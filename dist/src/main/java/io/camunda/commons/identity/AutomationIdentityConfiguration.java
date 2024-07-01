@@ -15,7 +15,6 @@ import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfigurat
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
@@ -23,16 +22,10 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  * Configuration to include the Identity based services and repositories in the Camunda application.
  */
 @Configuration(proxyBeanMethods = false)
-@ComponentScan(
-    basePackages = {"io.camunda.identity"},
-    excludeFilters = {
-      @ComponentScan.Filter(
-          type = FilterType.REGEX,
-          pattern = "io\\.camunda\\.identity\\.starter\\..*")
-    })
-@ConfigurationPropertiesScan(basePackages = {"io.camunda.identity"})
-@EnableJpaRepositories("io.camunda.identity")
-@EntityScan("io.camunda.identity")
+@ComponentScan(basePackages = {"io.camunda.identity.automation"})
+@ConfigurationPropertiesScan(basePackages = {"io.camunda.identity.automation"})
+@EnableJpaRepositories("io.camunda.identity.automation")
+@EntityScan("io.camunda.identity.automation")
 @Import(
     value = {
       DataSourceAutoConfiguration.class,
