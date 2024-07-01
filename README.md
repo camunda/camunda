@@ -71,7 +71,7 @@ To learn more about what we're currently working on, check the [GitHub issues](h
 * [Installation and Configuration](https://docs.camunda.io/docs/self-managed/zeebe-deployment/)
 * [Java Client](https://docs.camunda.io/docs/apis-clients/java-client/)
 * [Go Client](https://docs.camunda.io/docs/apis-clients/go-client/)
-* [Spring Integration](https://github.com/camunda-community-hub/spring-zeebe/)
+* [Spring SDK](https://docs.camunda.io/docs/apis-tools/spring-zeebe-sdk/getting-started/)
 
 ## Contributing
 
@@ -93,6 +93,7 @@ below, which are made available under the [Apache License, Version
 Available under the [Apache License, Version 2.0](/licenses/APACHE-2.0.txt):
 - Java Client ([clients/java](/clients/java))
 - Go Client ([clients/go](/clients/go))
+- Spring SDK ([spring-boot-starter-camunda-sdk](/spring-boot-starter-camunda-sdk))
 - Exporter API ([exporter-api](/exporter-api))
 - Protocol ([protocol](/protocol))
 - Gateway Protocol Implementation ([gateway-protocol-impl](/gateway-protocol-impl))

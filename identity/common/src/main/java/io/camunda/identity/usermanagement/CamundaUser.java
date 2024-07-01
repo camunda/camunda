@@ -7,30 +7,47 @@
  */
 package io.camunda.identity.usermanagement;
 
+import jakarta.validation.constraints.NotBlank;
 import java.util.Objects;
 
 public class CamundaUser {
   private Long id;
+
+  @NotBlank(message = "user.invalid")
   private String username;
+
+  private String name;
+
   private String email;
+
   private boolean enabled = true;
 
   public CamundaUser() {}
 
   public CamundaUser(
       final Long id, final String username, final String email, final boolean enabled) {
+    this(id, username, null, email, enabled);
+  }
+
+  public CamundaUser(
+      final Long id,
+      final String username,
+      final String name,
+      final String email,
+      final boolean enabled) {
     this.id = id;
     this.username = username;
+    this.name = name;
     this.email = email;
     this.enabled = enabled;
   }
 
   public CamundaUser(final String username) {
-    this(username, null);
+    this(username, null, null);
   }
 
-  public CamundaUser(final String username, final String email) {
-    this(username, email, true);
+  public CamundaUser(final String username, final String name, final String email) {
+    this(null, username, name, email, true);
   }
 
   public CamundaUser(final String username, final String email, final boolean enabled) {
@@ -51,6 +68,14 @@ public class CamundaUser {
 
   public void setUsername(final String username) {
     this.username = username;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(final String name) {
+    this.name = name;
   }
 
   public String getEmail() {

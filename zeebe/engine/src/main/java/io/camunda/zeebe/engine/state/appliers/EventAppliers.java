@@ -239,6 +239,9 @@ public final class EventAppliers implements EventApplier {
     register(
         MessageSubscriptionIntent.DELETED,
         new MessageSubscriptionDeletedApplier(state.getMessageSubscriptionState()));
+    register(
+        MessageSubscriptionIntent.MIGRATED,
+        new MessageSubscriptionMigratedApplier(state.getMessageSubscriptionState()));
   }
 
   private void registerMessageStartEventSubscriptionAppliers(final MutableProcessingState state) {
@@ -285,6 +288,9 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessMessageSubscriptionIntent.DELETED,
         new ProcessMessageSubscriptionDeletedApplier(subscriptionState));
+    register(
+        ProcessMessageSubscriptionIntent.MIGRATED,
+        new ProcessMessageSubscriptionMigratedApplier(subscriptionState));
   }
 
   private void registerProcessEventAppliers(final MutableProcessingState state) {

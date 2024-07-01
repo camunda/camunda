@@ -9,13 +9,8 @@ package io.camunda.search.clients.query;
 
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
-import java.util.function.Function;
 
-public final record SearchWildcardQuery(String field, String value) implements SearchQueryOption {
-
-  static SearchWildcardQuery of(final Function<Builder, ObjectBuilder<SearchWildcardQuery>> fn) {
-    return SearchQueryBuilders.wildcard(fn);
-  }
+public record SearchWildcardQuery(String field, String value) implements SearchQueryOption {
 
   public static final class Builder implements ObjectBuilder<SearchWildcardQuery> {
 

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { FC } from "react";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
 import NotFound from "src/pages/not-found";
@@ -19,11 +19,14 @@ import Tabs from "src/components/tabs";
 import { DetailPageHeaderFallback } from "src/components/fallbacks";
 import Flex from "src/components/layout/Flex";
 import { useEntityModal } from "src/components/modal";
-import EditModal from "src/pages/users/EditModal";
+import EditModal from "src/pages/users/modals/EditModal";
+import DeleteModal from "src/pages/users/modals/DeleteModal";
+import List from "src/pages/users/detail/role/List";
 
 const Details: FC = () => {
   const { t } = useTranslate();
   const { id = "", tab = "details" } = useParams<{ id: string; tab: string }>();
+  const navigate = useNavigate();
   const {
     data: user,
     loading,
@@ -32,6 +35,9 @@ const Details: FC = () => {
     id,
   });
   const [editUser, editUserModal] = useEntityModal(EditModal, reload);
+  const [deleteUser, deleteUserModal] = useEntityModal(DeleteModal, () =>
+    navigate("..", { replace: true }),
+  );
 
   if (!loading && !user) return <NotFound />;
 
@@ -52,6 +58,12 @@ const Details: FC = () => {
                       editUser(user);
                     }}
                   />
+                  <OverflowMenuItem
+                    itemText={t("Delete")}
+                    onClick={() => {
+                      deleteUser(user);
+                    }}
+                  />
                 </OverflowMenu>
               </>
             )}
@@ -68,7 +80,7 @@ const Details: FC = () => {
               {
                 key: "roles",
                 label: t("Assigned roles"),
-                content: t("Roles"),
+                content: user && <List user={user} loadingUser={loading} />,
               },
             ]}
             selectedTabKey={tab}
@@ -77,6 +89,7 @@ const Details: FC = () => {
         </Section>
       </>
       {editUserModal}
+      {deleteUserModal}
     </StackPage>
   );
 };

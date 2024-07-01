@@ -118,4 +118,10 @@ public interface JobRecordValue
    * @return the job kind indicating the specific category of the job
    */
   JobKind getJobKind();
+
+  /**
+   * @return the listener event type associated with this job. This type is applicable mainly for
+   *     jobs of kind {@link JobKind#EXECUTION_LISTENER} or {@link JobKind#TASK_LISTENER}
+   */
+  JobListenerEventType getJobListenerEventType();
 }

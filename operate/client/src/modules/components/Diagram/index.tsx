@@ -30,6 +30,7 @@ type Props = {
     | React.ReactElement<SelectedFlowNodeOverlayProps>
     | false;
   highlightedSequenceFlows?: string[];
+  highlightedFlowNodeIds?: string[];
 };
 
 const Diagram: React.FC<Props> = observer(
@@ -42,6 +43,7 @@ const Diagram: React.FC<Props> = observer(
     selectedFlowNodeOverlay,
     children,
     highlightedSequenceFlows,
+    highlightedFlowNodeIds,
   }) => {
     const diagramCanvasRef = useRef<HTMLDivElement | null>(null);
     const [isDiagramRendered, setIsDiagramRendered] = useState(false);
@@ -69,6 +71,7 @@ const Diagram: React.FC<Props> = observer(
             selectedFlowNodeIds,
             overlaysData,
             highlightedSequenceFlows,
+            highlightedFlowNodeIds: highlightedFlowNodeIds,
             nonSelectableNodeTooltipText: isModificationModeEnabled
               ? 'Modification is not supported for this flow node.'
               : undefined,
@@ -78,7 +81,6 @@ const Diagram: React.FC<Props> = observer(
           setIsDiagramRendered(true);
         }
       }
-
       renderDiagram();
     }, [
       xml,
@@ -89,6 +91,7 @@ const Diagram: React.FC<Props> = observer(
       highlightedSequenceFlows,
       isModificationModeEnabled,
       selectedRunningInstanceCount,
+      highlightedFlowNodeIds,
     ]);
 
     useEffect(() => {

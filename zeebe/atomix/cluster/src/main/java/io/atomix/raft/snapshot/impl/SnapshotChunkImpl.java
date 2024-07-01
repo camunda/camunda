@@ -35,6 +35,8 @@ public final class SnapshotChunkImpl
   private String chunkName;
   private long checksum;
   private long snapshotChecksum;
+  private long fileBlockPosition;
+  private long totalFileSize;
 
   public SnapshotChunkImpl() {}
 
@@ -45,6 +47,8 @@ public final class SnapshotChunkImpl
     checksum = chunk.getChecksum();
     snapshotChecksum = chunk.getSnapshotChecksum();
     content.wrap(chunk.getContent());
+    fileBlockPosition = chunk.getFileBlockPosition();
+    totalFileSize = chunk.getTotalFileSize();
   }
 
   @Override
@@ -64,6 +68,8 @@ public final class SnapshotChunkImpl
     totalCount = SnapshotChunkDecoder.totalCountNullValue();
     checksum = SnapshotChunkDecoder.checksumNullValue();
     snapshotChecksum = SnapshotChunkDecoder.snapshotChecksumNullValue();
+    fileBlockPosition = SnapshotChunkDecoder.fileBlockPositionNullValue();
+    totalFileSize = SnapshotChunkDecoder.totalFileSizeNullValue();
 
     snapshotId = "";
     chunkName = "";
@@ -87,6 +93,8 @@ public final class SnapshotChunkImpl
 
     encoder
         .totalCount(totalCount)
+        .fileBlockPosition(fileBlockPosition)
+        .totalFileSize(totalFileSize)
         .snapshotId(snapshotId)
         .chunkName(chunkName)
         .checksum(checksum)
@@ -99,6 +107,8 @@ public final class SnapshotChunkImpl
     super.wrap(buffer, offset, length);
 
     totalCount = decoder.totalCount();
+    fileBlockPosition = decoder.fileBlockPosition();
+    totalFileSize = decoder.totalFileSize();
     snapshotId = decoder.snapshotId();
     chunkName = decoder.chunkName();
     checksum = decoder.checksum();
@@ -140,6 +150,26 @@ public final class SnapshotChunkImpl
   }
 
   @Override
+  public long getFileBlockPosition() {
+    // backwards compatability
+    if (fileBlockPosition == SnapshotChunkDecoder.fileBlockPositionNullValue()) {
+      return 0;
+    }
+
+    return fileBlockPosition;
+  }
+
+  @Override
+  public long getTotalFileSize() {
+    // backwards comptability
+    if (totalFileSize == SnapshotChunkDecoder.totalFileSizeNullValue()) {
+      return getContent().length;
+    }
+
+    return totalFileSize;
+  }
+
+  @Override
   public String toString() {
     return "SnapshotChunkImpl{"
         + "snapshotId="
@@ -153,6 +183,10 @@ public final class SnapshotChunkImpl
         + checksum
         + ", snapshotChecksum="
         + snapshotChecksum
+        + ", fileBlockPosition="
+        + fileBlockPosition
+        + ", totalFileSize="
+        + totalFileSize
         + "} "
         + super.toString();
   }
