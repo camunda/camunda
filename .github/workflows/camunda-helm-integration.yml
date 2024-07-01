@@ -21,20 +21,23 @@ jobs:
           image:
             repository: camunda/camunda
             tag: SNAPSHOT
-            env:
-              - SPRING_PROFILES_ACTIVE=broker
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: broker
         operate:
           image:
             repository: camunda/camunda
             tag: SNAPSHOT
-            env:
-              - SPRING_PROFILES_ACTIVE=operate
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: operate
         tasklist:
           image:
             repository: camunda/camunda
             tag: SNAPSHOT
-            env:
-              - SPRING_PROFILES_ACTIVE=tasklist
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: tasklist
       vault-secret-mapping: |
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR | TEST_DOCKER_USERNAME;
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
