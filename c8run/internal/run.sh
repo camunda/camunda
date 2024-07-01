@@ -124,7 +124,7 @@ if [ "$1" = "start" ] ; then
   fi
 
   if [ ! -d "camunda-zeebe-$CAMUNDA_VERSION" ]; then
-    wget "https://github.com/camunda/camunda/releases/download/untagged-cc17819bc8c11c9bd503/camunda-zeebe-$CAMUNDA_VERSION.tar.gz"
+    wget "https://github.com/camunda/camunda/releases/download/$CAMUNDA_VERSION/camunda-zeebe-$CAMUNDA_VERSION.tar.gz"
     tar -xzvf camunda-zeebe-$CAMUNDA_VERSION.tar.gz
   fi
 
