@@ -7,25 +7,24 @@
  */
 package io.camunda.search.clients.query;
 
+import io.camunda.util.CollectionUtil;
 import io.camunda.util.ObjectBuilder;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 public record SearchIdsQuery(List<String> values) implements SearchQueryOption {
 
   public static final class Builder implements ObjectBuilder<SearchIdsQuery> {
 
-    private final List<String> ids = new ArrayList<>();
+    private List<String> ids = new ArrayList<>();
 
     public Builder values(final List<String> values) {
-      ids.addAll(Objects.requireNonNullElse(values, List.of()));
+      ids = CollectionUtil.addValuesToList(ids, values);
       return this;
     }
 
     public Builder values(final String... values) {
-      return values(Arrays.stream(Objects.requireNonNullElse(values, new String[0])).toList());
+      return values(CollectionUtil.collectValuesAsList(values));
     }
 
     @Override
