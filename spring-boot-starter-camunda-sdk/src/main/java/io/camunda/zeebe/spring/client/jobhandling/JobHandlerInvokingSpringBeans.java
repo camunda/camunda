@@ -25,6 +25,8 @@ import io.camunda.zeebe.client.impl.Loggers;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 import io.camunda.zeebe.spring.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.zeebe.spring.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.zeebe.spring.client.jobhandling.result.ResultProcessor;
+import io.camunda.zeebe.spring.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.zeebe.spring.client.metrics.MetricsRecorder;
 import io.camunda.zeebe.spring.common.exception.ZeebeBpmnError;
 import java.io.InputStream;
@@ -40,16 +42,19 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
   private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
   private final MetricsRecorder metricsRecorder;
   private final List<ParameterResolver> parameterResolvers;
+  private final ResultProcessor resultProcessor;
 
   public JobHandlerInvokingSpringBeans(
       final ZeebeWorkerValue workerValue,
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
-      final ParameterResolverStrategy parameterResolverStrategy) {
+      final ParameterResolverStrategy parameterResolverStrategy,
+      final ResultProcessorStrategy resultProcessorStrategy) {
     this.workerValue = workerValue;
     this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
     this.metricsRecorder = metricsRecorder;
     parameterResolvers = createParameterResolvers(parameterResolverStrategy);
+    resultProcessor = createResultProcessor(resultProcessorStrategy);
   }
 
   private List<ParameterResolver> createParameterResolvers(
@@ -57,6 +62,11 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
     return workerValue.getMethodInfo().getParameters().stream()
         .map(parameterResolverStrategy::createResolver)
         .toList();
+  }
+
+  private ResultProcessor createResultProcessor(
+      final ResultProcessorStrategy resultProcessorStrategy) {
+    return resultProcessorStrategy.createProcessor(workerValue.getMethodInfo().getReturnType());
   }
 
   @Override
@@ -68,7 +78,8 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
           MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_ACTIVATED, job.getType());
       final Object result;
       try {
-        result = workerValue.getMethodInfo().invoke(args.toArray());
+        final Object methodInvocationResult = workerValue.getMethodInfo().invoke(args.toArray());
+        result = resultProcessor.process(methodInvocationResult);
       } catch (final Throwable t) {
         metricsRecorder.increase(
             MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_FAILED, job.getType());
