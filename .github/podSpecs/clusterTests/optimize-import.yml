@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-optimize-import-camunda-cloud
+  namespace: ${NAMESPACE}
+  labels:
+    team: optimize
+spec:
+  progressDeadlineSeconds: 1800
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: optimize-import
+  template:
+    metadata:
+      labels:
+        app: optimize-import
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: agents-n1-standard-8-netssd-stable
+      imagePullSecrets:
+        - name: registry-camunda-cloud
+      tolerations:
+        - key: "agents-n1-standard-8-netssd-stable"
+          operator: "Exists"
+          effect: "NoSchedule"
+      volumes:
+        - name: configuration
+          configMap:
+            name: cluster-optimize-import-camunda-cloud
+            defaultMode: 0744
+      containers:
+        - name: optimize-import
+          image: registry.camunda.cloud/team-optimize/optimize:latest
+          imagePullPolicy: Always
+          env:
+            - name: OPTIMIZE_JAVA_OPTS
+              value: |
+                -Xms1g
+                -Xmx1g
+                -XX:MaxMetaspaceSize=128m
+          ports:
+            - containerPort: 8090
+              name: optimize-http
+              protocol: TCP
+          tty: true
+          livenessProbe:
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            httpGet:
+              path: /
+              port: optimize-http
+          readinessProbe:
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            httpGet:
+              path: /api/readyz
+              port: optimize-http
+          resources:
+            limits:
+              cpu: 2
+              memory: 2Gi
+            requests:
+              cpu: 2
+              memory: 2Gi
+          volumeMounts:
+            - name: configuration
+              mountPath: /optimize/config/environment-config.yaml
+              subPath: environment-config.yaml
+            - name: configuration
+              mountPath: /optimize/config/OptimizeLicense.txt
+              subPath: OptimizeLicense.txt

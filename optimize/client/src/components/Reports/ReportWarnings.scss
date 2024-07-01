@@ -1,0 +1,6 @@
+@use '@carbon/styles/scss/spacing' as *;
+
+.incompatibleFiltersWarning,
+.runningEndedFlowNodeWarning {
+  margin-bottom: $spacing-04;
+}

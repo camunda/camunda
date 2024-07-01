@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:camunda="http://camunda.org/schema/1.0/dmn" id="invoiceBusinessDecisions" name="Invoice Business Decisions" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="4.1.1">
+  <decision id="berStatusEvaluation" name="BER Status">
+    <decisionTable id="decisionTable">
+      <input id="InputClause_1j7ojbw" label="Flight Destination">
+        <inputExpression id="LiteralExpression_0f701t5" typeRef="string">
+          <text>flightDestination</text>
+        </inputExpression>
+      </input>
+      <input id="clause1" label="Date" camunda:inputVariable="">
+        <inputExpression id="inputExpression1" typeRef="date">
+          <text>date</text>
+        </inputExpression>
+      </input>
+      <output id="clause3" label="Open Yet?" name="openYet" typeRef="string">
+        <outputValues id="UnaryTests_08dl8wf">
+          <text></text>
+        </outputValues>
+      </output>
+      <rule id="DecisionRule_1of5a87">
+        <inputEntry id="UnaryTests_03dc8rv">
+          <text>"Glasgow"</text>
+        </inputEntry>
+        <inputEntry id="LiteralExpression_0yrqmtg">
+          <text>&lt; date and time("2015-12-12T00:00:00")</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_046antl">
+          <text>"No flights yet to that destination, sorry."</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0tih3rb">
+        <inputEntry id="UnaryTests_00f1drd">
+          <text>"Glasgow"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0p25er6">
+          <text>&gt; date and time("2015-12-12T00:00:00")</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1b5xha1">
+          <text>"You still can't fly to Glasgow from BER."</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_1ak4z14">
+        <inputEntry id="UnaryTests_05z989c">
+          <text>"Malaga"</text>
+        </inputEntry>
+        <inputEntry id="LiteralExpression_0qmsef6">
+          <text>&gt; date and time("2015-12-12T00:00:00")</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_05xxvip">
+          <text>"No flights to that destination, but maybe soon."</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_18juyk6">
+        <inputEntry id="UnaryTests_1w1npht">
+          <text>"Malaga"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_19p5f7l">
+          <text>&lt; date and time("2015-12-12T00:00:00")</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_142n1um">
+          <text>"Nope, no can do."</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_06coi87">
+        <inputEntry id="UnaryTests_0ub3iyp">
+          <text>"Omran"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_05kuawm">
+          <text>&gt; date and time("2015-12-12T00:00:00")</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_06hhpw4">
+          <text>"Omran."</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0pt6jbu">
+        <inputEntry id="UnaryTests_0zki2cz">
+          <text>"Omran"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0jnl4hk">
+          <text>&lt; date and time("2015-12-12T00:00:00")</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_066f183">
+          <text>"Omran."</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_02zofic">
+      <dmndi:DMNShape id="DMNShape_0t32mez" dmnElementRef="berStatusEvaluation">
+        <dc:Bounds height="55" width="100" x="160" y="82" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

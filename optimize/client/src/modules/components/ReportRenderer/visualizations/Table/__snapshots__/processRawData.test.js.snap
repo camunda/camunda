@@ -1,0 +1,305 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Decision table should only show instance table column if result data is empty 1`] = `
+Object {
+  "body": Array [],
+  "head": Array [
+    Object {
+      "id": "decisionDefinitionKey",
+      "label": "Decision definition key",
+      "title": "Decision definition key",
+    },
+    Object {
+      "id": "decisionDefinitionId",
+      "label": "Decision definition Id",
+      "title": "Decision definition Id",
+    },
+    Object {
+      "id": "decisionInstanceId",
+      "label": "Decision instance Id",
+      "title": "Decision instance Id",
+    },
+    Object {
+      "id": "evaluationDateTime",
+      "label": "Evaluation date",
+      "title": "Evaluation date",
+    },
+  ],
+}
+`;
+
+exports[`Decision table should return correct table props 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "bar",
+      "foo",
+      "456",
+      "1",
+      "12",
+      "",
+      "1",
+      "1s",
+    ],
+    Array [
+      "abc",
+      "xyz",
+      "456",
+      "1",
+      "",
+      "true",
+      "8",
+      "--",
+    ],
+  ],
+  "head": Array [
+    Object {
+      "id": "decisionDefinitionId",
+      "label": "Decision definition Id",
+      "title": "Decision definition Id",
+    },
+    Object {
+      "id": "decisionInstanceId",
+      "label": "Decision instance Id",
+      "title": "Decision instance Id",
+    },
+    Object {
+      "id": "processInstanceId",
+      "label": "Process instance Id",
+      "title": "Process instance Id",
+    },
+    Object {
+      "id": "engineName",
+      "label": "Engine name",
+      "title": "Engine name",
+    },
+    Object {
+      "id": "inputVariable:var1",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          InputVar
+          : 
+        </span>
+        Var 1
+      </React.Fragment>,
+      "title": "Var 1",
+      "type": "inputVariables",
+    },
+    Object {
+      "id": "inputVariable:var2",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          InputVar
+          : 
+        </span>
+        Var 2
+      </React.Fragment>,
+      "title": "Var 2",
+      "type": "inputVariables",
+    },
+    Object {
+      "id": "outputVariable:result",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          OutputVar
+          : 
+        </span>
+        Result
+      </React.Fragment>,
+      "title": "Result",
+      "type": "outputVariables",
+    },
+    Object {
+      "id": "flowNodeDuration:dur1",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          Dur
+          : 
+        </span>
+        dur1name
+      </React.Fragment>,
+      "sortable": false,
+      "title": "dur1name",
+      "type": "flowNodeDurations",
+    },
+  ],
+}
+`;
+
+exports[`Decision table should show default instances column headers for empty results 1`] = `
+Object {
+  "body": Array [],
+  "head": Array [],
+  "noData": <NoDataNotice
+    type="info"
+  >
+    You need to enable at least one table column
+  </NoDataNotice>,
+}
+`;
+
+exports[`Process table should exclude variable columns using the variable prefix 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "bar",
+      "foo",
+      "12",
+    ],
+    Array [
+      "abc",
+      "xyz",
+      "",
+    ],
+  ],
+  "head": Array [
+    Object {
+      "id": "processDefinitionId",
+      "label": "Process definition Id",
+      "title": "Process definition Id",
+    },
+    Object {
+      "id": "processInstanceId",
+      "label": "Process instance Id",
+      "title": "Process instance Id",
+    },
+    Object {
+      "id": "variable:var1",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          Var
+          : 
+        </span>
+        var1
+      </React.Fragment>,
+      "title": "var1",
+      "type": "variables",
+    },
+  ],
+}
+`;
+
+exports[`Process table should transform data to table compatible format 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "bar",
+      "foo",
+      "12",
+      "",
+      <ForwardRef(Button)
+        className="ObjectViewBtn"
+        link={true}
+        onClick={[Function]}
+      >
+        View
+      </ForwardRef(Button)>,
+      "--",
+      "2s",
+    ],
+    Array [
+      "abc",
+      "xyz",
+      "",
+      "true",
+      "",
+      "1s",
+      "--",
+    ],
+  ],
+  "head": Array [
+    Object {
+      "id": "processDefinitionId",
+      "label": "Process definition Id",
+      "title": "Process definition Id",
+    },
+    Object {
+      "id": "processInstanceId",
+      "label": "Process instance Id",
+      "title": "Process instance Id",
+    },
+    Object {
+      "id": "variable:var1",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          Var
+          : 
+        </span>
+        var1
+      </React.Fragment>,
+      "title": "var1",
+      "type": "variables",
+    },
+    Object {
+      "id": "variable:var2",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          Var
+          : 
+        </span>
+        var2
+      </React.Fragment>,
+      "title": "var2",
+      "type": "variables",
+    },
+    Object {
+      "id": "variable:var3",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          Var
+          : 
+        </span>
+        var3
+      </React.Fragment>,
+      "title": "var3",
+      "type": "variables",
+    },
+    Object {
+      "id": "flowNodeDuration:dur1",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          Dur
+          : 
+        </span>
+        dur1Name
+      </React.Fragment>,
+      "sortable": false,
+      "title": "dur1Name",
+      "type": "flowNodeDurations",
+    },
+    Object {
+      "id": "flowNodeDuration:dur2",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          Dur
+          : 
+        </span>
+        dur2
+      </React.Fragment>,
+      "sortable": false,
+      "title": "dur2",
+      "type": "flowNodeDurations",
+    },
+  ],
+}
+`;

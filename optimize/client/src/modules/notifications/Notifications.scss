@@ -1,0 +1,6 @@
+.Notifications {
+  position: absolute;
+  width: 100%;
+  z-index: var(--z-notification);
+  pointer-events: none;
+}

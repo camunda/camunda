@@ -1,0 +1,41 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: optimize-team-read-permissions
+  namespace: ${NAMESPACE}
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "namespaces", "pods", "pods/log", "services"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["get", "list", "watch", "create"]
+  - apiGroups: [""]
+    resources: ["pods/portforward"]
+    verbs: ["get", "list", "create"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: optimize-team-read-permissions
+  namespace: ${NAMESPACE}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: optimize-team-read-permissions
+subjects:
+  - kind: ServiceAccount
+    name: kyrylo-zakurdaiev
+    namespace: optimize
+  - kind: ServiceAccount
+    name: helene-waechtler
+    namespace: optimize
+  - kind: ServiceAccount
+    name: joshua-windels
+    namespace: optimize

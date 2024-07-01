@@ -1,0 +1,124 @@
+name: Optimize Connect to secured Elasticsearch
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 5 * * 1-5
+
+jobs:
+  connect-to-secured-es:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+
+      - name: Login to Harbor registry
+        uses: ./.github/actions/login-registry
+        with:
+          secrets: ${{ toJSON(secrets) }}
+
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
+
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/camunda-optimize SLACK_BOT_URL;
+            secret/data/products/optimize/ci/camunda-optimize OPTIMIZE_CERT_KEY;
+            secret/data/products/optimize/ci/camunda-optimize OPTIMIZE_CERT;
+
+      - name: Create cert files
+        run: |
+          echo "${{ steps.secrets.outputs.OPTIMIZE_CERT_KEY}}" > .github/actions/compose/optimize.key
+          echo "${{ steps.secrets.outputs.OPTIMIZE_CERT}}" > .github/actions/compose/optimize.crt
+
+      - name: Read pom.xml
+        id: "java_info"
+        uses: YunaBraska/java-info-action@main
+
+      - name: Start Nginx - ssl=false, basicauth=true, port=80
+        uses: ./.github/actions/compose
+        with:
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.nginx-basic-auth.yml
+          project_name: nginx-nossl-basicauth-80
+        env:
+          NGINX_PORT: 80
+          NGINX_HTPASSWD: "elastic:$apr1$rAPWdsDW$/7taaK2oH4AwXgLTbYSpa0"
+
+      - name: Start Nginx - ssl=true, basicauth=true, port=9200
+        uses: ./.github/actions/compose
+        with:
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.nginx-ssl-basic-auth.yml
+          project_name: nginx-ssl-basicauth-9200
+        env:
+          NGINX_PORT: 9200
+          NGINX_HTPASSWD: "elastic:$apr1$rAPWdsDW$/7taaK2oH4AwXgLTbYSpa0"
+
+      - name: Start Nginx - ssl=true, basicauth=false, port=9201
+        uses: ./.github/actions/compose
+        with:
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.nginx-ssl.yml
+          project_name: nginx-ssl-nobasicauth-9201
+        env:
+          NGINX_PORT: 9201
+
+      - name: Start Elastic
+        uses: ./.github/actions/compose
+        with:
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch-secured.yml
+          project_name: elasticsearch
+        env:
+          ELASTIC_VERSION: ${{ steps.java_info.outputs.x_elasticsearch_version }}
+          ELASTIC_JVM_MEMORY: 4
+          ELASTIC_HTTP_PORT: 9203
+
+      - name: Start Cambpm
+        uses: ./.github/actions/compose
+        with:
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
+          project_name: cambpm
+        env:
+          CAMBPM_VERSION: ${{ steps.java_info.outputs.x_camunda_engine_version }}
+          CAMBPM_JVM_MEMORY: 2
+
+      - name: Build project
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: install -Dskip.docker -Dskip.fe.build -DskipTests -pl optimize/qa/connect-to-secured-es-tests -am
+
+      - name: Run tests
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: verify -Dskip.docker -Dskip.fe.build -pl optimize/qa/connect-to-secured-es-tests -Psecured-es-it
+
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        with:
+          archive_name: connect-to-secured-es-docker-logs
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
+        with:
+          name: connect-to-secured-es-tests-logs
+          path: |
+            ./optimize/backend/target/failsafe-reports/**/*.xml
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Post results on slack
+        if: failure() && github.event_name != 'schedule'
+        uses: ./.github/actions/notify-on-slack
+        with:
+          slack_webhook_url: ${{ steps.secrets.outputs.SLACK_BOT_URL}}
+          status: ${{ job.status }}

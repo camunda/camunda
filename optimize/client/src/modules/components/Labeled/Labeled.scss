@@ -1,0 +1,19 @@
+.Labeled {
+  .checkLabel {
+    display: flex;
+    align-items: center;
+  }
+
+  .label {
+    display: inline-block;
+
+    &.before {
+      margin-bottom: 10px;
+      font-size: 0.875em;
+    }
+
+    &.disabled {
+      color: var(--grey-lighten-50);
+    }
+  }
+}

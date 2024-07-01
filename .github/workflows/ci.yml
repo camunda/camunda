@@ -68,7 +68,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [detect-changes]
     runs-on: [ self-hosted, linux, amd64, "16" ]
-    timeout-minutes: 30
+    timeout-minutes: 60
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
@@ -218,7 +218,7 @@ jobs:
     name: Camunda docker tests
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     services:
       # local registry is used as this job needs to push as it builds multi-platform images
       registry:

@@ -1,0 +1,10 @@
+---
+zeebe:
+  partitionCount: 2
+  enabled: true
+
+import:
+  currentTimeBackoffMilliseconds: 0
+
+es:
+  scrollTimeoutInSeconds: 5

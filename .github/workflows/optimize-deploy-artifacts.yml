@@ -1,0 +1,104 @@
+
+name: Optimize Deploy Artifacts
+on:
+  workflow_call:
+
+jobs:
+  deploy-artifacts:
+    name: Deploy Artifacts
+    runs-on: gcp-core-2-default
+    timeout-minutes: 30
+    env:
+      DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
+      DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
+    steps:
+    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+    - name: Install common tooling (buildx)  # required on self-hosted runners
+      uses: camunda/infra-global-github-actions/common-tooling@main
+      with:
+        buildx-enabled: true
+        java-enabled: false
+        node-enabled: false
+        python-enabled: false
+        yarn-enabled: false
+    - name: Define common variables
+      id: define-values
+      uses: ./.github/actions/git-environment
+    - name: "Read Java / Version Info"
+      id: "pom-info"
+      uses: YunaBraska/java-info-action@main
+    - name: Expose common variables as Env
+      run: |
+        {
+          echo "DOCKER_BRANCH_TAG=${{ steps.define-values.outputs.branch_slug }}"
+          echo "DOCKER_LATEST_TAG=${{ steps.define-values.outputs.latest_tag }}"
+          echo "DOCKER_TAG=${{ steps.define-values.outputs.image_tag }}"
+          echo "VERSION=${{ steps.pom-info.outputs.project_version }}"
+          echo "PUSH_LATEST_TAG=${{ steps.define-values.outputs.is_main_or_maintenance_branch }}"
+          echo "IS_MAIN=${{ steps.define-values.outputs.is_main_branch }}"
+          echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
+        } >> "$GITHUB_ENV"
+    - name: Login to Harbor registry
+      uses: ./.github/actions/login-registry
+      with:
+        secrets: ${{ toJSON(secrets) }}
+    - name: Import secrets
+      id: secrets
+      uses: hashicorp/vault-action@148ee648ccb26f28892776406f3c3c4cf8ac033f
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_USR;
+          secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
+    - name: Login to Docker Hub
+      uses: docker/login-action@0d4c9c5ea7693da7b068278f7b52bda2a190a446 # v3
+      with:
+        username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+        password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+    # Generating a production build
+    - name: Setup Maven
+      uses: ./.github/actions/setup-maven
+      with:
+        secrets: ${{ toJSON(secrets) }}
+    - name: Generate production .tar.gz
+      uses: ./.github/actions/run-maven
+      with:
+        parameters: install -DskipTests -Dskip.docker
+    - name: Build Docker Image
+      run: ./.github/scripts/build-docker-image.sh
+    # The SmokeTest is running as part of the "deploy-artifact" job to ensure we only push the artifact on success
+    # It uses the previously created docker image before it was pushed
+    - name: Start Smoketest
+      uses: ./.github/actions/compose
+      with:
+        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.smoketest.yml
+        project_name: smoketest
+      env:
+        OPTIMIZE_IMAGE_TAG: ${{ env.DOCKER_TAG }}
+        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}
+        CAMBPM_HOST: "172.17.0.1"
+        CAMBPM_PORT: "8080"
+        # ^ starting ~2023-10-10, the hostname resolution for the cambpm docker-compose service
+        # http://cambpm:8080 does not work anymore for neither SaaS nor self-hosted Linux runners.
+        # 172.17.0.1 is the host IP address from the container perspective, and cambpm is running
+        # exposed there on port 8080.
+    - name: Execute health check and push docker image
+      uses: ./.github/actions/execute-healthcheck-and-push-image
+      with:
+        version: ${{ env.VERSION }}
+        date: ${{ env.DATE }}
+        revision: ${{ env.REVISION }}
+    # We're running under the same condition of main / maintenance
+    # We have all dependencies presents, therefore doesn't justify another job
+    - name: Deploy to Artifactory
+      uses: ./.github/actions/run-maven
+      with:
+        parameters: deploy -Dskip.fe.build -DskipTests -Dskip.docker
+    - name: Docker log dump
+      uses: ./.github/actions/docker-logs
+      if: always()
+      with:
+        archive_name: deploy-artifacts-docker

@@ -1,0 +1,15 @@
+button.AddDefinition {
+  position: relative;
+  top: -44px;
+  left: 160px;
+  z-index: var(--z-above);
+  padding-right: 40px;
+  margin-bottom: -40px;
+  float: left;
+}
+
+.AddDefinitionModal {
+  .cds--modal-container {
+    height: 100%;
+  }
+}

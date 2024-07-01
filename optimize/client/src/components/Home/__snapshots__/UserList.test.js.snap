@@ -1,0 +1,126 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<div
+  className="UserList"
+>
+  <EntityList
+    action={
+      <Button
+        kind="primary"
+        onClick={[Function]}
+      >
+        Add
+      </Button>
+    }
+    bulkActions={
+      Array [
+        <BulkDeleter
+          deleteEntities={[Function]}
+          type="remove"
+        />,
+      ]
+    }
+    emptyStateComponent={
+      <EmptyState
+        icon={<ForwardRef(User) />}
+        title="No results found"
+      />
+    }
+    headers={
+      Array [
+        "Name",
+        "Members",
+        "Role",
+      ]
+    }
+    isLoading={false}
+    onChange={[Function]}
+    rows={
+      Array [
+        Object {
+          "actions": Array [
+            Object {
+              "action": [Function],
+              "icon": <ForwardRef(Edit) />,
+              "text": "Edit",
+            },
+            Object {
+              "action": [Function],
+              "icon": <ForwardRef(TrashCan) />,
+              "text": "Remove",
+            },
+          ],
+          "className": "user",
+          "entityType": "user",
+          "icon": <ForwardRef(User) />,
+          "id": "USER:kermit",
+          "meta": Array [
+            false,
+            "Manager",
+          ],
+          "name": "kermit",
+          "type": "User",
+        },
+        Object {
+          "actions": Array [
+            Object {
+              "action": [Function],
+              "icon": <ForwardRef(Edit) />,
+              "text": "Edit",
+            },
+            Object {
+              "action": [Function],
+              "icon": <ForwardRef(TrashCan) />,
+              "text": "Remove",
+            },
+          ],
+          "className": "group",
+          "entityType": "user",
+          "icon": <ForwardRef(Group) />,
+          "id": "GROUP:sales",
+          "meta": Array [
+            "2 Users",
+            "Manager",
+          ],
+          "name": "sales",
+          "type": "User group",
+        },
+      ]
+    }
+  />
+  <DeleterErrorHandler
+    deleteEntity={[Function]}
+    descriptionText="The '' null will be removed from the collection."
+    onClose={[Function]}
+    onDelete={[Function]}
+  />
+  <AddUserModal
+    existingUsers={
+      Array [
+        Object {
+          "id": "USER:kermit",
+          "identity": Object {
+            "id": "kermit",
+            "type": "user",
+          },
+          "role": "manager",
+        },
+        Object {
+          "id": "GROUP:sales",
+          "identity": Object {
+            "id": "sales",
+            "memberCount": 2,
+            "type": "group",
+          },
+          "role": "manager",
+        },
+      ]
+    }
+    onClose={[Function]}
+    onConfirm={[Function]}
+    open={false}
+    optimizeProfile="platform"
+  />
+</div>
+`;

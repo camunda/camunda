@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: cambpm
+  namespace: ${NAMESPACE}
+spec:
+  selector:
+    app: cambpm
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      name: cambpm-http
