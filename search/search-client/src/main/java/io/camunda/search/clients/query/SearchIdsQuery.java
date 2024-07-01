@@ -9,13 +9,14 @@ package io.camunda.search.clients.query;
 
 import io.camunda.util.CollectionUtil;
 import io.camunda.util.ObjectBuilder;
+import java.util.ArrayList;
 import java.util.List;
 
 public record SearchIdsQuery(List<String> values) implements SearchQueryOption {
 
   public static final class Builder implements ObjectBuilder<SearchIdsQuery> {
 
-    private List<String> ids;
+    private List<String> ids = new ArrayList<>();
 
     public Builder values(final List<String> values) {
       ids = CollectionUtil.addValuesToList(ids, values);
