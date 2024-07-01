@@ -949,11 +949,55 @@ components:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
+    CamundaGroupDto:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+        name:
+          type: "string"
+    FilterDto:
+      type: "object"
+      properties: { }
+    SortDto:
+      type: "object"
+      properties: { }
+    PageDto:
+      type: "object"
+      properties: { }
+    SearchRequestDto:
+      type: "object"
+      properties:
+        filter:
+          type: "object"
+          properties: { }
+        sort:
+          type: "object"
+          properties: { }
+        page:
+          type: "object"
+          properties: { }
+    UserSearchResponseDto:
+      type: "object"
       properties:
         items:
           type: array
           items:
             $ref: "#/components/schemas/CamundaUserResponse"
+        page:
+          type: "object"
+          properties: { }
+    GroupSearchResponseDto:
+      type: "object"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CamundaGroupDto'
+        page:
+          type: "object"
+          properties: { }
   securitySchemes:
     bearerAuth:
       type: http
