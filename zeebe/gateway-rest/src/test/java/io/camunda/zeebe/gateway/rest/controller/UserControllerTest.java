@@ -61,6 +61,7 @@ public class UserControllerTest extends RestControllerTest {
     when(userService.findUserById(1L)).thenThrow(new IllegalArgumentException(message));
 
     final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
+    expectedBody.setTitle(IllegalArgumentException.class.getName());
     expectedBody.setInstance(URI.create("/v2/users/1"));
 
     webClient
@@ -126,6 +127,7 @@ public class UserControllerTest extends RestControllerTest {
         .thenThrow(new IllegalArgumentException(message));
 
     final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
+    expectedBody.setTitle(IllegalArgumentException.class.getName());
     expectedBody.setInstance(URI.create("/v2/users"));
 
     webClient
@@ -197,6 +199,7 @@ public class UserControllerTest extends RestControllerTest {
         .thenThrow(new IllegalArgumentException(message));
 
     final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
+    expectedBody.setTitle(IllegalArgumentException.class.getName());
     expectedBody.setInstance(URI.create("/v2/users/1"));
 
     webClient
