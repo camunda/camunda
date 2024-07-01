@@ -170,6 +170,15 @@
         "renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.* '(?<currentValue>.*)'\\s"
       ],
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ["package\\.json"],
+      "matchStrings": [
+        "mcr\\.microsoft\\.com\\\/playwright:(?<currentValue>.*?)\\s"
+      ],
+      "depNameTemplate": "mcr.microsoft.com/playwright",
+      "datasourceTemplate": "docker"
     }
   ]
 }
