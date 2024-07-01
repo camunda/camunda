@@ -21,7 +21,6 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.BatchRequest;
-import io.camunda.operate.store.ImportStore;
 import io.camunda.operate.util.Tuple;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -40,13 +39,19 @@ public class VariableZeebeRecordProcessor {
 
   @Autowired private VariableTemplate variableTemplate;
 
-  @Autowired private ImportStore importStore;
-
   @Autowired private OperateProperties operateProperties;
 
   public void processVariableRecords(
       final Map<Long, List<Record<VariableRecordValue>>> variablesGroupedByScopeKey,
       final BatchRequest batchRequest)
+      throws PersistenceException {
+    processVariableRecords(variablesGroupedByScopeKey, batchRequest, false);
+  }
+
+  public void processVariableRecords(
+      final Map<Long, List<Record<VariableRecordValue>>> variablesGroupedByScopeKey,
+      final BatchRequest batchRequest,
+      final boolean concurrencyMode)
       throws PersistenceException {
     for (final var variableRecords : variablesGroupedByScopeKey.entrySet()) {
       final var temporaryVariableCache = new HashMap<String, Tuple<Intent, VariableEntity>>();
@@ -85,7 +90,6 @@ public class VariableZeebeRecordProcessor {
           updateFields.put(BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
         }
 
-        final boolean concurrencyMode = importStore.getConcurrencyMode();
         if (concurrencyMode) {
           batchRequest.upsertWithScript(
               variableTemplate.getFullQualifiedName(),

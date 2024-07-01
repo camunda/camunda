@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +56,6 @@ public class EventZeebeRecordProcessorIT extends OperateSearchAbstractIT {
   @Autowired private BeanFactory beanFactory;
   @MockBean private PartitionHolder partitionHolder;
   @Autowired private ImportPositionHolder importPositionHolder;
-  private boolean concurrencyModeBefore;
   private final String jobType = "createOrder";
   private final String jobWorker = "someWorker";
   private final int jobRetries = 2;
@@ -69,15 +67,6 @@ public class EventZeebeRecordProcessorIT extends OperateSearchAbstractIT {
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
     when(partitionHolder.getPartitionIds()).thenReturn(List.of(1));
-    concurrencyModeBefore = importPositionHolder.getConcurrencyMode();
-    importPositionHolder.setConcurrencyMode(true);
-  }
-
-  @Override
-  @AfterAll
-  public void afterAllTeardown() {
-    importPositionHolder.setConcurrencyMode(concurrencyModeBefore);
-    super.afterAllTeardown();
   }
 
   @Test
@@ -574,7 +563,9 @@ public class EventZeebeRecordProcessorIT extends OperateSearchAbstractIT {
       throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
     eventZeebeRecordProcessor.processIncidentRecords(
-        Map.of(zeebeRecord.getValue().getElementInstanceKey(), List.of(zeebeRecord)), batchRequest);
+        Map.of(zeebeRecord.getValue().getElementInstanceKey(), List.of(zeebeRecord)),
+        batchRequest,
+        true);
     batchRequest.execute();
     searchContainerManager.refreshIndices(eventTemplate.getFullQualifiedName());
   }
@@ -583,7 +574,9 @@ public class EventZeebeRecordProcessorIT extends OperateSearchAbstractIT {
       throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
     eventZeebeRecordProcessor.processJobRecords(
-        Map.of(zeebeRecord.getValue().getElementInstanceKey(), List.of(zeebeRecord)), batchRequest);
+        Map.of(zeebeRecord.getValue().getElementInstanceKey(), List.of(zeebeRecord)),
+        batchRequest,
+        true);
     batchRequest.execute();
     searchContainerManager.refreshIndices(eventTemplate.getFullQualifiedName());
   }
@@ -592,7 +585,9 @@ public class EventZeebeRecordProcessorIT extends OperateSearchAbstractIT {
       final Record<ProcessMessageSubscriptionRecordValue> zeebeRecord) throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
     eventZeebeRecordProcessor.processProcessMessageSubscription(
-        Map.of(zeebeRecord.getValue().getElementInstanceKey(), List.of(zeebeRecord)), batchRequest);
+        Map.of(zeebeRecord.getValue().getElementInstanceKey(), List.of(zeebeRecord)),
+        batchRequest,
+        true);
     batchRequest.execute();
     searchContainerManager.refreshIndices(eventTemplate.getFullQualifiedName());
   }
@@ -601,7 +596,7 @@ public class EventZeebeRecordProcessorIT extends OperateSearchAbstractIT {
       final Record<ProcessInstanceRecordValue> zeebeRecord) throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
     eventZeebeRecordProcessor.processProcessInstanceRecords(
-        Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)), batchRequest);
+        Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)), batchRequest, true);
     batchRequest.execute();
     searchContainerManager.refreshIndices(eventTemplate.getFullQualifiedName());
   }
