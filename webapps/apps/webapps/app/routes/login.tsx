@@ -44,7 +44,7 @@ const login = (body: z.infer<typeof formSchema>, request: Request) =>
     },
   });
 
-export const action: ActionFunction = async ({request}) => {
+export const clientAction: ActionFunction = async ({request}) => {
   const formData = formSchema.safeParse(
     Object.fromEntries((await request.formData()).entries()),
   );
@@ -86,7 +86,7 @@ export const action: ActionFunction = async ({request}) => {
 
 const Login: React.FC = () => {
   const navigation = useNavigation();
-  const data = useActionData<typeof action>();
+  const data = useActionData<typeof clientAction>();
   const isSubmitting = navigation.state === 'submitting';
 
   return (

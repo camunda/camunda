@@ -1,0 +1,48 @@
+import { ArgsTable, Canvas, Story } from '@storybook/blocks';
+import * as LinkStories from './Link.stories';
+
+# Link
+
+[Source code](https://github.com/carbon-design-system/carbon/tree/main/packages/react/src/components/Link)
+&nbsp;|&nbsp;
+[Usage guidelines](https://www.carbondesignsystem.com/components/link/usage)
+&nbsp;|&nbsp;
+[Accessibility](https://www.carbondesignsystem.com/components/link/accessibility)
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Component API](#component-api)
+- [Feedback](#feedback)
+
+## Overview
+
+Links are used as navigational elements and can be used on their own or inline
+with text. They provide a lightweight option for navigation but like other
+interactive elements, too many links will clutter a page and make it difficult
+for users to identify their next steps. This is especially true for inline
+links, which should be used sparingly.
+
+<Canvas>
+  <Story of={LinkStories.Default} />
+</Canvas>
+
+## Accessible Link with Icon
+
+If the text of your link doesn't correspond to the action represented by the
+icon, consider incorporating an `aria-label` for the icon. This will ensure that
+visually impaired users can comprehend the outcome of clicking the link.
+
+<Canvas>
+  <Story of={LinkStories.PairedWithIcon} />
+</Canvas>
+
+## Component API
+
+<ArgsTable />
+
+## Feedback
+
+Help us improve this component by providing feedback, asking questions on Slack,
+or updating this file on
+[GitHub](https://github.com/carbon-design-system/carbon/edit/main/packages/react/src/components/Link/Link.mdx).

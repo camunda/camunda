@@ -1,0 +1,11 @@
+.fluid-input-wrapper {
+  display: flex;
+  justify-content: space-between;
+  inline-size: 100%;
+  margin-block-end: 2rem;
+}
+
+.fluid-input-wrapper > * {
+  margin: 0 1rem;
+  inline-size: 33%;
+}

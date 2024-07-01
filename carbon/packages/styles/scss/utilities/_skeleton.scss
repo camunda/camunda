@@ -1,0 +1,70 @@
+//
+// Copyright IBM Corp. 2021
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@use 'keyframes';
+@use '../theme' as *;
+@use '../config' as *;
+
+/// Skeleton loading animation
+/// @access public
+/// @example @include skeleton;
+/// @group utilities
+@mixin skeleton {
+  position: relative;
+  padding: 0;
+  border: none;
+  background: $skeleton-background;
+  box-shadow: none;
+  pointer-events: none;
+
+  &:hover,
+  &:focus,
+  &:active {
+    border: none;
+    cursor: default;
+    outline: none;
+  }
+
+  &::before {
+    position: absolute;
+    animation: 3000ms ease-in-out #{$prefix}--skeleton infinite;
+    background: $skeleton-element;
+    block-size: 100%;
+    content: '';
+    inline-size: 100%;
+    will-change: transform-origin, transform, opacity;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
+}
+
+/// Circular Skeleton loading animation
+/// @access public
+/// @example @include circular-skeleton;
+/// @group utilities
+@mixin circular-skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: 50%;
+  background: $skeleton-background;
+
+  &::before {
+    position: absolute;
+    animation: 3000ms ease-in-out #{$prefix}--skeleton infinite;
+    background: $skeleton-element;
+    block-size: 100%;
+    content: '';
+    inline-size: 200%;
+    will-change: transform-origin, transform, opacity;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
+}

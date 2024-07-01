@@ -1,0 +1,14 @@
+{
+  "module": "index.esm.js",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "import": "./index.esm.js",
+      "require": "./index.js",
+      "default": "./index.esm.js",
+      "types": "./index.d.ts"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+name: Nightly Release
+
+on:
+  schedule:
+    # Run every week day at 01:00 (24hr format)
+    - cron: '0 1 * * 1-5'
+
+jobs:
+  release:
+    runs-on: macos-13
+    # Needed as recommended by npm docs on publishing with provenance https://docs.npmjs.com/generating-provenance-statements
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 #v4.0.2
+        with:
+          node-version: '20.x'
+      - name: Install dependencies
+        run: yarn install --immutable --immutable-cache --check-cache
+      - name: Build project
+        run: yarn build
+      - name: Publish nightly release
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> .npmrc
+          yarn lerna publish --canary minor --force-publish --exact --dist-tag nightly --preid alpha --no-push --no-git-tag-version --yes

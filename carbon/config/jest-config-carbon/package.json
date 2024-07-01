@@ -1,0 +1,43 @@
+{
+  "name": "jest-config-carbon",
+  "private": true,
+  "description": "Jest configuration and preset for Carbon",
+  "version": "1.12.0",
+  "license": "Apache-2.0",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/carbon-design-system/carbon.git",
+    "directory": "config/jest-config-carbon"
+  },
+  "bugs": "https://github.com/carbon-design-system/carbon/issues",
+  "keywords": [
+    "ibm",
+    "carbon",
+    "carbon-design-system",
+    "components",
+    "react"
+  ],
+  "dependencies": {
+    "@babel/core": "^7.18.2",
+    "@babel/plugin-proposal-class-properties": "^7.17.12",
+    "@babel/plugin-proposal-export-default-from": "^7.17.12",
+    "@babel/plugin-proposal-export-namespace-from": "^7.17.12",
+    "@babel/plugin-transform-runtime": "^7.18.2",
+    "@babel/preset-env": "^7.18.2",
+    "@babel/preset-react": "^7.17.12",
+    "@babel/runtime": "^7.18.3",
+    "accessibility-checker": "^3.1.48",
+    "axe-core": "^4.3.5",
+    "babel-jest": "^28.1.0",
+    "chalk": "^4.1.1",
+    "jest-circus": "^28.1.0",
+    "jest-environment-jsdom": "^28.1.0",
+    "jest-watch-typeahead": "^2.0.0",
+    "sass": "^1.51.0"
+  },
+  "devDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}

@@ -6,7 +6,7 @@
   "scripts": {
     "build": "remix vite:build",
     "dev": "remix vite:dev",
-    "preview": "vite preview build",
+    "preview": "vite preview --outDir build/client",
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
     "start": "remix-serve ./build/server/index.js",
     "typecheck": "tsc",
@@ -16,7 +16,7 @@
     "@camunda/tasklist": "workspace:8.6.0-SNAPSHOT",
     "@carbon/grid": "11.23.0",
     "@carbon/layout": "11.22.0",
-    "@carbon/react": "1.60.3",
+    "@carbon/react": "file:/home/vinicius/repos/zeebe/carbon/packages/react",
     "@carbon/styles": "1.59.0",
     "@carbon/themes": "11.36.0",
     "@carbon/type": "11.27.0",

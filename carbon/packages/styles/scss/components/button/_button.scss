@@ -1,0 +1,423 @@
+//
+// Copyright IBM Corp. 2016, 2023
+//
+// This source code is licensed under the Apache-2.0 license found in the
+// LICENSE file in the root directory of this source tree.
+//
+
+@use 'tokens' as *;
+@use 'vars' as *;
+@use 'mixins' as *;
+@use '../tooltip';
+@use '../../config' as *;
+@use '../../spacing' as *;
+@use '../../theme' as *;
+@use '../../type' as *;
+@use '../../layer' as *;
+@use '../../utilities/convert';
+@use '../../utilities/focus-outline';
+@use '../../utilities/high-contrast-mode' as *;
+@use '../../utilities/skeleton' as *;
+@use '../../utilities/visually-hidden' as *;
+@use '../../utilities/layout';
+
+@mixin button {
+  .#{$prefix}--btn {
+    @include layout.use('size', $min: 'sm', $default: 'lg', $max: '2xl');
+    @include layout.use('density', $default: 'normal');
+
+    @include button-base;
+  }
+
+  // Reset intrinsic padding in Firefox (see #731)
+  .#{$prefix}--btn::-moz-focus-inner {
+    padding: 0;
+    border: 0;
+  }
+
+  .#{$prefix}--btn--primary {
+    @include button-theme(
+      $button-primary,
+      transparent,
+      $text-on-color,
+      $button-primary-hover,
+      currentColor,
+      $button-primary-active
+    );
+
+    &:hover {
+      color: $text-on-color;
+    }
+  }
+
+  .#{$prefix}--btn--secondary {
+    @include button-theme(
+      $button-secondary,
+      transparent,
+      $text-on-color,
+      $button-secondary-hover,
+      currentColor,
+      $button-secondary-active
+    );
+
+    &:hover,
+    &:focus {
+      color: $text-on-color;
+    }
+  }
+
+  .#{$prefix}--btn--tertiary {
+    @include button-theme(
+      transparent,
+      $button-tertiary,
+      $button-tertiary,
+      $button-tertiary-hover,
+      currentColor,
+      $button-tertiary-active
+    );
+
+    &:hover {
+      color: $text-inverse;
+    }
+
+    &:focus {
+      background-color: $button-tertiary;
+      color: $text-inverse;
+    }
+
+    &:active {
+      border-color: transparent;
+      background-color: $button-tertiary-active;
+      color: $text-inverse;
+    }
+
+    &:disabled,
+    &:hover:disabled,
+    &:focus:disabled,
+    &.#{$prefix}--btn--disabled,
+    &.#{$prefix}--btn--disabled:hover,
+    &.#{$prefix}--btn--disabled:focus {
+      background: transparent;
+      color: $text-on-color-disabled;
+      outline: none;
+    }
+  }
+
+  .#{$prefix}--btn--ghost {
+    @include button-theme(
+      transparent,
+      transparent,
+      $link-primary,
+      $background-hover,
+      currentColor,
+      $background-active
+    );
+
+    padding-inline-end: calc(
+      layout.density('padding-inline') - convert.to-rem(1px)
+    );
+
+    .#{$prefix}--btn__icon {
+      position: static;
+      margin-inline-start: $spacing-03;
+    }
+
+    &:hover,
+    &:active {
+      color: $link-primary-hover;
+    }
+
+    &:active {
+      background-color: $background-active;
+    }
+
+    &:disabled,
+    &:hover:disabled,
+    &:focus:disabled,
+    &.#{$prefix}--btn--disabled,
+    &.#{$prefix}--btn--disabled:hover,
+    &.#{$prefix}--btn--disabled:focus {
+      border-color: transparent;
+      background: transparent;
+      color: $text-on-color-disabled;
+      outline: none;
+    }
+
+    &:not([disabled]) svg {
+      fill: $icon-primary;
+    }
+  }
+
+  .#{$prefix}--btn--icon-only {
+    justify-content: center;
+    padding: 0;
+    block-size: layout.size('height');
+    inline-size: layout.size('height');
+    // -1px to compensate for border width
+    padding-block-start: min(
+      calc(
+        (layout.size('height') - convert.to-rem(16px)) / 2 - convert.to-rem(1px)
+      ),
+      var(--temp-padding-block-max)
+    );
+
+    > :first-child {
+      margin-block-start: convert.to-rem(1px);
+      min-inline-size: convert.to-rem(16px);
+    }
+
+    .#{$prefix}--btn__icon {
+      position: static;
+    }
+
+    &.#{$prefix}--btn--ghost .#{$prefix}--btn__icon,
+    &.#{$prefix}--btn--danger--ghost .#{$prefix}--btn__icon {
+      margin: 0;
+    }
+  }
+
+  // Adjust icon positioning in small, medium variants only
+  .#{$prefix}--btn--sm:not(.#{$prefix}--btn--icon-only) .#{$prefix}--btn__icon,
+  .#{$prefix}--btn--md:not(.#{$prefix}--btn--icon-only) .#{$prefix}--btn__icon {
+    margin-block-start: 0;
+  }
+
+  .#{$prefix}--btn--icon-only.#{$prefix}--btn--selected {
+    background: $background-selected;
+  }
+
+  .#{$prefix}--btn path[data-icon-path='inner-path'] {
+    fill: none;
+  }
+
+  .#{$prefix}--btn--ghost.#{$prefix}--btn--icon-only
+    .#{$prefix}--btn__icon
+    path:not([data-icon-path]):not([fill='none']),
+  .#{$prefix}--btn--ghost.#{$prefix}--btn--icon-only .#{$prefix}--btn__icon {
+    fill: $icon-primary;
+  }
+
+  .#{$prefix}--btn--ghost.#{$prefix}--btn--icon-only[disabled]
+    .#{$prefix}--btn__icon
+    path:not([data-icon-path]):not([fill='none']),
+  .#{$prefix}--btn--ghost.#{$prefix}--btn--icon-only[disabled]
+    .#{$prefix}--btn__icon,
+  .#{$prefix}--btn.#{$prefix}--btn--icon-only.#{$prefix}--btn--ghost[disabled]:hover
+    .#{$prefix}--btn__icon {
+    fill: $icon-on-color-disabled;
+  }
+
+  .#{$prefix}--btn--ghost.#{$prefix}--btn--icon-only[disabled] {
+    cursor: not-allowed;
+  }
+
+  // Workaround to ensure onMouseEnter events fire when moving
+  // from a disabled button to a non-disabled button (#13815)
+  .#{$prefix}--icon-tooltip--disabled .#{$prefix}--tooltip-trigger__wrapper {
+    cursor: not-allowed;
+  }
+
+  .#{$prefix}--icon-tooltip--disabled .#{$prefix}--btn--icon-only[disabled] {
+    pointer-events: none;
+  }
+
+  .#{$prefix}--btn--danger {
+    @include button-theme(
+      $button-danger-primary,
+      transparent,
+      $text-on-color,
+      $button-danger-hover,
+      currentColor,
+      $button-danger-active
+    );
+
+    &:hover {
+      color: $text-on-color;
+    }
+
+    &--tertiary {
+      @include button-theme(
+        transparent,
+        $button-danger-secondary,
+        $button-danger-secondary,
+        $button-danger-hover,
+        currentColor,
+        $button-danger-active
+      );
+
+      &:hover {
+        border-color: $button-danger-hover;
+        color: $text-on-color;
+      }
+
+      &:focus {
+        background-color: $button-danger-primary;
+        color: $text-on-color;
+      }
+
+      &:active {
+        border-color: $button-danger-active;
+        background-color: $button-danger-active;
+        color: $text-on-color;
+      }
+
+      &:disabled,
+      &:hover:disabled,
+      &:focus:disabled,
+      &.#{$prefix}--btn--disabled,
+      &.#{$prefix}--btn--disabled:hover,
+      &.#{$prefix}--btn--disabled:focus {
+        background: transparent;
+        color: $text-on-color-disabled;
+        outline: none;
+      }
+    }
+
+    &--ghost {
+      @include button-theme(
+        transparent,
+        transparent,
+        $button-danger-secondary,
+        $button-danger-hover,
+        currentColor,
+        $button-danger-active
+      );
+
+      padding-inline-end: calc(
+        layout.density('padding-inline') - convert.to-rem(1px)
+      );
+
+      .#{$prefix}--btn__icon {
+        position: static;
+        margin-inline-start: $spacing-03;
+      }
+
+      &:hover,
+      &:active {
+        color: $text-on-color;
+      }
+
+      &:disabled,
+      &:hover:disabled,
+      &:focus:disabled,
+      &.#{$prefix}--btn--disabled,
+      &.#{$prefix}--btn--disabled:hover,
+      &.#{$prefix}--btn--disabled:focus {
+        border-color: transparent;
+        background: transparent;
+        color: $text-disabled;
+        outline: none;
+      }
+    }
+  }
+
+  //expressive styles
+  .#{$prefix}--btn--expressive {
+    @include type-style('body-compact-02');
+
+    padding-block: min(
+      calc(
+        (layout.size('height') - var(--temp-expressive-1lh)) / 2 -
+          convert.to-rem(1px)
+      ),
+      var(--temp-padding-block-max)
+    );
+  }
+
+  .#{$prefix}--btn--icon-only.#{$prefix}--btn--expressive {
+    padding: 12px 13px;
+    //default size 48px
+  }
+
+  .#{$prefix}--btn.#{$prefix}--btn--expressive .#{$prefix}--btn__icon {
+    block-size: convert.to-rem(20px);
+    inline-size: convert.to-rem(20px);
+  }
+
+  .#{$prefix}--btn-set .#{$prefix}--btn.#{$prefix}--btn--expressive {
+    max-inline-size: convert.to-rem(320px);
+  }
+
+  // Skeleton State
+  .#{$prefix}--btn.#{$prefix}--skeleton {
+    @include skeleton;
+
+    inline-size: convert.to-rem(150px);
+  }
+
+  // button set styles
+  .#{$prefix}--btn-set {
+    display: flex;
+  }
+
+  .#{$prefix}--btn-set--stacked {
+    flex-direction: column;
+  }
+
+  .#{$prefix}--btn-set .#{$prefix}--btn {
+    inline-size: 100%;
+    // 196px from design kit
+    max-inline-size: convert.to-rem(196px);
+
+    &:not(:focus) {
+      box-shadow: convert.to-rem(-1px) 0 0 0 $button-separator;
+    }
+
+    &:first-of-type:not(:focus) {
+      box-shadow: inherit;
+    }
+  }
+
+  .#{$prefix}--btn-set .#{$prefix}--btn:focus + .#{$prefix}--btn {
+    box-shadow: inherit;
+  }
+
+  .#{$prefix}--btn-set--stacked .#{$prefix}--btn:not(:focus) {
+    box-shadow: 0 convert.to-rem(-1px) 0 0 $button-separator;
+  }
+
+  .#{$prefix}--btn-set--stacked .#{$prefix}--btn:first-of-type:not(:focus) {
+    box-shadow: inherit;
+  }
+
+  .#{$prefix}--btn-set .#{$prefix}--btn.#{$prefix}--btn--disabled {
+    box-shadow: convert.to-rem(-1px) 0 0 0 $icon-on-color-disabled;
+
+    &:first-of-type {
+      box-shadow: none;
+    }
+  }
+
+  .#{$prefix}--btn-set--stacked .#{$prefix}--btn.#{$prefix}--btn--disabled {
+    box-shadow: 0 convert.to-rem(-1px) 0 0 $layer-selected-disabled;
+
+    &:first-of-type {
+      box-shadow: none;
+    }
+  }
+
+  .#{$prefix}--btn-set .#{$prefix}--btn.#{$prefix}--btn--loading {
+    border-color: transparent;
+    background-color: transparent;
+    box-shadow: none;
+  }
+
+  // Windows HCM fix
+  .#{$prefix}--btn:focus {
+    @include high-contrast-mode('focus');
+  }
+
+  // Windows HCM fix
+  // stylelint-disable-next-line no-duplicate-selectors
+  .#{$prefix}--btn--ghost.#{$prefix}--btn--icon-only
+    .#{$prefix}--btn__icon
+    path:not([data-icon-path]):not([fill='none']),
+  .#{$prefix}--btn--ghost.#{$prefix}--btn--icon-only .#{$prefix}--btn__icon {
+    @include high-contrast-mode('icon-fill');
+  }
+
+  // RTL overrides
+  [dir='rtl'] .#{$prefix}--btn-set .#{$prefix}--btn:not(:focus) {
+    box-shadow: convert.to-rem(1px) 0 0 0 $button-separator;
+  }
+}

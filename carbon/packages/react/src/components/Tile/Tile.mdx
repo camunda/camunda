@@ -1,0 +1,103 @@
+import { Story, ArgsTable, Canvas, Meta } from '@storybook/blocks';
+import * as TileStories from './Tile.stories';
+import * as TileFeatureFlagStories from './Tile.featureflag.stories'
+
+<Meta of={TileStories} />
+
+# Tile
+
+[Source code](https://github.com/carbon-design-system/carbon/tree/main/packages/react/src/components/Tile)
+&nbsp;|&nbsp;
+[Usage guidelines](https://www.carbondesignsystem.com/components/tile/usage)
+&nbsp;|&nbsp;
+[Accessibility](https://www.carbondesignsystem.com/components/tile/accessibility)
+
+## Table of Contents
+
+## Overview
+
+<Canvas>
+  <Story of={TileStories.Default} />
+</Canvas>
+
+## Clickable
+
+<Canvas>
+  <Story of={TileStories.Clickable} />
+</Canvas>
+
+## Expandable
+
+<Canvas>
+  <Story of={TileStories.Expandable} />
+</Canvas>
+
+## Expandable with Interactive
+
+<Canvas>
+  <Story of={TileStories.ExpandableWithInteractive} />
+</Canvas>
+
+## Multi Select
+
+<Canvas>
+  <Story of={TileStories.Selectable} />
+</Canvas>
+
+## Multi Select
+
+<Canvas>
+  <Story of={TileStories.MultiSelect} />
+</Canvas>
+
+## Radio
+
+<Canvas>
+  <Story of={TileStories.Radio} />
+</Canvas>
+
+## Experimental Improved Contrast
+
+In Sass, you can enable the improved contrast tiles via a feature flag.
+
+```scss
+@include feature-flags.enable('enable-experimental-tile-contrast');
+```
+
+or if you have multiple feature flags you can enable them this way.
+
+```scss
+@use '@carbon/react/scss/feature-flags' with (
+  $feature-flags: (
+    'enable-experimental-tile-contrast': true,
+  )
+);
+```
+
+<Canvas>
+  <div style={{ width: '1018px', maxWidth: '100%' }}>
+    <Story of={TileFeatureFlagStories.Clickable} meta={TileFeatureFlagStories} />
+  </div>
+  <div style={{ width: '1018px', maxWidth: '100%' }}>
+    <Story of={TileFeatureFlagStories.Expandable} meta={TileFeatureFlagStories} />
+  </div>
+  <div style={{ width: '1018px', maxWidth: '100%' }}>
+    <Story of={TileFeatureFlagStories.MultiSelect} meta={TileFeatureFlagStories} />
+  </div>
+  <div style={{ width: '1018px', maxWidth: '100%' }}>
+    <Story of={TileFeatureFlagStories.Radio} meta={TileFeatureFlagStories} />
+  </div>
+  <div style={{ width: '1018px', maxWidth: '100%' }}>
+    <Story of={TileFeatureFlagStories.Selectable} meta={TileFeatureFlagStories} />
+  </div>
+</Canvas>
+
+## Component API
+
+<ArgsTable />
+
+## Feedback
+
+Help us improve this component by providing feedback, asking questions on Slack,
+or updating this file on
+[GitHub](https://github.com/carbon-design-system/carbon/edit/main/packages/react/src/components/Tile/Tile.mdx).
