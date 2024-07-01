@@ -161,4 +161,16 @@ public class RestErrorMapper {
       final ProblemDetail problemDetail) {
     return CompletableFuture.completedFuture(RestErrorMapper.mapProblemToResponse(problemDetail));
   }
+
+  public static ResponseEntity<Object> mapUserManagementExceptionsToResponse(final Exception e) {
+    if (e instanceof IllegalArgumentException) {
+      final ProblemDetail problemDetail =
+          ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
+      return ResponseEntity.of(problemDetail).build();
+    }
+
+    final ProblemDetail problemDetail =
+        ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+    return ResponseEntity.of(problemDetail).build();
+  }
 }

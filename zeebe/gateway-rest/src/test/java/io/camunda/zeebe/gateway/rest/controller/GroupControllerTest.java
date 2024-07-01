@@ -13,56 +13,32 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.identity.usermanagement.CamundaGroup;
 import io.camunda.identity.usermanagement.service.GroupService;
-import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupDto;
-import io.camunda.zeebe.gateway.protocol.rest.GroupSearchResponseDto;
-import io.camunda.zeebe.gateway.protocol.rest.SearchRequestDto;
-import io.camunda.zeebe.gateway.rest.GlobalControllerExceptionHandler;
-import io.camunda.zeebe.gateway.rest.controller.GroupControllerTest.TestGroupControllerApplication;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupRequest;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupResponse;
+import io.camunda.zeebe.gateway.protocol.rest.GroupSearchResponse;
+import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.GroupController;
-import io.camunda.zeebe.gateway.rest.controller.usermanagement.UserController;
 import java.net.URI;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.test.web.reactive.server.WebTestClient;
 
-@SpringBootTest(
-    classes = {
-      TestGroupControllerApplication.class,
-      GroupController.class,
-      GlobalControllerExceptionHandler.class
-    },
-    webEnvironment = WebEnvironment.RANDOM_PORT)
-public class GroupControllerTest {
+@WebMvcTest(GroupController.class)
+public class GroupControllerTest extends RestControllerTest {
 
-  @MockBean private UserController userController;
-  @MockBean private JobController jobController;
-  @MockBean private ProcessInstanceController processInstanceController;
-  @MockBean private TopologyController topologyController;
-  @MockBean private UserTaskController userTaskController;
-  @MockBean private HttpSecurity httpSecurity;
   @MockBean private GroupService groupService;
 
-  @Autowired private WebTestClient webClient;
-
   @Test
-  void getGroupByIdWorks() {
+  void getGroupByIdShouldReturnGroup() {
     final CamundaGroup camundaGroup = new CamundaGroup(1L, "demo");
 
-    final CamundaGroupDto camundaGroupDto = new CamundaGroupDto();
-    camundaGroupDto.setId(1L);
-    camundaGroupDto.setName("demo");
+    final CamundaGroupResponse camundaGroupResponse = new CamundaGroupResponse();
+    camundaGroupResponse.setId(1L);
+    camundaGroupResponse.setName("demo");
 
     when(groupService.findGroupById(1L)).thenReturn(camundaGroup);
 
@@ -73,8 +49,8 @@ public class GroupControllerTest {
         .exchange()
         .expectStatus()
         .is2xxSuccessful()
-        .expectBody(CamundaGroupDto.class)
-        .isEqualTo(camundaGroupDto);
+        .expectBody(CamundaGroupResponse.class)
+        .isEqualTo(camundaGroupResponse);
   }
 
   @Test
@@ -97,16 +73,16 @@ public class GroupControllerTest {
   }
 
   @Test
-  void createGroupWorks() {
+  void createGroupShouldReturnCreatedGroup() {
     final CamundaGroup camundaGroup = new CamundaGroup("demo");
     final CamundaGroup createdCamundaGroup = new CamundaGroup(1L, "demo");
 
-    final CamundaGroupDto camundaGroupDto = new CamundaGroupDto();
-    camundaGroupDto.setName("demo");
+    final CamundaGroupRequest camundaGroupRequest = new CamundaGroupRequest();
+    camundaGroupRequest.setName("demo");
 
-    final CamundaGroupDto createdCamundaGroupDto = new CamundaGroupDto();
-    createdCamundaGroupDto.setId(1L);
-    createdCamundaGroupDto.setName("demo");
+    final CamundaGroupResponse camundaGroupResponse = new CamundaGroupResponse();
+    camundaGroupResponse.setId(1L);
+    camundaGroupResponse.setName("demo");
 
     when(groupService.createGroup(camundaGroup)).thenReturn(createdCamundaGroup);
 
@@ -115,12 +91,12 @@ public class GroupControllerTest {
         .uri("/v2/groups")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(camundaGroupDto)
+        .bodyValue(camundaGroupRequest)
         .exchange()
         .expectStatus()
         .is2xxSuccessful()
-        .expectBody(CamundaGroupDto.class)
-        .isEqualTo(createdCamundaGroupDto);
+        .expectBody(CamundaGroupResponse.class)
+        .isEqualTo(camundaGroupResponse);
 
     verify(groupService, times(1)).createGroup(camundaGroup);
   }
@@ -131,8 +107,8 @@ public class GroupControllerTest {
 
     final CamundaGroup camundaGroup = new CamundaGroup("demo");
 
-    final CamundaGroupDto camundaGroupDto = new CamundaGroupDto();
-    camundaGroupDto.setName("demo");
+    final CamundaGroupRequest camundaGroupRequest = new CamundaGroupRequest();
+    camundaGroupRequest.setName("demo");
 
     when(groupService.createGroup(camundaGroup)).thenThrow(new IllegalArgumentException(message));
 
@@ -144,7 +120,7 @@ public class GroupControllerTest {
         .uri("/v2/groups")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(camundaGroupDto)
+        .bodyValue(camundaGroupRequest)
         .exchange()
         .expectStatus()
         .isBadRequest()
@@ -153,12 +129,16 @@ public class GroupControllerTest {
   }
 
   @Test
-  void updateGroupWorks() {
+  void updateGroupShouldReturnUpdatedGroup() {
     final CamundaGroup camundaGroup = new CamundaGroup(1L, "demoChanged");
 
-    final CamundaGroupDto camundaGroupDto = new CamundaGroupDto();
-    camundaGroupDto.setId(1L);
-    camundaGroupDto.setName("demoChanged");
+    final CamundaGroupRequest camundaGroupRequest = new CamundaGroupRequest();
+    camundaGroupRequest.setId(1L);
+    camundaGroupRequest.setName("demoChanged");
+
+    final CamundaGroupResponse camundaGroupResponse = new CamundaGroupResponse();
+    camundaGroupResponse.setId(1L);
+    camundaGroupResponse.setName("demoChanged");
 
     when(groupService.updateGroup(1L, camundaGroup)).thenReturn(camundaGroup);
 
@@ -167,12 +147,12 @@ public class GroupControllerTest {
         .uri("/v2/groups/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(camundaGroupDto)
+        .bodyValue(camundaGroupRequest)
         .exchange()
         .expectStatus()
         .is2xxSuccessful()
-        .expectBody(CamundaGroupDto.class)
-        .isEqualTo(camundaGroupDto);
+        .expectBody(CamundaGroupResponse.class)
+        .isEqualTo(camundaGroupResponse);
 
     verify(groupService, times(1)).updateGroup(1L, camundaGroup);
   }
@@ -183,9 +163,9 @@ public class GroupControllerTest {
 
     final CamundaGroup camundaGroup = new CamundaGroup(1L, "demoChanged");
 
-    final CamundaGroupDto camundaGroupDto = new CamundaGroupDto();
-    camundaGroupDto.setId(1L);
-    camundaGroupDto.setName("demoChanged");
+    final CamundaGroupRequest camundaGroupRequest = new CamundaGroupRequest();
+    camundaGroupRequest.setId(1L);
+    camundaGroupRequest.setName("demoChanged");
 
     when(groupService.updateGroup(1L, camundaGroup))
         .thenThrow(new IllegalArgumentException(message));
@@ -198,7 +178,7 @@ public class GroupControllerTest {
         .uri("/v2/groups/1")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(camundaGroupDto)
+        .bodyValue(camundaGroupRequest)
         .exchange()
         .expectStatus()
         .isBadRequest()
@@ -207,7 +187,7 @@ public class GroupControllerTest {
   }
 
   @Test
-  void deleteGroupWorks() {
+  void deleteGroupShouldDeleteGroup() {
 
     webClient
         .delete()
@@ -221,17 +201,17 @@ public class GroupControllerTest {
   }
 
   @Test
-  void searchGroupsWorks() {
+  void searchGroupsShouldReturnGroups() {
     final CamundaGroup camundaGroup = new CamundaGroup(1L, "demo");
 
-    final CamundaGroupDto camundaGroupDto = new CamundaGroupDto();
-    camundaGroupDto.setId(1L);
-    camundaGroupDto.setName("demo");
+    final CamundaGroupResponse camundaGroupResponse = new CamundaGroupResponse();
+    camundaGroupResponse.setId(1L);
+    camundaGroupResponse.setName("demo");
 
-    final GroupSearchResponseDto groupSearchResponseDto = new GroupSearchResponseDto();
-    groupSearchResponseDto.setItems(List.of(camundaGroupDto));
+    final GroupSearchResponse groupSearchResponse = new GroupSearchResponse();
+    groupSearchResponse.setItems(List.of(camundaGroupResponse));
 
-    final SearchRequestDto searchRequestDto = new SearchRequestDto();
+    final SearchQueryRequest searchQueryRequest = new SearchQueryRequest();
 
     when(groupService.findAllGroups()).thenReturn(List.of(camundaGroup));
 
@@ -240,21 +220,13 @@ public class GroupControllerTest {
         .uri("/v2/groups/search")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(searchRequestDto)
+        .bodyValue(searchQueryRequest)
         .exchange()
         .expectStatus()
         .is2xxSuccessful()
-        .expectBody(GroupSearchResponseDto.class)
-        .isEqualTo(groupSearchResponseDto);
+        .expectBody(GroupSearchResponse.class)
+        .isEqualTo(groupSearchResponse);
 
     verify(groupService, times(1)).findAllGroups();
   }
-
-  @SpringBootApplication(
-      exclude = {
-        SecurityAutoConfiguration.class,
-        HibernateJpaAutoConfiguration.class,
-        DataSourceAutoConfiguration.class
-      })
-  static class TestGroupControllerApplication {}
 }
