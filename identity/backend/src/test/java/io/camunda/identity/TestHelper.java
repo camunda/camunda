@@ -7,13 +7,13 @@
  */
 package io.camunda.identity;
 
+import io.camunda.identity.automation.usermanagement.CamundaGroup;
+import io.camunda.identity.automation.usermanagement.CamundaUser;
+import io.camunda.identity.automation.usermanagement.CamundaUserWithPassword;
+import io.camunda.identity.automation.usermanagement.service.GroupService;
+import io.camunda.identity.automation.usermanagement.service.UserService;
 import io.camunda.identity.rolemanagement.model.Role;
 import io.camunda.identity.rolemanagement.service.RoleService;
-import io.camunda.identity.usermanagement.CamundaGroup;
-import io.camunda.identity.usermanagement.CamundaUser;
-import io.camunda.identity.usermanagement.CamundaUserWithPassword;
-import io.camunda.identity.usermanagement.service.GroupService;
-import io.camunda.identity.usermanagement.service.UserService;
 import org.apache.maven.surefire.shared.lang3.RandomStringUtils;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
