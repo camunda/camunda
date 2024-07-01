@@ -11,21 +11,31 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.Objects;
 
 public class ElementTreePathBuilder {
-  private final ElementInstanceState elementInstanceState;
-  private final Long elementInstanceKey;
-  private final ElementTreePathProperties properties;
+  private ElementInstanceState elementInstanceState;
+  private Long elementInstanceKey;
+  private ElementTreePathProperties properties;
 
-  public ElementTreePathBuilder(
-      final ElementInstanceState elementInstanceState, final Long elementInstanceKey) {
+  public ElementTreePathBuilder() {}
+
+  public ElementTreePathBuilder withElementInstanceState(
+      final ElementInstanceState elementInstanceState) {
     this.elementInstanceState = elementInstanceState;
-    this.elementInstanceKey = elementInstanceKey;
-    properties =
-        new ElementTreePathProperties(new LinkedList<>(), new LinkedList<>(), new LinkedList<>());
+    return this;
   }
 
-  public ElementTreePathProperties getProperties() {
+  public ElementTreePathBuilder withElementInstanceKey(final long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
+    return this;
+  }
+
+  public ElementTreePathProperties build() {
+    Objects.requireNonNull(elementInstanceState, "elementInstanceState cannot be null");
+    Objects.requireNonNull(elementInstanceKey, "elementInstanceKey cannot be null");
+    properties =
+        new ElementTreePathProperties(new LinkedList<>(), new LinkedList<>(), new LinkedList<>());
     buildElementTreePathProperties(elementInstanceKey);
     return properties;
   }

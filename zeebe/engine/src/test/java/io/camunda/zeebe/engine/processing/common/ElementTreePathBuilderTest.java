@@ -59,9 +59,11 @@ public class ElementTreePathBuilderTest {
 
     // when
     final ElementTreePathBuilder builder =
-        new ElementTreePathBuilder(elementInstanceState, subProcess2.getKey());
+        new ElementTreePathBuilder()
+            .withElementInstanceState(elementInstanceState)
+            .withElementInstanceKey(subProcess2.getKey());
 
-    final ElementTreePathProperties properties = builder.getProperties();
+    final ElementTreePathProperties properties = builder.build();
 
     assertThat(properties.elementInstancePath()).isNotNull();
     assertThat(properties.elementInstancePath()).hasSize(1); // no call activities
@@ -99,9 +101,11 @@ public class ElementTreePathBuilderTest {
             processB, 103, subProcessCRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
     // when
     final ElementTreePathBuilder builder =
-        new ElementTreePathBuilder(elementInstanceState, subProcessC.getKey());
+        new ElementTreePathBuilder()
+            .withElementInstanceState(elementInstanceState)
+            .withElementInstanceKey(subProcessC.getKey());
 
-    final ElementTreePathProperties properties = builder.getProperties();
+    final ElementTreePathProperties properties = builder.build();
 
     assertThat(properties.elementInstancePath()).isNotNull();
     assertThat(properties.elementInstancePath()).hasSize(2);
