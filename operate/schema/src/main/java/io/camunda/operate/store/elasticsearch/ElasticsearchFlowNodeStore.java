@@ -54,7 +54,7 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
   @Autowired private OperateProperties operateProperties;
 
   @Override
-  public String getFlowNodeIdByFlowNodeInstanceId(String flowNodeInstanceId) {
+  public String getFlowNodeIdByFlowNodeInstanceId(final String flowNodeInstanceId) {
     // TODO Elasticsearch changes
     final ElasticsearchUtil.QueryType queryType =
         operateProperties.getImporter().isReadArchivedParents()
@@ -75,14 +75,15 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
       } else {
         return String.valueOf(response.getHits().getAt(0).getSourceAsMap().get(ACTIVITY_ID));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OperateRuntimeException(
           "Error occurred when searching for flow node instance: " + flowNodeInstanceId, e);
     }
   }
 
   @Override
-  public Map<String, String> getFlowNodeIdsForFlowNodeInstances(Set<String> flowNodeInstanceIds) {
+  public Map<String, String> getFlowNodeIdsForFlowNodeInstances(
+      final Set<String> flowNodeInstanceIds) {
     final Map<String, String> flowNodeIdsMap = new HashMap<>();
     final QueryBuilder q = termsQuery(FlowNodeInstanceTemplate.ID, flowNodeInstanceIds);
     final SearchRequest request =
@@ -116,7 +117,7 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
                 null);
             return null;
           });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OperateRuntimeException(
           "Exception occurred when searching for flow node ids: " + e.getMessage(), e);
     }
@@ -124,11 +125,11 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
   }
 
   @Override
-  public String findParentTreePathFor(long parentFlowNodeInstanceKey) {
+  public String findParentTreePathFor(final long parentFlowNodeInstanceKey) {
     return findParentTreePath(parentFlowNodeInstanceKey, 0);
   }
 
-  private String findParentTreePath(final long parentFlowNodeInstanceKey, int attemptCount) {
+  private String findParentTreePath(final long parentFlowNodeInstanceKey, final int attemptCount) {
     final ElasticsearchUtil.QueryType queryType =
         operateProperties.getImporter().isReadArchivedParents()
             ? ElasticsearchUtil.QueryType.ALL
@@ -143,14 +144,14 @@ public class ElasticsearchFlowNodeStore implements FlowNodeStore {
       final SearchHits hits = tenantAwareClient.search(searchRequest).getHits();
       if (hits.getTotalHits().value > 0) {
         return (String) hits.getHits()[0].getSourceAsMap().get(FlowNodeInstanceTemplate.TREE_PATH);
-      } else if (attemptCount < 1) {
+      } else if (attemptCount < 1 && operateProperties.getImporter().isRetryReadingParents()) {
         // retry for the case, when ELS has not yet refreshed the indices
         ThreadUtil.sleepFor(2000L);
         return findParentTreePath(parentFlowNodeInstanceKey, attemptCount + 1);
       } else {
         return null;
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while searching for parent flow node instance processes: %s",
