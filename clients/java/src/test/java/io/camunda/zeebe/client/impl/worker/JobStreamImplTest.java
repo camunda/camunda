@@ -21,6 +21,7 @@ import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
+import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.util.JsonUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
@@ -50,6 +51,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.migrationsupport.rules.ExternalResourceSupport;
+import org.mockito.Mockito;
 
 @ExtendWith(ExternalResourceSupport.class)
 final class JobStreamImplTest {
@@ -74,7 +76,7 @@ final class JobStreamImplTest {
     client =
         new JobClientImpl(
             asyncStub,
-            null,
+            Mockito.mock(HttpClient.class),
             new ZeebeClientBuilderImpl(),
             new ZeebeObjectMapper(),
             ignored -> false);
