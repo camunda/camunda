@@ -12,7 +12,7 @@ import useTranslate from "src/utility/localization";
 import { FormModal, UseModalProps } from "src/components/modal";
 import { createRole } from "src/utility/api/roles";
 import EntityList from "src/components/entityList";
-import useAllPermissionsTranslated from "src/pages/roles/modals/useAllPermissionsTranslated";
+import useAllPermissions from "src/pages/roles/modals/useAllPermissions.tsx";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("roles");
@@ -20,7 +20,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const { permissions, setPermissions, onSelect, onUnselect, availableItems } =
-    useAllPermissionsTranslated();
+    useAllPermissions();
 
   const handleSubmit = async () => {
     const { success } = await apiCall({
