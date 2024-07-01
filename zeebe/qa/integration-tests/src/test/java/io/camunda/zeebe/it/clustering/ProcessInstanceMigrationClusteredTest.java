@@ -18,7 +18,6 @@ import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -100,16 +99,7 @@ public class ProcessInstanceMigrationClusteredTest {
     final var secondTargetProcessDefinitionKey =
         deploymentEvent.getProcesses().get(2).getProcessDefinitionKey();
 
-    assertThat(
-            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.ACKNOWLEDGED)
-                .withDistributionPartitionId(2)
-                .findFirst())
-        .isPresent();
-    assertThat(
-            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.ACKNOWLEDGED)
-                .withDistributionPartitionId(3)
-                .findFirst())
-        .isPresent();
+    clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
 
     final int processInstancePartitionId = 2;
     final long processInstanceKey =
@@ -237,16 +227,7 @@ public class ProcessInstanceMigrationClusteredTest {
     final var targetProcessDefinitionKey =
         deploymentEvent.getProcesses().get(1).getProcessDefinitionKey();
 
-    assertThat(
-            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.ACKNOWLEDGED)
-                .withDistributionPartitionId(2)
-                .findFirst())
-        .isPresent();
-    assertThat(
-            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.ACKNOWLEDGED)
-                .withDistributionPartitionId(3)
-                .findFirst())
-        .isPresent();
+    clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
 
     final ProcessInstanceEvent processInstanceEvent =
         clientRule
