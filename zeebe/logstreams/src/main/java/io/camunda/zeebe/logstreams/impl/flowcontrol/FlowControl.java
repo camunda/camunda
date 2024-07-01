@@ -18,7 +18,9 @@ import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.Either;
+import java.time.Duration;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -73,6 +75,9 @@ public final class FlowControl implements AppendListener {
   private Limit requestLimit;
   private Limiter<Intent> processingLimiter;
   private RateLimiter writeRateLimiter;
+  private final RateMeasurement exportingRate =
+      new RateMeasurement(
+          ActorClock::currentTimeMillis, Duration.ofMinutes(5), Duration.ofSeconds(10));
   private volatile long lastProcessedPosition = -1;
 
   private final NavigableMap<Long, InFlightEntry> inFlight = new TreeMap<>();
@@ -169,6 +174,15 @@ public final class FlowControl implements AppendListener {
       inFlightEntry.onProcessed();
     }
     lastProcessedPosition = position;
+  }
+
+  public void onExported(final long position) {
+    if (position <= 0) {
+      return;
+    }
+    if (exportingRate.observe(position)) {
+      metrics.setExportingRate(exportingRate.rate());
+    }
   }
 
   public Limit getRequestLimit() {
