@@ -22,12 +22,13 @@ public class AdminRequest implements BufferReader, BufferWriter {
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   private final AdminRequestEncoder bodyEncoder = new AdminRequestEncoder();
   private final AdminRequestDecoder bodyDecoder = new AdminRequestDecoder();
-
   private int brokerId = AdminRequestEncoder.brokerIdNullValue();
   private int partitionId = AdminRequestEncoder.partitionIdNullValue();
   private AdminRequestType type = AdminRequestType.NULL_VAL;
-
   private long key = AdminRequestEncoder.keyNullValue();
+  private byte[] configuration = null;
+  private int payloadLength = 0;
+  private boolean hasPayload = false;
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
@@ -35,11 +36,15 @@ public class AdminRequest implements BufferReader, BufferWriter {
     brokerId = bodyDecoder.brokerId();
     partitionId = bodyDecoder.partitionId();
     type = bodyDecoder.type();
+    bodyDecoder.getPayload(configuration, 0, length - bodyDecoder.limit());
   }
 
   @Override
   public int getLength() {
-    return headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength();
+    return headerEncoder.encodedLength()
+        + bodyEncoder.sbeBlockLength()
+        + AdminRequestEncoder.payloadHeaderLength()
+        + payloadLength;
   }
 
   @Override
@@ -50,6 +55,10 @@ public class AdminRequest implements BufferReader, BufferWriter {
         .partitionId(partitionId)
         .type(type)
         .key(key);
+
+    if (hasPayload) {
+      bodyEncoder.putPayload(configuration, 0, payloadLength);
+    }
   }
 
   public int getBrokerId() {
@@ -72,6 +81,10 @@ public class AdminRequest implements BufferReader, BufferWriter {
     return type;
   }
 
+  public void setType(final AdminRequestType type) {
+    this.type = type;
+  }
+
   public long getKey() {
     return key;
   }
@@ -80,7 +93,9 @@ public class AdminRequest implements BufferReader, BufferWriter {
     this.key = key;
   }
 
-  public void setType(final AdminRequestType type) {
-    this.type = type;
+  public void setPayload(final byte[] payload) {
+    configuration = payload;
+    payloadLength = payload.length;
+    hasPayload = true;
   }
 }

@@ -7,9 +7,13 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import com.netflix.concurrency.limits.Limit;
 import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.LimitType;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 
@@ -60,6 +64,18 @@ public final class NoOpPartitionAdminAccess implements PartitionAdminAccess {
 
   @Override
   public ActorFuture<Void> banInstance(final long processInstanceKey) {
+    logCall();
+    return CompletableActorFuture.completed(null);
+  }
+
+  @Override
+  public ActorFuture<Void> configureFlowControl(final FlowControlCfg flowControlCfg) {
+    logCall();
+    return CompletableActorFuture.completed(null);
+  }
+
+  @Override
+  public ActorFuture<Map<LimitType, Limit>> getFlowControlConfiguration() {
     logCall();
     return CompletableActorFuture.completed(null);
   }

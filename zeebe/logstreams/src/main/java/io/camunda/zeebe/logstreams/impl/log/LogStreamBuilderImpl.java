@@ -77,19 +77,19 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
         new LogStreamImpl(
             logName, partitionId, maxFragmentSize, logStorage, appendLimit, requestLimit);
 
-    final var logstreamInstallFuture = new CompletableActorFuture<LogStream>();
+    final var logStreamInstallFuture = new CompletableActorFuture<LogStream>();
     actorSchedulingService
         .submitActor(logStreamService)
         .onComplete(
             (v, t) -> {
               if (t == null) {
-                logstreamInstallFuture.complete(logStreamService);
+                logStreamInstallFuture.complete(logStreamService);
               } else {
-                logstreamInstallFuture.completeExceptionally(t);
+                logStreamInstallFuture.completeExceptionally(t);
               }
             });
 
-    return logstreamInstallFuture;
+    return logStreamInstallFuture;
   }
 
   private void validate() {

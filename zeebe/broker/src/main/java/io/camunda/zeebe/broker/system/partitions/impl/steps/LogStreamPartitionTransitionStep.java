@@ -60,7 +60,7 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
       final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
 
       final var logStorage = context.getLogStorage();
-      buildLogstream(context, logStorage)
+      buildLogStream(context, logStorage)
           .onComplete(
               ((logStream, err) -> {
                 if (err == null) {
@@ -86,13 +86,13 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
     return "LogStream";
   }
 
-  private ActorFuture<LogStream> buildLogstream(
+  private ActorFuture<LogStream> buildLogStream(
       final PartitionTransitionContext context, final AtomixLogStorage atomixLogStorage) {
     final var flowControlCfg = context.getBrokerCfg().getFlowControl();
     return logStreamBuilderSupplier
         .get()
         .withLogStorage(atomixLogStorage)
-        .withLogName("logstream-" + context.getRaftPartition().name())
+        .withLogName("logStream-" + context.getRaftPartition().name())
         .withPartitionId(context.getPartitionId())
         .withMaxFragmentSize(context.getMaxFragmentSize())
         .withActorSchedulingService(context.getActorSchedulingService())

@@ -15,6 +15,7 @@ import org.agrona.DirectBuffer;
 public class ApiRequestReader implements RequestReader<AdminRequestDecoder> {
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   private final AdminRequestDecoder messageDecoder = new AdminRequestDecoder();
+  private String configuration = null;
 
   @Override
   public void reset() {}
@@ -24,12 +25,17 @@ public class ApiRequestReader implements RequestReader<AdminRequestDecoder> {
     return messageDecoder;
   }
 
+  @Override
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+    messageDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
+    configuration = messageDecoder.payload();
+  }
+
   public long key() {
     return messageDecoder.key();
   }
 
-  @Override
-  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    messageDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
+  public String configuration() {
+    return configuration;
   }
 }
