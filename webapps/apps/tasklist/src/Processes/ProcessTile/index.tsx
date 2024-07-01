@@ -12,7 +12,7 @@ import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {notificationsStore} from 'modules/stores/notifications';
 import {newProcessInstance} from 'modules/stores/newProcessInstance';
 import {useState} from 'react';
-import {useNavigate, useMatch, useLocation} from 'react-router-dom';
+import {useNavigate, useMatch, useLocation} from '@remix-run/react';
 import {pages} from 'modules/routing';
 import {logger} from 'modules/utils/logger';
 import {tracking} from 'modules/tracking';

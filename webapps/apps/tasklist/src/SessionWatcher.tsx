@@ -9,7 +9,7 @@
 import {useEffect, useRef} from 'react';
 import {authenticationStore} from 'modules/stores/authentication';
 import {observer} from 'mobx-react-lite';
-import {useLocation} from 'react-router-dom';
+import {useLocation} from '@remix-run/react';
 import {pages} from 'modules/routing';
 import {notificationsStore} from 'modules/stores/notifications';
 

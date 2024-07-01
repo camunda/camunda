@@ -7,7 +7,7 @@
  */
 
 import {useEffect, useMemo} from 'react';
-import {useSearchParams} from 'react-router-dom';
+import {useSearchParams} from '@remix-run/react';
 import zod from 'zod';
 
 const searchSchema = zod.tuple([zod.string(), zod.string()]);

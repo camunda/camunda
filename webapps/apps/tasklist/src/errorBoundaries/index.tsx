@@ -7,7 +7,7 @@
  */
 
 import {FallbackProps} from 'react-error-boundary';
-import {useRouteError} from 'react-router-dom';
+import {useRouteError} from '@remix-run/react';
 import {SomethingWentWrong} from 'modules/components/Errors/SomethingWentWrong';
 import styles from './styles.module.scss';
 

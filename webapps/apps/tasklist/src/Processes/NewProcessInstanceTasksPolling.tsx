@@ -10,7 +10,7 @@ import {observer} from 'mobx-react-lite';
 import {pages} from 'modules/routing';
 import {newProcessInstance} from 'modules/stores/newProcessInstance';
 import {Task} from 'modules/types';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate} from '@remix-run/react';
 import {tracking} from 'modules/tracking';
 import {useQuery} from '@tanstack/react-query';
 import {request, RequestError} from 'modules/request';

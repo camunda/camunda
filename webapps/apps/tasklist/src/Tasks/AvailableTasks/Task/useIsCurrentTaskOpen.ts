@@ -7,7 +7,7 @@
  */
 
 import {pages} from 'modules/routing';
-import {useMatch} from 'react-router-dom';
+import {useMatch} from '@remix-run/react';
 
 function useIsCurrentTaskOpen(id: string) {
   const taskDetailsMatch = useMatch(pages.taskDetails());

@@ -6,7 +6,7 @@
     "clean": "pnpm -r run clean && rimraf node_modules"
   },
   "devDependencies": {
-    "prettier": "3.3.1",
+    "prettier": "3.3.2",
     "rimraf": "5.0.7"
   },
   "engines": {

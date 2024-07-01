@@ -8,7 +8,7 @@
 
 /* istanbul ignore file */
 
-import {Outlet} from 'react-router-dom';
+import {Outlet} from '@remix-run/react';
 import {Header} from './Header';
 import {AuthenticationCheck} from 'AuthenticationCheck';
 import {pages} from 'modules/routing';
@@ -16,7 +16,7 @@ import {OSNotifications} from 'OSNotifications';
 import {C3Provider} from 'C3Provider';
 // import styles from '@camunda/camunda-composite-components/style.css?url';
 
-export const links = [{rel: 'stylesheet', href: styles}];
+// export const links = [{rel: 'stylesheet', href: styles}];
 
 const Layout: React.FC = () => {
   return (

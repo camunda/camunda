@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useLocation, useNavigate, Location} from 'react-router-dom';
+import {useLocation, useNavigate, Location} from '@remix-run/react';
 import {Form, Field} from 'react-final-form';
 import {FORM_ERROR} from 'final-form';
 import {authenticationStore} from 'modules/stores/authentication';

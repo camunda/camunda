@@ -14,7 +14,7 @@ import {useTasks} from 'modules/queries/useTasks';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {useEffect} from 'react';
 import {decodeTaskEmptyPageRef} from 'modules/utils/reftags';
-import {useSearchParams} from 'react-router-dom';
+import {useSearchParams} from '@remix-run/react';
 import {tracking} from 'modules/tracking';
 import styles from './styles.module.scss';
 

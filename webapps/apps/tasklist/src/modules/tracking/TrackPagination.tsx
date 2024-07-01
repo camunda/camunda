@@ -7,7 +7,7 @@
  */
 
 import {useEffect} from 'react';
-import {useLocation} from 'react-router-dom';
+import {useLocation} from '@remix-run/react';
 import {tracking} from 'modules/tracking';
 
 const TrackPagination: React.FC = () => {

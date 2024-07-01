@@ -7,7 +7,7 @@
  */
 
 import {useEffect, useMemo, useState} from 'react';
-import {Outlet, useLocation} from 'react-router-dom';
+import {Outlet, useLocation} from '@remix-run/react';
 import {Stack} from '@carbon/react';
 import {observer} from 'mobx-react-lite';
 import {useTasks} from 'modules/queries/useTasks';

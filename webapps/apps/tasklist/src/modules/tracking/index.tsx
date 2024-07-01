@@ -260,6 +260,6 @@ class Tracking {
   }
 }
 
-const tracking = typeof window !== 'undefined' ? new Tracking() : null;
+const tracking = new Tracking();
 
 export {tracking};

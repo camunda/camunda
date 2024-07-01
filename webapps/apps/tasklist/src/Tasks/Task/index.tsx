@@ -12,7 +12,7 @@ import {
   useNavigate,
   useOutletContext,
   useSearchParams,
-} from 'react-router-dom';
+} from '@remix-run/react';
 import {observer} from 'mobx-react-lite';
 import {useCompleteTask} from 'modules/mutations/useCompleteTask';
 import {pages, useTaskDetailsParams} from 'modules/routing';

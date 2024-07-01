@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useOutletContext} from 'react-router-dom';
+import {useOutletContext} from '@remix-run/react';
 import {Layer, Tag} from '@carbon/react';
 import {BPMNDiagram} from 'modules/components/BPMNDiagram';
 import {SomethingWentWrong} from 'modules/components/Errors/SomethingWentWrong';

@@ -13,7 +13,7 @@ import {tracking} from 'modules/tracking';
 import {useTaskFilters, TaskFilters} from 'modules/hooks/useTaskFilters';
 import styles from './styles.module.scss';
 import sharedStyles from 'modules/styles/panelHeader.module.scss';
-import {useSearchParams} from 'react-router-dom';
+import {useSearchParams} from '@remix-run/react';
 import {getStateLocally} from 'modules/utils/localStorage';
 
 const FILTER_LABELS: Record<string, string> = {

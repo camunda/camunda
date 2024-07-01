@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Form, useNavigation, useActionData, json} from '@remix-run/react';
-import {type ActionFunction, redirect} from '@remix-run/node';
+import {Form, useNavigation, useActionData, json, redirect,type ClientActionFunction} from '@remix-run/react';
+
 import {getCurrentCopyrightNoticeText} from '~/utils/getCurrentCopyrightNoticeText';
 import {Disclaimer} from '~/components/Disclaimer';
 import {
@@ -44,7 +44,7 @@ const login = (body: z.infer<typeof formSchema>, request: Request) =>
     },
   });
 
-export const clientAction: ActionFunction = async ({request}) => {
+export const clientAction: ClientActionFunction = async ({request}) => {
   const formData = formSchema.safeParse(
     Object.fromEntries((await request.formData()).entries()),
   );

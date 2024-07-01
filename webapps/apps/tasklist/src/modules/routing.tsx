@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useParams} from 'react-router-dom';
+import {useParams} from '@remix-run/react';
 
 /* istanbul ignore file */
 

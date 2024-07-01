@@ -8,7 +8,7 @@
 
 import {useEffect} from 'react';
 import {observer} from 'mobx-react-lite';
-import {Link as RouterLink, matchPath, useLocation} from 'react-router-dom';
+import {Link as RouterLink, matchPath, useLocation} from '@remix-run/react';
 import {Link} from '@carbon/react';
 // import {ArrowRight} from '@carbon/react/icons';
 import {C3Navigation} from '@camunda/camunda-composite-components';

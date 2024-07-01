@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Navigate, useLocation} from 'react-router-dom';
+import {Navigate, useLocation} from '@remix-run/react';
 import {observer} from 'mobx-react-lite';
 import {authenticationStore} from 'modules/stores/authentication';
 

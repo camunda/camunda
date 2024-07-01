@@ -7,7 +7,7 @@
  */
 
 import React, {useMemo} from 'react';
-import {NavLink, useLocation} from 'react-router-dom';
+import {NavLink, useLocation} from '@remix-run/react';
 import {isBefore} from 'date-fns';
 import {Stack} from '@carbon/react';
 import {

@@ -23,7 +23,7 @@ import {
   useNavigate,
   useMatch,
   useSearchParams,
-} from 'react-router-dom';
+} from '@remix-run/react';
 import {useEffect, useRef, useState} from 'react';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
 import EmptyMessageImage from './empty-message-image.svg';

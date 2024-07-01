@@ -9,7 +9,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useTasks} from 'modules/queries/useTasks';
 import {encodeTaskEmptyPageRef} from 'modules/utils/reftags';
-import {NavigateFunction, useBeforeUnload, useNavigate} from 'react-router-dom';
+import {NavigateFunction, useBeforeUnload, useNavigate} from '@remix-run/react';
 import {tracking} from 'modules/tracking';
 import {pages} from 'modules/routing';
 import {TaskFilters} from 'modules/hooks/useTaskFilters';

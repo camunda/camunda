@@ -7,7 +7,7 @@
  */
 
 import {useState} from 'react';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate} from '@remix-run/react';
 import {Modal} from 'modules/components/Modal';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {pages} from 'modules/routing';
