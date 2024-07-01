@@ -3,6 +3,9 @@ flags:
 spring:
   security:
     oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://auth.identity:9000
       client:
         registration:
           oidcclient:

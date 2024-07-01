@@ -58,8 +58,10 @@ public class WebSecurityConfig {
   public HttpSecurity oidcHttpSecurity(
       final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
       throws Exception {
+
     LOG.info("Configuring oidc auth login");
     return baseHttpSecurity(httpSecurity, authFailureHandler)
+        .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> {}))
         .oauth2Login(oauthLoginConfigurer -> {})
         .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
         .logout((logout) -> logout.logoutSuccessUrl("/"));
