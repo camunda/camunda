@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set constants
-CAMUNDA_VERSION="8.6.0-alpha3-rc3"
+CAMUNDA_VERSION="8.6.0-alpha3"
 ELASTICSEARCH_VERSION="8.13.4"
 EXPECTED_JAVA_VERSION=21
 
