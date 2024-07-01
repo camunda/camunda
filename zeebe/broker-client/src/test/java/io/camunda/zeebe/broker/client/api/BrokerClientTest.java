@@ -361,6 +361,45 @@ public final class BrokerClientTest {
         .hasMessageContaining("The partition " + partitionId + " is currently INACTIVE");
   }
 
+  @Test
+  public void shouldSendRequestToLeaderIfSomePartitionReplicasInactive() {
+    // given
+    final var partitionId = 1;
+    final var leaderBrokerId = 2;
+    final var request = new TestCommand(1, topologyManager -> partitionId);
+
+    // when
+    broker.updateInfo(info -> info.setInactiveForPartition(partitionId));
+    topologyManager.event(new ClusterMembershipEvent(Type.METADATA_CHANGED, broker.member()));
+
+    Awaitility.await("Partition " + partitionId + " is inactive.")
+        .untilAsserted(
+            () ->
+                assertThat(topologyManager.getTopology().getInactiveNodesForPartition(1))
+                    .isNotEmpty());
+
+    final BrokerResponse<?> response;
+    try (final var otherBroker =
+        new StubBroker(leaderBrokerId)
+            .start()
+            .updateInfo(info -> info.setLeaderForPartition(partitionId, 1))) {
+      registerSuccessResponse(otherBroker);
+
+      topologyManager.event(
+          new ClusterMembershipEvent(Type.METADATA_CHANGED, otherBroker.member()));
+      Awaitility.await("Broker " + leaderBrokerId + " is leader.")
+          .untilAsserted(
+              () ->
+                  assertThat(topologyManager.getTopology().getLeaderForPartition(1))
+                      .isEqualTo(leaderBrokerId));
+
+      response = client.sendRequest(request).join();
+    }
+
+    // then
+    assertThat(response.isResponse()).isTrue();
+  }
+
   private void registerSuccessResponse(final StubBroker broker) {
     broker
         .onExecuteCommandRequest(TestCommand.VALUE_TYPE, TestCommand.INTENT)
