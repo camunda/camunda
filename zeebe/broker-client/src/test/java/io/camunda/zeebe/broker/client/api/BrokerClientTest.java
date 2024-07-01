@@ -341,7 +341,7 @@ public final class BrokerClientTest {
   }
 
   @Test
-  public void shouldThrowCorrectErrorForInactivePartitionRequest() {
+  public void shouldThrowCorrectErrorForInactivePartitionAndNoLeaderRequest() {
     // given
     final var partitionId = 1;
     final var request = new TestCommand(1, topologyManager -> partitionId);
