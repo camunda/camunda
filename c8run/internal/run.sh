@@ -23,6 +23,21 @@ OPTIONS_HELP="Options:
   --detached   - Starts Camunda Run as a detached process
 "
 
+architecture="$(uname -m)"
+
+unameOut="$(uname -s)"
+case "${unameOut}" in
+    Linux*)     machine=Linux;;
+    Darwin*)    machine=Mac;;
+    *)          machine="UNKNOWN:${unameOut}"
+esac
+
+if [ "$machine" == "Mac" ]; then
+    export PLATFORM=darwin
+elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+    export PLATFORM=linux
+fi
+
 
 # set environment parameters
 optionalComponentChosen=false
@@ -99,15 +114,14 @@ if [ "$1" = "start" ] ; then
   # Retrieve elasticsearch
   mkdir -p "$PARENTDIR/log"
   if [ ! -d "elasticsearch-$ELASTICSEARCH_VERSION" ]; then
-    wget "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELASTICSEARCH_VERSION}-linux-x86_64.tar.gz"
-    tar -xzvf elasticsearch-${ELASTICSEARCH_VERSION}-linux-x86_64.tar.gz
+    wget "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELASTICSEARCH_VERSION}-${PLATFORM}-${architecture}.tar.gz"
+    tar -xzvf elasticsearch-${ELASTICSEARCH_VERSION}-${PLATFORM}-${architecture}.tar.gz
   fi
 
   if [ ! -d "camunda-zeebe-$CAMUNDA_VERSION" ]; then
     wget "https://github.com/camunda/camunda/releases/download/untagged-cc17819bc8c11c9bd503/camunda-zeebe-$CAMUNDA_VERSION.tar.gz"
     tar -xzvf camunda-zeebe-$CAMUNDA_VERSION.tar.gz
   fi
-
 
   # limit the java heapspace used by ElasticSearch to 1GB
   export ES_JAVA_OPTS="-Xms1g -Xmx1g"
