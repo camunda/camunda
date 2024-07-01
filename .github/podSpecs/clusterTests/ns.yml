@@ -1,0 +1,8 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: ${NAMESPACE}
+  labels:
+    name: ${NAMESPACE}
+  annotations:
+    janitor/ttl: 2d

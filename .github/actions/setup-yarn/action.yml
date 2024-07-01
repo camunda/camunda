@@ -1,0 +1,13 @@
+name: Setup Yarn
+description: |
+  Action to install yarn without NPM
+runs:
+  using: composite
+  steps:
+    - name: Install Yarn
+      shell: bash
+      run: |
+        curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+        echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+        sudo apt update -qq
+        sudo apt install --no-install-recommends yarn

@@ -1,0 +1,28 @@
+security:
+  auth:
+    token:
+      secret: 'redactedredactedredactedredactedredactedredactedredactedredacted'
+
+container:
+  host: 0.0.0.0
+  ports:
+    http: 8090
+    https: 8091
+
+engines:
+  'camunda-bpm':
+    name: default
+    rest: 'http://cambpm:8080/engine-rest'
+    authentication:
+      enabled: false
+    webapps:
+      endpoint: 'http://cambpm:8080/camunda'
+      enabled: true
+    # this instance is NOT importing
+    importEnabled: false
+
+es:
+  connection:
+    nodes:
+      - host: 'elasticsearch'
+        httpPort: 9200

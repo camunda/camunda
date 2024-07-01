@@ -1,0 +1,36 @@
+container:
+  host: 0.0.0.0
+
+api:
+  accessToken: secret
+
+engines:
+  'camunda-bpm':
+    name: default
+    rest: 'http://cambpm:8080/engine-rest'
+    authentication:
+      enabled: false
+    webapps:
+      endpoint: 'http://cambpm:8080/camunda'
+      enabled: true
+    importEnabled: true
+    eventImportEnabled: ${EVENT_IMPORT_ENABLED:false}
+
+es:
+  connection:
+    nodes:
+    - host: 'elasticsearch'
+      httpPort: 9200
+  settings:
+    index:
+      refresh_interval: ${ES_REFRESH_INTERVAL}
+
+security:
+  auth:
+    token:
+      secret: 'test'
+
+eventBasedProcess:
+  authorizedUserIds: ['demo']
+  eventImport:
+    enabled: ${EVENT_IMPORT_ENABLED:false}

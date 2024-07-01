@@ -1,0 +1,60 @@
+.Icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  min-width: 16px;
+  min-height: 16px;
+  background-repeat: no-repeat;
+  background-size: cover;
+  vertical-align: text-bottom;
+
+  &:not(:last-child) {
+    margin-right: 0.5em;
+  }
+}
+
+// Create classes for all known icons to be used as a background-image:
+$icons: (
+  'autorefresh',
+  'check',
+  'close',
+  'delete',
+  'edit',
+  'exit-fullscreen',
+  'fullscreen',
+  'plus',
+  'share',
+  'stop',
+  'link',
+  'embed',
+  'save',
+  'context-menu',
+  'jump',
+  'copy-document',
+  'check-small',
+  'left',
+  'up',
+  'right',
+  'down',
+  'error',
+  'warning',
+  'close-large',
+  'check-large',
+  'collection'
+);
+
+@each $icon in $icons {
+  .Icon--#{$icon} {
+    background-image: url('./icons/#{$icon}.svg');
+  }
+}
+
+.IconSvg {
+  svg {
+    min-height: 16px;
+    min-width: 16px;
+    max-height: 1em;
+    max-width: 1em;
+    fill: currentColor;
+  }
+}

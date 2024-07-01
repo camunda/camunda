@@ -1,0 +1,18 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should render text provided in config 1`] = `
+<div
+  className="Notification"
+  onClick={[Function]}
+>
+  Sample
+  <ForwardRef(Button)
+    className="close"
+    onClick={[Function]}
+  >
+    <Icon
+      type="close-large"
+    />
+  </ForwardRef(Button)>
+</div>
+`;

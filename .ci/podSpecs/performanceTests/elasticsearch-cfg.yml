@@ -1,0 +1,32 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: elasticsearch
+  namespace: ${NAMESPACE}
+spec:
+  selector:
+    app: elasticsearch
+  ports:
+    - port: 9200
+      targetPort: http
+      protocol: TCP
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: elasticsearch-discovery
+  namespace: ${NAMESPACE}
+spec:
+  # The next two Kubernetes settings together with Elasticsearch's setting
+  # `discovery.seed_hosts` allows the first ES StatefulSet's pod to discover
+  # other ES pods even if they are not ready yet using Kubernetes' DNS with IPs
+  # for service endpoints (pods).
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: elasticsearch
+  ports:
+    - port: 9300
+      targetPort: transport
+      protocol: TCP
