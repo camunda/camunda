@@ -1650,36 +1650,36 @@
   dependencies:
     defer-to-connect "^2.0.0"
 
-"@tanstack/eslint-plugin-query@5.47.0":
-  version "5.47.0"
-  resolved "https://registry.yarnpkg.com/@tanstack/eslint-plugin-query/-/eslint-plugin-query-5.47.0.tgz#1478e11943e12dcd05f574abd3934b6540039059"
-  integrity sha512-Y56KKu0DoftFkCd3H0xckDbvm38kg9UrGF2CABqMYr7yo94XUZhBYE8R3Gq7N4JxRvPha+lUg37eypECY5u2kA==
+"@tanstack/eslint-plugin-query@5.49.1":
+  version "5.49.1"
+  resolved "https://registry.yarnpkg.com/@tanstack/eslint-plugin-query/-/eslint-plugin-query-5.49.1.tgz#2130466ca3dd0b145d0db698add3575b15469fbe"
+  integrity sha512-pTaEvG3HC1y7BOsFJtZmi8dhWwML97zEBq4qLM6BaUSzZ4WlFyhmtG2sBVO0H+lP1WgnLpQclRQ+nFikTqoUfQ==
   dependencies:
     "@typescript-eslint/utils" "8.0.0-alpha.30"
 
-"@tanstack/query-core@5.48.0":
-  version "5.48.0"
-  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.48.0.tgz#a3308ec925d8c16d64c789899d6c084c2fe30cbc"
-  integrity sha512-lZAfPPeVIqXCswE9SSbG33B6/91XOWt/Iq41bFeWb/mnHwQSIfFRbkS4bfs+WhIk9abRArF9Id2fp0Mgo+hq6Q==
+"@tanstack/query-core@5.49.1":
+  version "5.49.1"
+  resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.49.1.tgz#09167842123eddaf47465376f3c835cf59b9f1e9"
+  integrity sha512-JnC9ndmD1KKS01Rt/ovRUB1tmwO7zkyXAyIxN9mznuJrcNtOrkmOnQqdJF2ib9oHzc2VxHomnEG7xyfo54Npkw==
 
-"@tanstack/query-devtools@5.47.0":
-  version "5.47.0"
-  resolved "https://registry.yarnpkg.com/@tanstack/query-devtools/-/query-devtools-5.47.0.tgz#5ba391691d519be7eecc93bf79916d5e26e29b7d"
-  integrity sha512-oo10s7Nqaf/Q3QF4vuSwS0xw7zuYr5nXef4RHQIXVJKvRQeo9WowPLAnB0SF/voB0c4GTX6Vq8wfQ1G72ezEdw==
+"@tanstack/query-devtools@5.49.1":
+  version "5.49.1"
+  resolved "https://registry.yarnpkg.com/@tanstack/query-devtools/-/query-devtools-5.49.1.tgz#4b51341cab67cc77f4a606d719cedf4fa2ecc6ea"
+  integrity sha512-9mBtuq76fp+OE780ImoNG109bM7lucZ9MLPLzAkQ2OMx+X6s3BfVATySTxm1Mrtui3qJIFo05ZI4zv9A44+GAg==
 
-"@tanstack/react-query-devtools@5.48.0":
-  version "5.48.0"
-  resolved "https://registry.yarnpkg.com/@tanstack/react-query-devtools/-/react-query-devtools-5.48.0.tgz#4987a96c4b38544ddfa8da45a458f7c1991715e0"
-  integrity sha512-0xvk8KDvEfQuLz3dy9jqtP0f6iR724d57Br7KtrtClbyqB53cy3Iy6BiTsiHaSsYnex/+cxWJZIX1UJWeV8Amw==
+"@tanstack/react-query-devtools@5.49.2":
+  version "5.49.2"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-query-devtools/-/react-query-devtools-5.49.2.tgz#08073e54c03d1aa5771d8279d88d9773663fe328"
+  integrity sha512-ARQ8GXaTcwXyXIv215sfFqT9s87Jj8vP8jAc9LlC28M+4RbexfBRvm+cra3Cn/xlXJrUEjijf+vUf1Ju9F1XJQ==
   dependencies:
-    "@tanstack/query-devtools" "5.47.0"
+    "@tanstack/query-devtools" "5.49.1"
 
-"@tanstack/react-query@5.48.0":
-  version "5.48.0"
-  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.48.0.tgz#7890620272b48aeb278498dfe082f27518f3ac6d"
-  integrity sha512-GDExbjYWzvDokyRqMSWXdrPiYpp95Aig0oeMIrxTaruOJJgWiWfUP//OAaowm2RrRkGVsavSZdko/XmIrrV2Nw==
+"@tanstack/react-query@5.49.2":
+  version "5.49.2"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-query/-/react-query-5.49.2.tgz#d9c08f8eb62890f5274608f8954ab1709912ef3c"
+  integrity sha512-6rfwXDK9BvmHISbNFuGd+wY3P44lyW7lWiA9vIFGT/T0P9aHD1VkjTvcM4SDAIbAQ9ygEZZoLt7dlU1o3NjMVA==
   dependencies:
-    "@tanstack/query-core" "5.48.0"
+    "@tanstack/query-core" "5.49.1"
 
 "@testing-library/dom@10.2.0":
   version "10.2.0"
@@ -2521,13 +2521,13 @@ boxen@7.0.0:
     widest-line "^4.0.1"
     wrap-ansi "^8.0.1"
 
-bpmn-js@17.8.3:
-  version "17.8.3"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-17.8.3.tgz#c3b18dd708df98533984345cbbd5058292098398"
-  integrity sha512-9QFvfAnCbbvdXQdSumK0/CJJAEPOBAMBgE951Vq/sc2SL+5/h+J7wiTvLVGksv+NUz0ucKM5OE34d/KDDP8WaA==
+bpmn-js@17.9.0:
+  version "17.9.0"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-17.9.0.tgz#985e115226543278c3d3104ec19f01694665d661"
+  integrity sha512-JmbyLWtaa04qZWtyjLcXBWsg+87SuYL2kY7+8wxa7uo6YDdWAoBXOSrGbfsp26ofvSa38LgNOYn7vBl3uABbUw==
   dependencies:
     bpmn-moddle "^8.1.0"
-    diagram-js "^14.7.1"
+    diagram-js "^14.7.2"
     diagram-js-direct-editing "^3.0.1"
     ids "^1.0.5"
     inherits-browser "^0.1.0"
@@ -3140,20 +3140,20 @@ diagram-js-direct-editing@^3.0.1:
     min-dash "^4.0.0"
     min-dom "^4.0.2"
 
-diagram-js@^14.7.1:
-  version "14.7.1"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-14.7.1.tgz#aa5e84b001ce0cb90084f8834b5097eb3a6b7472"
-  integrity sha512-XSWuB35iRuKPUVdYdArJb7OimI1oGj61M/7AtyfyS9uwlW//Z7edm4/yNbEUA4MEGhHJZbzg3wLexB1g2N/RmA==
+diagram-js@^14.7.2:
+  version "14.8.0"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-14.8.0.tgz#90942faf7c9d0b727a8a4d28ffc88c08140f8e6c"
+  integrity sha512-HV3R6i+hl2PyhsdOQ1pqOsI+JCkX/bYJiHgO5zAaExORtuDrdGVDW7lKsEfcrcGA0fXfpEcmerjOmdH/PIvyJA==
   dependencies:
     "@bpmn-io/diagram-js-ui" "^0.2.3"
     clsx "^2.1.0"
     didi "^10.2.2"
     inherits-browser "^0.1.0"
     min-dash "^4.1.0"
-    min-dom "^4.1.0"
+    min-dom "^4.2.1"
     object-refs "^0.4.0"
     path-intersection "^3.0.0"
-    tiny-svg "^3.0.1"
+    tiny-svg "^3.1.2"
 
 didi@^10.2.2:
   version "10.2.2"
@@ -5121,10 +5121,10 @@ mobx-react-lite@4.0.7:
   dependencies:
     use-sync-external-store "^1.2.0"
 
-mobx@6.12.4:
-  version "6.12.4"
-  resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.12.4.tgz#a1e176cd173bf45d3e5eb825eaff2c736c0a90cb"
-  integrity sha512-uIymg89x+HmItX1p3MG+d09irn2k63J6biftZ5Ok+UpNojS1I3NJPLfcmJT9ANnUltNlHi+HQqrVyxiAN8ISYg==
+mobx@6.12.5:
+  version "6.12.5"
+  resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.12.5.tgz#ed2e4312bc9dbe3d9ecd063c70a5ba9e7c2b823b"
+  integrity sha512-xRq2tyY6unAec0ItlsrgoCuxrWXLoIkM5cGPuerm/0nX/CI9FxAO6ttfRYfFa+B5Yz51d59IfKy0mJwxOEwqzQ==
 
 moddle-xml@^10.1.0:
   version "10.1.0"

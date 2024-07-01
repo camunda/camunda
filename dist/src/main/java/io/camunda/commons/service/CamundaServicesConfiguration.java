@@ -9,8 +9,12 @@ package io.camunda.commons.service;
 
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.CamundaServices;
+import io.camunda.service.JobServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.UserTaskServices;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
+import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -24,16 +28,19 @@ import org.springframework.context.annotation.Configuration;
     matchIfMissing = true)
 public class CamundaServicesConfiguration {
 
+  private final BrokerClient brokerClient;
   private final CamundaSearchClient camundaSearchClient;
 
   @Autowired
-  public CamundaServicesConfiguration(final CamundaSearchClient camundaSearchClient) {
+  public CamundaServicesConfiguration(
+      final BrokerClient brokerClient, final CamundaSearchClient camundaSearchClient) {
+    this.brokerClient = brokerClient;
     this.camundaSearchClient = camundaSearchClient;
   }
 
   @Bean
   public CamundaServices camundaServices() {
-    return new CamundaServices(camundaSearchClient);
+    return new CamundaServices(brokerClient, camundaSearchClient);
   }
 
   @Bean
@@ -44,5 +51,12 @@ public class CamundaServicesConfiguration {
   @Bean
   public UserTaskServices userTaskServices(final CamundaServices camundaServices) {
     return camundaServices.userTaskServices();
+  }
+
+  @Bean
+  public JobServices<JobActivationResponse> jobServices(
+      final CamundaServices camundaServices,
+      final ActivateJobsHandler<JobActivationResponse> activateJobsHandler) {
+    return camundaServices.jobServices(activateJobsHandler);
   }
 }
