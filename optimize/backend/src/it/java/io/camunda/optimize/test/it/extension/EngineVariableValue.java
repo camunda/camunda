@@ -5,12 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.test.it.extension;
-
-import lombok.Data;
-
-@Data
-public class EngineVariableValue {
-  private final Object value;
-  private final String type;
-}
+// TODO recreate C8 IT equivalent of this with #13337
+// package io.camunda.optimize.test.it.extension;
+//
+// import lombok.Data;
+//
+// @Data
+// public class EngineVariableValue {
+//  private final Object value;
+//  private final String type;
+// }

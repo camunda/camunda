@@ -12,7 +12,6 @@
 
   <properties>
     <skip.tests>true</skip.tests>
-    <version.camunda>${camunda.engine.version}</version.camunda>
     <failOnMissingWebXml>false</failOnMissingWebXml>
     <allure.version>2.13.2</allure.version>
     <aspectj.version>1.9.19</aspectj.version>
@@ -120,16 +119,6 @@
               <deployer>
                 <type>remote</type>
               </deployer>
-              <deployables>
-                <deployable>
-                  <groupId>io.camunda.optimize</groupId>
-                  <artifactId>engine-it-plugin</artifactId>
-                  <type>war</type>
-                  <properties>
-                    <context>engine-it-plugin</context>
-                  </properties>
-                </deployable>
-              </deployables>
             </configuration>
           </plugin>
         </plugins>

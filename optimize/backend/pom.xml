@@ -375,12 +375,6 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.camunda.bpm</groupId>
-      <artifactId>camunda-engine-rest-core</artifactId>
-      <version>${camunda.maven.artifacts.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>com.github.wnameless.json</groupId>
       <artifactId>json-flattener</artifactId>
       <version>0.16.6</version>
@@ -555,13 +549,6 @@
           <version>${postgres.version}</version>
           <scope>test</scope>
         </dependency>
-        <dependency>
-          <groupId>io.camunda.optimize</groupId>
-          <artifactId>engine-it-plugin</artifactId>
-          <scope>test</scope>
-          <type>war</type>
-          <version>${project.version}</version>
-        </dependency>
       </dependencies>
 
       <build>
@@ -590,8 +577,6 @@
                 <smtpTestPort>500${surefire.forkNumber}</smtpTestPort>
                 <management.server.port>600${surefire.forkNumber}</management.server.port>
                 <databaseMockServerPort>108${surefire.forkNumber}</databaseMockServerPort>
-                <engineMockServerPort>109${surefire.forkNumber}</engineMockServerPort>
-                <camunda.engine.version>${camunda.engine.version}</camunda.engine.version>
               </systemPropertyVariables>
             </configuration>
             <executions>
@@ -615,7 +600,6 @@
                 </goals>
                 <configuration>
                   <environmentVariables>
-                    <CAMBPM_VERSION>${camunda.engine.version}</CAMBPM_VERSION>
                     <ES_VERSION>${elasticsearch.test.version}</ES_VERSION>
                     <OS_VERSION>${opensearch.test.version}</OS_VERSION>
                   </environmentVariables>
@@ -655,33 +639,6 @@
             </executions>
           </plugin>
           <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-antrun-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>check-cambpm-is-up</id>
-                <phase>pre-integration-test</phase>
-                <configuration>
-                  <skip>${skip.docker}</skip>
-                  <target name="check-cambpm-is-running" description="Check whether Camunda Platform is running">
-                    <echo message="Check Camunda Platform Tomcat is running..." />
-                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                      <socket server="localhost" port="${tomcat.connector.http.port}" />
-                    </waitfor>
-                    <echo message="Camunda Platform Tomcat socket is open. Checking for manager app to become available..." />
-                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                      <http url="http://admin:admin@localhost:${tomcat.connector.http.port}/manager/text/list" />
-                    </waitfor>
-                    <echo message="Camunda Platform Tomcat manager app is running." />
-                  </target>
-                </configuration>
-                <goals>
-                  <goal>run</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
             <groupId>org.codehaus.cargo</groupId>
             <artifactId>cargo-maven3-plugin</artifactId>
             <executions>
@@ -711,16 +668,6 @@
               <deployer>
                 <type>remote</type>
               </deployer>
-              <deployables>
-                <deployable>
-                  <groupId>io.camunda.optimize</groupId>
-                  <artifactId>engine-it-plugin</artifactId>
-                  <type>war</type>
-                  <properties>
-                    <context>engine-it-plugin</context>
-                  </properties>
-                </deployable>
-              </deployables>
             </configuration>
           </plugin>
           <plugin>

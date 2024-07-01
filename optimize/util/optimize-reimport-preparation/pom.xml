@@ -182,29 +182,10 @@
               <deployer>
                 <type>remote</type>
               </deployer>
-              <deployables>
-                <deployable>
-                  <groupId>io.camunda.optimize</groupId>
-                  <artifactId>engine-it-plugin</artifactId>
-                  <type>war</type>
-                  <properties>
-                    <context>engine-it-plugin</context>
-                  </properties>
-                </deployable>
-              </deployables>
             </configuration>
           </plugin>
         </plugins>
       </build>
-      <dependencies>
-        <dependency>
-          <groupId>io.camunda.optimize</groupId>
-          <artifactId>engine-it-plugin</artifactId>
-          <scope>test</scope>
-          <type>war</type>
-          <version>${project.version}</version>
-        </dependency>
-      </dependencies>
     </profile>
   </profiles>
 
