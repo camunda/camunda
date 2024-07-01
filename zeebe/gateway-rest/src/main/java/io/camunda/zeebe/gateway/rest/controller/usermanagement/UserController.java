@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
-import io.camunda.identity.usermanagement.CamundaUser;
-import io.camunda.identity.usermanagement.CamundaUserWithPassword;
-import io.camunda.identity.usermanagement.service.UserService;
+import io.camunda.identity.automation.usermanagement.CamundaUser;
+import io.camunda.identity.automation.usermanagement.CamundaUserWithPassword;
+import io.camunda.identity.automation.usermanagement.service.UserService;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
