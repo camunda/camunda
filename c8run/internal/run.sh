@@ -200,7 +200,7 @@ Please stop it or remove the file $PID_PATH."
 
   else
     pushd $PARENTDIR/camunda-zeebe-$CAMUNDA_VERSION/
-    ./bin/camunda |& tee $PARENTDIR/log/camunda.log
+    ./bin/camunda 2>&1 | tee $PARENTDIR/log/camunda.log
     popd
   fi
 
