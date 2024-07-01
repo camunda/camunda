@@ -153,18 +153,14 @@ public class UserTaskController {
               HttpStatus.BAD_REQUEST,
               e.getMessage(),
               "Validation failed for UserTask Search Query");
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-          .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_PROBLEM_JSON))
-          .body(problemDetail);
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
     } catch (final Exception e) {
       final var problemDetail =
           RestErrorMapper.createProblemDetail(
               HttpStatus.INTERNAL_SERVER_ERROR,
               e.getMessage(),
               "Failed to execute UserTask Search Query");
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-          .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_PROBLEM_JSON))
-          .body(problemDetail);
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
     }
   }
 }
