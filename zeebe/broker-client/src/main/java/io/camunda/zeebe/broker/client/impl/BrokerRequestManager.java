@@ -242,7 +242,11 @@ final class BrokerRequestManager extends Actor {
 
   private void throwIfPartitionInactive(final int partitionId) {
     final BrokerClusterState topology = topologyManager.getTopology();
-    if (topology != null && topology.getInactiveNodesForPartition(partitionId) != null) {
+    final var inactiveNodes = topology.getInactiveNodesForPartition(partitionId);
+    final var someNodesInactive = inactiveNodes != null && !inactiveNodes.isEmpty();
+    final var noPartitionLeader =
+        topology.getLeaderForPartition(partitionId) == BrokerClusterState.NODE_ID_NULL;
+    if (topology != null && someNodesInactive && noPartitionLeader) {
       throw new PartitionInactiveException(partitionId);
     }
   }
