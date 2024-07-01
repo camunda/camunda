@@ -46,6 +46,25 @@ public class CollectionUtilTest {
     assertThat(result).isEqualTo(expected);
   }
 
+  private static Stream<Arguments> provideArrayParams() {
+    return Stream.of(
+        Arguments.arguments(null, List.of()),
+        Arguments.arguments(new String[0], List.of()),
+        Arguments.arguments(new String[] {"1", "2"}, List.of("1", "2")));
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideArrayParams")
+  public void shouldCollectValuesAsList(final String[] values, final List<String> expected) {
+    // given
+
+    // when
+    final var result = CollectionUtil.collectValuesAsList(values);
+
+    // then
+    assertThat(result).isEqualTo(expected);
+  }
+
   @Test
   public void shouldRemoveNullValuesFromStringArray() {
     // given
