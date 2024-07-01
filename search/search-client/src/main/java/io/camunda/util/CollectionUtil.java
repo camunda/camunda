@@ -57,6 +57,21 @@ public final class CollectionUtil {
     return result;
   }
 
+  /**
+   * Collects a given values (array) as list, and handles potential null or empty values.
+   *
+   * @param values the values that needs to be collected
+   * @return an appropriate list containing the values
+   * @param <T> the type of the values
+   */
+  public static <T> List<T> collectValuesAsList(final T... values) {
+    if (values == null) {
+      return List.of();
+    }
+
+    return Arrays.stream(values).toList();
+  }
+
   public static <T> List<T> collectValues(final T value, final T... values) {
     final List<T> collectedValues = new ArrayList<>();
     collectedValues.add(value);
