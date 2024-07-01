@@ -50,6 +50,11 @@ public class StubbedCamundaSearchClient implements CamundaSearchClient {
     this.searchRequestHandler = searchRequestHandler;
   }
 
+  @Override
+  public void close() throws Exception {
+    // noop
+  }
+
   public interface RequestStub<DocumentT> extends SearchRequestHandler<DocumentT> {
     void registerWith(final StubbedCamundaSearchClient client);
   }

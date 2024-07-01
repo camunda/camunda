@@ -16,9 +16,13 @@ export class MigrationView {
   readonly nextButton: Locator;
   readonly confirmButton: Locator;
   readonly summaryNotification: Locator;
+  readonly migrationConfirmationModal: Locator;
 
   constructor(page: Page) {
     this.page = page;
+    this.migrationConfirmationModal = page.getByRole('dialog', {
+      name: /migration confirmation/i,
+    });
 
     this.targetProcessComboBox = page.getByRole('combobox', {
       name: 'Target',
@@ -60,6 +64,13 @@ export class MigrationView {
     return this.page
       .getByLabel(`Target flow node for ${sourceFlowNodeName}`)
       .selectOption(targetFlowNodeName);
+  }
+
+  confirmMigration() {
+    this.migrationConfirmationModal.getByRole('textbox').fill('MIGRATE');
+    return this.migrationConfirmationModal
+      .getByRole('button', {name: /confirm/i})
+      .click();
   }
 
   selectTargetSourceFlowNode(flowNodeName: string) {

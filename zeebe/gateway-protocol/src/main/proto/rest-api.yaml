@@ -214,7 +214,276 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-
+  /process-instances/search:
+    post:
+      tags:
+        - Process Instance
+      summary: Process Instance Search Query
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessInstanceSearchQueryRequest'
+      responses:
+        '200':
+          $ref: "#/components/responses/ProcessInstanceSearchQueryResponse"
+        '400':
+          description: >
+            The Process Instance Search Query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /users:
+    post:
+      tags:
+        - User
+      summary: "Create a user"
+      operationId: "createUser"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CamundaUserWithPasswordRequest"
+        required: true
+      responses:
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CamundaUserResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /users/{id}:
+    delete:
+      tags:
+        - User
+      summary: "Delete a user"
+      operationId: "deleteUser"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "204":
+          description: "No Content"
+        "400":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+    get:
+      tags:
+        - User
+      summary: "Retrieve details of a user"
+      operationId: "findUserById"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CamundaUserResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+    put:
+      tags:
+        - User
+      summary: "Update a user"
+      operationId: "updateUser"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CamundaUserWithPasswordRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CamundaUserResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /users/search:
+    post:
+      tags:
+        - User
+      summary: "Get list of users"
+      operationId: "findAllUsers"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchQueryRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSearchResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 components:
   responses:
     TopologyResponse:
@@ -527,6 +796,165 @@ components:
           type: string
           format: uri
           description: A URI identifying the origin of the problem.
+    SearchQueryRequest:
+      type: object
+      properties:
+        sort:
+          type: array
+          items:
+            allOf:
+              - $ref: "#/components/schemas/SearchQuerySortRequest"
+        page:
+          allOf:
+            - $ref: "#/components/schemas/SearchQueryPageRequest"
+          type: object
+    SearchQueryPageRequest:
+      type: object
+      properties:
+        from:
+          type: integer
+          format: int32
+        limit:
+          type: integer
+          format: int32
+        searchAfter:
+          type: array
+          items:
+            type: object
+        searchBefore:
+          type: array
+          items:
+            type: object
+    SearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          type: string
+        order:
+          type: string
+    SearchQueryResponse:
+      type: object
+      properties:
+        page:
+          allOf:
+            - $ref: "#/components/schemas/SearchQueryPageResponse"
+          type: object
+    SearchQueryPageResponse:
+      type: object
+      properties:
+        totalItems:
+          type: integer
+          format: int64
+        firstSortValues:
+          type: array
+          items:
+            type: object
+        lastSortValues:
+          type: array
+          items:
+            type: object
+    ProcessInstanceSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceFilterRequest"
+    ProcessInstanceFilterRequest:
+      type: object
+      properties:
+        key:
+          type: array
+          items:
+            type: integer
+            format: int64
+        variables:
+          type: array
+          items:
+            $ref: "#/components/schemas/VariableValueFilterRequest"
+    VariableValueFilterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        eq:
+          type: object
+        gt:
+          type: object
+        gte:
+          type: object
+        lt:
+          type: object
+        lte:
+          type: object
+    ProcessInstanceSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInstanceItem"
+    ProcessInstanceItem:
+      type: object
+      properties:
+        tenantId:
+          type: string
+        key:
+          type: integer
+          format: int64
+        processDefinitionKey:
+          type: integer
+          format: int64
+        processVersion:
+          type: integer
+          format: int32
+        bpmnProcessId:
+          type: string
+        parentKey:
+          type: integer
+          format: int64
+        parentFlowNodeInstanceKey:
+          type: integer
+          format: int64
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+    CamundaUserResponse:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+        username:
+          type: "string"
+        name:
+          type: "string"
+        email:
+          type: "string"
+        enabled:
+          type: "boolean"
+    CamundaUserWithPasswordRequest:
+      allOf:
+        - $ref: '#/components/schemas/CamundaUserResponse'
+        - type: "object"
+          properties:
+            password:
+              type: "string"
+    UserSearchResponse:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CamundaUserResponse"
   securitySchemes:
     bearerAuth:
       type: http

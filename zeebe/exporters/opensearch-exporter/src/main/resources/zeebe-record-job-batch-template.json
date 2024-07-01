@@ -94,6 +94,9 @@
                 },
                 "jobKind": {
                   "type": "keyword"
+                },
+                "jobListenerEventType": {
+                  "type": "keyword"
                 }
               }
             },

@@ -106,7 +106,7 @@ services:
 With the registry set up, the next step is to push the Docker image we're building to it.
 
 ```yaml
-- uses: ./.github/actions/build-zeebe-docker
+- uses: ./.github/actions/build-platform-docker
   with:
     repository: localhost:5000/camunda/zeebe
     version: current-test

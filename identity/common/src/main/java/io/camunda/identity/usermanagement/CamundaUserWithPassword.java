@@ -7,13 +7,21 @@
  */
 package io.camunda.identity.usermanagement;
 
+import jakarta.validation.constraints.NotNull;
+
 public class CamundaUserWithPassword extends CamundaUser {
+
+  @NotNull(message = "userWithPassword.invalid")
   private String password;
 
   public CamundaUserWithPassword() {}
 
   public CamundaUserWithPassword(final String username, final String password) {
-    super(username);
+    this(username, null, password);
+  }
+
+  public CamundaUserWithPassword(final String username, final String name, final String password) {
+    super(username, name, null);
     this.password = password;
   }
 

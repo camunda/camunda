@@ -21,6 +21,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerErrorResponse;
@@ -323,7 +324,7 @@ public class LongPollingActivateJobsRestTest {
 
     actorClock.addTime(Duration.ofMillis(longPollingTimeout));
     requests.forEach(
-        request -> verify(request.getResponseObserver(), timeout(1000).times(1)).onCompleted());
+        request -> verify(request.getResponseObserver(), timeout(3000).times(1)).onCompleted());
 
     // when
     actorClock.addTime(Duration.ofMillis(probeTimeout));
@@ -920,22 +921,30 @@ public class LongPollingActivateJobsRestTest {
     // given
     final var activatedJobRef = new AtomicReference<ActivatedJob>();
     activateJobsStub.addAvailableJobs(TYPE, 1);
-    final var grpcRequest =
+    final var restRequest =
         new JobActivationRequest()
             .type(TYPE)
             .maxJobsToActivate(MAX_JOBS_TO_ACTIVATE)
             .requestTimeout(500L)
             .timeout(1000L);
-    final var requestMappingResult = RequestMapper.toJobsActivationRequest(grpcRequest);
+    final var requestMappingResult = RequestMapper.toJobsActivationRequest(restRequest);
     if (requestMappingResult.isLeft()) {
       fail("REST Request mapping failed unexpectedly: " + requestMappingResult.getLeft());
     }
+    final ActivateJobsRequest activateJobsRequest = requestMappingResult.get();
+    final var brokerRequest =
+        new BrokerActivateJobsRequest(activateJobsRequest.type())
+            .setMaxJobsToActivate(activateJobsRequest.maxJobsToActivate())
+            .setTimeout(activateJobsRequest.timeout())
+            .setTenantIds(activateJobsRequest.tenantIds())
+            .setVariables(activateJobsRequest.fetchVariable())
+            .setWorker(activateJobsRequest.worker());
     final var request =
         new InflightActivateJobsRequest<>(
             getNextRequestId(),
-            requestMappingResult.get(),
+            brokerRequest,
             spy(new JobActivationRequestResponseObserver(new CompletableFuture<>())),
-            grpcRequest.getRequestTimeout()) {
+            activateJobsRequest.requestTimeout()) {
 
           @Override
           public Either<Exception, Boolean> tryToSendActivatedJobs(
@@ -1002,16 +1011,24 @@ public class LongPollingActivateJobsRestTest {
   }
 
   private InflightActivateJobsRequest<JobActivationResponse> toInflightActivateJobsRequest(
-      final JobActivationRequest grpcRequest) {
-    final var requestMappingResult = RequestMapper.toJobsActivationRequest(grpcRequest);
+      final JobActivationRequest restRequest) {
+    final var requestMappingResult = RequestMapper.toJobsActivationRequest(restRequest);
     if (requestMappingResult.isLeft()) {
       fail("REST Request mapping failed unexpectedly: " + requestMappingResult.getLeft());
     }
+    final ActivateJobsRequest activateJobsRequest = requestMappingResult.get();
+    final var brokerRequest =
+        new BrokerActivateJobsRequest(activateJobsRequest.type())
+            .setMaxJobsToActivate(activateJobsRequest.maxJobsToActivate())
+            .setTimeout(activateJobsRequest.timeout())
+            .setTenantIds(activateJobsRequest.tenantIds())
+            .setVariables(activateJobsRequest.fetchVariable())
+            .setWorker(activateJobsRequest.worker());
     return new InflightActivateJobsRequest<>(
         getNextRequestId(),
-        requestMappingResult.get(),
+        brokerRequest,
         spy(new JobActivationRequestResponseObserver(new CompletableFuture<>())),
-        grpcRequest.getRequestTimeout());
+        activateJobsRequest.requestTimeout());
   }
 
   private long getNextRequestId() {

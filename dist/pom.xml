@@ -21,6 +21,22 @@
   </properties>
 
   <dependencies>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-connect</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-service</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker</artifactId>
@@ -120,7 +136,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
+      <artifactId>camunda-client-java</artifactId>
     </dependency>
 
     <dependency>
@@ -130,18 +146,22 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-data-generator</artifactId>
+      <artifactId>identity-common</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-common</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>commons-logging</groupId>
-          <artifactId>commons-logging</artifactId>
-        </exclusion>
-      </exclusions>
+      <artifactId>identity-backend</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-webjar</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-data-generator</artifactId>
     </dependency>
 
     <dependency>
@@ -186,7 +206,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>auth-spring-boot-starter</artifactId>
+      <artifactId>camunda-authentication</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.data</groupId>
+      <artifactId>spring-data-jpa</artifactId>
     </dependency>
 
     <dependency>
@@ -334,6 +359,11 @@
     </dependency>
 
     <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
     </dependency>
@@ -411,6 +441,16 @@
     <!-- /end -->
 
     <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>com.graphql-java-kickstart</groupId>
       <artifactId>graphql-spring-boot-autoconfigure</artifactId>
     </dependency>
@@ -483,6 +523,18 @@
     <dependency>
       <groupId>com.tngtech.archunit</groupId>
       <artifactId>archunit-junit5-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>elasticsearch</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -608,6 +660,8 @@
             <ignoredNonTestScopedDependency>com.fasterxml.jackson.core:jackson-core</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>com.fasterxml.jackson.core:jackson-databind</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>org.apache.httpcomponents.client5:httpclient5</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>org.apache.httpcomponents.core5:httpcore5</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
@@ -619,9 +673,13 @@
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
             <dependency>io.micrometer:micrometer-registry-prometheus-simpleclient</dependency>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
+            <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
 
             <!-- Needed for configuring the Identity SDK by providing an IdentityConfiguration bean -->
             <dependency>io.camunda:identity-spring-boot-autoconfigure</dependency>
+            <dependency>io.camunda:identity-backend</dependency>
+            <dependency>io.camunda:identity-common</dependency>
+            <dependency>io.camunda:identity-webjar</dependency>
 
             <dependency>io.camunda:operate-data-generator</dependency>
             <dependency>io.camunda:operate-archiver</dependency>
