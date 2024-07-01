@@ -92,8 +92,6 @@ public class ProcessInstanceMigrationClusteredTest {
             .addProcessModel(TARGET_PROCESS_2, "targetProcess2.bpmn")
             .send()
             .join();
-    final var sourceProcessDefinitionKey =
-        deploymentEvent.getProcesses().get(0).getProcessDefinitionKey();
     final var targetProcessDefinitionKey =
         deploymentEvent.getProcesses().get(1).getProcessDefinitionKey();
     final var secondTargetProcessDefinitionKey =
