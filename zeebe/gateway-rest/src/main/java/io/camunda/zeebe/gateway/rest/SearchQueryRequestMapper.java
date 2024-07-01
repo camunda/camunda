@@ -7,21 +7,31 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import io.camunda.service.search.filter.DateValueFilter;
 import io.camunda.service.search.filter.FilterBuilders;
 import io.camunda.service.search.filter.ProcessInstanceFilter;
+import io.camunda.service.search.filter.UserTaskFilter;
 import io.camunda.service.search.filter.VariableValueFilter;
 import io.camunda.service.search.page.SearchQueryPage;
 import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
+import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.service.search.sort.ProcessInstanceSort;
 import io.camunda.service.search.sort.SortOptionBuilders;
+import io.camunda.service.search.sort.UserTaskSort;
+import io.camunda.zeebe.gateway.protocol.rest.DateFilter;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterRequest;
 import io.camunda.zeebe.util.Either;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
 public final class SearchQueryRequestMapper {
@@ -108,8 +118,9 @@ public final class SearchQueryRequestMapper {
       final List<SearchQuerySortRequest> sorting) {
     if (sorting != null && !sorting.isEmpty()) {
       final var builder = SortOptionBuilders.processInstance();
+      final List<ProblemDetail> validationErrors = new ArrayList<>();
 
-      for (SearchQuerySortRequest sort : sorting) {
+      for (final SearchQuerySortRequest sort : sorting) {
         final var field = sort.getField();
         final var order = sort.getOrder();
 
@@ -120,7 +131,10 @@ public final class SearchQueryRequestMapper {
         } else if ("endDate".equals(field)) {
           builder.endDate();
         } else {
-          throw new RuntimeException("unkown sortBy " + field);
+          // Collect validation error for unknown sortBy field
+          validationErrors.add(ProblemDetail.forStatusAndDetail(
+              HttpStatus.BAD_REQUEST, "Unknown sortBy field: " + field));
+          continue;
         }
 
         if ("asc".equalsIgnoreCase(order)) {
@@ -128,8 +142,14 @@ public final class SearchQueryRequestMapper {
         } else if ("desc".equalsIgnoreCase(order)) {
           builder.desc();
         } else {
-          throw new RuntimeException("unkown sortOrder " + order);
+          // Collect validation error for unknown sortOrder
+          validationErrors.add(ProblemDetail.forStatusAndDetail(
+              HttpStatus.BAD_REQUEST, "Unknown sortOrder: " + order));
         }
+      }
+
+      if (!validationErrors.isEmpty()) {
+        return Either.left(validationErrors.get(0)); // Return the first encountered error for simplicity
       }
 
       return Either.right(builder.build());
@@ -138,11 +158,152 @@ public final class SearchQueryRequestMapper {
     return Either.right(null);
   }
 
+  public static Either<ProblemDetail, UserTaskSort> toUserTaskSearchQuerySort(
+      final List<SearchQuerySortRequest> sorting) {
+
+    if (sorting != null && !sorting.isEmpty()) {
+      final var builder = SortOptionBuilders.userTask();
+      final List<ProblemDetail> validationErrors = new ArrayList<>();
+
+      for (final SearchQuerySortRequest sort : sorting) {
+        final var field = sort.getField();
+        final var order = sort.getOrder();
+
+        if ("creationTime".equals(field)) {
+          builder.creationDate();
+        } else if ("completionTime".equals(field)) {
+          builder.completionDate();
+        } else {
+          // Collect validation error for unknown sortBy field
+          validationErrors.add(ProblemDetail.forStatusAndDetail(
+              HttpStatus.BAD_REQUEST, "Unknown sortBy field: " + field));
+          continue;
+        }
+
+        if ("asc".equalsIgnoreCase(order)) {
+          builder.asc();
+        } else if ("desc".equalsIgnoreCase(order)) {
+          builder.desc();
+        } else {
+          // Collect validation error for unknown sortOrder
+          validationErrors.add(ProblemDetail.forStatusAndDetail(
+              HttpStatus.BAD_REQUEST, "Unknown sortOrder: " + order));
+        }
+      }
+
+      if (!validationErrors.isEmpty()) {
+        return Either.left(validationErrors.get(0)); // Return the first encountered error for simplicity
+      }
+
+      return Either.right(builder.build());
+    }
+
+    return Either.right(null);
+  }
+
+  public static UserTaskFilter toUserTaskFilter(final UserTaskFilterRequest filter) {
+    final var builder = FilterBuilders.userTask();
+
+    if (filter != null) {
+      // key
+      if (filter.getKey() != null) {
+        builder.userTaskKeys(filter.getKey());
+      }
+
+      // state
+      if (filter.getTaskState() != null && !filter.getTaskState().isEmpty()) {
+        builder.userTaskState(filter.getTaskState());
+      }
+
+      // assignee
+      if (filter.getAssignee() != null && !filter.getAssignee().isEmpty()) {
+        builder.assignees(filter.getAssignee());
+      }
+
+      // candidateGroup
+      if (filter.getCandidateGroup() != null && !filter.getCandidateGroup().isEmpty()) {
+        builder.candidateGroups(filter.getCandidateGroup());
+      }
+
+      // candidateUser
+      if (filter.getCandidateUser() != null && !filter.getCandidateUser().isEmpty()) {
+        builder.candidateUsers(filter.getCandidateUser());
+      }
+
+      // processDefinitionKey
+      if (filter.getProcessDefinitionKey() != null) {
+        builder.processDefinitionKeys(filter.getProcessDefinitionKey());
+      }
+
+      // processInstanceKey
+      if (filter.getProcessInstanceKey() != null) {
+        builder.processInstanceKeys(filter.getProcessInstanceKey());
+      }
+
+      // tenantIds
+      if (filter.getTenantIds() != null) {
+        builder.tenantIds(filter.getTenantIds());
+      }
+
+      // creationTime
+      if (filter.getCreationTime() != null) {
+        builder.creationDate(toDateValueFilter(filter.getCreationTime()));
+      }
+
+      // completionTime
+      if (filter.getCompletionTime() != null) {
+        builder.completionDate(toDateValueFilter(filter.getCompletionTime()));
+      }
+
+      // dueDate
+      if (filter.getDueDate() != null) {
+        builder.dueDate(toDateValueFilter(filter.getDueDate()));
+      }
+
+      // followUpDate
+      if (filter.getFollowUpDate() != null) {
+        builder.followUpDate(toDateValueFilter(filter.getFollowUpDate()));
+      }
+    }
+
+    return builder.build();
+  }
+
+  public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
+      final UserTaskSearchQueryRequest request) {
+    final var pageResult = toSearchQueryPage(request.getPage());
+    if (pageResult.isLeft()) {
+      return Either.left(pageResult.getLeft());
+    }
+    final var page = pageResult.get();
+
+    final var sortingResult = toUserTaskSearchQuerySort(request.getSort());
+    if (sortingResult.isLeft()) {
+      return Either.left(sortingResult.getLeft());
+    }
+    final var sorting = sortingResult.get();
+
+    final var userTaskFilter = toUserTaskFilter(request.getFilter());
+
+    return Either.right(
+        SearchQueryBuilders.userTaskSearchQuery()
+            .page(page)
+            .filter(userTaskFilter)
+            .sort(sorting)
+            .build());
+  }
+
   private static Object[] toArrayOrNull(final List<Object> values) {
     if (values == null || values.isEmpty()) {
       return null;
     } else {
       return values.toArray();
     }
+  }
+
+  private static DateValueFilter toDateValueFilter(final DateFilter dateFilter) {
+    return new DateValueFilter(
+        dateFilter.getFrom() != null ? OffsetDateTime.parse(dateFilter.getFrom()) : null,
+        dateFilter.getTo() != null ? OffsetDateTime.parse(dateFilter.getTo()) : null);
   }
 }

@@ -8,14 +8,23 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.service.UserTaskServices;
+import io.camunda.service.search.query.UserTaskQuery;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RequestMapper.AssignUserTaskRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.CompleteUserTaskRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateUserTaskRequest;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
+import io.camunda.zeebe.gateway.rest.TenantAttributeHolder;
+import jakarta.validation.ValidationException;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -32,6 +41,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class UserTaskController {
 
   private final UserTaskServices userTaskServices;
+
+  @Autowired private UserTaskServices userTaskServices;
 
   @Autowired
   public UserTaskController(final UserTaskServices userTaskServices) {
@@ -120,5 +131,39 @@ public class UserTaskController {
             userTaskServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .updateUserTask(request.userTaskKey(), request.changeset(), request.action()));
+  }
+
+  @PostMapping(
+      path = "/user-tasks/search",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Object> searchUserTasks(
+      @RequestBody(required = false) final UserTaskSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toUserTaskQuery(
+            query == null ? new UserTaskSearchQueryRequest() : query)
+        .fold(this::search, RestErrorMapper::mapProblemToResponse);
+  }
+
+  private ResponseEntity<Object> search(final UserTaskQuery query) {
+    try {
+      final var tenantIds = TenantAttributeHolder.tenantIds();
+      final var result =
+          userTaskServices.withAuthentication((a) -> a.tenants(tenantIds)).search(query);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result));
+    } catch (final ValidationException e) {
+      final var problemDetail =
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.BAD_REQUEST,
+              e.getMessage(),
+              "Validation failed for UserTask Search Query");
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    } catch (final Exception e) {
+      final var problemDetail =
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.INTERNAL_SERVER_ERROR,
+              e.getMessage(),
+              "Failed to execute UserTask Search Query");
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    }
   }
 }
