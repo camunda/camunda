@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import java.util.concurrent.ThreadLocalRandom;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -65,6 +66,9 @@ public class ElementTreePathBuilderTest {
     assertThat(properties.elementInstancePath()).isNotNull();
     assertThat(properties.elementInstancePath()).hasSize(1); // no call activities
     assertThat(properties.elementInstancePath().getFirst()).containsExactly(100L, 102L);
+    assertThat(properties.processDefinitionPath()).hasSize(1);
+    assertThat(properties.processDefinitionPath())
+        .containsExactly(parentProcessInstanceRecord.getProcessDefinitionKey());
   }
 
   @Test
@@ -103,6 +107,10 @@ public class ElementTreePathBuilderTest {
     assertThat(properties.elementInstancePath()).hasSize(2);
     assertThat(properties.elementInstancePath().getFirst()).containsExactly(100L, 101L);
     assertThat(properties.elementInstancePath().getLast()).containsExactly(102L, 103L);
+    assertThat(properties.processDefinitionPath()).hasSize(2);
+    assertThat(properties.processDefinitionPath())
+        .containsExactly(
+            processARecord.getProcessDefinitionKey(), processBRecord.getProcessDefinitionKey());
   }
 
   private ProcessInstanceRecord createProcessInstanceRecord() {
@@ -112,7 +120,7 @@ public class ElementTreePathBuilderTest {
     processInstanceRecord.setProcessInstanceKey(1000L);
     processInstanceRecord.setFlowScopeKey(1001L);
     processInstanceRecord.setVersion(1);
-    processInstanceRecord.setProcessDefinitionKey(2);
+    processInstanceRecord.setProcessDefinitionKey(ThreadLocalRandom.current().nextLong(1000));
     processInstanceRecord.setBpmnElementType(BpmnElementType.START_EVENT);
 
     return processInstanceRecord;

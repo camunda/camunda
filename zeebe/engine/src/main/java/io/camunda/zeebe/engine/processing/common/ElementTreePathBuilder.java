@@ -41,8 +41,10 @@ public class ElementTreePathBuilder {
       parentElementInstanceKey = instance.getParentKey();
     }
     properties.elementInstancePath.addFirst(elementInstancePath);
+    final var processInstanceRecord = instance.getValue();
+    properties.processDefinitionPath.addFirst(processInstanceRecord.getProcessDefinitionKey());
 
-    final long callingElementInstanceKey = instance.getValue().getParentElementInstanceKey();
+    final long callingElementInstanceKey = processInstanceRecord.getParentElementInstanceKey();
     if (callingElementInstanceKey != -1) {
       buildElementTreePathProperties(callingElementInstanceKey);
     }
