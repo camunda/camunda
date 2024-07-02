@@ -8,9 +8,6 @@
 package io.camunda.zeebe.shared.management;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
@@ -32,8 +29,6 @@ import org.springframework.stereotype.Component;
 public class FlowControlServiceImpl implements FlowControlService {
   private static final Logger LOG = LoggerFactory.getLogger(FlowControlServiceImpl.class);
   private final BrokerClient client;
-  private final ObjectMapper objectMapper =
-      JsonMapper.builder().addModule(new JavaTimeModule()).build();
 
   @Autowired
   public FlowControlServiceImpl(final BrokerClient client) {
@@ -63,7 +58,7 @@ public class FlowControlServiceImpl implements FlowControlService {
 
     final byte[] configuration;
     try {
-      configuration = objectMapper.writeValueAsBytes(flowControlCfg);
+      configuration = flowControlCfg.serialize();
     } catch (final JsonProcessingException e) {
       return CompletableFuture.failedFuture(e);
     }
