@@ -40,7 +40,6 @@ public class FlowControlServiceImpl implements FlowControlService {
 
   @Override
   public CompletableFuture<Map<Integer, String>> get() {
-    LOG.info("Fetching flow control configuration.");
     final var topology = client.getTopologyManager().getTopology();
     final var futures =
         topology.getPartitions().stream()
@@ -58,7 +57,7 @@ public class FlowControlServiceImpl implements FlowControlService {
 
   @Override
   public CompletableFuture<Map<Integer, String>> set(final FlowControlCfg flowControlCfg) {
-    LOG.info("Setting flow control configuration.");
+    LOG.info("Setting flow control configuration to {}", flowControlCfg);
 
     final ObjectMapper objectMapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
     final byte[] configuration;
