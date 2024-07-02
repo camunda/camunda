@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
-import io.camunda.identity.permissions.PermissionEnum;
-import io.camunda.identity.rolemanagement.model.Role;
-import io.camunda.identity.rolemanagement.service.RoleService;
+import io.camunda.identity.automation.permissions.PermissionEnum;
+import io.camunda.identity.automation.rolemanagement.model.Role;
+import io.camunda.identity.automation.rolemanagement.service.RoleService;
 import io.camunda.zeebe.gateway.protocol.rest.Permission;
 import io.camunda.zeebe.gateway.protocol.rest.RoleRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleResponse;
@@ -81,7 +81,7 @@ public class RoleController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Object> findAllRoles(
-      @RequestBody final SearchQueryRequest searchQueryRequest) {
+      @RequestBody(required = false) final SearchQueryRequest searchQueryRequest) {
     try {
       final RoleSearchResponse roleSearchResponse = new RoleSearchResponse();
       final List<RoleResponse> allRoleResponses =
@@ -127,7 +127,6 @@ public class RoleController {
       case CREATE_ALL -> PermissionEnum.CREATE_ALL;
       case DELETE_ALL -> PermissionEnum.DELETE_ALL;
       case UPDATE_ALL -> PermissionEnum.UPDATE_ALL;
-      default -> throw new IllegalArgumentException("Unsupported permission: " + permission);
     };
   }
 
@@ -150,8 +149,6 @@ public class RoleController {
       case CREATE_ALL -> Permission.CREATE_ALL;
       case DELETE_ALL -> Permission.DELETE_ALL;
       case UPDATE_ALL -> Permission.UPDATE_ALL;
-      default ->
-          throw new IllegalArgumentException("Unsupported permissionEnum: " + permissionEnum);
     };
   }
 }

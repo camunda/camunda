@@ -1472,13 +1472,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CamundaGroupResponse"
-    AbstractRole:
-      type: object
-      properties:
-        name:
-          type: "string"
-        description:
-          type: "string"
     Permission:
       type: "string"
       enum:
@@ -1488,9 +1481,11 @@ components:
         - "DELETE_ALL"
     RoleRequest:
       type: object
-      allOf:
-        - $ref: "#/components/schemas/AbstractRole"
       properties:
+        name:
+          type: "string"
+        description:
+          type: "string"
         permissions:
           type: array
           items:
