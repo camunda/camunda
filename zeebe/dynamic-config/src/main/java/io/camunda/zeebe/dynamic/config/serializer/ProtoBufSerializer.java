@@ -49,6 +49,8 @@ import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration;
+import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration.FixedPartitionCount;
 import io.camunda.zeebe.util.Either;
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -133,8 +135,20 @@ public class ProtoBufSerializer
             ? Optional.of(decodeChangePlan(encodedClusterTopology.getCurrentChange()))
             : Optional.empty();
 
+    final var routingConfiguration =
+        decodeRoutingConfiguration(encodedClusterTopology.getRouting());
+
     return new ClusterConfiguration(
-        encodedClusterTopology.getVersion(), members, completedChange, currentChange);
+        encodedClusterTopology.getVersion(),
+        members,
+        routingConfiguration,
+        completedChange,
+        currentChange);
+  }
+
+  private RoutingConfiguration decodeRoutingConfiguration(
+      final Topology.RoutingConfiguration encodedRouting) {
+    return RoutingConfiguration.fixed(encodedRouting.getPartitionCount());
   }
 
   private Map<MemberId, io.camunda.zeebe.dynamic.config.state.MemberState> decodeMemberStateMap(
@@ -151,6 +165,7 @@ public class ProtoBufSerializer
     final var builder =
         Topology.ClusterTopology.newBuilder()
             .setVersion(clusterConfiguration.version())
+            .setRouting(encodeRoutingConfiguration(clusterConfiguration.routing()))
             .putAllMembers(members);
 
     clusterConfiguration
@@ -161,6 +176,16 @@ public class ProtoBufSerializer
         .ifPresent(changePlan -> builder.setCurrentChange(encodeChangePlan(changePlan)));
 
     return builder.build();
+  }
+
+  private Topology.RoutingConfiguration encodeRoutingConfiguration(
+      final RoutingConfiguration configuration) {
+    return switch (configuration) {
+      case final FixedPartitionCount fixed ->
+          Topology.RoutingConfiguration.newBuilder()
+              .setPartitionCount(fixed.partitionCount())
+              .build();
+    };
   }
 
   private MemberState decodeMemberState(final Topology.MemberState memberState) {

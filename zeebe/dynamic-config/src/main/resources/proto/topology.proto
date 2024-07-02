@@ -12,8 +12,13 @@ message GossipState {
 message ClusterTopology {
   int64 version = 1;
   map<string, MemberState> members = 2;
+  RoutingConfiguration routing = 5;
   CompletedChange lastChange = 3;
   ClusterChangePlan currentChange = 4;
+}
+
+message RoutingConfiguration {
+  int32 partitionCount = 1;
 }
 
 message MemberState {

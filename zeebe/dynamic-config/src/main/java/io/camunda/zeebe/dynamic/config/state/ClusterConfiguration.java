@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 public record ClusterConfiguration(
     long version,
     Map<MemberId, MemberState> members,
+    RoutingConfiguration routing,
     Optional<CompletedChange> lastChange,
     Optional<ClusterChangePlan> pendingChanges) {
 
@@ -44,7 +45,7 @@ public record ClusterConfiguration(
 
   public static ClusterConfiguration uninitialized() {
     return new ClusterConfiguration(
-        UNINITIALIZED_VERSION, Map.of(), Optional.empty(), Optional.empty());
+        UNINITIALIZED_VERSION, Map.of(), null, Optional.empty(), Optional.empty());
   }
 
   public boolean isUninitialized() {
@@ -52,10 +53,12 @@ public record ClusterConfiguration(
   }
 
   public static ClusterConfiguration init() {
-    return new ClusterConfiguration(INITIAL_VERSION, Map.of(), Optional.empty(), Optional.empty());
+    return new ClusterConfiguration(
+        INITIAL_VERSION, Map.of(), null, Optional.empty(), Optional.empty());
   }
 
   public ClusterConfiguration addMember(final MemberId memberId, final MemberState state) {
+
     if (members.containsKey(memberId)) {
       throw new IllegalStateException(
           String.format(
@@ -65,7 +68,7 @@ public record ClusterConfiguration(
 
     final var newMembers =
         ImmutableMap.<MemberId, MemberState>builder().putAll(members).put(memberId, state).build();
-    return new ClusterConfiguration(version, newMembers, lastChange, pendingChanges);
+    return new ClusterConfiguration(version, newMembers, routing, lastChange, pendingChanges);
   }
 
   /**
@@ -103,7 +106,7 @@ public record ClusterConfiguration(
     }
 
     final var newMembers = mapBuilder.buildKeepingLast();
-    return new ClusterConfiguration(version, newMembers, lastChange, pendingChanges);
+    return new ClusterConfiguration(version, newMembers, routing, lastChange, pendingChanges);
   }
 
   public ClusterConfiguration startConfigurationChange(
@@ -120,6 +123,7 @@ public record ClusterConfiguration(
       return new ClusterConfiguration(
           newVersion,
           members,
+          routing,
           lastChange,
           Optional.of(ClusterChangePlan.init(newVersion, operations)));
     }
@@ -148,8 +152,9 @@ public record ClusterConfiguration(
               .flatMap(Optional::stream)
               .reduce(ClusterChangePlan::merge);
 
+      // TODO: merge routing configuration
       return new ClusterConfiguration(
-          version, ImmutableMap.copyOf(mergedMembers), lastChange, mergedChanges);
+          version, ImmutableMap.copyOf(mergedMembers), routing, lastChange, mergedChanges);
     }
   }
 
@@ -199,7 +204,11 @@ public record ClusterConfiguration(
     }
     final ClusterConfiguration result =
         new ClusterConfiguration(
-            version, members, lastChange, Optional.of(pendingChanges.orElseThrow().advance()));
+            version,
+            members,
+            routing,
+            lastChange,
+            Optional.of(pendingChanges.orElseThrow().advance()));
 
     if (!result.hasPendingChanges()) {
       // The last change has been applied. Clean up the members that are marked as LEFT in the
@@ -218,7 +227,11 @@ public record ClusterConfiguration(
       // configuration.
       final var completedChange = pendingChanges.orElseThrow().completed();
       return new ClusterConfiguration(
-          result.version() + 1, currentMembers, Optional.of(completedChange), Optional.empty());
+          result.version() + 1,
+          currentMembers,
+          routing,
+          Optional.of(completedChange),
+          Optional.empty());
     }
 
     return result;
@@ -283,7 +296,7 @@ public record ClusterConfiguration(
       // A conflict would not happen if the cancel is only called when the operation is truly stuck.
       final var newVersion = version + 2;
       return new ClusterConfiguration(
-          newVersion, members, Optional.of(cancelledChange), Optional.empty());
+          newVersion, members, routing, Optional.of(cancelledChange), Optional.empty());
     } else {
       return this;
     }
