@@ -38,11 +38,7 @@ public final class SearchResponseMapper {
   public static SearchQueryResponse<ProcessInstance> toProcessInstanceSearchResponse(
       final ProcessInstanceSearchQueryResponse response) {
     final SearchQueryPageResponse pageResponse = response.getPage();
-    final SearchResponsePage page =
-        new SearchResponsePageImpl(
-            pageResponse.getTotalItems(),
-            pageResponse.getFirstSortValues(),
-            pageResponse.getLastSortValues());
+    final SearchResponsePage page = toSearchResponsePage(pageResponse);
 
     final List<ProcessInstance> instances =
         Optional.ofNullable(response.getItems())
@@ -60,11 +56,7 @@ public final class SearchResponseMapper {
   public static SearchQueryResponse<UserTaskItem> toUserTaskSearchResponse(
       final UserTaskSearchQueryResponse response) {
     final SearchQueryPageResponse pageResponse = response.getPage();
-    final SearchResponsePage page =
-        new SearchResponsePageImpl(
-            pageResponse.getTotalItems(),
-            pageResponse.getFirstSortValues(),
-            pageResponse.getLastSortValues());
+    final SearchResponsePage page = toSearchResponsePage(pageResponse);
 
     final List<UserTaskItem> userTasks =
         Optional.ofNullable(response.getItems())
@@ -77,5 +69,12 @@ public final class SearchResponseMapper {
             .orElse(Collections.emptyList());
 
     return new SearchQueryResponseImpl<>(userTasks, page);
+  }
+
+  private static SearchResponsePage toSearchResponsePage(final SearchQueryPageResponse pageResponse) {
+    return new SearchResponsePageImpl(
+        pageResponse.getTotalItems(),
+        pageResponse.getFirstSortValues(),
+        pageResponse.getLastSortValues());
   }
 }
