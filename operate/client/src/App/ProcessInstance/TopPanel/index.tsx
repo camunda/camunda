@@ -25,6 +25,7 @@ import {
   ACTIVE_BADGE,
   INCIDENTS_BADGE,
   COMPLETED_BADGE,
+  COMPLETED_END_EVENT_BADGE,
 } from 'modules/bpmn-js/badgePositions';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -47,6 +48,7 @@ const overlayPositions = {
   incidents: INCIDENTS_BADGE,
   canceled: CANCELED_BADGE,
   completed: COMPLETED_BADGE,
+  completedEndEvents: COMPLETED_END_EVENT_BADGE,
 } as const;
 
 type ModificationBadgePayload = {
@@ -243,7 +245,7 @@ const TopPanel: React.FC = observer(() => {
             >
               {stateOverlays.map((overlay) => {
                 const payload = overlay.payload as {
-                  flowNodeState: FlowNodeState;
+                  flowNodeState: FlowNodeState | 'completedEndEvents';
                   count: number;
                 };
 
@@ -256,6 +258,11 @@ const TopPanel: React.FC = observer(() => {
                     isFaded={modificationsStore.hasPendingCancelOrMoveModification(
                       overlay.flowNodeId,
                     )}
+                    title={
+                      payload.flowNodeState === 'completed'
+                        ? 'Execution Count'
+                        : undefined
+                    }
                   />
                 );
               })}
