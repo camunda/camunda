@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.impl.broker;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
-import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil.Routing;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public final class PublishMessageDispatchStrategy implements RequestDispatchStrategy {
@@ -32,7 +32,7 @@ public final class PublishMessageDispatchStrategy implements RequestDispatchStra
     }
 
     final int partitionsCount = topology.getPartitionsCount();
-    return SubscriptionUtil.getSubscriptionPartitionId(
-        BufferUtil.wrapString(correlationKey), partitionsCount);
+    return Routing.ofFixedPartitionCount(partitionsCount)
+        .partitionForCorrelationKey(BufferUtil.wrapString(correlationKey));
   }
 }

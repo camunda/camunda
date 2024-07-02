@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender;
 import io.camunda.zeebe.engine.util.TestStreams;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil.Routing;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.stream.impl.StreamProcessorBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
@@ -82,7 +83,8 @@ public final class TestEngine {
                             new SubscriptionCommandSender(partitionId, interPartitionCommandSender),
                             interPartitionCommandSender,
                             featureFlags,
-                            JobStreamer.noop())
+                            JobStreamer.noop(),
+                            Routing.ofFixedPartitionCount(partitionCount))
                         .withListener(
                             new ProcessingExporterTransistor(
                                 testStreams.getLogStream(

@@ -36,7 +36,7 @@ import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
-import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil.Routing;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
@@ -90,7 +90,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final DistributionState distributionState;
   private final int currentPartitionId;
-  private final int partitionsCount;
+  private final Routing routing;
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers,
@@ -98,7 +98,7 @@ public class ProcessInstanceMigrationMigrateProcessor
       final BpmnBehaviors bpmnBehaviors,
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
-      final int partitionsCount) {
+      final Routing routing) {
     stateWriter = writers.state();
     commandWriter = writers.command();
     responseWriter = writers.response();
@@ -115,7 +115,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     this.commandDistributionBehavior = commandDistributionBehavior;
     currentPartitionId = partitionId;
-    this.partitionsCount = partitionsCount;
+    this.routing = routing;
   }
 
   @Override
@@ -450,19 +450,18 @@ public class ProcessInstanceMigrationMigrateProcessor
 
           final long distributionKey = processMessageSubscription.getKey();
 
+          final var correlationKey = processMessageSubscriptionRecord.getCorrelationKeyBuffer();
           final var messageSubscription =
               new MessageSubscriptionRecord()
                   .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                   .setElementInstanceKey(processMessageSubscriptionRecord.getElementInstanceKey())
                   .setProcessInstanceKey(processMessageSubscriptionRecord.getProcessInstanceKey())
                   .setMessageName(processMessageSubscriptionRecord.getMessageNameBuffer())
-                  .setCorrelationKey(processMessageSubscriptionRecord.getCorrelationKeyBuffer())
+                  .setCorrelationKey(correlationKey)
                   .setTenantId(processMessageSubscriptionRecord.getTenantId())
                   .setInterrupting(interrupting);
 
-          final var subscriptionPartitionId =
-              SubscriptionUtil.getSubscriptionPartitionId(
-                  BufferUtil.wrapString(messageSubscription.getCorrelationKey()), partitionsCount);
+          final var subscriptionPartitionId = routing.partitionForCorrelationKey(correlationKey);
 
           if (currentPartitionId == subscriptionPartitionId) {
             commandWriter.appendFollowUpCommand(

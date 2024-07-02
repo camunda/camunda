@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.processing.variable.VariableStateEvaluationContextLookup;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil.Routing;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 
 public final class BpmnBehaviorsImpl implements BpmnBehaviors {
@@ -54,7 +55,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final JobMetrics jobMetrics,
       final DecisionBehavior decisionBehavior,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final int partitionsCount,
+      final Routing routing,
       final DueDateTimerChecker timerChecker,
       final JobStreamer jobStreamer) {
     expressionBehavior =
@@ -76,7 +77,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             writers.state(),
             writers.sideEffect(),
             timerChecker,
-            partitionsCount);
+            routing);
 
     eventTriggerBehavior =
         new EventTriggerBehavior(

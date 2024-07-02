@@ -42,6 +42,7 @@ import io.camunda.zeebe.engine.processing.usertask.UserTaskEventProcessors;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil.Routing;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
@@ -65,7 +66,8 @@ public final class EngineProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final InterPartitionCommandSender interPartitionCommandSender,
       final FeatureFlags featureFlags,
-      final JobStreamer jobStreamer) {
+      final JobStreamer jobStreamer,
+      final Routing routing) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
     final var scheduledTaskStateFactory =
@@ -95,7 +97,7 @@ public final class EngineProcessors {
             processingState,
             writers,
             subscriptionCommandSender,
-            partitionsCount,
+            routing,
             timerChecker,
             jobStreamer,
             jobMetrics,
@@ -144,7 +146,7 @@ public final class EngineProcessors {
             timerChecker,
             commandDistributionBehavior,
             partitionId,
-            partitionsCount);
+            routing);
 
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
@@ -192,7 +194,7 @@ public final class EngineProcessors {
       final MutableProcessingState processingState,
       final Writers writers,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final int partitionsCount,
+      final Routing routing,
       final DueDateTimerChecker timerChecker,
       final JobStreamer jobStreamer,
       final JobMetrics jobMetrics,
@@ -203,7 +205,7 @@ public final class EngineProcessors {
         jobMetrics,
         decisionBehavior,
         subscriptionCommandSender,
-        partitionsCount,
+        routing,
         timerChecker,
         jobStreamer);
   }
@@ -218,7 +220,7 @@ public final class EngineProcessors {
       final DueDateTimerChecker timerChecker,
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
-      final int partitionsCount) {
+      final Routing routing) {
     return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
         scheduledTaskState,
@@ -229,7 +231,7 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior,
         partitionId,
-        partitionsCount);
+        routing);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(

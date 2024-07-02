@@ -35,6 +35,7 @@ import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil.Routing;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -178,7 +179,8 @@ public final class EngineRule extends ExternalResource {
                           new SubscriptionCommandSender(partitionId, interPartitionCommandSender),
                           interPartitionCommandSender,
                           featureFlags,
-                          jobStreamer)
+                          jobStreamer,
+                          Routing.ofFixedPartitionCount(partitionCount))
                       .withListener(
                           new ProcessingExporterTransistor(
                               environmentRule.getLogStream(partitionId))),

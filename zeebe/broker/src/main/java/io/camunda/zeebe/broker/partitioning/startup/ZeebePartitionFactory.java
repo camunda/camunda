@@ -49,6 +49,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil.Routing;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -214,7 +215,8 @@ public final class ZeebePartitionFactory {
           subscriptionCommandSender,
           partitionCommandSender,
           featureFlags,
-          jobStreamer);
+          jobStreamer,
+          Routing.ofFixedPartitionCount(localBroker.getPartitionsCount()));
     };
   }
 }
