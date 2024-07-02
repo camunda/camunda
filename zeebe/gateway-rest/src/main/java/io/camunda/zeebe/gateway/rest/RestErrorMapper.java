@@ -27,6 +27,28 @@ import org.springframework.http.ResponseEntity;
 
 public class RestErrorMapper {
 
+  public static final Function<BrokerRejection, ProblemDetail> DEFAULT_REJECTION_MAPPER =
+      rejection -> {
+        final String message =
+            String.format(
+                "Command '%s' rejected with code '%s': %s",
+                rejection.intent(), rejection.type(), rejection.reason());
+        final String title = rejection.type().name();
+        return switch (rejection.type()) {
+          case NOT_FOUND:
+            yield RestErrorMapper.createProblemDetail(HttpStatus.NOT_FOUND, message, title);
+          case INVALID_STATE:
+            yield RestErrorMapper.createProblemDetail(HttpStatus.CONFLICT, message, title);
+          case INVALID_ARGUMENT:
+          case ALREADY_EXISTS:
+            yield RestErrorMapper.createProblemDetail(HttpStatus.BAD_REQUEST, message, title);
+          default:
+            {
+              yield RestErrorMapper.createProblemDetail(
+                  HttpStatus.INTERNAL_SERVER_ERROR, message, title);
+            }
+        };
+      };
   private static final Logger REST_GATEWAY_LOGGER =
       LoggerFactory.getLogger("io.camunda.zeebe.gateway.rest");
 

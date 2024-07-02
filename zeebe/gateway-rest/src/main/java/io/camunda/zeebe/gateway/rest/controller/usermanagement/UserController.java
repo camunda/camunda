@@ -7,18 +7,19 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
-import io.camunda.identity.usermanagement.CamundaUser;
-import io.camunda.identity.usermanagement.CamundaUserWithPassword;
-import io.camunda.identity.usermanagement.service.UserService;
+import static io.camunda.zeebe.gateway.rest.controller.usermanagement.UserManagementMapper.mapToCamundaUserResponse;
+import static io.camunda.zeebe.gateway.rest.controller.usermanagement.UserManagementMapper.mapToUserWithPassword;
+
+import io.camunda.identity.automation.usermanagement.service.UserService;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
+import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -84,7 +85,9 @@ public class UserController {
     try {
       final UserSearchResponse responseDto = new UserSearchResponse();
       final List<CamundaUserResponse> allUsers =
-          userService.findAllUsers().stream().map(this::mapToCamundaUserResponse).toList();
+          userService.findAllUsers().stream()
+              .map(UserManagementMapper::mapToCamundaUserResponse)
+              .toList();
       responseDto.setItems(allUsers);
 
       return new ResponseEntity<>(responseDto, HttpStatus.OK);
@@ -106,29 +109,5 @@ public class UserController {
     } catch (final Exception e) {
       return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
     }
-  }
-
-  private CamundaUserWithPassword mapToUserWithPassword(final CamundaUserWithPasswordRequest dto) {
-    final CamundaUserWithPassword camundaUserWithPassword = new CamundaUserWithPassword();
-
-    camundaUserWithPassword.setId(dto.getId());
-    camundaUserWithPassword.setUsername(dto.getUsername());
-    camundaUserWithPassword.setPassword(dto.getPassword());
-    camundaUserWithPassword.setName(dto.getName());
-    camundaUserWithPassword.setEmail(dto.getEmail());
-    camundaUserWithPassword.setEnabled(dto.getEnabled());
-
-    return camundaUserWithPassword;
-  }
-
-  private CamundaUserResponse mapToCamundaUserResponse(final CamundaUser camundaUser) {
-    final CamundaUserResponse camundaUserDto = new CamundaUserResponse();
-    camundaUserDto.setId(camundaUser.getId());
-    camundaUserDto.setUsername(camundaUser.getUsername());
-    camundaUserDto.setName(camundaUser.getName());
-    camundaUserDto.setEmail(camundaUser.getEmail());
-    camundaUserDto.setEnabled(camundaUser.isEnabled());
-
-    return camundaUserDto;
   }
 }

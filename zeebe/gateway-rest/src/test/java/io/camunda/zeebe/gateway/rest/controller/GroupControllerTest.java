@@ -11,6 +11,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.identity.automation.usermanagement.CamundaGroup;
+import io.camunda.identity.automation.usermanagement.service.GroupService;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupResponse;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchResponse;
@@ -133,6 +135,7 @@ public class GroupControllerTest extends RestControllerTest {
     when(groupService.createGroup(camundaGroup)).thenThrow(new IllegalArgumentException(message));
 
     final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
+    expectedBody.setTitle(IllegalArgumentException.class.getName());
     expectedBody.setInstance(URI.create("/v2/groups"));
 
     webClient

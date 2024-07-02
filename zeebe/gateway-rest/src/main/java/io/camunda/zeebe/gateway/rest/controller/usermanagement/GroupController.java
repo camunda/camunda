@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
-import io.camunda.identity.usermanagement.service.GroupService;
-import io.camunda.identity.usermanagement.service.UserGroupMembershipService;
-import io.camunda.identity.usermanagement.service.UserService;
+import static io.camunda.zeebe.gateway.rest.controller.usermanagement.UserManagementMapper.mapToGroup;
+import static io.camunda.zeebe.gateway.rest.controller.usermanagement.UserManagementMapper.mapToGroupResponse;
+
+import io.camunda.identity.automation.usermanagement.service.GroupService;
+import io.camunda.identity.automation.usermanagement.service.UserGroupMembershipService;
+import io.camunda.identity.automation.usermanagement.service.UserService;
 import io.camunda.zeebe.gateway.protocol.rest.AssignUserToGroupRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupResponse;
@@ -92,7 +95,9 @@ public class GroupController {
     try {
       final GroupSearchResponse groupSearchResponse = new GroupSearchResponse();
       final List<CamundaGroupResponse> allGroupResponses =
-          groupService.findAllGroups().stream().map(this::mapToGroupResponse).toList();
+          groupService.findAllGroups().stream()
+              .map(UserManagementMapper::mapToGroupResponse)
+              .toList();
       groupSearchResponse.setItems(allGroupResponses);
 
       return new ResponseEntity<>(groupSearchResponse, HttpStatus.OK);
@@ -162,16 +167,5 @@ public class GroupController {
     } catch (final Exception e) {
       return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
     }
-  }
-
-  private CamundaGroup mapToGroup(final CamundaGroupRequest groupRequest) {
-    return new CamundaGroup(groupRequest.getId(), groupRequest.getName());
-  }
-
-  private CamundaGroupResponse mapToGroupResponse(final CamundaGroup group) {
-    final CamundaGroupResponse camundaGroupResponse = new CamundaGroupResponse();
-    camundaGroupResponse.setId(group.id());
-    camundaGroupResponse.setName(group.name());
-    return camundaGroupResponse;
   }
 }
