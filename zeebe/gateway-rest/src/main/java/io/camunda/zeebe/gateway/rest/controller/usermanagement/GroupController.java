@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
-import io.camunda.identity.usermanagement.CamundaGroup;
-import io.camunda.identity.usermanagement.service.GroupService;
+import io.camunda.identity.automation.usermanagement.CamundaGroup;
+import io.camunda.identity.automation.usermanagement.service.GroupService;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupResponse;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchResponse;

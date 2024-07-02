@@ -11,7 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 
-import io.camunda.identity.usermanagement.service.GroupService;
+import io.camunda.identity.automation.usermanagement.service.GroupService;
 import io.camunda.service.CamundaServiceException;
 import io.camunda.service.JobServices;
 import io.camunda.service.ProcessInstanceServices;
