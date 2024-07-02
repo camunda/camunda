@@ -10,7 +10,6 @@ import {Locator, Page} from '@playwright/test';
 
 class TaskFormView {
   private page: Page;
-  readonly completeTaskButton: Locator;
   readonly nameInput: Locator;
   readonly addressInput: Locator;
   readonly ageInput: Locator;
@@ -27,7 +26,6 @@ class TaskFormView {
   constructor(page: Page) {
     this.page = page;
     this.form = page.getByTestId('embedded-form');
-    this.completeTaskButton = page.getByRole('button', {name: 'Complete Task'});
     this.nameInput = page.getByLabel('Name*');
     this.addressInput = page.getByLabel('Address*');
     this.ageInput = page.getByLabel('Age');
