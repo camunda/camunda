@@ -22,6 +22,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.agrona.collections.IntHashSet;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,16 +40,26 @@ public class FlowControlServiceImpl implements FlowControlService {
   }
 
   @Override
-  public CompletableFuture<List<String>> get() {
+  public CompletableFuture<JSONObject> get() {
     LOG.info("Fetching flow control configuration.");
     final var topology = client.getTopologyManager().getTopology();
+    final JSONObject jsonObject = new JSONObject();
     final var futures =
         topology.getPartitions().stream()
-            .map(partition -> fetchFlowConfigOnPartition(topology, partition).stream().toList())
-            .flatMap(List::stream)
+            .map(partition -> fetchFlowConfigOnPartition(topology, partition))
             .toList();
+    final JSONArray partitionsCfg = new JSONArray();
     return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-        .thenApply(element -> futures.stream().map(CompletableFuture::join).toList());
+        .thenApply(
+            element -> {
+              futures.forEach(
+                  future -> {
+                    final JSONArray partitions = future.join();
+                    partitions.forEach(partitionsCfg::put);
+                  });
+              jsonObject.put("partitions", partitionsCfg);
+              return jsonObject;
+            });
   }
 
   @Override
@@ -97,26 +109,34 @@ public class FlowControlServiceImpl implements FlowControlService {
     return CompletableFuture.allOf(requests);
   }
 
-  private List<CompletableFuture<String>> fetchFlowConfigOnPartition(
+  private CompletableFuture<JSONArray> fetchFlowConfigOnPartition(
       final BrokerClusterState topology, final Integer partitionId) {
 
     final var members = getMembers(topology, partitionId);
+    final JSONArray partitions = new org.json.JSONArray();
+    final JSONObject broker = new JSONObject();
+    final List<CompletableFuture<JSONObject>> partitionsFutures =
+        members.stream()
+            .map(
+                brokerId -> {
+                  final var request = new BrokerAdminRequest();
+                  request.setBrokerId(brokerId);
+                  request.setPartitionId(partitionId);
+                  request.getFLowControlConfiguration();
+                  return client
+                      .sendRequest(request)
+                      .thenApply(
+                          e -> {
+                            final byte[] payload = e.getResponse().getPayload();
+                            partitions.put(parsePayload(partitionId, payload));
+                            return null;
+                          })
+                      .thenApply(partitionsArray -> broker.put("partitions", partitions));
+                })
+            .toList();
 
-    return members.stream()
-        .map(
-            brokerId -> {
-              final var request = new BrokerAdminRequest();
-              request.setBrokerId(brokerId);
-              request.setPartitionId(partitionId);
-              request.getFLowControlConfiguration();
-              return client
-                  .sendRequest(request)
-                  .thenApply(
-                      e ->
-                          "BrokerId %d, partitionId %d: %s"
-                              .formatted(brokerId, partitionId, e.getResponse().getPayload()));
-            })
-        .toList();
+    return CompletableFuture.allOf(partitionsFutures.toArray(new CompletableFuture[0]))
+        .thenApply(e -> partitions);
   }
 
   private IntHashSet getMembers(final BrokerClusterState topology, final Integer partitionId) {
@@ -131,5 +151,12 @@ public class FlowControlServiceImpl implements FlowControlService {
     members.addAll(followers);
     members.addAll(inactive);
     return members;
+  }
+
+  private JSONObject parsePayload(final int partitionId, final byte[] payload) {
+    final JSONObject partition = new JSONObject();
+    partition.put("flowControlConfig", new String(payload));
+    partition.put("partitionId", partitionId);
+    return partition;
   }
 }

@@ -18,7 +18,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -67,10 +66,10 @@ final class FlowControlEndpointIT {
                 + "    }\n"
                 + "  }\n"
                 + "}");
-    final List<String> flowControlConfiguration = getActuator().getFlowControlConfiguration();
+    final String flowControlConfiguration = getActuator().getFlowControlConfiguration();
 
     // then
-    assertThat(flowControlConfiguration.getFirst())
+    assertThat(flowControlConfiguration)
         .contains(
             "REQUEST=VegasLimit [limit=50, rtt_noload=0.0 ms]",
             "APPEND=VegasLimit [limit=20, rtt_noload=0.0 ms]");
@@ -112,10 +111,10 @@ final class FlowControlEndpointIT {
                 + "    \"algorithm\":\"LEGACY_VEGAS\""
                 + "  }"
                 + "}");
-    final List<String> flowControlConfiguration = getActuator().getFlowControlConfiguration();
+    final String flowControlConfiguration = getActuator().getFlowControlConfiguration();
 
     // then
-    assertThat(flowControlConfiguration.getFirst())
+    assertThat(flowControlConfiguration)
         .contains(
             "APPEND=FixedLimit [limit=20]", "REQUEST=VegasLimit [limit=1024, rtt_noload=0.0 ms]");
   }
@@ -124,9 +123,9 @@ final class FlowControlEndpointIT {
   void canDisableALimit() {
     // given
     getActuator().setFlowControlConfiguration("{ \"request\": { \"enabled\": false } }");
-    final List<String> flowControlConfiguration = getActuator().getFlowControlConfiguration();
+    final String flowControlConfiguration = getActuator().getFlowControlConfiguration();
 
     // then
-    assertThat(flowControlConfiguration.getFirst()).contains("REQUEST=null");
+    assertThat(flowControlConfiguration).contains("REQUEST=null");
   }
 }
