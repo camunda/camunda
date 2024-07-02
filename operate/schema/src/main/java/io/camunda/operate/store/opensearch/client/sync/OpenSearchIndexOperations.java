@@ -19,6 +19,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.elasticsearch.rest.RestStatus;
+import org.opensearch.client.json.JsonData;
+import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.mapping.Property;
@@ -238,11 +240,21 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
                 indexMapping.getValue().mappings().dynamic() == null
                     ? null
                     : indexMapping.getValue().mappings().dynamic().name();
+            final Map<String, Object> metaFields = new HashMap<>();
+            if (indexMapping.getValue().mappings().meta() != null) {
+              for (final Map.Entry<String, JsonData> entry :
+                  indexMapping.getValue().mappings().meta().entrySet()) {
+                metaFields.put(
+                    entry.getKey(),
+                    entry.getValue().deserialize(JsonpDeserializer.booleanDeserializer()));
+              }
+            }
             final IndexMapping mapping =
                 new IndexMapping()
                     .setIndexName(indexMapping.getKey())
                     .setDynamic(dynamic)
-                    .setProperties(properties);
+                    .setProperties(properties)
+                    .setMetaProperties(metaFields);
             mappings.put(indexMapping.getKey(), mapping);
           }
           return mappings;

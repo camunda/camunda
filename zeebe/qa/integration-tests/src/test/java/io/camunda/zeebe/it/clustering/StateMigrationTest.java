@@ -41,7 +41,7 @@ public class StateMigrationTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
 
-  // regression test for https://github.com/camunda/zeebe/issues/14329
+  // regression test for https://github.com/camunda/camunda/issues/14329
   @Test
   public void shouldMakeJobActivatableAfterMigrationAndBackoff() {
     // given

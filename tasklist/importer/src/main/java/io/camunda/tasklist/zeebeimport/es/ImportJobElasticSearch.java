@@ -36,7 +36,7 @@ public class ImportJobElasticSearch extends ImportJobAbstract {
   private static final Logger LOGGER = LoggerFactory.getLogger(ImportJobElasticSearch.class);
 
   @Autowired
-  @Qualifier("zeebeEsClient")
+  @Qualifier("tasklistZeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
 
   public ImportJobElasticSearch(ImportBatch importBatch, ImportPositionEntity previousPosition) {

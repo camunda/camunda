@@ -137,9 +137,8 @@ public final class DbMessageSubscriptionState
 
   @Override
   public void put(final long key, final MessageSubscriptionRecord record) {
-    tenantIdKey.wrapString(record.getTenantId());
-    elementInstanceKey.wrapLong(record.getElementInstanceKey());
-    messageName.wrapBuffer(record.getMessageNameBuffer());
+    wrapSubscriptionKeys(
+        record.getElementInstanceKey(), record.getMessageNameBuffer(), record.getTenantId());
 
     messageSubscription.setKey(key).setRecord(record).setCorrelating(false);
 
@@ -220,6 +219,25 @@ public final class DbMessageSubscriptionState
             elementInstanceKey.getValue(), messageName.toString(), tenantIdKey.toString()));
   }
 
+  @Override
+  public void update(final long key, final MessageSubscriptionRecord record) {
+    final MessageSubscription subscription =
+        get(record.getElementInstanceKey(), record.getMessageNameBuffer());
+
+    if (subscription == null) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to update subscription but not found. [element-instance-key: %d, message-name: %s]",
+              record.getElementInstanceKey(), record.getMessageName()));
+    }
+
+    wrapSubscriptionKeys(
+        record.getElementInstanceKey(), record.getMessageNameBuffer(), record.getTenantId());
+    messageSubscription.setKey(key).setRecord(record).setCorrelating(subscription.isCorrelating());
+
+    subscriptionColumnFamily.update(elementKeyAndMessageName, messageSubscription);
+  }
+
   private void updateCorrelatingFlag(
       final MessageSubscription subscription, final boolean correlating) {
     final var record = subscription.getRecord();
@@ -274,5 +292,12 @@ public final class DbMessageSubscriptionState
       final long timestampMs) {
     transientState.update(
         new PendingSubscription(elementInstanceKey, messageName, tenantId), timestampMs);
+  }
+
+  private void wrapSubscriptionKeys(
+      final long elementInstanceKey, final DirectBuffer messageName, final String tenantId) {
+    this.elementInstanceKey.wrapLong(elementInstanceKey);
+    this.messageName.wrapBuffer(messageName);
+    tenantIdKey.wrapString(tenantId);
   }
 }

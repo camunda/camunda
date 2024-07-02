@@ -120,7 +120,7 @@ public class RaftReplicationTest {
   }
 
   @Test
-  // Regression test for https://github.com/camunda/zeebe/issues/9820
+  // Regression test for https://github.com/camunda/camunda/issues/9820
   public void shouldNotGetStuckInSnapshotReplicationLoop() throws Exception {
     // given -- a cluster where follower's log starts at snapshot index
     final var initialLeader = raftRule.getLeader().orElseThrow();

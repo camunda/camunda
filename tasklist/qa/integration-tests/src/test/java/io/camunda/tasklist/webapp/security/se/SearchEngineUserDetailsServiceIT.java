@@ -51,7 +51,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
       TasklistProperties.PREFIX + ".userId = user1",
       TasklistProperties.PREFIX + ".password = psw1",
-      "graphql.servlet.websocket.enabled=false"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class SearchEngineUserDetailsServiceIT extends TasklistIntegrationTest {
@@ -107,12 +106,12 @@ public class SearchEngineUserDetailsServiceIT extends TasklistIntegrationTest {
       jsonMap.put(UserIndex.DISPLAY_NAME, String.format("%s %s", TEST_FIRSTNAME, TEST_LASTNAME));
       noSqlHelper.update(userIndex.getFullQualifiedName(), TEST_USERNAME, jsonMap);
       databaseTestExtension.refreshTasklistIndices();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
-  public void deleteById(String id) throws IOException {
+  public void deleteById(final String id) throws IOException {
     noSqlHelper.delete(userIndex.getFullQualifiedName(), id);
   }
 }

@@ -9,3 +9,21 @@
 .notification {
   margin-top: var(--cds-spacing-03);
 }
+
+.toastEnter {
+  transform: translateX(120%);
+}
+
+.toastEnterActive {
+  transform: translateX(0);
+  transition: transform 300ms ease-in-out;
+}
+
+.toastExitActive {
+  transform: translateX(120%);
+  transition: transform 300ms ease-in-out;
+}
+
+.toastExitDone {
+  display: none;
+}

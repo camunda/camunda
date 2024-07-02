@@ -12,14 +12,49 @@ import java.util.Objects;
 
 public abstract class AbstractStep implements Step {
 
-  private String content;
-  private String description;
+  private String content = null;
+  private String description = null;
   private OffsetDateTime createdDate;
   private OffsetDateTime appliedDate;
-  private String indexName;
+  private String indexName = null;
   private boolean isApplied = false;
-  private String version;
-  private Integer order = 0;
+  private String version = null;
+  private final Integer order = 0;
+
+  @Override
+  public OffsetDateTime getCreatedDate() {
+    if (createdDate == null) {
+      createdDate = OffsetDateTime.now();
+    }
+    return createdDate;
+  }
+
+  @Override
+  public Step setCreatedDate(final OffsetDateTime createDate) {
+    createdDate = createDate;
+    return this;
+  }
+
+  @Override
+  public OffsetDateTime getAppliedDate() {
+    return appliedDate;
+  }
+
+  @Override
+  public Step setAppliedDate(final OffsetDateTime appliedDate) {
+    this.appliedDate = appliedDate;
+    return this;
+  }
+
+  @Override
+  public String getVersion() {
+    return version;
+  }
+
+  @Override
+  public Integer getOrder() {
+    return order;
+  }
 
   @Override
   public boolean isApplied() {
@@ -47,43 +82,29 @@ public abstract class AbstractStep implements Step {
     return description;
   }
 
-  @Override
-  public String getVersion() {
-    return version;
+  public void setDescription(final String description) {
+    this.description = description;
+  }
+
+  public void setContent(final String content) {
+    this.content = content;
+  }
+
+  public void setIndexName(final String indexName) {
+    this.indexName = indexName;
+  }
+
+  public void setVersion(final String version) {
+    this.version = version;
   }
 
   @Override
-  public Integer getOrder() {
-    return order;
+  public int hashCode() {
+    return Objects.hash(indexName, version, order);
   }
 
   @Override
-  public OffsetDateTime getCreatedDate() {
-    if (createdDate == null) {
-      createdDate = OffsetDateTime.now();
-    }
-    return createdDate;
-  }
-
-  @Override
-  public Step setCreatedDate(final OffsetDateTime createDate) {
-    this.createdDate = createDate;
-    return this;
-  }
-
-  @Override
-  public OffsetDateTime getAppliedDate() {
-    return appliedDate;
-  }
-
-  @Override
-  public Step setAppliedDate(final OffsetDateTime appliedDate) {
-    this.appliedDate = appliedDate;
-    return this;
-  }
-
-  @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -94,11 +115,6 @@ public abstract class AbstractStep implements Step {
     return Objects.equals(indexName, that.indexName)
         && Objects.equals(version, that.version)
         && Objects.equals(order, that.order);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(indexName, version, order);
   }
 
   @Override

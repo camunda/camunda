@@ -95,28 +95,31 @@ test.beforeEach(async ({page, dashboardPage}) => {
 });
 
 test.describe('Processes', () => {
-  test('Processes Page Initial Load', async ({processesPage, page}) => {
-    await processesPage.validateCheckedState({
+  test('Processes Page Initial Load', async ({
+    processesPage: {filtersPanel},
+    page,
+  }) => {
+    await filtersPanel.validateCheckedState({
       checked: [
-        processesPage.runningInstancesCheckbox,
-        processesPage.activeCheckbox,
-        processesPage.incidentsCheckbox,
+        filtersPanel.runningInstancesCheckbox,
+        filtersPanel.activeCheckbox,
+        filtersPanel.incidentsCheckbox,
       ],
       unChecked: [
-        processesPage.finishedInstancesCheckbox,
-        processesPage.completedCheckbox,
-        processesPage.canceledCheckbox,
+        filtersPanel.finishedInstancesCheckbox,
+        filtersPanel.completedCheckbox,
+        filtersPanel.canceledCheckbox,
       ],
     });
 
     await expect(page.getByText('There is no Process selected')).toBeVisible();
     await expect(
-      page.getByText('To see a Diagram, select a Process in the Filters panel'),
+      page.getByText('To see a Diagram, select a Process in the filters panel'),
     ).toBeVisible();
 
-    await processesPage.displayOptionalFilter('Process Instance Key(s)');
+    await filtersPanel.displayOptionalFilter('Process Instance Key(s)');
 
-    await processesPage.processInstanceKeysFilter.fill(
+    await filtersPanel.processInstanceKeysFilter.fill(
       `${initialData.instanceWithoutAnIncident.processInstanceKey}, ${initialData.instanceWithAnIncident.processInstanceKey}`,
     );
 
@@ -138,33 +141,37 @@ test.describe('Processes', () => {
     ).toBeVisible();
   });
 
-  test('Select flow node in diagram', async ({processesPage, page}) => {
+  test('Select flow node in diagram', async ({
+    processesPage,
+    processesPage: {filtersPanel},
+    page,
+  }) => {
     const instance = initialData.instanceWithoutAnIncident;
 
-    await processesPage.displayOptionalFilter('Process Instance Key(s)');
+    await filtersPanel.displayOptionalFilter('Process Instance Key(s)');
 
     // Filter by Process Instance Key
-    await processesPage.processInstanceKeysFilter.fill(
+    await filtersPanel.processInstanceKeysFilter.fill(
       instance.processInstanceKey,
     );
 
     await expect(page.getByTestId('diagram')).not.toBeInViewport();
 
-    await processesPage.selectProcess('Order process');
+    await filtersPanel.selectProcess('Order process');
 
     // Select "Ship Articles" flow node
     const shipArticlesTaskId = 'shipArticles';
     await expect(page.getByTestId('diagram')).toBeInViewport();
 
     await processesPage.diagram.clickFlowNode('Ship Articles');
-    await expect(processesPage.flowNodeFilter).toHaveValue('Ship Articles');
+    await expect(filtersPanel.flowNodeFilter).toHaveValue('Ship Articles');
 
     await expect(
       page.getByText('There are no Instances matching this filter set'),
     ).toBeVisible();
 
     await expect(page).toHaveURL(
-      `${Paths.processes()}?${convertToQueryString({
+      `.${Paths.processes()}?${convertToQueryString({
         active: 'true',
         incidents: 'true',
         ids: instance.processInstanceKey,
@@ -183,12 +190,12 @@ test.describe('Processes', () => {
     const checkPaymentTaskId = 'checkPayment';
 
     await processesPage.diagram.clickFlowNode('Check payment');
-    await expect(processesPage.flowNodeFilter).toHaveValue('Check payment');
+    await expect(filtersPanel.flowNodeFilter).toHaveValue('Check payment');
 
     await expect(page.getByRole('table').getByRole('row')).toHaveCount(2);
 
     await expect(page).toHaveURL(
-      `${Paths.processes()}?${convertToQueryString({
+      `.${Paths.processes()}?${convertToQueryString({
         active: 'true',
         incidents: 'true',
         ids: instance.processInstanceKey,
@@ -209,7 +216,11 @@ test.describe('Processes', () => {
     ).toHaveClass(/selected/);
   });
 
-  test('Wait for process creation', async ({processesPage, page}) => {
+  test('Wait for process creation', async ({
+    processesPage,
+    processesPage: {filtersPanel},
+    page,
+  }) => {
     await processesPage.navigateToProcesses({
       searchParams: {
         active: 'true',
@@ -222,7 +233,7 @@ test.describe('Processes', () => {
     await expect(page.getByTestId('data-table-skeleton')).toBeVisible();
     await expect(page.getByTestId('diagram-spinner')).toBeVisible();
 
-    await expect(processesPage.processNameFilter).toBeDisabled();
+    await expect(filtersPanel.processNameFilter).toBeDisabled();
 
     await deployProcess(['newProcess.bpmn']);
 
@@ -235,14 +246,15 @@ test.describe('Processes', () => {
       page.getByText('There are no Instances matching this filter set'),
     ).toBeVisible();
 
-    await expect(processesPage.processNameFilter).toBeEnabled();
-    await expect(processesPage.processNameFilter).toHaveValue('Test Process');
+    await expect(filtersPanel.processNameFilter).toBeEnabled();
+    await expect(filtersPanel.processNameFilter).toHaveValue('Test Process');
   });
 
-  test('Delete process definition after canceling running instance', async ({
+  test('Delete process definition after canceling running instance @roundtrip', async ({
     processesPage,
     page,
   }) => {
+    test.slow();
     await processesPage.navigateToProcesses({
       searchParams: {
         active: 'true',
@@ -312,7 +324,7 @@ test.describe('Processes', () => {
           const definitions: {total: number} = await response.json();
           return definitions.total;
         },
-        {timeout: SETUP_WAITING_TIME},
+        {timeout: 60000},
       )
       .toBe(0);
   });

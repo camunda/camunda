@@ -45,7 +45,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     },
     properties = {
       TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",
-      "graphql.servlet.websocket.enabled=false"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = {OpenSearchConnectorBasicAuthIT.OpenSearchStarter.class})
@@ -71,11 +70,11 @@ public class OpenSearchConnectorBasicAuthIT extends TasklistIntegrationTest {
               .withExposedPorts(9200, 9200);
 
   @Autowired
-  @Qualifier("openSearchClient")
+  @Qualifier("tasklistOsClient")
   OpenSearchClient openSearchClient;
 
   @Autowired
-  @Qualifier("zeebeOsClient")
+  @Qualifier("tasklistZeebeOsClient")
   OpenSearchClient zeebeOsClient;
 
   @BeforeAll
@@ -93,7 +92,7 @@ public class OpenSearchConnectorBasicAuthIT extends TasklistIntegrationTest {
       implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
     @Override
-    public void initialize(ConfigurableApplicationContext applicationContext) {
+    public void initialize(final ConfigurableApplicationContext applicationContext) {
       opensearch.start();
 
       final String osUrl =

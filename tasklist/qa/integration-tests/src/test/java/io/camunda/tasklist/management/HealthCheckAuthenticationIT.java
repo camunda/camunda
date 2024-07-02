@@ -13,15 +13,15 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 
+import io.camunda.tasklist.JacksonConfig;
 import io.camunda.tasklist.es.ElasticsearchConnector;
 import io.camunda.tasklist.es.ElasticsearchInternalTask;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
-import io.camunda.tasklist.management.HealthCheckIT.AddManagementPropertiesInitializer;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TestUtil;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.webapp.security.ElasticsearchSessionRepository;
-import io.camunda.tasklist.webapp.security.TasklistProfileService;
+import io.camunda.tasklist.webapp.security.TasklistProfileServiceImpl;
 import io.camunda.tasklist.webapp.security.WebSecurityConfig;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import org.junit.jupiter.api.BeforeAll;
@@ -32,11 +32,11 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 /** Tests the health check with enabled authentication. */
@@ -47,16 +47,16 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       TestApplicationWithNoBeans.class,
       SearchEngineHealthIndicator.class,
       WebSecurityConfig.class,
-      TasklistProfileService.class,
+      TasklistProfileServiceImpl.class,
       ElasticsearchSessionRepository.class,
       RetryElasticsearchClient.class,
       ElasticsearchInternalTask.class,
       TasklistProperties.class,
-      ElasticsearchConnector.class
+      ElasticsearchConnector.class,
+      JacksonConfig.class
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
-@ActiveProfiles(AUTH_PROFILE)
+@ActiveProfiles({AUTH_PROFILE, "tasklist", "test"})
 public class HealthCheckAuthenticationIT {
 
   @Autowired private TestRestTemplate testRestTemplate;
@@ -65,6 +65,8 @@ public class HealthCheckAuthenticationIT {
   @MockBean private SearchEngineHealthIndicator probes;
 
   @MockBean private OAuth2WebConfigurer oAuth2WebConfigurer;
+
+  @LocalManagementPort private int managementPort;
 
   @BeforeAll
   public static void beforeClass() {
@@ -76,7 +78,8 @@ public class HealthCheckAuthenticationIT {
     given(probes.getHealth(anyBoolean())).willReturn(Health.up().build());
 
     final ResponseEntity<String> response =
-        testRestTemplate.getForEntity("/actuator/health/liveness", String.class);
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + "/actuator/health/liveness", String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
   }

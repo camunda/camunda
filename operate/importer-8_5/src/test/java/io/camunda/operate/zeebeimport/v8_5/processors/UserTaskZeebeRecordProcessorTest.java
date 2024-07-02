@@ -193,7 +193,7 @@ class UserTaskZeebeRecordProcessorTest {
     verifyUpsert(batchRequest, expectedUpdateFields);
   }
 
-  @Test // https://github.com/camunda/zeebe/issues/17611
+  @Test // https://github.com/camunda/camunda/issues/17611
   void updateShouldIgnoreMissingAttributes() throws PersistenceException {
     /* given */
     final var batchRequest = mock(BatchRequest.class);

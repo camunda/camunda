@@ -109,7 +109,7 @@ test.describe('a11y', () => {
         });
       }
 
-      route.continue();
+      return route.continue();
     });
 
     await page.goto('/');

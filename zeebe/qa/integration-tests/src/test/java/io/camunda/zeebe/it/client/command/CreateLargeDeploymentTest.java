@@ -35,7 +35,7 @@ public final class CreateLargeDeploymentTest {
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
-  // Regression "https://github.com/camunda/zeebe/issues/12591")
+  // Regression "https://github.com/camunda/camunda/issues/12591")
   @Test
   public void shouldRejectDeployIfResourceIsTooLarge() {
     // when

@@ -43,18 +43,30 @@
     <includeITNames>**/*IT.java</includeITNames>
     <excludeITNames>**/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
     <itDatabase>elasticsearch</itDatabase>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
 
   <build>
     <pluginManagement>
       <plugins>
 
+        <!-- Javadoc generation fails under Java 11 -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <configuration>
-            <skip>true</skip>
-          </configuration>
+          <artifactId>maven-jar-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>empty-javadoc-jar</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+              <phase>package</phase>
+              <configuration>
+                <classifier>javadoc</classifier>
+                <classesDirectory>${basedir}/javadoc</classesDirectory>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
 
         <plugin>
@@ -167,26 +179,6 @@
         <excludeITNames>none</excludeITNames>
         <skipSurefire>true</skipSurefire>
       </properties>
-    </profile>
-
-    <profile>
-      <!--
-        We have to skip spotbugs analysis until Operate team have fixed several findings
-        See https://github.com/camunda/zeebe/issues/17331
-      -->
-      <id>spotbugs</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.github.spotbugs</groupId>
-            <artifactId>spotbugs-maven-plugin</artifactId>
-            <version>${plugin.version.spotbugs}</version>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
 
     <!--

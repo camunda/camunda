@@ -9,7 +9,6 @@ package io.camunda.tasklist.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.tasklist.management.HealthCheckIT.AddManagementPropertiesInitializer;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.DatabaseTestExtension;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
@@ -17,6 +16,7 @@ import io.camunda.tasklist.util.TasklistZeebeExtension;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.zeebe.PartitionHolder;
 import io.camunda.tasklist.zeebeimport.ZeebeImporter;
+import io.camunda.webapps.zeebe.StandalonePartitionSupplier;
 import org.apache.hc.core5.http.HttpStatus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -25,9 +25,9 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @SpringBootTest(
@@ -38,7 +38,6 @@ import org.springframework.test.util.ReflectionTestUtils;
       TasklistProperties.PREFIX + ".zeebe.gatewayAddress = localhost:55500"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
 public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
   @RegisterExtension @Autowired private DatabaseTestExtension databaseTestExtension;
@@ -49,11 +48,15 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
   @Autowired private PartitionHolder partitionHolder;
 
+  @Autowired private StandalonePartitionSupplier partitionSupplier;
+
   @Autowired private TasklistProperties tasklistProperties;
 
   @Autowired private BeanFactory beanFactory;
 
   @Autowired private TestRestTemplate testRestTemplate;
+
+  @LocalManagementPort private int managementPort;
 
   @AfterEach
   public void cleanup() {
@@ -67,7 +70,7 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
     // then 1
     // application context must be successfully started
-    testRequest("/actuator/health/liveness");
+    testRequest("http://localhost:" + managementPort + "/actuator/health/liveness");
     // import is working fine
     zeebeImporter.performOneRoundOfImport();
     // partition list is empty
@@ -84,7 +87,7 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
     assertThat(partitionHolder.getPartitionIds()).isNotEmpty();
   }
 
-  private void testRequest(String url) {
+  private void testRequest(final String url) {
     final ResponseEntity<Object> entity =
         testRestTemplate.exchange(url, HttpMethod.GET, null, Object.class);
     assertThat(entity.getStatusCode().value()).isEqualTo(HttpStatus.SC_OK);
@@ -92,7 +95,7 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
   private void startZeebe() {
     zeebeExtension.beforeEach(null);
-    ReflectionTestUtils.setField(partitionHolder, "zeebeClient", zeebeExtension.getClient());
+    ReflectionTestUtils.setField(partitionSupplier, "zeebeClient", zeebeExtension.getClient());
   }
 
   @Test

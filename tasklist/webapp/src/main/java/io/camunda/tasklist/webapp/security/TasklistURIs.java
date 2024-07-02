@@ -16,14 +16,14 @@ import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 
 public final class TasklistURIs {
 
-  public static final String ROOT_URL = "/";
+  public static final String ROOT_URL = "/tasklist";
   public static final String ROOT = ROOT_URL;
   public static final String ERROR_URL = "/error";
   public static final String GRAPHQL_URL = "/graphql";
   public static final String REST_V1_API = "/v1/";
   public static final String REST_V1_EXTERNAL_API = "/v1/external/**";
   public static final String NEW_FORM = "/new/**";
-  public static final String ALL_REST_V1_API = "/v1/**";
+  public static final String ALL_REST_VERSION_API = "/v*/**";
   public static final String TASKS_URL_V1 = "/v1/tasks";
   public static final String VARIABLES_URL_V1 = "/v1/variables";
   public static final String FORMS_URL_V1 = "/v1/forms";

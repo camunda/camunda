@@ -15,7 +15,6 @@ import {
 } from 'modules/testing-library';
 import {Component} from './index';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import * as formMocks from 'modules/mock-schema/mocks/form';
@@ -32,13 +31,11 @@ const getWrapper = ({
     children?: React.ReactNode;
   }> = ({children}) => (
     <QueryClientProvider client={mockClient}>
-      <MockThemeProvider>
-        <MemoryRouter initialEntries={initialEntries}>
-          <Routes>
-            <Route path="/new/:bpmnProcessId" element={children} />
-          </Routes>
-        </MemoryRouter>
-      </MockThemeProvider>
+      <MemoryRouter initialEntries={initialEntries}>
+        <Routes>
+          <Route path="/new/:bpmnProcessId" element={children} />
+        </Routes>
+      </MemoryRouter>
     </QueryClientProvider>
   );
 

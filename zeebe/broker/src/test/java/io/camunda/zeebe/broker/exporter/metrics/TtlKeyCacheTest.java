@@ -39,7 +39,7 @@ final class TtlKeyCacheTest {
     assertThat(cache.remove(2L)).isEqualTo(10L);
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/16405")
+  @RegressionTest("https://github.com/camunda/camunda/issues/16405")
   void shouldCleanupKeysEvenWithSameTimestamps() {
     // given
     final var cache = new TtlKeyCache();

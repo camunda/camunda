@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.logstreams.log;
 
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.impl.log.LogStreamBuilderImpl;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -50,6 +51,11 @@ public interface LogStream extends AsyncClosable, AutoCloseable, HealthMonitorab
    *     writer
    */
   ActorFuture<LogStreamWriter> newLogStreamWriter();
+
+  /**
+   * @return a handle to the flow control used by this log stream.
+   */
+  FlowControl getFlowControl();
 
   /**
    * Registers a listener that will be notified when new records are available to read from the

@@ -10,25 +10,10 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 import com.netflix.concurrency.limits.Limiter;
 import java.util.Optional;
 
-final class NoopLimiter implements Limiter<Void> {
-
-  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-  private final Optional<Listener> noop_listener =
-      Optional.of(
-          new Listener() {
-
-            @Override
-            public void onSuccess() {}
-
-            @Override
-            public void onIgnore() {}
-
-            @Override
-            public void onDropped() {}
-          });
+final class NoopLimiter<Context> implements Limiter<Context> {
 
   @Override
-  public Optional<Listener> acquire(final Void context) {
-    return noop_listener;
+  public Optional<Listener> acquire(final Context context) {
+    return Optional.of(NoopListener.INSTANCE);
   }
 }

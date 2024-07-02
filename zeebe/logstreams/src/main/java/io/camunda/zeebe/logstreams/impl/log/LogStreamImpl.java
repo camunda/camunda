@@ -48,7 +48,9 @@ public final class LogStreamImpl extends Actor
   private final String actorName;
   private HealthReport healthReport = HealthReport.healthy(this);
   private final Limit appendLimit;
+  private final Limit requestLimit;
   private final LogStreamMetrics logStreamMetrics;
+  private FlowControl flowControl;
 
   LogStreamImpl(
       final String logName,
@@ -56,7 +58,7 @@ public final class LogStreamImpl extends Actor
       final int maxFragmentSize,
       final LogStorage logStorage,
       final Limit appendLimit,
-      final LogStreamMetrics logStreamMetrics) {
+      final Limit requestLimit) {
     this.logName = logName;
 
     this.partitionId = partitionId;
@@ -65,7 +67,8 @@ public final class LogStreamImpl extends Actor
     this.maxFragmentSize = maxFragmentSize;
     this.logStorage = logStorage;
     this.appendLimit = appendLimit;
-    this.logStreamMetrics = logStreamMetrics;
+    this.requestLimit = requestLimit;
+    logStreamMetrics = new LogStreamMetrics(partitionId);
     closeFuture = new CompletableActorFuture<>();
     readers = new ArrayList<>();
   }
@@ -160,7 +163,14 @@ public final class LogStreamImpl extends Actor
         () -> {
           try {
             if (sequencer == null) {
-              sequencer = createAndScheduleWriteBuffer();
+              flowControl = new FlowControl(logStreamMetrics, appendLimit, requestLimit);
+              sequencer =
+                  new Sequencer(
+                      logStorage,
+                      getWriteBuffersInitialPosition(),
+                      maxFragmentSize,
+                      new SequencerMetrics(partitionId),
+                      flowControl);
             }
             result.complete(sequencer);
           } catch (final Throwable e) {
@@ -168,6 +178,11 @@ public final class LogStreamImpl extends Actor
           }
         });
     return result;
+  }
+
+  @Override
+  public FlowControl getFlowControl() {
+    return flowControl;
   }
 
   @Override
@@ -204,15 +219,6 @@ public final class LogStreamImpl extends Actor
     }
 
     return initialPosition;
-  }
-
-  private Sequencer createAndScheduleWriteBuffer() {
-    return new Sequencer(
-        logStorage,
-        getWriteBuffersInitialPosition(),
-        maxFragmentSize,
-        new SequencerMetrics(partitionId),
-        new FlowControl(logStreamMetrics, appendLimit));
   }
 
   private long getLastCommittedPosition() {

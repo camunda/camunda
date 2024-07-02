@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -62,19 +61,12 @@ final class CommandApiServiceStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> startupFuture) {
 
     final var concurrencyControl = brokerStartupContext.getConcurrencyControl();
-    final var brokerInfo = brokerStartupContext.getBrokerInfo();
     final var brokerCfg = brokerStartupContext.getBrokerConfiguration();
     final var schedulingService = brokerStartupContext.getActorSchedulingService();
 
-    final var limiter = PartitionAwareRequestLimiter.newLimiter(brokerCfg.getBackpressure());
-
     final var commandApiService =
         new CommandApiServiceImpl(
-            serverTransport,
-            brokerInfo,
-            limiter,
-            schedulingService,
-            brokerCfg.getExperimental().getQueryApi());
+            serverTransport, schedulingService, brokerCfg.getExperimental().getQueryApi());
 
     concurrencyControl.runOnCompletion(
         schedulingService.submitActor(commandApiService),

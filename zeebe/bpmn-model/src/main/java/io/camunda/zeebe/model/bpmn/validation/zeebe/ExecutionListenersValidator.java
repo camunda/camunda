@@ -20,7 +20,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,9 +32,13 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 public class ExecutionListenersValidator implements ModelElementValidator<ZeebeExecutionListeners> {
 
   private static final Set<String> ELEMENTS_THAT_SUPPORT_EXECUTION_LISTENERS =
-      new HashSet<>(
+      new LinkedHashSet<>(
           Arrays.asList(
+              // processes
               BpmnModelConstants.BPMN_ELEMENT_PROCESS,
+              BpmnModelConstants.BPMN_ELEMENT_SUB_PROCESS,
+              BpmnModelConstants.BPMN_ELEMENT_CALL_ACTIVITY,
+              // tasks
               BpmnModelConstants.BPMN_ELEMENT_TASK,
               BpmnModelConstants.BPMN_ELEMENT_SEND_TASK,
               BpmnModelConstants.BPMN_ELEMENT_SERVICE_TASK,
@@ -42,7 +46,18 @@ public class ExecutionListenersValidator implements ModelElementValidator<ZeebeE
               BpmnModelConstants.BPMN_ELEMENT_USER_TASK,
               BpmnModelConstants.BPMN_ELEMENT_RECEIVE_TASK,
               BpmnModelConstants.BPMN_ELEMENT_BUSINESS_RULE_TASK,
-              BpmnModelConstants.BPMN_ELEMENT_MANUAL_TASK));
+              BpmnModelConstants.BPMN_ELEMENT_MANUAL_TASK,
+              // events
+              BpmnModelConstants.BPMN_ELEMENT_START_EVENT,
+              BpmnModelConstants.BPMN_ELEMENT_INTERMEDIATE_THROW_EVENT,
+              BpmnModelConstants.BPMN_ELEMENT_INTERMEDIATE_CATCH_EVENT,
+              BpmnModelConstants.BPMN_ELEMENT_BOUNDARY_EVENT,
+              BpmnModelConstants.BPMN_ELEMENT_END_EVENT,
+              // gateways
+              BpmnModelConstants.BPMN_ELEMENT_EXCLUSIVE_GATEWAY,
+              BpmnModelConstants.BPMN_ELEMENT_INCLUSIVE_GATEWAY,
+              BpmnModelConstants.BPMN_ELEMENT_PARALLEL_GATEWAY,
+              BpmnModelConstants.BPMN_ELEMENT_EVENT_BASED_GATEWAY));
 
   @Override
   public Class<ZeebeExecutionListeners> getElementType() {
@@ -58,18 +73,6 @@ public class ExecutionListenersValidator implements ModelElementValidator<ZeebeE
       return;
     }
 
-    /*
-     * Temporary validation check to ensure execution listeners are only associated with supported
-     * BPMN elements.
-     *
-     * <p>Note: This validation is currently limited to specific BPMN elements that support
-     * execution listeners. As we extend the support for execution listeners across more BPMN
-     * elements, this check will be updated accordingly to reflect those changes. This is a
-     * transitional safeguard to ensure consistency and correctness in the model until full support
-     * is implemented.
-     *
-     * TODO: Review and update this validation as execution listener support is expanded to additional BPMN elements.
-     */
     final String parentElementTypeName =
         element.getParentElement().getParentElement().getElementType().getTypeName();
     if (!ELEMENTS_THAT_SUPPORT_EXECUTION_LISTENERS.contains(parentElementTypeName)) {

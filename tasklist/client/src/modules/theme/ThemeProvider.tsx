@@ -6,20 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled, {
-  ThemeProvider as StyledComponentThemeProvider,
-} from 'styled-components';
-import {CarbonTheme as BaseCarbonTheme} from './CarbonTheme';
+import {GlobalTheme, usePrefix} from '@carbon/react';
 import {observer} from 'mobx-react-lite';
 import {themeStore} from 'modules/stores/theme';
-import {themes, THEME_TOKENS} from './themes';
 import {useLayoutEffect} from 'react';
-import {usePrefix} from '@carbon/react';
+import styles from './styles.module.scss';
 
-const CarbonTheme = styled(BaseCarbonTheme)`
-  width: 100%;
-  height: 100%;
-` as typeof BaseCarbonTheme;
+const THEME_TOKENS = {
+  light: 'g10',
+  dark: 'g100',
+} as const;
 
 type Props = {
   children: React.ReactNode;
@@ -33,13 +29,7 @@ const ThemeProvider: React.FC<Props> = observer(({children}) => {
     document.documentElement.dataset.carbonTheme = THEME_TOKENS[actualTheme];
   }, [actualTheme, prefix]);
 
-  return (
-    <CarbonTheme>
-      <StyledComponentThemeProvider theme={themes[THEME_TOKENS[actualTheme]]}>
-        {children}
-      </StyledComponentThemeProvider>
-    </CarbonTheme>
-  );
+  return <GlobalTheme className={styles.carbonTheme}>{children}</GlobalTheme>;
 });
 
 export {ThemeProvider};

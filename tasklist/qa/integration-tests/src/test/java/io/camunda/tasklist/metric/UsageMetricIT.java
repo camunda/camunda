@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -40,12 +41,13 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private TestRestTemplate testRestTemplate;
   @Autowired private TaskMetricsStore taskMetricsStore;
+  @LocalManagementPort private int managementPort;
   private final UserDTO joe = buildAllAccessUserWith("joe", "Joe", "Doe");
   private final UserDTO jane = buildAllAccessUserWith("jane", "Jane", "Doe");
   private final UserDTO demo = buildAllAccessUserWith("demo", "Demo", "User");
 
   private static UserDTO buildAllAccessUserWith(
-      String username, String firstname, String lastname) {
+      final String username, final String firstname, final String lastname) {
     return new UserDTO()
         .setUserId(username)
         .setDisplayName(String.format("%s %s", firstname, lastname))
@@ -64,7 +66,10 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     parameters.put("startTime", "1970-11-14T10:50:26.963-0100");
     parameters.put("endTime", "1970-11-14T10:50:26.963-0100");
     final ResponseEntity<UsageMetricDTO> response =
-        testRestTemplate.getForEntity(ASSIGNEE_ENDPOINT, UsageMetricDTO.class, parameters);
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + ASSIGNEE_ENDPOINT,
+            UsageMetricDTO.class,
+            parameters);
 
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
     assertThat(response.getBody().getAssignees()).isEqualTo(List.of());
@@ -86,7 +91,10 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     parameters.put("startTime", now.minusSeconds(1L).format(FORMATTER));
     parameters.put("endTime", now.plusSeconds(1L).format(FORMATTER));
     final ResponseEntity<UsageMetricDTO> response =
-        testRestTemplate.getForEntity(ASSIGNEE_ENDPOINT, UsageMetricDTO.class, parameters);
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + ASSIGNEE_ENDPOINT,
+            UsageMetricDTO.class,
+            parameters);
 
     final UsageMetricDTO expectedDto =
         new UsageMetricDTO(List.of("Angela Merkel", "John Lennon")); // just repeat once
@@ -110,7 +118,10 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     parameters.put("startTime", now.plusMinutes(5L).format(FORMATTER)); // out of range
     parameters.put("endTime", now.plusMinutes(15L).format(FORMATTER));
     final ResponseEntity<UsageMetricDTO> response =
-        testRestTemplate.getForEntity(ASSIGNEE_ENDPOINT, UsageMetricDTO.class, parameters);
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + ASSIGNEE_ENDPOINT,
+            UsageMetricDTO.class,
+            parameters);
 
     final UsageMetricDTO expectedDto = new UsageMetricDTO(List.of());
 
@@ -132,7 +143,10 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     parameters.put("startTime", now.minusSeconds(1L).format(FORMATTER));
     parameters.put("endTime", now.plusSeconds(1L).format(FORMATTER));
     final ResponseEntity<UsageMetricDTO> response =
-        testRestTemplate.getForEntity(ASSIGNEE_ENDPOINT, UsageMetricDTO.class, parameters);
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + ASSIGNEE_ENDPOINT,
+            UsageMetricDTO.class,
+            parameters);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody().getTotal()).isEqualTo(10_001);
@@ -183,7 +197,10 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     parameters.put("startTime", now.minusMinutes(5L).format(FORMATTER));
     parameters.put("endTime", now.plusMinutes(15L).format(FORMATTER));
     final ResponseEntity<UsageMetricDTO> response =
-        testRestTemplate.getForEntity(ASSIGNEE_ENDPOINT, UsageMetricDTO.class, parameters);
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + ASSIGNEE_ENDPOINT,
+            UsageMetricDTO.class,
+            parameters);
 
     // then
     final UsageMetricDTO expectedDto = new UsageMetricDTO(List.of("jane", "demo", "joe"));
@@ -192,7 +209,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     assertThat(response.getBody()).isEqualTo(expectedDto);
   }
 
-  private void insertMetricForAssignee(String assignee, OffsetDateTime eventTime) {
+  private void insertMetricForAssignee(final String assignee, final OffsetDateTime eventTime) {
     final var task = new TaskEntity().setAssignee(assignee).setCompletionTime(eventTime);
     taskMetricsStore.registerTaskCompleteEvent(task);
   }

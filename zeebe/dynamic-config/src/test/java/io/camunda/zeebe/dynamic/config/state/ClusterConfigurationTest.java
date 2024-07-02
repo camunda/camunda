@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import static io.camunda.zeebe.dynamic.config.state.ExporterState.State.ENABLED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert;
+import io.camunda.zeebe.dynamic.config.PartitionStateAssert;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -260,7 +262,8 @@ class ClusterConfigurationTest {
     // given
     final String exporterName = "exporter";
     final var exportersConfig =
-        new ExportersConfig(Map.of(exporterName, new ExporterState(ExporterState.State.ENABLED)));
+        new ExportersConfig(
+            Map.of(exporterName, new ExporterState(1, ENABLED, Optional.of("other"))));
     final var config = new DynamicPartitionConfig(exportersConfig);
 
     final var initialTopology =
@@ -279,17 +282,51 @@ class ClusterConfigurationTest {
                     1,
                     p ->
                         p.updateConfig(
-                            c ->
-                                c.updateExporting(
-                                    e ->
-                                        e.updateExporter(
-                                            exporterName,
-                                            new ExporterState(ExporterState.State.DISABLED))))));
+                            c -> c.updateExporting(e -> e.disableExporter(exporterName)))));
 
     // then
     assertThat(
             updatedTopology.getMember(member(1)).getPartition(1).config().exporting().exporters())
-        .containsEntry(exporterName, new ExporterState(ExporterState.State.DISABLED));
+        .containsEntry(
+            exporterName, new ExporterState(1, ExporterState.State.DISABLED, Optional.empty()));
+  }
+
+  @Test
+  void shouldMergeUninitializedDynamicConfig() {
+    // given
+    final var topologyWithUninitializedConfig =
+        new ClusterConfiguration(
+            0,
+            Map.of(
+                member(1),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, DynamicPartitionConfig.uninitialized())))),
+            Optional.empty(),
+            Optional.empty());
+
+    final DynamicPartitionConfig validConfig =
+        new DynamicPartitionConfig(
+            new ExportersConfig(Map.of("expA", new ExporterState(1, ENABLED, Optional.empty()))));
+    final var topologyWithValidConfig =
+        new ClusterConfiguration(
+            0,
+            Map.of(
+                member(1),
+                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1, validConfig)))),
+            Optional.empty(),
+            Optional.empty());
+
+    // when
+    final var mergeValidToUninitialized =
+        topologyWithUninitializedConfig.merge(topologyWithValidConfig);
+    final var mergeUninitializedToValid =
+        topologyWithValidConfig.merge(topologyWithUninitializedConfig);
+
+    // then
+    assertThat(mergeValidToUninitialized).isEqualTo(topologyWithValidConfig);
+    ClusterConfigurationAssert.assertThatClusterTopology(mergeUninitializedToValid)
+        .member(1)
+        .hasPartitionSatisfying(1, p -> PartitionStateAssert.assertThat(p).hasConfig(validConfig));
   }
 
   private MemberId member(final int id) {

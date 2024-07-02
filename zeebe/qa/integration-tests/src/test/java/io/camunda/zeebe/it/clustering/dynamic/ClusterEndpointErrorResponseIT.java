@@ -39,13 +39,6 @@ final class ClusterEndpointErrorResponseIT {
             .withBrokersCount(1)
             .withPartitionsCount(1)
             .withReplicationFactor(1)
-            .withBrokerConfig(
-                broker ->
-                    broker
-                        .brokerConfig()
-                        .getExperimental()
-                        .getFeatures()
-                        .setEnableDynamicClusterTopology(true))
             .build();
 
     @Test

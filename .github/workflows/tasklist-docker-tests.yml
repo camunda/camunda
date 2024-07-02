@@ -13,6 +13,7 @@ on:
       - 'pom.xml'
       - 'tasklist/**'
       - 'tasklist.Dockerfile'
+      - 'webapps-common/**'
   pull_request:
     paths:
       - '.github/actions/**'
@@ -22,6 +23,7 @@ on:
       - 'pom.xml'
       - 'tasklist/**'
       - 'tasklist.Dockerfile'
+      - 'webapps-common/**'
 
 # This will limit the workflow to 1 concurrent run per ref (branch / PR).
 # If a new commits occurs, the current run will be canceled to save costs.
@@ -44,7 +46,7 @@ jobs:
           - 5000:5000
     steps:
       - name: Check out repository code
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Test Dockerfile with Hadolint
         uses: hadolint/hadolint-action@v3.1.0
         with:
@@ -52,7 +54,7 @@ jobs:
           dockerfile: tasklist.Dockerfile
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@0f302fb182aed807f79e2c0558e3250bbc27b043
+        uses: hashicorp/vault-action@148ee648ccb26f28892776406f3c3c4cf8ac033f
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -91,7 +93,7 @@ jobs:
         with:
           driver-opts: network=host
       - name: Build and push to local registry
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true

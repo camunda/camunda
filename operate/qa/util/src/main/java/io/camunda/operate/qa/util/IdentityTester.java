@@ -7,8 +7,6 @@
  */
 package io.camunda.operate.qa.util;
 
-import static io.camunda.application.StandaloneOperate.SPRING_THYMELEAF_PREFIX_KEY;
-import static io.camunda.application.StandaloneOperate.SPRING_THYMELEAF_PREFIX_VALUE;
 import static io.camunda.operate.qa.util.TestContainerUtil.*;
 import static io.camunda.operate.webapp.security.OperateURIs.COOKIE_JSESSIONID;
 
@@ -28,7 +26,7 @@ public class IdentityTester {
   private static final String REALM = "camunda-platform";
   private static final String CONTEXT_PATH = "/auth";
 
-  public static void startIdentityBeforeTestClass(boolean multiTenancyEnabled) {
+  public static void startIdentityBeforeTestClass(final boolean multiTenancyEnabled) {
 
     testContainerUtil = new TestContainerUtil();
     testContext = new TestContext();
@@ -53,7 +51,7 @@ public class IdentityTester {
   }
 
   public static void registerProperties(
-      DynamicPropertyRegistry registry, boolean multiTenancyEnabled) {
+      final DynamicPropertyRegistry registry, final boolean multiTenancyEnabled) {
     registry.add("camunda.identity.baseUrl", () -> testContext.getExternalIdentityBaseUrl());
     //    registry.add("camunda.operate.identity.resourcePermissionsEnabled", () -> true);
     registry.add(
@@ -72,7 +70,6 @@ public class IdentityTester {
     registry.add("graphql.servlet.exception-handlers-enabled", () -> true);
     registry.add(
         "management.endpoints.web.exposure.include", () -> "info,prometheus,loggers,usage-metrics");
-    registry.add(SPRING_THYMELEAF_PREFIX_KEY, () -> SPRING_THYMELEAF_PREFIX_VALUE);
     registry.add("server.servlet.session.cookie.name", () -> COOKIE_JSESSIONID);
     registry.add("camunda.operate.multiTenancy.enabled", () -> String.valueOf(multiTenancyEnabled));
   }

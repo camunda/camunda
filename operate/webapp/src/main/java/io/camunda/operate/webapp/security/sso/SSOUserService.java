@@ -45,14 +45,14 @@ public class SSOUserService extends AbstractUserService<AbstractAuthenticationTo
   @Override
   public String getUserToken(final AbstractAuthenticationToken authentication) {
     if (authentication instanceof TokenAuthentication) {
-      return ((TokenAuthentication) authentication).getNewTokenByRefreshToken();
+      return ((TokenAuthentication) authentication).getAccessToken();
     } else {
       throw new UnsupportedOperationException(
           "Not supported for token class: " + authentication.getClass().getName());
     }
   }
 
-  private UserDto getUserDtoFor(JwtAuthenticationToken authentication) {
+  private UserDto getUserDtoFor(final JwtAuthenticationToken authentication) {
     // Token is already validated in CCSaaSJwtAuthenticationTokenValidator
     // ,and we don't have permission yet.
     final List<Permission> permissions = List.of(Permission.READ, Permission.WRITE);

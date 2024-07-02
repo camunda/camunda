@@ -15,8 +15,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 
+import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.ElasticsearchConnector;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.entities.UserEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.UserStore;
@@ -79,7 +82,10 @@ import org.springframework.util.MultiValueMap;
       OperateProfileService.class,
       ElasticsearchConnector.class,
       ProcessRestService.class,
-      ProcessDefinitionController.class
+      ProcessDefinitionController.class,
+      JacksonConfig.class,
+      OperateDateTimeFormatter.class,
+      DatabaseInfo.class
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {

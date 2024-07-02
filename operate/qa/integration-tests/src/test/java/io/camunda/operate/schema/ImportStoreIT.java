@@ -13,10 +13,12 @@ import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.ElasticsearchConnector;
+import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
 import io.camunda.operate.schema.indices.ImportPositionIndex;
+import io.camunda.operate.schema.opensearch.OpensearchSchemaManager;
 import io.camunda.operate.schema.util.SchemaTestHelper;
 import io.camunda.operate.schema.util.TestTemplate;
 import io.camunda.operate.schema.util.elasticsearch.ElasticsearchSchemaTestHelper;
@@ -25,6 +27,7 @@ import io.camunda.operate.store.ImportStore;
 import io.camunda.operate.store.elasticsearch.ElasticsearchImportStore;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
+import io.camunda.operate.store.opensearch.OpensearchImportStore;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,12 +43,15 @@ import org.springframework.test.context.ContextConfiguration;
       TestTemplate.class,
       ElasticsearchSchemaManager.class,
       ElasticsearchImportStore.class,
+      OpensearchSchemaManager.class,
+      OpensearchImportStore.class,
       OpenSearchSchemaTestHelper.class,
       ElasticsearchSchemaTestHelper.class,
       DatabaseInfo.class,
       OperateProperties.class,
       RetryElasticsearchClient.class,
       ElasticsearchConnector.class,
+      OpensearchConnector.class,
       ElasticsearchTaskStore.class,
       JacksonConfig.class,
       OperateDateTimeFormatter.class,

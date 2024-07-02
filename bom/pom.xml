@@ -22,15 +22,15 @@
   <inceptionYear>2017</inceptionYear>
 
   <scm>
-    <connection>scm:git:git@github.com:camunda/zeebe.git</connection>
-    <developerConnection>scm:git:git@github.com:camunda/zeebe.git</developerConnection>
+    <connection>scm:git:git@github.com:camunda/camunda.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda/camunda.git</developerConnection>
     <tag>HEAD</tag>
-    <url>https://github.com/camunda/zeebe</url>
+    <url>https://github.com/camunda/camunda</url>
   </scm>
 
   <issueManagement>
     <system>GitHub</system>
-    <url>https://github.com/camunda/zeebe/issues</url>
+    <url>https://github.com/camunda/camunda/issues</url>
   </issueManagement>
 
   <properties>
@@ -43,7 +43,7 @@
     <license.header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header>
 
     <plugin.version.flatten>1.6.0</plugin.version.flatten>
-    <plugin.version.javadoc>3.6.3</plugin.version.javadoc>
+    <plugin.version.javadoc>3.7.0</plugin.version.javadoc>
     <plugin.version.license>4.5</plugin.version.license>
     <plugin.version.spotless>2.43.0</plugin.version.spotless>
 
@@ -67,7 +67,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>zeebe-client-java</artifactId>
+        <artifactId>camunda-client-java</artifactId>
         <version>${project.version}</version>
       </dependency>
 

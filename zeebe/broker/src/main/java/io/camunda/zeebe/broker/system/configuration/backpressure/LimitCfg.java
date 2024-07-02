@@ -14,7 +14,7 @@ import com.netflix.concurrency.limits.limit.GradientLimit;
 import com.netflix.concurrency.limits.limit.VegasLimit;
 import com.netflix.concurrency.limits.limit.WindowedLimit;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
-import io.camunda.zeebe.broker.transport.backpressure.StabilizingAIMDLimit;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.StabilizingAIMDLimit;
 import java.util.concurrent.TimeUnit;
 
 public final class LimitCfg implements ConfigurationEntry {
@@ -54,7 +54,7 @@ public final class LimitCfg implements ConfigurationEntry {
     this.algorithm = LimitAlgorithm.valueOf(algorithm.toUpperCase());
   }
 
-  public void setAlgorithm(LimitAlgorithm algorithm) {
+  public void setAlgorithm(final LimitAlgorithm algorithm) {
     this.algorithm = algorithm;
   }
 

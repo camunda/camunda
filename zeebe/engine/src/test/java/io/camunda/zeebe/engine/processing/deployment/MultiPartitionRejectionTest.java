@@ -51,7 +51,7 @@ public class MultiPartitionRejectionTest {
         .hasRejectionReason("");
   }
 
-  @Test // Regression of https://github.com/camunda/zeebe/issues/13254
+  @Test // Regression of https://github.com/camunda/camunda/issues/13254
   public void shouldNotBeAbleToCreateInstanceWhenDeploymentIsRejected() {
     // given
     final BpmnModelInstance invalidProcess =

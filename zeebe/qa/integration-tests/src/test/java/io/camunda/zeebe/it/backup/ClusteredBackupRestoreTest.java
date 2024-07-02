@@ -53,7 +53,7 @@ public class ClusteredBackupRestoreTest {
     }
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/14496")
+  @RegressionTest("https://github.com/camunda/camunda/issues/14496")
   void shouldRestoreWithFewerBrokers() {
     // given
     final var backupId = 22;

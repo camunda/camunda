@@ -8,12 +8,14 @@
 package io.camunda.zeebe.broker.transport.commandapi;
 
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
-import java.util.function.Consumer;
 
 public interface CommandApiService {
 
   CommandResponseWriter newCommandResponseWriter();
 
-  Consumer<TypedRecord<?>> getOnProcessedListener(int partitionId);
+  void onRecovered(final int partitionId);
+
+  void onPaused(final int partitionId);
+
+  void onResumed(final int partitionId);
 }

@@ -14,8 +14,10 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.OpensearchConnector;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.TestElasticsearchSchemaManager;
@@ -52,6 +54,10 @@ import org.springframework.test.context.junit4.SpringRunner;
       RichOpenSearchClient.class,
       OpensearchConnector.class,
       IndexDescriptor.class,
+      JacksonConfig.class,
+      OperateDateTimeFormatter.class,
+      JacksonConfig.class,
+      OperateDateTimeFormatter.class,
       // Assume we have only 3 indices:
       ProcessIndex.class,
       UserIndex.class,

@@ -17,12 +17,15 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
 public class PayloadUtil {
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   public Map<String, Object> parsePayload(String payload) throws IOException {
 

@@ -45,7 +45,7 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   }
 
   @Override
-  public Either<Failure, ?> onActivate(
+  public Either<Failure, ?> finalizeActivation(
       final ExecutableStartEvent element, final BpmnElementContext context) {
     final var activated =
         stateTransitionBehavior.transitionToActivated(context, element.getEventType());
@@ -56,15 +56,20 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   @Override
   public Either<Failure, ?> onComplete(
       final ExecutableStartEvent element, final BpmnElementContext context) {
+
+    return variableMappingBehavior.applyOutputMappings(context, element);
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeCompletion(
+      final ExecutableStartEvent element, final BpmnElementContext context) {
     final var flowScope = (ExecutableCatchEventSupplier) element.getFlowScope();
 
     final BpmnElementContextImpl flowScopeInstanceContext =
         buildContextForFlowScopeInstance(context);
 
-    return variableMappingBehavior
-        .applyOutputMappings(context, element)
-        .flatMap(
-            ok -> eventSubscriptionBehavior.subscribeToEvents(flowScope, flowScopeInstanceContext))
+    return eventSubscriptionBehavior
+        .subscribeToEvents(flowScope, flowScopeInstanceContext)
         .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
         .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
   }

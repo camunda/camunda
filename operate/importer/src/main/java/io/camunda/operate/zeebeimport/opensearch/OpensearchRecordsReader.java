@@ -169,9 +169,12 @@ public class OpensearchRecordsReader implements RecordsReader {
       if (!useOnlyPosition && latestPosition != null && latestPosition.getSequence() > 0) {
         LOGGER.debug("Use import for {} ( {} ) by sequence", importValueType.name(), partitionId);
         importBatch = readNextBatchBySequence(latestPosition.getSequence());
-      } else {
+      } else if (latestPosition != null) {
         LOGGER.debug("Use import for {} ( {} ) by position", importValueType.name(), partitionId);
         importBatch = readNextBatchByPositionAndPartition(latestPosition.getPosition(), null);
+      } else {
+        LOGGER.debug("latestPosition is null, importBatch was not initialized");
+        importBatch = null;
       }
       Integer nextRunDelay = null;
       if (importBatch == null

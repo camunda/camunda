@@ -59,6 +59,8 @@ public interface LogStreamBuilder {
 
   LogStreamBuilder withAppendLimit(Limit appendLimit);
 
+  LogStreamBuilder withRequestLimit(Limit requestLimit);
+
   /**
    * Returns a future which, when completed, contains a log stream that can be read from/written to.
    *

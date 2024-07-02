@@ -8,27 +8,19 @@
 
 import {observer} from 'mobx-react-lite';
 import {notificationsStore} from 'modules/stores/notifications';
-import {Container} from './NotificationContainer';
-import {TransitionGroup} from './TransitionGroup';
+import {TransitionGroup} from 'react-transition-group';
 import {Notification} from './Notification';
-
-const TRANSITION_DURATION = 300;
+import styles from './styles.module.scss';
 
 const Notifications: React.FC = observer(() => {
   const {notifications} = notificationsStore;
 
   return (
-    <Container>
-      <TransitionGroup $animationTimeout={TRANSITION_DURATION}>
-        {notifications.map((notification) => (
-          <Notification
-            key={notification.id}
-            notification={notification}
-            animationTimeout={TRANSITION_DURATION}
-          />
-        ))}
-      </TransitionGroup>
-    </Container>
+    <TransitionGroup className={styles.container}>
+      {notifications.map((notification) => (
+        <Notification key={notification.id} notification={notification} />
+      ))}
+    </TransitionGroup>
   );
 });
 

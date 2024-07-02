@@ -43,8 +43,10 @@ public class PropertyUtil {
       final Map<String, Object> configCache) {
 
     if (configCache != null && configCache.containsKey(propertyName)) {
-      LOG.debug("Property {}: Loading from cache", propertyName);
-      return (T) configCache.get(propertyName);
+      final Object propertyValue = configCache.get(propertyName);
+      LOG.debug(
+          "Property {} loading from cache. Property is set to {}", propertyName, propertyValue);
+      return (T) propertyValue;
     }
     T property = getPropertyFromSupplier(legacyPropertySupplier, propertyName, "legacy");
 
@@ -58,6 +60,8 @@ public class PropertyUtil {
     if (configCache != null) {
       configCache.put(propertyName, property);
     }
+
+    LOG.debug("Property {} set to {}", propertyName, property);
     return property;
   }
 

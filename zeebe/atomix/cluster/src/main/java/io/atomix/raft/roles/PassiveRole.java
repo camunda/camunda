@@ -52,10 +52,12 @@ import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
+import io.camunda.zeebe.snapshots.impl.SnapshotChunkId;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -68,10 +70,13 @@ public class PassiveRole extends InactiveRole {
   private long pendingSnapshotStartTimestamp;
   private ReceivedSnapshot pendingSnapshot;
   private ByteBuffer nextPendingSnapshotChunkId;
+  private ByteBuffer previouslyReceivedSnapshotChunkId;
+  private final int snapshotChunkSize;
 
   public PassiveRole(final RaftContext context) {
     super(context);
 
+    snapshotChunkSize = context.getSnapshotChunkSize();
     snapshotReplicationMetrics = new SnapshotReplicationMetrics(context.getName());
     snapshotReplicationMetrics.setCount(0);
   }
@@ -117,6 +122,33 @@ public class PassiveRole extends InactiveRole {
 
     log.debug("Received snapshot {} chunk from {}", request.index(), request.leader());
 
+    if (Objects.equals(request.chunkId(), previouslyReceivedSnapshotChunkId)) {
+      return CompletableFuture.completedFuture(
+          logResponse(
+              InstallResponse.builder()
+                  .withStatus(RaftResponse.Status.OK)
+                  .withPreferredChunkSize(snapshotChunkSize)
+                  .build()));
+    }
+
+    // if null assume it is first chunk of file
+    if (nextPendingSnapshotChunkId != null
+        && !nextPendingSnapshotChunkId.equals(request.chunkId())) {
+      final var errMsg =
+          "Expected chunkId of ["
+              + new SnapshotChunkId(nextPendingSnapshotChunkId)
+              + "] got ["
+              + new SnapshotChunkId(request.chunkId())
+              + "].";
+      abortPendingSnapshots();
+      return CompletableFuture.completedFuture(
+          logResponse(
+              InstallResponse.builder()
+                  .withStatus(Status.ERROR)
+                  .withError(Type.ILLEGAL_MEMBER_STATE, errMsg)
+                  .build()));
+    }
+
     // If the request is for a lesser term, reject the request.
     if (request.currentTerm() < raft.getTerm()) {
       return CompletableFuture.completedFuture(
@@ -134,7 +166,11 @@ public class PassiveRole extends InactiveRole {
     // Skip the snapshot and response successfully.
     if (raft.getCommitIndex() > request.index()) {
       return CompletableFuture.completedFuture(
-          logResponse(InstallResponse.builder().withStatus(RaftResponse.Status.OK).build()));
+          logResponse(
+              InstallResponse.builder()
+                  .withStatus(RaftResponse.Status.OK)
+                  .withPreferredChunkSize(snapshotChunkSize)
+                  .build()));
     }
 
     // If a snapshot is currently being received and the snapshot versions don't match, simply
@@ -155,7 +191,11 @@ public class PassiveRole extends InactiveRole {
       abortPendingSnapshots();
 
       return CompletableFuture.completedFuture(
-          logResponse(InstallResponse.builder().withStatus(RaftResponse.Status.OK).build()));
+          logResponse(
+              InstallResponse.builder()
+                  .withStatus(RaftResponse.Status.OK)
+                  .withPreferredChunkSize(snapshotChunkSize)
+                  .build()));
     }
 
     if (!request.complete() && request.nextChunkId() == null) {
@@ -271,16 +311,23 @@ public class PassiveRole extends InactiveRole {
 
       pendingSnapshot = null;
       pendingSnapshotStartTimestamp = 0L;
+      setNextExpected(null);
+      previouslyReceivedSnapshotChunkId = null;
       snapshotReplicationMetrics.decrementCount();
       snapshotReplicationMetrics.observeDuration(elapsed);
       raft.updateCurrentSnapshot();
       onSnapshotReceiveCompletedOrAborted();
     } else {
       setNextExpected(request.nextChunkId());
+      previouslyReceivedSnapshotChunkId = request.chunkId();
     }
 
     return CompletableFuture.completedFuture(
-        logResponse(InstallResponse.builder().withStatus(RaftResponse.Status.OK).build()));
+        logResponse(
+            InstallResponse.builder()
+                .withStatus(RaftResponse.Status.OK)
+                .withPreferredChunkSize(snapshotChunkSize)
+                .build()));
   }
 
   @Override
@@ -442,7 +489,11 @@ public class PassiveRole extends InactiveRole {
       // happens, instead of crashing raft thread, we respond with success because we already
       // have the snapshot.
       return CompletableFuture.completedFuture(
-          logResponse(InstallResponse.builder().withStatus(Status.OK).build()));
+          logResponse(
+              InstallResponse.builder()
+                  .withStatus(Status.OK)
+                  .withPreferredChunkSize(snapshotChunkSize)
+                  .build()));
     } else {
       log.warn(
           "Failed to create pending snapshot when receiving snapshot {}",

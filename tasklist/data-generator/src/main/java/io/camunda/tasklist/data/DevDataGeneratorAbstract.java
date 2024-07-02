@@ -17,6 +17,7 @@ import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.PayloadUtil;
 import io.camunda.tasklist.util.ZeebeTestUtil;
 import io.camunda.zeebe.client.ZeebeClient;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -28,9 +29,12 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+@DependsOn("tasklistSchemaStartup")
 public abstract class DevDataGeneratorAbstract implements DataGenerator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DevDataGeneratorAbstract.class);
@@ -39,7 +43,9 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
   @Autowired protected UserIndex userIndex;
   protected PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-  @Autowired private ZeebeClient zeebeClient;
+  @Autowired
+  @Qualifier("tasklistZeebeClient")
+  private ZeebeClient zeebeClient;
 
   @Autowired private FormIndex formIndex;
 
@@ -51,9 +57,26 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
 
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   private boolean shutdown = false;
+
+  @PostConstruct
+  private void startDataGenerator() {
+    startGeneratingData();
+  }
+
+  protected void startGeneratingData() {
+    LOGGER.debug("INIT: Generate demo data...");
+    try {
+      createZeebeDataAsync();
+    } catch (final Exception ex) {
+      LOGGER.debug("Demo data could not be generated. Cause: {}", ex.getMessage());
+      LOGGER.error("Error occurred when generating demo data.", ex);
+    }
+  }
 
   @Override
   public void createZeebeDataAsync() {

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.InFlightEntry.Uncommitted;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import java.time.Duration;
 import java.util.LinkedList;
@@ -40,16 +41,16 @@ final class FlowControlTest {
     final var flow = new FlowControl(logStreamMetrics);
     // when
     boolean rejecting = false;
-    final var inFlight = new LinkedList<InFlightEntry>();
+    final var inFlight = new LinkedList<Uncommitted>();
     do {
       final var result = flow.tryAcquire(WriteContext.internal(), List.of());
       if (result.isLeft()) {
         rejecting = true;
       } else {
-        inFlight.push(result.get());
+        inFlight.push(result.get().uncommitted());
       }
     } while (!rejecting);
-    inFlight.forEach(InFlightEntry::onCommit);
+    inFlight.forEach(uncommitted -> uncommitted.finish(-1));
 
     // then
     Awaitility.await("Eventually accepts appends again")

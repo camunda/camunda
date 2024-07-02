@@ -8,7 +8,6 @@
 
 import {render, screen, fireEvent} from 'modules/testing-library';
 import {Task} from './index';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {MemoryRouter} from 'react-router-dom';
 import {currentUser} from 'modules/mock-schema/mocks/current-user';
 import {LocationLog} from 'modules/utils/LocationLog';
@@ -22,12 +21,10 @@ const createWrapper = (
   const Wrapper: React.FC<{
     children?: React.ReactNode;
   }> = ({children}) => (
-    <MockThemeProvider>
-      <MemoryRouter initialEntries={initialEntries}>
-        {children}
-        <LocationLog />
-      </MemoryRouter>
-    </MockThemeProvider>
+    <MemoryRouter initialEntries={initialEntries}>
+      {children}
+      <LocationLog />
+    </MemoryRouter>
   );
 
   return Wrapper;

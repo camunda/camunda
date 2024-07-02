@@ -28,13 +28,6 @@ final class SnapshotAfterScalingTest {
   @TestZeebe
   TestCluster cluster =
       TestCluster.builder()
-          .withBrokerConfig(
-              broker ->
-                  broker
-                      .brokerConfig()
-                      .getExperimental()
-                      .getFeatures()
-                      .setEnableDynamicClusterTopology(true))
           .useRecordingExporter(true)
           .withBrokersCount(2)
           .withReplicationFactor(1)
@@ -48,7 +41,7 @@ final class SnapshotAfterScalingTest {
   void shouldTakeSnapshotOnAllReplicasAfterScaling() {
     // Instead of doing a full scaling operation, we just add a new replica to partition 1. This is
     // done to simplify the test setup. This test fails without the fix
-    // https://github.com/camunda/zeebe/pull/15277
+    // https://github.com/camunda/camunda/pull/15277
 
     // given
     final var actuator = ClusterActuator.of(cluster.availableGateway());

@@ -55,11 +55,6 @@
   @include theme.theme(themes.$g100);
 }
 
-// Temporary fix because of this bug: https://github.com/carbon-design-system/carbon/issues/15890
-.cds--modal-scroll-content {
-  mask-image: none;
-}
-
 html,
 body,
 #root {

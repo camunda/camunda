@@ -9,11 +9,7 @@
 import {setup} from './processInstance.mocks';
 import {test} from '../test-fixtures';
 import {expect} from '@playwright/test';
-import {
-  DATE_REGEX,
-  DEFAULT_TEST_TIMEOUT,
-  SETUP_WAITING_TIME,
-} from './constants';
+import {DATE_REGEX, SETUP_WAITING_TIME} from './constants';
 import {config} from '../config';
 
 let initialData: Awaited<ReturnType<typeof setup>>;
@@ -62,6 +58,18 @@ test.beforeAll(async ({request}) => {
     expect
       .poll(
         async () => {
+          const response = await request.get(
+            `${config.endpoint}/v1/process-instances/${initialData.executionCountProcessInstance.processInstanceKey}`,
+          );
+
+          return response.status();
+        },
+        {timeout: SETUP_WAITING_TIME},
+      )
+      .toBe(200),
+    expect
+      .poll(
+        async () => {
           const response = await request.post(
             `${config.endpoint}/v1/incidents/search`,
             {
@@ -92,8 +100,11 @@ test.beforeAll(async ({request}) => {
 });
 
 test.describe('Process Instance', () => {
-  test('Resolve an incident', async ({page, processInstancePage}) => {
-    test.setTimeout(DEFAULT_TEST_TIMEOUT + 3 * 15000); // 15 seconds for each applied operation in this test
+  test('Resolve an incident @roundtrip', async ({
+    page,
+    processInstancePage,
+  }) => {
+    test.slow();
 
     await processInstancePage.navigateToProcessInstance({
       id: initialData.instanceWithIncidentToResolve.processInstanceKey,
@@ -199,8 +210,8 @@ test.describe('Process Instance', () => {
     ).toBeVisible();
   });
 
-  test('Cancel an instance', async ({page, processInstancePage}) => {
-    test.setTimeout(DEFAULT_TEST_TIMEOUT + 1 * 15000); // 15 seconds for each applied operation in this test
+  test('Cancel an instance @roundtrip', async ({page, processInstancePage}) => {
+    test.slow();
 
     const instanceId =
       initialData.instanceWithIncidentToCancel.processInstanceKey;
@@ -312,5 +323,46 @@ test.describe('Process Instance', () => {
       popover.getByText(/flow node instance key/i),
     ).not.toBeVisible();
     await expect(diagram.getFlowNode('fill form')).toBeVisible();
+  });
+
+  test('Should render execution count badges', async ({
+    processInstancePage,
+  }) => {
+    const {diagram} = processInstancePage;
+
+    await processInstancePage.navigateToProcessInstance({
+      id: initialData.executionCountProcessInstance.processInstanceKey,
+    });
+
+    const elementIds = [
+      'StartEvent_1',
+      'ParallelGateway',
+      'ExclusiveGateway',
+      'StartEvent_2',
+      'EndEvent_2',
+      'SubProcess',
+    ];
+
+    // Expect execution count badges not to be visible
+    for (const elementId of elementIds) {
+      expect(await diagram.getExecutionCount(elementId)).toBeUndefined();
+    }
+
+    await processInstancePage.executionCountToggleOn.click({force: true});
+
+    // Expect execution count badges to be visible
+    expect(await diagram.getExecutionCount('StartEvent_1')).toBe('1');
+    expect(await diagram.getExecutionCount('ParallelGateway')).toBe('1');
+    expect(await diagram.getExecutionCount('ExclusiveGateway')).toBe('3');
+    expect(await diagram.getExecutionCount('StartEvent_2')).toBe('3');
+    expect(await diagram.getExecutionCount('EndEvent_2')).toBe('3');
+    expect(await diagram.getExecutionCount('SubProcess')).toBe('3');
+
+    await processInstancePage.executionCountToggleOff.click({force: true});
+
+    // Expect execution count badges not to be visible
+    for (const elementId of elementIds) {
+      expect(await diagram.getExecutionCount(elementId)).toBeUndefined();
+    }
   });
 });

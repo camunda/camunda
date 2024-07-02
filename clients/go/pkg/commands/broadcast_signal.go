@@ -17,8 +17,8 @@ package commands
 import (
 	"context"
 	"fmt"
-	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
-	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
+	"github.com/camunda/camunda/clients/go/v8/internal/utils"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 )
 
 type DispatchBroadcastSignalCommand interface {

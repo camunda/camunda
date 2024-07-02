@@ -41,7 +41,7 @@ class DueDateTimerCheckerTest {
     @Test
     void shouldAbortIterationAndGiveYieldAfterSomeTimeHasPassed() {
       /* This test verifies that the class will yield control at some point. This is related to
-       * https://github.com/camunda/zeebe/issues/8991 where one issue was that the list of due timers
+       * https://github.com/camunda/camunda/issues/8991 where one issue was that the list of due timers
        * grew substantially to millions of entries. The algorithm iterated over each entry and blocked
        * the execution of any other work on that thread during that time.
        */

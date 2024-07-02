@@ -218,7 +218,7 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
   }
 
   private ActorFuture<List<Void>> resumeStreamProcessingOnAllPartitions() {
-    LOG.info("Pausing StreamProcessor on all partitions.");
+    LOG.info("Resume StreamProcessor on all partitions.");
     return partitionManager.getZeebePartitions().stream()
         .map(ZeebePartition::getAdminAccess)
         .map(PartitionAdminAccess::resumeProcessing)

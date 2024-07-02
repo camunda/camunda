@@ -67,7 +67,7 @@ public final class StreamProcessorContinouslyReplayModeTest {
   }
 
   @Test
-  @RegressionTest("https://github.com/camunda/zeebe/issues/7662")
+  @RegressionTest("https://github.com/camunda/camunda/issues/7662")
   public void shouldReplayIfNoEventsAfterSnapshot() throws Exception {
     // given
     streamPlatform.writeBatch(

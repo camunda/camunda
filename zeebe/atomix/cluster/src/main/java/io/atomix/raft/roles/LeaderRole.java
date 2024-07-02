@@ -745,7 +745,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       // to be committed. This is our glue code to notify them, instead of
       // passing the complete object (IndexedRaftLogEntry) threw the listeners and
       // keep them in heap until they are committed. This had the risk of going out of OOM
-      // if records can't be committed, see https://github.com/camunda/zeebe/issues/14275
+      // if records can't be committed, see https://github.com/camunda/camunda/issues/14275
       appendEntriesFuture.whenCompleteAsync(
           (commitIndex, commitError) -> {
             if (isRunning() && commitError == null) {

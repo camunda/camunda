@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -53,7 +54,11 @@ public class DecisionDataUtil {
   @Autowired protected DecisionStore decisionStore;
   private Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
   private final Random random = new Random();
-  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
+
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
 
   @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;

@@ -9,13 +9,14 @@ package io.camunda.tasklist.property;
 
 public class TasklistDocumentationProperties {
 
-  private String apiMigrationDocsUrl;
+  private String apiMigrationDocsUrl =
+      "https://docs.camunda.io/docs/apis-tools/tasklist-api-rest/migrate-to-zeebe-user-tasks/";
 
   public String getApiMigrationDocsUrl() {
     return apiMigrationDocsUrl;
   }
 
-  public void setApiMigrationDocsUrl(String apiMigrationDocsUrl) {
+  public void setApiMigrationDocsUrl(final String apiMigrationDocsUrl) {
     this.apiMigrationDocsUrl = apiMigrationDocsUrl;
   }
 }

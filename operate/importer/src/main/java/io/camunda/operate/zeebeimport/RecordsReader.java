@@ -32,7 +32,7 @@ public interface RecordsReader extends Runnable {
 
   /**
    * This method is based on Zeebe class
-   * https://github.com/camunda/zeebe/blob/cd37a352991e2fc763b7b1b0f5dc5b68ef7637e1/exporters/elasticsearch-exporter/src/main/java/io/camunda/zeebe/exporter/RecordSequence.java
+   * https://github.com/camunda/camunda/blob/cd37a352991e2fc763b7b1b0f5dc5b68ef7637e1/exporters/elasticsearch-exporter/src/main/java/io/camunda/zeebe/exporter/RecordSequence.java
    * which we don't have in classpath and which defines how `sequence` value is built.
    *
    * @param partitionId

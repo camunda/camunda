@@ -25,7 +25,7 @@ public class RejectLargeDeploymentTest {
   @TestZeebe
   private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/15989")
+  @RegressionTest("https://github.com/camunda/camunda/issues/15989")
   void shouldExportLargeDeploymentRejection() {
     // given - a deployment with a large, unparsable input expression
     final var data = "x".repeat(Short.MAX_VALUE * 2);

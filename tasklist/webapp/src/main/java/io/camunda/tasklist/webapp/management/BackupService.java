@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 @Component
 @RestControllerEndpoint(id = "backups")
+@Profile("standalone")
 public class BackupService extends ManagementAPIErrorController {
 
   @Autowired private BackupManager backupManager;
@@ -40,7 +42,7 @@ public class BackupService extends ManagementAPIErrorController {
   private final Pattern pattern = Pattern.compile("((?![A-Z \"*\\\\<|,>\\/?_]).){0,3996}$");
 
   @PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE})
-  public TakeBackupResponseDto takeBackup(@RequestBody TakeBackupRequestDto request) {
+  public TakeBackupResponseDto takeBackup(@RequestBody final TakeBackupRequestDto request) {
     validateRequest(request);
     validateRepositoryNameIsConfigured();
     return backupManager.takeBackup(request);
@@ -54,7 +56,7 @@ public class BackupService extends ManagementAPIErrorController {
   }
 
   @GetMapping("/{backupId}")
-  public GetBackupStateResponseDto getBackupState(@PathVariable Long backupId) {
+  public GetBackupStateResponseDto getBackupState(@PathVariable final Long backupId) {
     validateBackupId(backupId);
     validateRepositoryNameIsConfigured();
     return backupManager.getBackupState(backupId);
@@ -68,20 +70,20 @@ public class BackupService extends ManagementAPIErrorController {
 
   @DeleteMapping("/{backupId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deleteBackup(@PathVariable Long backupId) {
+  public void deleteBackup(@PathVariable final Long backupId) {
     validateBackupId(backupId);
     validateRepositoryNameIsConfigured();
     backupManager.deleteBackup(backupId);
   }
 
-  private void validateRequest(TakeBackupRequestDto request) {
+  private void validateRequest(final TakeBackupRequestDto request) {
     if (request.getBackupId() == null) {
       throw new InvalidRequestException("BackupId must be provided");
     }
     validateBackupId(request.getBackupId());
   }
 
-  private void validateBackupId(Long backupId) {
+  private void validateBackupId(final Long backupId) {
     if (backupId < 0) {
       throw new InvalidRequestException(
           "BackupId must be a non-negative Long. Received value: " + backupId);

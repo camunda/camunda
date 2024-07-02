@@ -34,16 +34,17 @@ defaults:
 env:
   BRANCH_NAME: ${{ inputs.branch }}
   IS_DEFAULT_BRANCH: ${{ inputs.branch == 'main' }}
+  DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
 
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
@@ -62,7 +63,7 @@ jobs:
       # Setup: import secrets from vault
       - name: Import Secrets
         id: secrets  # important to refer to it in later steps
-        uses: hashicorp/vault-action@0f302fb182aed807f79e2c0558e3250bbc27b043
+        uses: hashicorp/vault-action@148ee648ccb26f28892776406f3c3c4cf8ac033f
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -104,26 +105,18 @@ jobs:
           password: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       #########################################################################
-      # Build and tag Docker images
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
+      # Build Docker image
+      - name: Build Docker image
+        uses: ./.github/actions/build-platform-docker
         with:
-          images: |
-            registry.camunda.cloud/team-hto/tasklist
-          tags: |
+          repository: registry.camunda.cloud/team-hto/tasklist
+          version: |
             ${{ env.IMAGE_TAG }}
             ${{ env.CI_IMAGE_TAG }}
             ${{ env.PR_IMAGE_TAG }}
-
-      #########################################################################
-      # Build Docker image
-      - name: Build Docker image
-        uses: ./.github/actions/build-tasklist-docker
-        with:
-          tags: ${{ steps.meta.outputs.tags }}
           push: ${{ inputs.pushDocker }}
-          platforms: ${{ inputs.pushDocker && 'linux/arm64,linux/amd64' || 'linux/amd64' }}
+          platforms: ${{ inputs.pushDocker && env.DOCKER_PLATFORMS || 'linux/amd64' }}
+          dockerfile: tasklist.Dockerfile
 
       #########################################################################
       # Docker login for snapshot deployment
@@ -138,11 +131,13 @@ jobs:
       # Build SNAPSHOT Docker image
       - name: Build SNAPSHOT Docker image
         if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
-        uses: ./.github/actions/build-tasklist-docker
+        uses: ./.github/actions/build-platform-docker
         with:
-          tags: |
-            camunda/tasklist:SNAPSHOT
+          repository: camunda/tasklist
+          version: SNAPSHOT
           push: true
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          dockerfile: tasklist.Dockerfile
 
       #########################################################################
       # Deploy Nexus SNAPSHOT

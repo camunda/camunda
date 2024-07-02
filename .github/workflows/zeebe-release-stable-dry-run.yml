@@ -8,7 +8,7 @@ on:
 jobs:
   dry-run-release-85:
     name: "Release from stable/8.5"
-    uses: camunda/zeebe/.github/workflows/zeebe-release.yml@stable/8.5
+    uses: camunda/camunda/.github/workflows/zeebe-release.yml@stable/8.5
     secrets: inherit
     strategy:
       fail-fast: false
@@ -20,7 +20,7 @@ jobs:
       dryRun: true
   dry-run-release-84:
     name: "Release from stable/8.4"
-    uses: camunda/zeebe/.github/workflows/zeebe-release.yml@stable/8.4
+    uses: camunda/camunda/.github/workflows/zeebe-release.yml@stable/8.4
     secrets: inherit
     strategy:
       fail-fast: false
@@ -32,7 +32,7 @@ jobs:
       dryRun: true
   dry-run-release-83:
     name: "Release from stable/8.3"
-    uses: camunda/zeebe/.github/workflows/zeebe-release.yml@stable/8.3
+    uses: camunda/camunda/.github/workflows/zeebe-release.yml@stable/8.3
     secrets: inherit
     strategy:
       fail-fast: false
@@ -44,7 +44,7 @@ jobs:
       dryRun: true
   dry-run-release-82:
     name: "Release from stable/8.2"
-    uses: camunda/zeebe/.github/workflows/zeebe-release.yml@stable/8.2
+    uses: camunda/camunda/.github/workflows/zeebe-release.yml@stable/8.2
     secrets: inherit
     strategy:
       fail-fast: false
@@ -83,7 +83,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Please check the related workflow execution: https://github.com/camunda/zeebe/actions/runs/${{ github.run_id }}"
+                    "text": "Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
                   }
                 }
               ]

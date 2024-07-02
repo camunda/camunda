@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {ProcessTile} from '.';
 import {render, screen, within} from 'modules/testing-library';
 import {createMockProcess} from 'modules/queries/useProcesses';
@@ -20,9 +19,7 @@ const getWrapper = () => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
       <QueryClientProvider client={mockClient}>
-        <MemoryRouter initialEntries={['/processes']}>
-          <MockThemeProvider>{children}</MockThemeProvider>
-        </MemoryRouter>
+        <MemoryRouter initialEntries={['/processes']}>{children}</MemoryRouter>
       </QueryClientProvider>
     );
   };

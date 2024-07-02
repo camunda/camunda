@@ -35,7 +35,7 @@ import org.testcontainers.utility.MountableFile;
  * <p>So we use containers to test the actual production classpath as well.
  */
 final class Pkcs1SupportTest {
-  @RegressionTest("https://github.com/camunda/zeebe/issues/15977")
+  @RegressionTest("https://github.com/camunda/camunda/issues/15977")
   void shouldSupportPkcs1Key(final @TempDir Path tmpDir) throws IOException, CertificateException {
     // given
     final var certificate = new SelfSignedCertificate();

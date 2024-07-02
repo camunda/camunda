@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.transport.backpressure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.logstreams.impl.flowcontrol.StabilizingAIMDLimit;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 

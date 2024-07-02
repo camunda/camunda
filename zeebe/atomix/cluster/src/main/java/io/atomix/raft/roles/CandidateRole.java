@@ -155,7 +155,7 @@ public final class CandidateRole extends ActiveRole {
                       // electionTimeout to send the poll requests. But assuming this is not the
                       // common case, this delay is acceptable. The other option is to immediately
                       // send new vote request here, but this resulted in an election loop in a very
-                      // specific scenario https://github.com/camunda/zeebe/issues/11665
+                      // specific scenario https://github.com/camunda/camunda/issues/11665
                       log.debug("Second round of election timed out. Transitioning to follower.");
                       raft.transition(Role.FOLLOWER);
                     }

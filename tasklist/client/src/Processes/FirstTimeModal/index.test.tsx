@@ -7,7 +7,6 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {MemoryRouter} from 'react-router-dom';
 import {FirstTimeModal} from '.';
 
@@ -16,11 +15,7 @@ type Props = {
 };
 
 const Wrapper: React.FC<Props> = ({children}) => {
-  return (
-    <MemoryRouter initialEntries={['/']}>
-      <MockThemeProvider>{children}</MockThemeProvider>
-    </MemoryRouter>
-  );
+  return <MemoryRouter initialEntries={['/']}>{children}</MemoryRouter>;
 };
 
 describe('<FirstTimeModal />', () => {

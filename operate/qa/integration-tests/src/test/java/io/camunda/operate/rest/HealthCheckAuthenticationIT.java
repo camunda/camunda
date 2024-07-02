@@ -11,9 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 
+import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.connect.OpensearchConnector;
+import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.management.IndicesHealthIndicator;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.rest.HealthCheckIT.AddManagementPropertiesInitializer;
@@ -66,6 +69,9 @@ import org.springframework.test.context.junit4.SpringRunner;
       OpensearchTaskStore.class,
       RichOpenSearchClient.class,
       OpensearchConnector.class,
+      JacksonConfig.class,
+      OperateDateTimeFormatter.class,
+      DatabaseInfo.class,
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)

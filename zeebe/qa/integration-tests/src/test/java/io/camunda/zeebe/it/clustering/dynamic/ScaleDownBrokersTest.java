@@ -46,6 +46,13 @@ final class ScaleDownBrokersTest {
           .withBrokersCount(CLUSTER_SIZE)
           .withPartitionsCount(PARTITIONS_COUNT)
           .withReplicationFactor(1)
+          .withBrokerConfig(
+              b ->
+                  b.brokerConfig()
+                      .getCluster()
+                      .getMembership()
+                      // Decrease the timeouts for fast convergence of broker topology.
+                      .setSyncInterval(Duration.ofSeconds(1)))
           .withGatewayConfig(
               g ->
                   g.gatewayConfig()
@@ -56,12 +63,6 @@ final class ScaleDownBrokersTest {
                       // default values.
                       .setSyncInterval(Duration.ofSeconds(1))
                       .setFailureTimeout(Duration.ofSeconds(2)))
-          .withBrokerConfig(
-              b ->
-                  b.brokerConfig()
-                      .getExperimental()
-                      .getFeatures()
-                      .setEnableDynamicClusterTopology(true))
           .build();
 
   @BeforeEach

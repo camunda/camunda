@@ -34,15 +34,20 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ProcessService {
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessService.class);
 
-  @Autowired private ZeebeClient zeebeClient;
+  @Autowired
+  @Qualifier("tasklistZeebeClient")
+  private ZeebeClient zeebeClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private TenantService tenantService;
 

@@ -13,7 +13,6 @@ import {
   within,
 } from 'modules/testing-library';
 import {AvailableTasks} from './index';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Link, MemoryRouter} from 'react-router-dom';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {http, HttpResponse} from 'msw';
@@ -37,19 +36,17 @@ const getWrapper = (
     children?: React.ReactNode;
   }> = ({children}) => (
     <QueryClientProvider client={mockClient}>
-      <MockThemeProvider>
-        <MemoryRouter initialEntries={initialEntries}>
-          {children}
-          <Link to="/">go home</Link>
-        </MemoryRouter>
-      </MockThemeProvider>
+      <MemoryRouter initialEntries={initialEntries}>
+        {children}
+        <Link to="/">go home</Link>
+      </MemoryRouter>
     </QueryClientProvider>
   );
 
   return Wrapper;
 };
 
-describe('<Tasks />', () => {
+describe('<AvailableTasks />', () => {
   beforeEach(() => {
     nodeMockServer.use(
       http.get(
@@ -116,7 +113,7 @@ describe('<Tasks />', () => {
       withinFirstTask.getByText(firstTask.processName),
     ).toBeInTheDocument();
     expect(
-      withinFirstTask.getByTitle('Created on 28th of May at 10:11'),
+      withinFirstTask.getByTitle('Created on 28th of May, 2023 at 10:11'),
     ).toBeInTheDocument();
     expect(await withinFirstTask.findByText('Me')).toBeInTheDocument();
 
@@ -125,7 +122,7 @@ describe('<Tasks />', () => {
       withinSecondTask.getByText(secondTask.processName),
     ).toBeInTheDocument();
     expect(
-      withinSecondTask.getByTitle('Created on 29th of May at 13:14'),
+      withinSecondTask.getByTitle('Created on 29th of May, 2023 at 13:14'),
     ).toBeInTheDocument();
     expect(withinSecondTask.getByText('mustermann')).toBeInTheDocument();
   });

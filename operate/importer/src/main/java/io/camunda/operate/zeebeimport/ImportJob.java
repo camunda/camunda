@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -50,7 +51,9 @@ public class ImportJob implements Callable<Boolean> {
 
   @Autowired private ZeebeStore zeebeStore;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private OperateProperties operateProperties;
 
@@ -108,8 +111,7 @@ public class ImportJob implements Callable<Boolean> {
             final Long lastSequenceFromNewImportBatch =
                 newImportBatch.getLastProcessedSequence(objectMapper);
 
-            if (newImportBatch == null
-                || newImportBatch.getHits() == null
+            if (newImportBatch.getHits() == null
                 || lastSequenceFromInitialBatch > lastSequenceFromNewImportBatch) {
               final String message =
                   String.format(

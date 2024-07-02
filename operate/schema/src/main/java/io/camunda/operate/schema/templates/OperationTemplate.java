@@ -35,6 +35,9 @@ public class OperationTemplate extends AbstractTemplateDescriptor
   public static final String USERNAME = "username";
   public static final String MODIFIY_INSTRUCTIONS = "modifyInstructions";
   public static final String MIGRATION_PLAN = "migrationPlan";
+  public static final String METADATA_AGGREGATION = "metadataAggregation";
+  public static final String BATCH_OPERATION_ID_AGGREGATION = "batchOperationIdAggregation";
+  public static final String COMPLETED_DATE = "completedDate";
 
   @Override
   public String getIndexName() {
@@ -43,6 +46,6 @@ public class OperationTemplate extends AbstractTemplateDescriptor
 
   @Override
   public String getVersion() {
-    return "8.4.0";
+    return "8.4.1";
   }
 }

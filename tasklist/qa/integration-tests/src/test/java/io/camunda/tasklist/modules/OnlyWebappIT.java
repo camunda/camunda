@@ -14,6 +14,7 @@ import io.camunda.tasklist.ArchiverModuleConfiguration;
 import io.camunda.tasklist.ImportModuleConfiguration;
 import io.camunda.tasklist.WebappModuleConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.webapp.controllers.TasklistIndexController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.test.context.TestPropertySource;
@@ -22,13 +23,13 @@ import org.springframework.test.context.TestPropertySource;
     properties = {
       TasklistProperties.PREFIX + ".importerEnabled = false",
       TasklistProperties.PREFIX + ".archiverEnabled = false",
-      "graphql.servlet.websocket.enabled=false"
     })
 public class OnlyWebappIT extends ModuleIntegrationTest {
 
   @Test
   public void testWebappModuleIsPresent() {
     assertThat(applicationContext.getBean(WebappModuleConfiguration.class)).isNotNull();
+    assertThat(applicationContext.getBean(TasklistIndexController.class)).isNotNull();
   }
 
   @Test

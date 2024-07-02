@@ -147,7 +147,7 @@ public class ErrorEventTest {
 
   @Test
   public void shouldCatchErrorEventsByNumericErrorCode() {
-    // Regression for https://github.com/camunda/zeebe/issues/12326
+    // Regression for https://github.com/camunda/camunda/issues/12326
     // given
     ENGINE
         .deployment()

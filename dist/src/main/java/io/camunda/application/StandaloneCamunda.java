@@ -11,8 +11,13 @@ import static org.springframework.core.env.AbstractEnvironment.ACTIVE_PROFILES_P
 
 import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
+import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
+import io.camunda.application.sources.DefaultObjectMapperConfiguration;
+import io.camunda.commons.CommonsModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
+import io.camunda.tasklist.TasklistModuleConfiguration;
+import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import java.util.HashMap;
@@ -24,7 +29,7 @@ public class StandaloneCamunda {
 
   private static final String SPRING_PROFILES_ACTIVE_PROPERTY = ACTIVE_PROFILES_PROPERTY_NAME;
   private static final String DEFAULT_CAMUNDA_PROFILES =
-      String.format("%s,%s", Profile.OPERATE.getId(), Profile.BROKER.getId());
+      String.join(",", Profile.OPERATE.getId(), Profile.TASKLIST.getId(), Profile.BROKER.getId());
 
   public static void main(final String[] args) {
     MainSupport.setDefaultGlobalConfiguration();
@@ -35,12 +40,18 @@ public class StandaloneCamunda {
     final var standaloneCamundaApplication =
         MainSupport.createDefaultApplicationBuilder()
             .sources(
+                CommonsModuleConfiguration.class,
                 OperateModuleConfiguration.class,
+                TasklistModuleConfiguration.class,
+                WebappsModuleConfiguration.class,
                 BrokerModuleConfiguration.class,
-                GatewayModuleConfiguration.class)
+                GatewayModuleConfiguration.class,
+                DefaultObjectMapperConfiguration.class)
             .properties(defaultActiveProfiles)
             .initializers(
-                new DefaultAuthenticationInitializer(), new HealthConfigurationInitializer())
+                new DefaultAuthenticationInitializer(),
+                new HealthConfigurationInitializer(),
+                new WebappsConfigurationInitializer())
             .listeners(new ApplicationErrorListener())
             .build(args);
 

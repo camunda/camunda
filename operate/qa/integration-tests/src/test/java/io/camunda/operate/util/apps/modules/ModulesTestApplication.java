@@ -9,11 +9,13 @@ package io.camunda.operate.util.apps.modules;
 
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.util.TestApplication;
+import io.camunda.webapps.WebappsModuleConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
+import org.springframework.context.annotation.Import;
 
 @SpringBootApplication
 @ComponentScan(
@@ -38,9 +40,10 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
           value = OperateModuleConfiguration.class)
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
+@Import(WebappsModuleConfiguration.class)
 public class ModulesTestApplication {
 
-  public static void main(String[] args) throws Exception {
+  public static void main(final String[] args) throws Exception {
     SpringApplication.run(ModulesTestApplication.class, args);
   }
 }

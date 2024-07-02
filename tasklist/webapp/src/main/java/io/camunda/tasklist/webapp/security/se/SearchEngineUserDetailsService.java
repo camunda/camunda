@@ -8,6 +8,7 @@
 package io.camunda.tasklist.webapp.security.se;
 
 import static io.camunda.tasklist.util.CollectionUtil.map;
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.AUTH_BASIC;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTITY_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 
@@ -21,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -30,7 +32,12 @@ import org.springframework.stereotype.Component;
 
 @Configuration
 @Component
-@Profile("!" + SSO_AUTH_PROFILE + " & !" + IDENTITY_AUTH_PROFILE)
+@Profile("!" + SSO_AUTH_PROFILE + " & !" + IDENTITY_AUTH_PROFILE + " & !" + AUTH_BASIC)
+/*
+ * Required as primary for now due to a clashing bean in the always active Identity service classes.
+ * In future versions this class will be removed and the Identity service will be used instead.
+ */
+@Primary
 public class SearchEngineUserDetailsService implements UserDetailsService {
 
   private static final Logger LOGGER =
@@ -41,6 +48,7 @@ public class SearchEngineUserDetailsService implements UserDetailsService {
   @Autowired private TasklistProperties tasklistProperties;
 
   @Bean
+  @Primary
   public PasswordEncoder getPasswordEncoder() {
     return new BCryptPasswordEncoder();
   }

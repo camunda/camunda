@@ -26,6 +26,7 @@ const MigrationView: React.FC = observer(() => {
   }, []);
 
   useEffect(() => {
+    processesStore.init();
     processesStore.fetchProcesses();
 
     return () => {
@@ -35,6 +36,8 @@ const MigrationView: React.FC = observer(() => {
     };
   }, []);
 
+  const {currentStep} = processInstanceMigrationStore;
+
   return (
     <>
       <VisuallyHiddenH1>
@@ -42,6 +45,9 @@ const MigrationView: React.FC = observer(() => {
       </VisuallyHiddenH1>
 
       <InstancesList
+        frame={{
+          headerTitle: `Migration step ${currentStep?.stepNumber} - ${currentStep?.stepDescription}`,
+        }}
         type="migrate"
         topPanel={<TopPanel />}
         bottomPanel={<BottomPanel />}

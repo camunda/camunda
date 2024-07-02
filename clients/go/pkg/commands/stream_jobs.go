@@ -20,8 +20,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/camunda/zeebe/clients/go/v8/pkg/entities"
-	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
+	"github.com/camunda/camunda/clients/go/v8/pkg/entities"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 )
 
 type StreamJobsConsumer chan<- entities.Job

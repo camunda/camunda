@@ -11,13 +11,11 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.EventFilter;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
@@ -28,14 +26,7 @@ import java.util.function.BooleanSupplier;
 public final class StreamProcessorContext implements ReadonlyStreamProcessorContext {
 
   public static final int DEFAULT_MAX_COMMANDS_IN_BATCH = 100;
-  private static final StreamProcessorListener NOOP_LISTENER =
-      new StreamProcessorListener() {
-        @Override
-        public void onProcessed(final TypedRecord<?> processedCommand) {}
-
-        @Override
-        public void onSkipped(final LoggedEvent skippedRecord) {}
-      };
+  private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
   private ActorControl actor;
   private LogStream logStream;
   private LogStreamReader logStreamReader;

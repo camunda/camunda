@@ -39,7 +39,7 @@ public class MultipleInvalidResourceDeletionTest {
     client = zeebe.newClientBuilder().build();
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/16429")
+  @RegressionTest("https://github.com/camunda/camunda/issues/16429")
   public void shouldRejectMultipleResourceDeletion() {
     // given
     // generate load on stream processor. This is to increase the chance of the issue to happen.

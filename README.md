@@ -48,16 +48,16 @@ Oct       Nov          Dec          Jan          Feb          Mar          Apr
 
 ## Status
 
-To learn more about what we're currently working on, check the [GitHub issues](https://github.com/camunda/zeebe/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc) and the [latest commits](https://github.com/camunda/zeebe/commits/main).
+To learn more about what we're currently working on, check the [GitHub issues](https://github.com/camunda/camunda/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc) and the [latest commits](https://github.com/camunda/camunda/commits/main).
 
 ## Helpful Links
 
-* [Releases](https://github.com/camunda/zeebe/releases)
+* [Releases](https://github.com/camunda/camunda/releases)
 * [Pre-built Docker images](https://hub.docker.com/r/camunda/zeebe/tags?page=1&ordering=last_updated)
 * [Building Docker images for other platforms](/zeebe/docs/building_docker_images.md)
 * [Blog](https://camunda.com/blog/category/process-automation-as-a-service/)
 * [Documentation Home](https://docs.camunda.io)
-* [Issue Tracker](https://github.com/camunda/zeebe/issues)
+* [Issue Tracker](https://github.com/camunda/camunda/issues)
 * [User Forum](https://forum.camunda.io)
 * [Slack Channel](https://www.camunda.com/slack)
 * [Contribution Guidelines](/CONTRIBUTING.md)
@@ -71,7 +71,7 @@ To learn more about what we're currently working on, check the [GitHub issues](h
 * [Installation and Configuration](https://docs.camunda.io/docs/self-managed/zeebe-deployment/)
 * [Java Client](https://docs.camunda.io/docs/apis-clients/java-client/)
 * [Go Client](https://docs.camunda.io/docs/apis-clients/go-client/)
-* [Spring Integration](https://github.com/camunda-community-hub/spring-zeebe/)
+* [Spring SDK](https://docs.camunda.io/docs/apis-tools/spring-zeebe-sdk/getting-started/)
 
 ## Contributing
 
@@ -93,6 +93,7 @@ below, which are made available under the [Apache License, Version
 Available under the [Apache License, Version 2.0](/licenses/APACHE-2.0.txt):
 - Java Client ([clients/java](/clients/java))
 - Go Client ([clients/go](/clients/go))
+- Spring SDK ([spring-boot-starter-camunda-sdk](/spring-boot-starter-camunda-sdk))
 - Exporter API ([exporter-api](/exporter-api))
 - Protocol ([protocol](/protocol))
 - Gateway Protocol Implementation ([gateway-protocol-impl](/gateway-protocol-impl))

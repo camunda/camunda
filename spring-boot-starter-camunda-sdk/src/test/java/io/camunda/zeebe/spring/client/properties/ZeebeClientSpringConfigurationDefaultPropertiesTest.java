@@ -33,21 +33,6 @@ public class ZeebeClientSpringConfigurationDefaultPropertiesTest {
   @Autowired private ZeebeClientConfigurationProperties properties;
 
   @Test
-  public void hasDeprecatedGatewayAddress() {
-    assertThat(properties.getGatewayAddress()).isEqualTo("0.0.0.0:26500");
-  }
-
-  @Test
-  public void hasGrpcAddress() {
-    assertThat(properties.getGrpcAddress().toString()).isEqualTo("https://0.0.0.0:26500");
-  }
-
-  @Test
-  public void hasRestAddress() {
-    assertThat(properties.getRestAddress().toString()).isEqualTo("https://0.0.0.0:8080");
-  }
-
-  @Test
   public void hasRequestTimeout() {
     assertThat(properties.getRequestTimeout()).isEqualTo(Duration.ofSeconds(10));
   }
@@ -80,11 +65,6 @@ public class ZeebeClientSpringConfigurationDefaultPropertiesTest {
   @Test
   public void hasMessageTimeToLeave() {
     assertThat(properties.getDefaultMessageTimeToLive()).isEqualTo(Duration.ofSeconds(3600));
-  }
-
-  @Test
-  public void isSecurityPlainTextDisabled() {
-    assertThat(properties.isPlaintextConnectionEnabled()).isFalse();
   }
 
   @Test

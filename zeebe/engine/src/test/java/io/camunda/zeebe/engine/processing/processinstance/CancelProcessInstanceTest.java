@@ -498,7 +498,7 @@ public final class CancelProcessInstanceTest {
   /**
    * Regression test against activating jobs of cancelled process instances
    *
-   * <p>See: https://github.com/camunda/zeebe/issues/8588
+   * <p>See: https://github.com/camunda/camunda/issues/8588
    */
   @Test
   public void shouldCancelJobsWithIncidents() {

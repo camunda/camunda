@@ -408,7 +408,7 @@ public final class ActivateJobsTest {
     assertThat(remainingJobKeys).hasSize(jobCount - expectedJobsInBatch);
   }
 
-  // regression test for https://github.com/camunda/zeebe/issues/6207
+  // regression test for https://github.com/camunda/camunda/issues/6207
   @Test
   public void shouldActivateJobUpToMaxMessageSize() {
     // given
@@ -458,7 +458,7 @@ public final class ActivateJobsTest {
         .isEqualTo(Map.of("foo", "x".repeat(variablesSize), "bar", "x".repeat(variablesSize)));
   }
 
-  // regression test for https://github.com/camunda/zeebe/issues/10308
+  // regression test for https://github.com/camunda/camunda/issues/10308
   @Test
   public void shouldNotActivateJobWithNoRemainingRetries() {
     // given

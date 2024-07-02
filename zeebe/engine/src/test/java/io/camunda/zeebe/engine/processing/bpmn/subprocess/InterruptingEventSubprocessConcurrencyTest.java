@@ -39,7 +39,7 @@ public class InterruptingEventSubprocessConcurrencyTest {
           .maxCommandsInBatch(1);
 
   @Test
-  // https://github.com/camunda/zeebe/issues/6552
+  // https://github.com/camunda/camunda/issues/6552
   public void shouldEndProcess() {
     // given
     final ProcessBuilder process = Bpmn.createExecutableProcess(PROCESS_ID);

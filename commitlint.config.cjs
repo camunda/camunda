@@ -1,7 +1,7 @@
 module.exports = {
     extends: ['@commitlint/config-conventional'],
 
-    helpUrl: 'https://github.com/camunda/zeebe/blob/main/CONTRIBUTING.md/#commit-message-guidelines',
+    helpUrl: 'https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md/#commit-message-guidelines',
 
     // Rules are made up by a name and a configuration array. The configuration array contains:
     // - Level [0..2]: 0 disables the rule. For 1 it will be considered a warning for 2 an error.

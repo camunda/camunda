@@ -108,8 +108,8 @@ final class TestSupport {
    * Returns a stream of value types which are export-able by the exporter, i.e. the ones with an
    * index template.
    *
-   * <p>Issue https://github.com/camunda/zeebe/issues/8337 should fix this and ensure all types have
-   * an index template.
+   * <p>Issue https://github.com/camunda/camunda/issues/8337 should fix this and ensure all types
+   * have an index template.
    */
   static Stream<ValueType> provideValueTypes() {
     final var excludedValueTypes =

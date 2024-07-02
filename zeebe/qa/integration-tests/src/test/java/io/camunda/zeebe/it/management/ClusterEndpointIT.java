@@ -204,13 +204,6 @@ final class ClusterEndpointIT {
         .withBrokersCount(BROKER_COUNT)
         .withPartitionsCount(PARTITION_COUNT)
         .withReplicationFactor(replicationFactor)
-        .withBrokerConfig(
-            broker ->
-                broker
-                    .brokerConfig()
-                    .getExperimental()
-                    .getFeatures()
-                    .setEnableDynamicClusterTopology(true))
         .build()
         .start();
   }

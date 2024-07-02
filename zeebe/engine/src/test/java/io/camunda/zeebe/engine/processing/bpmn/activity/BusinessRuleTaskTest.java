@@ -564,8 +564,8 @@ public final class BusinessRuleTaskTest {
   }
 
   /**
-   * Regression test for https://github.com/camunda/zeebe/issues/9272. An exception occurred if two
-   * DRGs were deployed with a different id but the same decision id.
+   * Regression test for https://github.com/camunda/camunda/issues/9272. An exception occurred if
+   * two DRGs were deployed with a different id but the same decision id.
    */
   @Test
   public void shouldEvaluateDecisionIfMultipleDrgsWithSameDecisionId() {

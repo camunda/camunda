@@ -26,6 +26,8 @@ export class ProcessInstance {
   readonly editVariableValueField: Locator;
   readonly variableSpinner: Locator;
   readonly operationSpinner: Locator;
+  readonly executionCountToggleOn: Locator;
+  readonly executionCountToggleOff: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -45,6 +47,12 @@ export class ProcessInstance {
     this.editVariableValueField = page.getByRole('textbox', {name: 'Value'});
     this.variableSpinner = page.getByTestId('variable-operation-spinner');
     this.operationSpinner = page.getByTestId('operation-spinner');
+    this.executionCountToggleOn = this.instanceHistory.getByLabel(
+      /^show execution count$/i,
+    );
+    this.executionCountToggleOff = this.instanceHistory.getByLabel(
+      /^hide execution count$/i,
+    );
   }
 
   getEditVariableFieldSelector(variableName: string) {
@@ -82,7 +90,7 @@ export class ProcessInstance {
     id: string;
     options?: Parameters<Page['goto']>[1];
   }) {
-    await this.page.goto(Paths.processInstance(id), options);
+    await this.page.goto('.' + Paths.processInstance(id), options);
   }
 
   async getNthTreeNodeTestId(n: number) {

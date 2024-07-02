@@ -17,7 +17,7 @@ import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
-import io.camunda.zeebe.broker.partitioning.topology.ClusterTopologyService;
+import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
@@ -31,6 +31,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import java.time.Duration;
 import java.util.List;
+import org.agrona.concurrent.SnowflakeIdGenerator;
 
 /**
  * Context that is utilized during broker startup and shutdown process. It contains dependencies
@@ -105,11 +106,15 @@ public interface BrokerStartupContext {
 
   void setJobStreamService(final JobStreamService jobStreamService);
 
-  ClusterTopologyService getClusterTopology();
+  ClusterConfigurationService getClusterConfigurationService();
 
-  void setClusterTopology(ClusterTopologyService clusterTopologyService);
+  void setClusterConfigurationService(ClusterConfigurationService clusterConfigurationService);
 
   BrokerClient getBrokerClient();
 
   Duration getShutdownTimeout();
+
+  SnowflakeIdGenerator getRequestIdGenerator();
+
+  void setRequestIdGenerator(SnowflakeIdGenerator requestIdGenerator);
 }

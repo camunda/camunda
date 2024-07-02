@@ -24,9 +24,7 @@ import org.springframework.boot.test.context.SpringBootTest;
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      "spring.main.allow-bean-definition-overriding=true",
       TasklistProperties.PREFIX + "importer.jobType = testJobType",
-      "graphql.servlet.exception-handlers-enabled = true"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ZeebeImportRetryAfterFailureElasticSearchIT extends ZeebeImportIT {
@@ -40,6 +38,7 @@ public class ZeebeImportRetryAfterFailureElasticSearchIT extends ZeebeImportIT {
     assumeTrue(TestUtil.isElasticSearch());
   }
 
+  @Override
   @AfterEach
   public void after() {
     elasticsearchBulkProcessor.cancelAttempts();

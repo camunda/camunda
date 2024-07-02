@@ -105,7 +105,7 @@ public final class ExpireMessageTest {
         .hasMessageId("");
   }
 
-  // regression test for https://github.com/camunda/zeebe/issues/5420
+  // regression test for https://github.com/camunda/camunda/issues/5420
   @Test
   public void shouldHaveNoSourceRecordPositionOnExpire() {
     // given

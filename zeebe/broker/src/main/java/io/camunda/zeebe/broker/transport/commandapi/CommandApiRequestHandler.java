@@ -10,8 +10,6 @@ package io.camunda.zeebe.broker.transport.commandapi;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
-import io.camunda.zeebe.broker.transport.backpressure.BackpressureMetrics;
-import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
@@ -24,6 +22,8 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
+import java.util.HashMap;
+import java.util.Map;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 
@@ -32,10 +32,8 @@ final class CommandApiRequestHandler
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
   private final Int2ObjectHashMap<LogStreamWriter> leadingStreams = new Int2ObjectHashMap<>();
-  private final Int2ObjectHashMap<RequestLimiter<Intent>> partitionLimiters =
-      new Int2ObjectHashMap<>();
-  private final BackpressureMetrics metrics = new BackpressureMetrics();
   private boolean isDiskSpaceAvailable = true;
+  private final Map<Integer, Boolean> processingPaused = new HashMap<>();
 
   CommandApiRequestHandler() {
     super(CommandApiRequestReader::new, CommandApiResponseWriter::new);
@@ -50,6 +48,18 @@ final class CommandApiRequestHandler
       final ErrorResponseWriter errorWriter) {
     return CompletableActorFuture.completed(
         handle(partitionId, requestId, requestReader, responseWriter, errorWriter));
+  }
+
+  public void onRecovered(final int partitionId) {
+    actor.run(() -> processingPaused.put(partitionId, false));
+  }
+
+  public void onPaused(final int partitionId) {
+    actor.run(() -> processingPaused.put(partitionId, true));
+  }
+
+  public void onResumed(final int partitionId) {
+    actor.run(() -> processingPaused.put(partitionId, false));
   }
 
   private Either<ErrorResponseWriter, CommandApiResponseWriter> handle(
@@ -73,13 +83,18 @@ final class CommandApiRequestHandler
       return Either.left(errorWriter.outOfDiskSpace(partitionId));
     }
 
+    if (processingPaused.getOrDefault(partitionId, false)) {
+      return Either.left(
+          errorWriter.internalError("Processing paused for partition '%s'", partitionId));
+    }
+
     final var command = reader.getMessageDecoder();
     final var logStreamWriter = leadingStreams.get(partitionId);
-    final var limiter = partitionLimiters.get(partitionId);
 
     final var valueType = command.valueType();
     final var intent = Intent.fromProtocolValue(valueType, command.intent());
     final var value = reader.value();
+    final long operationReference = command.operationReference();
     final var metadata = reader.metadata();
 
     metadata.requestId(requestId);
@@ -87,6 +102,7 @@ final class CommandApiRequestHandler
     metadata.recordType(RecordType.COMMAND);
     metadata.intent(intent);
     metadata.valueType(valueType);
+    metadata.operationReference(operationReference);
 
     if (logStreamWriter == null) {
       errorWriter.partitionLeaderMismatch(partitionId);
@@ -99,30 +115,12 @@ final class CommandApiRequestHandler
       return Either.left(errorWriter);
     }
 
-    metrics.receivedRequest(partitionId);
-    if (!limiter.tryAcquire(partitionId, requestId, intent)) {
-      metrics.dropped(partitionId);
-      LOG.trace(
-          "Partition-{} receiving too many requests. Current limit {} inflight {}, dropping request {} from gateway",
-          partitionId,
-          limiter.getLimit(),
-          limiter.getInflightCount(),
-          requestId);
-      errorWriter.resourceExhausted();
-      return Either.left(errorWriter);
-    }
-
     try {
       return writeCommand(command.key(), metadata, value, logStreamWriter, errorWriter, partitionId)
           .map(b -> responseWriter)
-          .mapLeft(
-              failure -> {
-                limiter.onIgnore(partitionId, requestId);
-                return errorWriter;
-              });
+          .mapLeft(failure -> errorWriter);
 
     } catch (final Exception error) {
-      limiter.onIgnore(partitionId, requestId);
       final String errorMessage =
           "Failed to write client request to partition '%d', %s".formatted(partitionId, error);
       LOG.error(errorMessage);
@@ -157,23 +155,12 @@ final class CommandApiRequestHandler
     }
   }
 
-  void addPartition(
-      final int partitionId,
-      final LogStreamWriter logStreamWriter,
-      final RequestLimiter<Intent> limiter) {
-    actor.submit(
-        () -> {
-          leadingStreams.put(partitionId, logStreamWriter);
-          partitionLimiters.put(partitionId, limiter);
-        });
+  void addPartition(final int partitionId, final LogStreamWriter logStreamWriter) {
+    actor.submit(() -> leadingStreams.put(partitionId, logStreamWriter));
   }
 
   void removePartition(final int partitionId) {
-    actor.submit(
-        () -> {
-          leadingStreams.remove(partitionId);
-          partitionLimiters.remove(partitionId);
-        });
+    actor.submit(() -> leadingStreams.remove(partitionId));
   }
 
   void onDiskSpaceNotAvailable() {

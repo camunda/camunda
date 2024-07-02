@@ -98,7 +98,7 @@ test.describe('form-js integration', () => {
         });
       }
 
-      route.continue();
+      return route.continue();
     });
 
     await page.goto(`/${MOCK_TASK.id}/`, {

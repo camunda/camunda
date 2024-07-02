@@ -49,8 +49,8 @@ public class PropertiesPostProcessor implements EnvironmentPostProcessor {
 
   private String determinePropertiesFile(final ClientMode clientMode) {
     switch (clientMode) {
-      case oidc -> {
-        return "application-camunda-oidc.yaml";
+      case selfManaged -> {
+        return "application-camunda-self-managed.yaml";
       }
       case saas -> {
         return "application-camunda-saas.yaml";

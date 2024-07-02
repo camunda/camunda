@@ -116,7 +116,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
     }
   }
 
-  @VisibleForTesting("https://github.com/camunda/zeebe/issues/14624")
+  @VisibleForTesting("https://github.com/camunda/camunda/issues/14624")
   static JobActivationProperties readJobActivationProperties(final DirectBuffer buffer) {
     final var mutable = new JobActivationPropertiesImpl();
     mutable.wrap(buffer);

@@ -8,6 +8,7 @@
 package io.camunda.operate.util.j5templates;
 
 import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
@@ -26,10 +27,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.web.servlet.MvcResult;
 
 /**
  * Base definition for a test that requires opensearch/elasticsearch but not zeebe. The test suite
@@ -50,19 +53,18 @@ import org.springframework.test.context.web.WebAppConfiguration;
     TestInstance.Lifecycle
         .PER_CLASS) // Lifecycle required to use BeforeAll and AfterAll in non-static fashion
 public class OperateSearchAbstractIT {
+  public static final String DEFAULT_USER = "testuser";
   // These are mocked so we can bypass authentication issues when connecting to search
   @MockBean protected UserService userService;
   @MockBean protected TenantService tenantService;
-
   @Autowired protected ProcessCache processCache;
-
   @Autowired protected TestSearchRepository testSearchRepository;
-
   @Autowired protected SearchContainerManager searchContainerManager;
-
   @Autowired protected TestResourceManager testResourceManager;
 
-  @Autowired protected ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  protected ObjectMapper objectMapper;
 
   @BeforeAll
   public void beforeAllSetup() throws Exception {
@@ -119,4 +121,8 @@ public class OperateSearchAbstractIT {
   }
 
   public void runAdditionalAfterAllTeardown() {}
+
+  protected void assertErrorMessageContains(final MvcResult mvcResult, final String text) {
+    assertThat(mvcResult.getResolvedException().getMessage()).contains(text);
+  }
 }

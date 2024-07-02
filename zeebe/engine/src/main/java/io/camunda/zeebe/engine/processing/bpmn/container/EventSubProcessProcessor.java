@@ -43,24 +43,29 @@ public final class EventSubProcessProcessor
   @Override
   public Either<Failure, ?> onActivate(
       final ExecutableFlowElementContainer element, final BpmnElementContext activating) {
-    return variableMappingBehavior
-        .applyInputMappings(activating, element)
-        .thenDo(
-            ok -> {
-              final var activated =
-                  stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
-              stateTransitionBehavior.activateChildInstance(
-                  activated, element.getStartEvents().getFirst());
-            });
+    return variableMappingBehavior.applyInputMappings(activating, element);
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeActivation(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+    final var activated =
+        stateTransitionBehavior.transitionToActivated(context, element.getEventType());
+    stateTransitionBehavior.activateChildInstance(activated, element.getStartEvents().getFirst());
+    return SUCCESS;
   }
 
   @Override
   public Either<Failure, ?> onComplete(
       final ExecutableFlowElementContainer element, final BpmnElementContext completing) {
 
-    return variableMappingBehavior
-        .applyOutputMappings(completing, element)
-        .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing));
+    return variableMappingBehavior.applyOutputMappings(completing, element);
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeCompletion(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+    return stateTransitionBehavior.transitionToCompleted(element, context);
   }
 
   @Override

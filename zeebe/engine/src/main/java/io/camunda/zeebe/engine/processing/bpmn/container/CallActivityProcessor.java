@@ -63,9 +63,13 @@ public final class CallActivityProcessor
   @Override
   public Either<Failure, ?> onActivate(
       final ExecutableCallActivity element, final BpmnElementContext context) {
-    return variableMappingBehavior
-        .applyInputMappings(context, element)
-        .flatMap(ok -> evaluateProcessId(context, element))
+    return variableMappingBehavior.applyInputMappings(context, element);
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeActivation(
+      final ExecutableCallActivity element, final BpmnElementContext context) {
+    return evaluateProcessId(context, element)
         .flatMap(processId -> getProcessForProcessId(processId, context.getTenantId()))
         .flatMap(this::checkProcessHasNoneStartEvent)
         .flatMap(p -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> p))
@@ -101,12 +105,15 @@ public final class CallActivityProcessor
       final ExecutableCallActivity element, final BpmnElementContext context) {
     return variableMappingBehavior
         .applyOutputMappings(context, element)
-        .flatMap(
-            ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(context);
-              compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
-              return stateTransitionBehavior.transitionToCompleted(element, context);
-            })
+        .thenDo(ok -> eventSubscriptionBehavior.unsubscribeFromEvents(context));
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeCompletion(
+      final ExecutableCallActivity element, final BpmnElementContext context) {
+    compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
+    return stateTransitionBehavior
+        .transitionToCompleted(element, context)
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);

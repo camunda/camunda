@@ -28,6 +28,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.assertj.core.api.Assertions;
@@ -183,14 +184,14 @@ final class PartitionJoinApplierTest {
         new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor);
     final var updatedTopology =
         partitionJoinApplier.init(initialTopology).get().apply(initialTopology);
-    when(partitionChangeExecutor.join(anyInt(), any()))
+    when(partitionChangeExecutor.join(anyInt(), any(), any()))
         .thenReturn(CompletableActorFuture.completed(null));
 
     // when
     final var resultingTopology = partitionJoinApplier.apply().join().apply(updatedTopology);
 
     // then
-    verify(partitionChangeExecutor, times(1)).join(anyInt(), any());
+    verify(partitionChangeExecutor, times(1)).join(anyInt(), any(), any());
     ClusterConfigurationAssert.assertThatClusterTopology(resultingTopology)
         .hasMemberWithPartitions(1, Set.of(1))
         .member(localMemberId)
@@ -201,7 +202,7 @@ final class PartitionJoinApplierTest {
   @Test
   void shouldReturnExceptionWhenJoinFailed() {
     // given
-    when(partitionChangeExecutor.join(anyInt(), any()))
+    when(partitionChangeExecutor.join(anyInt(), any(), any()))
         .thenReturn(
             CompletableActorFuture.completedExceptionally(new RuntimeException("Expected")));
 
@@ -222,7 +223,10 @@ final class PartitionJoinApplierTest {
     // given
     final var config =
         new DynamicPartitionConfig(
-            new ExportersConfig(Map.of("expA", new ExporterState(ExporterState.State.ENABLED))));
+            new ExportersConfig(
+                Map.of(
+                    "expA",
+                    new ExporterState(1, ExporterState.State.ENABLED, Optional.of("expB")))));
     final var initialTopology =
         ClusterConfiguration.init()
             .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))

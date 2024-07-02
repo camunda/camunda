@@ -61,7 +61,7 @@ public class JobBackoffCleanupMigrationTest {
     jobKey.wrapLong(1);
   }
 
-  // regression test of https://github.com/camunda/zeebe/issues/14329
+  // regression test of https://github.com/camunda/camunda/issues/14329
   @Test
   public void shouldCleanOrphanBackoffEntries() {
     // given
@@ -78,7 +78,7 @@ public class JobBackoffCleanupMigrationTest {
     assertThat(backoffColumnFamily.isEmpty()).isTrue();
   }
 
-  // regression test of https://github.com/camunda/zeebe/issues/14329
+  // regression test of https://github.com/camunda/camunda/issues/14329
   @Test
   public void shouldNotCleanUpFailedJobs() {
     // given
@@ -94,7 +94,7 @@ public class JobBackoffCleanupMigrationTest {
     assertThat(backoffColumnFamily.isEmpty()).isFalse();
   }
 
-  // regression test of https://github.com/camunda/zeebe/issues/14329
+  // regression test of https://github.com/camunda/camunda/issues/14329
   @Test
   public void shoulCleanDuplicatedBackoffEntries() {
     // given

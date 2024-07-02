@@ -11,7 +11,6 @@ import {
   assignedTaskWithForm,
   unassignedTaskWithForm,
 } from 'modules/mock-schema/mocks/task';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {FormJS} from './index';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {http, HttpResponse} from 'msw';
@@ -41,9 +40,7 @@ const getWrapper = () => {
   const Wrapper: React.FC<{
     children?: React.ReactNode;
   }> = ({children}) => (
-    <QueryClientProvider client={mockClient}>
-      <MockThemeProvider>{children}</MockThemeProvider>
-    </QueryClientProvider>
+    <QueryClientProvider client={mockClient}>{children}</QueryClientProvider>
   );
 
   return Wrapper;

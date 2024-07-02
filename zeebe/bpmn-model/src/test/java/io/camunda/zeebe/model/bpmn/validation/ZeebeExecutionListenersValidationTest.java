@@ -133,9 +133,12 @@ public class ZeebeExecutionListenersValidationTest {
         process,
         expect(
             ZeebeExecutionListeners.class,
-            "Execution listeners are not supported for the 'startEvent' element. "
-                + "Currently, only [process, scriptTask, task, serviceTask, businessRuleTask, manualTask, "
-                + "sendTask, receiveTask, userTask] elements can have execution listeners."));
+            "Execution listeners are not supported for the 'sequenceFlow' element. "
+                + "Currently, only [process, subProcess, callActivity, task, sendTask, serviceTask, "
+                + "scriptTask, userTask, receiveTask, businessRuleTask, manualTask, startEvent, "
+                + "intermediateThrowEvent, intermediateCatchEvent, boundaryEvent, endEvent, "
+                + "exclusiveGateway, inclusiveGateway, parallelGateway, eventBasedGateway] "
+                + "elements can have execution listeners."));
   }
 
   @Test

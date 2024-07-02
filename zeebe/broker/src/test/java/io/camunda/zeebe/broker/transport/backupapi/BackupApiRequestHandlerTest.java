@@ -310,7 +310,7 @@ final class BackupApiRequestHandlerTest {
     assertThat(listResponse.getBackups()).containsExactly(expected);
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/12597")
+  @RegressionTest("https://github.com/camunda/camunda/issues/12597")
   void shouldListManyBackups() {
     // given
     final var request = new BackupRequest().setType(BackupRequestType.LIST).setPartitionId(1);

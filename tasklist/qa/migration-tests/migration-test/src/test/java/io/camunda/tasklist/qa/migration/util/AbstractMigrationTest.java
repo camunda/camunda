@@ -9,10 +9,15 @@ package io.camunda.tasklist.qa.migration.util;
 
 import static org.junit.Assume.assumeTrue;
 
+import io.camunda.tasklist.JacksonConfig;
+import io.camunda.tasklist.es.ElasticsearchInternalTask;
+import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.schema.indices.ImportPositionIndex;
+import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.schema.indices.UserIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
+import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,7 +28,16 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = TestConfig.class, loader = AnnotationConfigContextLoader.class)
+@ContextConfiguration(
+    classes = {
+      TestConfig.class,
+      ElasticsearchSchemaManager.class,
+      RetryElasticsearchClient.class,
+      ElasticsearchInternalTask.class,
+      JacksonConfig.class,
+      TestContext.class,
+    },
+    loader = AnnotationConfigContextLoader.class)
 @TestPropertySource(locations = "/test.properties")
 public abstract class AbstractMigrationTest {
 
@@ -33,15 +47,19 @@ public abstract class AbstractMigrationTest {
 
   @Autowired protected VariableIndex variableIndex;
 
+  @Autowired protected ProcessIndex processIndex;
+
+  @Autowired protected TestContext testContext;
+
+  @Autowired protected RestHighLevelClient esClient;
+
+  @Autowired protected RetryElasticsearchClient retryElasticsearchClient;
+
   @Autowired protected ImportPositionIndex importPositionIndex;
 
   @Autowired protected UserIndex userIndex;
 
-  @Autowired protected RestHighLevelClient esClient;
-
-  @Autowired protected TestContext testContext;
-
-  protected void assumeThatProcessIsUnderTest(String bpmnProcessId) {
+  protected void assumeThatProcessIsUnderTest(final String bpmnProcessId) {
     assumeTrue(testContext.getProcessesToAssert().contains(bpmnProcessId));
   }
 }

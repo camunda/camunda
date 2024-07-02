@@ -173,7 +173,7 @@ final class JobStreamLifecycleIT {
     }
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/17513")
+  @RegressionTest("https://github.com/camunda/camunda/issues/17513")
   void shouldAggregateStreamsEvenAcrossRestarts() {
     // given - many logically equivalent streams
     final List<JobWorker> workers = new ArrayList<>();

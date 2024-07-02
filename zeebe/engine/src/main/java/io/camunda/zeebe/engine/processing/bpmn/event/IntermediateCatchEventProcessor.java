@@ -46,7 +46,7 @@ public class IntermediateCatchEventProcessor
   }
 
   @Override
-  public Either<Failure, ?> onActivate(
+  public Either<Failure, ?> finalizeActivation(
       final ExecutableCatchEventElement element, final BpmnElementContext activating) {
     return eventBehaviorOf(element).onActivate(element, activating);
   }
@@ -56,11 +56,14 @@ public class IntermediateCatchEventProcessor
       final ExecutableCatchEventElement element, final BpmnElementContext completing) {
     return variableMappingBehavior
         .applyOutputMappings(completing, element)
-        .flatMap(
-            ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(completing);
-              return stateTransitionBehavior.transitionToCompleted(element, completing);
-            })
+        .thenDo(ok -> eventSubscriptionBehavior.unsubscribeFromEvents(completing));
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeCompletion(
+      final ExecutableCatchEventElement element, final BpmnElementContext context) {
+    return stateTransitionBehavior
+        .transitionToCompleted(element, context)
         .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
   }
 

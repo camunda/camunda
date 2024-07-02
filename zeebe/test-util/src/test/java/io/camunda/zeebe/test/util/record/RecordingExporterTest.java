@@ -126,6 +126,11 @@ public final class RecordingExporterTest {
     }
 
     @Override
+    public long getOperationReference() {
+      return 0;
+    }
+
+    @Override
     public Record<TestValue> copyOf() {
       return this;
     }

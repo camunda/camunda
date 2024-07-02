@@ -106,7 +106,7 @@ final class LogAppendEntrySerializerTest {
         .isInstanceOf(IllegalArgumentException.class);
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/15989")
+  @RegressionTest("https://github.com/camunda/camunda/issues/15989")
   void shouldWriteLargeMetadata() {
     // given
     final var rejection = "foo".repeat(Short.MAX_VALUE * 2);

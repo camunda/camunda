@@ -7,7 +7,6 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Disclaimer} from './index';
 
 const DISCLAIMER_TEXT =
@@ -28,7 +27,7 @@ describe('<Disclaimer />', () => {
   });
 
   it('should show the disclaimer', () => {
-    const {rerender} = render(<Disclaimer />, {wrapper: MockThemeProvider});
+    const {rerender} = render(<Disclaimer />);
 
     // we need this custom selector because the text contains a link
     expect(

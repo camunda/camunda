@@ -252,7 +252,7 @@ final class StreamProcessorReplayTest {
     assertThat(Protocol.decodeKeyInPartition(streamPlatform.getCurrentKey())).isEqualTo(21L);
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/13101")
+  @RegressionTest("https://github.com/camunda/camunda/issues/13101")
   void shouldNotReplayErrorEventAppliedInSnapshot() throws Exception {
     // given
     final var processorWhichFails = setupProcessorWhichFailsOnProcessing();

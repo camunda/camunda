@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.es.RetryElasticsearchClient;
-import io.camunda.tasklist.management.HealthCheckIT.AddManagementPropertiesInitializer;
 import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
@@ -31,7 +30,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
@@ -46,10 +45,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     },
     properties = {
       TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",
-      "graphql.servlet.websocket.enabled=false"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
+@ActiveProfiles({"tasklist", "test"})
 public class ProbesTestElasticSearchIT extends TasklistIntegrationTest {
 
   @Autowired private TasklistProperties tasklistProperties;
@@ -91,7 +89,7 @@ public class ProbesTestElasticSearchIT extends TasklistIntegrationTest {
     assertThat(indexSchemaValidator.schemaExists()).isFalse();
   }
 
-  protected void enableCreateSchema(boolean createSchema) {
+  protected void enableCreateSchema(final boolean createSchema) {
     tasklistProperties.getElasticsearch().setCreateSchema(createSchema);
   }
 }

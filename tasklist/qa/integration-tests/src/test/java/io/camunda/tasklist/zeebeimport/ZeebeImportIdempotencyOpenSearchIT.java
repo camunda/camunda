@@ -27,9 +27,7 @@ import org.springframework.boot.test.context.SpringBootTest;
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      "spring.main.allow-bean-definition-overriding=true",
       TasklistProperties.PREFIX + "importer.jobType = testJobType",
-      "graphql.servlet.exception-handlers-enabled = true"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ZeebeImportIdempotencyOpenSearchIT extends ZeebeImportIT {
@@ -44,7 +42,7 @@ public class ZeebeImportIdempotencyOpenSearchIT extends ZeebeImportIT {
   }
 
   @Override
-  protected void processAllRecordsAndWait(TestCheck waitTill, Object... arguments) {
+  protected void processAllRecordsAndWait(final TestCheck waitTill, final Object... arguments) {
     databaseTestExtension.processAllRecordsAndWait(waitTill, arguments);
     databaseTestExtension.processAllRecordsAndWait(waitTill, arguments);
     customOpenSearchBulkProcessor.cancelAttempts();

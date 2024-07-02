@@ -40,7 +40,7 @@ final class FormLinkingIT {
     client = zeebe.newClientBuilder().build();
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/16311")
+  @RegressionTest("https://github.com/camunda/camunda/issues/16311")
   public void shouldActivateUserTaskWithCorrectFormKey() {
     // given
     final DeploymentEvent deployment =

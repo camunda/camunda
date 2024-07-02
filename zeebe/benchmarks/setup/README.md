@@ -122,7 +122,7 @@ Possible future extension point: Use https://docs.camunda.io/docs/apis-clients/c
 ### Setup Cloud Benchmark
 
 * Create a new cloud benchmark in our benchmark folder, via `./newCloudBenchmark`. This will create a new namespace in our k8 cluster, such that we can deploy our starters and workers. They will connect to the camunda cloud cluster after we added the correct credentials.
-* Edit the `cloudcredentials.yaml` file, replace the old/default values with your client credentials. **NOTE: Please make sure that you're not pushing your credentials to the repository!** https://github.com/camunda/zeebe/blob/main/zeebe/benchmarks/setup/cloud-default/cloudcredentials.yaml contains an example.
+* Edit the `cloudcredentials.yaml` file, replace the old/default values with your client credentials. **NOTE: Please make sure that you're not pushing your credentials to the repository!** https://github.com/camunda/camunda/blob/main/zeebe/benchmarks/setup/cloud-default/cloudcredentials.yaml contains an example.
 * Deploy everything you need, e. g. run `make clean all` to deploy the secret, worker and starter. **Alternatively**, you can also manually provision the resources:
 * `make secret worker starter`
 

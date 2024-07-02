@@ -24,7 +24,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/camunda/zeebe/clients/go/v8/internal/embedded"
+	"github.com/camunda/camunda/clients/go/v8/internal/embedded"
 	"google.golang.org/grpc/credentials/insecure"
 
 	"google.golang.org/grpc/credentials"
@@ -32,9 +32,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/camunda/zeebe/clients/go/v8/pkg/commands"
-	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
-	"github.com/camunda/zeebe/clients/go/v8/pkg/worker"
+	"github.com/camunda/camunda/clients/go/v8/pkg/commands"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
+	"github.com/camunda/camunda/clients/go/v8/pkg/worker"
 )
 
 const DefaultKeepAlive = 45 * time.Second
@@ -191,7 +191,7 @@ func NewClient(config *ClientConfig) (Client, error) {
 
 	config.DialOpts = append(config.DialOpts, grpc.WithUserAgent(config.UserAgent))
 
-	conn, err := grpc.Dial(config.GatewayAddress, config.DialOpts...)
+	conn, err := grpc.NewClient(config.GatewayAddress, config.DialOpts...)
 	if err != nil {
 		return nil, err
 	}

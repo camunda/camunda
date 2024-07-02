@@ -106,11 +106,12 @@ env-clean: env-down
 start-e2e:
 	@curl --request DELETE --url http://localhost:9200/e2e* \
     && docker rm -f zeebe-e2e || true \
-    && docker-compose up --force-recreate -d zeebe-e2e \
+    && docker-compose up --force-recreate -d elasticsearch zeebe-e2e \
     && mvn install -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild  \
     && CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX=e2etasklist \
        CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX=e2e \
        CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=localhost:26503 \
+       CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://localhost:8088 \
        CAMUNDA_TASKLIST_IMPORTER_READERBACKOFF=0 \
        CAMUNDA_TASKLIST_IMPORTER_SCHEDULERBACKOFF=0 \
        SERVER_PORT=8081 \

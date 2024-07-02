@@ -32,9 +32,6 @@ const TargetVersionField: React.FC = observer(() => {
           if (!isNil(selectedItem)) {
             processInstanceMigrationStore.resetFlowNodeMapping();
             processesStore.setSelectedTargetVersion(selectedItem);
-            processInstanceMigrationStore.setTargetProcessDefinitionKey(
-              processesStore.selectedTargetProcessId ?? null,
-            );
           }
         }}
         disabled={

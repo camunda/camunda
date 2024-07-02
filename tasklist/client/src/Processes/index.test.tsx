@@ -17,7 +17,6 @@ import {
 } from 'modules/testing-library';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {createMockProcess} from 'modules/queries/useProcesses';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {http, HttpResponse} from 'msw';
 import {MemoryRouter} from 'react-router-dom';
 import {Component} from './index';
@@ -51,7 +50,7 @@ const getWrapper = (initialEntries = ['/']) => {
     return (
       <QueryClientProvider client={mockClient}>
         <MemoryRouter initialEntries={initialEntries}>
-          <MockThemeProvider>{children}</MockThemeProvider>
+          {children}
           <LocationLog />
         </MemoryRouter>
       </QueryClientProvider>

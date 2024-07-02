@@ -98,6 +98,7 @@ test.describe('processes page', () => {
       page,
       commonPage,
       processesPage,
+      processesPage: {filtersPanel},
     }) => {
       await commonPage.changeTheme(theme);
 
@@ -126,7 +127,7 @@ test.describe('processes page', () => {
         },
       });
 
-      await processesPage.selectFlowNode('Event Subprocess task');
+      await filtersPanel.selectFlowNode('Event Subprocess task');
 
       await expect(page).toHaveScreenshot();
     });
@@ -178,6 +179,7 @@ test.describe('processes page', () => {
       page,
       commonPage,
       processesPage,
+      processesPage: {filtersPanel},
     }) => {
       await commonPage.changeTheme(theme);
       await page.addInitScript(() => {
@@ -210,10 +212,10 @@ test.describe('processes page', () => {
         },
       });
 
-      await processesPage.displayOptionalFilter('Variable');
-      await processesPage.displayOptionalFilter('Error Message');
-      await processesPage.displayOptionalFilter('Operation Id');
-      await processesPage.operationIdFilter.type('aaa');
+      await filtersPanel.displayOptionalFilter('Variable');
+      await filtersPanel.displayOptionalFilter('Error Message');
+      await filtersPanel.displayOptionalFilter('Operation Id');
+      await filtersPanel.operationIdFilter.type('aaa');
       await expect(page.getByText('Id has to be a UUID')).toBeVisible();
       await expect(page).toHaveScreenshot();
     });
@@ -222,6 +224,7 @@ test.describe('processes page', () => {
       page,
       commonPage,
       processesPage,
+      processesPage: {filtersPanel},
     }) => {
       await commonPage.changeTheme(theme);
       await page.addInitScript(() => {
@@ -254,10 +257,10 @@ test.describe('processes page', () => {
         },
       });
 
-      await processesPage.displayOptionalFilter('Parent Process Instance Key');
-      await processesPage.displayOptionalFilter('Process Instance Key(s)');
-      await processesPage.displayOptionalFilter('Failed job but retries left');
-      await processesPage.displayOptionalFilter('End Date Range');
+      await filtersPanel.displayOptionalFilter('Parent Process Instance Key');
+      await filtersPanel.displayOptionalFilter('Process Instance Key(s)');
+      await filtersPanel.displayOptionalFilter('Failed job but retries left');
+      await filtersPanel.displayOptionalFilter('End Date Range');
 
       await expect(page).toHaveScreenshot();
     });
@@ -299,6 +302,7 @@ test.describe('processes page', () => {
       page,
       commonPage,
       processesPage,
+      processesPage: {filtersPanel},
     }) => {
       await commonPage.changeTheme(theme);
 
@@ -325,8 +329,8 @@ test.describe('processes page', () => {
         },
       });
 
-      await processesPage.displayOptionalFilter('Operation Id');
-      await processesPage.operationIdFilter.type(
+      await filtersPanel.displayOptionalFilter('Operation Id');
+      await filtersPanel.operationIdFilter.type(
         'bf547ac3-9a35-45b9-ab06-b80b43785153',
       );
 
@@ -339,6 +343,7 @@ test.describe('processes page', () => {
       page,
       commonPage,
       processesPage,
+      processesPage: {filtersPanel},
     }) => {
       await commonPage.changeTheme(theme);
 
@@ -365,8 +370,8 @@ test.describe('processes page', () => {
         },
       });
 
-      await processesPage.displayOptionalFilter('Operation Id');
-      await processesPage.operationIdFilter.type(
+      await filtersPanel.displayOptionalFilter('Operation Id');
+      await filtersPanel.operationIdFilter.type(
         'bf547ac3-9a35-45b9-ab06-b80b43785153',
       );
 

@@ -86,7 +86,7 @@ public final class JobFailIncidentTest {
     ENGINE.jobs().withType(JOB_TYPE).withMaxJobsToActivate(1).activate();
   }
 
-  // regression test for https://github.com/camunda/zeebe/issues/6516
+  // regression test for https://github.com/camunda/camunda/issues/6516
   @Test
   public void shouldCreateIncidentWithANewKey() {
     // given

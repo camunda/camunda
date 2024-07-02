@@ -40,9 +40,8 @@ We use Playwright for E2E tests, which are executed on every push to any branch 
 
 To run these tests locally, follow the steps:
 
-1. In the root folder, execute `make env-up` and confirm Tasklist is running by checking `localhost:8080`.
-2. In the same root folder, execute `make start-e2e`.
-3. Lastly, inside the `client/` folder run `yarn test:e2e`.
+1. Run `make start-e2e`.
+2. Then, inside the `client/` folder run `yarn test:e2e`.
 
 ### Running visual regression tests
 
@@ -63,7 +62,7 @@ If you made feature changes and want to purposely wants to update the UI baselin
 
 Sometimes the visual regression tests might fail in the CI and you want to check why. To achieve that you can download the Playwright report assets (like in the image below), unzip the folder and then run `npx @playwright/test show-report folder-with-unzipped-assets/`.
 
-<img src="/docs_assets/playwright_report.png" alt="Playwright report artifact download" width="500"/>
+<img src="./docs_assets/playwright_report.png" alt="Playwright report artifact download" width="500"/>
 
 ## Backporting changes
 

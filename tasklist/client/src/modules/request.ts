@@ -9,11 +9,17 @@
 import {reactQueryClient} from './react-query/reactQueryClient';
 import {authenticationStore} from './stores/authentication';
 
-type RequestError = {
-  variant: 'network-error' | 'failed-response';
-  response: Response | null;
-  networkError: unknown | null;
-};
+type RequestError =
+  | {
+      variant: 'network-error';
+      response: null;
+      networkError: unknown;
+    }
+  | {
+      variant: 'failed-response';
+      response: Response;
+      networkError: null;
+    };
 
 function getCsrfTokenFromStorage() {
   return sessionStorage.getItem('X-CSRF-TOKEN');
@@ -97,8 +103,8 @@ function isRequestError(error: unknown): error is {
   networkError: Error;
 } {
   return (
-    typeof error === 'object' &&
     error !== null &&
+    typeof error === 'object' &&
     'variant' in error &&
     error.variant === 'network-error'
   );

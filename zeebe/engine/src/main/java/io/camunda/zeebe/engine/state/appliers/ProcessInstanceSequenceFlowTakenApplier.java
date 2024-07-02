@@ -39,11 +39,7 @@ final class ProcessInstanceSequenceFlowTakenApplier
     // This is necessary for concurrent flows, where for example the end event is reached on one
     // path and on the other path the sequence flow is currently active.
     //
-    // See discussion in https://github.com/camunda/zeebe/pull/6562
-    final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
-    flowScopeInstance.incrementActiveSequenceFlows();
-    elementInstanceState.updateInstance(flowScopeInstance);
-
+    // See discussion in https://github.com/camunda/camunda/pull/6562
     final var sequenceFlow =
         processState.getFlowElement(
             value.getProcessDefinitionKey(),
@@ -51,6 +47,13 @@ final class ProcessInstanceSequenceFlowTakenApplier
             value.getElementIdBuffer(),
             ExecutableSequenceFlow.class);
     final var target = sequenceFlow.getTarget();
+
+    final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
+    flowScopeInstance.incrementActiveSequenceFlows();
+    // Stores the pending sequence flow that helps to determine
+    // if an inclusive gateway can be activated or not.
+    flowScopeInstance.addActiveSequenceFlowId(sequenceFlow.getId());
+    elementInstanceState.updateInstance(flowScopeInstance);
 
     if (target.getElementType() == BpmnElementType.PARALLEL_GATEWAY) {
       // stores which sequence flows of the parallel gateway are taken

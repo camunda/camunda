@@ -39,4 +39,8 @@ public class ExporterDescriptor {
   public String getId() {
     return configuration.id();
   }
+
+  public boolean isSameTypeAs(final ExporterDescriptor other) {
+    return exporterClass.equals(other.exporterClass);
+  }
 }

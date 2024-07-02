@@ -9,7 +9,7 @@ camunda:
       enabled: true
       audience: zeebe.camunda.io
       base-url: https://${camunda.client.region}.zeebe.camunda.io/${camunda.client.cluster-id}
-      gateway-url: https://${camunda.client.cluster-id}.${camunda.client.region}.zeebe.camunda.io
+      grpc-address: https://${camunda.client.cluster-id}.${camunda.client.region}.zeebe.camunda.io
       prefer-rest-over-grpc: false
     identity:
       enabled: false

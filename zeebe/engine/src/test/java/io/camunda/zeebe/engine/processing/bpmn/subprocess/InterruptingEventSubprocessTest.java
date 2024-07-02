@@ -810,7 +810,7 @@ public class InterruptingEventSubprocessTest {
   }
 
   @Test
-  // https://github.com/camunda/zeebe/issues/6565
+  // https://github.com/camunda/camunda/issues/6565
   public void shouldEndProcessWithParallelFlow() {
     // given
     final ProcessBuilder process = Bpmn.createExecutableProcess(PROCESS_ID);

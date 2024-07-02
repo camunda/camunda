@@ -8,7 +8,6 @@
 
 import {MemoryRouter} from 'react-router-dom';
 import {act, render, waitFor} from 'modules/testing-library';
-import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {authenticationStore} from 'modules/stores/authentication';
 import {SessionWatcher} from './SessionWatcher';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -27,12 +26,10 @@ const getWrapper = ({initialEntries}: GetWrapperProps) => {
   const Wrapper: React.FC<{
     children?: React.ReactNode;
   }> = ({children}) => (
-    <MockThemeProvider>
-      <MemoryRouter initialEntries={initialEntries}>
-        <SessionWatcher />
-        {children}
-      </MemoryRouter>
-    </MockThemeProvider>
+    <MemoryRouter initialEntries={initialEntries}>
+      <SessionWatcher />
+      {children}
+    </MemoryRouter>
   );
 
   return Wrapper;

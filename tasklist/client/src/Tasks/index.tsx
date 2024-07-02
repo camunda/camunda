@@ -19,6 +19,7 @@ import {Options} from './Options';
 import {Filters} from './Filters';
 import {AvailableTasks} from './AvailableTasks';
 import styles from './styles.module.scss';
+import {CollapsiblePanel} from './CollapsiblePanel';
 
 function useAutoSelectNextTaskSideEffects() {
   const {enabled} = autoSelectNextTaskStore;
@@ -93,6 +94,7 @@ const Tasks: React.FC = observer(() => {
 
   return (
     <main className={styles.container}>
+      <CollapsiblePanel />
       <Stack as="section" className={styles.tasksPanel} aria-label="Left panel">
         <Filters disabled={isPending} />
         <AvailableTasks

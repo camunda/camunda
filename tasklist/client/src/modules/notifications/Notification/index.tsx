@@ -16,7 +16,6 @@ import styles from './styles.module.scss';
 
 type Props = {
   notification: NotificationType;
-  animationTimeout: number;
 };
 
 const Notification: React.FC<Props> = observer(
@@ -32,7 +31,6 @@ const Notification: React.FC<Props> = observer(
       actionButtonLabel,
       onActionButtonClick,
     },
-    animationTimeout,
     ...props
   }) => {
     const nodeRef = useRef<HTMLDivElement | null>(null);
@@ -40,8 +38,13 @@ const Notification: React.FC<Props> = observer(
 
     return (
       <CSSTransition
-        timeout={animationTimeout}
-        classNames="toast"
+        timeout={300}
+        classNames={{
+          enter: styles.toastEnter,
+          enterActive: styles.toastEnterActive,
+          exitActive: styles.toastExitActive,
+          exitDone: styles.toastExitDone,
+        }}
         nodeRef={nodeRef}
         {...props}
       >

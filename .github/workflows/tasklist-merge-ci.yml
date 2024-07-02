@@ -5,6 +5,9 @@ on:
   pull_request: { }
   workflow_dispatch: { }
 
+concurrency:
+  cancel-in-progress: true
+  group: "${{ github.workflow }}-${{ github.ref }}"
 
 jobs:
   run-build:
@@ -15,6 +18,10 @@ jobs:
       branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
       pushDocker: false
 
+  run-fe-ci:
+    name: run-frontend-tests
+    uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
+
   tasklist-ci-test-summary:
     # Used by the merge queue to check all jobs.
     # New test jobs must be added to the `needs` lists!
@@ -24,5 +31,6 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - run-build
+      - run-fe-ci
     steps:
-      - run: exit ${{ ((contains(needs.*.result, 'skipped') || contains(needs.*.result, 'failure')) && 1) || 0 }}
+      - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}

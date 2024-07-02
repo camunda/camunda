@@ -1212,7 +1212,7 @@ public class ModifyProcessInstanceTest {
 
   @Test
   public void shouldTerminateProcessIfProcessInstanceKeyIsPassedAsTerminateInstruction() {
-    // regression test for https://github.com/camunda/zeebe/issues/11413
+    // regression test for https://github.com/camunda/camunda/issues/11413
     // given
     ENGINE
         .deployment()

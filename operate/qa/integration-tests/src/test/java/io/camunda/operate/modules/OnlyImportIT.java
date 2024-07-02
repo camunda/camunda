@@ -13,6 +13,7 @@ import io.camunda.operate.ArchiverModuleConfiguration;
 import io.camunda.operate.ImportModuleConfiguration;
 import io.camunda.operate.WebappModuleConfiguration;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.webapp.controllers.OperateIndexController;
 import org.junit.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.test.context.TestPropertySource;
@@ -37,5 +38,10 @@ public class OnlyImportIT extends ModuleAbstractIT {
   @Test(expected = NoSuchBeanDefinitionException.class)
   public void testArchiverModuleIsNotPresent() {
     applicationContext.getBean(ArchiverModuleConfiguration.class);
+  }
+
+  @Test(expected = NoSuchBeanDefinitionException.class)
+  public void testOperateIndexControllerIsNotPresent() {
+    applicationContext.getBean(OperateIndexController.class);
   }
 }
