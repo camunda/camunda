@@ -130,7 +130,7 @@ public final class ProcessInstanceMigrationPreconditions {
       Expected to migrate process instance '%s' \
       but a concurrent command was executed on the process instance. \
       Please retry the migration.""";
-  private static final long NO_PARENT = -1L;
+
   private static final String ZEEBE_USER_TASK_IMPLEMENTATION = "zeebe user task";
   private static final String JOB_WORKER_IMPLEMENTATION = "job worker";
 
