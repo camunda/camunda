@@ -3,6 +3,29 @@
 BASEDIR=$(dirname "$0")
 runScript=$BASEDIR/internal/run.sh
 
+
+function checkCamundaStartup {
+  RETRIES=12
+    SLEEP_TIME=10
+    URL=$1
+    NAME=$2
+    COMMAND="curl -XGET $URL"
+
+  until ${COMMAND}&>/dev/null;
+      do
+        sleep ${SLEEP_TIME}
+        RETRIES=$(( RETRIES - 1 ))
+      if [ $RETRIES = 0 ]; then
+        echo "Error: $NAME did not start!"
+        exit 1;
+      else
+        echo "Polling $NAME ... $RETRIES retries left"
+      fi
+    done
+  echo "$NAME has successfully been started.";
+}
+
+
 if [ $# -eq 0 ]; then
 
   # open a browser (must be done first)
@@ -26,7 +49,8 @@ if [ $# -eq 0 ]; then
   if [ -z "$BROWSER" ]; then
     (sleep 5; echo -e "We are sorry... We tried all we could do but we couldn't locate your default browser... \nIf you want to see our default website please open your browser and insert this URL:\nhttp://localhost:8080/";) &
   else
-    (sleep 120; $BROWSER "http://localhost:8080/operate/login";) &
+    URL="http://localhost:8080/operate/login"
+    ( checkCamundaStartup "$URL" "Camunda"; $BROWSER "http://localhost:8080/operate/login"; ) &
   fi
 
   # start Camunda Run in the background
