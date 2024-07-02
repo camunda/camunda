@@ -48,9 +48,13 @@ public final class ProcessInstanceMigrationPreconditions {
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to migrate process instance but no process instance found with key '%d'";
   private static final String ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND =
-      "Expected to migrate process instance to process definition but no process definition found with key '%d'";
+      """
+      Expected to migrate process instance to process definition \
+      but no process definition found with key '%d'""";
   private static final String ERROR_MESSAGE_DUPLICATE_SOURCE_ELEMENT_IDS =
-      "Expected to migrate process instance '%s' but the mapping instructions contain duplicate source element ids '%s'.";
+      """
+      Expected to migrate process instance '%s' \
+      but the mapping instructions contain duplicate source element ids '%s'.""";
   private static final String ERROR_SOURCE_ELEMENT_ID_NOT_FOUND =
       """
       Expected to migrate process instance '%s' \
@@ -64,13 +68,23 @@ public final class ProcessInstanceMigrationPreconditions {
       Elements provided in mapping instructions must exist \
       in the target process definition.""";
   private static final String ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_PROCESS_INSTANCE =
-      "Expected to migrate process instance but process instance has an event subprocess. Process instances with event subprocesses cannot be migrated yet.";
+      """
+      Expected to migrate process instance but process instance has an event subprocess. \
+      Process instances with event subprocesses cannot be migrated yet.""";
   private static final String ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_TARGET_PROCESS =
-      "Expected to migrate process instance but target process has an event subprocess. Target processes with event subprocesses cannot be migrated yet.";
+      """
+      Expected to migrate process instance but target process has an event subprocess. \
+      Target processes with event subprocesses cannot be migrated yet.""";
   private static final String ERROR_UNSUPPORTED_ELEMENT_TYPE =
-      "Expected to migrate process instance '%s' but active element with id '%s' has an unsupported type. The migration of a %s is not supported.";
+      """
+      Expected to migrate process instance '%s' \
+      but active element with id '%s' has an unsupported type. \
+      The migration of a %s is not supported.""";
   private static final String ERROR_UNMAPPED_ACTIVE_ELEMENT =
-      "Expected to migrate process instance '%s' but no mapping instruction defined for active element with id '%s'. Elements cannot be migrated without a mapping.";
+      """
+      Expected to migrate process instance '%s' \
+      but no mapping instruction defined for active element with id '%s'. \
+      Elements cannot be migrated without a mapping.""";
   private static final String ERROR_ELEMENT_TYPE_CHANGED =
       """
       Expected to migrate process instance '%s' \
@@ -112,7 +126,10 @@ public final class ProcessInstanceMigrationPreconditions {
       but active element with id '%s' has a pending message subscription \
       migration distribution for event with id '%s'.""";
   private static final String ERROR_CONCURRENT_COMMAND =
-      "Expected to migrate process instance '%s' but a concurrent command was executed on the process instance. Please retry the migration.";
+      """
+      Expected to migrate process instance '%s' \
+      but a concurrent command was executed on the process instance. \
+      Please retry the migration.""";
   private static final long NO_PARENT = -1L;
   private static final String ZEEBE_USER_TASK_IMPLEMENTATION = "zeebe user task";
   private static final String JOB_WORKER_IMPLEMENTATION = "job worker";
