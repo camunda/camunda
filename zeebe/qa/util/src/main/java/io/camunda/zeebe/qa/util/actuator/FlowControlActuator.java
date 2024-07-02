@@ -8,29 +8,66 @@
 package io.camunda.zeebe.qa.util.actuator;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import feign.Feign;
+import feign.Headers;
+import feign.RequestLine;
+import feign.Retryer;
+import feign.Target.HardCodedTarget;
+import feign.jackson.JacksonEncoder;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
+import io.camunda.zeebe.qa.util.cluster.TestApplication;
+import io.zeebe.containers.ZeebeNode;
+import org.springframework.web.bind.annotation.RequestBody;
 
-public class FlowControlActuator {
-  private final GetFlowControlActuator getClient;
-  private final SetFlowControlActuator postClient;
-
-  public FlowControlActuator(
-      final GetFlowControlActuator getClient, final SetFlowControlActuator postClient) {
-    this.getClient = getClient;
-    this.postClient = postClient;
+public interface FlowControlActuator {
+  static FlowControlActuator of(final ZeebeNode<?> node) {
+    final var endpoint =
+        String.format("http://%s/actuator/flowControl", node.getExternalMonitoringAddress());
+    return of(endpoint);
   }
 
-  public String getFlowControlConfiguration() {
-    return getClient.getFlowControlConfiguration();
+  static FlowControlActuator of(final TestApplication<?> node) {
+    return of(node.actuatorUri("flowControl").toString());
   }
 
-  public String setFlowControlConfiguration(final String request) {
+  static FlowControlActuator of(final String endpoint) {
+    final var target = new HardCodedTarget<>(FlowControlActuator.class, endpoint);
+    final ObjectMapper mapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
+
+    return Feign.builder()
+        .encoder(new JacksonEncoder(mapper))
+        .retryer(Retryer.NEVER_RETRY)
+        .target(target);
+  }
+
+  public default String setFlowControlConfiguration(final String request) {
     final FlowControlCfg flowControlCfg;
     try {
       flowControlCfg = FlowControlCfg.fromJson(request);
     } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }
-    return postClient.setFlowControlConfiguration(flowControlCfg);
+    return setFlowControlConfiguration(flowControlCfg);
   }
+
+  /**
+   * Sets the flow control configuration.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  String setFlowControlConfiguration(@RequestBody FlowControlCfg flowControlCfg);
+
+  /**
+   * Gets the flow control configuration.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("GET")
+  @Headers({"Content-Type: application/json"})
+  String getFlowControlConfiguration();
 }
