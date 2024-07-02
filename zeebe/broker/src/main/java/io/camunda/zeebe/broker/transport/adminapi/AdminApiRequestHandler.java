@@ -76,7 +76,7 @@ public class AdminApiRequestHandler
       final ErrorResponseWriter errorWriter) {
     final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
 
-    final String payload = requestReader.configuration();
+    final String payload = requestReader.payload();
     final FlowControlCfg flowControlCfg;
 
     try {
