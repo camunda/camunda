@@ -22,6 +22,7 @@ import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.USER_TASK_FORM_KEY
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
@@ -173,6 +174,14 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
   @Override
   public B zeebeExternalFormReferenceExpression(final String expression) {
     return zeebeExternalFormReference(asZeebeExpression(expression));
+  }
+
+  @Override
+  public B zeebeFormBindingType(final ZeebeBindingType bindingType) {
+    final ZeebeFormDefinition formDefinition =
+        getCreateSingleExtensionElement(ZeebeFormDefinition.class);
+    formDefinition.setBindingType(bindingType);
+    return myself;
   }
 
   public B zeebeTaskHeader(final String key, final String value) {

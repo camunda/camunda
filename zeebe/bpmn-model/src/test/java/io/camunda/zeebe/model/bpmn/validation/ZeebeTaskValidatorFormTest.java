@@ -20,6 +20,7 @@ import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 import java.util.Arrays;
@@ -349,6 +350,19 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
                 ZeebeFormDefinition.class,
                 "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
       },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormKey("form-key")
+            .zeebeFormBindingType(ZeebeBindingType.deployment)
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Attribute 'formKey' must not be used in combination with attribute 'bindingType'"))
+      },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ////////////////////////////////// Native user tasks ////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -625,7 +639,21 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .endEvent()
             .done(),
         EMPTY_LIST
-      }
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeExternalFormReference("reference")
+            .zeebeFormBindingType(ZeebeBindingType.deployment)
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Attribute 'externalReference' must not be used in combination with attribute 'bindingType'"))
+      },
     };
   }
 }

@@ -15,23 +15,7 @@
  */
 package io.camunda.zeebe.model.bpmn.instance.zeebe;
 
-import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
-
-public interface ZeebeFormDefinition extends BpmnModelElementInstance {
-
-  String getFormKey();
-
-  void setFormKey(String formKey);
-
-  String getFormId();
-
-  void setFormId(String formId);
-
-  String getExternalReference();
-
-  void setExternalReference(String externalReference);
-
-  ZeebeBindingType getBindingType();
-
-  void setBindingType(ZeebeBindingType bindingType);
+public enum ZeebeBindingType {
+  deployment,
+  latest
 }
