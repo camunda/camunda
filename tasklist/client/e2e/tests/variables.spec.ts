@@ -63,17 +63,16 @@ test.describe('variables page', () => {
   test('edited variable is saved after refresh if task is completed', async ({
     page,
     taskVariableView,
-    taskFormView,
     tasksPage,
   }) => {
     await tasksPage.openTask('usertask_with_variables');
 
     await expect(tasksPage.assignToMeButton).toBeVisible();
-    await expect(taskFormView.completeTaskButton).toBeDisabled();
+    await expect(tasksPage.completeTaskButton).toBeDisabled();
     await tasksPage.assignToMeButton.click();
 
     await expect(tasksPage.unassignButton).toBeVisible();
-    await expect(taskFormView.completeTaskButton).toBeEnabled();
+    await expect(tasksPage.completeTaskButton).toBeEnabled();
     await expect(tasksPage.assignee).toHaveText('Assigned to me');
     await expect(
       taskVariableView.variablesTable.getByTitle('testData value'),
@@ -82,7 +81,7 @@ test.describe('variables page', () => {
       name: 'testData value',
       value: '"updatedValue"',
     });
-    await taskFormView.completeTaskButton.click();
+    await tasksPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await expect(tasksPage.pickATaskHeader).toBeVisible();
@@ -102,18 +101,17 @@ test.describe('variables page', () => {
   test('edited variable is not saved after refresh', async ({
     page,
     taskVariableView,
-    taskFormView,
     tasksPage,
   }) => {
     await tasksPage.filterBy('Unassigned');
     await tasksPage.openTask('usertask_with_variables');
 
     await expect(tasksPage.assignToMeButton).toBeVisible();
-    await expect(taskFormView.completeTaskButton).toBeDisabled();
+    await expect(tasksPage.completeTaskButton).toBeDisabled();
     await tasksPage.assignToMeButton.click();
 
     await expect(tasksPage.unassignButton).toBeVisible();
-    await expect(taskFormView.completeTaskButton).toBeEnabled();
+    await expect(tasksPage.completeTaskButton).toBeEnabled();
     await expect(tasksPage.assignee).toHaveText('Assigned to me');
     await expect(
       taskVariableView.variablesTable.getByTitle('testData value'),
@@ -165,7 +163,6 @@ test.describe('variables page', () => {
   test('new variable still exists after refresh if task is completed', async ({
     page,
     taskVariableView,
-    taskFormView,
     tasksPage,
   }) => {
     await tasksPage.filterBy('Unassigned');
@@ -173,11 +170,11 @@ test.describe('variables page', () => {
 
     await expect(taskVariableView.addVariableButton).not.toBeVisible();
     await expect(tasksPage.assignToMeButton).toBeVisible();
-    await expect(taskFormView.completeTaskButton).toBeDisabled();
+    await expect(tasksPage.completeTaskButton).toBeDisabled();
     await tasksPage.assignToMeButton.click();
 
     await expect(tasksPage.unassignButton).toBeVisible();
-    await expect(taskFormView.completeTaskButton).toBeEnabled();
+    await expect(tasksPage.completeTaskButton).toBeEnabled();
     await expect(tasksPage.assignee).toHaveText('Assigned to me');
 
     await taskVariableView.addVariable({
@@ -185,7 +182,7 @@ test.describe('variables page', () => {
       value: '"newVariableValue"',
     });
 
-    await taskFormView.completeTaskButton.click();
+    await tasksPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
     await expect(tasksPage.pickATaskHeader).toBeVisible();
 
