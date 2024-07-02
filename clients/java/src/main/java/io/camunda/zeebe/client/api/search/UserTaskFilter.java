@@ -18,9 +18,7 @@ package io.camunda.zeebe.client.api.search;
 import io.camunda.zeebe.client.api.search.TypedSearchQueryRequest.SearchRequestFilter;
 import io.camunda.zeebe.client.protocol.rest.DateFilter;
 
-/**
- * Interface for defining user task filters in search queries.
- */
+/** Interface for defining user task filters in search queries. */
 public interface UserTaskFilter extends SearchRequestFilter {
 
   /**

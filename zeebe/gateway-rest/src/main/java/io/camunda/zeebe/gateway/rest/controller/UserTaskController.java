@@ -9,9 +9,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.search.query.UserTaskQuery;
-import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
-import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
@@ -27,6 +24,7 @@ import io.camunda.zeebe.gateway.rest.TenantAttributeHolder;
 import jakarta.validation.ValidationException;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -41,8 +39,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class UserTaskController {
 
   private final UserTaskServices userTaskServices;
-
-  @Autowired private UserTaskServices userTaskServices;
 
   @Autowired
   public UserTaskController(final UserTaskServices userTaskServices) {

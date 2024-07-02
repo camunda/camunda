@@ -132,8 +132,9 @@ public final class SearchQueryRequestMapper {
           builder.endDate();
         } else {
           // Collect validation error for unknown sortBy field
-          validationErrors.add(ProblemDetail.forStatusAndDetail(
-              HttpStatus.BAD_REQUEST, "Unknown sortBy field: " + field));
+          validationErrors.add(
+              ProblemDetail.forStatusAndDetail(
+                  HttpStatus.BAD_REQUEST, "Unknown sortBy field: " + field));
           continue;
         }
 
@@ -143,13 +144,15 @@ public final class SearchQueryRequestMapper {
           builder.desc();
         } else {
           // Collect validation error for unknown sortOrder
-          validationErrors.add(ProblemDetail.forStatusAndDetail(
-              HttpStatus.BAD_REQUEST, "Unknown sortOrder: " + order));
+          validationErrors.add(
+              ProblemDetail.forStatusAndDetail(
+                  HttpStatus.BAD_REQUEST, "Unknown sortOrder: " + order));
         }
       }
 
       if (!validationErrors.isEmpty()) {
-        return Either.left(validationErrors.get(0)); // Return the first encountered error for simplicity
+        return Either.left(
+            validationErrors.get(0)); // Return the first encountered error for simplicity
       }
 
       return Either.right(builder.build());
@@ -175,8 +178,9 @@ public final class SearchQueryRequestMapper {
           builder.completionDate();
         } else {
           // Collect validation error for unknown sortBy field
-          validationErrors.add(ProblemDetail.forStatusAndDetail(
-              HttpStatus.BAD_REQUEST, "Unknown sortBy field: " + field));
+          validationErrors.add(
+              ProblemDetail.forStatusAndDetail(
+                  HttpStatus.BAD_REQUEST, "Unknown sortBy field: " + field));
           continue;
         }
 
@@ -186,13 +190,15 @@ public final class SearchQueryRequestMapper {
           builder.desc();
         } else {
           // Collect validation error for unknown sortOrder
-          validationErrors.add(ProblemDetail.forStatusAndDetail(
-              HttpStatus.BAD_REQUEST, "Unknown sortOrder: " + order));
+          validationErrors.add(
+              ProblemDetail.forStatusAndDetail(
+                  HttpStatus.BAD_REQUEST, "Unknown sortOrder: " + order));
         }
       }
 
       if (!validationErrors.isEmpty()) {
-        return Either.left(validationErrors.get(0)); // Return the first encountered error for simplicity
+        return Either.left(
+            validationErrors.get(0)); // Return the first encountered error for simplicity
       }
 
       return Either.right(builder.build());

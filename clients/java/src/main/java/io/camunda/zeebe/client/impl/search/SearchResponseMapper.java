@@ -71,7 +71,8 @@ public final class SearchResponseMapper {
     return new SearchQueryResponseImpl<>(userTasks, page);
   }
 
-  private static SearchResponsePage toSearchResponsePage(final SearchQueryPageResponse pageResponse) {
+  private static SearchResponsePage toSearchResponsePage(
+      final SearchQueryPageResponse pageResponse) {
     return new SearchResponsePageImpl(
         pageResponse.getTotalItems(),
         pageResponse.getFirstSortValues(),

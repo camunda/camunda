@@ -91,26 +91,25 @@ public final class SearchQueryResponseMapper {
     return response;
   }
 
-  public static List<UserTaskItem> toUserTasks(
-      final List<UserTaskEntity> tasks) {
+  public static List<UserTaskItem> toUserTasks(final List<UserTaskEntity> tasks) {
     return tasks.stream().map(SearchQueryResponseMapper::toUserTask).toList();
   }
 
   public static UserTaskItem toUserTask(final UserTaskEntity t) {
     return new UserTaskItem()
-            .tenantIds(t.tenantId())
-            .key(t.key())
-            .processInstanceKey(t.processInstanceId())
-            .processDefinitionKey(t.processDefinitionId())
-            .taskState(t.state())
-            .assignee(t.assignee())
-            .candidateUser(t.candidateUsers())
-            .candidateGroup(t.candidateGroups())
-            .formKey(t.formKey())
-            .taskDefinitionId(t.flowNodeBpmnId())
-            .creationDate(t.creationTime())
-            .completionDate(t.completionTime())
-            .dueDate(t.dueDate())
-            .followUpDate(t.followUpDate());
+        .tenantIds(t.tenantId())
+        .key(t.key())
+        .processInstanceKey(t.processInstanceId())
+        .processDefinitionKey(t.processDefinitionId())
+        .taskState(t.state())
+        .assignee(t.assignee())
+        .candidateUser(t.candidateUsers())
+        .candidateGroup(t.candidateGroups())
+        .formKey(t.formKey())
+        .taskDefinitionId(t.flowNodeBpmnId())
+        .creationDate(t.creationTime())
+        .completionDate(t.completionTime())
+        .dueDate(t.dueDate())
+        .followUpDate(t.followUpDate());
   }
 }
