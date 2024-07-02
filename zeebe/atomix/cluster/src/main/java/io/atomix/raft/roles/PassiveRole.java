@@ -470,6 +470,7 @@ public class PassiveRole extends InactiveRole {
   private void abortPendingSnapshots() {
     if (pendingSnapshot != null) {
       setNextExpected(null);
+      previouslyReceivedSnapshotChunkId = null;
       log.info("Rolling back snapshot {}", pendingSnapshot);
       try {
         pendingSnapshot.abort();
