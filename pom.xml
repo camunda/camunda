@@ -82,9 +82,6 @@
           <value>!true</value>
         </property>
       </activation>
-      <modules>
-        <module>qa</module>
-      </modules>
     </profile>
   </profiles>
 </project>

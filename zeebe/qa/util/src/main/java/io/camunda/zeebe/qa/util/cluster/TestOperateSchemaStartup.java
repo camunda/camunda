@@ -7,12 +7,10 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
-import io.camunda.commons.CommonsModuleConfiguration;
+import io.camunda.operate.schema.SchemaStartup;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
 
-public abstract class TestCamundaApplication<T extends TestCamundaApplication<T>>
-    extends TestSpringApplication<T> {
-
-  public TestCamundaApplication(final Class<?> springApplication) {
-    super(springApplication, CommonsModuleConfiguration.class);
-  }
-}
+@Component("schemaStartup")
+@Profile("test")
+public class TestOperateSchemaStartup extends SchemaStartup {}
