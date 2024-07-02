@@ -64,8 +64,6 @@ public class ErrorMapperTest {
   private static final String USER_TASKS_BASE_URL = "/v1/user-tasks";
 
   @MockBean UserTaskServices userTaskServices;
-  @MockBean GroupService groupService;
-  @MockBean BrokerClient brokerClient;
 
   @Autowired private WebTestClient webClient;
 
@@ -301,6 +299,11 @@ public class ErrorMapperTest {
     @Bean
     public BrokerClient brokerClient() {
       return Mockito.mock(BrokerClient.class);
+    }
+
+    @Bean
+    public GroupService groupService() {
+      return Mockito.mock(GroupService.class);
     }
 
     @Bean

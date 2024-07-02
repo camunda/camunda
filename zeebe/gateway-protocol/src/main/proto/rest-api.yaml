@@ -39,8 +39,7 @@ paths:
         - Job
       summary: Activate jobs
       description: |
-        Iterate through all known partitions and activate up to the requested maximum and
-        stream them back to the client as they are activated.
+        Iterate through all known partitions and activate jobs up to the requested maximum.
       requestBody:
         required: true
         content:
@@ -1228,37 +1227,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CamundaGroupResponse"
-    FilterDto:
-      type: "object"
-      properties: { }
-    SortDto:
-      type: "object"
-      properties: { }
-    PageDto:
-      type: "object"
-      properties: { }
-    SearchRequestDto:
-      type: "object"
-      properties:
-        filter:
-          type: "object"
-          properties: { }
-        sort:
-          type: "object"
-          properties: { }
-        page:
-          type: "object"
-          properties: { }
-    GroupSearchResponseDto:
-      type: "object"
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/CamundaGroupResponse"
-        page:
-          type: "object"
-          properties: { }
   securitySchemes:
     bearerAuth:
       type: http
