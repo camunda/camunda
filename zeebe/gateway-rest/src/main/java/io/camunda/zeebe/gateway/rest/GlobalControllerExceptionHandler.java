@@ -25,6 +25,7 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
 
   private static final String REQUEST_BODY_MISSING_EXCEPTION_MESSAGE =
       "Required request body is missing";
+  private static final String JSON_PARSE_ERROR_EXCEPTION_MESSAGE = "JSON parse error";
 
   @Override
   protected ProblemDetail createProblemDetail(
@@ -42,6 +43,11 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
       // with "Required request body is missing"
       // for proper exception tracing
       detail = REQUEST_BODY_MISSING_EXCEPTION_MESSAGE;
+    } else if (isJsonParseError(ex)) {
+      // Replace detail "Failed to read request"
+      // with "JSON parse error"
+      // for proper exception tracing
+      detail = "Unable to parse JSON request body";
     } else {
       detail = defaultDetail;
     }
@@ -51,10 +57,22 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
   }
 
   private boolean isRequestBodyMissing(final Exception ex) {
-    if (ex instanceof HttpMessageNotReadableException exception) {
+    if (ex instanceof final HttpMessageNotReadableException exception) {
       final var exceptionMessage = exception.getMessage();
       if (exceptionMessage != null
           && exceptionMessage.startsWith(REQUEST_BODY_MISSING_EXCEPTION_MESSAGE)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private boolean isJsonParseError(final Exception ex) {
+    if (ex instanceof final HttpMessageNotReadableException exception) {
+      final var exceptionMessage = exception.getMessage();
+      if (exceptionMessage != null
+          && exceptionMessage.startsWith(JSON_PARSE_ERROR_EXCEPTION_MESSAGE)) {
         return true;
       }
     }

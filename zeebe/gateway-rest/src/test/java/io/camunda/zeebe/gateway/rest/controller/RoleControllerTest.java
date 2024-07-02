@@ -163,9 +163,15 @@ public class RoleControllerTest extends RestControllerTest {
   @Test
   void createRoleWithUnknownPermissionShouldThrowException() {
     final var body =
-        "{\"name\": \"test\", \"description\": \"Test role\", \"permissions\": [\"UNKNOWN\"]}";
+        """
+          {
+            "name": "test",
+            "description": "Test role",
+            "permissions": ["UNKNOWN"]
+          }
+        """;
 
-    final String message = "Failed to read request";
+    final String message = "Unable to parse JSON request body";
     final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
     expectedBody.setTitle("Bad Request");
     expectedBody.setInstance(URI.create("/v2/roles"));
@@ -186,7 +192,13 @@ public class RoleControllerTest extends RestControllerTest {
   @Test
   void createRoleWithPermissionShouldCorrectlyMapPermissions() {
     final var body =
-        "{\"name\": \"test\", \"description\": \"Test role\", \"permissions\": [\"CREATE_ALL\", \"READ_ALL\"]}";
+        """
+          {
+            "name": "test",
+            "description": "Test role",
+            "permissions": ["CREATE_ALL", "READ_ALL"]
+          }
+        """;
 
     final var expectedRole = new Role();
     expectedRole.setName("test");
