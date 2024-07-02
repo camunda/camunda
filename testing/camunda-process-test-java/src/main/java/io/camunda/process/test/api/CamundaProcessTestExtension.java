@@ -17,6 +17,8 @@ package io.camunda.process.test.api;
 
 import static org.junit.platform.commons.util.ReflectionUtils.makeAccessible;
 
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
@@ -115,6 +117,10 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
     final Store store = context.getStore(NAMESPACE);
     store.put(STORE_KEY_RUNTIME, containerRuntime);
     store.put(STORE_KEY_CONTEXT, camundaProcessTestContext);
+
+    // initialize assertions
+    final CamundaDataSource dataSource = createDataSource(containerRuntime);
+    BpmnAssert.initialize(dataSource);
   }
 
   private <T> void injectField(
@@ -145,8 +151,17 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
             });
   }
 
+  private CamundaDataSource createDataSource(final CamundaContainerRuntime containerRuntime) {
+    final OperateContainer operateContainer = containerRuntime.getOperateContainer();
+    final String operateApiEndpoint =
+        "http://" + operateContainer.getHost() + ":" + operateContainer.getRestApiPort();
+    return new CamundaDataSource(operateApiEndpoint);
+  }
+
   @Override
   public void afterEach(final ExtensionContext extensionContext) throws Exception {
+    // reset assertions
+    BpmnAssert.reset();
     // close all created clients
     createdClients.forEach(ZeebeClient::close);
     // close the runtime
