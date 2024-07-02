@@ -823,6 +823,20 @@
         <version>${project.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>spring-boot-starter-camunda-sdk</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- Camunda Process Testing modules -->
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-process-test-java</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- sibling projects -->
 
       <dependency>
