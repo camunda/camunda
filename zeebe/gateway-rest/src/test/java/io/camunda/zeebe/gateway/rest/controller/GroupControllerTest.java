@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.identity.automation.usermanagement.CamundaGroup;
 import io.camunda.identity.automation.usermanagement.service.GroupService;
+import io.camunda.identity.automation.usermanagement.service.UserGroupMembershipService;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupResponse;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchResponse;
@@ -31,6 +32,7 @@ import org.springframework.http.ProblemDetail;
 public class GroupControllerTest extends RestControllerTest {
 
   @MockBean private GroupService groupService;
+  @MockBean private UserGroupMembershipService userGroupMembershipService;
 
   @Test
   void getGroupByIdShouldReturnGroup() {

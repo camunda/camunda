@@ -12,7 +12,6 @@ import static io.camunda.zeebe.gateway.rest.controller.usermanagement.UserManage
 
 import io.camunda.identity.automation.usermanagement.service.GroupService;
 import io.camunda.identity.automation.usermanagement.service.UserGroupMembershipService;
-import io.camunda.identity.automation.usermanagement.service.UserService;
 import io.camunda.zeebe.gateway.protocol.rest.AssignUserToGroupRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupResponse;
@@ -38,15 +37,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/groups")
 public class GroupController {
   private final GroupService groupService;
-  private final UserService userService;
   private final UserGroupMembershipService userGroupMembershipService;
 
   public GroupController(
       final GroupService groupService,
-      final UserService userService,
       final UserGroupMembershipService userGroupMembershipService) {
     this.groupService = groupService;
-    this.userService = userService;
     this.userGroupMembershipService = userGroupMembershipService;
   }
 
