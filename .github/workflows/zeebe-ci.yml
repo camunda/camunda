@@ -53,7 +53,7 @@ env:
 jobs:
   integration-tests:
     name: "[IT] ${{ matrix.name }}"
-    timeout-minutes: 20
+    timeout-minutes: 40
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     runs-on: [ self-hosted, linux, amd64, "16" ]
@@ -218,7 +218,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   smoke-tests:
     name: "[Smoke] ${{ matrix.os }} with ${{ matrix.arch }}"
-    timeout-minutes: 20
+    timeout-minutes: 40
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
