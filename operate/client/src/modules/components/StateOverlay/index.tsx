@@ -19,20 +19,29 @@ import {observer} from 'mobx-react';
 import {currentTheme} from 'modules/stores/currentTheme';
 
 type Props = {
-  state: FlowNodeState | DecisionInstanceEntityState;
+  state: (FlowNodeState | 'completedEndEvents') | DecisionInstanceEntityState;
   container: HTMLElement;
   count?: number;
   isFaded?: boolean;
   testId?: string;
+  title?: string;
 };
 
 const StateOverlay: React.FC<Props> = observer(
-  ({state, container, count, isFaded = false, testId = 'state-overlay'}) => {
+  ({
+    state,
+    container,
+    count,
+    isFaded = false,
+    testId = `state-overlay-${state}`,
+    title,
+  }) => {
     const showStatistic = count !== undefined;
 
     return createPortal(
       <Container
         data-testid={testId}
+        title={title}
         $theme={currentTheme.theme}
         $state={state}
         $isFaded={isFaded}
@@ -42,7 +51,9 @@ const StateOverlay: React.FC<Props> = observer(
       >
         {['FAILED', 'incidents'].includes(state) && <WarningFilled />}
         {state === 'active' && <RadioButtonChecked />}
-        {['EVALUATED', 'completed'].includes(state) && <CheckmarkOutline />}
+        {['EVALUATED', 'completedEndEvents'].includes(state) && (
+          <CheckmarkOutline />
+        )}
         {state === 'canceled' && <Error />}
         {showStatistic && <span>{count}</span>}
       </Container>,

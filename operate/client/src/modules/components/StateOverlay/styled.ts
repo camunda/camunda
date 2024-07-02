@@ -29,6 +29,10 @@ const backgroundColors = {
       fadedColor: '#cc8a8a',
     },
     completed: {
+      color: 'var(--cds-layer-02)',
+      fadedColor: 'var(--cds-layer-02)',
+    },
+    completedEndEvents: {
       color: staticColors.completed,
       fadedColor: staticColors.completed,
     },
@@ -55,6 +59,10 @@ const backgroundColors = {
       fadedColor: '#94595b',
     },
     completed: {
+      color: '#161616',
+      fadedColor: '#161616',
+    },
+    completedEndEvents: {
       color: staticColors.completed,
       fadedColor: staticColors.completed,
     },
@@ -76,6 +84,7 @@ type ContainerProps = {
     | 'incidents'
     | 'completed'
     | 'canceled'
+    | 'completedEndEvents'
     | 'EVALUATED'
     | 'FAILED';
   $isFaded: boolean;
@@ -100,6 +109,14 @@ const Container = styled(Stack)<ContainerProps>`
       css`
         padding-right: var(--cds-spacing-03);
         transform: translateX(-50%);
+      `}
+
+      ${$state === 'completed' &&
+      css`
+        border: 1px solid var(--cds-border-inverse);
+        color: var(--cds-border-inverse);
+        font-weight: 400;
+        padding: var(--cds-spacing-02) var(--cds-spacing-05);
       `}
     `;
   }}

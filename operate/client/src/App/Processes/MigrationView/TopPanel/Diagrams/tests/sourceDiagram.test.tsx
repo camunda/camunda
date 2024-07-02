@@ -64,8 +64,10 @@ describe('Source Diagram', () => {
     await user.click(screen.getByRole('button', {name: /summary/i}));
 
     expect(await screen.findByText(/diagram mock/i)).toBeInTheDocument();
-    expect(await screen.findByTestId('state-overlay')).toBeInTheDocument();
-    expect(screen.getByTestId('state-overlay')).toHaveTextContent('1');
+    expect(
+      await screen.findByTestId('state-overlay-active'),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('state-overlay-active')).toHaveTextContent('1');
 
     await user.click(screen.getByRole('button', {name: /element mapping/i}));
 

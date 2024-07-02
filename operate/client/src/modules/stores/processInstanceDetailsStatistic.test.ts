@@ -130,12 +130,14 @@ describe('stores/processInstanceDetailsStatistics', () => {
     ).toBe(0);
     expect(processInstanceDetailsStatisticsStore.flowNodeStatistics).toEqual([
       {count: 2, flowNodeId: 'inclGatewayFork', flowNodeState: 'active'},
+      {count: 1, flowNodeId: 'inclGatewayFork', flowNodeState: 'completed'},
       {count: 1, flowNodeId: 'exclusiveGateway', flowNodeState: 'incidents'},
       {count: 2, flowNodeId: 'exclusiveGateway', flowNodeState: 'canceled'},
+      {count: 25, flowNodeId: 'startEvent', flowNodeState: 'completed'},
       {count: 4, flowNodeId: 'alwaysFailingTask', flowNodeState: 'incidents'},
       {count: 5, flowNodeId: 'messageCatchEvent', flowNodeState: 'active'},
       {count: 1, flowNodeId: 'messageCatchEvent', flowNodeState: 'incidents'},
-      {count: 12, flowNodeId: 'endEvent', flowNodeState: 'completed'},
+      {count: 12, flowNodeId: 'endEvent', flowNodeState: 'completedEndEvents'},
     ]);
 
     modificationsStore.enableModificationMode();
@@ -362,8 +364,10 @@ describe('stores/processInstanceDetailsStatistics', () => {
 
     expect(processInstanceDetailsStatisticsStore.flowNodeStatistics).toEqual([
       {count: 2, flowNodeId: 'service-task-1', flowNodeState: 'active'},
+      {count: 1, flowNodeId: 'service-task-1', flowNodeState: 'completed'},
       {count: 2, flowNodeId: 'service-task-2', flowNodeState: 'active'},
       {count: 2, flowNodeId: 'service-task-2', flowNodeState: 'incidents'},
+      {count: 1, flowNodeId: 'service-task-2', flowNodeState: 'completed'},
     ]);
   });
 
