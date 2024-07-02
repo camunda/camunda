@@ -65,8 +65,7 @@ public class FlowControlServiceImpl implements FlowControlService {
     try {
       configuration = objectMapper.writeValueAsBytes(flowControlCfg);
     } catch (final JsonProcessingException e) {
-      return CompletableFuture.completedFuture(
-          "Failed to parse flow control configuration: " + e.getMessage());
+      return CompletableFuture.failedFuture(e);
     }
 
     final var topology = client.getTopologyManager().getTopology();
