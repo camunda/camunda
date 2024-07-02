@@ -16,9 +16,14 @@ import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
+import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Path;
 import java.util.Set;
@@ -95,7 +100,37 @@ public class RestoreManager {
     }
     return new PartitionRestoreService(backupStore, partition)
         .restore(backupId, validator)
+        .thenApply(
+            backup -> {
+              if (partition.id().id() == 1 && configuration.getCluster().getNodeId() == 0) {
+                restoreClusterConfiguration(backup);
+              }
+              return backup;
+            })
         .thenAccept(backup -> logSuccessfulRestore(backup, partition.id().id(), backupId));
+  }
+
+  private void restoreClusterConfiguration(final BackupDescriptor backupDescriptor) {
+    final var staticConfig =
+        StaticConfigurationGenerator.getStaticConfiguration(
+            configuration, MemberId.from(String.valueOf(configuration.getCluster().getNodeId())));
+    final var clusterConfiguration = staticConfig.generateTopology();
+    final var withRestoredRouting =
+        new ClusterConfiguration(
+            clusterConfiguration.version(),
+            clusterConfiguration.members(),
+            backupDescriptor.routingConfiguration(),
+            clusterConfiguration.lastChange(),
+            clusterConfiguration.pendingChanges());
+    try {
+      PersistedClusterConfiguration.ofFile(
+              Path.of(configuration.getData().getDirectory())
+                  .resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME),
+              new ProtoBufSerializer())
+          .update(withRestoredRouting);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   private Set<RaftPartition> collectPartitions() {

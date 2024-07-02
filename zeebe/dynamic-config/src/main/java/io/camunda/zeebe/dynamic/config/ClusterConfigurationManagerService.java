@@ -41,10 +41,10 @@ import java.util.Optional;
 
 public final class ClusterConfigurationManagerService
     implements ClusterConfigurationUpdateNotifier, AsyncClosable {
+  public static final String TOPOLOGY_FILE_NAME = ".topology.meta";
   // Use a node 0 as always the coordinator. Later we can make it configurable or allow changing it
   // dynamically.
   private static final String COORDINATOR_ID = "0";
-  private static final String TOPOLOGY_FILE_NAME = ".topology.meta";
   private final ClusterConfigurationManagerImpl clusterConfigurationManager;
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
   private final ClusterMembershipService memberShipService;
