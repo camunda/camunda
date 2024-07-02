@@ -300,7 +300,7 @@ public class UserTaskFilterTest {
                       SearchTermQuery.class,
                       (term) -> {
                         assertThat(term.field()).isEqualTo("processDefinitionId");
-                        assertThat(term.value().stringValue()).isEqualTo("processDef1");
+                        assertThat(term.value().longValue()).isEqualTo(123L);
                       });
             });
   }
