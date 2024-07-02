@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.qa.util.cluster;
+package io.camunda.zeebe.qa.util.cluster;
 
 import io.camunda.commons.CommonsModuleConfiguration;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
