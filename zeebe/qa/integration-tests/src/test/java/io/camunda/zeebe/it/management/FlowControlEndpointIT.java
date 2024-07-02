@@ -11,8 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.actuator.FlowControlActuator;
-import io.camunda.zeebe.qa.util.actuator.GetFlowControlActuator;
-import io.camunda.zeebe.qa.util.actuator.SetFlowControlActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -76,9 +74,7 @@ final class FlowControlEndpointIT {
   }
 
   private FlowControlActuator getActuator() {
-    return new FlowControlActuator(
-        GetFlowControlActuator.of(CLUSTER.availableGateway()),
-        SetFlowControlActuator.of(CLUSTER.availableGateway()));
+    return FlowControlActuator.of(CLUSTER.availableGateway());
   }
 
   @Test
