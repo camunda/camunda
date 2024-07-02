@@ -20,6 +20,7 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 public class AdminApiRequestHandler
     extends AsyncApiRequestHandler<ApiRequestReader, ApiResponseWriter> {
@@ -116,7 +117,7 @@ public class AdminApiRequestHandler
         .onComplete(
             (r, t) -> {
               if (t == null) {
-                responseWriter.setPayload(r.toString());
+                responseWriter.setPayload(r.toString().getBytes(StandardCharsets.UTF_8));
                 result.complete(Either.right(responseWriter));
 
               } else {

@@ -12,11 +12,8 @@ import feign.Headers;
 import feign.RequestLine;
 import feign.Retryer;
 import feign.Target.HardCodedTarget;
-import feign.jackson.JacksonDecoder;
-import feign.jackson.JacksonEncoder;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.zeebe.containers.ZeebeNode;
-import java.util.List;
 
 public interface GetFlowControlActuator {
   static GetFlowControlActuator of(final ZeebeNode<?> node) {
@@ -31,11 +28,7 @@ public interface GetFlowControlActuator {
 
   static GetFlowControlActuator of(final String endpoint) {
     final var target = new HardCodedTarget<>(GetFlowControlActuator.class, endpoint);
-    return Feign.builder()
-        .encoder(new JacksonEncoder())
-        .decoder(new JacksonDecoder())
-        .retryer(Retryer.NEVER_RETRY)
-        .target(target);
+    return Feign.builder().retryer(Retryer.NEVER_RETRY).target(target);
   }
 
   /**
@@ -44,6 +37,6 @@ public interface GetFlowControlActuator {
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
    */
   @RequestLine("GET")
-  @Headers({"Content-Type: application/json", "Accept: application/json"})
-  List<String> getFlowControlConfiguration();
+  @Headers({"Content-Type: application/json"})
+  String getFlowControlConfiguration();
 }
