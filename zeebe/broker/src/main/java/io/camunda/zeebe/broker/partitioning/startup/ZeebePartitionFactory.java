@@ -99,6 +99,7 @@ public final class ZeebePartitionFactory {
   private final List<PartitionListener> partitionListeners;
   private final TopologyManagerImpl topologyManager;
   private final FeatureFlags featureFlags;
+  private final Routing routing;
   private final List<PartitionRaftListener> partitionRaftListeners;
 
   public ZeebePartitionFactory(
@@ -114,7 +115,8 @@ public final class ZeebePartitionFactory {
       final List<PartitionListener> partitionListeners,
       final List<PartitionRaftListener> partitionRaftListeners,
       final TopologyManagerImpl topologyManager,
-      final FeatureFlags featureFlags) {
+      final FeatureFlags featureFlags,
+      final Routing routing) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -128,6 +130,7 @@ public final class ZeebePartitionFactory {
     this.partitionRaftListeners = partitionRaftListeners;
     this.topologyManager = topologyManager;
     this.featureFlags = featureFlags;
+    this.routing = routing;
   }
 
   public ZeebePartition constructPartition(
@@ -216,7 +219,7 @@ public final class ZeebePartitionFactory {
           partitionCommandSender,
           featureFlags,
           jobStreamer,
-          Routing.ofFixedPartitionCount(localBroker.getPartitionsCount()));
+          routing);
     };
   }
 }

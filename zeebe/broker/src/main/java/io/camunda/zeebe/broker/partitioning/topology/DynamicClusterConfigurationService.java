@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -32,6 +33,12 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   @Override
   public PartitionDistribution getPartitionDistribution() {
     return partitionDistribution;
+  }
+
+  @Override
+  public RoutingConfiguration getRoutingConfiguration() {
+    // TODO: don't use initial, look up current config from manager
+    return initialClusterConfiguration.routing();
   }
 
   @Override
