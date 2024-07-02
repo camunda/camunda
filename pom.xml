@@ -30,6 +30,7 @@
     <module>search</module>
     <module>service</module>
     <module>testing/camunda-process-test-java</module>
+    <module>testing/camunda-process-test-spring</module>
     <module>clients/java</module>
   </modules>
 

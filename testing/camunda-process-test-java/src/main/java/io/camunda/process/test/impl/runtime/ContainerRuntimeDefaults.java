@@ -32,7 +32,8 @@ public class ContainerRuntimeDefaults {
 
   public static final String ELASTICSEARCH_DOCKER_IMAGE_VERSION =
       VERSION_UTIL.getElasticsearchVersion();
-  public static final String ZEEBE_DOCKER_IMAGE_VERSION = VERSION_UTIL.getCamundaVersion();
-  public static final String OPERATE_DOCKER_IMAGE_VERSION = VERSION_UTIL.getCamundaVersion();
-  public static final String TASKLIST_DOCKER_IMAGE_VERSION = VERSION_UTIL.getCamundaVersion();
+  public static final String CAMUNDA_VERSION = VERSION_UTIL.getCamundaVersion();
+  public static final String ZEEBE_DOCKER_IMAGE_VERSION = CAMUNDA_VERSION;
+  public static final String OPERATE_DOCKER_IMAGE_VERSION = CAMUNDA_VERSION;
+  public static final String TASKLIST_DOCKER_IMAGE_VERSION = CAMUNDA_VERSION;
 }
