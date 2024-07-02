@@ -54,6 +54,6 @@ public class FlowControlEndpoint {
   interface FlowControlService {
     CompletableFuture<Map<Integer, String>> get();
 
-    CompletableFuture<String> set(FlowControlCfg flowControlCfg);
+    CompletableFuture<Map<Integer, String>> set(FlowControlCfg flowControlCfg);
   }
 }

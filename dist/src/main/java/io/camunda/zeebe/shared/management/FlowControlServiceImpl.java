@@ -57,7 +57,7 @@ public class FlowControlServiceImpl implements FlowControlService {
   }
 
   @Override
-  public CompletableFuture<String> set(final FlowControlCfg flowControlCfg) {
+  public CompletableFuture<Map<Integer, String>> set(final FlowControlCfg flowControlCfg) {
     LOG.info("Setting flow control configuration.");
 
     final ObjectMapper objectMapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
@@ -78,7 +78,7 @@ public class FlowControlServiceImpl implements FlowControlService {
                         partition,
                         request -> request.setFlowControlConfiguration(configuration)))
             .toArray(CompletableFuture<?>[]::new);
-    return CompletableFuture.allOf(results).thenApply(e -> "Flow control configuration set.");
+    return CompletableFuture.allOf(results).thenCompose(ignored -> get());
   }
 
   private CompletableFuture<Void> broadcastOnPartition(
