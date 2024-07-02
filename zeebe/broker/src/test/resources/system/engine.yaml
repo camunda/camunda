@@ -12,3 +12,5 @@ zeebe:
         jobs:
           timeoutCheckerPollingInterval: 15s
           timeoutCheckerBatchLimit: 1000
+        validators:
+          resultsOutputMaxSize: 2000

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.transform;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static java.util.Map.entry;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -48,7 +49,8 @@ public final class DeploymentTransformer {
       final ProcessingState processingState,
       final ExpressionProcessor expressionProcessor,
       final KeyGenerator keyGenerator,
-      final FeatureFlags featureFlags) {
+      final FeatureFlags featureFlags,
+      final EngineConfiguration config) {
 
     try {
       // We get an alert by LGTM, since MD5 is a weak cryptographic hash function,
@@ -68,7 +70,8 @@ public final class DeploymentTransformer {
             this::getChecksum,
             processingState.getProcessState(),
             expressionProcessor,
-            featureFlags.enableStraightThroughProcessingLoopDetector());
+            featureFlags.enableStraightThroughProcessingLoopDetector(),
+            config);
     final var dmnResourceTransformer =
         new DmnResourceTransformer(
             keyGenerator, stateWriter, this::getChecksum, processingState.getDecisionState());
