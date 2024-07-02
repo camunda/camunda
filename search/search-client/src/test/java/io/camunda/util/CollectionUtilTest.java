@@ -10,9 +10,9 @@ package io.camunda.util;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.stream.Streams;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -28,9 +28,12 @@ public class CollectionUtilTest {
         Arguments.arguments(new ArrayList<>(), null, List.of()),
         Arguments.arguments(null, List.of(), List.of()),
         Arguments.arguments(null, List.of("1"), List.of("1")),
-        Arguments.arguments(
-            new ArrayList<>(Streams.of("1").toList()), List.of("2"), List.of("1", "2")),
-        Arguments.arguments(new ArrayList<>(Streams.of("1").toList()), null, List.of("1")));
+        Arguments.arguments(asList("1"), List.of("2"), List.of("1", "2")),
+        Arguments.arguments(asList("1"), null, List.of("1")));
+  }
+
+  private static List<String> asList(final String... args) {
+    return new ArrayList<>(Arrays.stream(args).toList());
   }
 
   @ParameterizedTest
