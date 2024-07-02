@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 
+import io.camunda.identity.automation.rolemanagement.service.RoleService;
 import io.camunda.identity.automation.usermanagement.service.GroupService;
 import io.camunda.service.CamundaServiceException;
 import io.camunda.service.JobServices;
@@ -304,6 +305,11 @@ public class ErrorMapperTest {
     @Bean
     public GroupService groupService() {
       return Mockito.mock(GroupService.class);
+    }
+
+    @Bean
+    public RoleService roleService() {
+      return Mockito.mock(RoleService.class);
     }
 
     @Bean
