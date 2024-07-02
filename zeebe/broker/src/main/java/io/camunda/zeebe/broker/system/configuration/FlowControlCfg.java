@@ -16,6 +16,9 @@ import io.camunda.zeebe.broker.system.configuration.backpressure.RateLimitCfg;
 import java.util.Objects;
 
 public class FlowControlCfg implements ConfigurationEntry {
+
+  private static final ObjectMapper mapper =
+      JsonMapper.builder().addModule(new JavaTimeModule()).build();
   private LimitCfg request = null;
   private RateLimitCfg write = new RateLimitCfg();
 
@@ -53,12 +56,11 @@ public class FlowControlCfg implements ConfigurationEntry {
     return Objects.equals(request, that.request) && Objects.equals(write, that.write);
   }
 
-  public static FlowControlCfg fromJson(final String json) throws JsonProcessingException {
-    final ObjectMapper mapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
-    final FlowControlCfg flowControlCfg;
+  public static FlowControlCfg deserialize(final String serialized) throws JsonProcessingException {
+    return mapper.readValue(serialized, FlowControlCfg.class);
+  }
 
-    flowControlCfg = mapper.readValue(json, FlowControlCfg.class);
-
-    return flowControlCfg;
+  public byte[] serialize() throws JsonProcessingException {
+    return mapper.writeValueAsBytes(this);
   }
 }

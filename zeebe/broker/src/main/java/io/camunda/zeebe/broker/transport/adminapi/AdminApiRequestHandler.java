@@ -80,7 +80,7 @@ public class AdminApiRequestHandler
     final FlowControlCfg flowControlCfg;
 
     try {
-      flowControlCfg = FlowControlCfg.fromJson(payload);
+      flowControlCfg = FlowControlCfg.deserialize(payload);
     } catch (final IOException e) {
       LOG.error("Failed to parse the flow control configuration: ", e);
       result.complete(
