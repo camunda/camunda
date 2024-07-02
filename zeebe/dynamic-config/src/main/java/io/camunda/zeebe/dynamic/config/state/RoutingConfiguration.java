@@ -14,7 +14,7 @@ public sealed interface RoutingConfiguration {
     return new FixedPartitionCount(partitionCount);
   }
 
-  public record FixedPartitionCount(int partitionCount) implements RoutingConfiguration {
+  record FixedPartitionCount(int partitionCount) implements RoutingConfiguration {
 
     @Override
     public String name() {

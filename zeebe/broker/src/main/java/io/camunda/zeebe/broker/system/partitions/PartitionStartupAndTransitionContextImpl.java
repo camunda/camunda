@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
+import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -96,6 +97,7 @@ public class PartitionStartupAndTransitionContextImpl
   private BackupManager backupManager;
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private final TopologyManager topologyManager;
+  private final ClusterConfigurationService clusterConfigurationService;
   private BackupStore backupStore;
   private AdminApiRequestHandler adminApiService;
   private PartitionAdminAccess adminAccess;
@@ -117,7 +119,8 @@ public class PartitionStartupAndTransitionContextImpl
       final PartitionProcessingState partitionProcessingState,
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final AtomixServerTransport gatewayBrokerTransport,
-      final TopologyManager topologyManager) {
+      final TopologyManager topologyManager,
+      final ClusterConfigurationService clusterConfigurationService) {
     this.nodeId = nodeId;
     this.clusterCommunicationService = clusterCommunicationService;
     this.raftPartition = raftPartition;
@@ -137,6 +140,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     this.topologyManager = topologyManager;
+    this.clusterConfigurationService = clusterConfigurationService;
   }
 
   public PartitionAdminControl getPartitionAdminControl() {
@@ -345,6 +349,11 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setBackupStore(final BackupStore backupStore) {
     this.backupStore = backupStore;
+  }
+
+  @Override
+  public ClusterConfigurationService getClusterConfigurationService() {
+    return clusterConfigurationService;
   }
 
   @Override

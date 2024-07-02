@@ -14,6 +14,7 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.metrics.BackupManagerMetrics;
+import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -22,6 +23,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +37,7 @@ public final class BackupService extends Actor implements BackupManager {
   private final BackupServiceImpl internalBackupManager;
   private final PersistedSnapshotStore snapshotStore;
   private final Path segmentsDirectory;
+  private final Supplier<RoutingConfiguration> routingSupplier;
   private final Predicate<Path> isSegmentsFile;
   private final BackupManagerMetrics metrics;
 
@@ -45,12 +48,14 @@ public final class BackupService extends Actor implements BackupManager {
       final BackupStore backupStore,
       final PersistedSnapshotStore snapshotStore,
       final Path segmentsDirectory,
+      final Supplier<RoutingConfiguration> routingSupplier,
       final Predicate<Path> isSegmentsFile) {
     this.nodeId = nodeId;
     this.partitionId = partitionId;
     this.numberOfPartitions = numberOfPartitions;
     this.snapshotStore = snapshotStore;
     this.segmentsDirectory = segmentsDirectory;
+    this.routingSupplier = routingSupplier;
     this.isSegmentsFile = isSegmentsFile;
     metrics = new BackupManagerMetrics(partitionId);
     internalBackupManager = new BackupServiceImpl(backupStore);
@@ -78,6 +83,7 @@ public final class BackupService extends Actor implements BackupManager {
                   getBackupId(checkpointId),
                   checkpointPosition,
                   numberOfPartitions,
+                  routingSupplier.get(),
                   actor,
                   segmentsDirectory,
                   isSegmentsFile);

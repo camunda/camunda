@@ -28,9 +28,7 @@ import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
-import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration.FixedPartitionCount;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
-import io.camunda.zeebe.protocol.impl.SubscriptionUtil.Routing;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -94,12 +92,6 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
 
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
-    final var routing =
-        switch (clusterConfigurationService.getRoutingConfiguration()) {
-          case final FixedPartitionCount fixed ->
-              Routing.ofFixedPartitionCount(fixed.partitionCount());
-        };
-
     zeebePartitionFactory =
         new ZeebePartitionFactory(
             actorSchedulingService,
@@ -115,7 +107,7 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
             partitionRaftListeners,
             topologyManager,
             featureFlags,
-            routing);
+            clusterConfigurationService);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());

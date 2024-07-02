@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
+import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -46,6 +47,7 @@ import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration.FixedPartitionCount;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -99,7 +101,7 @@ public final class ZeebePartitionFactory {
   private final List<PartitionListener> partitionListeners;
   private final TopologyManagerImpl topologyManager;
   private final FeatureFlags featureFlags;
-  private final Routing routing;
+  private final ClusterConfigurationService clusterConfigurationService;
   private final List<PartitionRaftListener> partitionRaftListeners;
 
   public ZeebePartitionFactory(
@@ -116,7 +118,7 @@ public final class ZeebePartitionFactory {
       final List<PartitionRaftListener> partitionRaftListeners,
       final TopologyManagerImpl topologyManager,
       final FeatureFlags featureFlags,
-      final Routing routing) {
+      final ClusterConfigurationService clusterConfigurationService) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -130,7 +132,7 @@ public final class ZeebePartitionFactory {
     this.partitionRaftListeners = partitionRaftListeners;
     this.topologyManager = topologyManager;
     this.featureFlags = featureFlags;
-    this.routing = routing;
+    this.clusterConfigurationService = clusterConfigurationService;
   }
 
   public ZeebePartition constructPartition(
@@ -163,7 +165,8 @@ public final class ZeebePartitionFactory {
             new PartitionProcessingState(raftPartition),
             diskSpaceUsageMonitor,
             gatewayBrokerTransport,
-            topologyManager);
+            topologyManager,
+            clusterConfigurationService);
     context.setDynamicPartitionConfig(initialPartitionConfig);
 
     final PartitionTransition newTransitionBehavior = new PartitionTransitionImpl(TRANSITION_STEPS);
@@ -211,6 +214,12 @@ public final class ZeebePartitionFactory {
       final SubscriptionCommandSender subscriptionCommandSender =
           new SubscriptionCommandSender(
               recordProcessorContext.getPartitionId(), partitionCommandSender);
+
+      final var routing =
+          switch (clusterConfigurationService.getRoutingConfiguration()) {
+            case final FixedPartitionCount fixed ->
+                Routing.ofFixedPartitionCount(fixed.partitionCount());
+          };
 
       return EngineProcessors.createEngineProcessors(
           recordProcessorContext,

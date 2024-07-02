@@ -18,6 +18,7 @@ import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.management.BackupService;
+import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
@@ -91,6 +92,7 @@ class PartitionRestoreServiceTest {
             backupStore,
             snapshotStore,
             dataDirectory,
+            () -> RoutingConfiguration.fixed(1),
             path -> path.toString().endsWith(".log"));
     actorScheduler.submitActor(backupService);
 

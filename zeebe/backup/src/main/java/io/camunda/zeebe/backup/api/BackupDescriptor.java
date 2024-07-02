@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.api;
 
+import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration;
 import java.util.Optional;
 
 /**
@@ -43,4 +44,6 @@ public interface BackupDescriptor {
    * @return The version of the broker that took the backup.
    */
   String brokerVersion();
+
+  RoutingConfiguration routingConfiguration();
 }

@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -55,6 +56,7 @@ class InProgressBackupImplTest {
             new BackupIdentifierImpl(1, 1, 1),
             10,
             1,
+            RoutingConfiguration.fixed(1),
             concurrencyControl,
             segmentsDirectory,
             path -> path.toString().endsWith(".log"));
