@@ -53,8 +53,7 @@ public class GroupController {
   public ResponseEntity<Object> createGroup(@RequestBody final CamundaGroupRequest groupRequest) {
     try {
       final CamundaGroupResponse camundaGroupResponse =
-          UserManagementMapper.mapToGroupResponse(
-              groupService.createGroup(UserManagementMapper.mapToGroup(groupRequest)));
+          mapToGroupResponse(groupService.createGroup(mapToGroup(groupRequest)));
       return new ResponseEntity<>(camundaGroupResponse, HttpStatus.CREATED);
     } catch (final Exception e) {
       return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
@@ -77,7 +76,7 @@ public class GroupController {
   public ResponseEntity<Object> findGroupById(@PathVariable(name = "id") final Long groupId) {
     try {
       final CamundaGroupResponse camundaGroupResponse =
-          UserManagementMapper.mapToGroupResponse(groupService.findGroupById(groupId));
+          mapToGroupResponse(groupService.findGroupById(groupId));
       return new ResponseEntity<>(camundaGroupResponse, HttpStatus.OK);
     } catch (final Exception e) {
       return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
@@ -93,9 +92,7 @@ public class GroupController {
     try {
       final GroupSearchResponse groupSearchResponse = new GroupSearchResponse();
       final List<CamundaGroupResponse> allGroupResponses =
-          groupService.findAllGroups().stream()
-              .map(UserManagementMapper::mapToGroupResponse)
-              .toList();
+          groupService.findAllGroups().stream().map(this::mapToGroupResponse).toList();
       groupSearchResponse.setItems(allGroupResponses);
 
       return new ResponseEntity<>(groupSearchResponse, HttpStatus.OK);
@@ -113,8 +110,7 @@ public class GroupController {
       @RequestBody final CamundaGroupRequest groupRequest) {
     try {
       final CamundaGroupResponse camundaGroupResponse =
-          UserManagementMapper.mapToGroupResponse(
-              groupService.updateGroup(groupId, UserManagementMapper.mapToGroup(groupRequest)));
+          mapToGroupResponse(groupService.updateGroup(groupId, mapToGroup(groupRequest)));
       return new ResponseEntity<>(camundaGroupResponse, HttpStatus.OK);
     } catch (final Exception e) {
       return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
@@ -166,5 +162,16 @@ public class GroupController {
     } catch (final Exception e) {
       return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
     }
+  }
+
+  private CamundaGroup mapToGroup(final CamundaGroupRequest groupRequest) {
+    return new CamundaGroup(groupRequest.getId(), groupRequest.getName());
+  }
+
+  private CamundaGroupResponse mapToGroupResponse(final CamundaGroup group) {
+    final CamundaGroupResponse camundaGroupResponse = new CamundaGroupResponse();
+    camundaGroupResponse.setId(group.id());
+    camundaGroupResponse.setName(group.name());
+    return camundaGroupResponse;
   }
 }

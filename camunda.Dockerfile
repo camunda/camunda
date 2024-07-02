@@ -5,9 +5,9 @@
 # Both ubuntu and eclipse-temurin are pinned via digest and not by a strict version tag, as Renovate
 # has trouble with custom versioning schemes
 ARG BASE_IMAGE="ubuntu:jammy"
-ARG BASE_DIGEST="sha256:19478ce7fc2ffbce89df29fea5725a8d12e57de52eb9ea570890dc5852aac1ac"
+ARG BASE_DIGEST="sha256:340d9b015b194dc6e2a13938944e0d016e57b9679963fdeb9ce021daac430221"
 ARG JDK_IMAGE="eclipse-temurin:21-jdk-jammy"
-ARG JDK_DIGEST="sha256:08553a9e5fa00ff728e4b69a390d49b08785675173d8384f38c27da2b49b0fc1"
+ARG JDK_DIGEST="sha256:491c504dec16e0e8fb33a5a5bd5e70412f68c59fcd31a762d39d6adf41c9bc87"
 
 # set to "build" to build camunda from scratch instead of using a distball
 ARG DIST="distball"
@@ -115,9 +115,9 @@ ARG REVISION=""
 LABEL org.opencontainers.image.base.digest="${BASE_DIGEST}"
 LABEL org.opencontainers.image.base.name="docker.io/library/${BASE_IMAGE}"
 LABEL org.opencontainers.image.created="${DATE}"
-LABEL org.opencontainers.image.authors="zeebe@camunda.com"
-LABEL org.opencontainers.image.url="https://zeebe.io"
-LABEL org.opencontainers.image.documentation="https://docs.camunda.io/docs/self-managed/zeebe-deployment/"
+LABEL org.opencontainers.image.authors="community@camunda.com"
+LABEL org.opencontainers.image.url="https://camunda.com/platform/"
+LABEL org.opencontainers.image.documentation="https://docs.camunda.io/docs/self-managed/about-self-managed/"
 LABEL org.opencontainers.image.source="https://github.com/camunda/camunda"
 LABEL org.opencontainers.image.version="${VERSION}"
 # According to https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
@@ -126,15 +126,16 @@ LABEL org.opencontainers.image.ref.name="${BASE_IMAGE}"
 LABEL org.opencontainers.image.revision="${REVISION}"
 LABEL org.opencontainers.image.vendor="Camunda Services GmbH"
 LABEL org.opencontainers.image.licenses="(Apache-2.0 AND LicenseRef-Camunda-License-1.0)"
-LABEL org.opencontainers.image.title="Camunda 8"
-LABEL org.opencontainers.image.description="Workflow engine for microservice orchestration"
+LABEL org.opencontainers.image.title="Camunda Platform"
+LABEL org.opencontainers.image.description="Camunda platform: the universal process orchestrator"
 
 # OpenShift labels: https://docs.openshift.com/container-platform/4.10/openshift_images/create-images.html#defining-image-metadata
-LABEL io.openshift.tags="bpmn,orchestration,workflow"
-LABEL io.k8s.description="Workflow engine for microservice orchestration"
+LABEL io.openshift.tags="bpmn,orchestration,workflow,operate,tasklist"
+LABEL io.k8s.description="Camunda platform: the universal process orchestrator"
 LABEL io.openshift.non-scalable="false"
 LABEL io.openshift.min-memory="512Mi"
 LABEL io.openshift.min-cpu="1"
+LABEL io.openshift.wants="elasticsearch"
 
 ENV CAMUNDA_HOME=/usr/local/camunda
 ENV PATH "${CAMUNDA_HOME}/bin:${PATH}"

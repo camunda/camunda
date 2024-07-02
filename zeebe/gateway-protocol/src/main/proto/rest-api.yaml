@@ -39,8 +39,7 @@ paths:
         - Job
       summary: Activate jobs
       description: |
-        Iterate through all known partitions and activate up to the requested maximum and
-        stream them back to the client as they are activated.
+        Iterate through all known partitions and activate jobs up to the requested maximum.
       requestBody:
         required: true
         content:
@@ -369,7 +368,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Bad request"
+          description: "Not found"
           content:
             application/problem+json:
               schema:
@@ -424,7 +423,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Bad request"
+          description: "Not found"
           content:
             application/problem+json:
               schema:
@@ -473,7 +472,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Bad request"
+          description: "Not found"
           content:
             application/problem+json:
               schema:
@@ -522,7 +521,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Bad request"
+          description: "Not found"
           content:
             application/problem+json:
               schema:
@@ -568,7 +567,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Bad request"
+          description: "Not found"
           content:
             application/problem+json:
               schema:
@@ -617,7 +616,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Bad request"
+          description: "Not found"
           content:
             application/problem+json:
               schema:
@@ -672,7 +671,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Bad request"
+          description: "Not found"
           content:
             application/problem+json:
               schema:
@@ -721,7 +720,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Bad request"
+          description: "Not found"
           content:
             application/problem+json:
               schema:
@@ -732,76 +731,6 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-  /groups/{id}/users:
-    post:
-      tags:
-        - User
-      summary: "Assign a user to a group"
-      operationId: "assignUserToGroup"
-      parameters:
-        - name: "id"
-          in: "path"
-          required: true
-          schema:
-            type: "integer"
-            format: "int64"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AssignUserToGroupRequest"
-        required: true
-      responses:
-        "204":
-          description: "No Content"
-  /groups/{id}/users/{userId}:
-    delete:
-      tags:
-        - User
-      summary: "Unassign a user from a group"
-      operationId: "removeUserFromGroup"
-      parameters:
-        - name: "id"
-          in: "path"
-          required: true
-          schema:
-            type: "integer"
-            format: "int64"
-        - name: "userId"
-          in: "path"
-          required: true
-          schema:
-            type: "integer"
-            format: "int64"
-      responses:
-        "204":
-          description: "No Content"
-  /groups/{id}/users/search:
-    post:
-      tags:
-        - User
-      summary: "Get list of users of a group"
-      operationId: "findAllUsersOfGroup"
-      parameters:
-        - name: "id"
-          in: "path"
-          required: true
-          schema:
-            type: "integer"
-            format: "int64"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SearchQueryRequest"
-        required: true
-      responses:
-        "200":
-          description: "OK"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UserSearchResponse"
 components:
   responses:
     TopologyResponse:

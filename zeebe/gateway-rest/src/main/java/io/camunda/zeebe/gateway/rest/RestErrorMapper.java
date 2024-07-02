@@ -7,12 +7,13 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import io.camunda.service.CamundaServiceException;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
-import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
@@ -30,13 +31,11 @@ public class RestErrorMapper {
       LoggerFactory.getLogger("io.camunda.zeebe.gateway.rest");
 
   public static <T> Optional<ResponseEntity<T>> getResponse(
-      final BrokerResponse<?> brokerResponse,
-      final Throwable error,
-      final Function<BrokerRejection, ProblemDetail> rejectionMapper) {
+      final Throwable error, final Function<BrokerRejection, ProblemDetail> rejectionMapper) {
     return Optional.ofNullable(error)
         .map(e -> mapErrorToProblem(e, rejectionMapper))
-        .or(() -> mapBrokerErrorToProblem(brokerResponse))
-        .or(() -> mapRejectionToProblem(brokerResponse, rejectionMapper))
+        .or(() -> mapBrokerErrorToProblem(error))
+        .or(() -> mapRejectionToProblem(error, rejectionMapper))
         .map(RestErrorMapper::mapProblemToResponse);
   }
 
@@ -46,8 +45,10 @@ public class RestErrorMapper {
       return null;
     }
     return switch (error) {
+      case final CamundaServiceException cse:
+        yield cse.getCause() != null ? mapErrorToProblem(cse.getCause(), rejectionMapper) : null;
       case final BrokerErrorException bee:
-        yield mapBrokerErrorToProblem(error, bee.getError());
+        yield mapBrokerErrorToProblem(bee.getError(), error);
       case final BrokerRejectionException bre:
         REST_GATEWAY_LOGGER.trace(
             "Expected to handle REST request, but the broker rejected it", error);
@@ -66,16 +67,17 @@ public class RestErrorMapper {
     };
   }
 
-  private static Optional<ProblemDetail> mapBrokerErrorToProblem(
-      final BrokerResponse<?> brokerResponse) {
-    if (brokerResponse.isError()) {
-      return Optional.ofNullable(mapBrokerErrorToProblem(null, brokerResponse.getError()));
+  private static Optional<ProblemDetail> mapBrokerErrorToProblem(final Throwable exception) {
+    if (!(exception instanceof CamundaServiceException)) {
+      return Optional.empty();
     }
-    return Optional.empty();
+    return ((CamundaServiceException) exception)
+        .getBrokerError()
+        .map(error -> mapBrokerErrorToProblem(error, null));
   }
 
   private static ProblemDetail mapBrokerErrorToProblem(
-      final Throwable rootError, final BrokerError error) {
+      final BrokerError error, final Throwable rootError) {
     if (error == null) {
       return null;
     }
@@ -113,12 +115,11 @@ public class RestErrorMapper {
   }
 
   private static Optional<ProblemDetail> mapRejectionToProblem(
-      final BrokerResponse<?> brokerResponse,
-      final Function<BrokerRejection, ProblemDetail> rejectionMapper) {
-    if (brokerResponse.isRejection()) {
-      return Optional.ofNullable(rejectionMapper.apply(brokerResponse.getRejection()));
+      final Throwable exception, final Function<BrokerRejection, ProblemDetail> rejectionMapper) {
+    if (!(exception instanceof CamundaServiceException)) {
+      return Optional.empty();
     }
-    return Optional.empty();
+    return ((CamundaServiceException) exception).getBrokerRejection().map(rejectionMapper);
   }
 
   public static ProblemDetail createProblemDetail(
@@ -134,15 +135,21 @@ public class RestErrorMapper {
         .build();
   }
 
+  public static CompletableFuture<ResponseEntity<Object>> mapProblemToCompletedResponse(
+      final ProblemDetail problemDetail) {
+    return CompletableFuture.completedFuture(RestErrorMapper.mapProblemToResponse(problemDetail));
+  }
+
   public static ResponseEntity<Object> mapUserManagementExceptionsToResponse(final Exception e) {
     if (e instanceof IllegalArgumentException) {
-      final ProblemDetail problemDetail =
-          ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
-      return ResponseEntity.of(problemDetail).build();
+      final var problemDetail =
+          createProblemDetail(HttpStatus.BAD_REQUEST, e.getMessage(), e.getClass().getName());
+      return mapProblemToResponse(problemDetail);
     }
 
-    final ProblemDetail problemDetail =
-        ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-    return ResponseEntity.of(problemDetail).build();
+    final var problemDetail =
+        createProblemDetail(
+            HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e.getClass().getName());
+    return mapProblemToResponse(problemDetail);
   }
 }

@@ -18,14 +18,13 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assume.assumeThat;
 
-import io.camunda.zeebe.engine.processing.deployment.model.validation.ExpectedValidationResult;
-import io.camunda.zeebe.engine.processing.deployment.model.validation.ProcessValidationUtil;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.IntermediateThrowEventBuilder;
-import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -80,6 +79,10 @@ public class ExecutionListenerIntermediateThrowEventElementTest {
               IntermediateThrowEventTestScenario.of(
                   "compensation",
                   e -> e.compensateEventDefinition().compensateEventDefinitionDone())
+            },
+            {
+              IntermediateThrowEventTestScenario.of(
+                  "escalation", e -> e.escalation("my_escalation"))
             }
           });
     }
@@ -224,8 +227,7 @@ public class ExecutionListenerIntermediateThrowEventElementTest {
         new RecordingExporterTestWatcher();
 
     @Test
-    public void
-        shouldCompleteEscalationIntermediateThrowEventFromSubprocessWithMultipleStartExecutionListeners() {
+    public void shouldCompleteNonInterruptingEscalationThrowEventFromSubprocessWithMultipleELs() {
       // given
       final long processInstanceKey =
           createProcessInstance(
@@ -238,22 +240,28 @@ public class ExecutionListenerIntermediateThrowEventElementTest {
                           s.embeddedSubProcess()
                               .startEvent()
                               .intermediateThrowEvent(
-                                  "escalation-throw-event",
+                                  "esc-throw-event",
                                   e ->
                                       e.escalation("my_escalation")
                                           .zeebeStartExecutionListener(START_EL_TYPE + "_1")
-                                          .zeebeStartExecutionListener(START_EL_TYPE + "_2"))
+                                          .zeebeStartExecutionListener(START_EL_TYPE + "_2")
+                                          .zeebeEndExecutionListener(END_EL_TYPE + "_1")
+                                          .zeebeEndExecutionListener(END_EL_TYPE + "_2"))
                               .endEvent("sub_e"))
-                  .boundaryEvent("escalation-catch-event", b -> b.escalation("my_escalation"))
+                  // non interrupting escalation catch event
+                  .boundaryEvent(
+                      "esc-catch-event", b -> b.escalation("my_escalation").cancelActivity(false))
                   .manualTask()
-                  .endEvent("com_e")
+                  .endEvent("escalation_e")
                   .moveToActivity("subprocess")
                   .endEvent("main_e")
                   .done());
 
-      // when: complete the start execution listener jobs
+      // when: complete all execution listener jobs
       ENGINE.job().ofInstance(processInstanceKey).withType(START_EL_TYPE + "_1").complete();
       ENGINE.job().ofInstance(processInstanceKey).withType(START_EL_TYPE + "_2").complete();
+      ENGINE.job().ofInstance(processInstanceKey).withType(END_EL_TYPE + "_1").complete();
+      ENGINE.job().ofInstance(processInstanceKey).withType(END_EL_TYPE + "_2").complete();
 
       // assert the process instance has completed as expected
       assertThat(
@@ -276,6 +284,86 @@ public class ExecutionListenerIntermediateThrowEventElementTest {
               tuple(
                   BpmnElementType.INTERMEDIATE_THROW_EVENT,
                   ProcessInstanceIntent.ELEMENT_ACTIVATED),
+              tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+              tuple(
+                  BpmnElementType.INTERMEDIATE_THROW_EVENT,
+                  ProcessInstanceIntent.ELEMENT_COMPLETING),
+              tuple(
+                  BpmnElementType.INTERMEDIATE_THROW_EVENT,
+                  ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER),
+              tuple(
+                  BpmnElementType.INTERMEDIATE_THROW_EVENT,
+                  ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER),
+              tuple(
+                  BpmnElementType.INTERMEDIATE_THROW_EVENT,
+                  ProcessInstanceIntent.ELEMENT_COMPLETED),
+              tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
+              tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
+              tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+              tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+    }
+
+    @Test
+    public void shouldNotExecuteEndELsForInterruptingEscalationThrowEventFromSubprocess() {
+      // given
+      final long processInstanceKey =
+          createProcessInstance(
+              ENGINE,
+              Bpmn.createExecutableProcess(PROCESS_ID)
+                  .startEvent()
+                  .subProcess(
+                      "subprocess",
+                      s ->
+                          s.embeddedSubProcess()
+                              .startEvent()
+                              .intermediateThrowEvent(
+                                  "esc-throw-event",
+                                  e ->
+                                      e.escalation("my_escalation")
+                                          .zeebeStartExecutionListener(START_EL_TYPE)
+                                          .zeebeEndExecutionListener(END_EL_TYPE + "_1")
+                                          .zeebeEndExecutionListener(END_EL_TYPE + "_2"))
+                              .endEvent("sub_e"))
+                  // interrupting escalation catch event
+                  .boundaryEvent("esc-catch-event", b -> b.escalation("my_escalation"))
+                  .manualTask()
+                  .endEvent("escalation_e")
+                  .moveToActivity("subprocess")
+                  .endEvent("main_e")
+                  .done());
+
+      // when: complete start execution listener jobs
+      ENGINE.job().ofInstance(processInstanceKey).withType(START_EL_TYPE).complete();
+
+      // assert that only 1 start execution listener job was created
+      assertThat(
+              RecordingExporter.records()
+                  .betweenProcessInstance(processInstanceKey)
+                  .withIntent(JobIntent.CREATED)
+                  .withValueType(ValueType.JOB))
+          .extracting(Record::getValue)
+          .map(JobRecordValue.class::cast)
+          .map(JobRecordValue::getType)
+          .containsExactly(START_EL_TYPE);
+
+      // assert the process instance has completed as expected
+      assertThat(
+              RecordingExporter.processInstanceRecords()
+                  .withProcessInstanceKey(processInstanceKey)
+                  .limitToProcessInstanceCompleted())
+          .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+          .containsSubsequence(
+              tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+              tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+              tuple(
+                  BpmnElementType.INTERMEDIATE_THROW_EVENT,
+                  ProcessInstanceIntent.ELEMENT_ACTIVATING),
+              tuple(
+                  BpmnElementType.INTERMEDIATE_THROW_EVENT,
+                  ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER),
+              tuple(
+                  BpmnElementType.INTERMEDIATE_THROW_EVENT,
+                  ProcessInstanceIntent.ELEMENT_ACTIVATED),
               tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
               tuple(
                   BpmnElementType.INTERMEDIATE_THROW_EVENT,
@@ -285,30 +373,6 @@ public class ExecutionListenerIntermediateThrowEventElementTest {
               tuple(BpmnElementType.MANUAL_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
               tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
               tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
-    }
-
-    @Test
-    public void
-        shouldNotDeployProcessWithEscalationIntermediateThrowEventWithEndExecutionListeners() {
-      // given
-      final BpmnModelInstance modelInstance =
-          Bpmn.createExecutableProcess(PROCESS_ID)
-              .startEvent()
-              .intermediateThrowEvent("event", e -> e.escalation("my_escalation"))
-              .zeebeStartExecutionListener(START_EL_TYPE + "_1")
-              .zeebeStartExecutionListener(START_EL_TYPE + "_2")
-              .zeebeEndExecutionListener(END_EL_TYPE + "_1")
-              .zeebeEndExecutionListener(END_EL_TYPE + "_2")
-              .manualTask()
-              .endEvent()
-              .done();
-
-      // when - then
-      ProcessValidationUtil.validateProcess(
-          modelInstance,
-          ExpectedValidationResult.expect(
-              IntermediateThrowEvent.class,
-              "Execution listeners of type 'end' are not supported by [escalation] intermediate throw events"));
     }
 
     @Test

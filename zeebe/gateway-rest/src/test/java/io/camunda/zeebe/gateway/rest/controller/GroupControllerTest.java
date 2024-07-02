@@ -11,8 +11,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.identity.usermanagement.CamundaGroup;
-import io.camunda.identity.usermanagement.service.GroupService;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupResponse;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchResponse;
@@ -54,11 +52,12 @@ public class GroupControllerTest extends RestControllerTest {
   }
 
   @Test
-  void getGroupByIdThrowsExceptionWhenServiceThrowsException() {
+  void getGroupByIdThrowsIllegalArgumentExceptionWhenServiceThrowsException() {
     final String message = "message";
     when(groupService.findGroupById(1L)).thenThrow(new IllegalArgumentException(message));
 
     final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
+    expectedBody.setTitle(IllegalArgumentException.class.getName());
     expectedBody.setInstance(URI.create("/v2/groups/1"));
 
     webClient
@@ -68,6 +67,27 @@ public class GroupControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isBadRequest()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  void getGroupByIdThrowsInternalServerErrorExceptionWhenServiceThrowsException() {
+    final String message = "message";
+    when(groupService.findGroupById(1L)).thenThrow(new RuntimeException(message));
+
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, message);
+    expectedBody.setTitle(RuntimeException.class.getName());
+    expectedBody.setInstance(URI.create("/v2/groups/1"));
+
+    webClient
+        .get()
+        .uri("/v2/groups/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .is5xxServerError()
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
   }
@@ -171,6 +191,7 @@ public class GroupControllerTest extends RestControllerTest {
         .thenThrow(new IllegalArgumentException(message));
 
     final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
+    expectedBody.setTitle(IllegalArgumentException.class.getName());
     expectedBody.setInstance(URI.create("/v2/groups/1"));
 
     webClient
