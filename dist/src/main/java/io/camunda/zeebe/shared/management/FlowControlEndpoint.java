@@ -8,8 +8,8 @@
 package io.camunda.zeebe.shared.management;
 
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
@@ -45,14 +45,14 @@ public class FlowControlEndpoint {
   public ResponseEntity<?> get() {
     try {
       return ResponseEntity.status(WebEndpointResponse.STATUS_OK)
-          .body(flowControlService.get().join().toString());
+          .body(flowControlService.get().join());
     } catch (final Exception e) {
       return ResponseEntity.internalServerError().body(e);
     }
   }
 
   interface FlowControlService {
-    CompletableFuture<JSONObject> get();
+    CompletableFuture<Map<Integer, String>> get();
 
     CompletableFuture<String> set(FlowControlCfg flowControlCfg);
   }
