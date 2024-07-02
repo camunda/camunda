@@ -3864,13 +3864,13 @@ boxen@7.0.0:
     widest-line "^4.0.1"
     wrap-ansi "^8.0.1"
 
-bpmn-js@17.8.3:
-  version "17.8.3"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-17.8.3.tgz#c3b18dd708df98533984345cbbd5058292098398"
-  integrity sha512-9QFvfAnCbbvdXQdSumK0/CJJAEPOBAMBgE951Vq/sc2SL+5/h+J7wiTvLVGksv+NUz0ucKM5OE34d/KDDP8WaA==
+bpmn-js@17.9.0:
+  version "17.9.0"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-17.9.0.tgz#985e115226543278c3d3104ec19f01694665d661"
+  integrity sha512-JmbyLWtaa04qZWtyjLcXBWsg+87SuYL2kY7+8wxa7uo6YDdWAoBXOSrGbfsp26ofvSa38LgNOYn7vBl3uABbUw==
   dependencies:
     bpmn-moddle "^8.1.0"
-    diagram-js "^14.7.1"
+    diagram-js "^14.7.2"
     diagram-js-direct-editing "^3.0.1"
     ids "^1.0.5"
     inherits-browser "^0.1.0"
@@ -4987,6 +4987,21 @@ diagram-js@^14.7.1:
     object-refs "^0.4.0"
     path-intersection "^3.0.0"
     tiny-svg "^3.0.1"
+
+diagram-js@^14.7.2:
+  version "14.8.0"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-14.8.0.tgz#90942faf7c9d0b727a8a4d28ffc88c08140f8e6c"
+  integrity sha512-HV3R6i+hl2PyhsdOQ1pqOsI+JCkX/bYJiHgO5zAaExORtuDrdGVDW7lKsEfcrcGA0fXfpEcmerjOmdH/PIvyJA==
+  dependencies:
+    "@bpmn-io/diagram-js-ui" "^0.2.3"
+    clsx "^2.1.0"
+    didi "^10.2.2"
+    inherits-browser "^0.1.0"
+    min-dash "^4.1.0"
+    min-dom "^4.2.1"
+    object-refs "^0.4.0"
+    path-intersection "^3.0.0"
+    tiny-svg "^3.1.2"
 
 didi@^10.0.0, didi@^10.2.2:
   version "10.2.2"
@@ -8820,10 +8835,10 @@ mobx-react@9.1.1:
   dependencies:
     mobx-react-lite "^4.0.7"
 
-mobx@6.12.4:
-  version "6.12.4"
-  resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.12.4.tgz#a1e176cd173bf45d3e5eb825eaff2c736c0a90cb"
-  integrity sha512-uIymg89x+HmItX1p3MG+d09irn2k63J6biftZ5Ok+UpNojS1I3NJPLfcmJT9ANnUltNlHi+HQqrVyxiAN8ISYg==
+mobx@6.12.5:
+  version "6.12.5"
+  resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.12.5.tgz#ed2e4312bc9dbe3d9ecd063c70a5ba9e7c2b823b"
+  integrity sha512-xRq2tyY6unAec0ItlsrgoCuxrWXLoIkM5cGPuerm/0nX/CI9FxAO6ttfRYfFa+B5Yz51d59IfKy0mJwxOEwqzQ==
 
 moddle-xml@^10.1.0:
   version "10.1.0"
@@ -12163,10 +12178,10 @@ typedarray-to-buffer@^3.1.5:
   dependencies:
     is-typedarray "^1.0.0"
 
-typescript@5.5.2:
-  version "5.5.2"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.5.2.tgz#c26f023cb0054e657ce04f72583ea2d85f8d0507"
-  integrity sha512-NcRtPEOsPFFWjobJEtfihkLCZCXZt/os3zf8nTxjVH3RvTSxjrCamJpbExGvYOF+tFHc3pA65qpdwPbzjohhew==
+typescript@5.5.3:
+  version "5.5.3"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.5.3.tgz#e1b0a3c394190838a0b168e771b0ad56a0af0faa"
+  integrity sha512-/hreyEujaB0w76zKo6717l3L0o/qEUtRgdvUBvlkhoWeOVMjMuHNHk0BRBzikzuGDqNmPQbg5ifMEqsHLiIUcQ==
 
 unbox-primitive@^1.0.2:
   version "1.0.2"

@@ -39,8 +39,7 @@ paths:
         - Job
       summary: Activate jobs
       description: |
-        Iterate through all known partitions and activate up to the requested maximum and
-        stream them back to the client as they are activated.
+        Iterate through all known partitions and activate jobs up to the requested maximum.
       requestBody:
         required: true
         content:
