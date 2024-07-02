@@ -32,6 +32,8 @@ import org.springframework.stereotype.Component;
 public class FlowControlServiceImpl implements FlowControlService {
   private static final Logger LOG = LoggerFactory.getLogger(FlowControlServiceImpl.class);
   private final BrokerClient client;
+  private final ObjectMapper objectMapper =
+      JsonMapper.builder().addModule(new JavaTimeModule()).build();
 
   @Autowired
   public FlowControlServiceImpl(final BrokerClient client) {
@@ -59,7 +61,6 @@ public class FlowControlServiceImpl implements FlowControlService {
   public CompletableFuture<Map<Integer, String>> set(final FlowControlCfg flowControlCfg) {
     LOG.info("Setting flow control configuration to {}", flowControlCfg);
 
-    final ObjectMapper objectMapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
     final byte[] configuration;
     try {
       configuration = objectMapper.writeValueAsBytes(flowControlCfg);
