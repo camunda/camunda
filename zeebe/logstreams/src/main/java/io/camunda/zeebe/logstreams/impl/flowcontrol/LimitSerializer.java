@@ -11,10 +11,13 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.concurrency.limits.Limit;
 import com.netflix.concurrency.limits.limit.VegasLimit;
 import com.netflix.concurrency.limits.limit.WindowedLimit;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Map;
 
 public final class LimitSerializer {
@@ -31,6 +34,14 @@ public final class LimitSerializer {
       return OBJECT_MAPPER.writeValueAsBytes(flowControlStatus);
     } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  public static JsonNode deserialize(final byte[] bytes) {
+    try {
+      return OBJECT_MAPPER.readTree(bytes);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
     }
   }
 

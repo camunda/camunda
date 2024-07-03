@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -52,8 +53,8 @@ public class FlowControlEndpoint {
   }
 
   interface FlowControlService {
-    CompletableFuture<Map<Integer, String>> get();
+    CompletableFuture<Map<Integer, JsonNode>> get();
 
-    CompletableFuture<Map<Integer, String>> set(FlowControlCfg flowControlCfg);
+    CompletableFuture<Map<Integer, JsonNode>> set(FlowControlCfg flowControlCfg);
   }
 }
