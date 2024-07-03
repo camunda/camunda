@@ -39,7 +39,6 @@ import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -54,8 +53,6 @@ import org.testcontainers.utility.DockerImageName;
  * <p>The important part is that we should be aware whether rolling update is possible between
  * versions.
  */
-@Disabled(
-    "Was detected as flaky, see https://camunda.slack.com/archives/C013MEVQ4M9/p1719835052167879")
 final class RollingUpdateTest {
 
   private static final BpmnModelInstance PROCESS =

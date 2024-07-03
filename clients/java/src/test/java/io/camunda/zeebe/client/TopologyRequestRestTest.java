@@ -35,7 +35,7 @@ import io.camunda.zeebe.client.protocol.rest.Partition;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.protocol.rest.TopologyResponse;
 import io.camunda.zeebe.client.util.ClientRestTest;
-import io.camunda.zeebe.client.util.RestGatewayService;
+import io.camunda.zeebe.client.util.RestGatewayPaths;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -166,7 +166,7 @@ public final class TopologyRequestRestTest extends ClientRestTest {
   public void shouldRaiseExceptionOnError() {
     // given
     gatewayService.errorOnRequest(
-        RestGatewayService.URL_TOPOLOGY,
+        RestGatewayPaths.getTopologyUrl(),
         () -> new ProblemDetail().title("Invalid request").status(400));
 
     // when
