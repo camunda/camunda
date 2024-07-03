@@ -210,11 +210,11 @@ Please stop it or remove the file $PID_PATH."
     echo $! > "$PID_PATH"
     popd
 
-    $JAVA -cp "$PARENTDIR/*" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" >> $PARENTDIR/log/connectors.log 2>> $PARENTDIR/log/connectors.log &
+    $JAVA -cp "$PARENTDIR/*:$PARENTDIR/custom_connectors/*:./camunda-zeebe-$CAMUNDA_VERSION/lib/*" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> $PARENTDIR/log/connectors.log 2>> $PARENTDIR/log/connectors.log &
     echo $! > "$CONNECTORS_PID_PATH"
 
   else
-    $JAVA -cp "$PARENTDIR/*" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" >> $PARENTDIR/log/connectors.log 2>> $PARENTDIR/log/connectors.log &
+    $JAVA -cp "$PARENTDIR/*:$PARENTDIR/custom_connectors/*:./camunda-zeebe-$CAMUNDA_VERSION/lib/*'" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> $PARENTDIR/log/connectors.log 2>> $PARENTDIR/log/connectors.log &
     echo $! > "$CONNECTORS_PID_PATH"
 
     pushd $PARENTDIR/camunda-zeebe-$CAMUNDA_VERSION/
