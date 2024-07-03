@@ -7,24 +7,24 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
-import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
+import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-@Component("tasklistSchemaManager")
-@Conditional(ElasticSearchCondition.class)
+@Component("schemaManager")
+@Conditional(ElasticsearchCondition.class)
 @Profile("test")
-public class TestTasklistElasticsearchSchemaManager extends ElasticsearchSchemaManager {
+public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(TestTasklistElasticsearchSchemaManager.class);
+      LoggerFactory.getLogger(TestElasticsearchSchemaManager.class);
 
   public void deleteSchema() {
-    final String prefix = tasklistProperties.getElasticsearch().getIndexPrefix();
+    final String prefix = operateProperties.getElasticsearch().getIndexPrefix();
     LOGGER.info("Removing indices {}*", prefix);
     retryElasticsearchClient.deleteIndicesFor(prefix + "*");
     LOGGER.info("Removing templates {}*", prefix);
@@ -32,14 +32,14 @@ public class TestTasklistElasticsearchSchemaManager extends ElasticsearchSchemaM
   }
 
   public void setCreateSchema(final boolean createSchema) {
-    tasklistProperties.getElasticsearch().setCreateSchema(createSchema);
+    operateProperties.getElasticsearch().setCreateSchema(createSchema);
   }
 
   public void setIndexPrefix(final String indexPrefix) {
-    tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
+    operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
   }
 
   public void setDefaultIndexPrefix() {
-    tasklistProperties.getElasticsearch().setDefaultIndexPrefix();
+    operateProperties.getElasticsearch().setDefaultIndexPrefix();
   }
 }

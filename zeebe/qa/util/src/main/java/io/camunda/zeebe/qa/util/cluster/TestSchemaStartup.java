@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
-import io.camunda.tasklist.schema.SchemaStartup;
+import io.camunda.operate.schema.SchemaStartup;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-@Component("tasklistSchemaStartup")
+@Component("schemaStartup")
 @Profile("test")
-public class TestTasklistSchemaStartup extends SchemaStartup {}
+public class TestSchemaStartup extends SchemaStartup {}
