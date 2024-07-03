@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.usertask;
+package io.camunda.client.usertask;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
-import io.camunda.zeebe.client.util.ClientRestTest;
-import io.camunda.zeebe.client.util.RestGatewayPaths;
-import io.camunda.zeebe.client.util.RestGatewayService;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.util.ClientRestTest;
+import io.camunda.client.util.RestGatewayPaths;
+import io.camunda.client.util.RestGatewayService;
 import org.junit.jupiter.api.Test;
 
 public final class UnassignUserTaskTest extends ClientRestTest {

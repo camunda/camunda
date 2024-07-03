@@ -37,7 +37,7 @@ import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.TopologyResponse;
 import io.camunda.client.util.RecordingGatewayService;
-import io.camunda.client.util.RestGatewayService;
+import io.camunda.client.util.RestGatewayPaths;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
 import io.grpc.Server;

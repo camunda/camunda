@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.usertask;
+package io.camunda.client.usertask;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -21,12 +21,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
-import io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest;
-import io.camunda.zeebe.client.util.ClientRestTest;
-import io.camunda.zeebe.client.util.RestGatewayPaths;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.protocol.rest.UserTaskUpdateRequest;
+import io.camunda.client.util.ClientRestTest;
+import io.camunda.client.util.RestGatewayPaths;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;

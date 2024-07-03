@@ -31,7 +31,7 @@ import io.camunda.client.protocol.rest.JobActivationRequest;
 import io.camunda.client.protocol.rest.JobActivationResponse;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
-import io.camunda.client.util.RestGatewayService;
+import io.camunda.client.util.RestGatewayPaths;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;

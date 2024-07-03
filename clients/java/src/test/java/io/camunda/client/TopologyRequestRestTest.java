@@ -35,7 +35,7 @@ import io.camunda.client.protocol.rest.Partition;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.TopologyResponse;
 import io.camunda.client.util.ClientRestTest;
-import io.camunda.client.util.RestGatewayService;
+import io.camunda.client.util.RestGatewayPaths;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
