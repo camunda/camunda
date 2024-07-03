@@ -78,6 +78,8 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
       - uses: ./.github/actions/build-platform-docker
+        with:
+          version: current-test
       - name: Test snapshot
         run: >
           ./mvnw -B --no-snapshot-updates -pl zeebe/qa/update-tests
