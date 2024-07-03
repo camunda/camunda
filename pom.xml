@@ -32,7 +32,7 @@
     <module>testing/camunda-process-test-java</module>
     <module>testing/camunda-process-test-spring</module>
     <module>clients/java</module>
-    <module>qa/util</module>
+    <module>qa</module>
   </modules>
 
   <scm>
