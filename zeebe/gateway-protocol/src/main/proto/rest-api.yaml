@@ -1099,39 +1099,32 @@ components:
       type: object
       properties:
         changeset:
-          allOf:
-            - $ref: "#/components/schemas/Changeset"
-          description: |
-            JSON object with changed task attribute values.
-
-            The following attributes can be adjusted with this endpoint, additional attributes
-            will be ignored:
-
-            * `candidateGroups` - reset by providing an empty list
-            * `candidateUsers` - reset by providing an empty list
-            * `dueDate` - reset by providing an empty String
-            * `followUpDate` - reset by providing an empty String
-
-            Providing any of those attributes with a `null` value or omitting it preserves
-            the persisted attribute's value.
-
-            The assignee cannot be adjusted with this endpoint, use the Assign task endpoint.
-            This ensures correct event emission for assignee changes.
-          type: object
-          nullable: true
+          $ref: "#/components/schemas/Changeset"
         action:
           description: >
             A custom action value that will be accessible from user task events resulting
             from this endpoint invocation. If not provided, it will default to "update".
           type: string
           nullable: true
-    Variables:
-      description: A map of variables.
-      type: object
-      additionalProperties: true
     Changeset:
-      description: A map of changes.
+      description: |
+        JSON object with changed task attribute values.
+
+        The following attributes can be adjusted with this endpoint, additional attributes
+        will be ignored:
+
+        * `candidateGroups` - reset by providing an empty list
+        * `candidateUsers` - reset by providing an empty list
+        * `dueDate` - reset by providing an empty String
+        * `followUpDate` - reset by providing an empty String
+
+        Providing any of those attributes with a `null` value or omitting it preserves
+        the persisted attribute's value.
+
+        The assignee cannot be adjusted with this endpoint, use the Assign task endpoint.
+        This ensures correct event emission for assignee changes.
       type: object
+      nullable: true
       additionalProperties: true
       properties:
         dueDate:

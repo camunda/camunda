@@ -22,8 +22,8 @@ import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.response.UpdateUserTaskResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
+import io.camunda.zeebe.client.protocol.rest.Changeset;
 import io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest;
-import io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequestChangeset;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
@@ -137,10 +137,10 @@ public final class UpdateUserTaskCommandImpl implements UpdateUserTaskCommandSte
     return this;
   }
 
-  private UserTaskUpdateRequestChangeset getChangesetEnsureInitialized() {
-    UserTaskUpdateRequestChangeset changeset = request.getChangeset();
+  private Changeset getChangesetEnsureInitialized() {
+    Changeset changeset = request.getChangeset();
     if (changeset == null) {
-      changeset = new UserTaskUpdateRequestChangeset();
+      changeset = new Changeset();
       request.setChangeset(changeset);
     }
     return changeset;
