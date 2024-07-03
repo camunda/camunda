@@ -15,8 +15,8 @@
     <camunda.maven.artifacts.version>7.19.11-ee</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <zeebe.version>8.6.0-alpha2</zeebe.version>
-    <identity.version>8.6.0-alpha2</identity.version>
+    <zeebe.version>8.6.0-alpha3</zeebe.version>
+    <identity.version>8.6.0-alpha3</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
@@ -552,9 +552,10 @@
         <version>1.21.0</version>
         <configuration>
           <gitFlowConfig>
-            <productionBranch>latest</productionBranch>
-            <developmentBranch>master</developmentBranch>
+            <productionBranch>optimize-latest</productionBranch>
+            <developmentBranch>test-optimize-release</developmentBranch>
             <supportBranchPrefix>maintenance/</supportBranchPrefix>
+            <releaseBranchPrefix>release/optimize-</releaseBranchPrefix>
           </gitFlowConfig>
           <commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>
           <useSnapshotInRelease>true</useSnapshotInRelease>
@@ -634,12 +635,12 @@
   </distributionManagement>
 
   <scm>
-    <url>https://github.com/camunda/camunda-optimize</url>
+    <url>https://github.com/camunda/camunda</url>
     <connection>
-      scm:git:https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/camunda/camunda-optimize.git
+      scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git
     </connection>
     <developerConnection>
-      scm:git:https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/camunda/camunda-optimize.git
+      scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git
     </developerConnection>
     <tag>HEAD</tag>
   </scm>
