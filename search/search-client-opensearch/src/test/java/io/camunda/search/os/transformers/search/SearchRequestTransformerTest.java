@@ -10,10 +10,21 @@ package io.camunda.search.os.transformers.search;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.clients.query.SearchQueryBuilders;
+import io.camunda.search.clients.sort.SearchSortOptions;
 import io.camunda.search.os.transformers.OpensearchTransformers;
+import io.camunda.search.os.util.OSQuerySerializer;
 import io.camunda.search.transformers.SearchTransfomer;
+import java.io.IOException;
+import java.util.List;
+import java.util.stream.Stream;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.SearchRequest;
 
@@ -22,13 +33,174 @@ public class SearchRequestTransformerTest {
   private final OpensearchTransformers transformers = new OpensearchTransformers();
   private SearchTransfomer<SearchQueryRequest, SearchRequest> transformer;
 
+  private OSQuerySerializer osQuerySerializer;
+
   @BeforeEach
-  public void before() {
+  public void before() throws IOException {
     transformer = transformers.getTransformer(SearchQueryRequest.class);
+
+    // To serialize OS queries to json
+    osQuerySerializer = new OSQuerySerializer();
+  }
+
+  @AfterEach
+  public void close() throws Exception {
+    osQuerySerializer.close();
+  }
+
+  private static Stream<Arguments> provideQueryRequests() {
+    return Stream.of(
+        // NO QUERY
+        Arguments.arguments(SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_")), "{}"),
+        // WITH QUERY
+        Arguments.arguments(
+            SearchQueryRequest.of(
+                b ->
+                    b.index("operate-list-view-8.3.0_")
+                        .query(
+                            SearchQueryBuilders.or(
+                                List.of(
+                                    SearchQueryBuilders.exists("foo"),
+                                    SearchQueryBuilders.exists("bar"))))),
+            "{'query':{'bool':{'should':[{'exists':{'field':'foo'}},{'exists':{'field':'bar'}}]}}}"),
+        // WITH FROM
+        Arguments.arguments(
+            SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").from(1)), "{'from':1}"),
+        // WITH QUERY AND FROM
+        Arguments.arguments(
+            SearchQueryRequest.of(
+                b ->
+                    b.index("operate-list-view-8.3.0_")
+                        .query(
+                            SearchQueryBuilders.or(
+                                List.of(
+                                    SearchQueryBuilders.exists("foo"),
+                                    SearchQueryBuilders.exists("bar"))))
+                        .from(1)),
+            "{'from':1,'query':{'bool':{'should':[{'exists':{'field':'foo'}},{'exists':{'field':'bar'}}]}}}"),
+        // WITH SIZE
+        Arguments.arguments(
+            SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").size(10)),
+            "{'size':10}"),
+        // WITH QUERY AND SIZE
+        Arguments.arguments(
+            SearchQueryRequest.of(
+                b ->
+                    b.index("operate-list-view-8.3.0_")
+                        .query(
+                            SearchQueryBuilders.or(
+                                List.of(
+                                    SearchQueryBuilders.exists("foo"),
+                                    SearchQueryBuilders.exists("bar"))))
+                        .size(10)),
+            "{'query':{'bool':{'should':[{'exists':{'field':'foo'}},{'exists':{'field':'bar'}}]}},'size':10}"),
+        // WITH QUERY, SIZE AND FROM
+        Arguments.arguments(
+            SearchQueryRequest.of(
+                b ->
+                    b.index("operate-list-view-8.3.0_")
+                        .query(
+                            SearchQueryBuilders.or(
+                                List.of(
+                                    SearchQueryBuilders.exists("foo"),
+                                    SearchQueryBuilders.exists("bar"))))
+                        .from(1)
+                        .size(10)),
+            "{'from':1,'query':{'bool':{'should':[{'exists':{'field':'foo'}},{'exists':{'field':'bar'}}]}},'size':10}"),
+        // WITH SIZE AND FROM
+        Arguments.arguments(
+            SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").from(1).size(10)),
+            "{'from':1,'size':10}"),
+        // WITH SORT
+        Arguments.arguments(
+            SearchQueryRequest.of(
+                b ->
+                    b.index("operate-list-view-8.3.0_")
+                        .sort(
+                            SearchSortOptions.of(
+                                builder -> builder.field(f -> f.field("test").asc())))),
+            "{'sort':[{'test':{'order':'asc'}}]}"),
+        // WITH SIZE, SORT
+        Arguments.arguments(
+            SearchQueryRequest.of(
+                b ->
+                    b.index("operate-list-view-8.3.0_")
+                        .size(10)
+                        .sort(
+                            SearchSortOptions.of(
+                                builder -> builder.field(f -> f.field("test").asc())))),
+            "{'size':10,'sort':[{'test':{'order':'asc'}}]}"),
+        // WITH FROM, SORT
+        Arguments.arguments(
+            SearchQueryRequest.of(
+                b ->
+                    b.index("operate-list-view-8.3.0_")
+                        .from(1)
+                        .sort(
+                            SearchSortOptions.of(
+                                builder -> builder.field(f -> f.field("test").asc())))),
+            "{'from':1,'sort':[{'test':{'order':'asc'}}]}"),
+        // WITH SIZE, FROM AND SORT
+        Arguments.arguments(
+            SearchQueryRequest.of(
+                b ->
+                    b.index("operate-list-view-8.3.0_")
+                        .sort(
+                            SearchSortOptions.of(
+                                builder -> builder.field(f -> f.field("test").asc())))
+                        .from(1)
+                        .size(10)),
+            "{'from':1,'size':10,'sort':[{'test':{'order':'asc'}}]}"),
+        // WITH QUERY AND SORT
+        Arguments.arguments(
+            SearchQueryRequest.of(
+                b ->
+                    b.index("operate-list-view-8.3.0_")
+                        .query(
+                            SearchQueryBuilders.or(
+                                List.of(
+                                    SearchQueryBuilders.exists("foo"),
+                                    SearchQueryBuilders.exists("bar"))))
+                        .sort(
+                            SearchSortOptions.of(
+                                builder -> builder.field(f -> f.field("test").asc())))),
+            "{'query':{'bool':{'should':[{'exists':{'field':'foo'}},{'exists':{'field':'bar'}}]}},'sort':[{'test':{'order':'asc'}}]}"),
+        // WITH QUERY, SIZE, FROM AND SORT
+        Arguments.arguments(
+            SearchQueryRequest.of(
+                b ->
+                    b.index("operate-list-view-8.3.0_")
+                        .query(
+                            SearchQueryBuilders.or(
+                                List.of(
+                                    SearchQueryBuilders.exists("foo"),
+                                    SearchQueryBuilders.exists("bar"))))
+                        .sort(
+                            SearchSortOptions.of(
+                                builder -> builder.field(f -> f.field("test").asc())))
+                        .from(1)
+                        .size(10)),
+            "{'from':1,'query':{'bool':{'should':[{'exists':{'field':'foo'}},{'exists':{'field':'bar'}}]}},'size':10,'sort':[{'test':{'order':'asc'}}]}"));
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideQueryRequests")
+  public void shouldApplyTransformer(
+      final SearchQueryRequest queryRequest, final String expectedResultQuery) {
+    // given
+    final var expectedQuery = expectedResultQuery.replace("'", "\"");
+
+    // when
+    final var result = transformer.apply(queryRequest);
+
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.index()).hasSize(1).contains("operate-list-view-8.3.0_");
+    Assertions.assertThat(osQuerySerializer.serialize(result)).isEqualTo(expectedQuery);
   }
 
   @Test
-  public void shouldTransformEmptySearchRequest() {
+  public void shouldTransformSearchRequestWithIndex() {
     // given
     final SearchQueryRequest request =
         SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_"));
