@@ -472,7 +472,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
 
   private JobClient newJobClient() {
     return new JobClientImpl(
-        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
+        asyncStub, httpClient, config, jsonMapper, credentialsProvider::shouldRetryRequest);
   }
 
   @Override

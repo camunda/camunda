@@ -7,18 +7,18 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
-import io.camunda.identity.usermanagement.CamundaUser;
-import io.camunda.identity.usermanagement.CamundaUserWithPassword;
-import io.camunda.identity.usermanagement.service.UserService;
+import io.camunda.identity.automation.usermanagement.CamundaUser;
+import io.camunda.identity.automation.usermanagement.CamundaUserWithPassword;
+import io.camunda.identity.automation.usermanagement.service.UserService;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
+import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,7 +48,7 @@ public class UserController {
               userService.createUser(mapToUserWithPassword(userWithPasswordDto)));
       return new ResponseEntity<>(camundaUserResponse, HttpStatus.CREATED);
     } catch (final Exception e) {
-      return handleException(e);
+      return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
     }
   }
 
@@ -58,7 +58,7 @@ public class UserController {
       userService.deleteUser(id);
       return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     } catch (final Exception e) {
-      return handleException(e);
+      return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
     }
   }
 
@@ -71,7 +71,7 @@ public class UserController {
           mapToCamundaUserResponse(userService.findUserById(id));
       return new ResponseEntity<>(camundaUserResponse, HttpStatus.OK);
     } catch (final Exception e) {
-      return handleException(e);
+      return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
     }
   }
 
@@ -89,7 +89,7 @@ public class UserController {
 
       return new ResponseEntity<>(responseDto, HttpStatus.OK);
     } catch (final Exception e) {
-      return handleException(e);
+      return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
     }
   }
 
@@ -104,7 +104,7 @@ public class UserController {
           mapToCamundaUserResponse(userService.updateUser(id, mapToUserWithPassword(user)));
       return new ResponseEntity<>(camundaUserResponse, HttpStatus.OK);
     } catch (final Exception e) {
-      return handleException(e);
+      return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
     }
   }
 
@@ -130,17 +130,5 @@ public class UserController {
     camundaUserDto.setEnabled(camundaUser.isEnabled());
 
     return camundaUserDto;
-  }
-
-  private ResponseEntity<Object> handleException(final Exception e) {
-    if (e instanceof IllegalArgumentException) {
-      final ProblemDetail problemDetail =
-          ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
-      return ResponseEntity.of(problemDetail).build();
-    }
-
-    final ProblemDetail problemDetail =
-        ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-    return ResponseEntity.of(problemDetail).build();
   }
 }

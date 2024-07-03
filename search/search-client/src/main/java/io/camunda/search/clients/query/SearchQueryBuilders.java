@@ -94,7 +94,7 @@ public final class SearchQueryBuilders {
   }
 
   public static SearchQuery constantScore(final SearchQuery query) {
-    return SearchConstantScoreQuery.of(q -> q.filter(query)).toSearchQuery();
+    return constantScore(q -> q.filter(query)).toSearchQuery();
   }
 
   public static SearchExistsQuery.Builder exists() {
@@ -107,7 +107,7 @@ public final class SearchQueryBuilders {
   }
 
   public static SearchQuery exists(final String field) {
-    return SearchExistsQuery.of(q -> q.field(field)).toSearchQuery();
+    return exists(q -> q.field(field)).toSearchQuery();
   }
 
   public static SearchHasChildQuery.Builder hasChild() {

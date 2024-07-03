@@ -22,16 +22,20 @@ import static io.camunda.zeebe.client.protocol.rest.Partition.RoleEnum.FOLLOWER;
 import static io.camunda.zeebe.client.protocol.rest.Partition.RoleEnum.INACTIVE;
 import static io.camunda.zeebe.client.protocol.rest.Partition.RoleEnum.LEADER;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.response.PartitionBrokerHealth;
 import io.camunda.zeebe.client.api.response.PartitionBrokerRole;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.client.protocol.rest.BrokerInfo;
 import io.camunda.zeebe.client.protocol.rest.Partition;
+import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.protocol.rest.TopologyResponse;
 import io.camunda.zeebe.client.util.ClientRestTest;
+import io.camunda.zeebe.client.util.RestGatewayService;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -156,5 +160,18 @@ public final class TopologyRequestRestTest extends ClientRestTest {
     assertThat(topology.getBrokers().get(0).getPartitions().get(0))
         .extracting(PartitionInfo::getHealth)
         .isEqualTo(PartitionBrokerHealth.DEAD);
+  }
+
+  @Test
+  public void shouldRaiseExceptionOnError() {
+    // given
+    gatewayService.errorOnRequest(
+        RestGatewayService.URL_TOPOLOGY,
+        () -> new ProblemDetail().title("Invalid request").status(400));
+
+    // when
+    assertThatThrownBy(() -> client.newTopologyRequest().send().join())
+        .hasCauseInstanceOf(ProblemException.class)
+        .hasMessageContaining("Invalid request");
   }
 }

@@ -20,6 +20,7 @@ import io.camunda.service.search.filter.FilterBuilders;
 import io.camunda.service.search.filter.UserTaskFilter;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.SearchQueryResult;
+import io.camunda.service.util.StubbedBrokerClient;
 import io.camunda.service.util.StubbedCamundaSearchClient;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,12 +30,13 @@ public class UserTaskFilterTest {
 
   private UserTaskServices services;
   private StubbedCamundaSearchClient client;
+  private StubbedBrokerClient brokerClient;
 
   @BeforeEach
   public void before() {
     client = new StubbedCamundaSearchClient();
     new UserTaskSearchQueryStub().registerWith(client);
-    services = new UserTaskServices(client);
+    services = new UserTaskServices(brokerClient, client);
   }
 
   @Test

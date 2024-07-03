@@ -23,6 +23,7 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
+import io.camunda.search.clients.query.SearchWildcardQuery;
 import io.camunda.search.clients.sort.SearchFieldSort;
 import io.camunda.search.clients.sort.SearchSortOptions;
 import io.camunda.search.clients.types.TypedValue;
@@ -39,6 +40,7 @@ import io.camunda.search.os.transformers.query.QueryTransformer;
 import io.camunda.search.os.transformers.query.RangeQueryTransformer;
 import io.camunda.search.os.transformers.query.TermQueryTransformer;
 import io.camunda.search.os.transformers.query.TermsQueryTransformer;
+import io.camunda.search.os.transformers.query.WildcardQueryTransformer;
 import io.camunda.search.os.transformers.search.SearchQueryHitTransformer;
 import io.camunda.search.os.transformers.search.SearchRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchResponseTransformer;
@@ -86,6 +88,7 @@ public final class OpensearchTransformers {
     mappers.put(SearchRangeQuery.class, new RangeQueryTransformer(mappers));
     mappers.put(SearchTermQuery.class, new TermQueryTransformer(mappers));
     mappers.put(SearchTermsQuery.class, new TermsQueryTransformer(mappers));
+    mappers.put(SearchWildcardQuery.class, new WildcardQueryTransformer(mappers));
 
     // sort
     mappers.put(SearchSortOptions.class, new SortOptionsTransformer(mappers));

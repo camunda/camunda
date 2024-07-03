@@ -72,7 +72,7 @@
     <version.mockito>5.12.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.8</version.msgpack>
-    <version.netty>4.1.110.Final</version.netty>
+    <version.netty>4.1.111.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.8.0</version.opensearch>
     <version.opensearch.testcontainers>2.0.1</version.opensearch.testcontainers>
@@ -86,7 +86,7 @@
     <version.slf4j>2.0.13</version.slf4j>
     <version.snakeyaml>2.2</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
-    <version.wiremock>3.7.0</version.wiremock>
+    <version.wiremock>3.8.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
     <version.testcontainers>1.19.8</version.testcontainers>
@@ -97,7 +97,7 @@
     <version.rest-assured>5.4.0</version.rest-assured>
     <version.spring>6.1.10</version.spring>
     <version.spring-security>6.3.1</version.spring-security>
-    <version.spring-boot>3.3.0</version.spring-boot>
+    <version.spring-boot>3.3.1</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.0</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
@@ -123,14 +123,14 @@
     <version.feign>13.3</version.feign>
     <version.google-sdk>26.42.0</version.google-sdk>
     <version.azure-sdk>1.2.24</version.azure-sdk>
-    <version.awssdk>2.26.11</version.awssdk>
+    <version.awssdk>2.26.14</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.17.1</version.jackson-annotations>
     <version.swagger-annotations>2.2.22</version.swagger-annotations>
-    <version.checker-qual>3.44.0</version.checker-qual>
+    <version.checker-qual>3.45.0</version.checker-qual>
     <version.java-jwt>4.4.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.3</version.postgresql>
@@ -147,13 +147,13 @@
     <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
     <version.unboundid-ldapsdk>7.0.1</version.unboundid-ldapsdk>
     <version.parsson>1.1.6</version.parsson>
-    <version.springdoc>2.5.0</version.springdoc>
+    <version.springdoc>2.6.0</version.springdoc>
     <version.jakarta.json>2.0.1</version.jakarta.json>
 
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.752</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.755</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.8</version.postgres-test-container>
     <version.elasticsearch7>7.17.22</version.elasticsearch7>
@@ -214,7 +214,7 @@
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.8.6.1</plugin.version.spotbugs>
     <plugin.version.surefire>3.3.0</plugin.version.surefire>
-    <plugin.version.versions>2.16.2</plugin.version.versions>
+    <plugin.version.versions>2.17.0</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.0</plugin.version.frontend-maven>
     <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
 
@@ -820,6 +820,20 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-client-java</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>spring-boot-starter-camunda-sdk</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- Camunda Process Testing modules -->
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-process-test-java</artifactId>
         <version>${project.version}</version>
       </dependency>
 

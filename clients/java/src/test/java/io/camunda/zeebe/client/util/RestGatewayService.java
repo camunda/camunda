@@ -15,25 +15,53 @@
  */
 package io.camunda.zeebe.client.util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static io.camunda.zeebe.client.impl.http.HttpClientFactory.REST_API_PATH;
+
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
-import io.camunda.zeebe.client.impl.http.HttpClientFactory;
+import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
+import io.camunda.zeebe.client.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.protocol.rest.TopologyResponse;
-import org.junit.jupiter.api.Assertions;
+import java.util.List;
+import java.util.function.Supplier;
+import org.assertj.core.api.Assertions;
 
 public class RestGatewayService {
 
   /** The topology request URL */
-  public static final String URL_TOPOLOGY = HttpClientFactory.REST_API_PATH + "/topology";
+  public static final String URL_TOPOLOGY = REST_API_PATH + "/topology";
 
-  private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+  /** The job activation request URL */
+  public static final String URL_JOB_ACTIVATION = REST_API_PATH + "/jobs/activation";
+
+  private static final ZeebeObjectMapper JSON_MAPPER = new ZeebeObjectMapper();
 
   private final WireMockRuntimeInfo mockInfo;
 
   protected RestGatewayService(final WireMockRuntimeInfo mockInfo) {
     this.mockInfo = mockInfo;
+    /*
+     * Register a default response to support. Tests that don't need a specific response
+     * registration can simply invoke commands and send requests.
+     * Otherwise, Wiremock fails if no stubs are registered but a request is sent.
+     */
+    mockInfo.getWireMock().register(WireMock.any(WireMock.anyUrl()).willReturn(WireMock.ok()));
+  }
+
+  /**
+   * Register the given response for POST requests to {@value #URL_JOB_ACTIVATION}
+   *
+   * @param jobActivationResponse the response to provide upon a job activation request
+   */
+  public void onActivateJobsRequest(final JobActivationResponse jobActivationResponse) {
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.post(URL_JOB_ACTIVATION)
+                .willReturn(WireMock.okJson(JSON_MAPPER.toJson(jobActivationResponse))));
   }
 
   /**
@@ -44,15 +72,47 @@ public class RestGatewayService {
   public void onTopologyRequest(final TopologyResponse topologyResponse) {
     mockInfo
         .getWireMock()
-        .register(WireMock.get(URL_TOPOLOGY).willReturn(WireMock.okJson(toJson(topologyResponse))));
+        .register(
+            WireMock.get(URL_TOPOLOGY)
+                .willReturn(WireMock.okJson(JSON_MAPPER.toJson(topologyResponse))));
   }
 
-  private static String toJson(final Object response) {
-    try {
-      return JSON_MAPPER.writeValueAsString(response);
-    } catch (final JsonProcessingException e) {
-      Assertions.fail("Couldn't serialize response body to JSON", e);
-      return null;
+  /**
+   * Fetch the last request that was served and convert it to the request target type.
+   *
+   * @param requestType the Java type to convert the request to
+   * @return the last request
+   * @param <T> the request type
+   */
+  public <T> T getLastRequest(final Class<T> requestType) {
+    return JSON_MAPPER.fromJson(getLastRequest().getBodyAsString(), requestType);
+  }
+
+  /**
+   * Register the given error response for a URL. The client will receive a BAD_REQUEST (HTTP status
+   * 400) response with the given problem detail upon a request to the URL with any HTTP method.
+   *
+   * @param url the URL to register the error response for
+   * @param problemDetailSupplier the supplier for the error details the client will receive upon a
+   *     request
+   */
+  public void errorOnRequest(
+      final String url, final Supplier<ProblemDetail> problemDetailSupplier) {
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.any(WireMock.urlEqualTo(url))
+                .willReturn(
+                    WireMock.badRequest()
+                        .withBody(JSON_MAPPER.toJson(problemDetailSupplier.get()))
+                        .withHeader("Content-Type", "application/problem+json")));
+  }
+
+  private static LoggedRequest getLastRequest() {
+    final List<ServeEvent> serveEvents = WireMock.getAllServeEvents();
+    if (serveEvents.isEmpty()) {
+      Assertions.fail("No request was found");
     }
+    return serveEvents.get(serveEvents.size() - 1).getRequest();
   }
 }
