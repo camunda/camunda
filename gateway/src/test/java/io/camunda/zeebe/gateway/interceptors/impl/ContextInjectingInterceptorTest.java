@@ -13,7 +13,6 @@ import static org.mockito.Mockito.mock;
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.camunda.zeebe.gateway.query.QueryApi;
 import io.grpc.Metadata;
-import io.grpc.internal.NoopServerCall;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
