@@ -120,6 +120,10 @@ final class ClusteredSnapshotTest {
     // then
     clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(followerId));
     assertThat(clusteringRule.getBroker(followerId)).havingSnapshot();
+
+    // then the broker should be able to restart with the new received snapshot
+    // Regression test for https://github.com/camunda/camunda/issues/19984
+    clusteringRule.restartBroker(followerId);
   }
 
   private void awaitUntilAsserted(final Consumer<Broker> consumer) {
