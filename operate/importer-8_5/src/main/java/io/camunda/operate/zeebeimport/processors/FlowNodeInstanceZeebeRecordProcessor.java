@@ -61,11 +61,11 @@ public class FlowNodeInstanceZeebeRecordProcessor {
   @Autowired private OperateProperties operateProperties;
 
   // treePath by flowNodeInstanceKey cache
-  private Map<String, String> treePathCache;
+  private Map<Integer, Map<String, String>> treePathCache;
 
   @PostConstruct
   private void init() {
-    treePathCache = new SoftHashMap<>(operateProperties.getImporter().getFlowNodeTreeCacheSize());
+    treePathCache = new HashMap<>();
   }
 
   public void processIncidentRecord(final Record record, final BatchRequest batchRequest)
@@ -210,6 +210,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
   private String getParentTreePath(
       final Record record, final ProcessInstanceRecordValue recordValue) {
     String parentTreePath;
+    final var partitionCache = getPartitionCache(record.getPartitionId());
     // if scopeKey differs from processInstanceKey, then it's inner tree level and we need to search
     // for parent 1st
     if (recordValue.getFlowScopeKey() == recordValue.getProcessInstanceKey()) {
@@ -217,7 +218,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     } else {
       // find parent flow node instance
       parentTreePath =
-          treePathCache.get(ConversionUtils.toStringOrNull(recordValue.getFlowScopeKey()));
+          partitionCache.get(ConversionUtils.toStringOrNull(recordValue.getFlowScopeKey()));
       // query from ELS
       if (parentTreePath == null) {
         parentTreePath = flowNodeStore.findParentTreePathFor(recordValue.getFlowScopeKey());
@@ -233,10 +234,20 @@ public class FlowNodeInstanceZeebeRecordProcessor {
         parentTreePath = ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey());
       }
     }
-    treePathCache.put(
+    partitionCache.put(
         ConversionUtils.toStringOrNull(record.getKey()),
         String.join("/", parentTreePath, ConversionUtils.toStringOrNull(record.getKey())));
     return parentTreePath;
+  }
+
+  private Map<String, String> getPartitionCache(final int partitionId) {
+    var partitionCache = treePathCache.get(partitionId);
+    if (partitionCache == null) {
+      partitionCache =
+          new SoftHashMap<>(operateProperties.getImporter().getFlowNodeTreeCacheSize());
+      treePathCache.put(partitionId, partitionCache);
+    }
+    return partitionCache;
   }
 
   private boolean canOptimizeFlowNodeInstanceIndexing(final FlowNodeInstanceEntity entity) {
