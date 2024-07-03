@@ -95,6 +95,8 @@ public final class FlowControl implements AppendListener {
    * @return An Optional containing a {@link InFlightEntry} if append was accepted, an empty
    *     Optional otherwise.
    */
+  // False positive: https://github.com/checkstyle/checkstyle/issues/14891
+  @SuppressWarnings("checkstyle:MissingSwitchDefault")
   public Either<Rejection, InFlightEntry> tryAcquire(
       final WriteContext context, final List<LogAppendEntryMetadata> batchMetadata) {
     final var result = tryAcquireInternal(context, batchMetadata);
