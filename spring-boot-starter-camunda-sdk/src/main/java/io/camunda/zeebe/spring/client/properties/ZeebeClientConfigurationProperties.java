@@ -364,6 +364,10 @@ public class ZeebeClientConfigurationProperties {
     return message.getMaxMessageSize();
   }
 
+  public int getMaxMetadataSize() {
+    return DEFAULT.getMaxMetadataSize();
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(broker, cloud, worker, message, security, job, requestTimeout);

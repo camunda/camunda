@@ -126,6 +126,11 @@ public interface ZeebeClientConfiguration {
   int getMaxMessageSize();
 
   /**
+   * @see ZeebeClientBuilder#maxMetadataSize(int)
+   */
+  int getMaxMetadataSize();
+
+  /**
    * @see ZeebeClientBuilder#jobWorkerExecutor(ScheduledExecutorService)
    */
   ScheduledExecutorService jobWorkerExecutor();
