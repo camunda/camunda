@@ -216,13 +216,8 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       parentTreePath = ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey());
     } else {
       // find parent flow node instance
-      parentTreePath = null;
-      // search in cache
-      if (treePathCache.get(ConversionUtils.toStringOrNull(recordValue.getFlowScopeKey()))
-          != null) {
-        parentTreePath =
-            treePathCache.get(ConversionUtils.toStringOrNull(recordValue.getFlowScopeKey()));
-      }
+      parentTreePath =
+          treePathCache.get(ConversionUtils.toStringOrNull(recordValue.getFlowScopeKey()));
       // query from ELS
       if (parentTreePath == null) {
         parentTreePath = flowNodeStore.findParentTreePathFor(recordValue.getFlowScopeKey());
