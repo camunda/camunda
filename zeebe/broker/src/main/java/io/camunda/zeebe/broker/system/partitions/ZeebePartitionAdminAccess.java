@@ -30,6 +30,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -244,12 +245,10 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
         () -> {
           final var flowControl = adminControl.getLogStream().getFlowControl();
           try {
-            future.complete(
-                Map.of(
-                    LimitType.APPEND,
-                    flowControl.getAppendLimit(),
-                    LimitType.REQUEST,
-                    flowControl.getRequestLimit()));
+            final Map<LimitType, Limit> limits = new HashMap<>();
+            limits.put(LimitType.APPEND, flowControl.getAppendLimit());
+            limits.put(LimitType.REQUEST, flowControl.getRequestLimit());
+            future.complete(limits);
           } catch (final Exception e) {
             LOG.error("Failure on getting the limit configuration of flow control.", e);
             future.completeExceptionally(e);
