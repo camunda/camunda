@@ -360,6 +360,11 @@
                 "type": "int64"
               },
               {
+                "id": 5,
+                "name": "routing",
+                "type": "RoutingConfiguration"
+              },
+              {
                 "id": 3,
                 "name": "lastChange",
                 "type": "CompletedChange"
@@ -378,6 +383,16 @@
                   "name": "members",
                   "type": "MemberState"
                 }
+              }
+            ]
+          },
+          {
+            "name": "RoutingConfiguration",
+            "fields": [
+              {
+                "id": 1,
+                "name": "partitionCount",
+                "type": "int32"
               }
             ]
           },
