@@ -2,8 +2,8 @@ name: Zeebe Version Compatibility
 on:
   workflow_dispatch:
   schedule:
-    # Run at 10:00 on every tuesday
-    - cron: '0 10 * * 2'
+    # Run at 6:00 every day
+    - cron: '0 6 * * *'
 concurrency:
   group: zeebe-version-compatibility
   cancel-in-progress: false
