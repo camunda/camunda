@@ -30,7 +30,6 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.PostImporterQueueTemplate;
 import io.camunda.operate.store.BatchRequest;
-import io.camunda.operate.store.ImportStore;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.util.OperationsManager;
@@ -60,8 +59,6 @@ public class IncidentZeebeRecordProcessor {
 
   @Autowired private IncidentTemplate incidentTemplate;
 
-  @Autowired private ImportStore importStore;
-
   @Autowired private PostImporterQueueTemplate postImporterQueueTemplate;
 
   @Autowired private OperationsManager operationsManager;
@@ -70,9 +67,15 @@ public class IncidentZeebeRecordProcessor {
 
   public void processIncidentRecord(final List<Record> records, final BatchRequest batchRequest)
       throws PersistenceException {
+    processIncidentRecord(records, batchRequest, false);
+  }
+
+  public void processIncidentRecord(
+      final List<Record> records, final BatchRequest batchRequest, final boolean concurrencyMode)
+      throws PersistenceException {
     final List<IncidentEntity> newIncidents = new ArrayList<>();
     for (final Record record : records) {
-      processIncidentRecord(record, batchRequest, newIncidents::add);
+      processIncidentRecord(record, batchRequest, newIncidents::add, concurrencyMode);
     }
     if (operateProperties.getAlert().getWebhook() != null) {
       incidentNotifier.notifyOnIncidents(newIncidents);
@@ -82,11 +85,12 @@ public class IncidentZeebeRecordProcessor {
   public void processIncidentRecord(
       final Record record,
       final BatchRequest batchRequest,
-      final Consumer<IncidentEntity> newIncidentHandler)
+      final Consumer<IncidentEntity> newIncidentHandler,
+      final boolean concurrencyMode)
       throws PersistenceException {
     final IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
 
-    persistIncident(record, recordValue, batchRequest, newIncidentHandler);
+    persistIncident(record, recordValue, batchRequest, newIncidentHandler, concurrencyMode);
 
     persistPostImportQueueEntry(record, recordValue, batchRequest);
   }
@@ -117,7 +121,8 @@ public class IncidentZeebeRecordProcessor {
       final Record record,
       final IncidentRecordValue recordValue,
       final BatchRequest batchRequest,
-      final Consumer<IncidentEntity> newIncidentHandler)
+      final Consumer<IncidentEntity> newIncidentHandler,
+      final boolean concurrencyMode)
       throws PersistenceException {
     final String intentStr = record.getIntent().name();
     final Long incidentKey = record.getKey();
@@ -167,7 +172,6 @@ public class IncidentZeebeRecordProcessor {
 
       final Map<String, Object> updateFields = getUpdateFieldsMapByIntent(intentStr, incident);
       updateFields.put(POSITION, incident.getPosition());
-      final boolean concurrencyMode = importStore.getConcurrencyMode();
       if (concurrencyMode) {
         batchRequest.upsertWithScript(
             incidentTemplate.getFullQualifiedName(),
