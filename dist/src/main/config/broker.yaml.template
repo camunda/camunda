@@ -993,7 +993,7 @@
           # timeoutCheckerBatchLimit: 0x7fffffff
 
         # validators:
-          # Allows to configure the maximum output size for BPMN validator results.
+          # Allows to configure the maximum output size (in bytes) for BPMN validator results.
           # These results details are typically returned in our gRPC endpoint responses and can cause issues in proxy servers if they are too long to be contained in proxy-headers.
           # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENGINE_VALIDATORS_RESULTSOUTPUTMAXSIZE
           # resultsOutputMaxSize: 0x7fffffff
