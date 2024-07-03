@@ -7,11 +7,9 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
-import com.netflix.concurrency.limits.Limit;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
-import io.camunda.zeebe.logstreams.impl.flowcontrol.LimitType;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControlLimits;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import java.util.Map;
 import java.util.Optional;
 
 public interface PartitionAdminAccess {
@@ -33,5 +31,5 @@ public interface PartitionAdminAccess {
 
   ActorFuture<Void> configureFlowControl(final FlowControlCfg flowControlCfg);
 
-  ActorFuture<Map<LimitType, Limit>> getFlowControlConfiguration();
+  ActorFuture<FlowControlLimits> getFlowControlConfiguration();
 }

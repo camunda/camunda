@@ -7,11 +7,6 @@
  */
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.netflix.concurrency.limits.Limit;
 
-public enum LimitType {
-  @JsonProperty("append")
-  APPEND,
-  @JsonProperty("request")
-  REQUEST
-}
+public record FlowControlLimits(Limit requestLimiter, RateLimit writeRateLimit) {}

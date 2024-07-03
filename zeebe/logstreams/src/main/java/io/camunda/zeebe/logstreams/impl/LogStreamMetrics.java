@@ -177,10 +177,6 @@ public final class LogStreamMetrics {
     inflightAppends.dec();
   }
 
-  public void setInflightAppends(final int count) {
-    inflightAppends.set(count);
-  }
-
   public void setAppendLimit(final long limit) {
     appendLimit.set(limit);
   }

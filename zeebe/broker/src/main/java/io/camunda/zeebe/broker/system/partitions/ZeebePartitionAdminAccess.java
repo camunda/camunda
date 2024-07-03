@@ -9,13 +9,12 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import static java.util.Objects.requireNonNull;
 
-import com.netflix.concurrency.limits.Limit;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
-import io.camunda.zeebe.logstreams.impl.flowcontrol.LimitType;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControlLimits;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.log.WriteContext;
@@ -30,8 +29,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 
@@ -219,8 +216,8 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
         () -> {
           try {
             final FlowControl flowControl = adminControl.getLogStream().getFlowControl();
-            if (flowControlCfg.getAppend() != null) {
-              flowControl.setAppendLimit(flowControlCfg.getAppend().buildLimit());
+            if (flowControlCfg.getWrite() != null) {
+              flowControl.setWriteRateLimit(flowControlCfg.getWrite().buildLimit());
             }
             if (flowControlCfg.getRequest() != null) {
               flowControl.setRequestLimit(flowControlCfg.getRequest().buildLimit());
@@ -238,16 +235,16 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
   }
 
   @Override
-  public ActorFuture<Map<LimitType, Limit>> getFlowControlConfiguration() {
-    final ActorFuture<Map<LimitType, Limit>> future = concurrencyControl.createFuture();
+  public ActorFuture<FlowControlLimits> getFlowControlConfiguration() {
+    final ActorFuture<FlowControlLimits> future = concurrencyControl.createFuture();
 
     concurrencyControl.run(
         () -> {
           final var flowControl = adminControl.getLogStream().getFlowControl();
           try {
-            final Map<LimitType, Limit> limits = new HashMap<>();
-            limits.put(LimitType.APPEND, flowControl.getAppendLimit());
-            limits.put(LimitType.REQUEST, flowControl.getRequestLimit());
+            final FlowControlLimits limits =
+                new FlowControlLimits(
+                    flowControl.getRequestLimit(), flowControl.getWriteRateLimit());
             future.complete(limits);
           } catch (final Exception e) {
             LOG.error("Failure on getting the limit configuration of flow control.", e);
@@ -261,7 +258,7 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
       final long processInstanceKey, final LogStreamWriter writer, final ActorFuture<Void> future) {
     tryWriteErrorEvent(writer, processInstanceKey)
         .ifRightOrLeft(
-            (position) -> {
+            position -> {
               LOG.info("Wrote error record on position {}", position);
               // we only want to make the state change after we wrote the event
               banInstanceInState(processInstanceKey);

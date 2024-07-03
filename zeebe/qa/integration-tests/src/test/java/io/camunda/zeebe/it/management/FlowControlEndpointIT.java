@@ -47,15 +47,11 @@ final class FlowControlEndpointIT {
     getActuator()
         .setFlowControlConfiguration(
             "{\n"
-                + "  \"append\": {\n"
-                + "    \"useWindowed\": false,\n"
-                + "    \"algorithm\": \"VEGAS\",\n"
-                + "    \"vegas\": {\n"
-                + "      \"alpha\": 3,\n"
-                + "      \"beta\": 6,\n"
-                + "      \"initialLimit\": 20\n"
-                + "    }\n"
-                + "  },\n"
+                + " \"write\": { \n"
+                + "     \"rampUp\": 0,"
+                + "     \"enabled\": true,"
+                + "     \"limit\": 999"
+                + "  },"
                 + "  \"request\": {\n"
                 + "    \"useWindowed\": false,\n"
                 + "    \"algorithm\": \"VEGAS\",\n"
@@ -72,8 +68,8 @@ final class FlowControlEndpointIT {
     // then
     assertThat(flowControlConfiguration.get(1).toString())
         .contains(
-            "\"request\":{\"limit\":50,\"estimatedLimit\":50.0,\"rtt_noload\":0,\"maxLimit\":1000,\"smoothing\":1.0}",
-            "\"append\":{\"limit\":20,\"estimatedLimit\":20.0,\"rtt_noload\":0,\"maxLimit\":1000,\"smoothing\":1.0}");
+            "\"requestLimiter\":{\"limit\":50,\"estimatedLimit\":50.0,\"rtt_noload\":0,\"maxLimit\":1000,\"smoothing\":1.0}",
+            "\"writeRateLimit\":{\"enabled\":true,\"limit\":999,\"rampUp\":0.0}");
   }
 
   private FlowControlActuator getActuator() {
@@ -88,18 +84,16 @@ final class FlowControlEndpointIT {
         .setFlowControlConfiguration(
             "{ "
                 + "  \"request\": null, "
-                + "  \"append\": "
-                + "  {"
-                + "    \"enabled\":true,"
-                + "    \"useWindowed\":false,"
-                + "    \"fixed\":{\"limit\":20},"
-                + "    \"algorithm\":\"FIXED\""
+                + "  \"write\": { \n"
+                + "     \"rampUp\": 0,"
+                + "     \"enabled\": true,"
+                + "     \"limit\": 5000"
                 + "  }"
                 + "}");
     getActuator()
         .setFlowControlConfiguration(
             "{ "
-                + "  \"append\": null, "
+                + "  \"write\": null, "
                 + "  \"request\": "
                 + "  {"
                 + "    \"enabled\":true,"
@@ -116,19 +110,29 @@ final class FlowControlEndpointIT {
     // then
     assertThat(flowControlConfiguration.get(1).toString())
         .contains(
-            "\"request\":{\"limit\":1024,\"estimatedLimit\":1024.0,\"rtt_noload\":0,\"maxLimit\":32768,\"smoothing\":1.0}",
-            "\"append\":{\"limit\":20}");
+            "\"requestLimiter\":{\"limit\":1024,\"estimatedLimit\":1024.0,\"rtt_noload\":0,\"maxLimit\":32768,\"smoothing\":1.0}",
+            "\"writeRateLimit\":{\"enabled\":true,\"limit\":5000,\"rampUp\":0.0}");
   }
 
   @Test
   void canDisableALimit() {
     // given
     getActuator()
-        .setFlowControlConfiguration("{ \"request\": { \"enabled\": false }, \"append\": null }");
+        .setFlowControlConfiguration(
+            "{ \"request\": { \"enabled\": false }, "
+                + "\"write\": { \n"
+                + "     \"rampUp\": 0,"
+                + "     \"enabled\": false,"
+                + "     \"limit\": 1000"
+                + "  }"
+                + "}");
     final Map<Integer, JsonNode> flowControlConfiguration =
         getActuator().getFlowControlConfiguration();
 
     // then
-    assertThat(flowControlConfiguration.get(1).toString()).contains("\"request\":null");
+    assertThat(flowControlConfiguration.get(1).toString())
+        .contains(
+            "\"requestLimiter\":null",
+            "\"writeRateLimit\":{\"enabled\":false,\"limit\":1000,\"rampUp\":0.0}");
   }
 }

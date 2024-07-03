@@ -13,12 +13,11 @@ import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.concurrency.limits.Limit;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.netflix.concurrency.limits.limit.VegasLimit;
 import com.netflix.concurrency.limits.limit.WindowedLimit;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Map;
 
 public final class LimitSerializer {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -27,9 +26,10 @@ public final class LimitSerializer {
     OBJECT_MAPPER.addMixIn(StabilizingAIMDLimit.class, AIMDLimitMixIn.class);
     OBJECT_MAPPER.addMixIn(WindowedLimit.class, WindowedLimitMixIn.class);
     OBJECT_MAPPER.addMixIn(VegasLimit.class, VegasLimitMixIn.class);
+    OBJECT_MAPPER.registerModule(new JavaTimeModule());
   }
 
-  public static byte[] serialize(final Map<LimitType, Limit> flowControlStatus) {
+  public static byte[] serialize(final FlowControlLimits flowControlStatus) {
     try {
       return OBJECT_MAPPER.writeValueAsBytes(flowControlStatus);
     } catch (final JsonProcessingException e) {
