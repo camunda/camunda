@@ -86,8 +86,6 @@ jobs:
             maven-test-fork-count: 10
             tcc-enabled: ${{ vars.TCC_ENABLED }}
             tcc-concurrency: 2
-    env:
-      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
       registry:
         image: registry:2
@@ -108,7 +106,6 @@ jobs:
       - uses: ./.github/actions/build-platform-docker
         with:
           repository: localhost:5000/camunda/zeebe
-          version: current-test
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Setup TCC
@@ -263,7 +260,6 @@ jobs:
         # Currently only Linux runners support building docker images without further ado
         if: ${{ runner.os == 'Linux' }}
         with:
-          version: current-test
           distball: ${{ steps.build-zeebe.outputs.distball }}
           platforms: linux/${{ matrix.arch }}
           push: false
@@ -421,8 +417,6 @@ jobs:
       - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
-          repository: camunda/zeebe
-          version: current-test
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Run Go tests
         working-directory: clients/go
