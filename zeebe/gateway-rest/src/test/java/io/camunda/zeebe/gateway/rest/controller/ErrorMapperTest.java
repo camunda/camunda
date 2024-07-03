@@ -5,28 +5,17 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest;
+package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 
-import io.camunda.identity.automation.usermanagement.service.GroupService;
 import io.camunda.service.CamundaServiceException;
-import io.camunda.service.JobServices;
-import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.security.auth.Authentication;
-import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
-import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
-import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
-import io.camunda.zeebe.gateway.rest.ErrorMapperTest.TestErrorMapperApplication;
-import io.camunda.zeebe.gateway.rest.ErrorMapperTest.TestErrorMapperConfiguration;
-import io.camunda.zeebe.gateway.rest.controller.ResponseObserverProvider;
-import io.camunda.zeebe.gateway.rest.controller.UserTaskController;
-import io.camunda.zeebe.gateway.rest.controller.usermanagement.UserController;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
@@ -35,37 +24,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
-@SpringBootTest(
-    classes = {
-      TestErrorMapperApplication.class,
-      TestErrorMapperConfiguration.class,
-      UserTaskController.class
-    },
-    webEnvironment = WebEnvironment.RANDOM_PORT)
-public class ErrorMapperTest {
+@WebMvcTest(UserTaskController.class)
+public class ErrorMapperTest extends RestControllerTest {
 
   private static final String USER_TASKS_BASE_URL = "/v1/user-tasks";
 
   @MockBean UserTaskServices userTaskServices;
-
-  @Autowired private WebTestClient webClient;
 
   @BeforeEach
   void setUp() {
@@ -252,65 +223,11 @@ public class ErrorMapperTest {
         .exchange()
         .expectStatus()
         .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
 
     Mockito.verifyNoInteractions(userTaskServices);
-  }
-
-  @SpringBootApplication(
-      exclude = {
-        SecurityAutoConfiguration.class,
-        HibernateJpaAutoConfiguration.class,
-        DataSourceAutoConfiguration.class
-      })
-  static class TestErrorMapperApplication {
-    // required to provide the web server context
-  }
-
-  @TestConfiguration
-  static class TestErrorMapperConfiguration {
-
-    @Bean
-    public ActivateJobsHandler<JobActivationResponse> handler() {
-      return Mockito.mock(ActivateJobsHandler.class);
-    }
-
-    @Bean
-    public ResponseObserverProvider responseObserverProvider() {
-      return Mockito.mock(ResponseObserverProvider.class);
-    }
-
-    @Bean
-    public ProcessInstanceServices processInstanceService() {
-      return Mockito.mock(ProcessInstanceServices.class);
-    }
-
-    @Bean
-    public UserController userController() {
-      return Mockito.mock(UserController.class);
-    }
-
-    @Bean
-    public HttpSecurity httpSecurity() {
-      return Mockito.mock(HttpSecurity.class);
-    }
-
-    @Bean
-    public BrokerClient brokerClient() {
-      return Mockito.mock(BrokerClient.class);
-    }
-
-    @Bean
-    public GroupService groupService() {
-      return Mockito.mock(GroupService.class);
-    }
-
-    @Bean
-    public JobServices<JobActivationResponse> jobServices(
-        final BrokerClient brokerClient,
-        final ActivateJobsHandler<JobActivationResponse> activateJobsHandler) {
-      return new JobServices<>(brokerClient, activateJobsHandler, null);
-    }
   }
 }

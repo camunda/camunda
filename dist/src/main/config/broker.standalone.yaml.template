@@ -606,16 +606,6 @@
       # ioThreadCount: 2
 
     # flowControl:
-      # Configure flow control for appending. See ZEEBE_BROKER_BACKPRESSURE for available configuration options.
-      # append:
-        # enabled: true
-        # algorithm: "legacyVegas"
-        # useWindowed: false
-        # legacyVegas:
-          # initialLimit: 1024
-          # maxConcurrency: 32768
-          # alphaLimit: 0.7
-          # betaLimit: 0.95
       # Configure flow control for user requests. This setting takes precedence over the backpressure configuration.
       # request:
         # enabled: true
@@ -627,6 +617,11 @@
           # minLimit: 1
           # maxLimit: 1000
           # backoffRatio: 0.9
+      # Configure a rate limit for all writes.
+      # write:
+        # enabled: false
+        # rampUp: 0 # ramp up time, for example 10s
+        # limit: 1000 # maximum number of records written per second
 
     # backpressure:
       # Configure backpressure below.
