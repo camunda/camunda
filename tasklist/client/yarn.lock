@@ -1321,12 +1321,12 @@
   resolved "https://registry.yarnpkg.com/@pkgr/core/-/core-0.1.1.tgz#1ec17e2edbec25c8306d424ecfbf13c7de1aaa31"
   integrity sha512-cq8o4cWH0ibXh9VGi5P20Tu9XF/0fFXl9EUinr9QfTM7a7p0oTA4iJRCQWppXR1Pg8dSM0UCItCkPwsk9qWWYA==
 
-"@playwright/test@1.45.0":
-  version "1.45.0"
-  resolved "https://registry.yarnpkg.com/@playwright/test/-/test-1.45.0.tgz#790a66165a46466c0d7099dd260881802f5aba7e"
-  integrity sha512-TVYsfMlGAaxeUllNkywbwek67Ncf8FRGn8ZlRdO291OL3NjG9oMbfVhyP82HQF0CZLMrYsvesqoUekxdWuF9Qw==
+"@playwright/test@1.45.1":
+  version "1.45.1"
+  resolved "https://registry.yarnpkg.com/@playwright/test/-/test-1.45.1.tgz#819b90fa43d17000fce5ebd127043fd661938b7a"
+  integrity sha512-Wo1bWTzQvGA7LyKGIZc8nFSTFf2TkthGIFBR+QVNilvwouGzFd4PYukZe3rvf5PSqjHi1+1NyKSDZKcQWETzaA==
   dependencies:
-    playwright "1.45.0"
+    playwright "1.45.1"
 
 "@polka/url@^1.0.0-next.24":
   version "1.0.0-next.25"
@@ -1650,10 +1650,10 @@
   dependencies:
     defer-to-connect "^2.0.0"
 
-"@tanstack/eslint-plugin-query@5.49.1":
-  version "5.49.1"
-  resolved "https://registry.yarnpkg.com/@tanstack/eslint-plugin-query/-/eslint-plugin-query-5.49.1.tgz#2130466ca3dd0b145d0db698add3575b15469fbe"
-  integrity sha512-pTaEvG3HC1y7BOsFJtZmi8dhWwML97zEBq4qLM6BaUSzZ4WlFyhmtG2sBVO0H+lP1WgnLpQclRQ+nFikTqoUfQ==
+"@tanstack/eslint-plugin-query@5.50.0":
+  version "5.50.0"
+  resolved "https://registry.yarnpkg.com/@tanstack/eslint-plugin-query/-/eslint-plugin-query-5.50.0.tgz#2479f86b147b7ff144fe188f7469a8228b1be11f"
+  integrity sha512-XUgagiakpReYMHNo22sUuNvuhfqKogkYZkeLhbWkDqrwP3doVvG35L3098GPX6MwdV9EKfBjRA7umjpyEJZV0A==
   dependencies:
     "@typescript-eslint/utils" "8.0.0-alpha.30"
 
@@ -1681,10 +1681,10 @@
   dependencies:
     "@tanstack/query-core" "5.49.1"
 
-"@testing-library/dom@10.2.0":
-  version "10.2.0"
-  resolved "https://registry.yarnpkg.com/@testing-library/dom/-/dom-10.2.0.tgz#d3b22515bc0603a06f119c6ae6670669c3f2085f"
-  integrity sha512-CytIvb6tVOADRngTHGWNxH8LPgO/3hi/BdCEHOf7Qd2GvZVClhVP0Wo/QHzWhpki49Bk0b4VT6xpt3fx8HTSIw==
+"@testing-library/dom@10.3.0":
+  version "10.3.0"
+  resolved "https://registry.yarnpkg.com/@testing-library/dom/-/dom-10.3.0.tgz#f871a4776432c1bf196e643945800ea65c277aae"
+  integrity sha512-pT/TYB2+IyMYkkB6lqpkzD7VFbsR0JBJtflK3cS68sCNWxmOhWwRm1XvVHlseNEorsNcxkYsb4sRDV3aNIpttg==
   dependencies:
     "@babel/code-frame" "^7.10.4"
     "@babel/runtime" "^7.12.5"
@@ -5121,10 +5121,10 @@ mobx-react-lite@4.0.7:
   dependencies:
     use-sync-external-store "^1.2.0"
 
-mobx@6.12.5:
-  version "6.12.5"
-  resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.12.5.tgz#ed2e4312bc9dbe3d9ecd063c70a5ba9e7c2b823b"
-  integrity sha512-xRq2tyY6unAec0ItlsrgoCuxrWXLoIkM5cGPuerm/0nX/CI9FxAO6ttfRYfFa+B5Yz51d59IfKy0mJwxOEwqzQ==
+mobx@6.13.0:
+  version "6.13.0"
+  resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.13.0.tgz#791446e1a75f643aa2e7b96163e3d0bb237e91c1"
+  integrity sha512-1laWODrBWmB7mDJ8EClCjUQTyLwJ0ydJgE4FtK7t9r3JnjXgc9OhmYs2P4RtHrY1co5+4T6cKP2UswX2SU29mA==
 
 moddle-xml@^10.1.0:
   version "10.1.0"
@@ -5473,17 +5473,17 @@ pkg-types@^1.0.3, pkg-types@^1.1.0:
     mlly "^1.6.1"
     pathe "^1.1.2"
 
-playwright-core@1.45.0:
-  version "1.45.0"
-  resolved "https://registry.yarnpkg.com/playwright-core/-/playwright-core-1.45.0.tgz#5741a670b7c9060ce06852c0051d84736fb94edc"
-  integrity sha512-lZmHlFQ0VYSpAs43dRq1/nJ9G/6SiTI7VPqidld9TDefL9tX87bTKExWZZUF5PeRyqtXqd8fQi2qmfIedkwsNQ==
+playwright-core@1.45.1:
+  version "1.45.1"
+  resolved "https://registry.yarnpkg.com/playwright-core/-/playwright-core-1.45.1.tgz#549a2701556b58245cc75263f9fc2795c1158dc1"
+  integrity sha512-LF4CUUtrUu2TCpDw4mcrAIuYrEjVDfT1cHbJMfwnE2+1b8PZcFzPNgvZCvq2JfQ4aTjRCCHw5EJ2tmr2NSzdPg==
 
-playwright@1.45.0:
-  version "1.45.0"
-  resolved "https://registry.yarnpkg.com/playwright/-/playwright-1.45.0.tgz#400c709c64438690f13705cb9c88ef93089c5c27"
-  integrity sha512-4z3ac3plDfYzGB6r0Q3LF8POPR20Z8D0aXcxbJvmfMgSSq1hkcgvFRXJk9rUq5H/MJ0Ktal869hhOdI/zUTeLA==
+playwright@1.45.1:
+  version "1.45.1"
+  resolved "https://registry.yarnpkg.com/playwright/-/playwright-1.45.1.tgz#aaa6b0d6db14796b599d80c6679e63444e942534"
+  integrity sha512-Hjrgae4kpSQBr98nhCj3IScxVeVUixqj+5oyif8TdIn2opTCPEzqAqNMeK42i3cWDCVu9MI+ZsGWw+gVR4ISBg==
   dependencies:
-    playwright-core "1.45.0"
+    playwright-core "1.45.1"
   optionalDependencies:
     fsevents "2.3.2"
 
