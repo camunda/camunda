@@ -7,10 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
-import io.camunda.identity.automation.permissions.PermissionEnum;
 import io.camunda.identity.automation.rolemanagement.model.Role;
 import io.camunda.identity.automation.rolemanagement.service.RoleService;
-import io.camunda.zeebe.gateway.protocol.rest.Permission;
 import io.camunda.zeebe.gateway.protocol.rest.RoleRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleResponse;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchResponse;
@@ -114,15 +112,6 @@ public class RoleController {
     role.setDescription(roleRequest.getDescription());
     role.setPermissions(new HashSet<>(roleRequest.getPermissions()));
     return role;
-  }
-
-  private PermissionEnum mapToPermissionEnum(final Permission permission) {
-    return switch (permission) {
-      case READ_ALL -> PermissionEnum.READ_ALL;
-      case CREATE_ALL -> PermissionEnum.CREATE_ALL;
-      case DELETE_ALL -> PermissionEnum.DELETE_ALL;
-      case UPDATE_ALL -> PermissionEnum.UPDATE_ALL;
-    };
   }
 
   private RoleResponse mapToRoleResponse(final Role role) {
