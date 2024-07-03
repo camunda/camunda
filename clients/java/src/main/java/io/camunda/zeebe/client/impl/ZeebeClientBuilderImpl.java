@@ -20,11 +20,13 @@ import static io.camunda.zeebe.client.ClientProperties.DEFAULT_MESSAGE_TIME_TO_L
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
 import static io.camunda.zeebe.client.ClientProperties.KEEP_ALIVE;
 import static io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE;
+import static io.camunda.zeebe.client.ClientProperties.MAX_METADATA_SIZE;
 import static io.camunda.zeebe.client.ClientProperties.OVERRIDE_AUTHORITY;
 import static io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.zeebe.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 import static io.camunda.zeebe.client.impl.BuilderUtils.appendProperty;
+import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
 
 import io.camunda.zeebe.client.ClientProperties;
@@ -82,6 +84,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private JsonMapper jsonMapper = new ZeebeObjectMapper();
   private String overrideAuthority;
   private int maxMessageSize = 4 * ONE_MB;
+  private int maxMetadataSize = 16 * ONE_KB;
   private boolean streamEnabled = false;
   private ScheduledExecutorService jobWorkerExecutor;
   private boolean ownsJobWorkerExecutor;
@@ -178,6 +181,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   }
 
   @Override
+  public int getMaxMetadataSize() {
+    return maxMetadataSize;
+  }
+
+  @Override
   public ScheduledExecutorService jobWorkerExecutor() {
     return jobWorkerExecutor;
   }
@@ -271,6 +279,9 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     }
     if (properties.containsKey(MAX_MESSAGE_SIZE)) {
       maxMessageSize(DataSizeUtil.parse(properties.getProperty(MAX_MESSAGE_SIZE)));
+    }
+    if (properties.containsKey(MAX_METADATA_SIZE)) {
+      maxMetadataSize(DataSizeUtil.parse(properties.getProperty(MAX_METADATA_SIZE)));
     }
     if (properties.containsKey(STREAM_ENABLED)) {
       defaultJobWorkerStreamEnabled(Boolean.parseBoolean(properties.getProperty(STREAM_ENABLED)));
@@ -411,6 +422,12 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   }
 
   @Override
+  public ZeebeClientBuilder maxMetadataSize(final int maxMetadataSize) {
+    this.maxMetadataSize = maxMetadataSize;
+    return this;
+  }
+
+  @Override
   public ZeebeClientBuilder defaultJobWorkerStreamEnabled(final boolean streamEnabled) {
     this.streamEnabled = streamEnabled;
     return this;
@@ -460,6 +477,10 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
       maxMessageSize(DataSizeUtil.parse(Environment.system().get(MAX_MESSAGE_SIZE)));
     }
 
+    if (Environment.system().isDefined(MAX_METADATA_SIZE)) {
+      maxMetadataSize(DataSizeUtil.parse(Environment.system().get(MAX_METADATA_SIZE)));
+    }
+
     if (Environment.system().isDefined(DEFAULT_TENANT_ID_VAR)) {
       defaultTenantId(Environment.system().get(DEFAULT_TENANT_ID_VAR));
     }
@@ -496,6 +517,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     appendProperty(sb, "defaultRequestTimeout", defaultRequestTimeout);
     appendProperty(sb, "overrideAuthority", overrideAuthority);
     appendProperty(sb, "maxMessageSize", maxMessageSize);
+    appendProperty(sb, "maxMetadataSize", maxMetadataSize);
     appendProperty(sb, "jobWorkerExecutor", jobWorkerExecutor);
     appendProperty(sb, "ownsJobWorkerExecutor", ownsJobWorkerExecutor);
     appendProperty(sb, "streamEnabled", streamEnabled);
