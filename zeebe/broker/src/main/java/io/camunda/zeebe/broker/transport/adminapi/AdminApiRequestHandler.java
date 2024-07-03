@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.LimitSerializer;
 import io.camunda.zeebe.protocol.management.AdminRequestType;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -20,7 +21,6 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 public class AdminApiRequestHandler
     extends AsyncApiRequestHandler<ApiRequestReader, ApiResponseWriter> {
@@ -110,14 +110,13 @@ public class AdminApiRequestHandler
 
   private ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> getFlowControl(
       final ApiResponseWriter responseWriter, final ErrorResponseWriter errorWriter) {
-
     final ActorFuture<Either<ErrorResponseWriter, ApiResponseWriter>> result = actor.createFuture();
     adminAccess
         .getFlowControlConfiguration()
         .onComplete(
             (r, t) -> {
               if (t == null) {
-                responseWriter.setPayload(r.toString().getBytes(StandardCharsets.UTF_8));
+                responseWriter.setPayload(LimitSerializer.serialize(r));
                 result.complete(Either.right(responseWriter));
 
               } else {

@@ -7,7 +7,11 @@
  */
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public enum LimitType {
+  @JsonProperty("append")
   APPEND,
+  @JsonProperty("request")
   REQUEST
 }
