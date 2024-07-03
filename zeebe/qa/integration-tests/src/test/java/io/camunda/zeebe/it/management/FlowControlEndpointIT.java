@@ -9,6 +9,7 @@ package io.camunda.zeebe.it.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.actuator.FlowControlActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -16,6 +17,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -64,13 +66,14 @@ final class FlowControlEndpointIT {
                 + "    }\n"
                 + "  }\n"
                 + "}");
-    final String flowControlConfiguration = getActuator().getFlowControlConfiguration();
+    final Map<Integer, JsonNode> flowControlConfiguration =
+        getActuator().getFlowControlConfiguration();
 
     // then
-    assertThat(flowControlConfiguration)
+    assertThat(flowControlConfiguration.get(1).toString())
         .contains(
-            "REQUEST=VegasLimit [limit=50, rtt_noload=0.0 ms]",
-            "APPEND=VegasLimit [limit=20, rtt_noload=0.0 ms]");
+            "\"request\":{\"limit\":50,\"estimatedLimit\":50.0,\"rtt_noload\":0,\"maxLimit\":1000,\"smoothing\":1.0}",
+            "\"append\":{\"limit\":20,\"estimatedLimit\":20.0,\"rtt_noload\":0,\"maxLimit\":1000,\"smoothing\":1.0}");
   }
 
   private FlowControlActuator getActuator() {
@@ -107,21 +110,25 @@ final class FlowControlEndpointIT {
                 + "    \"algorithm\":\"LEGACY_VEGAS\""
                 + "  }"
                 + "}");
-    final String flowControlConfiguration = getActuator().getFlowControlConfiguration();
+    final Map<Integer, JsonNode> flowControlConfiguration =
+        getActuator().getFlowControlConfiguration();
 
     // then
-    assertThat(flowControlConfiguration)
+    assertThat(flowControlConfiguration.get(1).toString())
         .contains(
-            "APPEND=FixedLimit [limit=20]", "REQUEST=VegasLimit [limit=1024, rtt_noload=0.0 ms]");
+            "\"request\":{\"limit\":1024,\"estimatedLimit\":1024.0,\"rtt_noload\":0,\"maxLimit\":32768,\"smoothing\":1.0}",
+            "\"append\":{\"limit\":20}");
   }
 
   @Test
   void canDisableALimit() {
     // given
-    getActuator().setFlowControlConfiguration("{ \"request\": { \"enabled\": false } }");
-    final String flowControlConfiguration = getActuator().getFlowControlConfiguration();
+    getActuator()
+        .setFlowControlConfiguration("{ \"request\": { \"enabled\": false }, \"append\": null }");
+    final Map<Integer, JsonNode> flowControlConfiguration =
+        getActuator().getFlowControlConfiguration();
 
     // then
-    assertThat(flowControlConfiguration).contains("REQUEST=null");
+    assertThat(flowControlConfiguration.get(1).toString()).contains("\"request\":null");
   }
 }
