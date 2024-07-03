@@ -2,6 +2,7 @@
 
 # set constants
 CAMUNDA_VERSION="8.6.0-alpha3"
+CAMUNDA_CONNECTORS_VERSION="8.6.0-alpha3"
 ELASTICSEARCH_VERSION="8.13.4"
 EXPECTED_JAVA_VERSION=21
 
@@ -14,6 +15,7 @@ SWAGGER_PATH=$BASEDIR/swaggerui
 EXAMPLE_PATH=$BASEDIR/example
 PID_PATH=$BASEDIR/run.pid
 ELASTIC_PID_PATH=$BASEDIR/elasticsearch.pid
+CONNECTORS_PID_PATH=$BASEDIR/connectors.pid
 OPTIONS_HELP="Options:
   --webapps    - Enables the Camunda Platform Webapps
   --rest       - Enables the REST API
@@ -128,6 +130,11 @@ if [ "$1" = "start" ] ; then
     tar -xzvf camunda-zeebe-$CAMUNDA_VERSION.tar.gz
   fi
 
+  connectorsFileName="connector-runtime-bundle-$CAMUNDA_CONNECTORS_VERSION-with-dependencies.jar"
+  if [ ! -f "$connectorsFileName" ]; then
+    wget "https://repo1.maven.org/maven2/io/camunda/connector/connector-runtime-bundle/$CAMUNDA_CONNECTORS_VERSION/$connectorsFileName"
+  fi
+
   # limit the java heapspace used by ElasticSearch to 1GB
   export ES_JAVA_OPTS="-Xms1g -Xmx1g"
 
@@ -203,10 +210,17 @@ Please stop it or remove the file $PID_PATH."
     echo $! > "$PID_PATH"
     popd
 
+    $JAVA -cp "$PARENTDIR/*" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" >> $PARENTDIR/log/connectors.log 2>> $PARENTDIR/log/connectors.log &
+    echo $! > "$CONNECTORS_PID_PATH"
+
   else
+    $JAVA -cp "$PARENTDIR/*" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" >> $PARENTDIR/log/connectors.log 2>> $PARENTDIR/log/connectors.log &
+    echo $! > "$CONNECTORS_PID_PATH"
+
     pushd $PARENTDIR/camunda-zeebe-$CAMUNDA_VERSION/
     ./bin/camunda 2>&1 | tee $PARENTDIR/log/camunda.log
     popd
+
   fi
 
 elif [ "$1" = "stop" ] ; then
@@ -232,6 +246,14 @@ elif [ "$1" = "stop" ] ; then
     echo "Elasticsearch is shutting down."
   else
     echo "There is no instance of Elasticsearch to shut down."
+  fi
+
+  if [ -s "$CONNECTORS_PID_PATH" ]; then
+    kill $(cat "$CONNECTORS_PID_PATH")
+    rm "$CONNECTORS_PID_PATH"
+    echo "Connectors is shutting down."
+  else
+    echo "There is no instance of Connectors to shut down."
   fi
 
 elif [ "$1" = "" ] || [ "$1" = "help" ] ; then
