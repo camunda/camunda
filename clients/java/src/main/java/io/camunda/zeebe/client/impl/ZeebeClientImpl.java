@@ -17,7 +17,6 @@ package io.camunda.zeebe.client.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.impl.CamundaCallCredentials;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
@@ -208,7 +207,7 @@ public class ZeebeClientImpl implements ZeebeClient {
       return null;
     }
 
-    return new CamundaCallCredentials(customCredentialsProvider);
+    return new ZeebeCallCredentials(customCredentialsProvider);
   }
 
   private static void configureConnectionSecurity(

@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.client.api.CamundaFuture;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
@@ -55,28 +54,8 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
     return this;
   }
 
-  /**
-   * @deprecated since 8.6 for removal with 8.8, use {@link DeleteResourceCommandImpl#sendCommand()}
-   */
   @Override
-  @Deprecated
   public ZeebeFuture<DeleteResourceResponse> send() {
-    final DeleteResourceRequest request = requestBuilder.build();
-
-    final RetriableClientFutureImpl<
-            DeleteResourceResponse, GatewayOuterClass.DeleteResourceResponse>
-        future =
-            new RetriableClientFutureImpl<>(
-                DeleteResourceResponseImpl::new,
-                retryPredicate,
-                streamObserver -> send(request, streamObserver));
-
-    send(request, future);
-    return future;
-  }
-
-  @Override
-  public CamundaFuture<DeleteResourceResponse> sendCommand() {
     final DeleteResourceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<

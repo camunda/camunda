@@ -15,12 +15,8 @@
  */
 package io.camunda.client;
 
-import io.camunda.zeebe.client.ClientProperties;
-import io.camunda.zeebe.client.CredentialsProvider;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
-import io.camunda.zeebe.client.api.ExperimentalApi;
-import io.camunda.zeebe.client.api.JsonMapper;
-import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
+import io.camunda.client.api.ExperimentalApi;
+import io.camunda.client.api.JsonMapper;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
 import java.time.Duration;
@@ -28,7 +24,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 
-public interface CamundaClientBuilder extends ZeebeClientBuilder {
+public interface CamundaClientBuilder {
 
   /**
    * Sets all the properties from a {@link Properties} object. Can be used to configure the client
@@ -36,7 +32,6 @@ public interface CamundaClientBuilder extends ZeebeClientBuilder {
    *
    * <p>See {@link ClientProperties} for valid property names.
    */
-  @Override
   CamundaClientBuilder withProperties(Properties properties);
 
   /**
@@ -46,7 +41,6 @@ public interface CamundaClientBuilder extends ZeebeClientBuilder {
    *
    * <p>The default value is <code>true</code>.
    */
-  @Override
   CamundaClientBuilder applyEnvironmentVariableOverrides(
       final boolean applyEnvironmentVariableOverrides);
 
@@ -57,21 +51,18 @@ public interface CamundaClientBuilder extends ZeebeClientBuilder {
    *     to. Must be in format <code>host:port</code>. The default value is <code>0.0.0.0:26500
    *     </code> .
    */
-  @Override
   CamundaClientBuilder gatewayAddress(String gatewayAddress);
 
   /**
    * @param restAddress the REST API address of a gateway that the client can connect to. The
    *     default value is {@code 0.0.0.0:8080}.
    */
-  @Override
   CamundaClientBuilder restAddress(URI restAddress);
 
   /**
    * @param grpcAddress the gRPC address of a gateway that the client can connect to. The default
    *     value is {@code 0.0.0.0:26500}.
    */
-  @Override
   CamundaClientBuilder grpcAddress(URI grpcAddress);
 
   /**
@@ -79,7 +70,6 @@ public interface CamundaClientBuilder extends ZeebeClientBuilder {
    *     identifier is set. The default value is {@link
    *     io.camunda.zeebe.client.api.command.CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.
    */
-  @Override
   CamundaClientBuilder defaultTenantId(String tenantId);
 
   /**
@@ -87,21 +77,19 @@ public interface CamundaClientBuilder extends ZeebeClientBuilder {
    *     tenant identifiers are set. The default value contains only {@link
    *     io.camunda.zeebe.client.api.command.CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.
    */
-  @Override
   CamundaClientBuilder defaultJobWorkerTenantIds(List<String> tenantIds);
 
   /**
-   * @param maxJobsActive Default value for {@link JobWorkerBuilderStep3#maxJobsActive(int)}.
+   * @param maxJobsActive Default value for {@link
+   *     io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3#maxJobsActive(int)}.
    *     Default value is 32.
    */
-  @Override
   CamundaClientBuilder defaultJobWorkerMaxJobsActive(int maxJobsActive);
 
   /**
    * @param numThreads The number of threads for invocation of job workers. Setting this value to 0
    *     effectively disables subscriptions and workers. Default value is 1.
    */
-  @Override
   CamundaClientBuilder numJobWorkerExecutionThreads(int numThreads);
 
   /**
@@ -112,7 +100,6 @@ public interface CamundaClientBuilder extends ZeebeClientBuilder {
    * @param executor an executor service to use when invoking job workers
    * @see #jobWorkerExecutor(ScheduledExecutorService, boolean)
    */
-  @Override
   default CamundaClientBuilder jobWorkerExecutor(final ScheduledExecutorService executor) {
     return jobWorkerExecutor(executor, true);
   }
@@ -130,61 +117,49 @@ public interface CamundaClientBuilder extends ZeebeClientBuilder {
    * @param takeOwnership if true, the executor will be closed when the client is closed. otherwise,
    *     it's up to the caller to manage its lifecycle
    */
-  @Override
   CamundaClientBuilder jobWorkerExecutor(
       final ScheduledExecutorService executor, final boolean takeOwnership);
 
   /**
    * The name of the worker which is used when none is set for a job worker. Default is 'default'.
    */
-  @Override
   CamundaClientBuilder defaultJobWorkerName(String workerName);
 
   /** The timeout which is used when none is provided for a job worker. Default is 5 minutes. */
-  @Override
   CamundaClientBuilder defaultJobTimeout(Duration timeout);
 
   /**
    * The interval which a job worker is periodically polling for new jobs. Default is 100
    * milliseconds.
    */
-  @Override
   CamundaClientBuilder defaultJobPollInterval(Duration pollInterval);
 
   /** The time-to-live which is used when none is provided for a message. Default is 1 hour. */
-  @Override
   CamundaClientBuilder defaultMessageTimeToLive(Duration timeToLive);
 
   /** The request timeout used if not overridden by the command. Default is 10 seconds. */
-  @Override
   CamundaClientBuilder defaultRequestTimeout(Duration requestTimeout);
 
   /** Use a plaintext connection between the client and the gateway. */
-  @Override
   CamundaClientBuilder usePlaintext();
 
   /**
    * Path to a root CA certificate to be used instead of the certificate in the default default
    * store.
    */
-  @Override
   CamundaClientBuilder caCertificatePath(String certificatePath);
 
   /**
    * A custom {@link CredentialsProvider} which will be used to apply authentication credentials to
    * requests.
    */
-  @Override
   CamundaClientBuilder credentialsProvider(CredentialsProvider credentialsProvider);
 
   /** Time interval between keep alive messages sent to the gateway. The default is 45 seconds. */
-  @Override
   CamundaClientBuilder keepAlive(Duration keepAlive);
 
-  @Override
   CamundaClientBuilder withInterceptors(ClientInterceptor... interceptor);
 
-  @Override
   CamundaClientBuilder withJsonMapper(JsonMapper jsonMapper);
 
   /**
@@ -201,7 +176,6 @@ public interface CamundaClientBuilder extends ZeebeClientBuilder {
    * @apiNote For the full definition of authority see [RFC 2396: Uniform Resource Identifiers
    *     (URI): Generic Syntax](http://www.ietf.org/rfc/rfc2396.txt)
    */
-  @Override
   CamundaClientBuilder overrideAuthority(String authority);
 
   /**
@@ -209,14 +183,12 @@ public interface CamundaClientBuilder extends ZeebeClientBuilder {
    * Technically, it specifies the maxInboundMessageSize of the gRPC channel. The default is 4194304
    * = 4MB.
    */
-  @Override
   CamundaClientBuilder maxMessageSize(int maxSize);
 
   /**
    * A custom streamEnabled allows the client to use job stream instead of job poll. The default
    * value is set as enabled.
    */
-  @Override
   CamundaClientBuilder defaultJobWorkerStreamEnabled(boolean streamEnabled);
 
   /**
@@ -225,7 +197,6 @@ public interface CamundaClientBuilder extends ZeebeClientBuilder {
    * <p>NOTE: the default retry policy is taken from the {@code gateway-service-config.json} in the
    * {@code io.camunda:zeebe-gateway-protocol-impl} JAR.
    */
-  @Override
   CamundaClientBuilder useDefaultRetryPolicy(final boolean useDefaultRetryPolicy);
 
   /**
@@ -239,13 +210,11 @@ public interface CamundaClientBuilder extends ZeebeClientBuilder {
    * @deprecated since 8.5, will be removed in 8.8
    * @return this builder for chaining
    */
-  @Override
   @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
   CamundaClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
 
   /**
    * @return a new {@link CamundaClient} with the provided configuration options.
    */
-  @Override
   CamundaClient build();
 }

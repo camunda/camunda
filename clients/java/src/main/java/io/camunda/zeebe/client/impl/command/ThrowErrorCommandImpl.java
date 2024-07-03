@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.client.api.CamundaFuture;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -78,24 +77,8 @@ public final class ThrowErrorCommandImpl extends CommandWithVariables<ThrowError
     return this;
   }
 
-  /**
-   * @deprecated since 8.6 for removal with 8.8, use {@link ThrowErrorCommandImpl#sendCommand()}
-   */
   @Override
-  @Deprecated
   public ZeebeFuture<Void> send() {
-    final ThrowErrorRequest request = builder.build();
-
-    final RetriableClientFutureImpl<Void, ThrowErrorResponse> future =
-        new RetriableClientFutureImpl<>(
-            retryPredicate, streamObserver -> send(request, streamObserver));
-
-    send(request, future);
-    return future;
-  }
-
-  @Override
-  public CamundaFuture<Void> sendCommand() {
     final ThrowErrorRequest request = builder.build();
 
     final RetriableClientFutureImpl<Void, ThrowErrorResponse> future =

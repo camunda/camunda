@@ -40,27 +40,27 @@ public interface ZeebeClientConfiguration {
   String getGatewayAddress();
 
   /**
-   * @see CamundaClientBuilder#restAddress(URI)
+   * @see ZeebeClientBuilder#restAddress(URI)
    */
   URI getRestAddress();
 
   /**
-   * @see CamundaClientBuilder#grpcAddress(URI)
+   * @see ZeebeClientBuilder#grpcAddress(URI)
    */
   URI getGrpcAddress();
 
   /**
-   * @see CamundaClientBuilder#defaultTenantId(String)
+   * @see ZeebeClientBuilder#defaultTenantId(String)
    */
   String getDefaultTenantId();
 
   /**
-   * @see CamundaClientBuilder#defaultJobWorkerTenantIds(List)
+   * @see ZeebeClientBuilder#defaultJobWorkerTenantIds(List)
    */
   List<String> getDefaultJobWorkerTenantIds();
 
   /**
-   * @see CamundaClientBuilder#numJobWorkerExecutionThreads(int)
+   * @see ZeebeClientBuilder#numJobWorkerExecutionThreads(int)
    */
   int getNumJobWorkerExecutionThreads();
 

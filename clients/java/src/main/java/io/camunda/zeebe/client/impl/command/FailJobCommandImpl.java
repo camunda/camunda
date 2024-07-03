@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.client.api.CamundaFuture;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -86,26 +85,8 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
     return this;
   }
 
-  /**
-   * @deprecated since 8.6 for removal with 8.8, use {@link FailJobCommandImpl#sendCommand()}
-   */
   @Override
-  @Deprecated
   public ZeebeFuture<FailJobResponse> send() {
-    final FailJobRequest request = builder.build();
-
-    final RetriableClientFutureImpl<FailJobResponse, GatewayOuterClass.FailJobResponse> future =
-        new RetriableClientFutureImpl<>(
-            FailJobResponseImpl::new,
-            retryPredicate,
-            streamObserver -> send(request, streamObserver));
-
-    send(request, future);
-    return future;
-  }
-
-  @Override
-  public CamundaFuture<FailJobResponse> sendCommand() {
     final FailJobRequest request = builder.build();
 
     final RetriableClientFutureImpl<FailJobResponse, GatewayOuterClass.FailJobResponse> future =

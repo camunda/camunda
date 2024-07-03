@@ -15,19 +15,16 @@
  */
 package io.camunda.client;
 
-import io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1;
-
-public interface CamundaClientCloudBuilderStep1 extends ZeebeClientCloudBuilderStep1 {
+public interface CamundaClientCloudBuilderStep1 {
 
   /**
    * Sets the cluster id of the Camunda Cloud cluster. This parameter is mandatory.
    *
    * @param clusterId cluster id of the Camunda Cloud cluster.
    */
-  @Override
   CamundaClientCloudBuilderStep2 withClusterId(String clusterId);
 
-  interface CamundaClientCloudBuilderStep2 extends ZeebeClientCloudBuilderStep2 {
+  interface CamundaClientCloudBuilderStep2 {
 
     /**
      * Sets the client id that will be used to authenticate against the Camunda Cloud cluster. This
@@ -35,10 +32,9 @@ public interface CamundaClientCloudBuilderStep1 extends ZeebeClientCloudBuilderS
      *
      * @param clientId client id that will be used in the authentication.
      */
-    @Override
     CamundaClientCloudBuilderStep3 withClientId(String clientId);
 
-    interface CamundaClientCloudBuilderStep3 extends ZeebeClientCloudBuilderStep3 {
+    interface CamundaClientCloudBuilderStep3 {
 
       /**
        * Sets the client secret that will be used to authenticate against the Camunda Cloud cluster.
@@ -46,18 +42,15 @@ public interface CamundaClientCloudBuilderStep1 extends ZeebeClientCloudBuilderS
        *
        * @param clientSecret client secret that will be used in the authentication.
        */
-      @Override
       CamundaClientCloudBuilderStep4 withClientSecret(String clientSecret);
 
-      interface CamundaClientCloudBuilderStep4
-          extends CamundaClientBuilder, ZeebeClientCloudBuilderStep4 {
+      interface CamundaClientCloudBuilderStep4 extends CamundaClientBuilder {
 
         /**
          * Sets the region of the Camunda Cloud cluster. Default is 'bru-2'.
          *
          * @param region region of the Camunda Cloud cluster
          */
-        @Override
         CamundaClientCloudBuilderStep4 withRegion(String region);
       }
     }

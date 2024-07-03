@@ -15,8 +15,8 @@
  */
 package io.camunda.client.impl;
 
-import io.camunda.zeebe.client.CredentialsProvider;
-import io.camunda.zeebe.client.CredentialsProvider.CredentialsApplier;
+import io.camunda.client.CredentialsProvider;
+import io.camunda.client.CredentialsProvider.CredentialsApplier;
 import io.grpc.Metadata;
 import io.grpc.SecurityLevel;
 import io.grpc.Status;

@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.client.api.CamundaFuture;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -212,30 +211,8 @@ public final class ModifyProcessInstanceCommandImpl
     return this;
   }
 
-  /**
-   * @deprecated since 8.6 for removal with 8.8, use {@link
-   *     ModifyProcessInstanceCommandImpl#sendCommand()}
-   */
   @Override
-  @Deprecated
   public ZeebeFuture<ModifyProcessInstanceResponse> send() {
-    final ModifyProcessInstanceRequest request = requestBuilder.build();
-
-    final RetriableClientFutureImpl<
-            ModifyProcessInstanceResponse, GatewayOuterClass.ModifyProcessInstanceResponse>
-        future =
-            new RetriableClientFutureImpl<>(
-                ModifyProcessInstanceResponseImpl::new,
-                retryPredicate,
-                streamObserver -> send(request, streamObserver));
-
-    send(request, future);
-
-    return future;
-  }
-
-  @Override
-  public CamundaFuture<ModifyProcessInstanceResponse> sendCommand() {
     final ModifyProcessInstanceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<

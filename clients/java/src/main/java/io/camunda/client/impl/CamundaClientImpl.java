@@ -20,66 +20,64 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.zeebe.client.CredentialsProvider;
-import io.camunda.zeebe.client.api.JsonMapper;
-import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
-import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
-import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
-import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
-import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
-import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
-import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
-import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
-import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1;
-import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
-import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
-import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
-import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
-import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1;
-import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
-import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
-import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
-import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
-import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
-import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
-import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.search.ProcessInstanceQuery;
-import io.camunda.zeebe.client.api.worker.JobClient;
-import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
-import io.camunda.zeebe.client.impl.Loggers;
-import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
-import io.camunda.zeebe.client.impl.command.AssignUserTaskCommandImpl;
-import io.camunda.zeebe.client.impl.command.BroadcastSignalCommandImpl;
-import io.camunda.zeebe.client.impl.command.CancelProcessInstanceCommandImpl;
-import io.camunda.zeebe.client.impl.command.CompleteUserTaskCommandImpl;
-import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
-import io.camunda.zeebe.client.impl.command.DeleteResourceCommandImpl;
-import io.camunda.zeebe.client.impl.command.DeployProcessCommandImpl;
-import io.camunda.zeebe.client.impl.command.DeployResourceCommandImpl;
-import io.camunda.zeebe.client.impl.command.EvaluateDecisionCommandImpl;
-import io.camunda.zeebe.client.impl.command.JobUpdateRetriesCommandImpl;
-import io.camunda.zeebe.client.impl.command.JobUpdateTimeoutCommandImpl;
-import io.camunda.zeebe.client.impl.command.MigrateProcessInstanceCommandImpl;
-import io.camunda.zeebe.client.impl.command.ModifyProcessInstanceCommandImpl;
-import io.camunda.zeebe.client.impl.command.PublishMessageCommandImpl;
-import io.camunda.zeebe.client.impl.command.ResolveIncidentCommandImpl;
-import io.camunda.zeebe.client.impl.command.SetVariablesCommandImpl;
-import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
-import io.camunda.zeebe.client.impl.command.TopologyRequestImpl;
-import io.camunda.zeebe.client.impl.command.UnassignUserTaskCommandImpl;
-import io.camunda.zeebe.client.impl.command.UpdateUserTaskCommandImpl;
-import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.impl.http.HttpClientFactory;
-import io.camunda.zeebe.client.impl.search.ProcessInstanceQueryImpl;
-import io.camunda.zeebe.client.impl.util.ExecutorResource;
-import io.camunda.zeebe.client.impl.util.VersionUtil;
-import io.camunda.zeebe.client.impl.worker.JobClientImpl;
-import io.camunda.zeebe.client.impl.worker.JobWorkerBuilderImpl;
+import io.camunda.client.CredentialsProvider;
+import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.command.ActivateJobsCommandStep1;
+import io.camunda.client.api.command.AssignUserTaskCommandStep1;
+import io.camunda.client.api.command.BroadcastSignalCommandStep1;
+import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
+import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.command.CompleteJobCommandStep1;
+import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
+import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.client.api.command.DeleteResourceCommandStep1;
+import io.camunda.client.api.command.DeployProcessCommandStep1;
+import io.camunda.client.api.command.DeployResourceCommandStep1;
+import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
+import io.camunda.client.api.command.FailJobCommandStep1;
+import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
+import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
+import io.camunda.client.api.command.PublishMessageCommandStep1;
+import io.camunda.client.api.command.ResolveIncidentCommandStep1;
+import io.camunda.client.api.command.SetVariablesCommandStep1;
+import io.camunda.client.api.command.StreamJobsCommandStep1;
+import io.camunda.client.api.command.ThrowErrorCommandStep1;
+import io.camunda.client.api.command.TopologyRequestStep1;
+import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
+import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
+import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
+import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.search.ProcessInstanceQuery;
+import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.api.worker.JobWorkerBuilderStep1;
+import io.camunda.client.impl.command.AssignUserTaskCommandImpl;
+import io.camunda.client.impl.command.BroadcastSignalCommandImpl;
+import io.camunda.client.impl.command.CancelProcessInstanceCommandImpl;
+import io.camunda.client.impl.command.CompleteUserTaskCommandImpl;
+import io.camunda.client.impl.command.CreateProcessInstanceCommandImpl;
+import io.camunda.client.impl.command.DeleteResourceCommandImpl;
+import io.camunda.client.impl.command.DeployProcessCommandImpl;
+import io.camunda.client.impl.command.DeployResourceCommandImpl;
+import io.camunda.client.impl.command.EvaluateDecisionCommandImpl;
+import io.camunda.client.impl.command.JobUpdateRetriesCommandImpl;
+import io.camunda.client.impl.command.JobUpdateTimeoutCommandImpl;
+import io.camunda.client.impl.command.MigrateProcessInstanceCommandImpl;
+import io.camunda.client.impl.command.ModifyProcessInstanceCommandImpl;
+import io.camunda.client.impl.command.PublishMessageCommandImpl;
+import io.camunda.client.impl.command.ResolveIncidentCommandImpl;
+import io.camunda.client.impl.command.SetVariablesCommandImpl;
+import io.camunda.client.impl.command.StreamJobsCommandImpl;
+import io.camunda.client.impl.command.TopologyRequestImpl;
+import io.camunda.client.impl.command.UnassignUserTaskCommandImpl;
+import io.camunda.client.impl.command.UpdateUserTaskCommandImpl;
+import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.http.HttpClientFactory;
+import io.camunda.client.impl.search.ProcessInstanceQueryImpl;
+import io.camunda.client.impl.util.ExecutorResource;
+import io.camunda.client.impl.util.VersionUtil;
+import io.camunda.client.impl.worker.JobClientImpl;
+import io.camunda.client.impl.worker.JobWorkerBuilderImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.grpc.CallCredentials;
@@ -290,6 +288,11 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
+  public CamundaClientConfiguration getConfiguration() {
+    return config;
+  }
+
+  @Override
   public void close() {
     closeables.forEach(
         c -> {
@@ -472,14 +475,9 @@ public final class CamundaClientImpl implements CamundaClient {
     return new ProcessInstanceQueryImpl(httpClient, jsonMapper);
   }
 
-  @Override
-  public CamundaClientConfiguration getConfiguration() {
-    return config;
-  }
-
   private JobClient newJobClient() {
     return new JobClientImpl(
-        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
+        asyncStub, httpClient, config, jsonMapper, credentialsProvider::shouldRetryRequest);
   }
 
   @Override

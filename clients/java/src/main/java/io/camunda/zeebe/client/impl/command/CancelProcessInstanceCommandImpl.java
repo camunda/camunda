@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.client.api.CamundaFuture;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
@@ -58,29 +57,8 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
     return this;
   }
 
-  /**
-   * @deprecated since 8.6 for removal with 8.8, use {@link
-   *     CancelProcessInstanceCommandImpl#sendCommand()}
-   */
   @Override
-  @Deprecated
   public ZeebeFuture<CancelProcessInstanceResponse> send() {
-    final CancelProcessInstanceRequest request = builder.build();
-
-    final RetriableClientFutureImpl<
-            CancelProcessInstanceResponse, GatewayOuterClass.CancelProcessInstanceResponse>
-        future =
-            new RetriableClientFutureImpl<>(
-                CancelProcessInstanceResponseImpl::new,
-                retryPredicate,
-                streamObserver -> send(request, streamObserver));
-
-    send(request, future);
-    return future;
-  }
-
-  @Override
-  public CamundaFuture<CancelProcessInstanceResponse> sendCommand() {
     final CancelProcessInstanceRequest request = builder.build();
 
     final RetriableClientFutureImpl<

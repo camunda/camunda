@@ -15,6 +15,27 @@
  */
 package io.camunda.client.api;
 
-import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.command.ClientStatusException;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
-public interface CamundaFuture<T> extends ZeebeFuture<T> {}
+public interface CamundaFuture<T> extends Future<T>, CompletionStage<T> {
+
+  /**
+   * Like {@link #get()} but throws runtime exceptions.
+   *
+   * @throws ClientStatusException on gRPC errors
+   * @throws ClientException on unexpected errors
+   */
+  T join();
+
+  /**
+   * Like {@link #get(long, TimeUnit)} but throws runtime exceptions.
+   *
+   * @throws ClientStatusException on gRPC errors
+   * @throws ClientException on unexpected errors
+   */
+  T join(long timeout, TimeUnit unit);
+}

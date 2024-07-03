@@ -15,8 +15,6 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.client.api.CamundaFuture;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
@@ -51,26 +49,6 @@ public final class CreateProcessInstanceCommandImpl
   private final JsonMapper jsonMapper;
   private Duration requestTimeout;
 
-  public CreateProcessInstanceCommandImpl(
-      final GatewayStub asyncStub,
-      final JsonMapper jsonMapper,
-      final CamundaClientConfiguration config,
-      final Predicate<StatusCode> retryPredicate) {
-    super(jsonMapper);
-    this.asyncStub = asyncStub;
-    requestTimeout = config.getDefaultRequestTimeout();
-    this.retryPredicate = retryPredicate;
-    this.jsonMapper = jsonMapper;
-    builder = CreateProcessInstanceRequest.newBuilder();
-    tenantId(config.getDefaultTenantId());
-  }
-
-  /**
-   * @deprecated since 8.6.0 for removal with 8.8.0, use {@link
-   *     CreateProcessInstanceCommandImpl#CreateProcessInstanceCommandImpl(GatewayStub asyncStub,
-   *     JsonMapper jsonMapper, CamundaClientConfiguration config, Predicate retryPredicate)}
-   */
-  @Deprecated
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
@@ -161,24 +139,7 @@ public final class CreateProcessInstanceCommandImpl
   }
 
   @Override
-  @Deprecated
   public ZeebeFuture<ProcessInstanceEvent> send() {
-    final CreateProcessInstanceRequest request = builder.build();
-
-    final RetriableClientFutureImpl<
-            ProcessInstanceEvent, GatewayOuterClass.CreateProcessInstanceResponse>
-        future =
-            new RetriableClientFutureImpl<>(
-                CreateProcessInstanceResponseImpl::new,
-                retryPredicate,
-                streamObserver -> send(request, streamObserver));
-
-    send(request, future);
-    return future;
-  }
-
-  @Override
-  public CamundaFuture<ProcessInstanceEvent> sendCommand() {
     final CreateProcessInstanceRequest request = builder.build();
 
     final RetriableClientFutureImpl<

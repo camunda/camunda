@@ -19,8 +19,6 @@ import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 import static io.camunda.zeebe.client.impl.command.StreamUtil.readInputStream;
 
 import com.google.protobuf.ByteString;
-import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.client.api.CamundaFuture;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -58,22 +56,6 @@ public final class DeployResourceCommandImpl
   private final Predicate<StatusCode> retryPredicate;
   private Duration requestTimeout;
 
-  public DeployResourceCommandImpl(
-      final GatewayStub asyncStub,
-      final CamundaClientConfiguration config,
-      final Predicate<StatusCode> retryPredicate) {
-    this.asyncStub = asyncStub;
-    requestTimeout = config.getDefaultRequestTimeout();
-    this.retryPredicate = retryPredicate;
-    tenantId(config.getDefaultTenantId());
-  }
-
-  /**
-   * @deprecated since 8.6.0 for removal with 8.8.0, use {@link
-   *     DeployResourceCommandImpl#DeployResourceCommandImpl(GatewayStub asyncStub,
-   *     CamundaClientConfiguration config, Predicate retryPredicate)}
-   */
-  @Deprecated
   public DeployResourceCommandImpl(
       final GatewayStub asyncStub,
       final ZeebeClientConfiguration config,
@@ -196,24 +178,7 @@ public final class DeployResourceCommandImpl
   }
 
   @Override
-  @Deprecated
   public ZeebeFuture<DeploymentEvent> send() {
-    final DeployResourceRequest request = requestBuilder.build();
-
-    final RetriableClientFutureImpl<DeploymentEvent, GatewayOuterClass.DeployResourceResponse>
-        future =
-            new RetriableClientFutureImpl<>(
-                DeploymentEventImpl::new,
-                retryPredicate,
-                streamObserver -> send(request, streamObserver));
-
-    send(request, future);
-
-    return future;
-  }
-
-  @Override
-  public CamundaFuture<DeploymentEvent> sendCommand() {
     final DeployResourceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<DeploymentEvent, GatewayOuterClass.DeployResourceResponse>

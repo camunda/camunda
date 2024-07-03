@@ -20,8 +20,8 @@ import static java.lang.Math.toIntExact;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import io.camunda.client.impl.CamundaClientCredentials;
 import io.camunda.zeebe.client.CredentialsProvider;
+import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,7 +54,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private static final ObjectMapper JSON_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   private static final ObjectReader CREDENTIALS_READER =
-      JSON_MAPPER.readerFor(CamundaClientCredentials.class);
+      JSON_MAPPER.readerFor(ZeebeClientCredentials.class);
   private static final Logger LOG = LoggerFactory.getLogger(OAuthCredentialsProvider.class);
   private final URL authorizationServerUrl;
   private final String payload;
@@ -75,7 +75,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   /** Adds an access token to the Authorization header of a gRPC call. */
   @Override
   public void applyCredentials(final CredentialsApplier applier) throws IOException {
-    final CamundaClientCredentials camundaClientCredentials =
+    final ZeebeClientCredentials camundaClientCredentials =
         credentialsCache.computeIfMissingOrInvalid(endpoint, this::fetchCredentials);
 
     String type = camundaClientCredentials.getTokenType();
@@ -101,7 +101,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
               .withCache(
                   endpoint,
                   value -> {
-                    final CamundaClientCredentials fetchedCredentials = fetchCredentials();
+                    final ZeebeClientCredentials fetchedCredentials = fetchCredentials();
                     credentialsCache.put(endpoint, fetchedCredentials).writeCache();
                     return !fetchedCredentials.equals(value) || !value.isValid();
                   })
@@ -136,7 +136,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     }
   }
 
-  private CamundaClientCredentials fetchCredentials() throws IOException {
+  private ZeebeClientCredentials fetchCredentials() throws IOException {
     final HttpURLConnection connection =
         (HttpURLConnection) authorizationServerUrl.openConnection();
     connection.setRequestMethod("POST");
@@ -161,7 +161,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
 
     try (final InputStream in = connection.getInputStream();
         final InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
-      final CamundaClientCredentials fetchedCredentials = CREDENTIALS_READER.readValue(reader);
+      final ZeebeClientCredentials fetchedCredentials = CREDENTIALS_READER.readValue(reader);
 
       if (fetchedCredentials == null) {
         throw new IOException("Expected valid credentials but got null instead.");

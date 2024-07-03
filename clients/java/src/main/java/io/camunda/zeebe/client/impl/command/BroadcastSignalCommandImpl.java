@@ -15,8 +15,6 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.client.api.CamundaFuture;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
@@ -44,25 +42,6 @@ public final class BroadcastSignalCommandImpl
   private final BroadcastSignalRequest.Builder builder;
   private Duration requestTimeout;
 
-  public BroadcastSignalCommandImpl(
-      final GatewayStub asyncStub,
-      final CamundaClientConfiguration configuration,
-      final JsonMapper jsonMapper,
-      final Predicate<StatusCode> retryPredicate) {
-    super(jsonMapper);
-    this.asyncStub = asyncStub;
-    this.retryPredicate = retryPredicate;
-    builder = BroadcastSignalRequest.newBuilder();
-    requestTimeout = configuration.getDefaultRequestTimeout();
-    tenantId(configuration.getDefaultTenantId());
-  }
-
-  /**
-   * @deprecated since 8.6.0 for removal with 8.8.0, use {@link
-   *     BroadcastSignalCommandImpl#BroadcastSignalCommandImpl(GatewayStub asyncStub,
-   *     CamundaClientConfiguration config, JsonMapper jsonMapper, Predicate retryPredicate)}
-   */
-  @Deprecated
   public BroadcastSignalCommandImpl(
       final GatewayStub asyncStub,
       final ZeebeClientConfiguration configuration,
@@ -100,28 +79,8 @@ public final class BroadcastSignalCommandImpl
     return this;
   }
 
-  /**
-   * @deprecated since 8.6 for removal with 8.8, use {@link
-   *     BroadcastSignalCommandImpl#sendCommand()}
-   */
   @Override
-  @Deprecated
   public ZeebeFuture<BroadcastSignalResponse> send() {
-    final BroadcastSignalRequest request = builder.build();
-    final RetriableClientFutureImpl<
-            BroadcastSignalResponse, GatewayOuterClass.BroadcastSignalResponse>
-        future =
-            new RetriableClientFutureImpl<>(
-                BroadcastSignalResponseImpl::new,
-                retryPredicate,
-                streamObserver -> send(request, streamObserver));
-
-    send(request, future);
-    return future;
-  }
-
-  @Override
-  public CamundaFuture<BroadcastSignalResponse> sendCommand() {
     final BroadcastSignalRequest request = builder.build();
     final RetriableClientFutureImpl<
             BroadcastSignalResponse, GatewayOuterClass.BroadcastSignalResponse>

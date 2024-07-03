@@ -17,7 +17,7 @@
 package io.camunda.zeebe.client.impl;
 
 import com.google.protobuf.GeneratedMessageV3;
-import io.camunda.client.api.CamundaFuture;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.ClientStatusException;
 import io.grpc.Status;
@@ -37,7 +37,7 @@ import java.util.function.Function;
 @Deprecated
 public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
     extends CompletableFuture<ClientResponse>
-    implements CamundaFuture<ClientResponse>,
+    implements ZeebeFuture<ClientResponse>,
         ClientResponseObserver<GeneratedMessageV3, BrokerResponse> {
 
   protected ClientCallStreamObserver<GeneratedMessageV3> clientCall;

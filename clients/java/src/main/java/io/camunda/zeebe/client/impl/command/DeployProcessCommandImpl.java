@@ -19,7 +19,6 @@ import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 import static io.camunda.zeebe.client.impl.command.StreamUtil.readInputStream;
 
 import com.google.protobuf.ByteString;
-import io.camunda.client.api.CamundaFuture;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
@@ -153,28 +152,8 @@ public final class DeployProcessCommandImpl
     return this;
   }
 
-  /**
-   * @deprecated since 8.6 for removal with 8.8, use {@link DeployProcessCommandImpl#sendCommand()}
-   */
   @Override
-  @Deprecated
   public ZeebeFuture<DeploymentEvent> send() {
-    final DeployProcessRequest request = requestBuilder.build();
-
-    final RetriableClientFutureImpl<DeploymentEvent, GatewayOuterClass.DeployProcessResponse>
-        future =
-            new RetriableClientFutureImpl<>(
-                DeploymentEventImpl::new,
-                retryPredicate,
-                streamObserver -> send(request, streamObserver));
-
-    send(request, future);
-
-    return future;
-  }
-
-  @Override
-  public CamundaFuture<DeploymentEvent> sendCommand() {
     final DeployProcessRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<DeploymentEvent, GatewayOuterClass.DeployProcessResponse>

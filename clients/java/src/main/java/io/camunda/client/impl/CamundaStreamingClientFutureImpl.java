@@ -15,14 +15,42 @@
  */
 package io.camunda.client.impl;
 
-import io.camunda.zeebe.client.impl.ZeebeStreamingClientFutureImpl;
 import java.util.function.Consumer;
 
 public class CamundaStreamingClientFutureImpl<ClientResponse, BrokerResponse>
-    extends ZeebeStreamingClientFutureImpl<ClientResponse, BrokerResponse> {
+    extends CamundaClientFutureImpl<ClientResponse, BrokerResponse> {
+
+  private final ClientResponse response;
+  private final Consumer<BrokerResponse> collector;
 
   public CamundaStreamingClientFutureImpl(
-      final ClientResponse clientResponse, final Consumer<BrokerResponse> collector) {
-    super(clientResponse, collector);
+      final ClientResponse response, final Consumer<BrokerResponse> collector) {
+    this.response = response;
+    this.collector = collector;
+  }
+
+  @Override
+  public void onNext(final BrokerResponse brokerResponse) {
+    try {
+      collector.accept(brokerResponse);
+    } catch (final Exception e) {
+      completeExceptionally(e);
+      rethrow(e);
+    }
+  }
+
+  @Override
+  public void onError(final Throwable throwable) {
+    completeExceptionally(throwable);
+  }
+
+  @Override
+  public void onCompleted() {
+    complete(response);
+  }
+
+  @SuppressWarnings("unchecked")
+  private <T extends Throwable> void rethrow(final Throwable exception) throws T {
+    throw (T) exception;
   }
 }

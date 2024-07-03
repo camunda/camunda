@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.client.api.CamundaFuture;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -68,33 +67,8 @@ public final class CreateProcessInstanceWithResultCommandImpl
     return this;
   }
 
-  /**
-   * @deprecated since 8.6 for removal with 8.8, use {@link
-   *     CreateProcessInstanceWithResultCommandImpl#sendCommand()}
-   */
   @Override
-  @Deprecated
   public ZeebeFuture<ProcessInstanceResult> send() {
-    final CreateProcessInstanceWithResultRequest request =
-        builder
-            .setRequest(createProcessInstanceRequestBuilder)
-            .setRequestTimeout(requestTimeout.toMillis())
-            .build();
-
-    final RetriableClientFutureImpl<
-            ProcessInstanceResult, GatewayOuterClass.CreateProcessInstanceWithResultResponse>
-        future =
-            new RetriableClientFutureImpl<>(
-                response -> new CreateProcessInstanceWithResultResponseImpl(jsonMapper, response),
-                retryPredicate,
-                streamObserver -> send(request, streamObserver));
-
-    send(request, future);
-    return future;
-  }
-
-  @Override
-  public CamundaFuture<ProcessInstanceResult> sendCommand() {
     final CreateProcessInstanceWithResultRequest request =
         builder
             .setRequest(createProcessInstanceRequestBuilder)

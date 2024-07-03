@@ -15,17 +15,106 @@
  */
 package io.camunda.client.impl;
 
-import io.camunda.zeebe.client.impl.ZeebeClientFutureImpl;
+import com.google.protobuf.GeneratedMessageV3;
+import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.command.ClientStatusException;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import io.grpc.stub.ClientCallStreamObserver;
+import io.grpc.stub.ClientResponseObserver;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 public class CamundaClientFutureImpl<ClientResponse, BrokerResponse>
-    extends ZeebeClientFutureImpl<ClientResponse, BrokerResponse> {
+    extends CompletableFuture<ClientResponse>
+    implements CamundaFuture<ClientResponse>,
+        ClientResponseObserver<GeneratedMessageV3, BrokerResponse> {
+
+  protected ClientCallStreamObserver<GeneratedMessageV3> clientCall;
+  private final Function<BrokerResponse, ClientResponse> responseMapper;
 
   public CamundaClientFutureImpl() {
-    super();
+    this(brokerResponse -> null);
   }
 
   public CamundaClientFutureImpl(final Function<BrokerResponse, ClientResponse> responseMapper) {
-    super(responseMapper);
+    this.responseMapper = responseMapper;
+  }
+
+  @Override
+  public ClientResponse join() {
+    try {
+      return get();
+    } catch (final ExecutionException e) {
+      throw transformExecutionException(e);
+    } catch (final InterruptedException e) {
+      throw new ClientException("Unexpectedly interrupted awaiting client response", e);
+    }
+  }
+
+  @Override
+  public boolean cancel(final boolean mayInterruptIfRunning) {
+    if (mayInterruptIfRunning && clientCall != null) {
+      clientCall.cancel("Client call explicitly cancelled by user", null);
+    }
+
+    return super.cancel(mayInterruptIfRunning);
+  }
+
+  @Override
+  public ClientResponse join(final long timeout, final TimeUnit unit) {
+    try {
+      return get(timeout, unit);
+    } catch (final ExecutionException e) {
+      throw transformExecutionException(e);
+    } catch (final InterruptedException e) {
+      throw new ClientException("Unexpectedly interrupted awaiting client response", e);
+    } catch (final TimeoutException e) {
+      throw new ClientException("Timed out waiting on client response", e);
+    }
+  }
+
+  @Override
+  public void onNext(final BrokerResponse brokerResponse) {
+    try {
+      complete(responseMapper.apply(brokerResponse));
+    } catch (final Exception e) {
+      completeExceptionally(e);
+    }
+  }
+
+  @Override
+  public void onError(final Throwable throwable) {
+    completeExceptionally(throwable);
+  }
+
+  @Override
+  public void onCompleted() {
+    // do nothing as we don't support streaming
+  }
+
+  @Override
+  public void beforeStart(final ClientCallStreamObserver<GeneratedMessageV3> requestStream) {
+    if (isDone()) {
+      requestStream.cancel("Call was completed by the client before it was started", null);
+      return;
+    }
+
+    clientCall = requestStream;
+  }
+
+  private RuntimeException transformExecutionException(final ExecutionException e) {
+    final Throwable cause = e.getCause();
+
+    if (cause instanceof StatusRuntimeException) {
+      final Status status = ((StatusRuntimeException) cause).getStatus();
+      throw new ClientStatusException(status, e);
+    } else {
+      throw new ClientException(e);
+    }
   }
 }
