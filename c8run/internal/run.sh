@@ -25,6 +25,11 @@ OPTIONS_HELP="Options:
   --detached   - Starts Camunda Run as a detached process
 "
 
+# Configuration file defaults overriden because upstream config doesn't export to elasticsearch
+export ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME="io.camunda.zeebe.exporter.ElasticsearchExporter"
+export ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL="http://localhost:9200"
+export ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX="zeebe-record"
+
 architectureRaw="$(uname -m)"
 case "${architectureRaw}" in
   arm64*)     architecture=aarch64;;
