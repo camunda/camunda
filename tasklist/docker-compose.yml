@@ -85,7 +85,7 @@ services:
 
   zeebe-opensearch:
     container_name: zeebe-opensearch
-    image: camunda/zeebe:8.5.4
+    image: camunda/zeebe:8.5.5
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=0.0.0.0
@@ -169,7 +169,7 @@ services:
 
   zeebe-e2e:
     container_name: zeebe-e2e
-    image: camunda/zeebe:8.5.4
+    image: camunda/zeebe:8.5.5
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=zeebe-e2e
