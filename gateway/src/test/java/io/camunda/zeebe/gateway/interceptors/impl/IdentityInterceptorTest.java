@@ -21,7 +21,6 @@ import io.grpc.Metadata.Key;
 import io.grpc.MethodDescriptor;
 import io.grpc.ServerCallHandler;
 import io.grpc.Status;
-import io.grpc.internal.NoopServerCall;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
