@@ -8,6 +8,7 @@
 package io.camunda.zeebe.qa.util.actuator;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -16,10 +17,12 @@ import feign.Headers;
 import feign.RequestLine;
 import feign.Retryer;
 import feign.Target.HardCodedTarget;
+import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.zeebe.containers.ZeebeNode;
+import java.util.Map;
 import org.springframework.web.bind.annotation.RequestBody;
 
 public interface FlowControlActuator {
@@ -39,14 +42,15 @@ public interface FlowControlActuator {
 
     return Feign.builder()
         .encoder(new JacksonEncoder(mapper))
+        .decoder(new JacksonDecoder(mapper))
         .retryer(Retryer.NEVER_RETRY)
         .target(target);
   }
 
-  public default String setFlowControlConfiguration(final String request) {
+  public default Map<Integer, JsonNode> setFlowControlConfiguration(final String request) {
     final FlowControlCfg flowControlCfg;
     try {
-      flowControlCfg = FlowControlCfg.fromJson(request);
+      flowControlCfg = FlowControlCfg.deserialize(request);
     } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }
@@ -60,7 +64,7 @@ public interface FlowControlActuator {
    */
   @RequestLine("POST")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
-  String setFlowControlConfiguration(@RequestBody FlowControlCfg flowControlCfg);
+  Map<Integer, JsonNode> setFlowControlConfiguration(@RequestBody FlowControlCfg flowControlCfg);
 
   /**
    * Gets the flow control configuration.
@@ -69,5 +73,5 @@ public interface FlowControlActuator {
    */
   @RequestLine("GET")
   @Headers({"Content-Type: application/json"})
-  String getFlowControlConfiguration();
+  Map<Integer, JsonNode> getFlowControlConfiguration();
 }
