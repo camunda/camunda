@@ -32,15 +32,44 @@ public final class CollectionUtil {
     return null;
   }
 
+  /**
+   * Adds given values to a list.
+   *
+   * <p>This method can handle null-values gracefully.
+   *
+   * <p>This means, if either one of the given list is empty, and empty ArrayList will be used
+   * instead.
+   *
+   * <p>Example:
+   *
+   * <p>* addValuesToList(null, List.of(1)) -> List(1) * addValuesToList(List.of(1), null) ->
+   * List(1) * addValuesToList(null, null) -> List() * addValuesToList(List.of(1), List.of(2)) ->
+   * List(1, 2)
+   *
+   * @param list where the values should be added to
+   * @param values the values which should be added
+   * @return the given list (when not empty) otherwise a new list containing the values
+   * @param <T> the list value type
+   */
   public static <T> List<T> addValuesToList(final List<T> list, final List<T> values) {
-    final List<T> result;
-    if (list == null) {
-      result = Objects.requireNonNull(values);
-    } else {
-      result = new ArrayList<>(list);
-      result.addAll(values);
-    }
+    final List<T> result = Objects.requireNonNullElse(list, new ArrayList<>());
+    result.addAll(Objects.requireNonNullElse(values, new ArrayList<>()));
     return result;
+  }
+
+  /**
+   * Collects a given values (array) as list, and handles potential null or empty values.
+   *
+   * @param values the values that needs to be collected
+   * @return an appropriate list containing the values
+   * @param <T> the type of the values
+   */
+  public static <T> List<T> collectValuesAsList(final T... values) {
+    if (values == null) {
+      return List.of();
+    }
+
+    return Arrays.stream(values).toList();
   }
 
   public static <T> List<T> collectValues(final T value, final T... values) {

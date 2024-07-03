@@ -49,7 +49,6 @@ import io.camunda.zeebe.broker.system.management.PartitionStatus;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.api.response.BrokerInfo;
-import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.gateway.Gateway;
@@ -58,6 +57,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceR
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -99,6 +99,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
@@ -584,13 +585,6 @@ public class ClusteringRule extends ExternalResource {
     }
   }
 
-  /** Returns the list of available brokers in a cluster. */
-  public List<InetSocketAddress> getBrokersInCluster() {
-    return client.newTopologyRequest().send().join().getBrokers().stream()
-        .map(b -> new InetSocketAddress(b.getHost(), b.getPort()))
-        .collect(Collectors.toList());
-  }
-
   public Collection<Broker> getBrokers() {
     return brokers.values();
   }
@@ -600,19 +594,6 @@ public class ClusteringRule extends ExternalResource {
         .map(b -> b.getConfig().getNetwork().getCommandApi().getAddress())
         .filter(a -> !address.equals(a))
         .toArray(InetSocketAddress[]::new);
-  }
-
-  public InetSocketAddress[] getOtherBrokers(final int nodeId) {
-    final InetSocketAddress filter = getBrokerCfg(nodeId).getNetwork().getCommandApi().getAddress();
-    return getOtherBrokers(filter);
-  }
-
-  /** Returns the count of partition leaders */
-  public long getPartitionLeaderCount() {
-    return client.newTopologyRequest().send().join().getBrokers().stream()
-        .flatMap(broker -> broker.getPartitions().stream())
-        .filter(PartitionInfo::isLeader)
-        .count();
   }
 
   public BrokerInfo awaitOtherLeader(final int partitionId, final int previousLeader) {
@@ -725,9 +706,12 @@ public class ClusteringRule extends ExternalResource {
             });
   }
 
-  public long createProcessInstanceOnPartition(final int partitionId, final String bpmnProcessId) {
+  public long createProcessInstanceOnPartition(
+      final int partitionId, final String bpmnProcessId, final Map<String, String> variables) {
     final BrokerCreateProcessInstanceRequest request =
-        new BrokerCreateProcessInstanceRequest().setBpmnProcessId(bpmnProcessId);
+        new BrokerCreateProcessInstanceRequest()
+            .setBpmnProcessId(bpmnProcessId)
+            .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
 
     request.setPartitionId(partitionId);
 
@@ -745,6 +729,10 @@ public class ClusteringRule extends ExternalResource {
               + ": "
               + response);
     }
+  }
+
+  public long createProcessInstanceOnPartition(final int partitionId, final String bpmnProcessId) {
+    return createProcessInstanceOnPartition(partitionId, bpmnProcessId, Collections.emptyMap());
   }
 
   public InetSocketAddress getGatewayAddress() {

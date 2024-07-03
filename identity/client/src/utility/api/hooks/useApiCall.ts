@@ -36,7 +36,7 @@ export type UseApiCall = {
 const useApiCall: UseApiCall = <R, P>(
   apiDefinition: ApiDefinition<R, P>,
 ): UseApiCallResult<R, P> => {
-  const { authorization } = useAuth();
+  const authHeaders = useAuth();
   const { enqueueNotification } = useNotifications();
   const { t } = useTranslate("components");
   const [data, setData] = useState<R | null>(null);
@@ -49,6 +49,7 @@ const useApiCall: UseApiCall = <R, P>(
       (!loading &&
         (errors?.reduce(namedErrorsReducer, {}) as NamedErrors<P>)) ||
       null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [JSON.stringify([errors, loading])],
   );
 
@@ -70,9 +71,7 @@ const useApiCall: UseApiCall = <R, P>(
         status: apiStatus,
         errors: apiErrors,
         success: apiSuccess,
-      } = await apiDefinition(params as P)(apiBaseUrl, {
-        Authorization: authorization,
-      });
+      } = await apiDefinition(params as P)(apiBaseUrl, authHeaders);
 
       if (apiStatus >= 400) {
         switch (apiStatus) {
@@ -123,6 +122,7 @@ const useApiCall: UseApiCall = <R, P>(
         success: apiSuccess,
       };
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [apiDefinition],
   ) as ApiCall<R, P>;
 

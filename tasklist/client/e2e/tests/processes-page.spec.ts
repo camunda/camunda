@@ -85,7 +85,6 @@ test.describe('process page', () => {
   test('complete task started by process instance', async ({
     page,
     header,
-    taskFormView,
     processesPage,
     tasksPage,
   }) => {
@@ -102,7 +101,7 @@ test.describe('process page', () => {
     await tasksPage.openTask('User_Task');
 
     await tasksPage.assignToMeButton.click();
-    await taskFormView.completeTaskButton.click();
+    await tasksPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
   });
 });
