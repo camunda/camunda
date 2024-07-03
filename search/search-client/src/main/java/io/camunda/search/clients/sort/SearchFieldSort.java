@@ -56,7 +56,10 @@ public final record SearchFieldSort(String field, SortOrder order, String missin
 
     @Override
     public SearchFieldSort build() {
-      return new SearchFieldSort(Objects.requireNonNull(field), order, missing);
+      return new SearchFieldSort(
+          Objects.requireNonNull(field, "Expected field name for field sorting, but got null."),
+          order,
+          missing);
     }
   }
 }
