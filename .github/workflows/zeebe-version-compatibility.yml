@@ -83,7 +83,7 @@ jobs:
       - name: Test snapshot
         run: >
           ./mvnw -B --no-snapshot-updates -pl zeebe/qa/update-tests
-          -D it.test=io.camunda.zeebe.test.SnapshotTest
+          -D it.test=io.camunda.zeebe.test.RollingUpdateTest
           -D failsafe.rerunFailingTestsCount=3
           -D skipChecks
           verify
