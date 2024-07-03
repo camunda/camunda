@@ -31,18 +31,21 @@ public class DatabaseInfo implements ApplicationContextAware {
   static final DatabaseType DEFAULT_DATABASE = DatabaseType.Elasticsearch;
   private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseInfo.class);
   private static ApplicationContext applicationContext;
+  private static DatabaseType current;
 
   public static DatabaseType getCurrent() {
-    if (applicationContext == null) {
-      LOGGER.warn("getCurrent() called on DatabaseInfo before application context has been set");
-      return DEFAULT_DATABASE;
+    if (current == null) {
+      if (applicationContext == null) {
+        LOGGER.warn("getCurrent() called on DatabaseInfo before application context has been set");
+        return DEFAULT_DATABASE;
+      }
+      final var code = applicationContext.getEnvironment().getProperty(DATABASE_PROPERTY);
+      current = DatabaseType.byCode(code).orElse(DEFAULT_DATABASE);
     }
-
-    final var code = applicationContext.getEnvironment().getProperty(DATABASE_PROPERTY);
-    return DatabaseType.byCode(code).orElse(DEFAULT_DATABASE);
+    return current;
   }
 
-  public static boolean isCurrent(DatabaseType databaseType) {
+  public static boolean isCurrent(final DatabaseType databaseType) {
     return databaseType == getCurrent();
   }
 
@@ -65,7 +68,8 @@ public class DatabaseInfo implements ApplicationContextAware {
   }
 
   @Override
-  public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+  public void setApplicationContext(final ApplicationContext applicationContext)
+      throws BeansException {
     DatabaseInfo.applicationContext = applicationContext;
   }
 }
