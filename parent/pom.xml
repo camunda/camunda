@@ -97,7 +97,7 @@
     <version.rest-assured>5.4.0</version.rest-assured>
     <version.spring>6.1.10</version.spring>
     <version.spring-security>6.3.1</version.spring-security>
-    <version.spring-boot>3.3.0</version.spring-boot>
+    <version.spring-boot>3.3.1</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.0</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
@@ -123,7 +123,7 @@
     <version.feign>13.3</version.feign>
     <version.google-sdk>26.42.0</version.google-sdk>
     <version.azure-sdk>1.2.24</version.azure-sdk>
-    <version.awssdk>2.26.13</version.awssdk>
+    <version.awssdk>2.26.14</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -153,7 +153,7 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.754</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.755</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
     <version.postgres-test-container>1.19.8</version.postgres-test-container>
     <version.elasticsearch7>7.17.22</version.elasticsearch7>
