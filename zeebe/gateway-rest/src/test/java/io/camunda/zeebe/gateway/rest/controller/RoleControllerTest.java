@@ -17,7 +17,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.identity.automation.permissions.PermissionEnum;
 import io.camunda.identity.automation.rolemanagement.model.Role;
 import io.camunda.identity.automation.rolemanagement.service.RoleService;
-import io.camunda.zeebe.gateway.protocol.rest.Permission;
 import io.camunda.zeebe.gateway.protocol.rest.RoleRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleResponse;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchResponse;
@@ -171,7 +170,9 @@ public class RoleControllerTest extends RestControllerTest {
           }
         """;
 
-    final String message = "Unexpected value 'UNKNOWN' for enum Permission";
+    final String message =
+        """
+        Invalid Enum value "UNKNOWN" for Permission, expected one of [CREATE_ALL, READ_ALL, UPDATE_ALL, DELETE_ALL]""";
     final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
     expectedBody.setTitle("Bad Request");
     expectedBody.setInstance(URI.create("/v2/roles"));
@@ -210,7 +211,7 @@ public class RoleControllerTest extends RestControllerTest {
     final var expectedResponse = new RoleResponse();
     expectedResponse.setName("test");
     expectedResponse.setDescription("description");
-    expectedResponse.setPermissions(List.of(Permission.CREATE_ALL, Permission.READ_ALL));
+    expectedResponse.setPermissions(List.of(PermissionEnum.CREATE_ALL, PermissionEnum.READ_ALL));
 
     final var actualResponse =
         webClient
