@@ -1046,6 +1046,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+
 components:
   responses:
     TopologyResponse:
@@ -1542,6 +1543,44 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CamundaGroupResponse"
+    AssignUserToGroupRequest:
+      type: "object"
+      properties:
+        userId:
+          type: "integer"
+          format: "int64"
+    Permission:
+      type: "string"
+      enum:
+        - "CREATE_ALL"
+        - "READ_ALL"
+        - "UPDATE_ALL"
+        - "DELETE_ALL"
+    RoleRequest:
+      type: object
+      properties:
+        name:
+          type: "string"
+        description:
+          type: "string"
+        permissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Permission"
+    RoleResponse:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/RoleRequest"
+    RoleSearchResponse:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoleResponse"
+
   securitySchemes:
     bearerAuth:
       type: http
