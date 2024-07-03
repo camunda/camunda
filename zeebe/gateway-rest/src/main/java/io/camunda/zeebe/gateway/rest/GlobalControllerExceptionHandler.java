@@ -9,6 +9,8 @@ package io.camunda.zeebe.gateway.rest;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
+import java.util.Map;
+import java.util.Objects;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
@@ -25,7 +27,10 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
 
   private static final String REQUEST_BODY_MISSING_EXCEPTION_MESSAGE =
       "Required request body is missing";
-  private static final String JSON_PARSE_ERROR_EXCEPTION_MESSAGE = "JSON parse error";
+  private static final String JSON_CANNOT_CONSTRUCT_INSTANCE_EXCEPTION_MESSAGE =
+      "JSON parse error: Cannot construct instance of";
+  private static final Map<String, String> ENUM_CLASS_TO_PRETTY_NAME =
+      Map.of("io.camunda.zeebe.gateway.protocol.rest.Permission", "Permission");
 
   @Override
   protected ProblemDetail createProblemDetail(
@@ -43,11 +48,9 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
       // with "Required request body is missing"
       // for proper exception tracing
       detail = REQUEST_BODY_MISSING_EXCEPTION_MESSAGE;
-    } else if (isJsonParseError(ex)) {
-      // Replace detail "Failed to read request"
-      // with "JSON parse error"
-      // for proper exception tracing
-      detail = "Unable to parse JSON request body";
+    } else if (isUnknownEnumError(ex)) {
+      final var httpMessageNotReadableException = (HttpMessageNotReadableException) ex;
+      detail = getEnumErrorMessage(httpMessageNotReadableException);
     } else {
       detail = defaultDetail;
     }
@@ -68,16 +71,31 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
     return false;
   }
 
-  private boolean isJsonParseError(final Exception ex) {
+  private boolean isUnknownEnumError(final Exception ex) {
     if (ex instanceof final HttpMessageNotReadableException exception) {
       final var exceptionMessage = exception.getMessage();
-      if (exceptionMessage != null
-          && exceptionMessage.startsWith(JSON_PARSE_ERROR_EXCEPTION_MESSAGE)) {
-        return true;
-      }
+
+      return exceptionMessage != null
+          && exceptionMessage.startsWith(JSON_CANNOT_CONSTRUCT_INSTANCE_EXCEPTION_MESSAGE)
+          && exceptionContainsEnumClass(exceptionMessage);
     }
 
     return false;
+  }
+
+  private boolean exceptionContainsEnumClass(final String exceptionMessage) {
+    return ENUM_CLASS_TO_PRETTY_NAME.keySet().stream().anyMatch(exceptionMessage::contains);
+  }
+
+  private String getEnumErrorMessage(final HttpMessageNotReadableException exception) {
+    final var matchedEnumClass =
+        ENUM_CLASS_TO_PRETTY_NAME.entrySet().stream()
+            .filter(entry -> exception.getMessage().contains(entry.getKey()))
+            .findFirst()
+            .orElseThrow();
+
+    final var rootCause = Objects.requireNonNull(exception.getRootCause()).getMessage();
+    return String.format("%s for enum %s", rootCause, matchedEnumClass.getValue());
   }
 
   @ExceptionHandler(Exception.class)

@@ -171,7 +171,7 @@ public class RoleControllerTest extends RestControllerTest {
           }
         """;
 
-    final String message = "Unable to parse JSON request body";
+    final String message = "Unexpected value 'UNKNOWN' for enum Permission";
     final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
     expectedBody.setTitle("Bad Request");
     expectedBody.setInstance(URI.create("/v2/roles"));
