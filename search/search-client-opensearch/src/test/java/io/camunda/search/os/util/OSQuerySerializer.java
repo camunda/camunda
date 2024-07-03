@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringWriter;
+import org.opensearch.client.json.JsonpSerializable;
 import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -36,6 +37,12 @@ public class OSQuerySerializer implements AutoCloseable {
 
   public String serialize(final Query query) {
     query.serialize(jacksonJsonpGenerator, mapper);
+    jacksonJsonpGenerator.flush();
+    return out.toString();
+  }
+
+  public String serialize(final JsonpSerializable serializable) {
+    serializable.serialize(jacksonJsonpGenerator, mapper);
     jacksonJsonpGenerator.flush();
     return out.toString();
   }
