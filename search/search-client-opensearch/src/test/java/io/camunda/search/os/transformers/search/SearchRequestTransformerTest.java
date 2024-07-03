@@ -5,11 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.os.transformers;
+package io.camunda.search.os.transformers.search;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.os.transformers.OpensearchTransformers;
 import io.camunda.search.transformers.SearchTransfomer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
