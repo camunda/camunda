@@ -10,6 +10,7 @@ package io.camunda.zeebe.test;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.util.SemanticVersion;
+import io.camunda.zeebe.util.StreamUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.github.resilience4j.core.IntervalFunction;
@@ -19,6 +20,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.SequencedCollection;
 import java.util.stream.Stream;
@@ -36,8 +38,8 @@ final class VersionCompatibilityMatrix {
    *
    * <ul>
    *   <li>Locally: {@link #fromPreviousMinorToCurrent()} for fast feedback.
-   *   <li>CI: {@link #fromPreviousPatchesToCurrent()} for extended coverage without taking too much
-   *       time.
+   *   <li>CI: {@link #fromFirstAndLastPatchToCurrent()} for extended coverage without taking too
+   *       much time.
    *   <li>Periodic tests: {@link #full()} for full coverage of all allowed upgrade paths.
    * </ul>
    */
@@ -45,7 +47,7 @@ final class VersionCompatibilityMatrix {
     if (System.getenv("ZEEBE_CI_CHECK_VERSION_COMPATIBILITY") != null) {
       return full();
     } else if (System.getenv("CI") != null) {
-      return fromPreviousPatchesToCurrent();
+      return fromFirstAndLastPatchToCurrent();
     } else {
       return fromPreviousMinorToCurrent();
     }
@@ -55,12 +57,17 @@ final class VersionCompatibilityMatrix {
     return Stream.of(Arguments.of(VersionUtil.getPreviousVersion(), "CURRENT"));
   }
 
-  private static Stream<Arguments> fromPreviousPatchesToCurrent() {
+  private static Stream<Arguments> fromFirstAndLastPatchToCurrent() {
     final var current = VersionUtil.getSemanticVersion().orElseThrow();
-    return discoverVersions()
-        .filter(version -> version.compareTo(current) < 0)
-        .filter(version -> current.minor() - version.minor() <= 1)
-        .map(version -> Arguments.of(version.toString(), "CURRENT"));
+
+    final var minAndMaxPatch =
+        discoverVersions()
+            .filter(version -> version.compareTo(current) < 0)
+            .filter(version -> current.minor() - version.minor() == 1)
+            .collect(StreamUtil.minMax(Comparator.comparing(SemanticVersion::patch)));
+    return Stream.of(
+        Arguments.of(minAndMaxPatch.min().toString(), "CURRENT"),
+        Arguments.of(minAndMaxPatch.max().toString(), "CURRENT"));
   }
 
   private static Stream<Arguments> full() {
