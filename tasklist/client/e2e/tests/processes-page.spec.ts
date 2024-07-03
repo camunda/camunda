@@ -114,36 +114,38 @@ test.describe('process page', () => {
     processesPage,
     tasksPage,
   }) => {
-    await mainPage.clickProcessesTab();
-    await expect(page).toHaveURL('/processes');
-    await processesPage.clickContinueButton();
+    await header.processesTab.click();
+    await expect(page).toHaveURL('/tasklist/processes');
+    await processesPage.continueButton.click();
     await processesPage.searchForProcess('processWithStartNodeFormDeployed');
-    await expect(processesPage.processTile).toHaveCount(1, {timeout: 30000});
+    await expect(processesPage.processTile).toHaveCount(1, {
+      timeout: 30000,
+    });
 
-    await processesPage.clickStartProcessButton();
+    await processesPage.startProcessButton.click();
     await page.getByLabel('Client Name*').fill('Jon');
     await page.getByLabel('Client Address*').fill('Earth');
-    await formJSDetailsPage.fillDateField('Invoice Date*', '1/1/3000');
-    await formJSDetailsPage.fillDateField('Due Date*', '1/2/3000');
+    await taskFormView.fillDateField('Invoice Date*', '1/1/3000');
+    await taskFormView.fillDateField('Due Date*', '1/2/3000');
     await page.getByLabel('Invoice Number*').fill('123');
-    await formJSDetailsPage.selectDropdownOption(
+    await taskFormView.selectDropdownOption(
       'USD - United States Dollar',
       'EUR - Euro',
     );
     await page.getByRole('button', {name: /add new/i}).click();
-    await formJSDetailsPage.forEachDynamicListItem(
+    await taskFormView.forEachDynamicListItem(
       page.getByLabel('Item Name*'),
       async (element, index) => {
         await element.fill(`${'Laptop'}${index + 1}`);
       },
     );
-    await formJSDetailsPage.forEachDynamicListItem(
+    await taskFormView.forEachDynamicListItem(
       page.getByLabel('Unit Price*'),
       async (element, index) => {
         await element.fill(`${'1'}${index + 1}`);
       },
     );
-    await formJSDetailsPage.forEachDynamicListItem(
+    await taskFormView.forEachDynamicListItem(
       page.getByLabel('Quantity*'),
       async (element, index) => {
         await element.clear();
@@ -157,8 +159,8 @@ test.describe('process page', () => {
     await processesPage.startProcessSubButton.click();
 
     await processesPage.tasksTab.click();
-    await taskPanelPage.openTask('processStartedByForm_user_task');
-    await taskDetailsPage.assignToMeButton.click();
+    await tasksPage.openTask('processStartedByForm_user_task');
+    await tasksPage.assignToMeButton.click();
     await expect(
       page.getByText('{"name":"jon","address":"earth"}'),
     ).toBeVisible();
@@ -172,77 +174,7 @@ test.describe('process page', () => {
       ),
     ).toBeVisible();
 
-    await formJSDetailsPage.completeTaskButton.click();
-    await expect(page.getByText('Task completed')).toBeVisible();
-  });
-
-  test('complete process with start node having deployed form', async ({
-    page,
-    mainPage,
-    taskDetailsPage,
-    formJSDetailsPage,
-    processesPage,
-    taskPanelPage,
-  }) => {
-    await mainPage.clickProcessesTab();
-    await expect(page).toHaveURL('/processes');
-    await processesPage.clickContinueButton();
-    await processesPage.searchForProcess('processWithStartNodeFormDeployed');
-    await expect(processesPage.processTile).toHaveCount(1, {timeout: 30000});
-
-    await processesPage.clickStartProcessButton();
-    await page.getByLabel('Client Name*').fill('Jon');
-    await page.getByLabel('Client Address*').fill('Earth');
-    await formJSDetailsPage.fillDateField('Invoice Date*', '1/1/3000');
-    await formJSDetailsPage.fillDateField('Due Date*', '1/2/3000');
-    await page.getByLabel('Invoice Number*').fill('123');
-    await formJSDetailsPage.selectDropdownOption(
-      'USD - United States Dollar',
-      'EUR - Euro',
-    );
-    await page.getByRole('button', {name: /add new/i}).click();
-    await formJSDetailsPage.forEachDynamicListItem(
-      page.getByLabel('Item Name*'),
-      async (element, index) => {
-        await element.fill(`${'Laptop'}${index + 1}`);
-      },
-    );
-    await formJSDetailsPage.forEachDynamicListItem(
-      page.getByLabel('Unit Price*'),
-      async (element, index) => {
-        await element.fill(`${'1'}${index + 1}`);
-      },
-    );
-    await formJSDetailsPage.forEachDynamicListItem(
-      page.getByLabel('Quantity*'),
-      async (element, index) => {
-        await element.clear();
-        await element.fill(`${'2'}${index + 1}`);
-      },
-    );
-
-    await expect(page.getByText('EUR 231')).toBeVisible();
-    await expect(page.getByText('EUR 264')).toBeVisible();
-    await expect(page.getByText('Total: EUR 544.5')).toBeVisible();
-    await processesPage.startProcessSubButton.click();
-
-    await processesPage.tasksTab.click();
-    await taskPanelPage.openTask('processStartedByForm_user_task');
-    await taskDetailsPage.assignToMeButton.click();
-    await expect(
-      page.getByText('{"name":"jon","address":"earth"}'),
-    ).toBeVisible();
-    await expect(page.getByText('EUR')).toBeVisible();
-    await expect(page.getByText('3000-01-01')).toBeVisible();
-    await expect(page.getByText('3000-01-02')).toBeVisible();
-    await expect(page.getByText('123')).toBeVisible();
-    await expect(
-      page.getByText(
-        '[{"itemName":"laptop1","unitPrice":11,"quantity":21},{"itemName":"laptop2","unitPrice":12,"quantity":22}]',
-      ),
-    ).toBeVisible();
-
-    await formJSDetailsPage.completeTaskButton.click();
+    await tasksPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
   });
 });
