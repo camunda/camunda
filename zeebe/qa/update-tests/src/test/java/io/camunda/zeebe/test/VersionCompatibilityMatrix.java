@@ -40,12 +40,17 @@ final class VersionCompatibilityMatrix {
    *   <li>Locally: {@link #fromPreviousMinorToCurrent()} for fast feedback.
    *   <li>CI: {@link #fromFirstAndLastPatchToCurrent()} for extended coverage without taking too
    *       much time.
-   *   <li>Periodic tests: {@link #full()} for full coverage of all allowed upgrade paths.
+   *   <li>Periodic tests for current versions: {@link #fromPreviousPatchesToCurrent()} to ensure
+   *       that the current version is compatible with all released patches.
+   *   <li>Periodic tests for released versions: {@link #full()} for full coverage of all allowed
+   *       upgrade paths.
    * </ul>
    */
   private static Stream<Arguments> auto() {
     if (System.getenv("ZEEBE_CI_CHECK_VERSION_COMPATIBILITY") != null) {
       return full();
+    } else if (System.getenv("ZEEBE_CI_CHECK_CURRENT_VERSION_COMPATIBILITY") != null) {
+      return fromPreviousPatchesToCurrent();
     } else if (System.getenv("CI") != null) {
       return fromFirstAndLastPatchToCurrent();
     } else {
@@ -55,6 +60,14 @@ final class VersionCompatibilityMatrix {
 
   private static Stream<Arguments> fromPreviousMinorToCurrent() {
     return Stream.of(Arguments.of(VersionUtil.getPreviousVersion(), "CURRENT"));
+  }
+
+  private static Stream<Arguments> fromPreviousPatchesToCurrent() {
+    final var current = VersionUtil.getSemanticVersion().orElseThrow();
+    return discoverVersions()
+        .filter(version -> version.compareTo(current) < 0)
+        .filter(version -> current.minor() - version.minor() <= 1)
+        .map(version -> Arguments.of(version.toString(), "CURRENT"));
   }
 
   private static Stream<Arguments> fromFirstAndLastPatchToCurrent() {
