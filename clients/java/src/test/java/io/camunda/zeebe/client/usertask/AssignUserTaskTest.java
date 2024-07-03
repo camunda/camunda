@@ -82,6 +82,14 @@ public final class AssignUserTaskTest extends ClientRestTest {
   }
 
   @Test
+  void shouldRaiseExceptionOnNullAssignee() {
+    // when / then
+    assertThatThrownBy(() -> client.newUserTaskAssignCommand(123L).assignee(null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("assignee must not be null");
+  }
+
+  @Test
   void shouldRaiseExceptionOnRequestError() {
     // given
     gatewayService.errorOnRequest(
