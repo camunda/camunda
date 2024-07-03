@@ -19,8 +19,6 @@ import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -118,10 +116,6 @@ public class RoleController {
     return role;
   }
 
-  private Set<PermissionEnum> mapPermissionsToEnumsSet(final List<Permission> permissions) {
-    return permissions.stream().map(this::mapToPermissionEnum).collect(Collectors.toSet());
-  }
-
   private PermissionEnum mapToPermissionEnum(final Permission permission) {
     return switch (permission) {
       case READ_ALL -> PermissionEnum.READ_ALL;
@@ -137,19 +131,5 @@ public class RoleController {
     roleResponse.setDescription(role.getDescription());
     roleResponse.setPermissions(role.getPermissions().stream().toList());
     return roleResponse;
-  }
-
-  private List<Permission> mapPermissionEnumsToPermissions(
-      final Set<PermissionEnum> permissionEnums) {
-    return permissionEnums.stream().map(this::mapToPermission).toList();
-  }
-
-  private Permission mapToPermission(final PermissionEnum permissionEnum) {
-    return switch (permissionEnum) {
-      case READ_ALL -> Permission.READ_ALL;
-      case CREATE_ALL -> Permission.CREATE_ALL;
-      case DELETE_ALL -> Permission.DELETE_ALL;
-      case UPDATE_ALL -> Permission.UPDATE_ALL;
-    };
   }
 }
