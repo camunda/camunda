@@ -10,7 +10,7 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 import java.time.Duration;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.LongSupplier;
-import javax.annotation.concurrent.ThreadSafe;
+import net.jcip.annotations.ThreadSafe;
 
 /** Measures the rate of change for monotonically increasing values. */
 @ThreadSafe
