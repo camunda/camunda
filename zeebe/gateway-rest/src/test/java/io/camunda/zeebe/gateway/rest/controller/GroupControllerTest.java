@@ -7,17 +7,23 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.identity.automation.usermanagement.CamundaGroup;
+import io.camunda.identity.automation.usermanagement.CamundaUser;
 import io.camunda.identity.automation.usermanagement.service.GroupService;
 import io.camunda.identity.automation.usermanagement.service.UserGroupMembershipService;
+import io.camunda.zeebe.gateway.protocol.rest.AssignUserToGroupRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupResponse;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.GroupController;
 import java.net.URI;
 import java.util.List;
@@ -254,5 +260,111 @@ public class GroupControllerTest extends RestControllerTest {
         .isEqualTo(groupSearchResponse);
 
     verify(groupService, times(1)).findAllGroups();
+  }
+
+  @Test
+  void assignUserToGroupShouldAssignedToGroup() {
+    final var assignRequest = new AssignUserToGroupRequest().userId(1L);
+    webClient
+        .post()
+        .uri("/v2/groups/1/users")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(assignRequest)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.NO_CONTENT);
+    verify(userGroupMembershipService).addUserToGroupByIds(1L, 1L);
+  }
+
+  @Test
+  void assignUserToGroupThrowsExceptionWhenServiceThrowsException() {
+    final String message = "message";
+
+    doThrow(new IllegalArgumentException(message))
+        .when(userGroupMembershipService)
+        .addUserToGroupByIds(1L, 1L);
+
+    final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
+    expectedBody.setTitle(IllegalArgumentException.class.getName());
+    expectedBody.setInstance(URI.create("/v2/groups/1/users"));
+
+    final var assignRequest = new AssignUserToGroupRequest().userId(1L);
+    webClient
+        .post()
+        .uri("/v2/groups/1/users")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(assignRequest)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  void removeUserFromGroupShouldRemoveUserFromGroup() {
+
+    webClient
+        .delete()
+        .uri("/v2/groups/1/users/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.NO_CONTENT);
+
+    verify(userGroupMembershipService).removeUserFromGroupByIds(1L, 1L);
+  }
+
+  @Test
+  void removeUserFromGroupThrowsExceptionWhenServiceThrowsException() {
+    final String message = "message";
+
+    doThrow(new IllegalArgumentException(message))
+        .when(userGroupMembershipService)
+        .removeUserFromGroupByIds(1L, 1L);
+
+    final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
+    expectedBody.setTitle(IllegalArgumentException.class.getName());
+    expectedBody.setInstance(URI.create("/v2/groups/1/users/1"));
+
+    webClient
+        .delete()
+        .uri("/v2/groups/1/users/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  void searchUsersOfGroupShouldReturnMembers() {
+    final CamundaUser camundaUser = new CamundaUser(1L, "username", "name", "email", true);
+    final CamundaUserResponse camundaUserResponse =
+        RequestMapper.getCamundaUserResponse(camundaUser);
+
+    final UserSearchResponse userSearchResponse = new UserSearchResponse();
+    userSearchResponse.setItems(List.of(camundaUserResponse));
+
+    final SearchQueryRequest searchQueryRequest = new SearchQueryRequest();
+
+    when(userGroupMembershipService.getUsersOfGroupById(1L)).thenReturn(List.of(camundaUser));
+
+    webClient
+        .post()
+        .uri("/v2/groups/1/users/search")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(searchQueryRequest)
+        .exchange()
+        .expectStatus()
+        .is2xxSuccessful()
+        .expectBody(UserSearchResponse.class)
+        .isEqualTo(userSearchResponse);
+
+    verify(userGroupMembershipService).getUsersOfGroupById(1L);
   }
 }

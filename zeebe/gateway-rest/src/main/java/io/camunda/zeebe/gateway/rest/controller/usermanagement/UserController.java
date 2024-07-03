@@ -7,14 +7,15 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
-import static io.camunda.zeebe.gateway.rest.controller.usermanagement.UserManagementMapper.mapToCamundaUserResponse;
-import static io.camunda.zeebe.gateway.rest.controller.usermanagement.UserManagementMapper.mapToUserWithPassword;
+import static io.camunda.zeebe.gateway.rest.RequestMapper.getCamundaUserResponse;
+import static io.camunda.zeebe.gateway.rest.RequestMapper.getUserWithPassword;
 
 import io.camunda.identity.automation.usermanagement.service.UserService;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
 import java.util.List;
@@ -45,8 +46,7 @@ public class UserController {
       @RequestBody final CamundaUserWithPasswordRequest userWithPasswordDto) {
     try {
       final CamundaUserResponse camundaUserResponse =
-          mapToCamundaUserResponse(
-              userService.createUser(mapToUserWithPassword(userWithPasswordDto)));
+          getCamundaUserResponse(userService.createUser(getUserWithPassword(userWithPasswordDto)));
       return new ResponseEntity<>(camundaUserResponse, HttpStatus.CREATED);
     } catch (final Exception e) {
       return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
@@ -69,7 +69,7 @@ public class UserController {
   public ResponseEntity<Object> findUserById(@PathVariable final Long id) {
     try {
       final CamundaUserResponse camundaUserResponse =
-          mapToCamundaUserResponse(userService.findUserById(id));
+          getCamundaUserResponse(userService.findUserById(id));
       return new ResponseEntity<>(camundaUserResponse, HttpStatus.OK);
     } catch (final Exception e) {
       return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
@@ -85,9 +85,7 @@ public class UserController {
     try {
       final UserSearchResponse responseDto = new UserSearchResponse();
       final List<CamundaUserResponse> allUsers =
-          userService.findAllUsers().stream()
-              .map(UserManagementMapper::mapToCamundaUserResponse)
-              .toList();
+          userService.findAllUsers().stream().map(RequestMapper::getCamundaUserResponse).toList();
       responseDto.setItems(allUsers);
 
       return new ResponseEntity<>(responseDto, HttpStatus.OK);
@@ -104,7 +102,7 @@ public class UserController {
       @PathVariable final Long id, @RequestBody final CamundaUserWithPasswordRequest user) {
     try {
       final CamundaUserResponse camundaUserResponse =
-          mapToCamundaUserResponse(userService.updateUser(id, mapToUserWithPassword(user)));
+          getCamundaUserResponse(userService.updateUser(id, getUserWithPassword(user)));
       return new ResponseEntity<>(camundaUserResponse, HttpStatus.OK);
     } catch (final Exception e) {
       return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
