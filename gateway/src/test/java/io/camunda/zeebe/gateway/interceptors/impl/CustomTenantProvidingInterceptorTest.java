@@ -14,7 +14,6 @@ import io.camunda.zeebe.gateway.interceptors.util.TestTenantProvidingInterceptor
 import io.grpc.Context;
 import io.grpc.Metadata;
 import io.grpc.Status;
-import io.grpc.internal.NoopServerCall;
 import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.Test;
 
