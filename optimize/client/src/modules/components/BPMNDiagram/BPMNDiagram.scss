@@ -27,7 +27,11 @@
     }
   }
 
-  .diagramLoading,
+  .Loading {
+    z-index: var(--z-above);
+  }
+
+  .Loading,
   .emptyText {
     position: absolute;
     top: 50%;
