@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Thin abstraction layer on top of Apache's HTTP client to wire up the expected Zeebe API
- * conventions, e.g. errors are always {@link io.camunda.zeebe.client.protocol.rest.ProblemDetail},
+ * conventions, e.g. errors are always {@link io.camunda.client.protocol.rest.ProblemDetail},
  * content type is always JSON, etc.
  */
 public final class HttpClient implements AutoCloseable {
@@ -100,7 +100,7 @@ public final class HttpClient implements AutoCloseable {
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
+      final HttpZeebeFuture<RespT> result) {
     sendRequest(Method.GET, path, null, requestConfig, responseType, transformer, result);
   }
 
@@ -108,7 +108,7 @@ public final class HttpClient implements AutoCloseable {
       final String path,
       final String body,
       final RequestConfig requestConfig,
-      final HttpCamundaFuture<RespT> result) {
+      final HttpZeebeFuture<RespT> result) {
     sendRequest(Method.POST, path, body, requestConfig, Void.class, r -> null, result);
   }
 
@@ -118,7 +118,7 @@ public final class HttpClient implements AutoCloseable {
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
+      final HttpZeebeFuture<RespT> result) {
     sendRequest(Method.POST, path, body, requestConfig, responseType, transformer, result);
   }
 
@@ -126,12 +126,12 @@ public final class HttpClient implements AutoCloseable {
       final String path,
       final String body,
       final RequestConfig requestConfig,
-      final HttpCamundaFuture<RespT> result) {
+      final HttpZeebeFuture<RespT> result) {
     sendRequest(Method.PATCH, path, body, requestConfig, Void.class, r -> null, result);
   }
 
   public <RespT> void delete(
-      final String path, final RequestConfig requestConfig, final HttpCamundaFuture<RespT> result) {
+      final String path, final RequestConfig requestConfig, final HttpZeebeFuture<RespT> result) {
     sendRequest(Method.DELETE, path, null, requestConfig, Void.class, r -> null, result);
   }
 
@@ -142,7 +142,7 @@ public final class HttpClient implements AutoCloseable {
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
+      final HttpZeebeFuture<RespT> result) {
     final URI target = buildRequestURI(path);
     final Runnable retryAction =
         () -> {

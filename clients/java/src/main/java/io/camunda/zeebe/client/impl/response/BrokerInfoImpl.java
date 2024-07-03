@@ -43,7 +43,7 @@ public final class BrokerInfoImpl implements BrokerInfo {
     }
   }
 
-  public BrokerInfoImpl(final io.camunda.zeebe.client.protocol.rest.BrokerInfo httpBrokerInfo) {
+  public BrokerInfoImpl(final io.camunda.client.protocol.rest.BrokerInfo httpBrokerInfo) {
     nodeId = httpBrokerInfo.getNodeId();
     host = httpBrokerInfo.getHost();
     port = httpBrokerInfo.getPort();
@@ -86,23 +86,6 @@ public final class BrokerInfoImpl implements BrokerInfo {
   }
 
   @Override
-  public String toString() {
-    return "BrokerInfoImpl{"
-        + "nodeId="
-        + nodeId
-        + ", host='"
-        + host
-        + '\''
-        + ", port="
-        + port
-        + ", version="
-        + version
-        + ", partitions="
-        + partitions
-        + '}';
-  }
-
-  @Override
   public int hashCode() {
     return Objects.hash(nodeId, host, port, version, partitions);
   }
@@ -123,5 +106,22 @@ public final class BrokerInfoImpl implements BrokerInfo {
         && Objects.equals(host, that.host)
         && Objects.equals(version, that.version)
         && Objects.equals(partitions, that.partitions);
+  }
+
+  @Override
+  public String toString() {
+    return "BrokerInfoImpl{"
+        + "nodeId="
+        + nodeId
+        + ", host='"
+        + host
+        + '\''
+        + ", port="
+        + port
+        + ", version="
+        + version
+        + ", partitions="
+        + partitions
+        + '}';
   }
 }

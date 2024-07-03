@@ -15,14 +15,14 @@
  */
 package io.camunda.zeebe.client.impl.search;
 
+import io.camunda.client.protocol.rest.ProcessInstanceSearchQueryResponse;
+import io.camunda.client.protocol.rest.SearchQueryPageResponse;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.api.search.response.SearchResponsePage;
 import io.camunda.zeebe.client.impl.search.response.ProcessInstanceImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchQueryResponseImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchResponsePageImpl;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryResponse;
-import io.camunda.zeebe.client.protocol.rest.SearchQueryPageResponse;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;

@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.api.command;
 
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
+import io.camunda.client.protocol.rest.ProblemDetail;
 
 public class ProblemException extends ClientHttpException {
   private final ProblemDetail details;

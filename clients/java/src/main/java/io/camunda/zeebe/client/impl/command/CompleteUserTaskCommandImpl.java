@@ -15,15 +15,14 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.CompleteUserTaskResponse;
-import io.camunda.zeebe.client.impl.http.HttpCamundaFuture;
 import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.protocol.rest.UserTaskCompletionRequest;
+import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -58,25 +57,9 @@ public final class CompleteUserTaskCommandImpl implements CompleteUserTaskComman
     return this;
   }
 
-  /**
-   * @deprecated since 8.6 for removal with 8.8, use {@link
-   *     CompleteUserTaskCommandImpl:sendCommand()}
-   */
   @Override
-  @Deprecated
   public ZeebeFuture<CompleteUserTaskResponse> send() {
-    final HttpCamundaFuture<CompleteUserTaskResponse> result = new HttpCamundaFuture<>();
-    httpClient.post(
-        "/user-tasks/" + userTaskKey + "/completion",
-        jsonMapper.toJson(request),
-        httpRequestConfig.build(),
-        result);
-    return result;
-  }
-
-  @Override
-  public CamundaFuture<CompleteUserTaskResponse> sendCommand() {
-    final HttpCamundaFuture<CompleteUserTaskResponse> result = new HttpCamundaFuture<>();
+    final HttpZeebeFuture<CompleteUserTaskResponse> result = new HttpZeebeFuture<>();
     httpClient.post(
         "/user-tasks/" + userTaskKey + "/completion",
         jsonMapper.toJson(request),

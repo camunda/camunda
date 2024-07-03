@@ -19,10 +19,10 @@ import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.variableV
 import static io.camunda.zeebe.client.impl.util.CollectionUtil.addValuesToList;
 import static io.camunda.zeebe.client.impl.util.CollectionUtil.toList;
 
+import io.camunda.client.protocol.rest.ProcessInstanceFilterRequest;
+import io.camunda.client.protocol.rest.VariableValueFilterRequest;
 import io.camunda.zeebe.client.api.search.ProcessInstanceFilter;
 import io.camunda.zeebe.client.api.search.VariableValueFilter;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.VariableValueFilterRequest;
 import java.util.List;
 import java.util.function.Consumer;
 

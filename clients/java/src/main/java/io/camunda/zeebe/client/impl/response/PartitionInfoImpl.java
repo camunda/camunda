@@ -15,11 +15,11 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.protocol.rest.Partition.HealthEnum;
+import io.camunda.client.protocol.rest.Partition.RoleEnum;
 import io.camunda.zeebe.client.api.response.PartitionBrokerHealth;
 import io.camunda.zeebe.client.api.response.PartitionBrokerRole;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
-import io.camunda.zeebe.client.protocol.rest.Partition.HealthEnum;
-import io.camunda.zeebe.client.protocol.rest.Partition.RoleEnum;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import java.util.Arrays;
@@ -61,7 +61,7 @@ public class PartitionInfoImpl implements PartitionInfo {
     }
   }
 
-  public PartitionInfoImpl(final io.camunda.zeebe.client.protocol.rest.Partition httpPartition) {
+  public PartitionInfoImpl(final io.camunda.client.protocol.rest.Partition httpPartition) {
 
     if (httpPartition.getPartitionId() == null) {
       throw new RuntimeException("Unexpected missing partition ID. A partition ID is required.");
@@ -116,18 +116,6 @@ public class PartitionInfoImpl implements PartitionInfo {
   }
 
   @Override
-  public String toString() {
-    return "PartitionInfoImpl{"
-        + "partitionId="
-        + partitionId
-        + ", role="
-        + role
-        + ", health="
-        + partitionBrokerHealth
-        + '}';
-  }
-
-  @Override
   public int hashCode() {
     return Objects.hash(partitionId, role, partitionBrokerHealth);
   }
@@ -146,5 +134,17 @@ public class PartitionInfoImpl implements PartitionInfo {
     return partitionId == that.partitionId
         && role == that.role
         && partitionBrokerHealth == that.partitionBrokerHealth;
+  }
+
+  @Override
+  public String toString() {
+    return "PartitionInfoImpl{"
+        + "partitionId="
+        + partitionId
+        + ", role="
+        + role
+        + ", health="
+        + partitionBrokerHealth
+        + '}';
   }
 }

@@ -19,7 +19,11 @@ import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.processIn
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.processInstanceSort;
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.searchRequestPage;
 
-import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.protocol.rest.ProcessInstanceFilterRequest;
+import io.camunda.client.protocol.rest.ProcessInstanceSearchQueryRequest;
+import io.camunda.client.protocol.rest.ProcessInstanceSearchQueryResponse;
+import io.camunda.client.protocol.rest.SearchQueryPageRequest;
+import io.camunda.client.protocol.rest.SearchQuerySortRequest;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.search.FinalSearchQueryStep;
@@ -30,13 +34,8 @@ import io.camunda.zeebe.client.api.search.SearchRequestPage;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.impl.command.ThrowErrorCommandImpl;
-import io.camunda.zeebe.client.impl.http.HttpCamundaFuture;
 import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryRequest;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryResponse;
-import io.camunda.zeebe.client.protocol.rest.SearchQueryPageRequest;
-import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
+import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -112,22 +111,7 @@ public class ProcessInstanceQueryImpl
   @Override
   @Deprecated
   public ZeebeFuture<SearchQueryResponse<ProcessInstance>> send() {
-    final HttpCamundaFuture<SearchQueryResponse<ProcessInstance>> result =
-        new HttpCamundaFuture<>();
-    httpClient.post(
-        "/process-instances/search",
-        jsonMapper.toJson(request),
-        httpRequestConfig.build(),
-        ProcessInstanceSearchQueryResponse.class,
-        SearchResponseMapper::toProcessInstanceSearchResponse,
-        result);
-    return result;
-  }
-
-  @Override
-  public CamundaFuture<SearchQueryResponse<ProcessInstance>> sendCommand() {
-    final HttpCamundaFuture<SearchQueryResponse<ProcessInstance>> result =
-        new HttpCamundaFuture<>();
+    final HttpZeebeFuture<SearchQueryResponse<ProcessInstance>> result = new HttpZeebeFuture<>();
     httpClient.post(
         "/process-instances/search",
         jsonMapper.toJson(request),
