@@ -22,7 +22,7 @@ import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
-import io.camunda.zeebe.client.util.RestGatewayService;
+import io.camunda.zeebe.client.util.RestGatewayPaths;
 import org.junit.jupiter.api.Test;
 
 public final class AssignUserTaskTest extends ClientRestTest {
@@ -82,10 +82,10 @@ public final class AssignUserTaskTest extends ClientRestTest {
   }
 
   @Test
-  void shouldRaiseExceptionOnError() {
+  void shouldRaiseExceptionOnRequestError() {
     // given
     gatewayService.errorOnRequest(
-        String.format(RestGatewayService.URL_USER_TASK_ASSIGNMENT, 123L),
+        RestGatewayPaths.getUserTaskAssignmentUrl(123L),
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
