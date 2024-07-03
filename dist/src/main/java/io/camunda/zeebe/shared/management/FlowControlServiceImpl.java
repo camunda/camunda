@@ -8,10 +8,12 @@
 package io.camunda.zeebe.shared.management;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.gateway.admin.BrokerAdminRequest;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.LimitSerializer;
 import io.camunda.zeebe.shared.management.FlowControlEndpoint.FlowControlService;
 import java.util.Map;
 import java.util.Optional;
@@ -36,7 +38,7 @@ public class FlowControlServiceImpl implements FlowControlService {
   }
 
   @Override
-  public CompletableFuture<Map<Integer, String>> get() {
+  public CompletableFuture<Map<Integer, JsonNode>> get() {
     final var topology = client.getTopologyManager().getTopology();
     final var futures =
         topology.getPartitions().stream()
@@ -53,7 +55,7 @@ public class FlowControlServiceImpl implements FlowControlService {
   }
 
   @Override
-  public CompletableFuture<Map<Integer, String>> set(final FlowControlCfg flowControlCfg) {
+  public CompletableFuture<Map<Integer, JsonNode>> set(final FlowControlCfg flowControlCfg) {
     LOG.info("Setting flow control configuration to {}", flowControlCfg);
 
     final byte[] configuration;
@@ -110,7 +112,7 @@ public class FlowControlServiceImpl implements FlowControlService {
         .thenApply(
             response ->
                 new FlowControlStatus(
-                    partitionId, new String(response.getResponse().getPayload())));
+                    partitionId, LimitSerializer.deserialize(response.getResponse().getPayload())));
   }
 
   private IntHashSet getMembers(final BrokerClusterState topology, final Integer partitionId) {
@@ -127,5 +129,5 @@ public class FlowControlServiceImpl implements FlowControlService {
     return members;
   }
 
-  record FlowControlStatus(int partitionId, String flowControlConfig) {}
+  record FlowControlStatus(int partitionId, JsonNode flowControlConfig) {}
 }
