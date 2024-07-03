@@ -333,7 +333,7 @@
               <generatorName>spring</generatorName>
               <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.gateway.protocol.rest</modelPackage>
-              <typeMappings>OffsetDateTime=String</typeMappings>
+              <typeMappings>OffsetDateTime=String,Permission=io.camunda.identity.automation.permissions.PermissionEnum</typeMappings>
               <generateApis>false</generateApis>
               <generateSupportingFiles>false</generateSupportingFiles>
               <generateModels>true</generateModels>
