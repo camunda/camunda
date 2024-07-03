@@ -19,3 +19,11 @@ Options:
 ```
 
 Right now, `start`, `stop`, and `--detached` are the only functional options.
+
+
+## Note about connectors
+
+Connectors is configured to run on port `8085` just like the docker compose file. Other camunda applications are expected to be accessible via `localhost:8080/<component>`.
+
+`localhost:8080/operate`
+`localhost:8080/tasklist`
