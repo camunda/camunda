@@ -6,7 +6,7 @@ on:
     branches:
     - master
     - maintenance/*
-  workflow_dispatch: 
+  workflow_dispatch:
 
 jobs:
   e2e-cloud-test:
@@ -50,12 +50,12 @@ jobs:
       with:
         node-version: ${{ steps.pom-info.outputs.x_version_node }}
         cache: "yarn"
-        cache-dependency-path: optimize/client/yarn.lock    
+        cache-dependency-path: optimize/client/yarn.lock
     - name: Install node dependencies
       working-directory: ./optimize/client
       run: yarn install
     - name: 'build backend & frontend'
-      run: mvn clean install -DskipTests -Dskip.docker -pl optimize/backend,optimize/qa/data-generation -am
+      run: mvn clean install -DskipTests -Dskip.docker -pl optimize/backend -am
     - name: 'start backend'
       working-directory: ./optimize/client
       run: |

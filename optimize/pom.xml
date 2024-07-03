@@ -88,7 +88,6 @@
     <module>util</module>
     <module>plugins</module>
     <module>backend</module>
-    <module>qa</module>
     <module>../optimize-distro</module>
     <module>upgrade</module>
   </modules>
