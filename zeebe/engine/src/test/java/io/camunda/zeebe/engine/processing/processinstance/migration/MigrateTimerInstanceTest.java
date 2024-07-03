@@ -25,7 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class MigrateTimerSubscriptionTest {
+public class MigrateTimerInstanceTest {
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
@@ -33,7 +33,7 @@ public class MigrateTimerSubscriptionTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
-  public void shouldWriteTimerSubscriptionMigratedEvent() {
+  public void shouldWriteTimerMigratedEvent() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
