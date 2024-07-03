@@ -45,7 +45,7 @@ it('should initially load data', () => {
 it('should display a loading indicator', () => {
   const node = shallow(<Sharing {...props} mightFail={() => {}} />);
 
-  expect(node.find('LoadingIndicator')).toExist();
+  expect(node.find('Loading')).toExist();
 });
 
 it('should display an error message if evaluation was unsuccessful', () => {

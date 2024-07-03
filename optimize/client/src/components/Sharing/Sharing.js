@@ -14,7 +14,7 @@ import {
   ReportRenderer,
   DashboardRenderer,
   Icon,
-  LoadingIndicator,
+  Loading,
   ErrorPage,
   EntityName,
   LastModifiedInfo,
@@ -116,7 +116,7 @@ export class Sharing extends React.Component {
     const params = new URLSearchParams(this.props.location.search);
 
     if (loading) {
-      return <LoadingIndicator />;
+      return <Loading />;
     }
 
     if (!evaluationResult || !this.hasValidType(type)) {
