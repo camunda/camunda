@@ -108,7 +108,7 @@ func TestJobWorkerBuilder_TenantIds(t *testing.T) {
 
 func TestJobWorkerBuilder_DefaultTenantIds(t *testing.T) {
 	builder := NewJobWorkerBuilder(nil, nil, nil).(*JobWorkerBuilder)
-	assert.Equal(t, []string{commands.DefaultJobTenantId}, builder.request.TenantIds)
+	assert.Equal(t, []string{commands.DefaultJobTenantID}, builder.request.TenantIds)
 }
 
 func TestJobWorkerBuilder_Metrics(t *testing.T) {

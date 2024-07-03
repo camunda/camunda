@@ -28,7 +28,7 @@ const (
 	DefaultJobTimeout     = 5 * time.Minute
 	DefaultJobTimeoutInMs = int64(DefaultJobTimeout / time.Millisecond)
 	DefaultJobWorkerName  = "default"
-	DefaultJobTenantId    = "<default>"
+	DefaultJobTenantID    = "<default>"
 )
 
 type DispatchActivateJobsCommand interface {
