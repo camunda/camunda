@@ -11,9 +11,9 @@ import com.google.common.util.concurrent.RateLimiter;
 import java.time.Duration;
 
 @SuppressWarnings("UnstableApiUsage")
-public record RateLimit(boolean enabled, int limit, Duration rampUp) {
+public record RateLimit(boolean enabled, int limit, Duration rampUp, Throttling throttling) {
   public static RateLimit disabled() {
-    return new RateLimit(false, 0, Duration.ZERO);
+    return new RateLimit(false, 0, Duration.ZERO, Throttling.disabled());
   }
 
   public RateLimiter limiter() {
@@ -24,5 +24,12 @@ public record RateLimit(boolean enabled, int limit, Duration rampUp) {
       return RateLimiter.create(limit);
     }
     return RateLimiter.create(limit, rampUp);
+  }
+
+  public record Throttling(
+      boolean enabled, long acceptableBacklog, long minRate, Duration resolution) {
+    static Throttling disabled() {
+      return new Throttling(false, 0, 0, Duration.ZERO);
+    }
   }
 }

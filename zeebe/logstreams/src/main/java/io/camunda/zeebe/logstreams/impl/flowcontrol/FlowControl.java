@@ -70,6 +70,7 @@ import java.util.TreeMap;
  */
 @SuppressWarnings("UnstableApiUsage")
 public final class FlowControl implements AppendListener {
+
   private final LogStreamMetrics metrics;
   private RateLimit writeRateLimit;
   private Limit requestLimit;
@@ -78,7 +79,10 @@ public final class FlowControl implements AppendListener {
   private final RateMeasurement exportingRate =
       new RateMeasurement(
           ActorClock::currentTimeMillis, Duration.ofMinutes(5), Duration.ofSeconds(10));
+  private RateLimitThrottle writeRateThrottle;
+  private volatile long lastWrittenPosition = -1;
   private volatile long lastProcessedPosition = -1;
+  private volatile long lastExportedPosition;
 
   private final NavigableMap<Long, InFlightEntry> inFlight = new TreeMap<>();
 
@@ -89,13 +93,8 @@ public final class FlowControl implements AppendListener {
   public FlowControl(
       final LogStreamMetrics metrics, final Limit requestLimit, final RateLimit writeRateLimit) {
     this.metrics = metrics;
-    this.requestLimit = requestLimit;
-    this.writeRateLimit = writeRateLimit;
-    processingLimiter =
-        requestLimit != null
-            ? new CommandRateLimiterBuilder().limit(requestLimit).build(metrics)
-            : new NoopLimiter<>();
-    writeRateLimiter = writeRateLimit == null ? null : writeRateLimit.limiter();
+    setRequestLimit(requestLimit);
+    setWriteRateLimit(writeRateLimit);
   }
 
   /**
@@ -151,6 +150,8 @@ public final class FlowControl implements AppendListener {
 
   @Override
   public void onWrite(final long index, final long highestPosition) {
+    lastWrittenPosition = highestPosition;
+    updateWriteRateThrottle();
     metrics.setLastWrittenPosition(highestPosition);
     final var inFlightEntry = inFlight.get(highestPosition);
     if (inFlightEntry != null) {
@@ -180,8 +181,17 @@ public final class FlowControl implements AppendListener {
     if (position <= 0) {
       return;
     }
+    lastExportedPosition = position;
     if (exportingRate.observe(position)) {
       metrics.setExportingRate(exportingRate.rate());
+    }
+    updateWriteRateThrottle();
+  }
+
+  private void updateWriteRateThrottle() {
+    if (writeRateThrottle != null && lastWrittenPosition != -1 && lastExportedPosition != -1) {
+      writeRateThrottle.update(
+          ActorClock.currentTimeMillis(), lastWrittenPosition - lastExportedPosition);
     }
   }
 
@@ -205,6 +215,7 @@ public final class FlowControl implements AppendListener {
   public void setWriteRateLimit(final RateLimit writeRateLimit) {
     this.writeRateLimit = writeRateLimit;
     writeRateLimiter = writeRateLimit == null ? null : writeRateLimit.limiter();
+    writeRateThrottle = new RateLimitThrottle(writeRateLimit, writeRateLimiter, exportingRate);
   }
 
   public enum Rejection {

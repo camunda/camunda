@@ -15,6 +15,7 @@ public class RateLimitCfg {
   private boolean enabled = false;
   private int limit;
   private Duration rampUp = Duration.ZERO;
+  private ThrottleCfg throttling = new ThrottleCfg();
 
   public boolean isEnabled() {
     return enabled;
@@ -33,7 +34,15 @@ public class RateLimitCfg {
   }
 
   public RateLimit buildLimit() {
-    return new RateLimit(enabled, limit, rampUp);
+    return new RateLimit(
+        enabled,
+        limit,
+        rampUp,
+        new RateLimit.Throttling(
+            throttling.isEnabled(),
+            throttling.getAcceptableBacklog(),
+            throttling.getMinimumLimit(),
+            throttling.getResolution()));
   }
 
   public Duration getRampUp() {
@@ -44,9 +53,17 @@ public class RateLimitCfg {
     this.rampUp = rampUp;
   }
 
+  public ThrottleCfg getThrottling() {
+    return throttling;
+  }
+
+  public void setThrottling(final ThrottleCfg throttling) {
+    this.throttling = throttling;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(limit, enabled, rampUp);
+    return Objects.hash(enabled, limit, rampUp, throttling);
   }
 
   @Override
@@ -57,6 +74,23 @@ public class RateLimitCfg {
     if (!(o instanceof final RateLimitCfg that)) {
       return false;
     }
-    return limit == that.limit && enabled == that.enabled && Objects.equals(rampUp, that.rampUp);
+    return enabled == that.enabled
+        && limit == that.limit
+        && Objects.equals(rampUp, that.rampUp)
+        && Objects.equals(throttling, that.throttling);
+  }
+
+  @Override
+  public String toString() {
+    return "RateLimitCfg{"
+        + "enabled="
+        + enabled
+        + ", limit="
+        + limit
+        + ", rampUp="
+        + rampUp
+        + ", throttling="
+        + throttling
+        + '}';
   }
 }
