@@ -56,6 +56,3 @@ els-snapshots
 optimize/client/.vscode/
 optimize/client/dist
 optimize/client/.node/
-optimize/qa/engine-rest-secure/overlays
-optimize/qa/engine-rest-custom/overlays
-optimize/qa/engine-it-plugin/overlays
