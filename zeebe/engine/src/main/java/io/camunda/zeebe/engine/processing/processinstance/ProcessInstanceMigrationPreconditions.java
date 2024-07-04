@@ -11,6 +11,7 @@ import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
@@ -47,66 +48,89 @@ public final class ProcessInstanceMigrationPreconditions {
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to migrate process instance but no process instance found with key '%d'";
   private static final String ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND =
-      "Expected to migrate process instance to process definition but no process definition found with key '%d'";
+      """
+      Expected to migrate process instance to process definition \
+      but no process definition found with key '%d'""";
   private static final String ERROR_MESSAGE_DUPLICATE_SOURCE_ELEMENT_IDS =
-      "Expected to migrate process instance '%s' but the mapping instructions contain duplicate source element ids '%s'.";
+      """
+      Expected to migrate process instance '%s' \
+      but the mapping instructions contain duplicate source element ids '%s'.""";
   private static final String ERROR_SOURCE_ELEMENT_ID_NOT_FOUND =
       """
-              Expected to migrate process instance '%s' \
-              but mapping instructions contain a non-existing source element id '%s'. \
-              Elements provided in mapping instructions must exist \
-              in the source process definition.""";
+      Expected to migrate process instance '%s' \
+      but mapping instructions contain a non-existing source element id '%s'. \
+      Elements provided in mapping instructions must exist \
+      in the source process definition.""";
   private static final String ERROR_TARGET_ELEMENT_ID_NOT_FOUND =
       """
-              Expected to migrate process instance '%s' \
-              but mapping instructions contain a non-existing target element id '%s'. \
-              Elements provided in mapping instructions must exist \
-              in the target process definition.""";
+      Expected to migrate process instance '%s' \
+      but mapping instructions contain a non-existing target element id '%s'. \
+      Elements provided in mapping instructions must exist \
+      in the target process definition.""";
   private static final String ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_PROCESS_INSTANCE =
-      "Expected to migrate process instance but process instance has an event subprocess. Process instances with event subprocesses cannot be migrated yet.";
+      """
+      Expected to migrate process instance but process instance has an event subprocess. \
+      Process instances with event subprocesses cannot be migrated yet.""";
   private static final String ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_TARGET_PROCESS =
-      "Expected to migrate process instance but target process has an event subprocess. Target processes with event subprocesses cannot be migrated yet.";
+      """
+      Expected to migrate process instance but target process has an event subprocess. \
+      Target processes with event subprocesses cannot be migrated yet.""";
   private static final String ERROR_UNSUPPORTED_ELEMENT_TYPE =
-      "Expected to migrate process instance '%s' but active element with id '%s' has an unsupported type. The migration of a %s is not supported.";
+      """
+      Expected to migrate process instance '%s' \
+      but active element with id '%s' has an unsupported type. \
+      The migration of a %s is not supported.""";
   private static final String ERROR_UNMAPPED_ACTIVE_ELEMENT =
-      "Expected to migrate process instance '%s' but no mapping instruction defined for active element with id '%s'. Elements cannot be migrated without a mapping.";
+      """
+      Expected to migrate process instance '%s' \
+      but no mapping instruction defined for active element with id '%s'. \
+      Elements cannot be migrated without a mapping.""";
   private static final String ERROR_ELEMENT_TYPE_CHANGED =
       """
-              Expected to migrate process instance '%s' \
-              but active element with id '%s' and type '%s' is mapped to \
-              an element with id '%s' and different type '%s'. \
-              Elements must be mapped to elements of the same type.""";
-
+      Expected to migrate process instance '%s' \
+      but active element with id '%s' and type '%s' is mapped to \
+      an element with id '%s' and different type '%s'. \
+      Elements must be mapped to elements of the same type.""";
   private static final String ERROR_USER_TASK_IMPLEMENTATION_CHANGED =
       """
-              Expected to migrate process instance '%s' \
-              but active user task with id '%s' and implementation '%s' is mapped to \
-              an user task with id '%s' and different implementation '%s'. \
-              Elements must be mapped to elements of the same implementation.""";
+      Expected to migrate process instance '%s' \
+      but active user task with id '%s' and implementation '%s' is mapped to \
+      an user task with id '%s' and different implementation '%s'. \
+      Elements must be mapped to elements of the same implementation.""";
   private static final String ERROR_MESSAGE_ELEMENT_FLOW_SCOPE_CHANGED =
       """
-              Expected to migrate process instance '%s' \
-              but the flow scope of active element with id '%s' is changed. \
-              The flow scope of the active element is expected to be '%s' but was '%s'. \
-              The flow scope of an element cannot be changed during migration yet.""";
+      Expected to migrate process instance '%s' \
+      but the flow scope of active element with id '%s' is changed. \
+      The flow scope of the active element is expected to be '%s' but was '%s'. \
+      The flow scope of an element cannot be changed during migration yet.""";
   private static final String ERROR_ACTIVE_ELEMENT_WITH_BOUNDARY_EVENT =
       """
-              Expected to migrate process instance '%s' \
-              but active element with id '%s' has one or more boundary events of types '%s'. \
-              Migrating active elements with boundary events of these types is not possible yet.""";
+      Expected to migrate process instance '%s' \
+      but active element with id '%s' has one or more boundary events of types '%s'. \
+      Migrating active elements with boundary events of these types is not possible yet.""";
   private static final String ERROR_TARGET_ELEMENT_WITH_BOUNDARY_EVENT =
       """
-              Expected to migrate process instance '%s' \
-              but target element with id '%s' has one or more boundary events of types '%s'. \
-              Migrating target elements with boundary events of these types is not possible yet.""";
+      Expected to migrate process instance '%s' \
+      but target element with id '%s' has one or more boundary events of types '%s'. \
+      Migrating target elements with boundary events of these types is not possible yet.""";
+  private static final String ERROR_BOUNDARY_EVENT_DETACHED =
+      """
+      Expected to migrate process instance '%s' \
+      but active element with id '%s' is mapped to an element with id '%s' and \
+      has a boundary event with id '%s' that is mapped to an element with id '%s'. \
+      These mappings detach the boundary event from the element in the target process. \
+      Boundary events must stay attached to the same element instance.""";
   private static final String ERROR_PENDING_DISTRIBUTION =
       """
-              Expected to migrate process instance '%s' \
-              but active element with id '%s' has a pending message subscription \
-              migration distribution for event with id '%s'.""";
+      Expected to migrate process instance '%s' \
+      but active element with id '%s' has a pending message subscription \
+      migration distribution for event with id '%s'.""";
   private static final String ERROR_CONCURRENT_COMMAND =
-      "Expected to migrate process instance '%s' but a concurrent command was executed on the process instance. Please retry the migration.";
-  private static final long NO_PARENT = -1L;
+      """
+      Expected to migrate process instance '%s' \
+      but a concurrent command was executed on the process instance. \
+      Please retry the migration.""";
+
   private static final String ZEEBE_USER_TASK_IMPLEMENTATION = "zeebe user task";
   private static final String JOB_WORKER_IMPLEMENTATION = "job worker";
 
@@ -491,6 +515,47 @@ public final class ProcessInstanceMigrationPreconditions {
               elementInstanceRecord.getProcessInstanceKey(), elementId, rejectedEventTypes);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
+    }
+  }
+
+  public static void requireMappedBoundaryEventsToStayAttachedToSameElement(
+      final long processInstanceKey,
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final String sourceElementId,
+      final String targetElementId,
+      final Map<String, String> sourceElementIdToTargetElementId) {
+    final var sourceElement =
+        sourceProcessDefinition
+            .getProcess()
+            .getElementById(sourceElementId, ExecutableCatchEventSupplier.class);
+    for (final var boundaryIdBuffer : sourceElement.getBoundaryElementIds()) {
+      final String sourceBoundaryEventId = BufferUtil.bufferAsString(boundaryIdBuffer);
+      if (!sourceElementIdToTargetElementId.containsKey(sourceBoundaryEventId)) {
+        // only check mapped boundary events
+        continue;
+      }
+
+      final var targetBoundaryEventId = sourceElementIdToTargetElementId.get(sourceBoundaryEventId);
+      final var targetElement =
+          targetProcessDefinition
+              .getProcess()
+              .getElementById(targetElementId, ExecutableCatchEventSupplier.class);
+      if (targetElement.getBoundaryElementIds().stream()
+          .map(BufferUtil::bufferAsString)
+          .noneMatch(targetBoundaryEventId::equals)) {
+        // boundary event has become detached from element instance
+        final var reason =
+            String.format(
+                ERROR_BOUNDARY_EVENT_DETACHED,
+                processInstanceKey,
+                sourceElementId,
+                targetElementId,
+                sourceBoundaryEventId,
+                targetBoundaryEventId);
+        throw new ProcessInstanceMigrationPreconditionFailedException(
+            reason, RejectionType.INVALID_STATE);
+      }
     }
   }
 
