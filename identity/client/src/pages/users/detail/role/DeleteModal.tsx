@@ -26,7 +26,7 @@ const DeleteModal: FC<UseEntityModalProps<Role>> = ({
     if (role) {
       const { success } = await callRemoveRole({
         id,
-        roleId: role.id,
+        roleName: role.name,
       });
 
       if (success) {

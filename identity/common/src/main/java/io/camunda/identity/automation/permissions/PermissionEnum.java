@@ -30,7 +30,10 @@ public enum PermissionEnum {
   @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
   public static PermissionEnum fromString(final String value) {
     return Stream.of(PermissionEnum.values())
-        .filter(entityType -> entityType.name().equals(value.toUpperCase()))
+        .filter(
+            permissionEnum ->
+                permissionEnum.getValue().equalsIgnoreCase(value)
+                    || permissionEnum.name().equalsIgnoreCase(value))
         .findFirst()
         .orElseThrow(
             () ->

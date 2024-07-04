@@ -29,7 +29,6 @@ const EditModal: FC<UseEntityModalProps<Role>> = ({
 
   const handleSubmit = async () => {
     const { success } = await apiCall({
-      id: role.id,
       name,
       description,
       permissions,
