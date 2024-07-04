@@ -24,6 +24,10 @@ public class TimerMigrationApplier implements TypedEventApplier<TimerIntent, Tim
   @Override
   public void applyState(final long key, final TimerRecord value) {
     final TimerInstance timerInstance = timerInstanceState.get(value.getElementInstanceKey(), key);
+    // only these fields are updated during migration
+    timerInstance.setHandlerNodeId(value.getTargetElementIdBuffer());
+    timerInstance.setProcessDefinitionKey(value.getProcessDefinitionKey());
+
     timerInstanceState.update(timerInstance);
   }
 }
