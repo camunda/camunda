@@ -2504,13 +2504,17 @@
               <configuration>
                 <rules>
                   <dependencyConvergence>
-                    <!-- To be removed once these conflicts are resolved by identity. -->
-                    <!-- See https://github.com/camunda-cloud/identity/issues/1696 -->
                     <excludes>
+                      <!-- To be removed once these conflicts are resolved by identity. -->
+                      <!-- See https://github.com/camunda-cloud/identity/issues/1696 -->
                       <exclude>com.auth0:java-jwt</exclude>
                       <exclude>org.jetbrains.kotlin:kotlin-stdlib-common</exclude>
                       <exclude>org.jetbrains.kotlin:kotlin-stdlib-jdk8</exclude>
                       <exclude>com.squareup.okio:okio</exclude>
+                      <!-- azure-sdk makes some calls at runtime to msal4j which may fail if we
+                           pin it to the wrong version, but azure-sdk also, transitively, causes
+                           dependency convergence issues -->
+                      <exclude>com.microsoft.azure:msal4j</exclude>
                     </excludes>
                   </dependencyConvergence>
                 </rules>
