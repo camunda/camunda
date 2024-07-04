@@ -20,6 +20,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
@@ -179,7 +180,9 @@ final class BackupApiRequestHandlerTest {
     final BackupStatus status =
         new BackupStatusImpl(
             new BackupIdentifierImpl(1, 1, checkpointId),
-            Optional.of(new BackupDescriptorImpl(Optional.of("s-id"), 100, 3, "test")),
+            Optional.of(
+                new BackupDescriptorImpl(
+                    Optional.of("s-id"), 100, 3, "test", RoutingConfiguration.fixed(1))),
             io.camunda.zeebe.backup.api.BackupStatusCode.COMPLETED,
             Optional.empty(),
             Optional.of(createdAt),
@@ -289,7 +292,9 @@ final class BackupApiRequestHandlerTest {
     final BackupStatus status =
         new BackupStatusImpl(
             new BackupIdentifierImpl(1, 1, 2),
-            Optional.of(new BackupDescriptorImpl(Optional.of("s-id"), 100, 3, "test")),
+            Optional.of(
+                new BackupDescriptorImpl(
+                    Optional.of("s-id"), 100, 3, "test", RoutingConfiguration.fixed(1))),
             io.camunda.zeebe.backup.api.BackupStatusCode.COMPLETED,
             Optional.empty(),
             Optional.of(createdAt),
