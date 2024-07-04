@@ -1,0 +1,283 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.client.usertask;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
+import io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest;
+import io.camunda.zeebe.client.util.ClientRestTest;
+import io.camunda.zeebe.client.util.RestGatewayPaths;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.Arrays;
+import org.junit.jupiter.api.Test;
+
+public final class UpdateUserTaskTest extends ClientRestTest {
+
+  private static final String TEST_TIME =
+      ZonedDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneId.of("UTC")).toString();
+
+  @Test
+  void shouldUpdateUserTask() {
+    // when
+    client.newUserTaskUpdateCommand(123L).send().join();
+
+    // then
+    final UserTaskUpdateRequest request =
+        gatewayService.getLastRequest(UserTaskUpdateRequest.class);
+    assertThat(request.getAction()).isNull();
+    assertThat(request.getChangeset()).isNull();
+  }
+
+  @Test
+  void shouldUpdateUserTaskWithAction() {
+    // when
+    client.newUserTaskUpdateCommand(123L).action("foo").send().join();
+
+    // then
+    final UserTaskUpdateRequest request =
+        gatewayService.getLastRequest(UserTaskUpdateRequest.class);
+    assertThat(request.getAction()).isEqualTo("foo");
+    assertThat(request.getChangeset()).isNull();
+  }
+
+  @Test
+  void shouldUpdateUserTaskWithDueDate() {
+    // when
+    client.newUserTaskUpdateCommand(123L).dueDate(TEST_TIME).send().join();
+
+    // then
+    final UserTaskUpdateRequest request =
+        gatewayService.getLastRequest(UserTaskUpdateRequest.class);
+    assertThat(request.getAction()).isNull();
+    assertThat(request.getChangeset())
+        .isNotNull()
+        .hasAllNullFieldsOrPropertiesExcept("dueDate")
+        .hasFieldOrPropertyWithValue("dueDate", TEST_TIME);
+  }
+
+  @Test
+  void shouldUpdateUserTaskWithFollowUpDate() {
+    // when
+    client.newUserTaskUpdateCommand(123L).followUpDate(TEST_TIME).send().join();
+
+    // then
+    final UserTaskUpdateRequest request =
+        gatewayService.getLastRequest(UserTaskUpdateRequest.class);
+    assertThat(request.getAction()).isNull();
+    assertThat(request.getChangeset())
+        .isNotNull()
+        .hasAllNullFieldsOrPropertiesExcept("followUpDate")
+        .hasFieldOrPropertyWithValue("followUpDate", TEST_TIME);
+  }
+
+  @Test
+  void shouldUpdateUserTaskWithDueDateAndFollowUpDate() {
+    // when
+    client.newUserTaskUpdateCommand(123L).dueDate(TEST_TIME).followUpDate(TEST_TIME).send().join();
+
+    // then
+    final UserTaskUpdateRequest request =
+        gatewayService.getLastRequest(UserTaskUpdateRequest.class);
+    assertThat(request.getAction()).isNull();
+    assertThat(request.getChangeset())
+        .isNotNull()
+        .hasAllNullFieldsOrPropertiesExcept("followUpDate", "dueDate")
+        .hasFieldOrPropertyWithValue("followUpDate", TEST_TIME)
+        .hasFieldOrPropertyWithValue("dueDate", TEST_TIME);
+  }
+
+  @Test
+  void shouldUpdateUserTaskWithCandidateGroup() {
+    // when
+    client.newUserTaskUpdateCommand(123L).candidateGroups("foo").send().join();
+
+    // then
+    final UserTaskUpdateRequest request =
+        gatewayService.getLastRequest(UserTaskUpdateRequest.class);
+    assertThat(request.getAction()).isNull();
+    assertThat(request.getChangeset())
+        .isNotNull()
+        .hasAllNullFieldsOrPropertiesExcept("candidateGroups")
+        .hasFieldOrPropertyWithValue("candidateGroups", singletonList("foo"));
+  }
+
+  @Test
+  void shouldUpdateUserTaskWithCandidateGroups() {
+    // when
+    client.newUserTaskUpdateCommand(123L).candidateGroups("foo", "bar").send().join();
+
+    // then
+    final UserTaskUpdateRequest request =
+        gatewayService.getLastRequest(UserTaskUpdateRequest.class);
+    assertThat(request.getAction()).isNull();
+    assertThat(request.getChangeset())
+        .isNotNull()
+        .hasAllNullFieldsOrPropertiesExcept("candidateGroups")
+        .hasFieldOrPropertyWithValue("candidateGroups", Arrays.asList("foo", "bar"));
+  }
+
+  @Test
+  void shouldUpdateUserTaskWithCandidateGroupsList() {
+    // when
+    client
+        .newUserTaskUpdateCommand(123L)
+        .candidateGroups(Arrays.asList("foo", "bar"))
+        .send()
+        .join();
+
+    // then
+    final UserTaskUpdateRequest request =
+        gatewayService.getLastRequest(UserTaskUpdateRequest.class);
+    assertThat(request.getAction()).isNull();
+    assertThat(request.getChangeset())
+        .isNotNull()
+        .hasAllNullFieldsOrPropertiesExcept("candidateGroups")
+        .hasFieldOrPropertyWithValue("candidateGroups", Arrays.asList("foo", "bar"));
+  }
+
+  @Test
+  void shouldUpdateUserTaskWithCandidateUser() {
+    // when
+    client.newUserTaskUpdateCommand(123L).candidateUsers("foo").send().join();
+
+    // then
+    final UserTaskUpdateRequest request =
+        gatewayService.getLastRequest(UserTaskUpdateRequest.class);
+    assertThat(request.getAction()).isNull();
+    assertThat(request.getChangeset())
+        .isNotNull()
+        .hasAllNullFieldsOrPropertiesExcept("candidateUsers")
+        .hasFieldOrPropertyWithValue("candidateUsers", singletonList("foo"));
+  }
+
+  @Test
+  void shouldUpdateUserTaskWithCandidateUsers() {
+    // when
+    client.newUserTaskUpdateCommand(123L).candidateUsers("foo", "bar").send().join();
+
+    // then
+    final UserTaskUpdateRequest request =
+        gatewayService.getLastRequest(UserTaskUpdateRequest.class);
+    assertThat(request.getAction()).isNull();
+    assertThat(request.getChangeset())
+        .isNotNull()
+        .hasAllNullFieldsOrPropertiesExcept("candidateUsers")
+        .hasFieldOrPropertyWithValue("candidateUsers", Arrays.asList("foo", "bar"));
+  }
+
+  @Test
+  void shouldUpdateUserTaskWithCandidateUsersList() {
+    // when
+    client.newUserTaskUpdateCommand(123L).candidateUsers(Arrays.asList("foo", "bar")).send().join();
+
+    // then
+    final UserTaskUpdateRequest request =
+        gatewayService.getLastRequest(UserTaskUpdateRequest.class);
+    assertThat(request.getAction()).isNull();
+    assertThat(request.getChangeset())
+        .isNotNull()
+        .hasAllNullFieldsOrPropertiesExcept("candidateUsers")
+        .hasFieldOrPropertyWithValue("candidateUsers", Arrays.asList("foo", "bar"));
+  }
+
+  @Test
+  void shouldClearUserTaskDueDate() {
+    // given
+    final UpdateUserTaskCommandStep1 updateUserTaskCommandStep1 =
+        client.newUserTaskUpdateCommand(123L).dueDate(TEST_TIME);
+
+    // when
+    updateUserTaskCommandStep1.clearDueDate().send().join();
+
+    // then
+    final UserTaskUpdateRequest request =
+        gatewayService.getLastRequest(UserTaskUpdateRequest.class);
+    assertThat(request.getAction()).isNull();
+    assertThat(request.getChangeset())
+        .isNotNull()
+        .hasAllNullFieldsOrPropertiesExcept("dueDate")
+        .hasFieldOrPropertyWithValue("dueDate", "");
+  }
+
+  @Test
+  void shouldClearUserTaskFollowUpDate() {
+    // given
+    final UpdateUserTaskCommandStep1 updateUserTaskCommandStep1 =
+        client.newUserTaskUpdateCommand(123L).followUpDate(TEST_TIME);
+
+    // when
+    updateUserTaskCommandStep1.clearFollowUpDate().send().join();
+
+    // then
+    final UserTaskUpdateRequest request =
+        gatewayService.getLastRequest(UserTaskUpdateRequest.class);
+    assertThat(request.getAction()).isNull();
+    assertThat(request.getChangeset())
+        .isNotNull()
+        .hasAllNullFieldsOrPropertiesExcept("followUpDate")
+        .hasFieldOrPropertyWithValue("followUpDate", "");
+  }
+
+  @Test
+  void shouldClearUserTaskCandidateGroups() {
+    // given
+    final UpdateUserTaskCommandStep1 updateUserTaskCommandStep1 =
+        client.newUserTaskUpdateCommand(123L).candidateGroups("foo");
+
+    // when
+    updateUserTaskCommandStep1.clearCandidateGroups().send().join();
+
+    // then
+    final UserTaskUpdateRequest request =
+        gatewayService.getLastRequest(UserTaskUpdateRequest.class);
+    assertThat(request.getAction()).isNull();
+    assertThat(request.getChangeset())
+        .isNotNull()
+        .hasAllNullFieldsOrPropertiesExcept("candidateGroups")
+        .hasFieldOrPropertyWithValue("candidateGroups", emptyList());
+  }
+
+  @Test
+  void shouldClearUserTaskCandidateUsers() {
+    // given
+    final UpdateUserTaskCommandStep1 updateUserTaskCommandStep1 =
+        client.newUserTaskUpdateCommand(123L).candidateUsers("foo");
+
+    // when
+    updateUserTaskCommandStep1.clearCandidateUsers().send().join();
+
+    // then
+    final UserTaskUpdateRequest request =
+        gatewayService.getLastRequest(UserTaskUpdateRequest.class);
+    assertThat(request.getAction()).isNull();
+    assertThat(request.getChangeset())
+        .isNotNull()
+        .hasAllNullFieldsOrPropertiesExcept("candidateUsers")
+        .hasFieldOrPropertyWithValue("candidateUsers", emptyList());
+  }
+
+  @Test
+  void shouldRaiseExceptionOnError() {
+    // given
+    gatewayService.errorOnRequest(
+        RestGatewayPaths.getUserTaskUpdateUrl(123L),
+        () -> new ProblemDetail().title("Not Found").status(404));
+
+    // when / then
+    assertThatThrownBy(() -> client.newUserTaskUpdateCommand(123L).send().join())
+        .hasCauseInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'");
+  }
+}
