@@ -175,7 +175,9 @@ public final class EngineRule extends ExternalResource {
               (recordProcessorContext) ->
                   EngineProcessors.createEngineProcessors(
                           recordProcessorContext,
-                          partitionCount,
+                          () ->
+                              IntStream.rangeClosed(Protocol.START_PARTITION_ID, partitionCount)
+                                  .boxed(),
                           new SubscriptionCommandSender(partitionId, interPartitionCommandSender),
                           interPartitionCommandSender,
                           featureFlags,

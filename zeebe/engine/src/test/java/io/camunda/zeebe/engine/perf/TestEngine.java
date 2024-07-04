@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender;
 import io.camunda.zeebe.engine.util.TestStreams;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil.Routing;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.stream.impl.StreamProcessorBuilder;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.util.FeatureFlags;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 import org.junit.rules.TemporaryFolder;
 
 /** Helper class which should help to make it easy to create an engine for tests. */
@@ -79,7 +81,9 @@ public final class TestEngine {
                 (recordProcessorContext) ->
                     EngineProcessors.createEngineProcessors(
                             recordProcessorContext,
-                            partitionCount,
+                            () ->
+                                IntStream.rangeClosed(Protocol.START_PARTITION_ID, partitionCount)
+                                    .boxed(),
                             new SubscriptionCommandSender(partitionId, interPartitionCommandSender),
                             interPartitionCommandSender,
                             featureFlags,

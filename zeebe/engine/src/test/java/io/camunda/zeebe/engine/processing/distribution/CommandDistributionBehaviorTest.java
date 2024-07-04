@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import java.util.List;
+import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -75,7 +76,8 @@ class CommandDistributionBehaviorTest {
   void shouldNotDistributeCommandToThisPartition() {
     // given 1 partition
     final var behavior =
-        new CommandDistributionBehavior(writers, 1, 1, mockInterpartitionCommandSender);
+        new CommandDistributionBehavior(
+            writers, 1, () -> Stream.of(1), mockInterpartitionCommandSender);
 
     // when distributing to all partitions
     behavior.distributeCommand(key, command);
@@ -92,7 +94,8 @@ class CommandDistributionBehaviorTest {
   void shouldDistributeCommandToAllOtherPartitions() {
     // given 3 partitions and behavior on partition 1
     final var behavior =
-        new CommandDistributionBehavior(writers, 1, 3, mockInterpartitionCommandSender);
+        new CommandDistributionBehavior(
+            writers, 1, () -> Stream.of(1, 2, 3), mockInterpartitionCommandSender);
 
     // when distributing to all partitions
     behavior.distributeCommand(key, command);
@@ -122,7 +125,8 @@ class CommandDistributionBehaviorTest {
   void shouldDistributeCommandToSpecificPartitions() {
     // given 4 partitions and behavior on partition 2
     final var behavior =
-        new CommandDistributionBehavior(writers, 2, 4, mockInterpartitionCommandSender);
+        new CommandDistributionBehavior(
+            writers, 2, () -> Stream.of(1, 2, 3, 4), mockInterpartitionCommandSender);
 
     // when distributing to partitions 1 and 3
     behavior.distributeCommand(key, command, List.of(1, 3));

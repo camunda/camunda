@@ -39,6 +39,7 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
+import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.awaitility.Awaitility;
 import org.junit.Before;
@@ -66,7 +67,9 @@ public final class MessageStreamProcessorTest {
         spy(new SubscriptionCommandSender(1, mockInterpartitionCommandSender));
     spySubscriptionCommandSender.setWriters(writers);
     spyCommandDistributionBehavior =
-        spy(new CommandDistributionBehavior(writers, 1, 1, mockInterpartitionCommandSender));
+        spy(
+            new CommandDistributionBehavior(
+                writers, 1, () -> Stream.of(1), mockInterpartitionCommandSender));
 
     rule.startTypedStreamProcessor(
         (typedRecordProcessors, processingContext) -> {

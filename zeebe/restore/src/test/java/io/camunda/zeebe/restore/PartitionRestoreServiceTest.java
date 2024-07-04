@@ -88,7 +88,7 @@ class PartitionRestoreServiceTest {
         new BackupService(
             nodeId,
             partitionId,
-            1,
+            () -> 1,
             backupStore,
             snapshotStore,
             dataDirectory,
