@@ -12,6 +12,7 @@ import com.google.protobuf.Any;
 import com.google.rpc.Code;
 import com.google.rpc.Status;
 import com.google.rpc.Status.Builder;
+import io.atomix.cluster.messaging.MessagingException;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
@@ -135,6 +136,12 @@ public final class GrpcErrorMapper {
         builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
         logger.warn(
             "Expected to handle gRPC request, but there was a connection error with one of the brokers",
+            rootError);
+      }
+      case final MessagingException.ConnectionClosed ignored -> {
+        builder.setCode(Code.ABORTED_VALUE).setMessage(error.getMessage());
+        logger.warn(
+            "Expected to handle gRPC request, but the connection was cut between with the broker",
             rootError);
       }
       default -> {
