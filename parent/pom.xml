@@ -59,7 +59,7 @@
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
     <version.httpclient5>5.3.1</version.httpclient5>
-    <version.httpcore5>5.2.4</version.httpcore5>
+    <version.httpcore5>5.2.5</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.identity>8.5.3</version.identity>
     <version.surefire>3.3.0</version.surefire>
@@ -91,7 +91,7 @@
     <version.asm>9.3</version.asm>
     <version.testcontainers>1.19.8</version.testcontainers>
     <version.netflix.concurrency>0.5.1</version.netflix.concurrency>
-    <version.zeebe-test-container>3.6.3</version.zeebe-test-container>
+    <version.zeebe-test-container>3.6.5</version.zeebe-test-container>
     <version.feel-scala>1.18.0-alpha1</version.feel-scala>
     <version.dmn-scala>1.9.0</version.dmn-scala>
     <version.rest-assured>5.4.0</version.rest-assured>
