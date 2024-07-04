@@ -75,7 +75,8 @@ public class ZeebeClientStarterAutoConfigurationCustomJsonMapperTest {
     assertThat(autoConfiguration).isNotNull();
 
     final Map<String, io.camunda.zeebe.client.api.JsonMapper> jsonMapperBeans =
-        applicationContext.getBeansOfType(io.camunda.zeebe.client.api.JsonMapper.class);
+        applicationContext.getBeansOfType(io.camunda.zeebe.client.api.
+            JsonMapper.class);
     final Object objectMapper = ReflectionTestUtils.getField(jsonMapper, "objectMapper");
 
     assertThat(jsonMapperBeans.size()).isEqualTo(2);

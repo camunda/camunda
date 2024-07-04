@@ -223,6 +223,7 @@ public interface ZeebeClientBuilder {
    * @deprecated since 8.5, will be removed in 8.8
    * @return this builder for chaining
    */
+  @Deprecated
   @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
   ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
 

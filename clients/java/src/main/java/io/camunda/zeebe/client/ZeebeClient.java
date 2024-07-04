@@ -141,6 +141,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @deprecated since 8 for removal with 8.1, replaced by {@link
    *     ZeebeClient#newDeployResourceCommand()}
    */
+  @Deprecated
   DeployProcessCommandStep1 newDeployCommand();
 
   /**

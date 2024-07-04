@@ -210,6 +210,7 @@ public interface CamundaClientBuilder {
    * @deprecated since 8.5, will be removed in 8.8
    * @return this builder for chaining
    */
+  @Deprecated
   @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
   CamundaClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
 

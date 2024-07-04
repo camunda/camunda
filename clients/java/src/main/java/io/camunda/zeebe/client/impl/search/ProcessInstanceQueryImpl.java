@@ -106,7 +106,7 @@ public class ProcessInstanceQueryImpl
   }
 
   /**
-   * @deprecated since 8.6 for removal with 8.8, use {@link ThrowErrorCommandImpl#sendCommand()}
+   * @deprecated since 8.6 for removal with 8.8, use {@link ThrowErrorCommandImpl#send()}
    */
   @Override
   @Deprecated
