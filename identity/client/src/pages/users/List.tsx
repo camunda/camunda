@@ -31,7 +31,7 @@ const List: FC = () => {
   const navigate = useNavigate();
   const [, setSearch] = useState("");
   const {
-    data: userSearchResults,
+    data: userSearchResponse,
     loading,
     reload,
     success,
@@ -42,7 +42,7 @@ const List: FC = () => {
 
   const showDetails = ({ id }: User) => navigate(`${id}`);
 
-  if (success && !userSearchResults?.items.length) {
+  if (success && !userSearchResponse?.items.length) {
     return (
       <Page>
         <PageTitle>
@@ -71,7 +71,7 @@ const List: FC = () => {
     <Page>
       <EntityList
         title={t("Users")}
-        data={userSearchResults!.items}
+        data={userSearchResponse?.items || []}
         headers={[
           { header: t("Username"), key: "username" },
           { header: t("Name"), key: "name" },
