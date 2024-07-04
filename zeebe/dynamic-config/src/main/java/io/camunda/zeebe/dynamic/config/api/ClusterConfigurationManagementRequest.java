@@ -42,6 +42,9 @@ public sealed interface ClusterConfigurationManagementRequest {
     }
   }
 
+  record PartitionScaleRequest(int partitionCount, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
+
   record ExporterDisableRequest(String exporterId, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 

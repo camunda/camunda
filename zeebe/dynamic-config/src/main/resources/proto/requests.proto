@@ -34,6 +34,11 @@ message ScaleRequest {
   optional uint32 newReplicationFactor = 3;
 }
 
+message PartitionScaleRequest {
+  bool dryRun = 1;
+  uint32 newPartitionCount = 2;
+}
+
 message ReassignAllPartitionsRequest {
   // The ids of the brokers to which all partitions should be re-distributed
   repeated string memberIds = 1;

@@ -17,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PartitionScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ScaleRequest;
@@ -315,7 +316,7 @@ public class ProtoBufSerializer
 
   private MemberState.State toMemberState(final Topology.State state) {
     return switch (state) {
-      case UNRECOGNIZED, UNKNOWN -> MemberState.State.UNINITIALIZED;
+      case UNRECOGNIZED, UNKNOWN, BOOTSTRAPPING -> MemberState.State.UNINITIALIZED;
       case ACTIVE -> MemberState.State.ACTIVE;
       case JOINING -> MemberState.State.JOINING;
       case LEAVING -> MemberState.State.LEAVING;
@@ -329,6 +330,7 @@ public class ProtoBufSerializer
       case ACTIVE -> PartitionState.State.ACTIVE;
       case JOINING -> PartitionState.State.JOINING;
       case LEAVING -> PartitionState.State.LEAVING;
+      case BOOTSTRAPPING -> PartitionState.State.BOOTSTRAPPING;
     };
   }
 
@@ -338,6 +340,7 @@ public class ProtoBufSerializer
       case ACTIVE -> Topology.State.ACTIVE;
       case JOINING -> Topology.State.JOINING;
       case LEAVING -> Topology.State.LEAVING;
+      case BOOTSTRAPPING -> Topology.State.BOOTSTRAPPING;
     };
   }
 
@@ -625,6 +628,15 @@ public class ProtoBufSerializer
   }
 
   @Override
+  public byte[] encodePartitionScaleRequest(final PartitionScaleRequest partitionScaleRequest) {
+    return Requests.PartitionScaleRequest.newBuilder()
+        .setNewPartitionCount(partitionScaleRequest.partitionCount())
+        .setDryRun(partitionScaleRequest.dryRun())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
   public byte[] encodeCancelChangeRequest(final CancelChangeRequest cancelChangeRequest) {
     return Requests.CancelTopologyChangeRequest.newBuilder()
         .setChangeId(cancelChangeRequest.changeId())
@@ -735,6 +747,17 @@ public class ProtoBufSerializer
           scaleRequest.getMemberIdsList().stream().map(MemberId::from).collect(Collectors.toSet()),
           newReplicationFactor,
           scaleRequest.getDryRun());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public PartitionScaleRequest decodePartitionScaleRequest(final byte[] encodedState) {
+    try {
+      final var partitionScaleRequest = Requests.PartitionScaleRequest.parseFrom(encodedState);
+      return new PartitionScaleRequest(
+          partitionScaleRequest.getNewPartitionCount(), partitionScaleRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }

@@ -46,6 +46,15 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
     registerForceScaleDownHandler();
     registerDisableExporterHandler();
     registerEnableExporterHandler();
+    registerPartitionScaleRequestHandler();
+  }
+
+  private void registerPartitionScaleRequestHandler() {
+    communicationService.replyTo(
+        ClusterConfigurationRequestTopics.SCALE_PARTITIONS.topic(),
+        serializer::decodePartitionScaleRequest,
+        request -> mapResponse(clusterConfigurationManagementApi.scalePartitions(request)),
+        this::encodeResponse);
   }
 
   @Override

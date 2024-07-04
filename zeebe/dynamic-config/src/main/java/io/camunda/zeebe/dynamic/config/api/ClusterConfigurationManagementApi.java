@@ -12,6 +12,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PartitionScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ScaleRequest;
@@ -36,6 +37,9 @@ public interface ClusterConfigurationManagementApi {
       ReassignPartitionsRequest reassignPartitionsRequest);
 
   ActorFuture<ClusterConfigurationChangeResponse> scaleMembers(ScaleRequest scaleRequest);
+
+  ActorFuture<ClusterConfigurationChangeResponse> scalePartitions(
+      PartitionScaleRequest scaleRequest);
 
   /**
    * Forces a scale down of the cluster. The members that are not specified in the request will be

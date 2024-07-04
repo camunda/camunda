@@ -29,6 +29,9 @@ public interface ClusterConfigurationRequestsSerializer {
 
   byte[] encodeScaleRequest(ClusterConfigurationManagementRequest.ScaleRequest scaleRequest);
 
+  byte[] encodePartitionScaleRequest(
+      ClusterConfigurationManagementRequest.PartitionScaleRequest partitionScaleRequest);
+
   byte[] encodeCancelChangeRequest(
       ClusterConfigurationManagementRequest.CancelChangeRequest cancelChangeRequest);
 
@@ -54,6 +57,9 @@ public interface ClusterConfigurationRequestsSerializer {
       byte[] encodedState);
 
   ClusterConfigurationManagementRequest.ScaleRequest decodeScaleRequest(byte[] encodedState);
+
+  ClusterConfigurationManagementRequest.PartitionScaleRequest decodePartitionScaleRequest(
+      byte[] encodedState);
 
   ClusterConfigurationManagementRequest.CancelChangeRequest decodeCancelChangeRequest(
       byte[] encodedState);

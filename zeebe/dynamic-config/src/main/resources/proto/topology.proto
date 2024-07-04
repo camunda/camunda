@@ -134,6 +134,7 @@ enum State {
   ACTIVE = 2;
   LEAVING = 3;
   LEFT = 4;
+  BOOTSTRAPPING = 5;
 }
 
 enum ChangeStatus {
