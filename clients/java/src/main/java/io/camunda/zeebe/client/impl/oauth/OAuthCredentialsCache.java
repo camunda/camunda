@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
+import io.camunda.zeebe.client.impl.util.AtomicUtil;
 import io.camunda.zeebe.client.impl.util.FunctionWithIO;
 import io.camunda.zeebe.client.impl.util.SupplierWithIO;
 import java.io.File;
@@ -34,6 +35,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.concurrent.ThreadSafe;
 
 @ThreadSafe
@@ -46,11 +48,11 @@ public final class OAuthCredentialsCache {
   private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
 
   private final File cacheFile;
-  private final Map<String, OAuthCachedCredentials> audiences;
+  private final AtomicReference<Map<String, OAuthCachedCredentials>> audiences;
 
   public OAuthCredentialsCache(final File cacheFile) {
     this.cacheFile = cacheFile;
-    audiences = new HashMap<>();
+    audiences = new AtomicReference<>(new HashMap<>());
   }
 
   public synchronized OAuthCredentialsCache readCache() throws IOException {
@@ -59,15 +61,16 @@ public final class OAuthCredentialsCache {
     }
 
     final Map<String, OAuthCachedCredentials> cache = MAPPER.readValue(cacheFile, TYPE_REFERENCE);
-    audiences.clear();
-    audiences.putAll(cache);
+    AtomicUtil.replace(audiences, current -> cache);
 
     return this;
   }
 
   public synchronized void writeCache() throws IOException {
-    final Map<String, Map<String, OAuthCachedCredentials>> cache = new HashMap<>(audiences.size());
-    for (final Entry<String, OAuthCachedCredentials> audience : audiences.entrySet()) {
+    final Map<String, OAuthCachedCredentials> values = audiences.get();
+
+    final Map<String, Map<String, OAuthCachedCredentials>> cache = new HashMap<>(values.size());
+    for (final Entry<String, OAuthCachedCredentials> audience : values.entrySet()) {
       cache.put(audience.getKey(), Collections.singletonMap(KEY_AUTH, audience.getValue()));
     }
 
@@ -76,7 +79,8 @@ public final class OAuthCredentialsCache {
   }
 
   public synchronized Optional<ZeebeClientCredentials> get(final String endpoint) {
-    return Optional.ofNullable(audiences.get(endpoint)).map(OAuthCachedCredentials::getCredentials);
+    final Map<String, OAuthCachedCredentials> cache = audiences.get();
+    return Optional.ofNullable(cache.get(endpoint)).map(OAuthCachedCredentials::getCredentials);
   }
 
   public synchronized ZeebeClientCredentials computeIfMissingOrInvalid(
@@ -116,12 +120,18 @@ public final class OAuthCredentialsCache {
 
   public synchronized OAuthCredentialsCache put(
       final String endpoint, final ZeebeClientCredentials credentials) {
-    audiences.put(endpoint, new OAuthCachedCredentials(credentials));
+    AtomicUtil.replace(
+        audiences,
+        current -> {
+          final HashMap<String, OAuthCachedCredentials> cache = new HashMap<>(current);
+          cache.put(endpoint, new OAuthCachedCredentials(credentials));
+          return cache;
+        });
     return this;
   }
 
   public synchronized int size() {
-    return audiences.size();
+    return audiences.get().size();
   }
 
   private void ensureCacheFileExists() throws IOException {
