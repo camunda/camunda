@@ -250,6 +250,7 @@ class ClusterConfigurationTest {
                 member(1),
                 MemberState.initializeAsActive(
                     Map.of(1, PartitionState.active(1, emptyPartitionConfig)))),
+            RoutingConfiguration.fixed(1),
             Optional.of(
                 new CompletedChange(changeId, Status.COMPLETED, Instant.now(), Instant.now())),
             Optional.empty());
@@ -301,6 +302,7 @@ class ClusterConfigurationTest {
                 member(1),
                 MemberState.initializeAsActive(
                     Map.of(1, PartitionState.active(1, DynamicPartitionConfig.uninitialized())))),
+            RoutingConfiguration.fixed(1),
             Optional.empty(),
             Optional.empty());
 
@@ -313,6 +315,7 @@ class ClusterConfigurationTest {
             Map.of(
                 member(1),
                 MemberState.initializeAsActive(Map.of(1, PartitionState.active(1, validConfig)))),
+            RoutingConfiguration.fixed(1),
             Optional.empty(),
             Optional.empty());
 

@@ -24,6 +24,7 @@ import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.ManifestImpl;
+import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -71,7 +72,8 @@ final class ManifestSerializationTest {
     final var manifest =
         new ManifestImpl(
             new BackupIdentifierImpl(1, 2, 43),
-            new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
+            new BackupDescriptorImpl(
+                Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT", RoutingConfiguration.fixed(1)),
             IN_PROGRESS,
             null,
             null,
@@ -106,7 +108,8 @@ final class ManifestSerializationTest {
         Manifest.createInProgress(
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
-                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
+                new BackupDescriptorImpl(
+                    Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT", RoutingConfiguration.fixed(1)),
                 null,
                 null));
     final var failed = created.fail("expected failure reason");
@@ -316,7 +319,8 @@ final class ManifestSerializationTest {
     final var manifest =
         new ManifestImpl(
             new BackupIdentifierImpl(1, 2, 43),
-            new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
+            new BackupDescriptorImpl(
+                Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT", RoutingConfiguration.fixed(1)),
             IN_PROGRESS,
             new FileSet(List.of(new NamedFile("snapshotFile1"), new NamedFile("snapshotFile2"))),
             new FileSet(List.of(new NamedFile("segmentFile1"))),

@@ -19,6 +19,7 @@ import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
@@ -37,7 +38,8 @@ final class ManifestManagerTest {
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
-            new BackupDescriptorImpl(Optional.empty(), 1, 1, "version"),
+            new BackupDescriptorImpl(
+                Optional.empty(), 1, 1, "version", RoutingConfiguration.fixed(1)),
             new NamedFileSetImpl(
                 Map.of("snapshotFile1", Path.of("file1"), "snapshotFile2", Path.of("file2"))),
             new NamedFileSetImpl(Map.of("segmentFile1", Path.of("file3"))));
@@ -68,7 +70,8 @@ final class ManifestManagerTest {
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
-            new BackupDescriptorImpl(Optional.empty(), 1, 1, "version"),
+            new BackupDescriptorImpl(
+                Optional.empty(), 1, 1, "version", RoutingConfiguration.fixed(1)),
             new NamedFileSetImpl(
                 Map.of("snapshotFile1", Path.of("file1"), "snapshotFile2", Path.of("file2"))),
             new NamedFileSetImpl(Map.of("segmentFile1", Path.of("file3"))));
@@ -108,7 +111,8 @@ final class ManifestManagerTest {
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
-            new BackupDescriptorImpl(Optional.empty(), 1, 1, "version"),
+            new BackupDescriptorImpl(
+                Optional.empty(), 1, 1, "version", RoutingConfiguration.fixed(1)),
             new NamedFileSetImpl(Map.of()),
             new NamedFileSetImpl(Map.of()));
 
@@ -131,7 +135,8 @@ final class ManifestManagerTest {
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
-            new BackupDescriptorImpl(Optional.empty(), 1, 1, "version"),
+            new BackupDescriptorImpl(
+                Optional.empty(), 1, 1, "version", RoutingConfiguration.fixed(1)),
             new NamedFileSetImpl(Map.of()),
             new NamedFileSetImpl(Map.of()));
 
@@ -154,7 +159,8 @@ final class ManifestManagerTest {
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
-            new BackupDescriptorImpl(Optional.empty(), 1, 1, "version"),
+            new BackupDescriptorImpl(
+                Optional.empty(), 1, 1, "version", RoutingConfiguration.fixed(1)),
             new NamedFileSetImpl(Map.of()),
             new NamedFileSetImpl(Map.of()));
 
@@ -186,7 +192,8 @@ final class ManifestManagerTest {
     final var backup =
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
-            new BackupDescriptorImpl(Optional.empty(), 1, 1, "version"),
+            new BackupDescriptorImpl(
+                Optional.empty(), 1, 1, "version", RoutingConfiguration.fixed(1)),
             new NamedFileSetImpl(Map.of()),
             new NamedFileSetImpl(Map.of()));
 

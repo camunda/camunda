@@ -14,6 +14,7 @@ import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.testkit.support.BackupAssert;
+import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -123,7 +124,8 @@ final class CompressionIT {
 
     return new BackupImpl(
         new BackupIdentifierImpl(1, 2, 3),
-        new BackupDescriptorImpl(Optional.of("test-snapshot-id"), 4, 5, "test"),
+        new BackupDescriptorImpl(
+            Optional.of("test-snapshot-id"), 4, 5, "test", RoutingConfiguration.fixed(1)),
         new NamedFileSetImpl(Map.of("segment-file-1", seg1, "segment-file-2", seg2)),
         new NamedFileSetImpl(Map.of("snapshot-file-1", s1, "snapshot-file-2", s2)));
   }

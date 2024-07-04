@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,8 @@ final class ManifestStateCastingTest {
         Manifest.createInProgress(
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
-                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
+                new BackupDescriptorImpl(
+                    Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT", RoutingConfiguration.fixed(1)),
                 null,
                 null));
 
@@ -46,7 +48,8 @@ final class ManifestStateCastingTest {
         Manifest.createInProgress(
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
-                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
+                new BackupDescriptorImpl(
+                    Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT", RoutingConfiguration.fixed(1)),
                 new NamedFileSetImpl(Map.of()),
                 new NamedFileSetImpl(Map.of())));
 
@@ -63,7 +66,8 @@ final class ManifestStateCastingTest {
         Manifest.createInProgress(
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
-                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
+                new BackupDescriptorImpl(
+                    Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT", RoutingConfiguration.fixed(1)),
                 null,
                 null));
 
