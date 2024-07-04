@@ -45,7 +45,11 @@ public record ClusterConfiguration(
 
   public static ClusterConfiguration uninitialized() {
     return new ClusterConfiguration(
-        UNINITIALIZED_VERSION, Map.of(), null, Optional.empty(), Optional.empty());
+        UNINITIALIZED_VERSION,
+        Map.of(),
+        RoutingConfiguration.fixed(1), // TODO
+        Optional.empty(),
+        Optional.empty());
   }
 
   public boolean isUninitialized() {

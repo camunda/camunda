@@ -423,7 +423,11 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
             targetPriority,
             primary);
 
-    return bootstrapPartition(partitionMetadata, partitionConfig);
+    final ActorFuture<Void> future = concurrencyControl.createFuture();
+
+    concurrencyControl.run(
+        () -> bootstrapPartition(partitionMetadata, partitionConfig).onComplete(future));
+    return future;
   }
 
   private void disableExporter(
