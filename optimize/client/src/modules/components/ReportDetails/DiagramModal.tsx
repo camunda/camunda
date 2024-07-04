@@ -9,7 +9,7 @@
 import {useEffect, useState} from 'react';
 import {Button} from '@carbon/react';
 
-import {Modal, BPMNDiagram, LoadingIndicator} from 'components';
+import {Modal, BPMNDiagram, Loading} from 'components';
 import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
 import {t} from 'translation';
 import {showError} from 'notifications';
@@ -37,7 +37,7 @@ export function DiagramModal({definition, open, onClose, mightFail}: DiagramModa
     <Modal className="DiagramModal" open={open} size="lg" onClose={onClose}>
       <Modal.Header title={definition.name || definition.key} />
       <Modal.Content>
-        {!xml && <LoadingIndicator />}
+        {!xml && <Loading />}
 
         <BPMNDiagram xml={xml} />
       </Modal.Content>
