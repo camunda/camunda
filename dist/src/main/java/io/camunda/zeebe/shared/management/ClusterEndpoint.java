@@ -12,6 +12,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PartitionScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
@@ -131,7 +132,9 @@ public class ClusterEndpoint {
     return switch (resource) {
       case brokers -> scaleBrokers(ids, dryRun, force, replicationFactor);
       case partitions ->
-          new ResponseEntity<>("Scaling partitions is not supported", HttpStatusCode.valueOf(501));
+          // here we assume the list has only one element which represent the number of
+          // partitions. TODO: Revisit the interface
+          scalePartitions(ids.getFirst(), dryRun);
       case changes ->
           ResponseEntity.status(501)
               .body(
@@ -157,6 +160,15 @@ public class ClusterEndpoint {
               ? requestSender.forceScaleDown(scaleRequest).join()
               : requestSender.scaleMembers(scaleRequest).join();
       return ClusterApiUtils.mapOperationResponse(response);
+    } catch (final Exception error) {
+      return ClusterApiUtils.mapError(error);
+    }
+  }
+
+  private ResponseEntity<?> scalePartitions(final int partitionCount, final boolean dryRun) {
+    try {
+      return ClusterApiUtils.mapOperationResponse(
+          requestSender.scalePartitions(new PartitionScaleRequest(partitionCount, dryRun)).join());
     } catch (final Exception error) {
       return ClusterApiUtils.mapError(error);
     }

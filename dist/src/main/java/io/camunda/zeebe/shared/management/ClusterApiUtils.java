@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
@@ -158,6 +159,11 @@ final class ClusterApiUtils {
               .brokerId(Integer.parseInt(join.memberId().id()))
               .partitionId(join.partitionId())
               .priority(join.priority());
+      case final PartitionBootstrapOperation bootstrap ->
+          new Operation()
+              .operation(OperationEnum.PARTITION_BOOTSTRAP)
+              .brokerId(Integer.parseInt(bootstrap.memberId().id()))
+              .partitionId(bootstrap.partitionId());
       case final PartitionLeaveOperation leave ->
           new Operation()
               .operation(OperationEnum.PARTITION_LEAVE)
@@ -270,6 +276,7 @@ final class ClusterApiUtils {
       case JOINING -> PartitionStateCode.JOINING;
       case ACTIVE -> PartitionStateCode.ACTIVE;
       case LEAVING -> PartitionStateCode.LEAVING;
+      case BOOTSTRAPPING -> PartitionStateCode.BOOTSTRAPPING;
       case UNKNOWN -> PartitionStateCode.UNKNOWN;
     };
   }
@@ -344,6 +351,11 @@ final class ClusterApiUtils {
                   .brokerId(Integer.parseInt(join.memberId().id()))
                   .partitionId(join.partitionId())
                   .priority(join.priority());
+          case final PartitionBootstrapOperation bootstrap ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_BOOTSTRAP)
+                  .brokerId(Integer.parseInt(bootstrap.memberId().id()))
+                  .partitionId(bootstrap.partitionId());
           case final PartitionLeaveOperation leave ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_LEAVE)
