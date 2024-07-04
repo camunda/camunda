@@ -16,8 +16,6 @@ import java.io.StringWriter;
 import org.opensearch.client.json.JsonpSerializable;
 import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
-import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 
 public class OSQuerySerializer implements AutoCloseable {
   private final JacksonJsonpMapper mapper;
@@ -35,20 +33,8 @@ public class OSQuerySerializer implements AutoCloseable {
     mapper = new JacksonJsonpMapper(new ObjectMapper());
   }
 
-  public String serialize(final Query query) {
-    query.serialize(jacksonJsonpGenerator, mapper);
-    jacksonJsonpGenerator.flush();
-    return out.toString();
-  }
-
   public String serialize(final JsonpSerializable serializable) {
     serializable.serialize(jacksonJsonpGenerator, mapper);
-    jacksonJsonpGenerator.flush();
-    return out.toString();
-  }
-
-  public String serialize(final RangeQuery query) {
-    query.serialize(jacksonJsonpGenerator, mapper);
     jacksonJsonpGenerator.flush();
     return out.toString();
   }
