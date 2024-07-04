@@ -42,6 +42,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,11 +63,11 @@ public class FlowNodeInstanceZeebeRecordProcessor {
   @Autowired private OperateProperties operateProperties;
 
   // treePath by flowNodeInstanceKey cache
-  private Map<Integer, Map<String, String>> treePathCache;
+  private ConcurrentMap<Integer, Map<String, String>> treePathCache;
 
   @PostConstruct
   private void init() {
-    treePathCache = new HashMap<>();
+    treePathCache = new ConcurrentHashMap<>();
   }
 
   public void processIncidentRecord(final Record record, final BatchRequest batchRequest)
