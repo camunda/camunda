@@ -55,7 +55,7 @@ public final class OAuthCredentialsCache {
     audiences = new AtomicReference<>(new HashMap<>());
   }
 
-  public synchronized OAuthCredentialsCache readCache() throws IOException {
+  public OAuthCredentialsCache readCache() throws IOException {
     if (!cacheFile.exists() || cacheFile.length() == 0) {
       return this;
     }
@@ -66,7 +66,7 @@ public final class OAuthCredentialsCache {
     return this;
   }
 
-  public synchronized void writeCache() throws IOException {
+  public void writeCache() throws IOException {
     final Map<String, OAuthCachedCredentials> values = audiences.get();
 
     final Map<String, Map<String, OAuthCachedCredentials>> cache = new HashMap<>(values.size());
@@ -78,12 +78,12 @@ public final class OAuthCredentialsCache {
     MAPPER.writer().writeValue(cacheFile, cache);
   }
 
-  public synchronized Optional<ZeebeClientCredentials> get(final String endpoint) {
+  public Optional<ZeebeClientCredentials> get(final String endpoint) {
     final Map<String, OAuthCachedCredentials> cache = audiences.get();
     return Optional.ofNullable(cache.get(endpoint)).map(OAuthCachedCredentials::getCredentials);
   }
 
-  public synchronized ZeebeClientCredentials computeIfMissingOrInvalid(
+  public ZeebeClientCredentials computeIfMissingOrInvalid(
       final String endpoint,
       final SupplierWithIO<ZeebeClientCredentials> zeebeClientCredentialsConsumer)
       throws IOException {
@@ -107,7 +107,7 @@ public final class OAuthCredentialsCache {
     }
   }
 
-  public synchronized <T> Optional<T> withCache(
+  public <T> Optional<T> withCache(
       final String endpoint, final FunctionWithIO<ZeebeClientCredentials, T> function)
       throws IOException {
     final Optional<ZeebeClientCredentials> optionalCredentials = readCache().get(endpoint);
@@ -118,7 +118,7 @@ public final class OAuthCredentialsCache {
     }
   }
 
-  public synchronized OAuthCredentialsCache put(
+  public OAuthCredentialsCache put(
       final String endpoint, final ZeebeClientCredentials credentials) {
     AtomicUtil.replace(
         audiences,
@@ -130,7 +130,7 @@ public final class OAuthCredentialsCache {
     return this;
   }
 
-  public synchronized int size() {
+  public int size() {
     return audiences.get().size();
   }
 
