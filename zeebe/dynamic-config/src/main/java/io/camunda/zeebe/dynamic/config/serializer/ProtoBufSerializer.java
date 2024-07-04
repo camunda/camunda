@@ -38,6 +38,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
@@ -391,6 +392,11 @@ public class ProtoBufSerializer
               Topology.PartitionJoinOperation.newBuilder()
                   .setPartitionId(joinOperation.partitionId())
                   .setPriority(joinOperation.priority()));
+      case final PartitionBootstrapOperation bootstrapOperation ->
+          builder.setPartitionBootstrap(
+              Topology.PartitionBootstrapOperation.newBuilder()
+                  .setPartitionId(bootstrapOperation.partitionId())
+                  .setPriority(bootstrapOperation.priority()));
       case final PartitionLeaveOperation leaveOperation ->
           builder.setPartitionLeave(
               Topology.PartitionLeaveOperation.newBuilder()
@@ -495,6 +501,11 @@ public class ProtoBufSerializer
           MemberId.from(topologyChangeOperation.getMemberId()),
           topologyChangeOperation.getPartitionJoin().getPartitionId(),
           topologyChangeOperation.getPartitionJoin().getPriority());
+    } else if (topologyChangeOperation.hasPartitionBootstrap()) {
+      return new PartitionBootstrapOperation(
+          MemberId.from(topologyChangeOperation.getMemberId()),
+          topologyChangeOperation.getPartitionBootstrap().getPartitionId(),
+          topologyChangeOperation.getPartitionBootstrap().getPriority());
     } else if (topologyChangeOperation.hasPartitionLeave()) {
       return new PartitionLeaveOperation(
           MemberId.from(topologyChangeOperation.getMemberId()),

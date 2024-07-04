@@ -56,6 +56,9 @@ public sealed interface ClusterConfigurationChangeOperation {
     record PartitionJoinOperation(MemberId memberId, int partitionId, int priority)
         implements PartitionChangeOperation {}
 
+    record PartitionBootstrapOperation(MemberId memberId, int partitionId, int priority)
+        implements PartitionChangeOperation {}
+
     /**
      * Operation to remove a member from a partition's replication group.
      *

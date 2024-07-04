@@ -76,6 +76,7 @@ message TopologyChangeOperation {
     MemberRemoveOperation memberRemove = 8;
     PartitionDisableExporterOperation partitionDisableExporter = 9;
     PartitionEnableExporterOperation partitionEnableExporter = 10;
+    PartitionBootstrapOperation partitionBootstrap = 11;
   }
 }
 
@@ -85,6 +86,11 @@ message CompletedTopologyChangeOperation {
 }
 
 message PartitionJoinOperation {
+  int32 partitionId = 1;
+  int32 priority = 2;
+}
+
+message PartitionBootstrapOperation {
   int32 partitionId = 1;
   int32 priority = 2;
 }
