@@ -13,19 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.assertions;
+package io.camunda.process.test.impl.client;
 
-public interface ProcessInstanceAssert {
-
-  ProcessInstanceAssert isActive();
-
-  ProcessInstanceAssert isCompleted();
-
-  ProcessInstanceAssert isTerminated();
-
-  ProcessInstanceAssert hasActiveElements(String... elementNames);
-
-  ProcessInstanceAssert hasCompletedElements(String... elementNames);
-
-  ProcessInstanceAssert hasTerminatedElements(String... elementNames);
+public enum FlowNodeInstanceState {
+  ACTIVE,
+  COMPLETED,
+  TERMINATED
 }

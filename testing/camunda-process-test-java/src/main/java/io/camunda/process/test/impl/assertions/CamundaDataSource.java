@@ -15,9 +15,11 @@
  */
 package io.camunda.process.test.impl.assertions;
 
+import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
 import io.camunda.process.test.impl.client.OperateApiClient;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
 import java.io.IOException;
+import java.util.List;
 
 public class CamundaDataSource {
 
@@ -29,5 +31,12 @@ public class CamundaDataSource {
 
   public ProcessInstanceDto getProcessInstance(final long processInstanceKey) throws IOException {
     return operateApiClient.getProcessInstanceByKey(processInstanceKey);
+  }
+
+  public List<FlowNodeInstanceDto> getFlowNodeInstancesByProcessInstanceKey(
+      final long processInstanceKey) throws IOException {
+    return operateApiClient
+        .findFlowNodeInstancesByProcessInstanceKey(processInstanceKey)
+        .getItems();
   }
 }

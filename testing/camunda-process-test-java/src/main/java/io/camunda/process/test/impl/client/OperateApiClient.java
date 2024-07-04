@@ -36,6 +36,7 @@ public class OperateApiClient {
   private static final String LOGIN_PASSWORD = "demo";
 
   private static final String PROCESS_INSTANCE_GET_ENDPOINT = "/v1/process-instances/%d";
+  private static final String FLOW_NODE_INSTANCES_SEARCH_ENDPOINT = "/v1/flownode-instances/search";
 
   private final ObjectMapper objectMapper =
       new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
@@ -97,6 +98,16 @@ public class OperateApiClient {
     final String body =
         sendGetRequest(String.format(PROCESS_INSTANCE_GET_ENDPOINT, processInstanceKey));
     return objectMapper.readValue(body, ProcessInstanceDto.class);
+  }
+
+  public FlowNodeInstancesResponseDto findFlowNodeInstancesByProcessInstanceKey(
+      final long processInstanceKey) throws IOException {
+    ensureAuthenticated();
+
+    final String requestBody =
+        String.format("{\"filter\": {\"processInstanceKey\":%d}}", processInstanceKey);
+    final String responseBody = sendPostRequest(FLOW_NODE_INSTANCES_SEARCH_ENDPOINT, requestBody);
+    return objectMapper.readValue(responseBody, FlowNodeInstancesResponseDto.class);
   }
 
   private static String getReponseAsString(final ClassicHttpResponse response) {

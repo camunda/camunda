@@ -13,19 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.assertions;
+package io.camunda.process.test.impl.client;
 
-public interface ProcessInstanceAssert {
+import java.util.List;
 
-  ProcessInstanceAssert isActive();
+public class FlowNodeInstancesResponseDto {
 
-  ProcessInstanceAssert isCompleted();
+  private List<FlowNodeInstanceDto> items;
+  private long total;
 
-  ProcessInstanceAssert isTerminated();
+  public List<FlowNodeInstanceDto> getItems() {
+    return items;
+  }
 
-  ProcessInstanceAssert hasActiveElements(String... elementNames);
+  public void setItems(final List<FlowNodeInstanceDto> items) {
+    this.items = items;
+  }
 
-  ProcessInstanceAssert hasCompletedElements(String... elementNames);
+  public long getTotal() {
+    return total;
+  }
 
-  ProcessInstanceAssert hasTerminatedElements(String... elementNames);
+  public void setTotal(final long total) {
+    this.total = total;
+  }
 }
