@@ -33,8 +33,8 @@ public final class BackupService extends Actor implements BackupManager {
   private final String actorName;
   private final int nodeId;
   private final int partitionId;
-  private final int numberOfPartitions;
   private final BackupServiceImpl internalBackupManager;
+  private final Supplier<Integer> partitionCountSupplier;
   private final PersistedSnapshotStore snapshotStore;
   private final Path segmentsDirectory;
   private final Supplier<RoutingConfiguration> routingSupplier;
@@ -44,7 +44,7 @@ public final class BackupService extends Actor implements BackupManager {
   public BackupService(
       final int nodeId,
       final int partitionId,
-      final int numberOfPartitions,
+      final Supplier<Integer> partitionCountSupplier,
       final BackupStore backupStore,
       final PersistedSnapshotStore snapshotStore,
       final Path segmentsDirectory,
@@ -52,7 +52,7 @@ public final class BackupService extends Actor implements BackupManager {
       final Predicate<Path> isSegmentsFile) {
     this.nodeId = nodeId;
     this.partitionId = partitionId;
-    this.numberOfPartitions = numberOfPartitions;
+    this.partitionCountSupplier = partitionCountSupplier;
     this.snapshotStore = snapshotStore;
     this.segmentsDirectory = segmentsDirectory;
     this.routingSupplier = routingSupplier;
@@ -82,7 +82,7 @@ public final class BackupService extends Actor implements BackupManager {
                   snapshotStore,
                   getBackupId(checkpointId),
                   checkpointPosition,
-                  numberOfPartitions,
+                  partitionCountSupplier.get(),
                   routingSupplier.get(),
                   actor,
                   segmentsDirectory,

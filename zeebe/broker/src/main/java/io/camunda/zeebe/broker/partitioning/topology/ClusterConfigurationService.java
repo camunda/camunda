@@ -31,4 +31,6 @@ public interface ClusterConfigurationService extends AsyncClosable {
   void removeInconsistentConfigurationListener();
 
   ClusterConfiguration getInitialClusterConfiguration();
+
+  ClusterConfiguration getCurrentClusterConfiguration();
 }

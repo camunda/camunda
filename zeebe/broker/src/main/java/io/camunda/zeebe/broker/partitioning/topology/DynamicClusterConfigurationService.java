@@ -122,6 +122,11 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   }
 
   @Override
+  public ClusterConfiguration getCurrentClusterConfiguration() {
+    return clusterConfigurationManagerService.getClusterTopologySync();
+  }
+
+  @Override
   public ActorFuture<Void> closeAsync() {
     partitionDistribution = null;
     if (clusterConfigurationManagerService != null) {

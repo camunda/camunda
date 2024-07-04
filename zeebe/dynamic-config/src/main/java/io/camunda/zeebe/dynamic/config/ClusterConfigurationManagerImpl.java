@@ -378,4 +378,9 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   void removeTopologyChangedListener() {
     executor.run(() -> onInconsistentConfigurationDetected = null);
   }
+
+  // Allow direct access temporarily for Engine
+  public ClusterConfiguration getClusterConfigurationSync() {
+    return persistedClusterConfiguration.getConfiguration();
+  }
 }

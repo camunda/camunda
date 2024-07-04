@@ -109,7 +109,11 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
         new BackupService(
             context.getNodeId(),
             context.getPartitionId(),
-            context.getBrokerCfg().getCluster().getPartitionsCount(),
+            () ->
+                context
+                    .getClusterConfigurationService()
+                    .getCurrentClusterConfiguration()
+                    .partitionCount(),
             context.getBackupStore(),
             context.getPersistedSnapshotStore(),
             context.getRaftPartition().dataDirectory().toPath(),

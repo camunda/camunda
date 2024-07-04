@@ -51,6 +51,7 @@ import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration.FixedPartition
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil.Routing;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -67,6 +68,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public final class ZeebePartitionFactory {
 
@@ -223,12 +226,21 @@ public final class ZeebePartitionFactory {
 
       return EngineProcessors.createEngineProcessors(
           recordProcessorContext,
-          localBroker.getPartitionsCount(),
+          this::getPartitions,
           subscriptionCommandSender,
           partitionCommandSender,
           featureFlags,
           jobStreamer,
           routing);
     };
+  }
+
+  private Stream<Integer> getPartitions() {
+    // TODO: Replace this with a ClusterContext that provides both latest partitions and routing
+    // info
+    return IntStream.rangeClosed(
+            Protocol.START_PARTITION_ID,
+            clusterConfigurationService.getCurrentClusterConfiguration().partitionCount())
+        .boxed();
   }
 }

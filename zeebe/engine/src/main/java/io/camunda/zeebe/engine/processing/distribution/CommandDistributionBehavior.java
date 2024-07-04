@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.distribution;
 
+import io.camunda.zeebe.engine.processing.EngineProcessors.PartitionProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -19,7 +20,6 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.List;
-import java.util.stream.IntStream;
 
 /**
  * The network communication between the partitions is unreliable. To allow communication between
@@ -37,10 +37,10 @@ public final class CommandDistributionBehavior {
 
   private final StateWriter stateWriter;
   private final SideEffectWriter sideEffectWriter;
+  private final PartitionProvider partitionProvider;
   private final InterPartitionCommandSender interPartitionCommandSender;
 
   private final int currentPartitionId;
-  private final List<Integer> otherPartitions;
 
   // Records are expensive to construct, so we create them once and reuse them
   private final CommandDistributionRecord commandDistributionStarted =
@@ -53,16 +53,12 @@ public final class CommandDistributionBehavior {
   public CommandDistributionBehavior(
       final Writers writers,
       final int currentPartition,
-      final int partitionsCount,
+      final PartitionProvider partitionProvider,
       final InterPartitionCommandSender partitionCommandSender) {
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
+    this.partitionProvider = partitionProvider;
     interPartitionCommandSender = partitionCommandSender;
-    otherPartitions =
-        IntStream.range(Protocol.START_PARTITION_ID, Protocol.START_PARTITION_ID + partitionsCount)
-            .filter(partition -> partition != currentPartition)
-            .boxed()
-            .toList();
     currentPartitionId = currentPartition;
   }
 
@@ -80,6 +76,12 @@ public final class CommandDistributionBehavior {
    */
   public <T extends UnifiedRecordValue> void distributeCommand(
       final long distributionKey, final TypedRecord<T> command) {
+    final var otherPartitions =
+        partitionProvider
+            .partitionIds()
+            .filter(partition -> partition != currentPartitionId)
+            .toList();
+
     distributeCommand(distributionKey, command, otherPartitions);
   }
 

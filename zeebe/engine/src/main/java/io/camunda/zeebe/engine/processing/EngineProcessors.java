@@ -55,6 +55,7 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 public final class EngineProcessors {
 
@@ -62,7 +63,7 @@ public final class EngineProcessors {
 
   public static TypedRecordProcessors createEngineProcessors(
       final TypedRecordProcessorContext typedRecordProcessorContext,
-      final int partitionsCount,
+      final PartitionProvider partitionProvider,
       final SubscriptionCommandSender subscriptionCommandSender,
       final InterPartitionCommandSender interPartitionCommandSender,
       final FeatureFlags featureFlags,
@@ -107,7 +108,7 @@ public final class EngineProcessors {
         new CommandDistributionBehavior(
             writers,
             typedRecordProcessorContext.getPartitionId(),
-            partitionsCount,
+            partitionProvider,
             interPartitionCommandSender);
 
     final var deploymentDistributionCommandSender =
@@ -387,5 +388,10 @@ public final class EngineProcessors {
         ValueType.COMMAND_DISTRIBUTION,
         CommandDistributionIntent.ACKNOWLEDGE,
         commandDistributionAcknowledgeProcessor);
+  }
+
+  @FunctionalInterface
+  public interface PartitionProvider {
+    Stream<Integer> partitionIds();
   }
 }

@@ -30,7 +30,8 @@ public final class PersistedClusterConfiguration {
   private static final byte VERSION = 1;
   private final Path topologyFile;
   private final ClusterConfigurationSerializer serializer;
-  private ClusterConfiguration clusterConfiguration;
+  // TODO: Temporary for direct access from Engine
+  private volatile ClusterConfiguration clusterConfiguration;
 
   private PersistedClusterConfiguration(
       final Path topologyFile,

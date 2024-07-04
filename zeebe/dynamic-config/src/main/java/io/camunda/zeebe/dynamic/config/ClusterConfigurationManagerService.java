@@ -203,6 +203,11 @@ public final class ClusterConfigurationManagerService
     return clusterConfigurationManager.getClusterConfiguration();
   }
 
+  // Temporarily allow to get the cluster topology synchronously for Engine
+  public ClusterConfiguration getClusterTopologySync() {
+    return clusterConfigurationManager.getClusterConfigurationSync();
+  }
+
   public Optional<ConfigurationChangeCoordinator> getTopologyChangeCoordinator() {
     return Optional.ofNullable(configurationChangeCoordinator);
   }
