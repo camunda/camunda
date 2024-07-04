@@ -22,18 +22,18 @@ public class RestTestUtil {
 
   @SneakyThrows
   public static String getResponseContentAsString(final Response response) {
-    byte[] result = getResponseContentAsByteArray(response);
+    final byte[] result = getResponseContentAsByteArray(response);
     return new String(result);
   }
 
   public static byte[] getResponseContentAsByteArray(final Response response) throws IOException {
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    final ByteArrayOutputStream bos = new ByteArrayOutputStream();
     IOUtils.copy(response.readEntity(InputStream.class), bos);
     return bos.toByteArray();
   }
 
   public static double getOffsetDiffInHours(final OffsetDateTime o1, final OffsetDateTime o2) {
-    int offsetDiffInSeconds =
+    final int offsetDiffInSeconds =
         Math.abs(o1.getOffset().getTotalSeconds() - o2.getOffset().getTotalSeconds());
     return offsetDiffInSeconds / 3600.0; // convert to hours
   }
