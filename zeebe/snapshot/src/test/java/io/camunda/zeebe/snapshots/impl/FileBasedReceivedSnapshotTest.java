@@ -371,6 +371,7 @@ public class FileBasedReceivedSnapshotTest {
     // simulate restart, store will attempt to update the latest snapshot to the most recent one.
     store.onActorStarting();
 
+    // then
     final AtomicReference<PersistedSnapshot> snapshot = new AtomicReference<>();
     store.getLatestSnapshot().ifPresent(snapshot::set);
 
