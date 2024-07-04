@@ -11,7 +11,7 @@ import classnames from 'classnames';
 import {withRouter} from 'react-router-dom';
 import {ComboBox, FormLabel} from '@carbon/react';
 
-import {BPMNDiagram, LoadingIndicator, Popover, TenantInfo} from 'components';
+import {BPMNDiagram, Loading, Popover, TenantInfo} from 'components';
 import {withErrorHandling} from 'HOC';
 import {getCollection, getRandomId, loadDefinitions} from 'services';
 import {t} from 'translation';
@@ -314,7 +314,7 @@ export class DefinitionSelection extends React.Component {
     if (!availableDefinitions) {
       return (
         <div className="DefinitionSelection">
-          <LoadingIndicator small />
+          <Loading small />
         </div>
       );
     }
