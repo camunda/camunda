@@ -49,7 +49,6 @@ import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -233,10 +232,10 @@ class TaskServiceTest {
   @ParameterizedTest
   @MethodSource("getTasksTestData")
   void getTasksWhenMoreThanOneSearchQueryProvided(
-      String[] searchBefore,
-      String[] searchBeforeOrEqual,
-      String[] searchAfter,
-      String[] searchAfterOrEqual) {
+      final String[] searchBefore,
+      final String[] searchBeforeOrEqual,
+      final String[] searchAfter,
+      final String[] searchAfterOrEqual) {
     // Given
     final var taskQuery =
         new TaskQueryDTO()
@@ -286,11 +285,11 @@ class TaskServiceTest {
   @ParameterizedTest
   @MethodSource("assignTaskTestData")
   void assignTask(
-      Boolean providedAllowOverrideAssignment,
-      boolean expectedAllowOverrideAssignment,
-      String providedAssignee,
-      UserDTO user,
-      String expectedAssignee) {
+      final Boolean providedAllowOverrideAssignment,
+      final boolean expectedAllowOverrideAssignment,
+      final String providedAssignee,
+      final UserDTO user,
+      final String expectedAssignee) {
 
     // Given
     final var taskId = "123";
@@ -520,11 +519,8 @@ class TaskServiceTest {
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
     final var user = mock(UserDTO.class);
-    final var problemDetail = new ProblemDetail();
     final var providedAssignee = "expectedAssignee";
     final var providedAllowOverrideAssignment = false;
-
-    problemDetail.setDetail("detail");
 
     when(taskBefore.getImplementation()).thenReturn(TaskImplementation.ZEEBE_USER_TASK);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
@@ -547,11 +543,11 @@ class TaskServiceTest {
   @ParameterizedTest
   @MethodSource("assignTaskTestData")
   void assignZeebeUserTask(
-      Boolean providedAllowOverrideAssignment,
-      boolean expectedAllowOverrideAssignment,
-      String providedAssignee,
-      UserDTO user,
-      String expectedAssignee) {
+      final Boolean providedAllowOverrideAssignment,
+      final boolean expectedAllowOverrideAssignment,
+      final String providedAssignee,
+      final UserDTO user,
+      final String expectedAssignee) {
     // Given
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
