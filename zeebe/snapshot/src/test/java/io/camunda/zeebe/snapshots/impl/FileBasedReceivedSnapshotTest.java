@@ -11,6 +11,7 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertTrue;
 
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotChunkWrapper;
+import io.camunda.zeebe.snapshots.TestChecksumProvider;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -26,8 +28,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.zip.CRC32C;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;
@@ -334,6 +338,47 @@ public class FileBasedReceivedSnapshotTest {
         .isDirectoryContaining(
             name ->
                 name.getFileName().toString().equals(FileBasedSnapshotStore.METADATA_FILE_NAME));
+  }
+
+  @Test
+  public void shouldNotFlagAsCorruptedIfFileChecksumsMatchButCombinedChecksumMismatch() {
+    // given
+    final Map<String, Long> fileChecksums = new HashMap<>();
+    for (final var entry : SNAPSHOT_FILE_CONTENTS.entrySet()) {
+      final var fileContentChecksum = new CRC32C();
+      fileContentChecksum.update(entry.getValue().getBytes(StandardCharsets.UTF_8));
+      fileChecksums.put(entry.getKey(), fileContentChecksum.getValue());
+    }
+
+    final var store =
+        new FileBasedSnapshotStore(
+            PARTITION_ID,
+            temporaryFolder.getRoot().toPath().resolve("receiver"),
+            new TestChecksumProvider(fileChecksums));
+    scheduler.submitActor(store);
+
+    // when
+    final var persistedSnapshot = takePersistedSnapshot(1L);
+    final var receivedSnapshot = store.newReceivedSnapshot(persistedSnapshot.getId()).join();
+    try (final var reader = persistedSnapshot.newChunkReader()) {
+      while (reader.hasNext()) {
+        receivedSnapshot.apply(reader.next()).join();
+      }
+    }
+
+    receivedSnapshot.persist().join();
+
+    // simulate restart, store will attempt to update the latest snapshot to the most recent one.
+    store.onActorStarting();
+
+    final AtomicReference<PersistedSnapshot> snapshot = new AtomicReference<>();
+    store.getLatestSnapshot().ifPresent(snapshot::set);
+
+    // The snapshot which is generated from received snapshot with the provider is DIFFERENT to
+    // the persisted checksum but a file corruption has not been detected. If a file corruption is
+    // detected the store.getLatestSnapshot() all will return null and the .get() call will return
+    // an NPE.
+    assertTrue(snapshot.get().getChecksum() != persistedSnapshot.getChecksum());
   }
 
   @Test
