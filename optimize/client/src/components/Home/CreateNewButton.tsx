@@ -11,12 +11,11 @@ import {MenuButton, MenuItem} from '@carbon/react';
 
 import {t} from 'translation';
 
-interface CreateNewButtonProps {
+interface CreateNewButtonProps
+  extends Pick<ComponentProps<typeof MenuButton>, 'kind' | 'size' | 'tabIndex' | 'disabled'> {
   create: (type: 'report' | 'dashboard' | 'kpi' | 'collection') => void;
   collection?: string;
   importEntity: () => void;
-  kind?: ComponentProps<typeof MenuButton>['kind'];
-  size?: ComponentProps<typeof MenuButton>['size'];
 }
 
 export default function CreateNewButton({
@@ -25,6 +24,8 @@ export default function CreateNewButton({
   importEntity,
   kind = 'tertiary',
   size = 'md',
+  disabled,
+  tabIndex,
 }: CreateNewButtonProps): JSX.Element {
   return (
     <MenuButton
@@ -32,6 +33,8 @@ export default function CreateNewButton({
       kind={kind}
       label={t('home.createBtn.default').toString()}
       className="CreateNewButton"
+      disabled={disabled}
+      tabIndex={tabIndex}
     >
       {!collection && (
         <MenuItem

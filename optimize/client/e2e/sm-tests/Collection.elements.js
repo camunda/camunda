@@ -27,7 +27,7 @@ export const userTab = tabButton.withText('Users');
 export const alertTab = tabButton.withText('Alerts');
 export const sourcesTab = tabButton.withText('Data sources');
 export const activeTab = Selector('.Collection .cds--tab-content:not([hidden])');
-export const addButton = activeTab.find('.cds--toolbar-content .cds--btn--primary');
+export const addButton = activeTab.find('.cds--toolbar-content > .cds--btn--primary');
 export const emptyStateAdd = activeTab.find('.EmptyState .cds--btn--primary');
 export const typeaheadInput = Selector('.Typeahead input');
 export const checkbox = (text) => Selector('.Checklist tr').withText(text);
