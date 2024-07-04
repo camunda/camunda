@@ -182,4 +182,18 @@ public interface ClusterActuator {
   @RequestLine("POST /brokers/{brokerId}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   PlannedOperationsResponse addBrokerInvalidType(@Param final String brokerId);
+
+  /**
+   * Scales the number of partitions up.
+   *
+   * @param partitionsCount the new partitionsCount
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  default PlannedOperationsResponse scalePartitions(final int partitionsCount) {
+    return scalePartitions(List.of(partitionsCount));
+  }
+
+  @RequestLine("POST /partitions")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse scalePartitions(@RequestBody List<Integer> partitionsCount);
 }
