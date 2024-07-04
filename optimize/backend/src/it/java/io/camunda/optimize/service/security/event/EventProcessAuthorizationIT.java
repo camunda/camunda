@@ -8,7 +8,6 @@
 package io.camunda.optimize.service.security.event;
 
 import static io.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
-import static io.camunda.optimize.rest.eventprocess.EventBasedProcessRestServiceIT.createProcessDefinitionXml;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static io.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
@@ -47,7 +46,7 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
   @Test
   public void getIsEventBasedProcessesEnabledWithoutAuthentication() {
     // when
-    Response response =
+    final Response response =
         embeddedOptimizeExtension
             .getRequestExecutor()
             .buildGetIsEventProcessEnabledRequest()
@@ -61,7 +60,7 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
   @Test
   public void createEventProcessMappingWithoutAuthentication() {
     // when
-    Response response =
+    final Response response =
         eventProcessClient
             .createCreateEventProcessMappingRequest(
                 eventProcessClient.buildEventProcessMappingDto(simpleDiagramXml))
@@ -75,9 +74,9 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
   @Test
   public void updateEventProcessMappingWithoutAuthentication() {
     // when
-    EventProcessMappingDto updateDto =
+    final EventProcessMappingDto updateDto =
         eventProcessClient.buildEventProcessMappingDto(simpleDiagramXml);
-    Response response =
+    final Response response =
         eventProcessClient
             .createUpdateEventProcessMappingRequest("doesNotMatter", updateDto)
             .withoutAuthentication()
@@ -90,7 +89,7 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
   @Test
   public void getEventProcessMappingWithoutAuthentication() {
     // when
-    Response response =
+    final Response response =
         eventProcessClient
             .createGetEventProcessMappingRequest(IdGenerator.getNextId())
             .withoutAuthentication()
@@ -103,7 +102,7 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
   @Test
   public void getAllEventProcessMappingWithoutAuthentication() {
     // when
-    Response response =
+    final Response response =
         embeddedOptimizeExtension
             .getRequestExecutor()
             .withoutAuthentication()
@@ -120,7 +119,7 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
     embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessAccessUserIds().clear();
 
     // when
-    Response response =
+    final Response response =
         eventProcessClient
             .createCreateEventProcessMappingRequest(
                 eventProcessClient.buildEventProcessMappingDto(simpleDiagramXml))
@@ -136,9 +135,9 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
     embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessAccessUserIds().clear();
 
     // when
-    EventProcessMappingDto updateDto =
+    final EventProcessMappingDto updateDto =
         eventProcessClient.buildEventProcessMappingDto(simpleDiagramXml);
-    Response response =
+    final Response response =
         eventProcessClient
             .createUpdateEventProcessMappingRequest("doesNotMatter", updateDto)
             .execute();
@@ -184,7 +183,7 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
         KERMIT_USER, definitionKey1, RESOURCE_TYPE_PROCESS_DEFINITION);
 
     // when
-    Response response =
+    final Response response =
         eventProcessClient
             .createGetEventProcessMappingRequest(expectedId)
             .withUserAuthentication(KERMIT_USER, KERMIT_USER)
@@ -237,7 +236,7 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
         KERMIT_USER, definitionKey1, RESOURCE_TYPE_PROCESS_DEFINITION);
 
     // when
-    List<EventProcessMappingDto> allMappings =
+    final List<EventProcessMappingDto> allMappings =
         eventProcessClient.getAllEventProcessMappings(KERMIT_USER, KERMIT_USER);
 
     // then only mappings where the user has authorization to see all event sources are returned
@@ -261,7 +260,7 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
         KERMIT_USER, definitionKey1, RESOURCE_TYPE_PROCESS_DEFINITION);
 
     // when
-    Response response =
+    final Response response =
         eventProcessClient
             .createCleanupEventProcessMappingsRequest(
                 EventMappingCleanupRequestDto.builder()

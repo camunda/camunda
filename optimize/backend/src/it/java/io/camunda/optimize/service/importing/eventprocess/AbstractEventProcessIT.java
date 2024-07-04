@@ -70,8 +70,9 @@ import org.junit.jupiter.params.provider.Arguments;
 
 @Tag("eventBasedProcess")
 public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
+  public static final String EXTERNAL_EVENT_GROUP = "testGroup";
+  public static final String EXTERNAL_EVENT_SOURCE = "integrationTestSource";
   protected static final String MY_TRACE_ID_1 = "myTraceId1";
-
   protected static final String BPMN_START_EVENT_ID = "StartEvent_1";
   protected static final String BPMN_INTERMEDIATE_EVENT_ID = "IntermediateEvent_1";
   protected static final String BPMN_INTERMEDIATE_EVENT_ID_TWO = "IntermediateEvent_2";
@@ -90,8 +91,6 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
   protected static final String MERGING_GATEWAY_ID_FOUR = "merging_gateway_four";
   protected static final String VARIABLE_ID = "var";
   protected static final String VARIABLE_VALUE = "value";
-  public static final String EXTERNAL_EVENT_GROUP = "testGroup";
-  public static final String EXTERNAL_EVENT_SOURCE = "integrationTestSource";
   protected static final String EVENT_PROCESS_NAME = "myEventProcess";
 
   protected static final String STARTED_EVENT = "startedEvent";
@@ -922,5 +921,22 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
   protected void publishEventProcessMappingAndRefreshIndices(final String eventProcessMappingId) {
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
+  @SneakyThrows
+  public static String createProcessDefinitionXml() {
+    final BpmnModelInstance bpmnModel =
+        Bpmn.createExecutableProcess("aProcess")
+            .camundaVersionTag("aVersionTag")
+            .name("aProcessName")
+            .startEvent(BPMN_START_EVENT_ID)
+            .userTask(USER_TASK_ID_ONE)
+            .userTask(USER_TASK_ID_TWO)
+            .userTask(USER_TASK_ID_THREE)
+            .endEvent("endEvent_ID")
+            .done();
+    final ByteArrayOutputStream xmlOutput = new ByteArrayOutputStream();
+    Bpmn.writeModelToStream(xmlOutput, bpmnModel);
+    return new String(xmlOutput.toByteArray(), StandardCharsets.UTF_8);
   }
 }
