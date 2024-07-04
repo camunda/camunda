@@ -53,4 +53,12 @@ public final class NoopPartitionChangeExecutor implements PartitionChangeExecuto
       final String initializeFrom) {
     return CompletableActorFuture.completed(null);
   }
+
+  @Override
+  public ActorFuture<Void> bootstrap(
+      final int partitionId,
+      final int priorityOfLocalMember,
+      final DynamicPartitionConfig partitionConfig) {
+    return CompletableActorFuture.completed(null);
+  }
 }

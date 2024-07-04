@@ -43,6 +43,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -400,6 +401,29 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
     concurrencyControl.run(
         () -> enableExporter(partitionId, exporterId, metadataVersion, initializeFrom, result));
     return result;
+  }
+
+  @Override
+  public ActorFuture<Void> bootstrap(
+      final int partitionId,
+      final int priorityOfLocalMember,
+      final DynamicPartitionConfig partitionConfig) {
+    final int targetPriority = priorityOfLocalMember;
+
+    final MemberId localMember = managementService.getMembershipService().getLocalMember().id();
+    final var members = Set.of(localMember);
+
+    final MemberId primary = localMember;
+
+    final var partitionMetadata =
+        new PartitionMetadata(
+            PartitionId.from(GROUP_NAME, partitionId),
+            members,
+            Map.of(localMember, targetPriority),
+            targetPriority,
+            primary);
+
+    return bootstrapPartition(partitionMetadata, partitionConfig);
   }
 
   private void disableExporter(

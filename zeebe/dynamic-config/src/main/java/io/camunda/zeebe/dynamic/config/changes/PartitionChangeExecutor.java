@@ -84,4 +84,9 @@ public interface PartitionChangeExecutor {
    */
   ActorFuture<Void> enableExporter(
       int partitionId, String exporterId, long metadataVersion, String initializeFrom);
+
+  ActorFuture<Void> bootstrap(
+      final int partitionId,
+      final int priorityOfLocalMember,
+      final DynamicPartitionConfig partitionConfig);
 }
