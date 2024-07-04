@@ -153,6 +153,6 @@ public interface ZeebeClientConfiguration {
   /**
    * @see ZeebeClientBuilder#preferRestOverGrpc(boolean)
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   boolean preferRestOverGrpc();
 }
