@@ -20,6 +20,11 @@ public record PartitionState(State state, int priority, DynamicPartitionConfig c
     return new PartitionState(State.JOINING, priority, partitionConfig);
   }
 
+  public static PartitionState bootstrapping(
+      final int priority, final DynamicPartitionConfig partitionConfig) {
+    return new PartitionState(State.BOOTSTRAPPING, priority, partitionConfig);
+  }
+
   public PartitionState toActive() {
     if (state == State.LEAVING) {
       throw new IllegalStateException(
@@ -44,6 +49,7 @@ public record PartitionState(State state, int priority, DynamicPartitionConfig c
     UNKNOWN,
     JOINING,
     ACTIVE,
-    LEAVING
+    LEAVING,
+    BOOTSTRAPPING,
   }
 }
