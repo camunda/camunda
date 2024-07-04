@@ -30,6 +30,7 @@ import io.camunda.operate.store.FlowNodeStore;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.util.SoftHashMap;
+import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -42,8 +43,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,13 +60,21 @@ public class FlowNodeInstanceZeebeRecordProcessor {
   @Autowired protected FlowNodeStore flowNodeStore;
   @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
   @Autowired private OperateProperties operateProperties;
+  @Autowired private PartitionHolder partitionHolder;
 
-  // treePath by flowNodeInstanceKey cache
-  private ConcurrentMap<Integer, Map<String, String>> treePathCache;
+  // treePath by flowNodeInstanceKey caches
+  private final Map<Integer, Map<String, String>> treePathCaches = new HashMap<>();
 
   @PostConstruct
   private void init() {
-    treePathCache = new ConcurrentHashMap<>();
+    partitionHolder
+        .getPartitionIds()
+        .forEach(
+            partitionId -> {
+              treePathCaches.put(
+                  partitionId,
+                  new SoftHashMap(operateProperties.getImporter().getFlowNodeTreeCacheSize()));
+            });
   }
 
   public void processIncidentRecord(final Record record, final BatchRequest batchRequest)
@@ -212,7 +219,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
   private String getParentTreePath(
       final Record record, final ProcessInstanceRecordValue recordValue) {
     String parentTreePath;
-    final var partitionCache = getPartitionCache(record.getPartitionId());
+    final var partitionCache = treePathCaches.get(record.getPartitionId());
     // if scopeKey differs from processInstanceKey, then it's inner tree level and we need to search
     // for parent 1st
     if (recordValue.getFlowScopeKey() == recordValue.getProcessInstanceKey()) {
@@ -240,16 +247,6 @@ public class FlowNodeInstanceZeebeRecordProcessor {
         ConversionUtils.toStringOrNull(record.getKey()),
         String.join("/", parentTreePath, ConversionUtils.toStringOrNull(record.getKey())));
     return parentTreePath;
-  }
-
-  private Map<String, String> getPartitionCache(final int partitionId) {
-    var partitionCache = treePathCache.get(partitionId);
-    if (partitionCache == null) {
-      partitionCache =
-          new SoftHashMap<>(operateProperties.getImporter().getFlowNodeTreeCacheSize());
-      treePathCache.put(partitionId, partitionCache);
-    }
-    return partitionCache;
   }
 
   private boolean canOptimizeFlowNodeInstanceIndexing(final FlowNodeInstanceEntity entity) {
