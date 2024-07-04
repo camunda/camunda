@@ -121,6 +121,11 @@ public final class ClientProperties {
   public static final String MAX_MESSAGE_SIZE = "zeebe.client.maxMessageSize";
 
   /**
+   * @see CamundaClientBuilder#maxMetadataSize(int)
+   */
+  public static final String MAX_METADATA_SIZE = "zeebe.client.maxMetadataSize";
+
+  /**
    * @see CamundaClientCloudBuilderStep1#withClusterId(String)
    */
   public static final String CLOUD_CLUSTER_ID = "zeebe.client.cloud.clusterId";

@@ -247,6 +247,11 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder maxMetadataSize(final int maxMetadataSize) {
+    return innerBuilder.maxMetadataSize(maxMetadataSize);
+  }
+
+  @Override
   public CamundaClientBuilder defaultJobWorkerStreamEnabled(final boolean streamEnabled) {
     innerBuilder.defaultJobWorkerStreamEnabled(streamEnabled);
     return this;

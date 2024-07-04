@@ -186,6 +186,13 @@ public interface CamundaClientBuilder {
   CamundaClientBuilder maxMessageSize(int maxSize);
 
   /**
+   * A custom maxMetadataSize allows the client to receive larger or smaller response headers from
+   * Zeebe. Technically, it specifies the maxInboundMetadataSize of the gRPC channel. The default is
+   * 16384 = 16KB .
+   */
+  CamundaClientBuilder maxMetadataSize(int maxSize);
+
+  /**
    * A custom streamEnabled allows the client to use job stream instead of job poll. The default
    * value is set as enabled.
    */

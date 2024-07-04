@@ -126,6 +126,11 @@ public interface CamundaClientConfiguration {
   int getMaxMessageSize();
 
   /**
+   * @see CamundaClientBuilder#maxMetadataSize(int)
+   */
+  int getMaxMetadataSize();
+
+  /**
    * @see CamundaClientBuilder#jobWorkerExecutor(ScheduledExecutorService)
    */
   ScheduledExecutorService jobWorkerExecutor();

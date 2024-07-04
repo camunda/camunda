@@ -19,6 +19,7 @@ import static io.camunda.client.ClientProperties.CLOUD_REGION;
 import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static io.camunda.client.ClientProperties.DEFAULT_TENANT_ID;
 import static io.camunda.client.ClientProperties.MAX_MESSAGE_SIZE;
+import static io.camunda.client.ClientProperties.MAX_METADATA_SIZE;
 import static io.camunda.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
@@ -36,6 +37,7 @@ import static io.camunda.client.impl.CamundaClientBuilderImpl.PREFER_REST_VAR;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.REST_ADDRESS_VAR;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.USE_DEFAULT_RETRY_POLICY_VAR;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
+import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -300,6 +302,19 @@ public final class CamundaClientTest extends ClientTest {
   }
 
   @Test
+  public void shouldSetMaxMetadataSize() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.maxMetadataSize(10 * 1024);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxMetadataSize()).isEqualTo(10 * 1024);
+  }
+
+  @Test
   public void shouldSetMaxMessageSizeWithProperty() {
     // given
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
@@ -315,6 +330,21 @@ public final class CamundaClientTest extends ClientTest {
   }
 
   @Test
+  public void shouldSetMaxMetadataSizeWithProperty() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    final Properties properties = new Properties();
+    properties.setProperty(MAX_METADATA_SIZE, "10KB");
+    builder.withProperties(properties);
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxMetadataSize()).isEqualTo(10 * ONE_KB);
+  }
+
+  @Test
   public void shouldOverrideMaxMessageSizeWithEnvVar() {
     // given
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
@@ -327,6 +357,21 @@ public final class CamundaClientTest extends ClientTest {
 
     // then
     assertThat(builder.getMaxMessageSize()).isEqualTo(10 * ONE_MB);
+  }
+
+  @Test
+  public void shouldOverrideMaxMetadataSizeWithEnvVar() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.applyEnvironmentVariableOverrides(Boolean.TRUE);
+    builder.maxMetadataSize(16 * ONE_KB);
+    Environment.system().put(MAX_METADATA_SIZE, "8KB");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxMetadataSize()).isEqualTo(8 * ONE_KB);
   }
 
   @Test
