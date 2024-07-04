@@ -51,81 +51,100 @@ public final class GrpcErrorMapper {
       final Throwable rootError, final Throwable error, final Logger logger) {
     final Builder builder = Status.newBuilder();
 
-    if (error instanceof ExecutionException) {
-      return mapErrorToStatus(rootError, error.getCause(), logger);
-    } else if (error instanceof BrokerErrorException) {
-      final Status status =
-          mapBrokerErrorToStatus(rootError, ((BrokerErrorException) error).getError(), logger);
-      builder.mergeFrom(status);
-    } else if (error instanceof BrokerRejectionException) {
-      final Status status = mapRejectionToStatus(((BrokerRejectionException) error).getRejection());
-      builder.mergeFrom(status);
-      logger.trace("Expected to handle gRPC request, but the broker rejected it", rootError);
-    } else if (error instanceof TimeoutException) { // can be thrown by transport
-      builder
-          .setCode(Code.DEADLINE_EXCEEDED_VALUE)
-          .setMessage("Time out between gateway and broker: " + error.getMessage());
-      logger.debug(
-          "Expected to handle gRPC request, but request timed out between gateway and broker",
-          rootError);
-    } else if (error instanceof InvalidBrokerRequestArgumentException) {
-      builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
-      logger.debug("Expected to handle gRPC request, but broker argument was invalid", rootError);
-    } else if (error instanceof MsgpackPropertyException) {
-      builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
-      logger.debug(
-          "Expected to handle gRPC request, but messagepack property was invalid", rootError);
-    } else if (error instanceof JsonParseException) {
-      builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
-      logger.debug("Expected to handle gRPC request, but JSON property was invalid", rootError);
-    } else if (error instanceof InvalidTenantRequestException) {
-      builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
-      logger.debug(error.getMessage(), rootError);
-    } else if (error instanceof IllegalTenantRequestException) {
-      builder.setCode(Code.PERMISSION_DENIED_VALUE).setMessage(error.getMessage());
-      logger.debug(error.getMessage(), rootError);
-    } else if (error instanceof IllegalArgumentException) {
-      builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
-      logger.debug("Expected to handle gRPC request, but JSON property was invalid 123", rootError);
-    } else if (error instanceof PartitionNotFoundException) {
-      builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
-      logger.debug(
-          "Expected to handle gRPC request, but request could not be delivered", rootError);
-    } else if (error instanceof RequestRetriesExhaustedException) {
-      builder.setCode(Code.RESOURCE_EXHAUSTED_VALUE).setMessage(error.getMessage());
-
-      // RequestRetriesExhaustedException will sometimes carry suppressed exceptions which can be
-      // added/mapped as error details to give more information to the user
-      for (final Throwable suppressed : error.getSuppressed()) {
-        builder.addDetails(Any.pack(mapErrorToStatus(rootError, suppressed, NOPLogger.NOP_LOGGER)));
+    switch (error) {
+      case final ExecutionException e -> {
+        return mapErrorToStatus(rootError, e.getCause(), logger);
       }
+      case final BrokerErrorException brokerError -> {
+        final Status status = mapBrokerErrorToStatus(rootError, brokerError.getError(), logger);
+        builder.mergeFrom(status);
+      }
+      case final BrokerRejectionException rejection -> {
+        final Status status = mapRejectionToStatus(rejection.getRejection());
+        builder.mergeFrom(status);
+        logger.trace("Expected to handle gRPC request, but the broker rejected it", rootError);
+      }
+      case final TimeoutException ignored -> {
+        builder
+            .setCode(Code.DEADLINE_EXCEEDED_VALUE)
+            .setMessage("Time out between gateway and broker: " + error.getMessage());
+        logger.debug(
+            "Expected to handle gRPC request, but request timed out between gateway and broker",
+            rootError);
+      }
+      case final InvalidBrokerRequestArgumentException ignored -> {
+        builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
+        logger.debug("Expected to handle gRPC request, but broker argument was invalid", rootError);
+      }
+      case final MsgpackPropertyException ignored -> {
+        builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
+        logger.debug(
+            "Expected to handle gRPC request, but messagepack property was invalid", rootError);
+      }
+      case final JsonParseException ignored -> {
+        builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
+        logger.debug("Expected to handle gRPC request, but JSON property was invalid", rootError);
+      }
+      case final InvalidTenantRequestException ignored -> {
+        builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
+        logger.debug(error.getMessage(), rootError);
+      }
+      case final IllegalTenantRequestException ignored -> {
+        builder.setCode(Code.PERMISSION_DENIED_VALUE).setMessage(error.getMessage());
+        logger.debug(error.getMessage(), rootError);
+      }
+      case final IllegalArgumentException ignored -> {
+        builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
+        logger.debug("Expected to handle gRPC request, but JSON property was invalid", rootError);
+      }
+      case final PartitionNotFoundException ignored -> {
+        builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
+        logger.debug(
+            "Expected to handle gRPC request, but request could not be delivered", rootError);
+      }
+      case final RequestRetriesExhaustedException ignored -> {
+        builder.setCode(Code.RESOURCE_EXHAUSTED_VALUE).setMessage(error.getMessage());
 
-      // this error occurs when all partitions have exhausted for requests which have no fixed
-      // partitions - it will then also occur when back pressure kicks in, leading to a large burst
-      // of error logs that is, in fact, expected
-      logger.trace(
-          "Expected to handle gRPC request, but all retries have been exhausted", rootError);
-    } else if (error instanceof NoTopologyAvailableException) {
-      builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
-      logger.trace(
-          "Expected to handle gRPC request, but the gateway does not know any partitions yet",
-          rootError);
-    } else if (error instanceof ConnectTimeoutException) {
-      builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
-      logger.warn(
-          "Expected to handle gRPC request, but a connection timeout exception occurred",
-          rootError);
-    } else if (error instanceof ConnectException) {
-      builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
-      logger.warn(
-          "Expected to handle gRPC request, but there was a connection error with one of the brokers",
-          rootError);
-    } else {
-      builder
-          .setCode(Code.INTERNAL_VALUE)
-          .setMessage(
-              "Unexpected error occurred during the request processing: " + error.getMessage());
-      logger.error("Expected to handle gRPC request, but an unexpected error occurred", rootError);
+        // RequestRetriesExhaustedException will sometimes carry suppressed exceptions which can be
+        // added/mapped as error details to give more information to the user
+        for (final Throwable suppressed : error.getSuppressed()) {
+          builder.addDetails(
+              Any.pack(mapErrorToStatus(rootError, suppressed, NOPLogger.NOP_LOGGER)));
+        }
+
+        // this error occurs when all partitions have exhausted for requests which have no fixed
+        // partitions - it will then also occur when back pressure kicks in, leading to a large
+        // burst
+        // of error logs that is, in fact, expected
+        logger.trace(
+            "Expected to handle gRPC request, but all retries have been exhausted", rootError);
+      }
+      case final NoTopologyAvailableException ignored -> {
+        builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
+        logger.trace(
+            "Expected to handle gRPC request, but the gateway does not know any partitions yet",
+            rootError);
+      }
+      case final ConnectTimeoutException ignored -> {
+        builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
+        logger.warn(
+            "Expected to handle gRPC request, but a connection timeout exception occurred",
+            rootError);
+      }
+      case final ConnectException ignored -> {
+        builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
+        logger.warn(
+            "Expected to handle gRPC request, but there was a connection error with one of the brokers",
+            rootError);
+      }
+      default -> {
+        builder
+            .setCode(Code.INTERNAL_VALUE)
+            .setMessage(
+                "Unexpected error occurred during the request processing: " + error.getMessage());
+        logger.error(
+            "Expected to handle gRPC request, but an unexpected error occurred", rootError);
+      }
     }
 
     return builder.build();
