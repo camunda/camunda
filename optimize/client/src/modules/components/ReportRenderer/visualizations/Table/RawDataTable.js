@@ -9,7 +9,7 @@
 import {useCallback, useEffect, useState} from 'react';
 
 import {getWebappEndpoints} from 'config';
-import {Table as TableRenderer, LoadingIndicator, NoDataNotice} from 'components';
+import {Table as TableRenderer, Loading, NoDataNotice} from 'components';
 import {t} from 'translation';
 
 import processRawData from './processRawData';
@@ -60,7 +60,7 @@ export default function RawDataTable({
   );
 
   if (result && camundaEndpoints === null) {
-    return <LoadingIndicator />;
+    return <Loading />;
   }
 
   const onVariableView = (name, processInstanceId, processDefinitionKey) => {

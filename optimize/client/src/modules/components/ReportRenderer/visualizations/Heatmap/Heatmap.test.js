@@ -98,7 +98,7 @@ it('should display a loading indication while loading', () => {
     <Heatmap {...props} report={{...report, data: {...report.data, configuration: {xml: null}}}} />
   );
 
-  expect(node.find('LoadingIndicator')).toExist();
+  expect(node.find('Loading')).toExist();
 });
 
 it('should display an error message if visualization is incompatible with data', () => {
