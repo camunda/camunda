@@ -14,7 +14,7 @@ import deepEqual from 'fast-deep-equal';
 
 import {
   ReportRenderer,
-  LoadingIndicator,
+  Loading,
   EntityName,
   ReportDetails,
   InstanceCount,
@@ -88,7 +88,7 @@ export default function OptimizeReportTile({
   }, []);
 
   if (loading) {
-    return <LoadingIndicator />;
+    return <Loading />;
   }
 
   const refreshTile = () => loadTileData(lastParams);
