@@ -45,8 +45,8 @@ public final class OAuthCredentialsCache {
       new TypeReference<Map<String, OAuthCachedCredentials>>() {};
   private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
 
-  private final Map<String, OAuthCachedCredentials> audiences;
   private final File cacheFile;
+  private final Map<String, OAuthCachedCredentials> audiences;
 
   public OAuthCredentialsCache(final File cacheFile) {
     this.cacheFile = cacheFile;
