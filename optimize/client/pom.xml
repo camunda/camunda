@@ -10,12 +10,6 @@
 
   <artifactId>client</artifactId>
   <packaging>pom</packaging>
-
-  <properties>
-    <skip.fe.build>false</skip.fe.build>
-    <skip.yarn.build>${skip.fe.build}</skip.yarn.build>
-  </properties>
-
   <build>
     <plugins>
       <plugin>
@@ -32,6 +26,7 @@
               <goal>install-node-and-yarn</goal>
             </goals>
             <configuration>
+              <skip>${skip.fe.build}</skip>
               <nodeVersion>${version.node}</nodeVersion>
               <yarnVersion>${version.yarn}</yarnVersion>
             </configuration>
@@ -42,6 +37,10 @@
             <goals>
               <goal>yarn</goal>
             </goals>
+            <configuration>
+              <failOnError>false</failOnError>
+              <skip>${skip.fe.build}</skip>
+            </configuration>
           </execution>
 
           <execution>
@@ -50,7 +49,7 @@
               <goal>yarn</goal>
             </goals>
             <configuration>
-              <skip>${skip.yarn.build}</skip>
+              <skip>${skip.fe.build}</skip>
               <arguments>build</arguments>
             </configuration>
           </execution>
@@ -58,4 +57,12 @@
       </plugin>
     </plugins>
   </build>
+   <profiles>
+    <profile>
+      <id>skipFrontendBuild</id>
+      <properties>
+        <skip.fe.build>true</skip.fe.build>
+      </properties>
+    </profile>
+  </profiles>
 </project>
