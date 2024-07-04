@@ -19,6 +19,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.UserTaskUpdateRequest;
@@ -69,10 +70,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
     final UserTaskUpdateRequest request =
         gatewayService.getLastRequest(UserTaskUpdateRequest.class);
     assertThat(request.getAction()).isNull();
-    assertThat(request.getChangeset())
-        .isNotNull()
-        .hasAllNullFieldsOrPropertiesExcept("dueDate")
-        .hasFieldOrPropertyWithValue("dueDate", TEST_TIME);
+    assertThat(request.getChangeset()).isNotNull().containsOnly(entry("dueDate", TEST_TIME));
   }
 
   @Test
@@ -84,10 +82,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
     final UserTaskUpdateRequest request =
         gatewayService.getLastRequest(UserTaskUpdateRequest.class);
     assertThat(request.getAction()).isNull();
-    assertThat(request.getChangeset())
-        .isNotNull()
-        .hasAllNullFieldsOrPropertiesExcept("followUpDate")
-        .hasFieldOrPropertyWithValue("followUpDate", TEST_TIME);
+    assertThat(request.getChangeset()).isNotNull().containsOnly(entry("followUpDate", TEST_TIME));
   }
 
   @Test
@@ -101,9 +96,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
     assertThat(request.getAction()).isNull();
     assertThat(request.getChangeset())
         .isNotNull()
-        .hasAllNullFieldsOrPropertiesExcept("followUpDate", "dueDate")
-        .hasFieldOrPropertyWithValue("followUpDate", TEST_TIME)
-        .hasFieldOrPropertyWithValue("dueDate", TEST_TIME);
+        .containsOnly(entry("followUpDate", TEST_TIME), entry("dueDate", TEST_TIME));
   }
 
   @Test
@@ -117,8 +110,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
     assertThat(request.getAction()).isNull();
     assertThat(request.getChangeset())
         .isNotNull()
-        .hasAllNullFieldsOrPropertiesExcept("candidateGroups")
-        .hasFieldOrPropertyWithValue("candidateGroups", singletonList("foo"));
+        .containsOnly(entry("candidateGroups", singletonList("foo")));
   }
 
   @Test
@@ -132,8 +124,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
     assertThat(request.getAction()).isNull();
     assertThat(request.getChangeset())
         .isNotNull()
-        .hasAllNullFieldsOrPropertiesExcept("candidateGroups")
-        .hasFieldOrPropertyWithValue("candidateGroups", Arrays.asList("foo", "bar"));
+        .containsOnly(entry("candidateGroups", Arrays.asList("foo", "bar")));
   }
 
   @Test
@@ -151,8 +142,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
     assertThat(request.getAction()).isNull();
     assertThat(request.getChangeset())
         .isNotNull()
-        .hasAllNullFieldsOrPropertiesExcept("candidateGroups")
-        .hasFieldOrPropertyWithValue("candidateGroups", Arrays.asList("foo", "bar"));
+        .containsOnly(entry("candidateGroups", Arrays.asList("foo", "bar")));
   }
 
   @Test
@@ -166,8 +156,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
     assertThat(request.getAction()).isNull();
     assertThat(request.getChangeset())
         .isNotNull()
-        .hasAllNullFieldsOrPropertiesExcept("candidateUsers")
-        .hasFieldOrPropertyWithValue("candidateUsers", singletonList("foo"));
+        .containsOnly(entry("candidateUsers", singletonList("foo")));
   }
 
   @Test
@@ -181,8 +170,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
     assertThat(request.getAction()).isNull();
     assertThat(request.getChangeset())
         .isNotNull()
-        .hasAllNullFieldsOrPropertiesExcept("candidateUsers")
-        .hasFieldOrPropertyWithValue("candidateUsers", Arrays.asList("foo", "bar"));
+        .containsOnly(entry("candidateUsers", Arrays.asList("foo", "bar")));
   }
 
   @Test
@@ -196,8 +184,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
     assertThat(request.getAction()).isNull();
     assertThat(request.getChangeset())
         .isNotNull()
-        .hasAllNullFieldsOrPropertiesExcept("candidateUsers")
-        .hasFieldOrPropertyWithValue("candidateUsers", Arrays.asList("foo", "bar"));
+        .containsOnly(entry("candidateUsers", Arrays.asList("foo", "bar")));
   }
 
   @Test
@@ -213,10 +200,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
     final UserTaskUpdateRequest request =
         gatewayService.getLastRequest(UserTaskUpdateRequest.class);
     assertThat(request.getAction()).isNull();
-    assertThat(request.getChangeset())
-        .isNotNull()
-        .hasAllNullFieldsOrPropertiesExcept("dueDate")
-        .hasFieldOrPropertyWithValue("dueDate", "");
+    assertThat(request.getChangeset()).isNotNull().containsOnly(entry("dueDate", ""));
   }
 
   @Test
@@ -232,10 +216,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
     final UserTaskUpdateRequest request =
         gatewayService.getLastRequest(UserTaskUpdateRequest.class);
     assertThat(request.getAction()).isNull();
-    assertThat(request.getChangeset())
-        .isNotNull()
-        .hasAllNullFieldsOrPropertiesExcept("followUpDate")
-        .hasFieldOrPropertyWithValue("followUpDate", "");
+    assertThat(request.getChangeset()).isNotNull().containsOnly(entry("followUpDate", ""));
   }
 
   @Test
@@ -253,8 +234,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
     assertThat(request.getAction()).isNull();
     assertThat(request.getChangeset())
         .isNotNull()
-        .hasAllNullFieldsOrPropertiesExcept("candidateGroups")
-        .hasFieldOrPropertyWithValue("candidateGroups", emptyList());
+        .containsOnly(entry("candidateGroups", emptyList()));
   }
 
   @Test
@@ -272,8 +252,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
     assertThat(request.getAction()).isNull();
     assertThat(request.getChangeset())
         .isNotNull()
-        .hasAllNullFieldsOrPropertiesExcept("candidateUsers")
-        .hasFieldOrPropertyWithValue("candidateUsers", emptyList());
+        .containsOnly(entry("candidateUsers", emptyList()));
   }
 
   @Test
