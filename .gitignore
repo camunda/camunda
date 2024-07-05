@@ -54,3 +54,9 @@ hs_err*.log
 .eslintcache
 els-snapshots
 .yarn
+
+c8run/*.tar.gz
+c8run/*.jar
+c8run/log/*.log
+c8run/camunda-zeebe*
+c8run/elasticsearch*
