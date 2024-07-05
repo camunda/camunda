@@ -63,7 +63,7 @@
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.identity>8.5.3</version.identity>
     <version.surefire>3.3.0</version.surefire>
-    <version.jackson>2.17.1</version.jackson>
+    <version.jackson>2.17.2</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
     <version.junit>5.10.3</version.junit>
     <version.junit4>4.13.2</version.junit4>
