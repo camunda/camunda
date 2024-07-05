@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run c8run
-        run: nohup ./start.sh
+        run: nohup JAVA_HOME=$JAVA_HOME_21_X64 ./start.sh
         working-directory: ./c8run
 
       - name: Sleep 2 mins
