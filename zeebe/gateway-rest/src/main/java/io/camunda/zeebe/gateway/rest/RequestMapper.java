@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
@@ -122,6 +123,13 @@ public class RequestMapper {
                 getMapOrEmpty(errorRequest, JobErrorRequest::getVariables)));
   }
 
+  public static CompleteJobRequest toJobCompletionRequest(
+      final JobCompletionRequest completionRequest, final long jobKey) {
+
+    return new CompleteJobRequest(
+            jobKey, getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables));
+  }
+
   public static CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
       final Supplier<CompletableFuture<?>> method, final Supplier<ResponseEntity<Object>> result) {
     return method
@@ -180,8 +188,8 @@ public class RequestMapper {
   }
 
   private static <R> Map<String, Object> getMapOrEmpty(
-      final R request, final Function<R, Map<String, Object>> variablesExtractor) {
-    return request == null ? Map.of() : variablesExtractor.apply(request);
+      final R request, final Function<R, Map<String, Object>> mapExtractor) {
+    return request == null ? Map.of() : mapExtractor.apply(request);
   }
 
   private static <R> String getStringOrEmpty(
@@ -223,4 +231,6 @@ public class RequestMapper {
 
   public record ErrorJobRequest(
       long jobKey, String errorCode, String errorMessage, Map<String, Object> variables) {}
+
+  public record CompleteJobRequest(long jobKey, Map<String, Object> variables) {}
 }

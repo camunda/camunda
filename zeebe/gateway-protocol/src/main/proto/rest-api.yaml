@@ -159,6 +159,55 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /jobs/{jobKey}/completion:
+    post:
+      tags:
+        - Job
+      summary: Complete job
+      description: |
+        Complete a job with the given payload, which allows completing the associated service task.
+      parameters:
+        - name: jobKey
+          in: path
+          required: true
+          description: The key of the job to complete.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobCompletionRequest"
+      responses:
+        '204':
+          description: The job was completed successfully.
+        '400':
+          description: >
+            The job with the given key cannot be completed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '404':
+          description: The job with the given key was not found.
+        '409':
+          description: >
+            The job with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 
   /user-tasks/{userTaskKey}/completion:
     post:
@@ -1740,6 +1789,14 @@ components:
           nullable: true
       required:
         - errorCode
+    JobCompletionRequest:
+      type: object
+      properties:
+        variables:
+          additionalProperties: true
+          description: The variables to complete the job with.
+          type: object
+          nullable: true
 
     ProblemDetail:
       description: >
