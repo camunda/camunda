@@ -40,6 +40,7 @@ faces-config.NavData
 work/
 public/
 tngp-data
+*.sst
 
 .flattened-pom.xml
 
@@ -56,3 +57,4 @@ els-snapshots
 optimize/client/.vscode/
 optimize/client/dist
 optimize/client/.node/
+.yarn
