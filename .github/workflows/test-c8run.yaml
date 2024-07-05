@@ -30,27 +30,22 @@ jobs:
         run: sleep 120
 
       - uses: actions/setup-node@v4
-        if: ${{ inputs.run_e2e_tests }}
         with:
           node-version: 18
 
       - name: Install dependencies
-        if: ${{ inputs.run_e2e_tests }}
         run: npm ci
         working-directory: ./c8run/e2e_tests
 
       - name: Install Playwright Browsers
-        if: ${{ inputs.run_e2e_tests }}
         run: npx playwright install --with-deps
         working-directory: ./c8run/e2e_tests
 
       - name: Run Playwright tests
-        if: ${{ inputs.run_e2e_tests }}
         run: npx playwright test
         working-directory: ./c8run/e2e_tests
 
       - uses: actions/upload-artifact@v4
-        if: ${{ inputs.run_e2e_tests }}
         with:
           name: playwright-report
           path: ./c8run/e2e_tests/playwright-report
