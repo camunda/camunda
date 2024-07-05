@@ -83,7 +83,7 @@ public final class OAuthCredentialsCache {
     return Optional.ofNullable(cache.get(endpoint)).map(OAuthCachedCredentials::getCredentials);
   }
 
-  public ZeebeClientCredentials computeIfMissingOrInvalid(
+  public synchronized ZeebeClientCredentials computeIfMissingOrInvalid(
       final String endpoint,
       final SupplierWithIO<ZeebeClientCredentials> zeebeClientCredentialsConsumer)
       throws IOException {
