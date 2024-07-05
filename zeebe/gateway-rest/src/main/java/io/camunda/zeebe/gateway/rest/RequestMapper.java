@@ -9,11 +9,15 @@ package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
+import io.camunda.identity.automation.usermanagement.CamundaGroup;
+import io.camunda.identity.automation.usermanagement.CamundaUserWithPassword;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupRequest;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
@@ -245,6 +249,24 @@ public class RequestMapper {
       record.setFollowUpDate(changeset.getFollowUpDate()).setFollowUpDateChanged();
     }
     return record;
+  }
+
+  public static CamundaUserWithPassword toUserWithPassword(
+      final CamundaUserWithPasswordRequest dto) {
+    final CamundaUserWithPassword camundaUserWithPassword = new CamundaUserWithPassword();
+
+    camundaUserWithPassword.setId(dto.getId());
+    camundaUserWithPassword.setUsername(dto.getUsername());
+    camundaUserWithPassword.setPassword(dto.getPassword());
+    camundaUserWithPassword.setName(dto.getName());
+    camundaUserWithPassword.setEmail(dto.getEmail());
+    camundaUserWithPassword.setEnabled(dto.getEnabled());
+
+    return camundaUserWithPassword;
+  }
+
+  public static CamundaGroup toGroup(final CamundaGroupRequest groupRequest) {
+    return new CamundaGroup(groupRequest.getId(), groupRequest.getName());
   }
 
   private static Map<String, Object> getMapOrEmpty(
