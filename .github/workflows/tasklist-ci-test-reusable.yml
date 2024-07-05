@@ -86,7 +86,7 @@ jobs:
       # Run integration tests in parallel
       - name: Run Integration Tests
         run: |
-          mvn -f tasklist -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }}
+          mvn -f tasklist/pom.xml -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }}
 
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize
