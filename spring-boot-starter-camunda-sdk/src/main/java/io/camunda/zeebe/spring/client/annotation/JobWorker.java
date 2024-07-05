@@ -30,7 +30,7 @@ public @interface JobWorker {
   String type() default "";
 
   /**
-   * set to empty string which leads to default from ZeebeClientBuilderImpl being used in
+   * set to empty string which leads to default from CamundaClientBuilderImpl being used in
    * ZeebeWorkerAnnotationProcessor
    */
   String name() default "";

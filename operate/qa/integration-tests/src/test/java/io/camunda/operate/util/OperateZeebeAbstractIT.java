@@ -73,7 +73,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
 
   @MockBean
   protected ZeebeClient
-      mockedZeebeClient; // we don't want to create ZeebeClient, we will rather use the one from
+      mockedZeebeClient; // we don't want to create CamundaClient, we will rather use the one from
 
   protected ZeebeClient zeebeClient;
   @Autowired protected PartitionHolder partitionHolder;

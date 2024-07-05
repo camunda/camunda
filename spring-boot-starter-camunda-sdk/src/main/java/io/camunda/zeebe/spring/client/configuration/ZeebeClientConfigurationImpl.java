@@ -393,7 +393,7 @@ public class ZeebeClientConfigurationImpl
           .build();
     } else if (Environment.system().get("ZEEBE_CLIENT_ID") != null
         && Environment.system().get("ZEEBE_CLIENT_SECRET") != null) {
-      // Copied from ZeebeClientBuilderImpl
+      // Copied from CamundaClientBuilderImpl
       final OAuthCredentialsProviderBuilder builder =
           CredentialsProvider.newCredentialsProviderBuilder();
       final int separatorIndex = properties.getBroker().getGatewayAddress().lastIndexOf(58); // ":"

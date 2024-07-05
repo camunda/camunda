@@ -72,7 +72,7 @@ public class ZeebeClientProdAutoConfiguration {
 
   @Bean(destroyMethod = "close")
   public ZeebeClient zeebeClient(final ZeebeClientConfigurationImpl configuration) {
-    LOG.info("Creating ZeebeClient using ZeebeClientConfigurationImpl [" + configuration + "]");
+    LOG.info("Creating CamundaClient using ZeebeClientConfigurationImpl [" + configuration + "]");
     final ScheduledExecutorService jobWorkerExecutor = configuration.jobWorkerExecutor();
     if (jobWorkerExecutor != null) {
       final ManagedChannel managedChannel = ZeebeClientImpl.buildChannel(configuration);

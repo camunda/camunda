@@ -31,7 +31,7 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    * <p>You can build your client like this:
    *
    * <pre>@{code
-   *   ZeebeClient.newClientBuilder()
+   *   CamundaClient.newClientBuilder()
    *     .gatewayAddress(gateway.gatewayAddress())
    *     .usePlaintext()
    *     .build();
@@ -50,7 +50,7 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    * <p>You can build your client like this:
    *
    * <pre>@{code
-   *    ZeebeClient.newClientBuilder()
+   *    CamundaClient.newClientBuilder()
    *      .restAddress(gateway.restAddress())
    *      .usePlaintext()
    *      .build();

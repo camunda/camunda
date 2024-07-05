@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
  *
  *     // when
  *     final Topology topology;
- *     try (final ZeebeClient client = cluster.newClientBuilder().build()) {
+ *     try (final CamundaClient client = cluster.newClientBuilder().build()) {
  *       topology = c.newTopologyRequest().send().join();
  *     }
  *

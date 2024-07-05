@@ -20,7 +20,7 @@ import java.lang.reflect.Method;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
- * Dynamic proxy to delegate to a {@link ZeebeClient} which allows to swap the ZeebeClient object
+ * Dynamic proxy to delegate to a {@link ZeebeClient} which allows to swap the CamundaClient object
  * under the hood.
  */
 public class ZeebeClientProxy extends AbstractInvocationHandler {
@@ -42,7 +42,7 @@ public class ZeebeClientProxy extends AbstractInvocationHandler {
       throw new RuntimeException(
           "Cannot invoke "
               + method
-              + " on ZeebeClient, as ZeebeClient is currently not initialized. Maybe you run outside of a testcase?");
+              + " on CamundaClient, as CamundaClient is currently not initialized. Maybe you run outside of a testcase?");
     }
     return method.invoke(delegate, args);
   }

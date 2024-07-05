@@ -33,7 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * public class MyProcessTest {
  *
  *   // will be injected
- *   private ZeebeClient zeebeClient;
+ *   private CamundaClient zeebeClient;
  *
  *   &#064;Test
  *   void shouldWork() {

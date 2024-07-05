@@ -278,6 +278,41 @@
               <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
               <generatorName>java</generatorName>
               <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
+              <modelPackage>io.camunda.client.protocol.rest</modelPackage>
+              <typeMappings>OffsetDateTime=String</typeMappings>
+              <generateApis>false</generateApis>
+              <generateApiTests>false</generateApiTests>
+              <generateSupportingFiles>false</generateSupportingFiles>
+              <generateModels>true</generateModels>
+              <generateModelDocumentation>false</generateModelDocumentation>
+              <generateModelTests>false</generateModelTests>
+              <!-- validate the spec on every generation -->
+              <skipValidateSpec>false</skipValidateSpec>
+              <configOptions>
+                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
+                <documentationProvider>none</documentationProvider>
+                <enumUnknownDefaultCase>true</enumUnknownDefaultCase>
+                <library>apache-httpclient</library>
+                <java8>true</java8>
+                <openApiNullable>false</openApiNullable>
+                <serializationLibrary>jackson</serializationLibrary>
+                <useReflectionEqualsHashCode>false</useReflectionEqualsHashCode>
+              </configOptions>
+            </configuration>
+          </execution>
+
+          <!-- For removal after 8.8 -->
+
+          <execution>
+            <id>old-rest</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
+              <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
+              <generatorName>java</generatorName>
+              <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.client.protocol.rest</modelPackage>
               <typeMappings>OffsetDateTime=String</typeMappings>
               <generateApis>false</generateApis>
@@ -302,6 +337,7 @@
           </execution>
         </executions>
       </plugin>
+
     </plugins>
   </build>
 

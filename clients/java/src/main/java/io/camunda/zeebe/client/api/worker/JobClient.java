@@ -181,7 +181,7 @@ public interface JobClient {
    *
    * <pre>{@code
    * final Consumer<ActivatedJob> consumer = ...; // do something with the consumed job
-   * final ZeebeFuture<StreamJobsResponse> stream = jobClient
+   * final CamundaFuture<StreamJobsResponse> stream = jobClient
    *  .newStreamJobsCommand()
    *  .jobType("payment")
    *  .consumer(consumer)

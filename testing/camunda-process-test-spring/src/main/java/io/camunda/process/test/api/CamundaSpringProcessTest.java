@@ -37,7 +37,7 @@ import org.springframework.test.context.TestExecutionListeners.MergeMode;
  * public class MyProcessTest {
  *
  *   &#064;Autowired
- *   private ZeebeClient zeebeClient;
+ *   private CamundaClient zeebeClient;
  *
  *   &#064;Test
  *   void shouldWork() {
