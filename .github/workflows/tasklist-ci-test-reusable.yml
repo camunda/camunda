@@ -86,7 +86,7 @@ jobs:
       # Run integration tests in parallel
       - name: Run Integration Tests
         run: |
-          mvn -f tasklist -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }}
+          mvn -f tasklist -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }} -pl '!optimize,!optimize-distro,!optimize/client,!optimize/upgrade,!optimize/backend,!optimize/util,!optimize/util/dependency-doc-creation,!optimize/util/optimize-reimport-preparation,!optimize/util/optimize-commons,!optimize/plugins,!optimize/plugins/plugin,!optimize/plugins/optimize-test-plugins/optimize-main-test-plugin,!optimize/plugins/optimize-test-plugins/optimize-pluginloading-test-plugin'
 
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize
