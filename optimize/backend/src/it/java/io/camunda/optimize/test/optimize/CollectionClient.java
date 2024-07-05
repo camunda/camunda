@@ -10,7 +10,6 @@ package io.camunda.optimize.test.optimize;
 import static io.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static io.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static io.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static io.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -205,7 +204,7 @@ public class CollectionClient {
     getRequestExecutor()
         .buildUpdateCollectionScopeEntryRequest(
             collectionId, scopeEntryId, new CollectionScopeEntryUpdateDto(tenants))
-        .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+        .withUserAuthentication("kermit", "kermit")
         .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
@@ -224,7 +223,7 @@ public class CollectionClient {
       final String collectionId) {
     return getRequestExecutor()
         .buildGetScopeForCollectionRequest(collectionId)
-        .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+        .withUserAuthentication("kermit", "kermit")
         .execute(new TypeReference<>() {});
   }
 
@@ -238,7 +237,7 @@ public class CollectionClient {
     addScopeEntryToCollection(collectionId, scopeEntry);
   }
 
-  public Response deleteCollection(String id) {
+  public Response deleteCollection(final String id) {
     return getRequestExecutor().buildDeleteCollectionRequest(id, true).execute();
   }
 
@@ -288,7 +287,7 @@ public class CollectionClient {
       final String collectionId,
       final CollectionScopeEntryUpdateDto scopeEntryUpdate,
       final String scopeEntryId) {
-    Response response =
+    final Response response =
         getRequestExecutor()
             .buildUpdateCollectionScopeEntryRequest(
                 collectionId, scopeEntryId, scopeEntryUpdate, true)
@@ -298,7 +297,7 @@ public class CollectionClient {
 
   public void deleteScopeEntry(
       final String collectionId, final CollectionScopeEntryDto scopeEntry, final Boolean force) {
-    Response response =
+    final Response response =
         getRequestExecutor()
             .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId(), force)
             .execute();
@@ -386,7 +385,7 @@ public class CollectionClient {
 
   public CollectionDefinitionRestDto copyCollection(
       final String collectionId, final String newName) {
-    OptimizeRequestExecutor executor =
+    final OptimizeRequestExecutor executor =
         getRequestExecutor().buildCopyCollectionRequest(collectionId);
     if (newName != null) {
       executor.addSingleQueryParam("name", newName);
