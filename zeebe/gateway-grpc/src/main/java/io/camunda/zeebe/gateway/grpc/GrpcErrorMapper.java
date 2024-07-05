@@ -141,7 +141,8 @@ public final class GrpcErrorMapper {
       case final MessagingException.ConnectionClosed ignored -> {
         builder.setCode(Code.ABORTED_VALUE).setMessage(error.getMessage());
         logger.warn(
-            "Expected to handle gRPC request, but the connection was cut between with the broker",
+            "Expected to handle gRPC request, but the connection was cut prematurely with the broker; "
+                + "the request may or may not have been accepted, and may not be safe to retry.",
             rootError);
       }
       default -> {
