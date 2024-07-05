@@ -11,13 +11,7 @@
   <artifactId>optimize-commons</artifactId>
 
   <dependencies>
-
-    <dependency>
-      <groupId>io.camunda.optimize</groupId>
-      <artifactId>plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
+    
     <!-- REST -->
     <dependency>
       <groupId>jakarta.validation</groupId>
