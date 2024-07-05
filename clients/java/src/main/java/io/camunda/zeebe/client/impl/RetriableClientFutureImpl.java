@@ -17,12 +17,14 @@ package io.camunda.zeebe.client.impl;
 
 import io.grpc.stub.StreamObserver;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 public final class RetriableClientFutureImpl<R, T> extends ZeebeClientFutureImpl<R, T> {
 
+  private final AtomicInteger retries = new AtomicInteger(2);
   private final Predicate<Throwable> retryPredicate;
   private final Consumer<StreamObserver<T>> retryAction;
 
@@ -45,7 +47,7 @@ public final class RetriableClientFutureImpl<R, T> extends ZeebeClientFutureImpl
 
   @Override
   public void onError(final Throwable throwable) {
-    if (retryPredicate.test(throwable)) {
+    if (retries.getAndDecrement() > 0 && retryPredicate.test(throwable)) {
       retryAction.accept(this);
     } else {
       super.onError(throwable);
