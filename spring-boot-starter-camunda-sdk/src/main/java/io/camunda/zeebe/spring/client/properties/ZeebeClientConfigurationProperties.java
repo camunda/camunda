@@ -79,6 +79,7 @@ public class ZeebeClientConfigurationProperties {
 
   private boolean defaultJobWorkerStreamEnabled = DEFAULT.getDefaultJobWorkerStreamEnabled();
   private Duration requestTimeout = DEFAULT.getDefaultRequestTimeout();
+  private int maxMetadataSize = DEFAULT.getMaxMetadataSize();
 
   @Autowired
   public ZeebeClientConfigurationProperties(
@@ -365,12 +366,17 @@ public class ZeebeClientConfigurationProperties {
   }
 
   public int getMaxMetadataSize() {
-    return DEFAULT.getMaxMetadataSize();
+    return maxMetadataSize;
+  }
+
+  public void setMaxMetadataSize(final int maxMetadataSize) {
+    this.maxMetadataSize = maxMetadataSize;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(broker, cloud, worker, message, security, job, requestTimeout);
+    return Objects.hash(
+        broker, cloud, worker, message, security, job, requestTimeout, maxMetadataSize);
   }
 
   @Override
@@ -388,7 +394,8 @@ public class ZeebeClientConfigurationProperties {
         && Objects.equals(message, that.message)
         && Objects.equals(security, that.security)
         && Objects.equals(job, that.job)
-        && Objects.equals(requestTimeout, that.requestTimeout);
+        && Objects.equals(requestTimeout, that.requestTimeout)
+        && Objects.equals(maxMetadataSize, that.maxMetadataSize);
   }
 
   @Override
@@ -426,6 +433,8 @@ public class ZeebeClientConfigurationProperties {
         + defaultJobWorkerStreamEnabled
         + ", requestTimeout="
         + requestTimeout
+        + ", maxMetadataSize="
+        + maxMetadataSize
         + '}';
   }
 
