@@ -15,12 +15,12 @@
  */
 package io.camunda.zeebe.spring.client.config;
 
-import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_KB;
-import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
+import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
+import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.zeebe.spring.client.config.legacy.CamundaClientStarterAutoConfigurationTest;
 import io.camunda.zeebe.spring.client.configuration.CamundaAutoConfiguration;
 import java.net.URI;
@@ -46,7 +46,7 @@ public class CamundaClientConfigurationDefaultPropertiesTest {
 
   @Test
   void testDefaultClientConfiguration() throws URISyntaxException {
-    final ZeebeClient client = applicationContext.getBean(ZeebeClient.class);
+    final CamundaClient client = applicationContext.getBean(CamundaClient.class);
 
     assertThat(client.getConfiguration().isPlaintextConnectionEnabled()).isFalse();
     assertThat(client.getConfiguration().getCaCertificatePath()).isNull();

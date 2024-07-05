@@ -64,7 +64,7 @@ public @interface JobWorker {
   /**
    * Set the request timeout (in seconds) for activate job request used to poll for new job. If no
    * request timeout is set then the default is used from the {@link
-   * io.camunda.zeebe.client.ZeebeClientConfiguration ZeebeClientConfigurationImpl}
+   * io.camunda.client.CamundaClientConfiguration ZeebeClientConfigurationImpl}
    */
   long requestTimeout() default -1L;
 
@@ -72,8 +72,7 @@ public @interface JobWorker {
    * Set the maximal interval (in milliseconds) between polling for new jobs. A job worker will
    * automatically try to always activate new jobs after completing jobs. If no jobs can be
    * activated after completing the worker will periodically poll for new jobs. If no poll interval
-   * is set then the default is used from the {@link
-   * io.camunda.zeebe.client.ZeebeClientConfiguration ZeebeClientConfigurationImpl}
+   * is set then the default is used from the {@link io.camunda.client.CamundaClientConfiguration}
    */
   long pollInterval() default -1L;
 

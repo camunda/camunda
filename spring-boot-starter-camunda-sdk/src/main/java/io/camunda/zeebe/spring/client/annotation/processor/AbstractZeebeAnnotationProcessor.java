@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.annotation.processor;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.spring.client.bean.ClassInfo;
 import org.springframework.beans.factory.BeanNameAware;
 
@@ -36,7 +36,7 @@ public abstract class AbstractZeebeAnnotationProcessor implements BeanNameAware 
 
   public abstract void configureFor(final ClassInfo beanInfo);
 
-  public abstract void start(ZeebeClient zeebeClient);
+  public abstract void start(CamundaClient client);
 
-  public abstract void stop(ZeebeClient zeebeClient);
+  public abstract void stop(CamundaClient client);
 }

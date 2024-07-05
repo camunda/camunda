@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.event;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import org.springframework.context.ApplicationEvent;
 
 /**
@@ -32,14 +32,14 @@ import org.springframework.context.ApplicationEvent;
  */
 public class ZeebeClientCreatedEvent extends ApplicationEvent {
 
-  public final ZeebeClient client;
+  public final CamundaClient client;
 
-  public ZeebeClientCreatedEvent(final Object source, final ZeebeClient client) {
+  public ZeebeClientCreatedEvent(final Object source, final CamundaClient client) {
     super(source);
     this.client = client;
   }
 
-  public ZeebeClient getClient() {
+  public CamundaClient getClient() {
     return client;
   }
 }

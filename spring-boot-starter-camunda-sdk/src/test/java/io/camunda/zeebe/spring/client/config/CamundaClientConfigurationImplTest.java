@@ -17,9 +17,9 @@ package io.camunda.zeebe.spring.client.config;
 
 import static org.assertj.core.api.Assertions.*;
 
-import io.camunda.zeebe.client.CredentialsProvider;
-import io.camunda.zeebe.client.api.JsonMapper;
-import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
+import io.camunda.client.CredentialsProvider;
+import io.camunda.client.api.JsonMapper;
+import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
@@ -49,7 +49,7 @@ public class CamundaClientConfigurationImplTest {
   }
 
   private static JsonMapper jsonMapper() {
-    return new ZeebeObjectMapper();
+    return new CamundaObjectMapper();
   }
 
   private static ZeebeClientExecutorService executorService() {

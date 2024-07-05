@@ -19,8 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.JsonMapper;
 import io.camunda.zeebe.spring.client.configuration.CamundaAutoConfiguration;
 import io.camunda.zeebe.spring.client.configuration.JsonMapperConfiguration;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientProdAutoConfiguration;
@@ -97,7 +97,7 @@ public class CamundaClientStarterAutoConfigurationTest {
 
   @Test
   void testClientConfiguration() {
-    final ZeebeClient client = applicationContext.getBean(ZeebeClient.class);
+    final CamundaClient client = applicationContext.getBean(CamundaClient.class);
     assertThat(client.getConfiguration().getGatewayAddress()).isEqualTo("localhost:1234");
     assertThat(client.getConfiguration().getGrpcAddress().toString())
         .isEqualTo("https://localhost:1234");

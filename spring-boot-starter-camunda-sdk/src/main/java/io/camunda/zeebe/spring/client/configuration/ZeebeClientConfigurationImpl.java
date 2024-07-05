@@ -19,11 +19,12 @@ import static io.camunda.zeebe.spring.client.configuration.PropertyUtil.*;
 import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties.*;
 import static org.springframework.util.StringUtils.hasText;
 
-import io.camunda.zeebe.client.CredentialsProvider;
-import io.camunda.zeebe.client.api.JsonMapper;
-import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
-import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.zeebe.client.impl.util.Environment;
+import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.CredentialsProvider;
+import io.camunda.client.api.JsonMapper;
+import io.camunda.client.impl.NoopCredentialsProvider;
+import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.client.impl.util.Environment;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties.ClientMode;
@@ -42,11 +43,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ZeebeClientConfigurationImpl
-    implements io.camunda.zeebe.client.ZeebeClientConfiguration {
+public class ZeebeClientConfigurationImpl implements CamundaClientConfiguration {
 
-  private static final Logger LOG =
-      LoggerFactory.getLogger(io.camunda.zeebe.client.ZeebeClientConfiguration.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ZeebeClientConfigurationImpl.class);
   private final Map<String, Object> configCache = new HashMap<>();
   private final ZeebeClientConfigurationProperties properties;
   private final CamundaClientProperties camundaClientProperties;
