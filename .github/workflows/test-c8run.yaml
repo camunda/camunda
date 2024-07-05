@@ -1,0 +1,55 @@
+name: "test c8run"
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  test_c8run:
+    name: Test deploying camunda platform on c8run
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: disable and stop mono-xsp4.service
+        run: |
+             sudo systemctl stop mono-xsp4.service || true
+             sudo systemctl disable mono-xsp4.service || true
+             sudo killall mono || true
+             sudo killall xsp4 || true
+
+      - uses: actions/checkout@v4
+
+      - name: Run c8run
+        run: nohup ./start.sh
+        working-directory: ./c8run
+
+      - name: Sleep 2 mins
+        run: sleep 120
+
+      - uses: actions/setup-node@v4
+        if: ${{ inputs.run_e2e_tests }}
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        if: ${{ inputs.run_e2e_tests }}
+        run: npm ci
+        working-directory: ./c8run/e2e_tests
+
+      - name: Install Playwright Browsers
+        if: ${{ inputs.run_e2e_tests }}
+        run: npx playwright install --with-deps
+        working-directory: ./c8run/e2e_tests
+
+      - name: Run Playwright tests
+        if: ${{ inputs.run_e2e_tests }}
+        run: npx playwright test
+        working-directory: ./c8run/e2e_tests
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.run_e2e_tests }}
+        with:
+          name: playwright-report
+          path: ./c8run/e2e_tests/playwright-report
+          retention-days: 30
