@@ -13,6 +13,7 @@ export async function setup() {
     'processWithAnIncident.bpmn',
     'processWithMultiIncidents.bpmn',
     'collapsedSubprocess.bpmn',
+    'executionCountProcess.bpmn',
   ]);
 
   const instanceWithIncidentToCancel = await createSingleInstance(
@@ -31,9 +32,15 @@ export async function setup() {
     1,
   );
 
+  const executionCountProcessInstance = await createSingleInstance(
+    'executionCountProcess',
+    1,
+  );
+
   return {
     instanceWithIncidentToCancel,
     instanceWithIncidentToResolve,
     collapsedSubProcessInstance,
+    executionCountProcessInstance,
   };
 }

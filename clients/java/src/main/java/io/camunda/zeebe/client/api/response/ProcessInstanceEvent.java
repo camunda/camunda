@@ -32,6 +32,6 @@ public interface ProcessInstanceEvent {
   long getProcessInstanceKey();
 
   /** Tenant identifier that owns this process instance */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/13321")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/13321")
   String getTenantId();
 }

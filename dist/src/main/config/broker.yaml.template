@@ -502,16 +502,6 @@
       # ioThreadCount: 2
 
     # flowControl:
-      # Configure flow control for appending. See ZEEBE_BROKER_BACKPRESSURE for available configuration options.
-      # append:
-        # enabled: true
-        # algorithm: "legacyVegas"
-        # useWindowed: false
-        # legacyVegas:
-          # initialLimit: 1024
-          # maxConcurrency: 32768
-          # alphaLimit: 0.7
-          # betaLimit: 0.95
       # Configure flow control for user requests. This setting takes precedence over the backpressure configuration.
       # request:
         # enabled: true
@@ -523,6 +513,11 @@
           # minLimit: 1
           # maxLimit: 1000
           # backoffRatio: 0.9
+      # Configure a rate limit for all writes.
+      # write:
+        # enabled: false
+        # rampUp: 0 # ramp up time, for example 10s
+        # limit: 1000 # maximum number of records written per second
 
     # backpressure:
       # Configure backpressure below.
@@ -1124,6 +1119,13 @@
           # that could be marked as timed-out in a single trigger run.
           # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENGINE_JOBS_TIMEOUTCHECKERBATCHLIMIT
           # timeoutCheckerBatchLimit: 0x7fffffff
+
+        # validators:
+          # Allows to configure the maximum output size (in bytes) for BPMN validator results.
+          # These results details are typically returned in our gRPC endpoint responses and can cause issues in proxy servers if they are too long to be contained in proxy-headers.
+          # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENGINE_VALIDATORS_RESULTSOUTPUTMAXSIZE
+          # PS: The default value is 12kb. Increasing it to a higher value introduces a risk that it will be throttled by NGINX proxy configs or the zeebe client configs.
+          # resultsOutputMaxSize: 12288
 
       # Allows to configure feature flags. These are used to test new features in dev and int environments prior
       # to rolling them out to production

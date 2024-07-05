@@ -40,7 +40,7 @@ The [Zeebe protocol](../protocol/src/main/resources/protocol.xml) defines both t
 The protocol is defined as [SBE](https://www.fixtrading.org/standards/sbe-online/), a binary encoding with limited support for backwards compatibility.
 We must be careful when extending or modifying the protocol to ensure that we do not break compatibility.
 Because SBE is a binary encoding with relatively little overhead, accidentally breaking compatibility can result in silent data corruption when data is read the wrong way.
-See https://github.com/camunda/zeebe/issues/14957 for an example of such an issue.
+See https://github.com/camunda/camunda/issues/14957 for an example of such an issue.
 
 There is guidance on message versioning that explains some of the rules we have to follow to ensure compatibility: https://github.com/real-logic/simple-binary-encoding/wiki/Message-Versioning
 Additionally, we have automated tests that prevent changes until we [mark them as acceptable](../protocol/revapi.json).
@@ -81,7 +81,7 @@ This increases the risk of rolling updates because it delays recovery and increa
 For example, a rolling update as implemented by Kubernetes will not complete if data migrations take so long that the updated brokers don't become ready in time.
 On the other hand, the migrations require additional resources that may not be accounted for.
 This can show up in CPU but most importantly in memory and disk resources.
-See for example https://github.com/camunda/zeebe/issues/14975.
+See for example https://github.com/camunda/camunda/issues/14975.
 
 When implementing a new feature, we actively try to avoid data migrations because their impact is difficult to assess for all use cases.
 Instead, we try to find alternative ways to implement new features:

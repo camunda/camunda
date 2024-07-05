@@ -228,6 +228,13 @@ public class ProcessInstanceMigrationMigrateProcessor
         targetElementId,
         elementInstanceRecord,
         EnumSet.of(BpmnEventType.MESSAGE));
+    requireMappedBoundaryEventsToStayAttachedToSameElement(
+        processInstanceKey,
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        elementId,
+        targetElementId,
+        sourceElementIdToTargetElementId);
     requireNoConcurrentCommand(eventScopeInstanceState, elementInstance, processInstanceKey);
 
     stateWriter.appendFollowUpEvent(

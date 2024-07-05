@@ -241,6 +241,6 @@ public interface JobClient {
    *
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/11231")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/11231")
   StreamJobsCommandStep1 newStreamJobsCommand();
 }

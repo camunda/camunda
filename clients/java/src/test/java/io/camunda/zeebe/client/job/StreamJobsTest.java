@@ -306,7 +306,7 @@ public final class StreamJobsTest extends ClientTest {
     assertThat(request.getTenantIdsList()).containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 
-  // Regression: https://github.com/camunda/zeebe/issues/17513
+  // Regression: https://github.com/camunda/camunda/issues/17513
   @Test
   public void shouldNotAccumulateTenantsOnSuccessiveOpen() {
     // given

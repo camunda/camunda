@@ -167,6 +167,33 @@ public class ExecutionListenerIntermediateCatchEventElementTest {
     }
 
     @Test
+    public void shouldAccessInputMappingVariablesInStartExecutionListener() {
+      // given
+      final var modelInstance =
+          Bpmn.createExecutableProcess(PROCESS_ID)
+              .startEvent()
+              .intermediateCatchEvent(
+                  scenario.name,
+                  c -> scenario.builderFunction.apply(c).zeebeInput("=5+4", "inputVar"))
+              .zeebeStartExecutionListener(START_EL_TYPE)
+              .endEvent()
+              .done();
+
+      // when: deploy process
+      final long processInstanceKey =
+          createProcessInstance(ENGINE, modelInstance, scenario.processVariables);
+
+      // then: `inputVar` variable accessible in start EL
+      final Optional<JobRecordValue> startElJobActivated =
+          ENGINE.jobs().withType(START_EL_TYPE).activate().getValue().getJobs().stream()
+              .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
+              .findFirst();
+
+      assertThat(startElJobActivated)
+          .hasValueSatisfying(job -> assertThat(job.getVariables()).contains(entry("inputVar", 9)));
+    }
+
+    @Test
     public void shouldAllowEndListenerToAccessStartListenerVariable() {
       // given
       final var modelInstance =

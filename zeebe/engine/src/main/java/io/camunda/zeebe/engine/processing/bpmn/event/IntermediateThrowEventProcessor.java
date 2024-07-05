@@ -181,16 +181,20 @@ public class IntermediateThrowEventProcessor
     }
 
     @Override
+    public Either<Failure, ?> onActivate(
+        final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
+      return element.getJobWorkerProperties() == null
+          ? SUCCESS
+          : variableMappingBehavior.applyInputMappings(activating, element);
+    }
+
+    @Override
     public Either<Failure, ?> finalizeActivation(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
       return element.getJobWorkerProperties() == null
           ? SUCCESS
-          : variableMappingBehavior
-              .applyInputMappings(activating, element)
-              .flatMap(
-                  ok ->
-                      jobBehavior.evaluateJobExpressions(
-                          element.getJobWorkerProperties(), activating))
+          : jobBehavior
+              .evaluateJobExpressions(element.getJobWorkerProperties(), activating)
               .thenDo(
                   jobProperties -> {
                     jobBehavior.createNewJob(activating, element, jobProperties);

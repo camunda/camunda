@@ -8,6 +8,7 @@
 package io.camunda.zeebe.logstreams.impl.log;
 
 import com.netflix.concurrency.limits.Limit;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
@@ -23,8 +24,8 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private ActorSchedulingService actorSchedulingService;
   private LogStorage logStorage;
   private String logName;
-  private Limit appendLimit;
   private Limit requestLimit;
+  private RateLimit writeRateLimit;
 
   @Override
   public LogStreamBuilder withActorSchedulingService(
@@ -58,14 +59,14 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   }
 
   @Override
-  public LogStreamBuilder withAppendLimit(final Limit appendLimit) {
-    this.appendLimit = appendLimit;
+  public LogStreamBuilder withRequestLimit(final Limit requestLimit) {
+    this.requestLimit = requestLimit;
     return this;
   }
 
   @Override
-  public LogStreamBuilder withRequestLimit(final Limit requestLimit) {
-    this.requestLimit = requestLimit;
+  public LogStreamBuilder withWriteRateLimit(final RateLimit writeRateLimit) {
+    this.writeRateLimit = writeRateLimit;
     return this;
   }
 
@@ -75,21 +76,21 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
 
     final var logStreamService =
         new LogStreamImpl(
-            logName, partitionId, maxFragmentSize, logStorage, appendLimit, requestLimit);
+            logName, partitionId, maxFragmentSize, logStorage, requestLimit, writeRateLimit);
 
-    final var logstreamInstallFuture = new CompletableActorFuture<LogStream>();
+    final var logStreamInstallFuture = new CompletableActorFuture<LogStream>();
     actorSchedulingService
         .submitActor(logStreamService)
         .onComplete(
             (v, t) -> {
               if (t == null) {
-                logstreamInstallFuture.complete(logStreamService);
+                logStreamInstallFuture.complete(logStreamService);
               } else {
-                logstreamInstallFuture.completeExceptionally(t);
+                logStreamInstallFuture.completeExceptionally(t);
               }
             });
 
-    return logstreamInstallFuture;
+    return logStreamInstallFuture;
   }
 
   private void validate() {
