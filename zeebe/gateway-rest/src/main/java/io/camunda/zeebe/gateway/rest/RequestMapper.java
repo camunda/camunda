@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.rest;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.identity.automation.usermanagement.CamundaGroup;
-import io.camunda.identity.automation.usermanagement.CamundaUser;
 import io.camunda.identity.automation.usermanagement.CamundaUserWithPassword;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.security.auth.Authentication;
@@ -18,8 +17,6 @@ import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupRequest;
-import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupResponse;
-import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
@@ -254,7 +251,7 @@ public class RequestMapper {
     return record;
   }
 
-  public static CamundaUserWithPassword getUserWithPassword(
+  public static CamundaUserWithPassword toUserWithPassword(
       final CamundaUserWithPasswordRequest dto) {
     final CamundaUserWithPassword camundaUserWithPassword = new CamundaUserWithPassword();
 
@@ -268,26 +265,8 @@ public class RequestMapper {
     return camundaUserWithPassword;
   }
 
-  public static CamundaUserResponse getCamundaUserResponse(final CamundaUser camundaUser) {
-    final CamundaUserResponse camundaUserDto = new CamundaUserResponse();
-    camundaUserDto.setId(camundaUser.getId());
-    camundaUserDto.setUsername(camundaUser.getUsername());
-    camundaUserDto.setName(camundaUser.getName());
-    camundaUserDto.setEmail(camundaUser.getEmail());
-    camundaUserDto.setEnabled(camundaUser.isEnabled());
-
-    return camundaUserDto;
-  }
-
-  public static CamundaGroup getGroup(final CamundaGroupRequest groupRequest) {
+  public static CamundaGroup toGroup(final CamundaGroupRequest groupRequest) {
     return new CamundaGroup(groupRequest.getId(), groupRequest.getName());
-  }
-
-  public static CamundaGroupResponse getGroupResponse(final CamundaGroup group) {
-    final CamundaGroupResponse camundaGroupResponse = new CamundaGroupResponse();
-    camundaGroupResponse.setId(group.id());
-    camundaGroupResponse.setName(group.name());
-    return camundaGroupResponse;
   }
 
   private static Map<String, Object> getMapOrEmpty(

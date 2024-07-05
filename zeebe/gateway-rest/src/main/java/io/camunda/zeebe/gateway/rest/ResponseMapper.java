@@ -9,8 +9,12 @@ package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.identity.automation.usermanagement.CamundaGroup;
+import io.camunda.identity.automation.usermanagement.CamundaUser;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupResponse;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -54,6 +58,24 @@ public final class ResponseMapper {
         .variables(job.getVariables())
         .customHeaders(job.getCustomHeadersObjectMap())
         .tenantId(job.getTenantId());
+  }
+
+  public static CamundaUserResponse toCamundaUserResponse(final CamundaUser camundaUser) {
+    final CamundaUserResponse camundaUserDto = new CamundaUserResponse();
+    camundaUserDto.setId(camundaUser.getId());
+    camundaUserDto.setUsername(camundaUser.getUsername());
+    camundaUserDto.setName(camundaUser.getName());
+    camundaUserDto.setEmail(camundaUser.getEmail());
+    camundaUserDto.setEnabled(camundaUser.isEnabled());
+
+    return camundaUserDto;
+  }
+
+  public static CamundaGroupResponse toGroupResponse(final CamundaGroup group) {
+    final CamundaGroupResponse camundaGroupResponse = new CamundaGroupResponse();
+    camundaGroupResponse.setId(group.id());
+    camundaGroupResponse.setName(group.name());
+    return camundaGroupResponse;
   }
 
   static class RestJobActivationResult implements JobActivationResult<JobActivationResponse> {

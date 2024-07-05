@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.zeebe.gateway.rest.ResponseMapper.toCamundaUserResponse;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -23,7 +24,6 @@ import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.GroupController;
 import java.net.URI;
 import java.util.List;
@@ -343,8 +343,7 @@ public class GroupControllerTest extends RestControllerTest {
   @Test
   void searchUsersOfGroupShouldReturnMembers() {
     final CamundaUser camundaUser = new CamundaUser(1L, "username", "name", "email", true);
-    final CamundaUserResponse camundaUserResponse =
-        RequestMapper.getCamundaUserResponse(camundaUser);
+    final CamundaUserResponse camundaUserResponse = toCamundaUserResponse(camundaUser);
 
     final UserSearchResponse userSearchResponse = new UserSearchResponse();
     userSearchResponse.setItems(List.of(camundaUserResponse));
@@ -359,6 +358,31 @@ public class GroupControllerTest extends RestControllerTest {
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(searchQueryRequest)
+        .exchange()
+        .expectStatus()
+        .is2xxSuccessful()
+        .expectBody(UserSearchResponse.class)
+        .isEqualTo(userSearchResponse);
+
+    verify(userGroupMembershipService).getUsersOfGroupById(1L);
+  }
+
+  @Test
+  void searchUsersOfGroupWithoutRequestBodyShouldReturnMembers() {
+
+    final CamundaUser camundaUser = new CamundaUser(1L, "username", "name", "email", true);
+    final CamundaUserResponse camundaUserResponse = toCamundaUserResponse(camundaUser);
+
+    final UserSearchResponse userSearchResponse = new UserSearchResponse();
+    userSearchResponse.setItems(List.of(camundaUserResponse));
+
+    when(userGroupMembershipService.getUsersOfGroupById(1L)).thenReturn(List.of(camundaUser));
+
+    webClient
+        .post()
+        .uri("/v2/groups/1/users/search")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .is2xxSuccessful()
