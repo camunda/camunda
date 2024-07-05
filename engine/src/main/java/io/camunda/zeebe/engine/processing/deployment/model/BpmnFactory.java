@@ -21,8 +21,8 @@ public final class BpmnFactory {
 
   public static BpmnValidator createValidator(
       final ExpressionProcessor expressionProcessor, final int validatorResultsOutputMaxSize) {
-    return new BpmnValidator(createExpressionLanguage(), expressionProcessor,
-        validatorResultsOutputMaxSize);
+    return new BpmnValidator(
+        createExpressionLanguage(), expressionProcessor, validatorResultsOutputMaxSize);
   }
 
   private static ExpressionLanguage createExpressionLanguage() {
