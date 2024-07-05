@@ -23,6 +23,10 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
+/**
+ * @deprecated since 8.6 for removal with 8.8
+ */
+@Deprecated
 public interface ZeebeClientConfiguration {
 
   /**

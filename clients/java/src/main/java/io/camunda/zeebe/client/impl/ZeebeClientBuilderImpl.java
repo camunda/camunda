@@ -49,6 +49,10 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 
+/**
+ * @deprecated since 8.6 for removal with 8.8
+ */
+@Deprecated
 public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
 
   public static final String PLAINTEXT_CONNECTION_VAR = "ZEEBE_INSECURE_CONNECTION";

@@ -42,7 +42,12 @@ import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeClientCloudBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 
-/** The client to communicate with a Zeebe broker/cluster. */
+/**
+ * The client to communicate with a Zeebe broker/cluster.
+ *
+ * @deprecated since 8.6 for removal with 8.8
+ */
+@Deprecated
 public interface ZeebeClient extends AutoCloseable, JobClient {
 
   /**

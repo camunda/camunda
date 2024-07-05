@@ -19,6 +19,10 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 
+/**
+ * @deprecated since 8.6 for removal with 8.8
+ */
+@Deprecated
 public final class ClientProperties {
 
   /**
