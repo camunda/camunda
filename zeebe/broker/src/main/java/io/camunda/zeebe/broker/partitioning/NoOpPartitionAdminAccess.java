@@ -8,6 +8,8 @@
 package io.camunda.zeebe.broker.partitioning;
 
 import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControlLimits;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Optional;
@@ -60,6 +62,18 @@ public final class NoOpPartitionAdminAccess implements PartitionAdminAccess {
 
   @Override
   public ActorFuture<Void> banInstance(final long processInstanceKey) {
+    logCall();
+    return CompletableActorFuture.completed(null);
+  }
+
+  @Override
+  public ActorFuture<Void> configureFlowControl(final FlowControlCfg flowControlCfg) {
+    logCall();
+    return CompletableActorFuture.completed(null);
+  }
+
+  @Override
+  public ActorFuture<FlowControlLimits> getFlowControlConfiguration() {
     logCall();
     return CompletableActorFuture.completed(null);
   }

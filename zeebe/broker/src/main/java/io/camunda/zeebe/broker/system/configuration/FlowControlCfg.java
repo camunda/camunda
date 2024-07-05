@@ -7,11 +7,18 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
 import io.camunda.zeebe.broker.system.configuration.backpressure.RateLimitCfg;
 import java.util.Objects;
 
 public class FlowControlCfg implements ConfigurationEntry {
+
+  private static final ObjectMapper MAPPER =
+      JsonMapper.builder().addModule(new JavaTimeModule()).build();
   private LimitCfg request = null;
   private RateLimitCfg write = new RateLimitCfg();
 
@@ -47,5 +54,13 @@ public class FlowControlCfg implements ConfigurationEntry {
       return false;
     }
     return Objects.equals(request, that.request) && Objects.equals(write, that.write);
+  }
+
+  public static FlowControlCfg deserialize(final String serialized) throws JsonProcessingException {
+    return MAPPER.readValue(serialized, FlowControlCfg.class);
+  }
+
+  public byte[] serialize() throws JsonProcessingException {
+    return MAPPER.writeValueAsBytes(this);
   }
 }

@@ -46,9 +46,15 @@ public class IntermediateCatchEventProcessor
   }
 
   @Override
-  public Either<Failure, ?> finalizeActivation(
+  public Either<Failure, ?> onActivate(
       final ExecutableCatchEventElement element, final BpmnElementContext activating) {
     return eventBehaviorOf(element).onActivate(element, activating);
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeActivation(
+      final ExecutableCatchEventElement element, final BpmnElementContext activating) {
+    return eventBehaviorOf(element).finalizeActivation(element, activating);
   }
 
   @Override
@@ -93,8 +99,15 @@ public class IntermediateCatchEventProcessor
 
     boolean isSuitableForEvent(final ExecutableCatchEventElement element);
 
-    Either<Failure, ?> onActivate(
-        final ExecutableCatchEventElement element, final BpmnElementContext activating);
+    default Either<Failure, ?> onActivate(
+        final ExecutableCatchEventElement element, final BpmnElementContext activating) {
+      return SUCCESS;
+    }
+
+    default Either<Failure, ?> finalizeActivation(
+        final ExecutableCatchEventElement element, final BpmnElementContext activating) {
+      return SUCCESS;
+    }
   }
 
   private final class DefaultIntermediateCatchEventBehavior
@@ -108,9 +121,14 @@ public class IntermediateCatchEventProcessor
     @Override
     public Either<Failure, ?> onActivate(
         final ExecutableCatchEventElement element, final BpmnElementContext activating) {
-      return variableMappingBehavior
-          .applyInputMappings(activating, element)
-          .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, activating))
+      return variableMappingBehavior.applyInputMappings(activating, element);
+    }
+
+    @Override
+    public Either<Failure, ?> finalizeActivation(
+        final ExecutableCatchEventElement element, final BpmnElementContext activating) {
+      return eventSubscriptionBehavior
+          .subscribeToEvents(element, activating)
           .thenDo(
               ok ->
                   stateTransitionBehavior.transitionToActivated(
@@ -126,7 +144,7 @@ public class IntermediateCatchEventProcessor
     }
 
     @Override
-    public Either<Failure, ?> onActivate(
+    public Either<Failure, ?> finalizeActivation(
         final ExecutableCatchEventElement element, final BpmnElementContext activating) {
       final var activated =
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());

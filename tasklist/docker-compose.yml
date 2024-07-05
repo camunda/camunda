@@ -4,7 +4,7 @@ networks:
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.1
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.2
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -50,7 +50,7 @@ services:
       - zeebe_network
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.14.1
+    image: docker.elastic.co/kibana/kibana:8.14.2
     ports:
       - 5601:5601
     environment:
@@ -85,7 +85,7 @@ services:
 
   zeebe-opensearch:
     container_name: zeebe-opensearch
-    image: camunda/zeebe:8.5.4
+    image: camunda/zeebe:8.5.5
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=0.0.0.0
@@ -169,7 +169,7 @@ services:
 
   zeebe-e2e:
     container_name: zeebe-e2e
-    image: camunda/zeebe:8.5.4
+    image: camunda/zeebe:8.5.5
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=zeebe-e2e

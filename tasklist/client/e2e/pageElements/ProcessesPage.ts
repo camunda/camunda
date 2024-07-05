@@ -12,6 +12,7 @@ class ProcessesPage {
   private page: Page;
   readonly continueButton: Locator;
   readonly cancelButton: Locator;
+  readonly modaLStartProcessButton: Locator;
   readonly startProcessButton: Locator;
   readonly docsLink: Locator;
   readonly searchProcessesInput: Locator;
@@ -23,6 +24,9 @@ class ProcessesPage {
     this.continueButton = page.getByRole('button', {name: 'Continue'});
     this.cancelButton = page.getByRole('button', {name: 'Cancel'});
     this.startProcessButton = page.getByRole('button', {name: 'Start process'});
+    this.modaLStartProcessButton = this.page
+      .getByLabel('Start process processWithStartNodeFormDeployed')
+      .getByRole('button', {name: 'Start process'});
     this.docsLink = page.getByRole('link', {name: 'here'});
     this.searchProcessesInput = page.getByPlaceholder('Search processes');
     this.processTile = page.getByTestId('process-tile');

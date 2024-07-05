@@ -18,7 +18,9 @@ import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.Either;
+import java.time.Duration;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -69,8 +71,13 @@ import java.util.TreeMap;
 @SuppressWarnings("UnstableApiUsage")
 public final class FlowControl implements AppendListener {
   private final LogStreamMetrics metrics;
-  private final Limiter<Intent> processingLimiter;
-  private final RateLimiter writeRateLimiter;
+  private RateLimit writeRateLimit;
+  private Limit requestLimit;
+  private Limiter<Intent> processingLimiter;
+  private RateLimiter writeRateLimiter;
+  private final RateMeasurement exportingRate =
+      new RateMeasurement(
+          ActorClock::currentTimeMillis, Duration.ofMinutes(5), Duration.ofSeconds(10));
   private volatile long lastProcessedPosition = -1;
 
   private final NavigableMap<Long, InFlightEntry> inFlight = new TreeMap<>();
@@ -82,6 +89,8 @@ public final class FlowControl implements AppendListener {
   public FlowControl(
       final LogStreamMetrics metrics, final Limit requestLimit, final RateLimit writeRateLimit) {
     this.metrics = metrics;
+    this.requestLimit = requestLimit;
+    this.writeRateLimit = writeRateLimit;
     processingLimiter =
         requestLimit != null
             ? new CommandRateLimiterBuilder().limit(requestLimit).build(metrics)
@@ -165,6 +174,37 @@ public final class FlowControl implements AppendListener {
       inFlightEntry.onProcessed();
     }
     lastProcessedPosition = position;
+  }
+
+  public void onExported(final long position) {
+    if (position <= 0) {
+      return;
+    }
+    if (exportingRate.observe(position)) {
+      metrics.setExportingRate(exportingRate.rate());
+    }
+  }
+
+  public Limit getRequestLimit() {
+    return requestLimit;
+  }
+
+  public void setRequestLimit(final Limit requestLimit) {
+    this.requestLimit = requestLimit;
+    processingLimiter =
+        requestLimit != null
+            ? new CommandRateLimiterBuilder().limit(requestLimit).build(metrics)
+            : new NoopLimiter<>();
+    metrics.setInflightRequests(0);
+  }
+
+  public RateLimit getWriteRateLimit() {
+    return writeRateLimit;
+  }
+
+  public void setWriteRateLimit(final RateLimit writeRateLimit) {
+    this.writeRateLimit = writeRateLimit;
+    writeRateLimiter = writeRateLimit == null ? null : writeRateLimit.limiter();
   }
 
   public enum Rejection {

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.transform;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
@@ -41,7 +42,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
 
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
-  private final Function<DeploymentResource, DirectBuffer> checksumGenerator;
+  private final Function<byte[], DirectBuffer> checksumGenerator;
 
   private final BpmnValidator validator;
   private final ProcessState processState;
@@ -50,15 +51,18 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   public BpmnResourceTransformer(
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
-      final Function<DeploymentResource, DirectBuffer> checksumGenerator,
+      final Function<byte[], DirectBuffer> checksumGenerator,
       final ProcessState processState,
       final ExpressionProcessor expressionProcessor,
-      final boolean enableStraightThroughProcessingLoopDetector) {
+      final boolean enableStraightThroughProcessingLoopDetector,
+      final EngineConfiguration config) {
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
     this.checksumGenerator = checksumGenerator;
     this.processState = processState;
-    validator = BpmnFactory.createValidator(expressionProcessor);
+    validator =
+        BpmnFactory.createValidator(
+            expressionProcessor, config.getValidatorsResultsOutputMaxSize());
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
   }
 
@@ -158,7 +162,8 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
 
         final DirectBuffer lastDigest =
             processState.getLatestVersionDigest(wrapString(bpmnProcessId), tenantId);
-        final DirectBuffer resourceDigest = checksumGenerator.apply(deploymentResource);
+        final DirectBuffer resourceDigest =
+            checksumGenerator.apply(deploymentResource.getResource());
 
         // adds process record to deployment record
         final var processMetadata = deploymentEvent.processesMetadata().add();

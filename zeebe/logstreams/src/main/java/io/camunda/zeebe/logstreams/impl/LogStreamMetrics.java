@@ -139,6 +139,15 @@ public final class LogStreamMetrics {
           .help("Count of records appended per partition, record type, value type, and intent")
           .register();
 
+  private static final Gauge EXPORTING_RATE =
+      Gauge.build()
+          .namespace("zeebe")
+          .subsystem("flow_control")
+          .name("exporting_rate")
+          .help("The rate of exporting records from the log appender")
+          .labelNames("partition")
+          .register();
+
   private final Counter.Child deferredAppends;
   private final Counter.Child triedAppends;
   private final Gauge.Child inflightAppends;
@@ -151,6 +160,7 @@ public final class LogStreamMetrics {
   private final Gauge.Child lastWritten;
   private final Histogram.Child commitLatency;
   private final Histogram.Child appendLatency;
+  private final Gauge.Child exportingRate;
   private final String partitionLabel;
 
   public LogStreamMetrics(final int partitionId) {
@@ -167,6 +177,7 @@ public final class LogStreamMetrics {
     lastWritten = LAST_WRITTEN_POSITION.labels(partitionLabel);
     commitLatency = COMMIT_LATENCY.labels(partitionLabel);
     appendLatency = WRITE_LATENCY.labels(partitionLabel);
+    exportingRate = EXPORTING_RATE.labels(partitionLabel);
   }
 
   public void increaseInflightAppends() {
@@ -234,6 +245,7 @@ public final class LogStreamMetrics {
     LAST_WRITTEN_POSITION.remove(partitionLabel);
     COMMIT_LATENCY.remove(partitionLabel);
     WRITE_LATENCY.remove(partitionLabel);
+    EXPORTING_RATE.remove(partitionLabel);
   }
 
   private String contextLabel(final WriteContext context) {
@@ -277,5 +289,9 @@ public final class LogStreamMetrics {
     FLOW_CONTROL_OUTCOME
         .labels(partitionLabel, contextLabel(context), reasonLabel(reason))
         .inc(batchMetadata.size());
+  }
+
+  public void setExportingRate(final long value) {
+    exportingRate.set(value);
   }
 }
