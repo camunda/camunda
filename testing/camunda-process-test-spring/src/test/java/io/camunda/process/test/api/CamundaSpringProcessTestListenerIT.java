@@ -15,8 +15,10 @@
  */
 package io.camunda.process.test.api;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import org.junit.jupiter.api.Test;
@@ -27,7 +29,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 @CamundaSpringProcessTest
 public class CamundaSpringProcessTestListenerIT {
 
-  @Autowired private ZeebeClient zeebeClient;
+  @Autowired private CamundaClient client;
 
   @Test
   void shouldCreateProcessInstance() {
@@ -43,11 +45,11 @@ public class CamundaSpringProcessTestListenerIT {
             .zeebeOutputExpression("\"ok\"", "result")
             .done();
 
-    zeebeClient.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+    client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
 
     // when
     final ProcessInstanceEvent processInstance =
-        zeebeClient
+        client
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()

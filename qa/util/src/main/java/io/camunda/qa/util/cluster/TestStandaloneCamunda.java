@@ -10,6 +10,7 @@ package io.camunda.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.commons.CommonsModuleConfiguration;
 import io.camunda.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
@@ -19,7 +20,6 @@ import io.camunda.operate.schema.SchemaManager;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
@@ -204,7 +204,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   }
 
   @Override
-  public ZeebeClientBuilder newClientBuilder() {
+  public CamundaClientBuilder newClientBuilder() {
     if (!isGateway()) {
       throw new IllegalStateException(
           "Cannot create a new client for this broker, as it does not have an embedded gateway");

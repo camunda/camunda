@@ -16,15 +16,15 @@
 package io.camunda.process.test.api;
 
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
 import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
+import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
-import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.spring.client.event.ZeebeClientClosingEvent;
 import io.camunda.zeebe.spring.client.event.ZeebeClientCreatedEvent;
 import java.util.ArrayList;
@@ -40,7 +40,7 @@ import org.springframework.test.context.TestExecutionListener;
  *
  * <ul>
  *   <li>Start the runtime
- *   <li>Create a {@link ZeebeClient} to inject in the test class
+ *   <li>Create a {@link CamundaClient} to inject in the test class
  *   <li>Create a {@link CamundaProcessTestContext} to inject in the test class
  *   <li>Publish a {@link ZeebeClientCreatedEvent}
  * </ul>
@@ -49,17 +49,17 @@ import org.springframework.test.context.TestExecutionListener;
  *
  * <ul>
  *   <li>Publish a {@link ZeebeClientClosingEvent}
- *   <li>Close created {@link ZeebeClient}s
+ *   <li>Close created {@link CamundaClient}s
  *   <li>Stop the runtime
  * </ul>
  */
 public class CamundaProcessTestExecutionListener implements TestExecutionListener, Ordered {
 
   private final CamundaContainerRuntimeBuilder containerRuntimeBuilder;
-  private final List<ZeebeClient> createdClients = new ArrayList<>();
+  private final List<CamundaClient> createdClients = new ArrayList<>();
 
   private CamundaContainerRuntime containerRuntime;
-  private ZeebeClient zeebeClient;
+  private CamundaClient client;
 
   public CamundaProcessTestExecutionListener() {
     this(CamundaContainerRuntime.newBuilder());
@@ -80,10 +80,10 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         new CamundaProcessTestContextImpl(
             containerRuntime.getZeebeContainer(), createdClients::add);
 
-    zeebeClient = createZeebeClient(testContext, camundaProcessTestContext);
+    client = createClient(testContext, camundaProcessTestContext);
 
     // fill proxies
-    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).setZeebeClient(zeebeClient);
+    testContext.getApplicationContext().getBean(CamundaClientProxy.class).setCamundaClient(client);
     testContext
         .getApplicationContext()
         .getBean(CamundaProcessTestContextProxy.class)
@@ -92,7 +92,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     // publish Zeebe client
     testContext
         .getApplicationContext()
-        .publishEvent(new ZeebeClientCreatedEvent(this, zeebeClient));
+        .publishEvent(new ZeebeClientCreatedEvent(this, client));
 
     // initialize assertions
     final CamundaDataSource dataSource = createDataSource(containerRuntime);
@@ -105,14 +105,12 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     CamundaAssert.reset();
 
     // close Zeebe clients
-    testContext
-        .getApplicationContext()
-        .publishEvent(new ZeebeClientClosingEvent(this, zeebeClient));
+    testContext.getApplicationContext().publishEvent(new ZeebeClientClosingEvent(this, client));
 
-    createdClients.forEach(ZeebeClient::close);
+    createdClients.forEach(CamundaClient::close);
 
     // clean up proxies
-    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).removeZeebeClient();
+    testContext.getApplicationContext().getBean(CamundaClientProxy.class).removeCamundaClient();
     testContext
         .getApplicationContext()
         .getBean(CamundaProcessTestContextProxy.class)
@@ -140,9 +138,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     return containerRuntimeBuilder.build();
   }
 
-  private static ZeebeClient createZeebeClient(
+  private static CamundaClient createClient(
       final TestContext testContext, final CamundaProcessTestContext camundaProcessTestContext) {
-    return camundaProcessTestContext.createZeebeClient(
+    return camundaProcessTestContext.createClient(
         builder -> {
           if (hasJsonMapper(testContext)) {
             final JsonMapper jsonMapper =

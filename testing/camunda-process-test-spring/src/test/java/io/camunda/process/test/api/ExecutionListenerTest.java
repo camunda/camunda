@@ -20,16 +20,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
 import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.containers.ZeebeContainer;
+import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
-import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientConfiguration;
-import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.spring.client.event.ZeebeClientClosingEvent;
 import io.camunda.zeebe.spring.client.event.ZeebeClientCreatedEvent;
 import java.net.URI;
@@ -59,7 +59,7 @@ public class ExecutionListenerTest {
   @Mock private ZeebeContainer zeebeContainer;
   @Mock private OperateContainer operateContainer;
 
-  @Mock private ZeebeClientProxy zeebeClientProxy;
+  @Mock private CamundaClientProxy camundaClientProxy;
   @Mock private CamundaProcessTestContextProxy camundaProcessTestContextProxy;
 
   @Mock private TestContext testContext;
@@ -69,7 +69,7 @@ public class ExecutionListenerTest {
 
   @Mock private JsonMapper jsonMapper;
 
-  @Captor private ArgumentCaptor<ZeebeClient> zeebeClientArgumentCaptor;
+  @Captor private ArgumentCaptor<CamundaClient> zeebeClientArgumentCaptor;
   @Captor private ArgumentCaptor<CamundaProcessTestContext> camundaProcessTestContextArgumentCaptor;
   @Captor private ArgumentCaptor<ZeebeClientCreatedEvent> zeebeClientCreatedEventArgumentCaptor;
   @Captor private ArgumentCaptor<ZeebeClientClosingEvent> zeebeClientClosingEventArgumentCaptor;
@@ -86,7 +86,7 @@ public class ExecutionListenerTest {
     when(operateContainer.getRestApiPort()).thenReturn(100);
 
     when(testContext.getApplicationContext()).thenReturn(applicationContext);
-    when(applicationContext.getBean(ZeebeClientProxy.class)).thenReturn(zeebeClientProxy);
+    when(applicationContext.getBean(CamundaClientProxy.class)).thenReturn(camundaClientProxy);
     when(applicationContext.getBean(CamundaProcessTestContextProxy.class))
         .thenReturn(camundaProcessTestContextProxy);
     when(applicationContext.getBean(CamundaContainerRuntimeConfiguration.class))
@@ -103,12 +103,12 @@ public class ExecutionListenerTest {
     listener.beforeTestMethod(testContext);
 
     // then
-    verify(zeebeClientProxy).setZeebeClient(zeebeClientArgumentCaptor.capture());
+    verify(camundaClientProxy).setCamundaClient(zeebeClientArgumentCaptor.capture());
 
-    final ZeebeClient zeebeClient = zeebeClientArgumentCaptor.getValue();
+    final CamundaClient zeebeClient = zeebeClientArgumentCaptor.getValue();
     assertThat(zeebeClient).isNotNull();
 
-    final ZeebeClientConfiguration configuration = zeebeClient.getConfiguration();
+    final CamundaClientConfiguration configuration = zeebeClient.getConfiguration();
     assertThat(configuration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
     assertThat(configuration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
 
@@ -138,10 +138,10 @@ public class ExecutionListenerTest {
     assertThat(camundaProcessTestContext.getZeebeGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
     assertThat(camundaProcessTestContext.getZeebeRestAddress()).isEqualTo(REST_API_ADDRESS);
 
-    final ZeebeClient newZeebeClient = camundaProcessTestContext.createZeebeClient();
+    final CamundaClient newZeebeClient = camundaProcessTestContext.createClient();
     assertThat(newZeebeClient).isNotNull();
 
-    final ZeebeClientConfiguration configuration = newZeebeClient.getConfiguration();
+    final CamundaClientConfiguration configuration = newZeebeClient.getConfiguration();
     assertThat(configuration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
     assertThat(configuration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
   }
@@ -161,12 +161,12 @@ public class ExecutionListenerTest {
     listener.beforeTestMethod(testContext);
 
     // then
-    verify(zeebeClientProxy).setZeebeClient(zeebeClientArgumentCaptor.capture());
+    verify(camundaClientProxy).setCamundaClient(zeebeClientArgumentCaptor.capture());
 
-    final ZeebeClient zeebeClient = zeebeClientArgumentCaptor.getValue();
+    final CamundaClient zeebeClient = zeebeClientArgumentCaptor.getValue();
     assertThat(zeebeClient).isNotNull();
 
-    final ZeebeClientConfiguration configuration = zeebeClient.getConfiguration();
+    final CamundaClientConfiguration configuration = zeebeClient.getConfiguration();
     assertThat(configuration.getJsonMapper()).isEqualTo(jsonMapper);
   }
 
@@ -204,7 +204,7 @@ public class ExecutionListenerTest {
 
     assertThat(createdEvent.getClient()).isEqualTo(closedClient.getClient());
 
-    verify(zeebeClientProxy).removeZeebeClient();
+    verify(camundaClientProxy).removeCamundaClient();
     verify(camundaProcessTestContextProxy).removeContext();
   }
 
