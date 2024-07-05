@@ -23,9 +23,39 @@ import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
 import java.time.Duration;
 import org.awaitility.Awaitility;
 
+/**
+ * The entry point for all assertions.
+ *
+ * <p>Example usage:
+ *
+ * <pre>
+ *   &#064;Test
+ *   void shouldWork() {
+ *     // given
+ *     final ProcessInstanceEvent processInstance =
+ *         zeebeClient
+ *             .newCreateInstanceCommand()
+ *             .bpmnProcessId("process")
+ *             .latestVersion()
+ *             .send()
+ *             .join();
+ *
+ *     // when
+ *
+ *     // then
+ *     BpmnAssert.assertThat(processInstance)
+ *         .isCompleted()
+ *         .hasCompletedElements("A", "B");
+ *   }
+ * }
+ * </pre>
+ */
 public class BpmnAssert {
 
+  /** The default time how long an assertion waits until the expected state is reached. */
   public static final Duration DEFAULT_ASSERTION_TIMEOUT = Duration.ofSeconds(10);
+
+  /** The default time between two assertion attempts until the expected state is reached. */
   public static final Duration DEFAULT_ASSERTION_INTERVAL = Duration.ofMillis(100);
 
   private static final ThreadLocal<CamundaDataSource> DATA_SOURCE = new ThreadLocal<>();
@@ -37,21 +67,45 @@ public class BpmnAssert {
 
   // ======== Configuration options ========
 
+  /**
+   * Configures the time how long an assertion waits until the expected state is reached.
+   *
+   * @param assertionTimeout the maximum time of an assertion
+   * @see #DEFAULT_ASSERTION_TIMEOUT
+   */
   public static void setAssertionTimeout(final Duration assertionTimeout) {
     Awaitility.setDefaultTimeout(assertionTimeout);
   }
 
+  /**
+   * Configures the time between two assertion attempts until the expected state is reached.
+   *
+   * @param assertionInterval time between two assertion attempts
+   * @see #DEFAULT_ASSERTION_INTERVAL
+   */
   public static void setAssertionInterval(final Duration assertionInterval) {
     Awaitility.setDefaultPollInterval(assertionInterval);
   }
 
   // ======== Assertions ========
 
+  /**
+   * To verify a process instance.
+   *
+   * @param processInstanceEvent the event of the process instance to verify
+   * @return the assertion object
+   */
   public static ProcessInstanceAssert assertThat(final ProcessInstanceEvent processInstanceEvent) {
     return new ProcessInstanceAssertj(
         getDataSource(), processInstanceEvent.getProcessInstanceKey());
   }
 
+  /**
+   * To verify a process instance.
+   *
+   * @param processInstanceResult the result of the process instance to verify
+   * @return the assertion object
+   */
   public static ProcessInstanceAssert assertThat(
       final ProcessInstanceResult processInstanceResult) {
     return new ProcessInstanceAssertj(
