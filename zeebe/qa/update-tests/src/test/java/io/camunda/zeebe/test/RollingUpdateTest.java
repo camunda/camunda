@@ -9,9 +9,10 @@ package io.camunda.zeebe.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.worker.JobHandler;
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
@@ -116,14 +117,15 @@ final class RollingUpdateTest {
       Awaitility.await()
           .atMost(Duration.ofSeconds(120))
           .pollInterval(Duration.ofMillis(100))
-          .untilAsserted(() -> assertTopologyDoesNotContainerBroker(client, index));
+          .untilAsserted(() -> assertTopologyDoesNotContainerBroker((CamundaClient) client, index));
 
       broker.start();
 
       Awaitility.await()
           .atMost(Duration.ofSeconds(120))
           .pollInterval(Duration.ofMillis(100))
-          .untilAsserted(() -> assertTopologyContainsUpdatedBroker(client, index, to));
+          .untilAsserted(
+              () -> assertTopologyContainsUpdatedBroker((CamundaClient) client, index, to));
     }
   }
 
@@ -155,7 +157,8 @@ final class RollingUpdateTest {
       Awaitility.await("broker is removed from topology")
           .atMost(Duration.ofSeconds(120))
           .pollInterval(Duration.ofMillis(100))
-          .untilAsserted(() -> assertTopologyDoesNotContainerBroker(client, brokerId));
+          .untilAsserted(
+              () -> assertTopologyDoesNotContainerBroker((CamundaClient) client, brokerId));
 
       for (int i = 0; i < 100; i++) {
         Awaitility.await("process instance creation")
@@ -184,7 +187,8 @@ final class RollingUpdateTest {
       Awaitility.await("updated broker is added to topology")
           .atMost(Duration.ofSeconds(120))
           .pollInterval(Duration.ofMillis(100))
-          .untilAsserted(() -> assertTopologyContainsUpdatedBroker(client, brokerId, to));
+          .untilAsserted(
+              () -> assertTopologyContainsUpdatedBroker((CamundaClient) client, brokerId, to));
     }
 
     Awaitility.await("until restarted broker has snapshot")
@@ -217,7 +221,7 @@ final class RollingUpdateTest {
     }
 
     for (int i = cluster.getBrokers().size() - 1; i >= 0; i--) {
-      try (final ZeebeClient client = newZeebeClient(availableGateway)) {
+      try (final CamundaClient client = newZeebeClient(availableGateway)) {
         final var brokerId = i;
         final ZeebeBrokerNode<?> broker = cluster.getBrokers().get(i);
         broker.stop();
@@ -301,7 +305,7 @@ final class RollingUpdateTest {
     return VersionUtil.getVersion().replace("-SNAPSHOT", "");
   }
 
-  private ProcessInstanceEvent createProcessInstance(final ZeebeClient client) {
+  private ProcessInstanceEvent createProcessInstance(final CamundaClient client) {
     return client
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
@@ -309,6 +313,25 @@ final class RollingUpdateTest {
         .variables(Map.of("foo", "bar"))
         .send()
         .join();
+  }
+
+  private io.camunda.zeebe.client.api.response.ProcessInstanceEvent createProcessInstance(
+      final ZeebeClient client) {
+    return client
+        .newCreateInstanceCommand()
+        .bpmnProcessId("process")
+        .latestVersion()
+        .variables(Map.of("foo", "bar"))
+        .send()
+        .join();
+  }
+
+  private void deployProcess(final CamundaClient client) {
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(PROCESS, "process.bpmn")
+        .send()
+        .join(10, TimeUnit.SECONDS);
   }
 
   private void deployProcess(final ZeebeClient client) {
@@ -320,7 +343,7 @@ final class RollingUpdateTest {
   }
 
   private void assertTopologyContainsUpdatedBroker(
-      final ZeebeClient zeebeClient, final int brokerId, final String expectedVersion) {
+      final CamundaClient zeebeClient, final int brokerId, final String expectedVersion) {
     final var topology = zeebeClient.newTopologyRequest().send().join();
     TopologyAssert.assertThat(topology)
         .as("the topology contains all the brokers")
@@ -339,7 +362,8 @@ final class RollingUpdateTest {
             });
   }
 
-  private void assertTopologyDoesNotContainerBroker(final ZeebeClient client, final int brokerId) {
+  private void assertTopologyDoesNotContainerBroker(
+      final CamundaClient client, final int brokerId) {
     final var topology = client.newTopologyRequest().send().join();
     TopologyAssert.assertThat(topology)
         .as("the topology does not contain broker %d", brokerId)
@@ -348,8 +372,8 @@ final class RollingUpdateTest {
         .hasExpectedReplicasCount(cluster.getPartitionsCount(), cluster.getBrokers().size() - 1);
   }
 
-  private ZeebeClient newZeebeClient(final ZeebeGatewayNode<?> gateway) {
-    return ZeebeClient.newClientBuilder()
+  private CamundaClient newZeebeClient(final ZeebeGatewayNode<?> gateway) {
+    return CamundaClient.newClientBuilder()
         .usePlaintext()
         .gatewayAddress(gateway.getExternalGatewayAddress())
         .build();

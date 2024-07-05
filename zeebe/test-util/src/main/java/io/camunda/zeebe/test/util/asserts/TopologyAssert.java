@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.test.util.asserts;
 
-import io.camunda.zeebe.client.api.response.BrokerInfo;
-import io.camunda.zeebe.client.api.response.PartitionBrokerHealth;
-import io.camunda.zeebe.client.api.response.PartitionInfo;
-import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.client.api.response.BrokerInfo;
+import io.camunda.client.api.response.PartitionBrokerHealth;
+import io.camunda.client.api.response.PartitionInfo;
+import io.camunda.client.api.response.Topology;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

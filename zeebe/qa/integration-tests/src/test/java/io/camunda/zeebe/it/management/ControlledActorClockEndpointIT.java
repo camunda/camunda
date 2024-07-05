@@ -14,7 +14,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -49,7 +49,7 @@ final class ControlledActorClockEndpointIT {
           .withRecordingExporter(true)
           .withProperty("zeebe.clock.controlled", true);
 
-  @AutoCloseResource private final ZeebeClient zeebeClient = broker.newClientBuilder().build();
+  @AutoCloseResource private final CamundaClient zeebeClient = broker.newClientBuilder().build();
 
   private final HttpClient httpClient = HttpClient.newHttpClient();
 

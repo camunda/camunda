@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.it.startup;
 
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.broker.TestLoggers;
-import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.it.clustering.ClusteringRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
