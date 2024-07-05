@@ -1699,10 +1699,10 @@
   dependencies:
     defer-to-connect "^2.0.0"
 
-"@tanstack/eslint-plugin-query@5.50.0":
-  version "5.50.0"
-  resolved "https://registry.yarnpkg.com/@tanstack/eslint-plugin-query/-/eslint-plugin-query-5.50.0.tgz#2479f86b147b7ff144fe188f7469a8228b1be11f"
-  integrity sha512-XUgagiakpReYMHNo22sUuNvuhfqKogkYZkeLhbWkDqrwP3doVvG35L3098GPX6MwdV9EKfBjRA7umjpyEJZV0A==
+"@tanstack/eslint-plugin-query@5.50.1":
+  version "5.50.1"
+  resolved "https://registry.yarnpkg.com/@tanstack/eslint-plugin-query/-/eslint-plugin-query-5.50.1.tgz#90054851bd3c6f1a09f36c24be11b613c654f531"
+  integrity sha512-k4Ra3hx8ddQ1YjW6+5T3f2OuphAipR5cHonB7nQSM5JbiJ7fAo2iu/y4eP3MRgtlrxN//Da77Xg5jqNafrjEHA==
   dependencies:
     "@typescript-eslint/utils" "8.0.0-alpha.30"
 
