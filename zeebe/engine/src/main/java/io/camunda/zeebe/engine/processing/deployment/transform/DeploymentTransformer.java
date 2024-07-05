@@ -88,8 +88,8 @@ public final class DeploymentTransformer {
             entry(".form", formResourceTransformer));
   }
 
-  private DirectBuffer getChecksum(final DeploymentResource resource) {
-    return wrapArray(digestGenerator.digest(resource.getResource()));
+  public DirectBuffer getChecksum(final byte[] resource) {
+    return wrapArray(digestGenerator.digest(resource));
   }
 
   public Either<Failure, Void> transform(final DeploymentRecord deploymentEvent) {
