@@ -317,7 +317,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     assertThat(request.getTenantIds()).containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 
-  // Regression: https://github.com/camunda/zeebe/issues/17513
+  // Regression: https://github.com/camunda/camunda/issues/17513
   @Test
   void shouldNotAccumulateTenantsOnSuccessiveOpen() {
     // given
