@@ -44,9 +44,7 @@ public interface UpdateTimeoutJobCommandStep1 {
    */
   UpdateTimeoutJobCommandStep2 timeout(Duration timeout);
 
-  interface UpdateTimeoutJobCommandStep2
-      extends CommandWithOperationReferenceStep<UpdateTimeoutJobCommandStep2>,
-          FinalCommandStep<UpdateTimeoutJobResponse> {
+  interface UpdateTimeoutJobCommandStep2 extends FinalCommandStep<UpdateTimeoutJobResponse> {
     // the place for new optional parameters
   }
 }

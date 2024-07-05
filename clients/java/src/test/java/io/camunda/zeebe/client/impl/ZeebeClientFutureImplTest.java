@@ -39,7 +39,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-final class CamundaClientFutureImplTest {
+final class ZeebeClientFutureImplTest {
 
   private final Service service = new Service();
   private final String serverName = InProcessServerBuilder.generateName();

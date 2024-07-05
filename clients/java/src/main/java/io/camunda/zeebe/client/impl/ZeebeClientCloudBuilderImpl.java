@@ -248,11 +248,6 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
-  public ZeebeClientBuilder maxMetadataSize(final int maxMetadataSize) {
-    return innerBuilder.maxMetadataSize(maxMetadataSize);
-  }
-
-  @Override
   public ZeebeClientBuilder defaultJobWorkerStreamEnabled(final boolean streamEnabled) {
     innerBuilder.defaultJobWorkerStreamEnabled(streamEnabled);
     return this;

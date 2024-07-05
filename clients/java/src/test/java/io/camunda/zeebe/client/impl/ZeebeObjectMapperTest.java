@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.client.util.ClientTest;
 import org.junit.Test;
 
-public class CamundaObjectMapperTest extends ClientTest {
+public class ZeebeObjectMapperTest extends ClientTest {
 
   @Test
   public void shouldReturnEmptyObject() {

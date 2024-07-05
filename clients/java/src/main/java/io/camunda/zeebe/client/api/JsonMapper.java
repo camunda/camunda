@@ -44,7 +44,7 @@ import java.util.Map;
  *     ...
  *   }
  *   ...
- *   CamundaClient.newClientBuilder().withJsonMapper(new MyJsonMapper());
+ *   ZeebeClient.newClientBuilder().withJsonMapper(new MyJsonMapper());
  * </pre>
  *
  * Null values won't pass in the JSON with variables: {@code { "a": "b" } }

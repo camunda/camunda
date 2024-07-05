@@ -78,10 +78,4 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .resolveIncident(request, streamObserver);
   }
-
-  @Override
-  public ResolveIncidentCommandStep1 operationReference(final long operationReference) {
-    builder.setOperationReference(operationReference);
-    return this;
-  }
 }
