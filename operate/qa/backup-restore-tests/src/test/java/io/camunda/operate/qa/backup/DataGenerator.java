@@ -63,7 +63,7 @@ public class DataGenerator {
       DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
 
   /**
-   * CamundaClient must not be reused between different test fixtures, as this may be different
+   * ZeebeClient must not be reused between different test fixtures, as this may be different
    * versions of client in the future.
    */
   private ZeebeClient zeebeClient;
@@ -217,8 +217,7 @@ public class DataGenerator {
     LOGGER.info("{} tasks {} completed", count, jobType);
   }
 
-  private List<Long> startProcessInstances(
-      final String bpmnProcessId, final int numberOfProcessInstances) {
+  private List<Long> startProcessInstances(final String bpmnProcessId, final int numberOfProcessInstances) {
     final List<Long> processInstanceKeys = new ArrayList<>();
     for (int i = 0; i < numberOfProcessInstances; i++) {
       final long processInstanceKey =

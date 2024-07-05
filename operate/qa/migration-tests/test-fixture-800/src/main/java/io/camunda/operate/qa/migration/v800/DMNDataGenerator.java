@@ -46,7 +46,7 @@ public class DMNDataGenerator {
   private static final Logger LOGGER = LoggerFactory.getLogger(DMNDataGenerator.class);
 
   /**
-   * CamundaClient must not be reused between different test fixtures, as this may be different
+   * ZeebeClient must not be reused between different test fixtures, as this may be different
    * versions of client in the future.
    */
   private ZeebeClient zeebeClient;

@@ -59,7 +59,7 @@ public class BasicProcessDataGenerator {
       DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
 
   /**
-   * CamundaClient must not be reused between different test fixtures, as this may be different
+   * ZeebeClient must not be reused between different test fixtures, as this may be different
    * versions of client in the future.
    */
   private ZeebeClient zeebeClient;
@@ -202,8 +202,7 @@ public class BasicProcessDataGenerator {
     }
   }
 
-  private boolean createOperation(
-      final Long processInstanceKey, final OperationType operationType) {
+  private boolean createOperation(final Long processInstanceKey, final OperationType operationType) {
     final Map<String, Object> operationRequest =
         CollectionUtil.asMap("operationType", operationType.name());
     final URI url =
