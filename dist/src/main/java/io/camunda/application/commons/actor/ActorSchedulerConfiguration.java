@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.commons.actor;
+package io.camunda.application.commons.actor;
 
-import io.camunda.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
+import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -7,8 +7,8 @@
  */
 package io.camunda.application;
 
+import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
-import io.camunda.commons.CommonsModuleConfiguration;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
 

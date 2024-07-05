@@ -9,12 +9,12 @@ package io.camunda.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
+import io.camunda.application.commons.CommonsModuleConfiguration;
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
+import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.sources.DefaultObjectMapperConfiguration;
 import io.camunda.client.CamundaClientBuilder;
-import io.camunda.commons.CommonsModuleConfiguration;
-import io.camunda.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
-import io.camunda.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.tasklist.TasklistModuleConfiguration;

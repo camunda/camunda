@@ -446,11 +446,6 @@
     </dependency>
 
     <dependency>
-      <groupId>com.graphql-java-kickstart</groupId>
-      <artifactId>graphql-spring-boot-autoconfigure</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
     </dependency>
