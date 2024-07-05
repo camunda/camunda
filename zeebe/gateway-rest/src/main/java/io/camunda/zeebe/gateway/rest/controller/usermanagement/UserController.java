@@ -8,7 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.RequestMapper.toUserWithPassword;
-import static io.camunda.zeebe.gateway.rest.ResponseMapper.toCamundaUserResponse;
+import static io.camunda.zeebe.gateway.rest.ResponseMapper.toUserResponse;
 
 import io.camunda.identity.automation.usermanagement.service.UserService;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
@@ -46,7 +46,7 @@ public class UserController {
       @RequestBody final CamundaUserWithPasswordRequest userWithPasswordDto) {
     try {
       final CamundaUserResponse camundaUserResponse =
-          toCamundaUserResponse(userService.createUser(toUserWithPassword(userWithPasswordDto)));
+          toUserResponse(userService.createUser(toUserWithPassword(userWithPasswordDto)));
       return new ResponseEntity<>(camundaUserResponse, HttpStatus.CREATED);
     } catch (final Exception e) {
       return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
@@ -68,8 +68,7 @@ public class UserController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public ResponseEntity<Object> findUserById(@PathVariable final Long id) {
     try {
-      final CamundaUserResponse camundaUserResponse =
-          toCamundaUserResponse(userService.findUserById(id));
+      final CamundaUserResponse camundaUserResponse = toUserResponse(userService.findUserById(id));
       return new ResponseEntity<>(camundaUserResponse, HttpStatus.OK);
     } catch (final Exception e) {
       return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
@@ -85,7 +84,7 @@ public class UserController {
     try {
       final UserSearchResponse responseDto = new UserSearchResponse();
       final List<CamundaUserResponse> allUsers =
-          userService.findAllUsers().stream().map(ResponseMapper::toCamundaUserResponse).toList();
+          userService.findAllUsers().stream().map(ResponseMapper::toUserResponse).toList();
       responseDto.setItems(allUsers);
 
       return new ResponseEntity<>(responseDto, HttpStatus.OK);
@@ -102,7 +101,7 @@ public class UserController {
       @PathVariable final Long id, @RequestBody final CamundaUserWithPasswordRequest user) {
     try {
       final CamundaUserResponse camundaUserResponse =
-          toCamundaUserResponse(userService.updateUser(id, toUserWithPassword(user)));
+          toUserResponse(userService.updateUser(id, toUserWithPassword(user)));
       return new ResponseEntity<>(camundaUserResponse, HttpStatus.OK);
     } catch (final Exception e) {
       return RestErrorMapper.mapUserManagementExceptionsToResponse(e);

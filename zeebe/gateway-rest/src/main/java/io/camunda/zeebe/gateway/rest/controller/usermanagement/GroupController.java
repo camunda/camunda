@@ -154,7 +154,7 @@ public class GroupController {
       final UserSearchResponse responseDto = new UserSearchResponse();
       final List<CamundaUserResponse> allUsers =
           userGroupMembershipService.getUsersOfGroupById(groupId).stream()
-              .map(ResponseMapper::toCamundaUserResponse)
+              .map(ResponseMapper::toUserResponse)
               .toList();
       responseDto.setItems(allUsers);
 

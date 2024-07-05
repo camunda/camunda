@@ -60,7 +60,7 @@ public final class ResponseMapper {
         .tenantId(job.getTenantId());
   }
 
-  public static CamundaUserResponse toCamundaUserResponse(final CamundaUser camundaUser) {
+  public static CamundaUserResponse toUserResponse(final CamundaUser camundaUser) {
     final CamundaUserResponse camundaUserDto = new CamundaUserResponse();
     camundaUserDto.setId(camundaUser.getId());
     camundaUserDto.setUsername(camundaUser.getUsername());

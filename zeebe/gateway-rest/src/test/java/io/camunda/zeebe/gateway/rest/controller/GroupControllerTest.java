@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static io.camunda.zeebe.gateway.rest.ResponseMapper.toCamundaUserResponse;
+import static io.camunda.zeebe.gateway.rest.ResponseMapper.toUserResponse;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -343,7 +343,7 @@ public class GroupControllerTest extends RestControllerTest {
   @Test
   void searchUsersOfGroupShouldReturnMembers() {
     final CamundaUser camundaUser = new CamundaUser(1L, "username", "name", "email", true);
-    final CamundaUserResponse camundaUserResponse = toCamundaUserResponse(camundaUser);
+    final CamundaUserResponse camundaUserResponse = toUserResponse(camundaUser);
 
     final UserSearchResponse userSearchResponse = new UserSearchResponse();
     userSearchResponse.setItems(List.of(camundaUserResponse));
@@ -371,7 +371,7 @@ public class GroupControllerTest extends RestControllerTest {
   void searchUsersOfGroupWithoutRequestBodyShouldReturnMembers() {
 
     final CamundaUser camundaUser = new CamundaUser(1L, "username", "name", "email", true);
-    final CamundaUserResponse camundaUserResponse = toCamundaUserResponse(camundaUser);
+    final CamundaUserResponse camundaUserResponse = toUserResponse(camundaUser);
 
     final UserSearchResponse userSearchResponse = new UserSearchResponse();
     userSearchResponse.setItems(List.of(camundaUserResponse));
