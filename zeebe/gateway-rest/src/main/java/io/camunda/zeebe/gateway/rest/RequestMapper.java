@@ -16,6 +16,8 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupRequest;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
