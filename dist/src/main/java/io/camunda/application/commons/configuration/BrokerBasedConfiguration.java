@@ -5,14 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.commons.configuration;
+package io.camunda.application.commons.configuration;
 
 import io.atomix.cluster.ClusterConfig;
-import io.camunda.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
-import io.camunda.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
-import io.camunda.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
-import io.camunda.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
-import io.camunda.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
+import io.camunda.application.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
+import io.camunda.application.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
+import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.application.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
 import io.camunda.zeebe.broker.clustering.ClusterConfigFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;

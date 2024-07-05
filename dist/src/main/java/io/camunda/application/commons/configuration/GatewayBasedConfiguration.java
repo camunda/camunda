@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.commons.configuration;
+package io.camunda.application.commons.configuration;
 
 import io.atomix.cluster.ClusterConfig;
 import io.atomix.cluster.MemberConfig;
@@ -14,10 +14,10 @@ import io.atomix.cluster.discovery.BootstrapDiscoveryConfig;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.protocol.SwimMembershipProtocolConfig;
 import io.atomix.utils.net.Address;
-import io.camunda.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
-import io.camunda.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
-import io.camunda.commons.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
-import io.camunda.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
+import io.camunda.application.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
+import io.camunda.application.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
+import io.camunda.application.commons.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
+import io.camunda.application.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;

@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.commons.service;
+package io.camunda.application.commons.service;
 
-import io.camunda.commons.service.SearchClientDatabaseConfiguration.SearchClientProperties;
+import io.camunda.application.commons.service.SearchClientDatabaseConfiguration.SearchClientProperties;
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.search.connect.SearchClientProvider;
 import io.camunda.search.connect.SearchClientProvider.SearchClientProviders;
