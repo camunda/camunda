@@ -23,7 +23,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
-import io.camunda.zeebe.client.impl.util.AtomicUtil;
 import io.camunda.zeebe.client.impl.util.FunctionWithIO;
 import io.camunda.zeebe.client.impl.util.SupplierWithIO;
 import java.io.File;
@@ -61,7 +60,7 @@ public final class OAuthCredentialsCache {
     }
 
     final Map<String, OAuthCachedCredentials> cache = MAPPER.readValue(cacheFile, TYPE_REFERENCE);
-    AtomicUtil.replace(audiences, current -> cache);
+    audiences.set(cache);
 
     return this;
   }
@@ -120,8 +119,7 @@ public final class OAuthCredentialsCache {
 
   public OAuthCredentialsCache put(
       final String endpoint, final ZeebeClientCredentials credentials) {
-    AtomicUtil.replace(
-        audiences,
+    audiences.getAndUpdate(
         current -> {
           final HashMap<String, OAuthCachedCredentials> cache = new HashMap<>(current);
           cache.put(endpoint, new OAuthCachedCredentials(credentials));
