@@ -150,7 +150,8 @@ public final class CredentialsTest {
 
               @Override
               public boolean shouldRetryRequest(final Throwable throwable) {
-                return retryCounter-- > 0;
+                retryCounter--;
+                return true;
               }
             });
     builder.usePlaintext().credentialsProvider(provider);
@@ -160,7 +161,7 @@ public final class CredentialsTest {
     assertThatThrownBy(() -> client.newTopologyRequest().send().join())
         .isInstanceOf(ClientException.class);
 
-    Mockito.verify(provider, times(retries + 1)).shouldRetryRequest(any(Throwable.class));
+    Mockito.verify(provider, times(retries)).shouldRetryRequest(any(Throwable.class));
     assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY)).isEqualTo("Bearer token-0");
   }
 
