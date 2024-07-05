@@ -2652,6 +2652,9 @@
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-maven-plugin</artifactId>
           <version>${version.spring-boot}</version>
+          <configuration>
+            <wait>40000</wait>
+          </configuration>
         </plugin>
 
         <plugin>
