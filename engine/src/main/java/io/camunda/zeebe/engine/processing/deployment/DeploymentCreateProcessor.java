@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment;
 
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -66,7 +67,8 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final Writers writers,
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final KeyGenerator keyGenerator,
-      final FeatureFlags featureFlags) {
+      final FeatureFlags featureFlags,
+      final EngineConfiguration config) {
     processState = processingState.getProcessState();
     decisionState = processingState.getDecisionState();
     timerInstanceState = processingState.getTimerState();
@@ -78,7 +80,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     expressionProcessor = bpmnBehaviors.expressionBehavior();
     deploymentTransformer =
         new DeploymentTransformer(
-            stateWriter, processingState, expressionProcessor, keyGenerator, featureFlags);
+            stateWriter, processingState, expressionProcessor, keyGenerator, featureFlags, config);
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator);
     deploymentDistributionBehavior =
@@ -130,7 +132,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       decisionState.clearCache();
     }
 
-    if (error instanceof ResourceTransformationFailedException exception) {
+    if (error instanceof final ResourceTransformationFailedException exception) {
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       responseWriter.writeRejectionOnCommand(

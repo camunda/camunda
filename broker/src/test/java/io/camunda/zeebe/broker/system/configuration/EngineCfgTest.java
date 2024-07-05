@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
