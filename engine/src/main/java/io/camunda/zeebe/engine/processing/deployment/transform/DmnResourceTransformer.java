@@ -49,13 +49,13 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
 
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
-  private final Function<DeploymentResource, DirectBuffer> checksumGenerator;
+  private final Function<byte[], DirectBuffer> checksumGenerator;
   private final DecisionState decisionState;
 
   public DmnResourceTransformer(
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
-      final Function<DeploymentResource, DirectBuffer> checksumGenerator,
+      final Function<byte[], DirectBuffer> checksumGenerator,
       final DecisionState decisionState) {
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
@@ -160,7 +160,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
       final DeploymentRecord deploymentEvent) {
 
     final LongSupplier newDecisionRequirementsKey = keyGenerator::nextKey;
-    final DirectBuffer checksum = checksumGenerator.apply(resource);
+    final DirectBuffer checksum = checksumGenerator.apply(resource.getResource());
     final var drgRecord = deploymentEvent.decisionRequirementsMetadata().add();
 
     drgRecord
