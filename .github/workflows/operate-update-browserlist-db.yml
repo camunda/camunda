@@ -21,6 +21,6 @@ jobs:
           cache-dependency-path: operate/client/yarn.lock
       - run: npx update-browserslist-db@latest --yes
         name: Update DB
-      - uses: stefanzweifel/git-auto-commit-action@18157e6f3b5f11546d1c1b46e4891d0bdccb113c
+      - uses: stefanzweifel/git-auto-commit-action@55a82ca24f1c4585f348f92fa0de24650ecae7a2
         with:
           commit_message: "chore: Update Browserlist DB"
