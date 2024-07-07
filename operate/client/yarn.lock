@@ -2526,10 +2526,10 @@
     "@types/node" "*"
     "@types/responselike" "^1.0.0"
 
-"@types/carbon-components-react@7.55.10":
-  version "7.55.10"
-  resolved "https://registry.yarnpkg.com/@types/carbon-components-react/-/carbon-components-react-7.55.10.tgz#4cd85ca35ead007b4867fcfa1377b7a1729db26c"
-  integrity sha512-dg+KQttM6Xp1eGNhixJNcE4y4DjBXDmpQFx+Cx87L4Ws3UpiMlsJgBO3ThqwBjbqrBHWai9PNdwOmfY2Vvyc+Q==
+"@types/carbon-components-react@7.55.11":
+  version "7.55.11"
+  resolved "https://registry.yarnpkg.com/@types/carbon-components-react/-/carbon-components-react-7.55.11.tgz#92ca96f5627c7264a6b7eecf03cabc266c0807c7"
+  integrity sha512-byqX9hXDqDjglGLM79B8gx2oJ/OkxuRU+ygl5OnZ+gT8FOqRP361IuB8kmVXcDw0pbPqG/D9qxLnLKpaHXwXwg==
   dependencies:
     "@types/react" "*"
     flatpickr "4.6.9"
