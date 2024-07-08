@@ -43,7 +43,7 @@ public class OpensearchFlowNodeStore implements FlowNodeStore {
   @Autowired private OperateProperties operateProperties;
 
   @Override
-  public String getFlowNodeIdByFlowNodeInstanceId(String flowNodeInstanceId) {
+  public String getFlowNodeIdByFlowNodeInstanceId(final String flowNodeInstanceId) {
     record Result(String activityId) {}
     final RequestDSL.QueryType queryType =
         operateProperties.getImporter().isReadArchivedParents()
@@ -64,7 +64,8 @@ public class OpensearchFlowNodeStore implements FlowNodeStore {
   }
 
   @Override
-  public Map<String, String> getFlowNodeIdsForFlowNodeInstances(Set<String> flowNodeInstanceIds) {
+  public Map<String, String> getFlowNodeIdsForFlowNodeInstances(
+      final Set<String> flowNodeInstanceIds) {
     record Result(String flowNodeId) {}
     final Map<String, String> flowNodeIdsMap = new HashMap<>();
     final var searchRequestBuilder =
@@ -79,11 +80,11 @@ public class OpensearchFlowNodeStore implements FlowNodeStore {
   }
 
   @Override
-  public String findParentTreePathFor(long parentFlowNodeInstanceKey) {
+  public String findParentTreePathFor(final long parentFlowNodeInstanceKey) {
     return findParentTreePath(parentFlowNodeInstanceKey, 0);
   }
 
-  private String findParentTreePath(final long parentFlowNodeInstanceKey, int attemptCount) {
+  private String findParentTreePath(final long parentFlowNodeInstanceKey, final int attemptCount) {
     record Result(String treePath) {}
     final RequestDSL.QueryType queryType =
         operateProperties.getImporter().isReadArchivedParents()
@@ -98,7 +99,7 @@ public class OpensearchFlowNodeStore implements FlowNodeStore {
 
     if (hits.size() > 0) {
       return hits.get(0).source().treePath();
-    } else if (attemptCount < 1) {
+    } else if (attemptCount < 1 && operateProperties.getImporter().isRetryReadingParents()) {
       // retry for the case, when ELS has not yet refreshed the indices
       ThreadUtil.sleepFor(2000L);
       return findParentTreePath(parentFlowNodeInstanceKey, attemptCount + 1);
