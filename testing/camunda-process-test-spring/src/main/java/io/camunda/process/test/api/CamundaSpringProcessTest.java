@@ -27,8 +27,8 @@ import org.springframework.test.context.TestExecutionListeners.MergeMode;
 
 /**
  * Marks a class as a process test and adds the Spring test execution listener {@link
- * CamundaProcessTestExecutionListener}. Use {@link BpmnAssert} to verify the expected result of a
- * test.
+ * CamundaProcessTestExecutionListener}. Use {@link CamundaAssert} to verify the expected result of
+ * a test.
  *
  * <p>Example usage:
  *
@@ -53,7 +53,7 @@ import org.springframework.test.context.TestExecutionListeners.MergeMode;
  *     // when
  *
  *     // then
- *     BpmnAssert.assertThat(processInstance)
+ *     CamundaAssert.assertThat(processInstance)
  *         .isCompleted()
  *         .hasCompletedElements("A", "B");
  *   }

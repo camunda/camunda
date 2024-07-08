@@ -55,15 +55,15 @@ public class ProcessInstanceAssertTest {
 
   @BeforeEach
   void configureAssertions() {
-    BpmnAssert.initialize(camundaDataSource);
-    BpmnAssert.setAssertionInterval(Duration.ZERO);
-    BpmnAssert.setAssertionTimeout(Duration.ofMillis(100));
+    CamundaAssert.initialize(camundaDataSource);
+    CamundaAssert.setAssertionInterval(Duration.ZERO);
+    CamundaAssert.setAssertionTimeout(Duration.ofMillis(100));
   }
 
   @AfterEach
   void resetAssertions() {
-    BpmnAssert.setAssertionInterval(BpmnAssert.DEFAULT_ASSERTION_INTERVAL);
-    BpmnAssert.setAssertionTimeout(BpmnAssert.DEFAULT_ASSERTION_TIMEOUT);
+    CamundaAssert.setAssertionInterval(CamundaAssert.DEFAULT_ASSERTION_INTERVAL);
+    CamundaAssert.setAssertionTimeout(CamundaAssert.DEFAULT_ASSERTION_TIMEOUT);
   }
 
   private static ProcessInstanceDto newActiveProcessInstance(final long processInstanceKey) {
@@ -129,7 +129,7 @@ public class ProcessInstanceAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when
-      BpmnAssert.assertThat(processInstanceEvent).isActive();
+      CamundaAssert.assertThat(processInstanceEvent).isActive();
 
       // then
       verify(camundaDataSource).getProcessInstance(PROCESS_INSTANCE_KEY);
@@ -141,7 +141,7 @@ public class ProcessInstanceAssertTest {
       when(processInstanceResult.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // when
-      BpmnAssert.assertThat(processInstanceResult).isActive();
+      CamundaAssert.assertThat(processInstanceResult).isActive();
 
       // then
       verify(camundaDataSource).getProcessInstance(PROCESS_INSTANCE_KEY);
@@ -161,7 +161,7 @@ public class ProcessInstanceAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      BpmnAssert.assertThat(processInstanceEvent).isActive();
+      CamundaAssert.assertThat(processInstanceEvent).isActive();
     }
 
     @Test
@@ -174,7 +174,7 @@ public class ProcessInstanceAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      Assertions.assertThatThrownBy(() -> BpmnAssert.assertThat(processInstanceEvent).isActive())
+      Assertions.assertThatThrownBy(() -> CamundaAssert.assertThat(processInstanceEvent).isActive())
           .hasMessage(
               "Process instance [key: %d] should be active but was completed.",
               PROCESS_INSTANCE_KEY);
@@ -190,7 +190,7 @@ public class ProcessInstanceAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      Assertions.assertThatThrownBy(() -> BpmnAssert.assertThat(processInstanceEvent).isActive())
+      Assertions.assertThatThrownBy(() -> CamundaAssert.assertThat(processInstanceEvent).isActive())
           .hasMessage(
               "Process instance [key: %d] should be active but was terminated.",
               PROCESS_INSTANCE_KEY);
@@ -207,7 +207,7 @@ public class ProcessInstanceAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      Assertions.assertThatThrownBy(() -> BpmnAssert.assertThat(processInstanceEvent).isActive())
+      Assertions.assertThatThrownBy(() -> CamundaAssert.assertThat(processInstanceEvent).isActive())
           .hasMessage(
               "Process instance [key: %d] should be active but was not activated.",
               PROCESS_INSTANCE_KEY);
@@ -227,7 +227,7 @@ public class ProcessInstanceAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      BpmnAssert.assertThat(processInstanceEvent).isCompleted();
+      CamundaAssert.assertThat(processInstanceEvent).isCompleted();
     }
 
     @Test
@@ -240,7 +240,8 @@ public class ProcessInstanceAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      Assertions.assertThatThrownBy(() -> BpmnAssert.assertThat(processInstanceEvent).isCompleted())
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).isCompleted())
           .hasMessage(
               "Process instance [key: %d] should be completed but was terminated.",
               PROCESS_INSTANCE_KEY);
@@ -261,7 +262,7 @@ public class ProcessInstanceAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      BpmnAssert.assertThat(processInstanceEvent).isCompleted();
+      CamundaAssert.assertThat(processInstanceEvent).isCompleted();
 
       verify(camundaDataSource, times(2)).getProcessInstance(PROCESS_INSTANCE_KEY);
     }
@@ -277,7 +278,8 @@ public class ProcessInstanceAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      Assertions.assertThatThrownBy(() -> BpmnAssert.assertThat(processInstanceEvent).isCompleted())
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).isCompleted())
           .hasMessage(
               "Process instance [key: %d] should be completed but was active.",
               PROCESS_INSTANCE_KEY);
@@ -296,7 +298,8 @@ public class ProcessInstanceAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      Assertions.assertThatThrownBy(() -> BpmnAssert.assertThat(processInstanceEvent).isCompleted())
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).isCompleted())
           .hasMessage(
               "Process instance [key: %d] should be completed but was not activated.",
               PROCESS_INSTANCE_KEY);
@@ -316,7 +319,7 @@ public class ProcessInstanceAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      BpmnAssert.assertThat(processInstanceEvent).isTerminated();
+      CamundaAssert.assertThat(processInstanceEvent).isTerminated();
     }
 
     @Test
@@ -330,7 +333,7 @@ public class ProcessInstanceAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> BpmnAssert.assertThat(processInstanceEvent).isTerminated())
+              () -> CamundaAssert.assertThat(processInstanceEvent).isTerminated())
           .hasMessage(
               "Process instance [key: %d] should be terminated but was completed.",
               PROCESS_INSTANCE_KEY);
@@ -351,7 +354,7 @@ public class ProcessInstanceAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      BpmnAssert.assertThat(processInstanceEvent).isTerminated();
+      CamundaAssert.assertThat(processInstanceEvent).isTerminated();
 
       verify(camundaDataSource, times(2)).getProcessInstance(PROCESS_INSTANCE_KEY);
     }
@@ -368,7 +371,7 @@ public class ProcessInstanceAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> BpmnAssert.assertThat(processInstanceEvent).isTerminated())
+              () -> CamundaAssert.assertThat(processInstanceEvent).isTerminated())
           .hasMessage(
               "Process instance [key: %d] should be terminated but was active.",
               PROCESS_INSTANCE_KEY);
@@ -388,7 +391,7 @@ public class ProcessInstanceAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> BpmnAssert.assertThat(processInstanceEvent).isTerminated())
+              () -> CamundaAssert.assertThat(processInstanceEvent).isTerminated())
           .hasMessage(
               "Process instance [key: %d] should be terminated but was not activated.",
               PROCESS_INSTANCE_KEY);
@@ -411,7 +414,23 @@ public class ProcessInstanceAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      BpmnAssert.assertThat(processInstanceEvent).hasActiveElements("A", "B");
+      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A", "B");
+    }
+
+    @Test
+    void shouldHasTwoActiveElements() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceActive = newActiveFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceCompleted = newCompletedFlowNodeInstance("A");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceCompleted, flowNodeInstanceActive));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A", "A");
     }
 
     @Test
@@ -428,7 +447,7 @@ public class ProcessInstanceAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      BpmnAssert.assertThat(processInstanceEvent).hasActiveElements("A", "B");
+      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A", "B");
 
       verify(camundaDataSource, times(2))
           .getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
@@ -448,7 +467,7 @@ public class ProcessInstanceAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> BpmnAssert.assertThat(processInstanceEvent).hasActiveElements("A", "C", "D"))
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A", "C", "D"))
           .hasMessage(
               "Process instance [key: %d] should have active elements ['A', 'C', 'D'] but the following elements were not active:\n"
                   + "\t- 'C': not activated\n"
@@ -471,7 +490,7 @@ public class ProcessInstanceAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> BpmnAssert.assertThat(processInstanceEvent).hasActiveElements("A", "B", "C"))
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A", "B", "C"))
           .hasMessage(
               "Process instance [key: %d] should have active elements ['A', 'B', 'C'] but the following elements were not active:\n"
                   + "\t- 'B': completed\n"
@@ -498,7 +517,7 @@ public class ProcessInstanceAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      BpmnAssert.assertThat(processInstanceEvent).hasCompletedElements("A", "B");
+      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("A", "B");
     }
 
     @Test
@@ -516,7 +535,7 @@ public class ProcessInstanceAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      BpmnAssert.assertThat(processInstanceEvent).hasCompletedElements("A", "B");
+      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("A", "B");
 
       verify(camundaDataSource, times(2))
           .getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
@@ -536,7 +555,9 @@ public class ProcessInstanceAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> BpmnAssert.assertThat(processInstanceEvent).hasCompletedElements("A", "C", "D"))
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasCompletedElements("A", "C", "D"))
           .hasMessage(
               "Process instance [key: %d] should have completed elements ['A', 'C', 'D'] but the following elements were not completed:\n"
                   + "\t- 'C': not activated\n"
@@ -558,7 +579,7 @@ public class ProcessInstanceAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> BpmnAssert.assertThat(processInstanceEvent).hasCompletedElements("A", "B"))
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("A", "B"))
           .hasMessage(
               "Process instance [key: %d] should have completed elements ['A', 'B'] but the following elements were not completed:\n"
                   + "\t- 'B': terminated",
@@ -584,7 +605,7 @@ public class ProcessInstanceAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      BpmnAssert.assertThat(processInstanceEvent).hasTerminatedElements("A", "B");
+      CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElements("A", "B");
     }
 
     @Test
@@ -602,7 +623,7 @@ public class ProcessInstanceAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      BpmnAssert.assertThat(processInstanceEvent).hasTerminatedElements("A", "B");
+      CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElements("A", "B");
 
       verify(camundaDataSource, times(2))
           .getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
@@ -623,7 +644,8 @@ public class ProcessInstanceAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () ->
-                  BpmnAssert.assertThat(processInstanceEvent).hasTerminatedElements("A", "C", "D"))
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasTerminatedElements("A", "C", "D"))
           .hasMessage(
               "Process instance [key: %d] should have terminated elements ['A', 'C', 'D'] but the following elements were not terminated:\n"
                   + "\t- 'C': not activated\n"
@@ -645,7 +667,7 @@ public class ProcessInstanceAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> BpmnAssert.assertThat(processInstanceEvent).hasTerminatedElements("A", "B"))
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElements("A", "B"))
           .hasMessage(
               "Process instance [key: %d] should have terminated elements ['A', 'B'] but the following elements were not terminated:\n"
                   + "\t- 'A': completed",

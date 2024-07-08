@@ -43,14 +43,14 @@ import org.awaitility.Awaitility;
  *     // when
  *
  *     // then
- *     BpmnAssert.assertThat(processInstance)
+ *     CamundaAssert.assertThat(processInstance)
  *         .isCompleted()
  *         .hasCompletedElements("A", "B");
  *   }
  * }
  * </pre>
  */
-public class BpmnAssert {
+public class CamundaAssert {
 
   /** The default time how long an assertion waits until the expected state is reached. */
   public static final Duration DEFAULT_ASSERTION_TIMEOUT = Duration.ofSeconds(10);
@@ -127,7 +127,7 @@ public class BpmnAssert {
    * used.
    */
   static void initialize(final CamundaDataSource dataSource) {
-    BpmnAssert.DATA_SOURCE.set(dataSource);
+    CamundaAssert.DATA_SOURCE.set(dataSource);
   }
 
   /**
@@ -135,6 +135,6 @@ public class BpmnAssert {
    * #initialize(CamundaDataSource)} before the assertions can be used again.
    */
   static void reset() {
-    BpmnAssert.DATA_SOURCE.remove();
+    CamundaAssert.DATA_SOURCE.remove();
   }
 }

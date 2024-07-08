@@ -30,7 +30,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class BpmnAssertTest {
+public class CamundaAssertTest {
 
   @Mock private CamundaDataSource camundaDataSource;
 
@@ -39,10 +39,10 @@ public class BpmnAssertTest {
   @Test
   void shouldFailIfNotInitialized() {
     // given
-    BpmnAssert.reset();
+    CamundaAssert.reset();
 
     // when/then
-    assertThatThrownBy(() -> BpmnAssert.assertThat(processInstanceEvent).isActive())
+    assertThatThrownBy(() -> CamundaAssert.assertThat(processInstanceEvent).isActive())
         .isInstanceOf(IllegalStateException.class)
         .hasMessage("No data source is set. Maybe you run outside of a testcase?");
   }
@@ -58,8 +58,8 @@ public class BpmnAssertTest {
     when(camundaDataSource.getProcessInstance(processInstanceKey)).thenReturn(processInstanceDto);
 
     // when
-    BpmnAssert.initialize(camundaDataSource);
-    BpmnAssert.assertThat(processInstanceEvent).isActive();
+    CamundaAssert.initialize(camundaDataSource);
+    CamundaAssert.assertThat(processInstanceEvent).isActive();
 
     // then
     verify(camundaDataSource).getProcessInstance(processInstanceKey);

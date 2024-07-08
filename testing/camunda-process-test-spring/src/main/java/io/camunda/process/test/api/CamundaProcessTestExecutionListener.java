@@ -96,13 +96,13 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     // initialize assertions
     final CamundaDataSource dataSource = createDataSource(containerRuntime);
-    BpmnAssert.initialize(dataSource);
+    CamundaAssert.initialize(dataSource);
   }
 
   @Override
   public void afterTestMethod(final TestContext testContext) throws Exception {
     // reset assertions
-    BpmnAssert.reset();
+    CamundaAssert.reset();
 
     // close Zeebe clients
     testContext

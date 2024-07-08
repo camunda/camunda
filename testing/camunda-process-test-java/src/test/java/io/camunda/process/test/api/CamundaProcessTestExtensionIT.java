@@ -53,7 +53,7 @@ public class CamundaProcessTestExtensionIT {
             .join();
 
     // then
-    BpmnAssert.assertThat(processInstance)
+    CamundaAssert.assertThat(processInstance)
         .isActive()
         .hasCompletedElements("start")
         .hasActiveElements("task");

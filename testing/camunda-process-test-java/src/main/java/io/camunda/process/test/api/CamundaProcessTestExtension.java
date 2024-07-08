@@ -120,7 +120,7 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
 
     // initialize assertions
     final CamundaDataSource dataSource = createDataSource(containerRuntime);
-    BpmnAssert.initialize(dataSource);
+    CamundaAssert.initialize(dataSource);
   }
 
   private <T> void injectField(
@@ -161,7 +161,7 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
   @Override
   public void afterEach(final ExtensionContext extensionContext) throws Exception {
     // reset assertions
-    BpmnAssert.reset();
+    CamundaAssert.reset();
     // close all created clients
     createdClients.forEach(ZeebeClient::close);
     // close the runtime

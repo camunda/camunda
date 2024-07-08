@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Marks a class as a process test and adds the JUnit extension {@link CamundaProcessTestExtension}.
- * Use {@link BpmnAssert} to verify the expected result of a test.
+ * Use {@link CamundaAssert} to verify the expected result of a test.
  *
  * <p>Example usage:
  *
@@ -49,7 +49,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  *     // when
  *
  *     // then
- *     BpmnAssert.assertThat(processInstance)
+ *     CamundaAssert.assertThat(processInstance)
  *         .isCompleted()
  *         .hasCompletedElements("A", "B");
  *   }
