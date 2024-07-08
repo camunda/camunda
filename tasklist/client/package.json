@@ -80,7 +80,7 @@
     "@typescript-eslint/parser": "7.15.0",
     "@vitejs/plugin-react": "4.3.1",
     "@vitest/coverage-istanbul": "1.6.0",
-    "@vitest/ui": "2.0.0",
+    "@vitest/ui": "2.0.1",
     "axe-core": "4.9.1",
     "browserslist": "4.23.1",
     "browserslist-to-esbuild": "2.1.1",
