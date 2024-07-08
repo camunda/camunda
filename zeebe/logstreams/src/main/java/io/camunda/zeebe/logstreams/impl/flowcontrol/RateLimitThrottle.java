@@ -30,8 +30,8 @@ final class RateLimitThrottle {
     this.limit = limit;
     this.limiter = limiter;
     this.measurement = measurement;
-    resolution = limit.throttling().resolution().toMillis();
-    enabled = limit.enabled() && limit.throttling().enabled();
+    resolution = limit == null ? -1 : limit.throttling().resolution().toMillis();
+    enabled = limit != null && limit.enabled() && limit.throttling().enabled();
   }
 
   public void update(final long timestamp, final long backlog) {

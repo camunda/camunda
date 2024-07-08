@@ -57,7 +57,7 @@ public final class LogStreamImpl extends Actor
       final int maxFragmentSize,
       final LogStorage logStorage,
       final Limit requestLimit,
-      final RateLimit writeRateLimiter) {
+      final RateLimit writeRateLimit) {
     this.logName = logName;
 
     this.partitionId = partitionId;
@@ -68,7 +68,7 @@ public final class LogStreamImpl extends Actor
     logStreamMetrics = new LogStreamMetrics(partitionId);
     closeFuture = new CompletableActorFuture<>();
     readers = new ArrayList<>();
-    flowControl = new FlowControl(logStreamMetrics, requestLimit, writeRateLimiter);
+    flowControl = new FlowControl(logStreamMetrics, requestLimit, writeRateLimit);
   }
 
   @Override
