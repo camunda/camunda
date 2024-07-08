@@ -86,6 +86,11 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
     return isDuplicateProp.getValue();
   }
 
+  public ProcessMetadata setDuplicate(final boolean isDuplicate) {
+    isDuplicateProp.setValue(isDuplicate);
+    return this;
+  }
+
   public ProcessMetadata setResourceName(final String resourceName) {
     resourceNameProp.setValue(resourceName);
     return this;
@@ -151,11 +156,6 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
   public ProcessMetadata setBpmnProcessId(
       final DirectBuffer bpmnProcessId, final int offset, final int length) {
     bpmnProcessIdProp.setValue(bpmnProcessId, offset, length);
-    return this;
-  }
-
-  public ProcessMetadata markAsDuplicate() {
-    isDuplicateProp.setValue(true);
     return this;
   }
 

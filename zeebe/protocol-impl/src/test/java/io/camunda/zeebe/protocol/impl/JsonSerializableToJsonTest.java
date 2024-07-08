@@ -309,7 +309,7 @@ final class JsonSerializableToJsonTest {
                   .setResourceName(wrapString(resourceName))
                   .setVersion(processVersion)
                   .setChecksum(checksum)
-                  .markAsDuplicate();
+                  .setDuplicate(true);
               record
                   .decisionRequirementsMetadata()
                   .add()
@@ -320,7 +320,7 @@ final class JsonSerializableToJsonTest {
                   .setNamespace("namespace")
                   .setResourceName("resource-name")
                   .setChecksum(checksum)
-                  .markAsDuplicate();
+                  .setDuplicate(true);
               record
                   .decisionsMetadata()
                   .add()
@@ -330,7 +330,7 @@ final class JsonSerializableToJsonTest {
                   .setDecisionKey(2L)
                   .setDecisionRequirementsKey(1L)
                   .setDecisionRequirementsId("drg-id")
-                  .markAsDuplicate();
+                  .setDuplicate(true);
               record
                   .formMetadata()
                   .add()
@@ -339,7 +339,7 @@ final class JsonSerializableToJsonTest {
                   .setFormKey(1L)
                   .setResourceName("form1.form")
                   .setChecksum(checksum)
-                  .markAsDuplicate();
+                  .setDuplicate(true);
               return record;
             },
         """
