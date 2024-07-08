@@ -14,11 +14,13 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.List;
 import org.assertj.core.groups.Tuple;
 import org.junit.Rule;
@@ -46,7 +48,7 @@ public class MigrateTimerInstanceTest {
                     .startEvent()
                     .userTask("A")
                     .boundaryEvent("boundary1")
-                    .timerWithDuration("PT5M")
+                    .timerWithDuration("PT1M")
                     .endEvent()
                     .moveToActivity("A")
                     .endEvent()
@@ -56,7 +58,7 @@ public class MigrateTimerInstanceTest {
                     .startEvent()
                     .userTask("B")
                     .boundaryEvent("boundary2")
-                    .timerWithDuration("PT1S")
+                    .timerWithDuration("PT10M")
                     .endEvent()
                     .moveToActivity("B")
                     .endEvent()
@@ -95,6 +97,20 @@ public class MigrateTimerInstanceTest {
         .hasTargetElementId("boundary2")
         .describedAs("Expect that the due date is not changed")
         .hasDueDate(timerRecord.getDueDate());
+
+    engine.increaseTime(Duration.ofMinutes(2));
+
+    Assertions.assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that the target element id is updated")
+        .hasTargetElementId("boundary2")
+        .describedAs("Expect that the due date is not changed")
+        .hasDueDate(timerRecord.getDueDate());
   }
 
   @Test
@@ -111,11 +127,11 @@ public class MigrateTimerInstanceTest {
                     .startEvent()
                     .userTask("A")
                     .boundaryEvent("boundary1")
-                    .timerWithDuration("PT5M")
+                    .timerWithDuration("PT1M")
                     .endEvent()
                     .moveToActivity("A")
                     .boundaryEvent("boundary2")
-                    .timerWithDuration("PT10M")
+                    .timerWithDuration("PT2M")
                     .endEvent()
                     .moveToActivity("A")
                     .endEvent()
@@ -125,11 +141,11 @@ public class MigrateTimerInstanceTest {
                     .startEvent()
                     .userTask("B")
                     .boundaryEvent("boundary3")
-                    .timerWithDuration("PT3S")
+                    .timerWithDuration("PT10M")
                     .endEvent()
                     .moveToActivity("B")
                     .boundaryEvent("boundary4")
-                    .timerWithDuration("PT7S")
+                    .timerWithDuration("PT15M")
                     .endEvent()
                     .moveToActivity("B")
                     .endEvent()
@@ -174,10 +190,24 @@ public class MigrateTimerInstanceTest {
         .containsExactly(
             Tuple.tuple(targetProcessDefinitionKey, "boundary4", firstDueDate),
             Tuple.tuple(targetProcessDefinitionKey, "boundary3", secondDueDate));
+
+    engine.increaseTime(Duration.ofMinutes(3));
+
+    Assertions.assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that the target element id is updated")
+        .hasTargetElementId("boundary3")
+        .describedAs("Expect that the due date is not changed")
+        .hasDueDate(secondDueDate);
   }
 
   @Test
-  public void shouldMigrateOneOfMultipleTimerBoundaryEventsAndUnsubscribe() {
+  public void shouldMigrateOneOfMultipleTimerBoundaryEventsAndCancel() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
@@ -190,11 +220,11 @@ public class MigrateTimerInstanceTest {
                     .startEvent()
                     .userTask("A")
                     .boundaryEvent("boundary1")
-                    .timerWithDuration("PT5M")
+                    .timerWithDuration("PT3M")
                     .endEvent()
                     .moveToActivity("A")
                     .boundaryEvent("boundary2")
-                    .timerWithDuration("PT10M")
+                    .timerWithDuration("PT1M")
                     .endEvent()
                     .moveToActivity("A")
                     .endEvent()
@@ -204,7 +234,7 @@ public class MigrateTimerInstanceTest {
                     .startEvent()
                     .userTask("B")
                     .boundaryEvent("boundary3")
-                    .timerWithDuration("PT3S")
+                    .timerWithDuration("PT10M")
                     .endEvent()
                     .moveToActivity("B")
                     .endEvent()
@@ -255,10 +285,24 @@ public class MigrateTimerInstanceTest {
                 .exists())
         .describedAs("Expect that the second timer boundary event is canceled")
         .isTrue();
+
+    engine.increaseTime(Duration.ofMinutes(4));
+
+    Assertions.assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that the target element id is updated")
+        .hasTargetElementId("boundary3")
+        .describedAs("Expect that the due date is not changed")
+        .hasDueDate(migratedDueDate);
   }
 
   @Test
-  public void shouldMigrateOneOfMultipleTimerBoundaryEventsAndSubscribe() {
+  public void shouldMigrateOneOfMultipleTimerBoundaryEventsAndCreate() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
@@ -281,11 +325,11 @@ public class MigrateTimerInstanceTest {
                     .startEvent()
                     .userTask("B")
                     .boundaryEvent("boundary2")
-                    .timerWithDuration("PT3S")
+                    .timerWithDuration("PT10M")
                     .endEvent()
                     .moveToActivity("B")
                     .boundaryEvent("boundary3")
-                    .timerWithDuration("PT7S")
+                    .timerWithDuration("PT1M")
                     .endEvent()
                     .moveToActivity("B")
                     .endEvent()
@@ -335,5 +379,210 @@ public class MigrateTimerInstanceTest {
                 .exists())
         .describedAs("Expect that the second timer boundary event is created")
         .isTrue();
+
+    final Record<TimerRecordValue> createdTimerRecord =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withHandlerNodeId("boundary3")
+            .getFirst();
+
+    final long createdTimerDueDate = createdTimerRecord.getValue().getDueDate();
+
+    engine.increaseTime(Duration.ofMinutes(6));
+
+    Assertions.assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasTargetElementId("boundary3")
+        .hasDueDate(createdTimerDueDate);
+  }
+
+  @Test
+  public void shouldMigrateToInterruptingStatus() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("A")
+                    .boundaryEvent("boundary1")
+                    .cancelActivity(false)
+                    .timerWithDuration("PT3M")
+                    .endEvent()
+                    .moveToActivity("A")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask("B")
+                    .boundaryEvent("boundary2")
+                    .cancelActivity(true)
+                    .timerWithDuration("PT5M")
+                    .endEvent()
+                    .moveToActivity("B")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    final Record<TimerRecordValue> timerRecord =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final long migratedDueDate = timerRecord.getValue().getDueDate();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .addMappingInstruction("boundary1", "boundary2")
+        .migrate();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.timerRecords(TimerIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that the target element id is updated")
+        .hasTargetElementId("boundary2")
+        .describedAs("Expect that the due date is not changed")
+        .hasDueDate(migratedDueDate);
+
+    engine.increaseTime(Duration.ofMinutes(3));
+
+    Assertions.assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that the target element id is updated")
+        .hasTargetElementId("boundary2")
+        .describedAs("Expect that the due date is not changed")
+        .hasDueDate(migratedDueDate);
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("B")
+                .getFirst())
+        .describedAs(
+            "Expect that the element is terminated as we the boundary event is now interrupting")
+        .isNotNull();
+  }
+
+  @Test
+  public void shouldMigrateToNonInterruptingStatus() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask("A", a -> a.zeebeJobType("A"))
+                    .boundaryEvent("boundary1")
+                    .cancelActivity(true)
+                    .timerWithDuration("PT3M")
+                    .endEvent()
+                    .moveToActivity("A")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask("B", b -> b.zeebeJobType("B"))
+                    .boundaryEvent("boundary2")
+                    .cancelActivity(false)
+                    .timerWithDuration("PT5M")
+                    .endEvent()
+                    .moveToActivity("B")
+                    .userTask("C")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    final Record<TimerRecordValue> timerRecord =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final long migratedDueDate = timerRecord.getValue().getDueDate();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .addMappingInstruction("boundary1", "boundary2")
+        .migrate();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.timerRecords(TimerIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that the target element id is updated")
+        .hasTargetElementId("boundary2")
+        .describedAs("Expect that the due date is not changed")
+        .hasDueDate(migratedDueDate);
+
+    engine.increaseTime(Duration.ofMinutes(3));
+
+    Assertions.assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that the target element id is updated")
+        .hasTargetElementId("boundary2")
+        .describedAs("Expect that the due date is not changed")
+        .hasDueDate(migratedDueDate);
+
+    engine.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("C")
+                .getFirst()
+                .getValue())
+        .describedAs(
+            "Expect that the element is activated as we the boundary event is now non-interrupting")
+        .isNotNull();
   }
 }
