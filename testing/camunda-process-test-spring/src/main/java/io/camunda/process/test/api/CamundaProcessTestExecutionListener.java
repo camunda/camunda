@@ -15,7 +15,9 @@
  */
 package io.camunda.process.test.api;
 
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
+import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
@@ -91,10 +93,17 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     testContext
         .getApplicationContext()
         .publishEvent(new ZeebeClientCreatedEvent(this, zeebeClient));
+
+    // initialize assertions
+    final CamundaDataSource dataSource = createDataSource(containerRuntime);
+    CamundaAssert.initialize(dataSource);
   }
 
   @Override
   public void afterTestMethod(final TestContext testContext) throws Exception {
+    // reset assertions
+    CamundaAssert.reset();
+
     // close Zeebe clients
     testContext
         .getApplicationContext()
@@ -145,6 +154,13 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private static boolean hasJsonMapper(final TestContext testContext) {
     return testContext.getApplicationContext().getBeanNamesForType(JsonMapper.class).length > 0;
+  }
+
+  private CamundaDataSource createDataSource(final CamundaContainerRuntime containerRuntime) {
+    final OperateContainer operateContainer = containerRuntime.getOperateContainer();
+    final String operateApiEndpoint =
+        "http://" + operateContainer.getHost() + ":" + operateContainer.getRestApiPort();
+    return new CamundaDataSource(operateApiEndpoint);
   }
 
   @Override
