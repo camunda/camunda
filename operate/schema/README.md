@@ -71,7 +71,6 @@ To perform index schema update:
 here (adjust assertions in `BasicProcessTest`) or create your own data that you would like to be
 tested.
 
-
 ## DMN
 
 DMN entities:
