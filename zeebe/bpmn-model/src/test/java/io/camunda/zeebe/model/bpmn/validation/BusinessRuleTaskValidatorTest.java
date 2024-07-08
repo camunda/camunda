@@ -20,6 +20,7 @@ import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.ex
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.BusinessRuleTaskBuilder;
+import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
@@ -65,6 +66,26 @@ class BusinessRuleTaskValidatorTest {
         process,
         ExpectedValidationResult.expect(
             ZeebeCalledDecision.class, "Attribute 'resultVariable' must be present and not empty"));
+  }
+
+  @Test
+  void invalidBindingType() {
+    // when
+    final BpmnModelInstance process =
+        process(
+            task ->
+                task.zeebeCalledDecisionId("decisionId")
+                    .zeebeResultVariable("result")
+                    .getElement()
+                    .getSingleExtensionElement(ZeebeCalledDecision.class)
+                    .setAttributeValue(ZeebeConstants.ATTRIBUTE_BINDING_TYPE, "foo"));
+
+    // then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        ExpectedValidationResult.expect(
+            ZeebeCalledDecision.class,
+            "Attribute 'bindingType' must be one of: deployment, latest"));
   }
 
   @Test
