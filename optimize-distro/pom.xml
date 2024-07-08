@@ -149,6 +149,7 @@
               <url>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${elasticsearch.demo.version}-windows-x86_64.zip</url>
               <unpack>true</unpack>
               <outputDirectory>${project.build.directory}</outputDirectory>
+              <readTimeOut>1200000</readTimeOut>
             </configuration>
           </execution>
         </executions>
