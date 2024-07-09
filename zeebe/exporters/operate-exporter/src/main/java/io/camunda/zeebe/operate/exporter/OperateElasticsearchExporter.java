@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.operate.exporter;
 
-import static io.camunda.zeebe.protocol.record.ValueType.INCIDENT;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
@@ -24,7 +23,7 @@ import io.camunda.operate.util.ElasticsearchScriptBuilder;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
-import io.camunda.zeebe.operate.exporter.handlers.FlowNodeInstanceIncidentHandler;
+import io.camunda.zeebe.operate.exporter.handlers.FlowNodeInstanceProcessInstanceHandler;
 import io.camunda.zeebe.operate.exporter.handlers.ProcessHandler;
 import io.camunda.zeebe.operate.exporter.handlers.SequenceFlowHandler;
 import io.camunda.zeebe.operate.exporter.handlers.VariableHandler;
@@ -56,7 +55,7 @@ public class OperateElasticsearchExporter implements Exporter {
     configuration =
         context.getConfiguration().instantiate(OperateElasticsearchExporterConfiguration.class);
     batchSize =
-        configuration.bulk.size; // TODO this duplicated configuration.elasticsearch.batchSize
+        configuration.bulk.size; // TODO this suplicated configuration.elasticsearch.batchSize
     log.debug("Exporter configured with {}", configuration);
 
     validate(configuration);
@@ -162,7 +161,7 @@ public class OperateElasticsearchExporter implements Exporter {
             new SequenceFlowHandler(
                 (SequenceFlowTemplate) (new SequenceFlowTemplate().setIndexPrefix(indexPrefix))))
         .withHandler(
-            new FlowNodeInstanceIncidentHandler(
+            new FlowNodeInstanceProcessInstanceHandler(
                 (FlowNodeInstanceTemplate)
                     (new FlowNodeInstanceTemplate().setIndexPrefix(indexPrefix))))
         .build();
@@ -171,11 +170,12 @@ public class OperateElasticsearchExporter implements Exporter {
   private static final class ElasticsearchRecordFilter implements Context.RecordFilter {
     private static final List<ValueType> VALUE_TYPES_2_IMPORT =
         List.of(
-            PROCESS, VARIABLE, PROCESS_INSTANCE, INCIDENT
+            PROCESS, VARIABLE, PROCESS_INSTANCE
             //            DECISION,
             //            DECISION_REQUIREMENTS,
             //            DECISION_EVALUATION,
             //            JOB,
+            //            INCIDENT,
             //            VARIABLE_DOCUMENT,
             //            PROCESS_MESSAGE_SUBSCRIPTION,
             //            USER_TASK
