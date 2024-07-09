@@ -59,14 +59,6 @@ public final class LogStreamMetrics {
           .labelNames("partition")
           .register();
 
-  private static final Gauge APPEND_LIMIT =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("backpressure_append_limit")
-          .help("Current limit for number of inflight appends")
-          .labelNames("partition")
-          .register();
-
   private static final Counter TOTAL_RECEIVED_REQUESTS =
       Counter.build()
           .namespace("zeebe")
@@ -151,7 +143,6 @@ public final class LogStreamMetrics {
   private final Counter.Child deferredAppends;
   private final Counter.Child triedAppends;
   private final Gauge.Child inflightAppends;
-  private final Gauge.Child appendLimit;
   private final Counter.Child receivedRequests;
   private final Counter.Child droppedRequests;
   private final Gauge.Child inflightRequests;
@@ -168,7 +159,6 @@ public final class LogStreamMetrics {
     deferredAppends = TOTAL_DEFERRED_APPEND_COUNT.labels(partitionLabel);
     triedAppends = TOTAL_APPEND_TRY_COUNT.labels(partitionLabel);
     inflightAppends = INFLIGHT_APPENDS.labels(partitionLabel);
-    appendLimit = APPEND_LIMIT.labels(partitionLabel);
     receivedRequests = TOTAL_RECEIVED_REQUESTS.labels(partitionLabel);
     droppedRequests = TOTAL_DROPPED_REQUESTS.labels(partitionLabel);
     inflightRequests = INFLIGHT_REQUESTS.labels(partitionLabel);
@@ -186,10 +176,6 @@ public final class LogStreamMetrics {
 
   public void decreaseInflightAppends() {
     inflightAppends.dec();
-  }
-
-  public void setAppendLimit(final long limit) {
-    appendLimit.set(limit);
   }
 
   public void setInflightRequests(final int count) {
@@ -238,7 +224,6 @@ public final class LogStreamMetrics {
     TOTAL_DEFERRED_APPEND_COUNT.remove(partitionLabel);
     TOTAL_APPEND_TRY_COUNT.remove(partitionLabel);
     INFLIGHT_APPENDS.remove(partitionLabel);
-    APPEND_LIMIT.remove(partitionLabel);
     INFLIGHT_REQUESTS.remove(partitionLabel);
     REQUEST_LIMIT.remove(partitionLabel);
     LAST_COMMITTED_POSITION.remove(partitionLabel);
