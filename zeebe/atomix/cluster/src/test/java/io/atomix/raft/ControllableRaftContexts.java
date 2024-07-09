@@ -341,7 +341,8 @@ public final class ControllableRaftContexts {
     // Take snapshot at an index between lastSnapshotIndex and current commitIndex
     final TestSnapshotStore testSnapshotStore = snapshotStores.get(memberId);
     final var startIndex =
-        Math.max(raftContext.getLog().getFirstIndex(), testSnapshotStore.getCurrentSnapshotIndex());
+        Math.max(
+            raftContext.getLog().getFirstIndex(), testSnapshotStore.getCurrentSnapshotIndex() + 1);
     if (startIndex >= raftContext.getCommitIndex()) {
       // cannot take snapshot
       return;
