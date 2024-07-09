@@ -15,6 +15,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.indices.ProcessIndex;
+import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.elasticsearch.NewElasticsearchBatchRequest;
@@ -22,6 +23,7 @@ import io.camunda.operate.util.ElasticsearchScriptBuilder;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.operate.exporter.handlers.FlowNodeInstanceProcessInstanceHandler;
 import io.camunda.zeebe.operate.exporter.handlers.ProcessHandler;
 import io.camunda.zeebe.operate.exporter.handlers.SequenceFlowHandler;
 import io.camunda.zeebe.operate.exporter.handlers.VariableHandler;
@@ -158,6 +160,10 @@ public class OperateElasticsearchExporter implements Exporter {
         .withHandler(
             new SequenceFlowHandler(
                 (SequenceFlowTemplate) (new SequenceFlowTemplate().setIndexPrefix(indexPrefix))))
+        .withHandler(
+            new FlowNodeInstanceProcessInstanceHandler(
+                (FlowNodeInstanceTemplate)
+                    (new FlowNodeInstanceTemplate().setIndexPrefix(indexPrefix))))
         .build();
   }
 
