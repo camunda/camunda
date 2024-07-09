@@ -98,7 +98,31 @@ public class PassiveRole extends InactiveRole {
     logRequest(request);
     updateTermAndLeader(request.currentTerm(), request.leader());
 
-    log.debug("Received snapshot {} chunk from {}", request.index(), request.leader());
+    final var snapshotChunk = new SnapshotChunkImpl();
+    final var snapshotChunkBuffer = new UnsafeBuffer(request.data());
+    if (!snapshotChunk.tryWrap(snapshotChunkBuffer)) {
+      abortPendingSnapshots();
+      return CompletableFuture.completedFuture(
+          logResponse(
+              InstallResponse.builder()
+                  .withStatus(RaftResponse.Status.ERROR)
+                  .withError(RaftError.Type.APPLICATION_ERROR, "Failed to parse request data")
+                  .build()));
+    }
+
+    log.debug(
+        "Received snapshot chunk {} of snapshot {} from {}",
+        snapshotChunk.getChunkName(),
+        snapshotChunk.getSnapshotId(),
+        request.leader());
+
+    if (pendingSnapshot != null
+        && !pendingSnapshot
+            .snapshotId()
+            .getSnapshotIdAsString()
+            .equals(snapshotChunk.getSnapshotId())) {
+      abortPendingSnapshots();
+    }
 
     // If the request is for a lesser term, reject the request.
     if (request.currentTerm() < raft.getTerm()) {
@@ -150,18 +174,6 @@ public class PassiveRole extends InactiveRole {
                   .withError(
                       RaftError.Type.PROTOCOL_ERROR,
                       "Snapshot installation is not complete but did not provide any next expected chunk")
-                  .build()));
-    }
-
-    final var snapshotChunk = new SnapshotChunkImpl();
-    final var snapshotChunkBuffer = new UnsafeBuffer(request.data());
-    if (!snapshotChunk.tryWrap(snapshotChunkBuffer)) {
-      abortPendingSnapshots();
-      return CompletableFuture.completedFuture(
-          logResponse(
-              InstallResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(RaftError.Type.APPLICATION_ERROR, "Failed to parse request data")
                   .build()));
     }
 
