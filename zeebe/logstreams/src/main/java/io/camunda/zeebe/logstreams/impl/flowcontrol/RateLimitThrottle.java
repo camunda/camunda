@@ -8,6 +8,7 @@
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.google.common.util.concurrent.RateLimiter;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,7 @@ final class RateLimitThrottle {
 
   private final AtomicLong lastUpdate = new AtomicLong(-1);
 
+  private final LogStreamMetrics metrics;
   private final RateLimit limit;
   private final RateLimiter limiter;
   private final RateMeasurement measurement;
@@ -26,12 +28,20 @@ final class RateLimitThrottle {
   private final boolean enabled;
 
   RateLimitThrottle(
-      final RateLimit limit, final RateLimiter limiter, final RateMeasurement measurement) {
+      final LogStreamMetrics metrics,
+      final RateLimit limit,
+      final RateLimiter limiter,
+      final RateMeasurement measurement) {
+    this.metrics = metrics;
     this.limit = limit;
     this.limiter = limiter;
     this.measurement = measurement;
     resolution = limit == null ? -1 : limit.throttling().resolution().toMillis();
     enabled = limit != null && limit.enabled() && limit.throttling().enabled();
+    if (enabled) {
+      metrics.setWriteRateMaxLimit(limit.limit());
+      metrics.setWriteRateLimit(limiter.getRate());
+    }
   }
 
   public void update(final long timestamp, final long backlog) {
@@ -57,6 +67,7 @@ final class RateLimitThrottle {
           limit.throttling().acceptableBacklog());
     }
     limiter.setRate(adjustedRate);
+    metrics.setWriteRateLimit(adjustedRate);
   }
 
   private boolean canSkipUpdate(final long timestamp) {

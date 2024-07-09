@@ -205,7 +205,6 @@ public final class FlowControl implements AppendListener {
         requestLimit != null
             ? new CommandRateLimiterBuilder().limit(requestLimit).build(metrics)
             : new NoopLimiter<>();
-    metrics.setInflightRequests(0);
   }
 
   public RateLimit getWriteRateLimit() {
@@ -215,7 +214,8 @@ public final class FlowControl implements AppendListener {
   public void setWriteRateLimit(final RateLimit writeRateLimit) {
     this.writeRateLimit = writeRateLimit;
     writeRateLimiter = writeRateLimit == null ? null : writeRateLimit.limiter();
-    writeRateThrottle = new RateLimitThrottle(writeRateLimit, writeRateLimiter, exportingRate);
+    writeRateThrottle =
+        new RateLimitThrottle(metrics, writeRateLimit, writeRateLimiter, exportingRate);
   }
 
   public enum Rejection {

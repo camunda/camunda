@@ -140,6 +140,24 @@ public final class LogStreamMetrics {
           .labelNames("partition")
           .register();
 
+  private static final Gauge WRITE_RATE_MAX_LIMIT =
+      Gauge.build()
+          .namespace("zeebe")
+          .subsystem("flow_control")
+          .name("write_rate_maximum")
+          .help("The maximum write rate limit")
+          .labelNames("partition")
+          .register();
+
+  private static final Gauge WRITE_RATE_LIMIT =
+      Gauge.build()
+          .namespace("zeebe")
+          .subsystem("flow_control")
+          .name("write_rate_limit")
+          .help("The current write rate limit")
+          .labelNames("partition")
+          .register();
+
   private final Counter.Child deferredAppends;
   private final Counter.Child triedAppends;
   private final Gauge.Child inflightAppends;
@@ -152,6 +170,8 @@ public final class LogStreamMetrics {
   private final Histogram.Child commitLatency;
   private final Histogram.Child appendLatency;
   private final Gauge.Child exportingRate;
+  private final Gauge.Child writeRateMaxLimit;
+  private final Gauge.Child writeRateLimit;
   private final String partitionLabel;
 
   public LogStreamMetrics(final int partitionId) {
@@ -168,6 +188,8 @@ public final class LogStreamMetrics {
     commitLatency = COMMIT_LATENCY.labels(partitionLabel);
     appendLatency = WRITE_LATENCY.labels(partitionLabel);
     exportingRate = EXPORTING_RATE.labels(partitionLabel);
+    writeRateMaxLimit = WRITE_RATE_MAX_LIMIT.labels(partitionLabel);
+    writeRateLimit = WRITE_RATE_LIMIT.labels(partitionLabel);
   }
 
   public void increaseInflightAppends() {
@@ -231,6 +253,9 @@ public final class LogStreamMetrics {
     COMMIT_LATENCY.remove(partitionLabel);
     WRITE_LATENCY.remove(partitionLabel);
     EXPORTING_RATE.remove(partitionLabel);
+    FLOW_CONTROL_OUTCOME.remove(partitionLabel);
+    WRITE_RATE_MAX_LIMIT.remove(partitionLabel);
+    WRITE_RATE_LIMIT.remove(partitionLabel);
   }
 
   private String contextLabel(final WriteContext context) {
@@ -278,5 +303,13 @@ public final class LogStreamMetrics {
 
   public void setExportingRate(final long value) {
     exportingRate.set(value);
+  }
+
+  public void setWriteRateMaxLimit(final long value) {
+    writeRateMaxLimit.set(value);
+  }
+
+  public void setWriteRateLimit(final double value) {
+    writeRateLimit.set(value);
   }
 }
