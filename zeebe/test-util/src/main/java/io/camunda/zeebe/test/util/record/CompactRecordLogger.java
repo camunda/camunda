@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
@@ -144,6 +145,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.SIGNAL_SUBSCRIPTION, this::summarizeSignalSubscription);
     valueLoggers.put(ValueType.USER_TASK, this::summarizeUserTask);
     valueLoggers.put(ValueType.COMMAND_DISTRIBUTION, this::summarizeCommandDistribution);
+    valueLoggers.put(ValueType.MESSAGE_CORRELATION, this::summarizeMessageCorrelation);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -828,6 +830,22 @@ public class CompactRecordLogger {
     return stringBuilder
         .append("%s partition %d".formatted(targetPartitionWord, value.getPartitionId()))
         .toString();
+  }
+
+  private String summarizeMessageCorrelation(final Record<?> record) {
+    final var value = (MessageCorrelationRecordValue) record.getValue();
+
+    final var result = new StringBuilder().append("\"").append(value.getName()).append("\"");
+
+    if (!StringUtils.isEmpty(value.getCorrelationKey())) {
+      result.append(" correlationKey: ").append(value.getCorrelationKey());
+    }
+
+    result.append(" processInstanceKey: ").append(value.getProcessInstanceKey());
+
+    result.append(summarizeVariables(value.getVariables()));
+
+    return result.toString();
   }
 
   /**
