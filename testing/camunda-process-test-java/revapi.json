@@ -3,6 +3,12 @@
     "extension": "revapi.filter",
     "id": "filter",
     "configuration": {
+      "archives": {
+        "justification": "Ignore everything not included in the module itself",
+        "include": [
+          "io\\.camunda:camunda-process-test-java:.*"
+        ]
+      },
       "elements": {
         "exclude": [
           {

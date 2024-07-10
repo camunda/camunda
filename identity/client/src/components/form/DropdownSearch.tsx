@@ -90,7 +90,7 @@ const DropdownSearch = <Item,>({
 
   useEffect(() => {
     if (items.length > 0) setSelectedResult(0);
-  }, [JSON.stringify(items)]);
+  }, [items.length]);
 
   return (
     <ListBox disabled={false} type="inline" isOpen>

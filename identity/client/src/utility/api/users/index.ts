@@ -1,16 +1,19 @@
 import { ApiDefinition, apiDelete, apiGet, apiPost, apiPut } from "../request";
+import { SearchResponse } from "src/utility/api";
 
 export const USERS_ENDPOINT = "/users";
 
 export type User = {
   id: string;
+  name: string;
   username: string;
   password: string;
   email: string;
   enabled: boolean;
 };
 
-export const getUsers: ApiDefinition<User[]> = () => apiGet(USERS_ENDPOINT);
+export const searchUser: ApiDefinition<SearchResponse<User>> = () =>
+  apiPost(`${USERS_ENDPOINT}/search`);
 
 type GetUserParams = {
   id: string;

@@ -25,6 +25,7 @@ import {
   ACTIVE_BADGE,
   INCIDENTS_BADGE,
   COMPLETED_BADGE,
+  COMPLETED_END_EVENT_BADGE,
 } from 'modules/bpmn-js/badgePositions';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -38,6 +39,7 @@ import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstance
 import {ModificationInfoBanner} from './ModificationInfoBanner';
 import {ModificationDropdown} from './ModificationDropdown';
 import {StateOverlay} from 'modules/components/StateOverlay';
+import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -47,6 +49,7 @@ const overlayPositions = {
   incidents: INCIDENTS_BADGE,
   canceled: CANCELED_BADGE,
   completed: COMPLETED_BADGE,
+  completedEndEvents: COMPLETED_END_EVENT_BADGE,
 } as const;
 
 type ModificationBadgePayload = {
@@ -55,7 +58,8 @@ type ModificationBadgePayload = {
 };
 
 const TopPanel: React.FC = observer(() => {
-  const {selectableFlowNodes} = processInstanceDetailsStatisticsStore;
+  const {selectableFlowNodes, executedFlowNodes} =
+    processInstanceDetailsStatisticsStore;
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const flowNodeSelection = flowNodeSelectionStore.state.selection;
   const [isInTransition, setIsInTransition] = useState(false);
@@ -71,7 +75,7 @@ const TopPanel: React.FC = observer(() => {
     };
   }, [processInstanceId]);
 
-  const flowNodeStateOverlays =
+  const allFlowNodeStateOverlays =
     processInstanceDetailsStatisticsStore.flowNodeStatistics.map(
       ({flowNodeState, count, flowNodeId}) => ({
         payload: {flowNodeState, count},
@@ -80,6 +84,15 @@ const TopPanel: React.FC = observer(() => {
         position: overlayPositions[flowNodeState],
       }),
     );
+
+  const notCompletedFlowNodeStateOverlays = allFlowNodeStateOverlays.filter(
+    (stateOverlay) => stateOverlay.payload.flowNodeState !== 'completed',
+  );
+
+  const flowNodeStateOverlays = executionCountToggleStore.state
+    .isExecutionCountVisible
+    ? allFlowNodeStateOverlays
+    : notCompletedFlowNodeStateOverlays;
 
   const modificationBadgesPerFlowNode = computed(() =>
     Object.entries(modificationsStore.modificationsByFlowNode).reduce<
@@ -236,10 +249,13 @@ const TopPanel: React.FC = observer(() => {
                 )
               }
               highlightedSequenceFlows={processedSequenceFlows}
+              highlightedFlowNodeIds={executedFlowNodes.map(
+                ({activityId}) => activityId,
+              )}
             >
               {stateOverlays.map((overlay) => {
                 const payload = overlay.payload as {
-                  flowNodeState: FlowNodeState;
+                  flowNodeState: FlowNodeState | 'completedEndEvents';
                   count: number;
                 };
 
@@ -252,6 +268,11 @@ const TopPanel: React.FC = observer(() => {
                     isFaded={modificationsStore.hasPendingCancelOrMoveModification(
                       overlay.flowNodeId,
                     )}
+                    title={
+                      payload.flowNodeState === 'completed'
+                        ? 'Execution Count'
+                        : undefined
+                    }
                   />
                 );
               })}

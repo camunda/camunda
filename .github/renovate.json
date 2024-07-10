@@ -71,6 +71,12 @@
       "allowedVersions": "!/0.8.9/"
     },
     {
+      "description": "Do not update Netty as it is incompatible with grpc-java < 1.65; this can be removed after that",
+      "matchManagers": ["maven"],
+      "matchPackagePrefixes": ["io.netty"],
+      "allowedVersions": "<=4.1.110.Final"
+    },
+    {
       "description" : "Exclude SNAPSHOT versions, renovate may suggest them for pre-release values.",
       "matchManagers": ["maven"],
       "matchPackagePatterns": [".*"],
@@ -164,6 +170,15 @@
         "renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.* '(?<currentValue>.*)'\\s"
       ],
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ["package\\.json"],
+      "matchStrings": [
+        "mcr\\.microsoft\\.com\\\/playwright:(?<currentValue>.*?)\\s"
+      ],
+      "depNameTemplate": "mcr.microsoft.com/playwright",
+      "datasourceTemplate": "docker"
     }
   ]
 }

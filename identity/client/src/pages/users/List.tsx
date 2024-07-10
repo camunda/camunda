@@ -16,7 +16,7 @@ import {
   documentationHref,
   DocumentationLink,
 } from "src/components/documentation";
-import { getUsers, User } from "src/utility/api/users";
+import { searchUser, User } from "src/utility/api/users";
 import { useNavigate } from "react-router";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
@@ -30,18 +30,23 @@ const List: FC = () => {
   const { t, Translate } = useTranslate();
   const navigate = useNavigate();
   const [, setSearch] = useState("");
-  const { data: users, loading, reload, success } = useApi(getUsers);
+  const {
+    data: userSearchResults,
+    loading,
+    reload,
+    success,
+  } = useApi(searchUser);
   const [addUser, addUserModal] = useModal(AddModal, reload);
   const [editUser, editUserModal] = useEntityModal(EditModal, reload);
   const [deleteUser, deleteUserModal] = useEntityModal(DeleteModal, reload);
 
   const showDetails = ({ id }: User) => navigate(`${id}`);
 
-  if (success && !users?.length) {
+  if (success && !userSearchResults?.items.length) {
     return (
       <Page>
         <PageTitle>
-          <Translate>Groups</Translate>
+          <Translate>Users</Translate>
         </PageTitle>
         <C3EmptyState
           heading={t("You don’t have any users yet")}
@@ -66,9 +71,10 @@ const List: FC = () => {
     <Page>
       <EntityList
         title={t("Users")}
-        data={users}
+        data={userSearchResults!.items}
         headers={[
           { header: t("Username"), key: "username" },
+          { header: t("Name"), key: "name" },
           { header: t("Email"), key: "email" },
         ]}
         menuItems={[

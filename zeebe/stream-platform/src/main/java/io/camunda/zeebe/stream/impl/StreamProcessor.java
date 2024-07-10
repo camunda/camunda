@@ -27,7 +27,6 @@ import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import io.camunda.zeebe.stream.impl.state.StreamProcessorDbState;
-import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
@@ -433,13 +432,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             openFuture.completeExceptionally(throwable);
           }
 
-          if (throwable instanceof UnrecoverableException) {
-            final var report = HealthReport.dead(this).withIssue(throwable);
-            failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
-          } else {
-            final var report = HealthReport.unhealthy(this).withIssue(throwable);
-            failureListeners.forEach(l -> l.onFailure(report));
-          }
+          final var report = HealthReport.dead(this).withIssue(throwable);
+          failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
         });
   }
 

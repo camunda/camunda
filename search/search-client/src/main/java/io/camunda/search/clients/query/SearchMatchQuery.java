@@ -9,19 +9,9 @@ package io.camunda.search.clients.query;
 
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
-import java.util.function.Function;
 
-public final record SearchMatchQuery(String field, String query, SearchMatchQueryOperator operator)
+public record SearchMatchQuery(String field, String query, SearchMatchQueryOperator operator)
     implements SearchQueryOption {
-
-  static SearchMatchQuery of(final Function<Builder, ObjectBuilder<SearchMatchQuery>> fn) {
-    return SearchQueryBuilders.match(fn);
-  }
-
-  public static enum SearchMatchQueryOperator {
-    AND,
-    OR;
-  }
 
   public static final class Builder implements ObjectBuilder<SearchMatchQuery> {
 
@@ -47,7 +37,19 @@ public final record SearchMatchQuery(String field, String query, SearchMatchQuer
     @Override
     public SearchMatchQuery build() {
       return new SearchMatchQuery(
-          Objects.requireNonNull(field), Objects.requireNonNull(query), operator);
+          Objects.requireNonNull(field, "Expected a non-null field for the match query."),
+          Objects.requireNonNull(
+              query,
+              () ->
+                  String.format(
+                      "Expected a non-null query parameter for the match query, with field: '%s'.",
+                      field)),
+          operator);
     }
+  }
+
+  public enum SearchMatchQueryOperator {
+    AND,
+    OR;
   }
 }

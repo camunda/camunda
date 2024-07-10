@@ -40,6 +40,7 @@ type RenderOptions = {
   selectedFlowNodeIds?: string[];
   overlaysData?: OverlayData[];
   highlightedSequenceFlows?: string[];
+  highlightedFlowNodeIds?: string[];
   nonSelectableNodeTooltipText?: string;
   hasOuterBorderOnSelection: boolean;
 };
@@ -51,6 +52,7 @@ class BpmnJS {
   #nonSelectableFlowNodes: string[] = [];
   #selectedFlowNodeIds?: string[];
   #highlightedSequenceFlows: string[] = [];
+  #highlightedFlowNodeIds: string[] = [];
   selectedFlowNode?: SVGGraphicsElement;
   onFlowNodeSelection?: OnFlowNodeSelection;
   onViewboxChange?: (isChanging: boolean) => void;
@@ -100,6 +102,7 @@ class BpmnJS {
       selectedFlowNodeIds,
       overlaysData = [],
       highlightedSequenceFlows = [],
+      highlightedFlowNodeIds = [],
       nonSelectableNodeTooltipText,
       hasOuterBorderOnSelection,
     } = options;
@@ -203,6 +206,21 @@ class BpmnJS {
       this.#hasOuterBorderOnSelection = hasOuterBorderOnSelection;
     }
 
+    // handle op-highlighted flow node markers
+    if (!isEqual(this.#highlightedFlowNodeIds, highlightedFlowNodeIds)) {
+      // remove previous markers
+      this.#highlightedFlowNodeIds.forEach((flowNodeId) => {
+        this.#removeMarker(flowNodeId, 'op-highlighted');
+      });
+
+      // add new markers
+      highlightedFlowNodeIds.forEach((element) => {
+        this.#addMarker(element, 'op-highlighted');
+      });
+
+      this.#highlightedFlowNodeIds = highlightedFlowNodeIds;
+    }
+
     // handle overlays
     if (!isEqual(this.#overlaysData, overlaysData)) {
       [
@@ -238,7 +256,7 @@ class BpmnJS {
       );
     }
 
-    // handle processed sequence flows
+    // handle highlighted sequence flows
     if (!isEqual(this.#highlightedSequenceFlows, highlightedSequenceFlows)) {
       highlightedSequenceFlows.forEach((sequenceFlow) => {
         this.#colorSequenceFlow(sequenceFlow, highlightedSequenceFlowsColor);

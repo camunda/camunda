@@ -13,6 +13,7 @@ import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchTermQuery;
+import io.camunda.search.clients.sort.SortOrder;
 import io.camunda.service.VariableServices;
 import io.camunda.service.entities.VariableEntity;
 import io.camunda.service.search.filter.FilterBuilders;
@@ -20,6 +21,7 @@ import io.camunda.service.search.filter.VariableFilter;
 import io.camunda.service.search.filter.VariableValueFilter;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.SearchQueryResult;
+import io.camunda.service.util.StubbedBrokerClient;
 import io.camunda.service.util.StubbedCamundaSearchClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,12 +30,13 @@ public final class VariableFilterTest {
 
   private VariableServices services;
   private StubbedCamundaSearchClient client;
+  private StubbedBrokerClient brokerClient;
 
   @BeforeEach
   public void before() {
     client = new StubbedCamundaSearchClient();
     new VariableSearchQueryStub().registerWith(client);
-    services = new VariableServices(client);
+    services = new VariableServices(brokerClient, client);
   }
 
   @Test
@@ -137,25 +140,148 @@ public final class VariableFilterTest {
   }
 
   @Test
-  public void shouldSetFilterValues() {
+  public void shouldSetFilterValuesWithGtAndGte() {
     // given
-    final var variableFilterBuilder = new VariableFilter.Builder();
+    var variableFilterBuilder = new VariableFilter.Builder();
 
     // when
-    final var variableFilter =
+    final var variableFilterGt =
         variableFilterBuilder
             .scopeKeys(1L)
             .processInstanceKeys(2L)
-            .variable(new VariableValueFilter.Builder().name("foo").build())
+            .variable(new VariableValueFilter.Builder().name("foo").gt("1000").build())
             .orConditions(true)
             .onlyRuntimeVariables(true)
             .build();
 
     // then
-    assertThat(variableFilter.scopeKeys()).hasSize(1).contains(1L);
-    assertThat(variableFilter.processInstanceKeys()).hasSize(1).contains(2L);
-    assertThat(variableFilter.variableFilters()).hasSize(1).extracting("name").contains("foo");
-    assertThat(variableFilter.orConditions()).isTrue();
-    assertThat(variableFilter.onlyRuntimeVariables()).isTrue();
+    assertThat(variableFilterGt.scopeKeys()).hasSize(1).contains(1L);
+    assertThat(variableFilterGt.processInstanceKeys()).hasSize(1).contains(2L);
+    assertThat(variableFilterGt.variableFilters()).hasSize(1).extracting("name").contains("foo");
+    assertThat(variableFilterGt.variableFilters()).hasSize(1).extracting("gt").contains("1000");
+    assertThat(variableFilterGt.orConditions()).isTrue();
+    assertThat(variableFilterGt.onlyRuntimeVariables()).isTrue();
+
+    variableFilterBuilder = new VariableFilter.Builder();
+
+    // when
+    final var variableFilterGte =
+        variableFilterBuilder
+            .scopeKeys(1L)
+            .processInstanceKeys(2L)
+            .variable(new VariableValueFilter.Builder().name("foo").gte("1000").build())
+            .orConditions(true)
+            .onlyRuntimeVariables(true)
+            .build();
+
+    // then
+    assertThat(variableFilterGte.scopeKeys()).hasSize(1).contains(1L);
+    assertThat(variableFilterGte.processInstanceKeys()).hasSize(1).contains(2L);
+    assertThat(variableFilterGte.variableFilters()).hasSize(1).extracting("name").contains("foo");
+    assertThat(variableFilterGte.variableFilters()).hasSize(1).extracting("gte").contains("1000");
+    assertThat(variableFilterGte.orConditions()).isTrue();
+    assertThat(variableFilterGte.onlyRuntimeVariables()).isTrue();
+  }
+
+  @Test
+  public void shouldSetFilterValuesWithLtAndLte() {
+    // given
+    var variableFilterBuilder = new VariableFilter.Builder();
+
+    // when
+    final var variableFilterLt =
+        variableFilterBuilder
+            .scopeKeys(1L)
+            .processInstanceKeys(2L)
+            .variable(new VariableValueFilter.Builder().name("foo").lt("1000").build())
+            .orConditions(true)
+            .onlyRuntimeVariables(true)
+            .build();
+
+    // then
+    assertThat(variableFilterLt.scopeKeys()).hasSize(1).contains(1L);
+    assertThat(variableFilterLt.processInstanceKeys()).hasSize(1).contains(2L);
+    assertThat(variableFilterLt.variableFilters()).hasSize(1).extracting("name").contains("foo");
+    assertThat(variableFilterLt.variableFilters()).hasSize(1).extracting("lt").contains("1000");
+    assertThat(variableFilterLt.orConditions()).isTrue();
+    assertThat(variableFilterLt.onlyRuntimeVariables()).isTrue();
+
+    variableFilterBuilder = new VariableFilter.Builder();
+
+    // when
+    final var variableFilterLte =
+        variableFilterBuilder
+            .scopeKeys(1L)
+            .processInstanceKeys(2L)
+            .variable(new VariableValueFilter.Builder().name("foo").lte("1000").build())
+            .orConditions(true)
+            .onlyRuntimeVariables(true)
+            .build();
+
+    // then
+    assertThat(variableFilterLte.scopeKeys()).hasSize(1).contains(1L);
+    assertThat(variableFilterLte.processInstanceKeys()).hasSize(1).contains(2L);
+    assertThat(variableFilterLte.variableFilters()).hasSize(1).extracting("name").contains("foo");
+    assertThat(variableFilterLte.variableFilters()).hasSize(1).extracting("lte").contains("1000");
+    assertThat(variableFilterLte.orConditions()).isTrue();
+    assertThat(variableFilterLte.onlyRuntimeVariables()).isTrue();
+  }
+
+  @Test
+  public void shouldApplySortConditionByValueASC() {
+    // given
+    final var variableFilter =
+        FilterBuilders.variable(
+            (f) -> f.variable(new VariableValueFilter.Builder().name("foo").build()));
+    final var searchQuery =
+        SearchQueryBuilders.variableSearchQuery(
+            (q) -> q.filter(variableFilter).sort((s) -> s.value().asc()));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    // Assert the sort condition
+    final var sort = searchRequest.sort();
+    assertThat(sort).isNotNull();
+    assertThat(sort).hasSize(2);
+
+    final boolean sortByValueConditionCheck =
+        sort.stream()
+            .anyMatch(
+                s -> s.field().field().equals("value") && s.field().order().equals(SortOrder.ASC));
+
+    assertThat(sortByValueConditionCheck).isTrue();
+  }
+
+  @Test
+  public void shouldApplySortConditionByValueDESC() {
+    // given
+    final var variableFilter =
+        FilterBuilders.variable(
+            (f) -> f.variable(new VariableValueFilter.Builder().name("foo").build()));
+    final var searchQuery =
+        SearchQueryBuilders.variableSearchQuery(
+            (q) -> q.filter(variableFilter).sort((s) -> s.value().desc()));
+
+    // when
+    services.search(searchQuery);
+
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+
+    // Assert the sort condition
+    final var sort = searchRequest.sort();
+    assertThat(sort).isNotNull();
+    assertThat(sort).hasSize(2);
+
+    final boolean sortByValueConditionCheck =
+        sort.stream()
+            .anyMatch(
+                s -> s.field().field().equals("value") && s.field().order().equals(SortOrder.DESC));
+
+    assertThat(sortByValueConditionCheck).isTrue();
   }
 }

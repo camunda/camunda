@@ -92,7 +92,7 @@ public abstract class BaseWebConfigurer {
                   .permitAll()
                   .requestMatchers(
                       AntPathRequestMatcher.antMatcher(GRAPHQL_URL),
-                      AntPathRequestMatcher.antMatcher(ALL_REST_V1_API),
+                      AntPathRequestMatcher.antMatcher(ALL_REST_VERSION_API),
                       AntPathRequestMatcher.antMatcher(ERROR_URL))
                   .authenticated()
                   .requestMatchers(AntPathRequestMatcher.antMatcher("/login"))
