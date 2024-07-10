@@ -149,6 +149,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
     channelBuilder.keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS);
     channelBuilder.userAgent("zeebe-client-java/" + VersionUtil.getVersion());
     channelBuilder.maxInboundMessageSize(config.getMaxMessageSize());
+    channelBuilder.maxInboundMetadataSize(config.getMaxMetadataSize());
 
     if (config.useDefaultRetryPolicy()) {
       final Map<String, Object> serviceConfig = defaultServiceConfig();
