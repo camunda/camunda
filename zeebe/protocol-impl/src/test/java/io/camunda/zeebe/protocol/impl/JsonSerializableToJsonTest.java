@@ -34,6 +34,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -2318,6 +2319,60 @@ final class JsonSerializableToJsonTest {
           "compensableActivityScopeKey": -1,
           "compensableActivityInstanceKey": -1,
           "variables": {}
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////// MessageCorrelationRecord ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "MessageCorrelationRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final String correlationKey = "test-key";
+              final String messageName = "test-message";
+              final long processInstanceKey = 1L;
+
+              return new MessageCorrelationRecord()
+                  .setCorrelationKey(correlationKey)
+                  .setName(messageName)
+                  .setVariables(VARIABLES_MSGPACK)
+                  .setTenantId("foo")
+                  .setProcessInstanceKey(processInstanceKey);
+            },
+        """
+        {
+          "correlationKey": "test-key",
+          "variables": {
+            "foo": "bar"
+          },
+          "name": "test-message",
+          "tenantId": "foo",
+          "processInstanceKey": 1
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////// Empty MessageCorrelationRecord /////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty MessageCorrelationRecord",
+        (Supplier<MessageCorrelationRecord>)
+            () -> {
+              final String correlationKey = "test-key";
+              final String messageName = "test-message";
+
+              return new MessageCorrelationRecord()
+                  .setCorrelationKey(correlationKey)
+                  .setName(messageName);
+            },
+        """
+        {
+          "correlationKey": "test-key",
+          "variables": {},
+          "name": "test-message",
+          "tenantId": "<default>",
+          "processInstanceKey": -1
         }
         """
       },
