@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 import com.google.common.util.concurrent.RateLimiter;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import java.util.concurrent.atomic.AtomicLong;
@@ -26,6 +29,7 @@ final class RateLimitThrottle {
   private final RateMeasurement measurement;
   private final long resolution;
   private final boolean enabled;
+  private final double minRate;
 
   RateLimitThrottle(
       final LogStreamMetrics metrics,
@@ -38,6 +42,7 @@ final class RateLimitThrottle {
     this.measurement = measurement;
     resolution = limit == null ? -1 : limit.throttling().resolution().toMillis();
     enabled = limit != null && limit.enabled() && limit.throttling().enabled();
+    minRate = limit == null ? -1 : limit.throttling().minRate();
     if (enabled) {
       metrics.setWriteRateMaxLimit(limit.limit());
       metrics.setWriteRateLimit(limiter.getRate());
@@ -56,7 +61,7 @@ final class RateLimitThrottle {
     final var factor = limit.throttling().acceptableBacklog() / (double) backlog;
     final var rate = measurement.rate();
     final double adjustedRate =
-        Math.min(limit.limit(), Math.max(factor * rate, (double) limit.throttling().minRate()));
+        factor > 2 ? limit.limit() : min(limit.limit(), max(factor * rate, minRate));
     if (adjustedRate < limit.limit()) {
       LOG.debug(
           "Throttling to {}, {} of observed rate {}, Current backlog {}, acceptable {}",
