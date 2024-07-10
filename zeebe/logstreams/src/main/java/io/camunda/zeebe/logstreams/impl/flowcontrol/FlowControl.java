@@ -15,6 +15,7 @@ import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.RequestLimiter.CommandRateLimiterBuilder;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.logstreams.log.WriteContext.Internal;
 import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -120,13 +121,18 @@ public final class FlowControl implements AppendListener {
   private Either<Rejection, InFlightEntry> tryAcquireInternal(
       final WriteContext context, final List<LogAppendEntryMetadata> batchMetadata) {
     final Listener requestListener;
-    if (context instanceof UserCommand(final var intent)) {
-      requestListener = processingLimiter.acquire(intent).orElse(null);
-      if (requestListener == null) {
-        return Either.left(Rejection.RequestLimitExhausted);
+    switch (context) {
+      case final Internal ignored -> {
+        // Internal commands are always accepted for incident response and maintenance.
+        return Either.right(new InFlightEntry(metrics, batchMetadata, null));
       }
-    } else {
-      requestListener = null;
+      case UserCommand(final var intent) -> {
+        requestListener = processingLimiter.acquire(intent).orElse(null);
+        if (requestListener == null) {
+          return Either.left(Rejection.RequestLimitExhausted);
+        }
+      }
+      default -> requestListener = null;
     }
 
     if (writeRateLimiter != null && !writeRateLimiter.tryAcquire(batchMetadata.size())) {
