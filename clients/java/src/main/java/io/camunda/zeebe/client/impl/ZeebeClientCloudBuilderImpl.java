@@ -192,6 +192,11 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
+  public ZeebeClientBuilder maxMetadataSize(final int maxMetadataSize) {
+    return innerBuilder.maxMetadataSize(maxMetadataSize);
+  }
+
+  @Override
   public ZeebeClient build() {
     innerBuilder.gatewayAddress(determineGatewayAddress());
     innerBuilder.credentialsProvider(determineCredentialsProvider());

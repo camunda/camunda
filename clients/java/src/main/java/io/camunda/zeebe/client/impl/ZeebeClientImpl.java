@@ -137,6 +137,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
     configureConnectionSecurity(config, channelBuilder);
     channelBuilder.keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS);
     channelBuilder.userAgent("zeebe-client-java/" + VersionUtil.getVersion());
+    channelBuilder.maxInboundMetadataSize(config.getMaxMetadataSize());
 
     return channelBuilder.build();
   }

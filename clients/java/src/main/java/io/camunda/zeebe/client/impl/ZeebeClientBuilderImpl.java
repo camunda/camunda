@@ -19,9 +19,11 @@ import static io.camunda.zeebe.client.ClientProperties.CA_CERTIFICATE_PATH;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
 import static io.camunda.zeebe.client.ClientProperties.KEEP_ALIVE;
+import static io.camunda.zeebe.client.ClientProperties.MAX_METADATA_SIZE;
 import static io.camunda.zeebe.client.ClientProperties.OVERRIDE_AUTHORITY;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 import static io.camunda.zeebe.client.impl.BuilderUtils.appendProperty;
+import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_KB;
 
 import io.camunda.zeebe.client.ClientProperties;
 import io.camunda.zeebe.client.CredentialsProvider;
@@ -30,6 +32,7 @@ import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.zeebe.client.impl.util.DataSizeUtil;
 import io.camunda.zeebe.client.impl.util.Environment;
 import io.grpc.ClientInterceptor;
 import java.time.Duration;
@@ -62,6 +65,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private Duration keepAlive = Duration.ofSeconds(45);
   private JsonMapper jsonMapper = new ZeebeObjectMapper();
   private String overrideAuthority;
+  private int maxMetadataSize = 16 * ONE_KB;
 
   @Override
   public String getGatewayAddress() {
@@ -139,6 +143,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   }
 
   @Override
+  public int getMaxMetadataSize() {
+    return maxMetadataSize;
+  }
+
+  @Override
   public ZeebeClientBuilder withProperties(final Properties properties) {
     if (properties.containsKey(ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES)) {
       applyEnvironmentVariableOverrides(
@@ -200,6 +209,9 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     }
     if (properties.containsKey(OVERRIDE_AUTHORITY)) {
       overrideAuthority(properties.getProperty(OVERRIDE_AUTHORITY));
+    }
+    if (properties.containsKey(MAX_METADATA_SIZE)) {
+      maxMetadataSize(DataSizeUtil.parse(properties.getProperty(MAX_METADATA_SIZE)));
     }
     return this;
   }
@@ -306,6 +318,12 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   }
 
   @Override
+  public ZeebeClientBuilder maxMetadataSize(final int maxMetadataSize) {
+    this.maxMetadataSize = maxMetadataSize;
+    return this;
+  }
+
+  @Override
   public ZeebeClient build() {
     if (applyEnvironmentVariableOverrides) {
       applyOverrides();
@@ -338,6 +356,10 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     if (shouldUseDefaultCredentialsProvider()) {
       credentialsProvider = createDefaultCredentialsProvider();
     }
+
+    if (Environment.system().isDefined(MAX_METADATA_SIZE)) {
+      maxMetadataSize(DataSizeUtil.parse(Environment.system().get(MAX_METADATA_SIZE)));
+    }
   }
 
   @Override
@@ -353,6 +375,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     appendProperty(sb, "defaultMessageTimeToLive", defaultMessageTimeToLive);
     appendProperty(sb, "defaultRequestTimeout", defaultRequestTimeout);
     appendProperty(sb, "overrideAuthority", overrideAuthority);
+    appendProperty(sb, "maxMetadataSize", maxMetadataSize);
 
     return sb.toString();
   }

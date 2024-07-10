@@ -119,6 +119,13 @@ public interface ZeebeClientBuilder {
   ZeebeClientBuilder overrideAuthority(String authority);
 
   /**
+   * A custom maxMetadataSize allows the client to receive larger or smaller response headers from
+   * Zeebe. Technically, it specifies the maxInboundMetadataSize of the gRPC channel. The default is
+   * 16384 = 16KB .
+   */
+  ZeebeClientBuilder maxMetadataSize(int maxSize);
+
+  /**
    * @return a new {@link ZeebeClient} with the provided configuration options.
    */
   ZeebeClient build();

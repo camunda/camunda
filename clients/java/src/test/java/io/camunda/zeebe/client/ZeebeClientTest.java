@@ -16,11 +16,13 @@
 package io.camunda.zeebe.client;
 
 import static io.camunda.zeebe.client.ClientProperties.CLOUD_REGION;
+import static io.camunda.zeebe.client.ClientProperties.MAX_METADATA_SIZE;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.KEEP_ALIVE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.OVERRIDE_AUTHORITY_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_VAR;
+import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_KB;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -63,6 +65,7 @@ public final class ZeebeClientTest extends ClientTest {
       assertThat(configuration.getDefaultJobPollInterval()).isEqualTo(Duration.ofMillis(100));
       assertThat(configuration.getDefaultMessageTimeToLive()).isEqualTo(Duration.ofHours(1));
       assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(10));
+      assertThat(configuration.getMaxMetadataSize()).isEqualTo(16 * 1024);
       assertThat(configuration.getOverrideAuthority()).isNull();
     }
   }
@@ -197,6 +200,49 @@ public final class ZeebeClientTest extends ClientTest {
 
     // then
     assertThat(builder.getOverrideAuthority()).isEqualTo("virtualhost");
+  }
+
+  @Test
+  public void shouldSetMaxMetadataSize() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.maxMetadataSize(10 * 1024);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxMetadataSize()).isEqualTo(10 * 1024);
+  }
+
+  @Test
+  public void shouldSetMaxMetadataSizeWithProperty() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+
+    final Properties properties = new Properties();
+    properties.setProperty(MAX_METADATA_SIZE, "10KB");
+    builder.withProperties(properties);
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxMetadataSize()).isEqualTo(10 * ONE_KB);
+  }
+
+  @Test
+  public void shouldOverrideMaxMetadataSizeWithEnvVar() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.applyEnvironmentVariableOverrides(Boolean.TRUE);
+    builder.maxMetadataSize(16 * ONE_KB);
+    Environment.system().put(MAX_METADATA_SIZE, "8KB");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxMetadataSize()).isEqualTo(8 * ONE_KB);
   }
 
   @Test
