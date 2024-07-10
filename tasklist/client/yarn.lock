@@ -3483,10 +3483,10 @@ eslint-plugin-react-hooks@4.6.2:
   resolved "https://registry.yarnpkg.com/eslint-plugin-react-hooks/-/eslint-plugin-react-hooks-4.6.2.tgz#c829eb06c0e6f484b3fbb85a97e57784f328c596"
   integrity sha512-QzliNJq4GinDBcD8gPB5v0wh6g8q3SUi6EFF0x8N/BL9PoVs0atuGc47ozMRyOWAKdwaZ5OnbOEa3WR+dSGKuQ==
 
-eslint-plugin-react-refresh@0.4.7:
-  version "0.4.7"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.4.7.tgz#1f597f9093b254f10ee0961c139a749acb19af7d"
-  integrity sha512-yrj+KInFmwuQS2UQcg1SF83ha1tuHC1jMQbRNyuWtlEzzKRDgAl7L4Yp4NlDUZTZNlWvHEzOtJhMi40R7JxcSw==
+eslint-plugin-react-refresh@0.4.8:
+  version "0.4.8"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.4.8.tgz#3b1db9188844101213ca637f181e84a016e36732"
+  integrity sha512-MIKAclwaDFIiYtVBLzDdm16E+Ty4GwhB6wZlCAG1R3Ur+F9Qbo6PRxpA5DK7XtDgm+WlCoAY2WxAwqhmIDHg6Q==
 
 eslint-plugin-testing-library@6.2.2:
   version "6.2.2"
@@ -6111,10 +6111,10 @@ safe-buffer@^5.0.1:
   resolved "https://registry.yarnpkg.com/safer-buffer/-/safer-buffer-2.1.2.tgz#44fa161b0187b9549dd84bb91802f9bd8385cd6a"
   integrity sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==
 
-sass@1.77.6:
-  version "1.77.6"
-  resolved "https://registry.yarnpkg.com/sass/-/sass-1.77.6.tgz#898845c1348078c2e6d1b64f9ee06b3f8bd489e4"
-  integrity sha512-ByXE1oLD79GVq9Ht1PeHWCPMPB8XHpBuz1r85oByKHjZY6qV6rWnQovQzXJXuQ/XyE1Oj3iPk3lo28uzaRA2/Q==
+sass@1.77.7:
+  version "1.77.7"
+  resolved "https://registry.yarnpkg.com/sass/-/sass-1.77.7.tgz#ef3520edc8f59da089f25891d8a6bebf93668ee0"
+  integrity sha512-9ywH75cO+rLjbrZ6en3Gp8qAMwPGBapFtlsMJoDTkcMU/bSe5a6cjKVUn5Jr4Gzg5GbP3HE8cm+02pLCgcoMow==
   dependencies:
     chokidar ">=3.0.0 <4.0.0"
     immutable "^4.0.0"
