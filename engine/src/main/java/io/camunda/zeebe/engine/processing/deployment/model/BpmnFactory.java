@@ -19,8 +19,10 @@ public final class BpmnFactory {
     return new BpmnTransformer(createExpressionLanguage());
   }
 
-  public static BpmnValidator createValidator(final ExpressionProcessor expressionProcessor) {
-    return new BpmnValidator(createExpressionLanguage(), expressionProcessor);
+  public static BpmnValidator createValidator(
+      final ExpressionProcessor expressionProcessor, final int validatorResultsOutputMaxSize) {
+    return new BpmnValidator(
+        createExpressionLanguage(), expressionProcessor, validatorResultsOutputMaxSize);
   }
 
   private static ExpressionLanguage createExpressionLanguage() {
