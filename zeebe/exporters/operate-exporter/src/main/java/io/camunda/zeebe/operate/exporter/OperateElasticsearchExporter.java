@@ -7,16 +7,20 @@
  */
 package io.camunda.zeebe.operate.exporter;
 
+import static io.camunda.zeebe.protocol.record.ValueType.INCIDENT;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
+import io.camunda.operate.schema.templates.UserTaskTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.elasticsearch.NewElasticsearchBatchRequest;
 import io.camunda.operate.util.ElasticsearchScriptBuilder;
@@ -27,6 +31,7 @@ import io.camunda.zeebe.operate.exporter.handlers.FlowNodeInstanceIncidentHandle
 import io.camunda.zeebe.operate.exporter.handlers.FlowNodeInstanceProcessInstanceHandler;
 import io.camunda.zeebe.operate.exporter.handlers.ProcessHandler;
 import io.camunda.zeebe.operate.exporter.handlers.SequenceFlowHandler;
+import io.camunda.zeebe.operate.exporter.handlers.UserTaskHandler;
 import io.camunda.zeebe.operate.exporter.handlers.VariableHandler;
 import io.camunda.zeebe.operate.exporter.util.XMLUtil;
 import io.camunda.zeebe.protocol.record.Record;
@@ -46,6 +51,7 @@ public class OperateElasticsearchExporter implements Exporter {
   private ExportBatchWriter writer;
   private ElasticsearchScriptBuilder scriptBuilder;
   private XMLUtil xmlUtil;
+  private ObjectMapper objectMapper;
 
   private long lastPosition = -1;
   private int batchSize;
@@ -69,6 +75,7 @@ public class OperateElasticsearchExporter implements Exporter {
     this.controller = controller;
     scriptBuilder = new ElasticsearchScriptBuilder();
     xmlUtil = new XMLUtil();
+    objectMapper = new ObjectMapper();
 
     client = createClient();
 
@@ -166,6 +173,10 @@ public class OperateElasticsearchExporter implements Exporter {
                 (FlowNodeInstanceTemplate)
                     (new FlowNodeInstanceTemplate().setIndexPrefix(indexPrefix))))
         .withHandler(
+            new UserTaskHandler(
+                (UserTaskTemplate) (new UserTaskTemplate().setIndexPrefix(indexPrefix)),
+                objectMapper))
+        .withHandler(
             new FlowNodeInstanceIncidentHandler(
                 (FlowNodeInstanceTemplate)
                     (new FlowNodeInstanceTemplate().setIndexPrefix(indexPrefix))))
@@ -175,15 +186,13 @@ public class OperateElasticsearchExporter implements Exporter {
   private static final class ElasticsearchRecordFilter implements Context.RecordFilter {
     private static final List<ValueType> VALUE_TYPES_2_IMPORT =
         List.of(
-            PROCESS, VARIABLE, PROCESS_INSTANCE
+            PROCESS, VARIABLE, PROCESS_INSTANCE, USER_TASK, INCIDENT
             //            DECISION,
             //            DECISION_REQUIREMENTS,
             //            DECISION_EVALUATION,
             //            JOB,
-            //            INCIDENT,
             //            VARIABLE_DOCUMENT,
             //            PROCESS_MESSAGE_SUBSCRIPTION,
-            //            USER_TASK
             );
 
     @Override
