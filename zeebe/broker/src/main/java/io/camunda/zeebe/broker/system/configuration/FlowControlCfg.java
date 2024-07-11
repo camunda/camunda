@@ -20,7 +20,7 @@ public class FlowControlCfg implements ConfigurationEntry {
   private static final ObjectMapper MAPPER =
       JsonMapper.builder().addModule(new JavaTimeModule()).build();
   private LimitCfg request = null;
-  private RateLimitCfg write = new RateLimitCfg();
+  private RateLimitCfg write = null;
 
   public FlowControlCfg() {}
 

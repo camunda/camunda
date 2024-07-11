@@ -15,6 +15,7 @@ import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.RequestLimiter.CommandRateLimiterBuilder;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.logstreams.log.WriteContext.Internal;
 import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -70,6 +71,7 @@ import java.util.TreeMap;
  */
 @SuppressWarnings("UnstableApiUsage")
 public final class FlowControl implements AppendListener {
+
   private final LogStreamMetrics metrics;
   private RateLimit writeRateLimit;
   private Limit requestLimit;
@@ -78,7 +80,10 @@ public final class FlowControl implements AppendListener {
   private final RateMeasurement exportingRate =
       new RateMeasurement(
           ActorClock::currentTimeMillis, Duration.ofMinutes(5), Duration.ofSeconds(10));
+  private RateLimitThrottle writeRateThrottle;
+  private volatile long lastWrittenPosition = -1;
   private volatile long lastProcessedPosition = -1;
+  private volatile long lastExportedPosition;
 
   private final NavigableMap<Long, InFlightEntry> inFlight = new TreeMap<>();
 
@@ -89,13 +94,8 @@ public final class FlowControl implements AppendListener {
   public FlowControl(
       final LogStreamMetrics metrics, final Limit requestLimit, final RateLimit writeRateLimit) {
     this.metrics = metrics;
-    this.requestLimit = requestLimit;
-    this.writeRateLimit = writeRateLimit;
-    processingLimiter =
-        requestLimit != null
-            ? new CommandRateLimiterBuilder().limit(requestLimit).build(metrics)
-            : new NoopLimiter<>();
-    writeRateLimiter = writeRateLimit == null ? null : writeRateLimit.limiter();
+    setRequestLimit(requestLimit);
+    setWriteRateLimit(writeRateLimit);
   }
 
   /**
@@ -121,13 +121,18 @@ public final class FlowControl implements AppendListener {
   private Either<Rejection, InFlightEntry> tryAcquireInternal(
       final WriteContext context, final List<LogAppendEntryMetadata> batchMetadata) {
     final Listener requestListener;
-    if (context instanceof UserCommand(final var intent)) {
-      requestListener = processingLimiter.acquire(intent).orElse(null);
-      if (requestListener == null) {
-        return Either.left(Rejection.RequestLimitExhausted);
+    switch (context) {
+      case final Internal ignored -> {
+        // Internal commands are always accepted for incident response and maintenance.
+        return Either.right(new InFlightEntry(metrics, batchMetadata, null));
       }
-    } else {
-      requestListener = null;
+      case UserCommand(final var intent) -> {
+        requestListener = processingLimiter.acquire(intent).orElse(null);
+        if (requestListener == null) {
+          return Either.left(Rejection.RequestLimitExhausted);
+        }
+      }
+      default -> requestListener = null;
     }
 
     if (writeRateLimiter != null && !writeRateLimiter.tryAcquire(batchMetadata.size())) {
@@ -151,6 +156,8 @@ public final class FlowControl implements AppendListener {
 
   @Override
   public void onWrite(final long index, final long highestPosition) {
+    lastWrittenPosition = highestPosition;
+    updateWriteRateThrottle();
     metrics.setLastWrittenPosition(highestPosition);
     final var inFlightEntry = inFlight.get(highestPosition);
     if (inFlightEntry != null) {
@@ -180,8 +187,17 @@ public final class FlowControl implements AppendListener {
     if (position <= 0) {
       return;
     }
+    lastExportedPosition = position;
     if (exportingRate.observe(position)) {
       metrics.setExportingRate(exportingRate.rate());
+    }
+    updateWriteRateThrottle();
+  }
+
+  private void updateWriteRateThrottle() {
+    if (writeRateThrottle != null && lastWrittenPosition != -1 && lastExportedPosition != -1) {
+      writeRateThrottle.update(
+          ActorClock.currentTimeMillis(), lastWrittenPosition - lastExportedPosition);
     }
   }
 
@@ -195,7 +211,6 @@ public final class FlowControl implements AppendListener {
         requestLimit != null
             ? new CommandRateLimiterBuilder().limit(requestLimit).build(metrics)
             : new NoopLimiter<>();
-    metrics.setInflightRequests(0);
   }
 
   public RateLimit getWriteRateLimit() {
@@ -205,6 +220,8 @@ public final class FlowControl implements AppendListener {
   public void setWriteRateLimit(final RateLimit writeRateLimit) {
     this.writeRateLimit = writeRateLimit;
     writeRateLimiter = writeRateLimit == null ? null : writeRateLimit.limiter();
+    writeRateThrottle =
+        new RateLimitThrottle(metrics, writeRateLimit, writeRateLimiter, exportingRate);
   }
 
   public enum Rejection {

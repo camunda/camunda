@@ -100,7 +100,8 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
             flowControlCfg.getRequest() != null
                 ? flowControlCfg.getRequest().buildLimit()
                 : context.getBrokerCfg().getBackpressure().buildLimit())
-        .withWriteRateLimit(flowControlCfg.getWrite().buildLimit())
+        .withWriteRateLimit(
+            flowControlCfg.getWrite() != null ? flowControlCfg.getWrite().buildLimit() : null)
         .buildAsync();
   }
 

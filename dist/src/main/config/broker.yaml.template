@@ -518,6 +518,11 @@
         # enabled: false
         # rampUp: 0 # ramp up time, for example 10s
         # limit: 1000 # maximum number of records written per second
+        # throttling:
+          # enabled: false # If enabled, throttle the write rate based on exporting backlog
+          # acceptableBacklog: 100000 # when exporting is a bottleneck, the write rate is throttled to keep the backlog at this value
+          # minimumLimit: 100 # Even when exporting is fully blocked, always allow this many writes per second
+          # resolution: 15s # How often to adjust the the throttling
 
     # backpressure:
       # Configure backpressure below.
