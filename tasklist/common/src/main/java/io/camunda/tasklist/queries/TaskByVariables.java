@@ -21,7 +21,8 @@ public class TaskByVariables {
 
   @Schema(
       description =
-          "The value of the variable. When specifying the variable value, it's crucial to maintain consistency with JSON values (serialization for the complex objects such as list) and ensure that strings remain appropriately formatted.")
+          "The value of the variable. When specifying the variable value, it's crucial to maintain consistency with JSON values (serialization for the complex objects such as list) and ensure that strings remain appropriately formatted.",
+      maxLength = 8191)
   @GraphQLField
   private String value;
 
@@ -33,7 +34,7 @@ public class TaskByVariables {
     return name;
   }
 
-  public TaskByVariables setName(String name) {
+  public TaskByVariables setName(final String name) {
     this.name = name;
     return this;
   }
@@ -42,7 +43,7 @@ public class TaskByVariables {
     return value;
   }
 
-  public TaskByVariables setValue(String value) {
+  public TaskByVariables setValue(final String value) {
     this.value = value;
     return this;
   }
@@ -51,7 +52,7 @@ public class TaskByVariables {
     return operator;
   }
 
-  public TaskByVariables setOperator(String operator) {
+  public TaskByVariables setOperator(final String operator) {
     this.operator = Operator.valueOf(operator);
     return this;
   }
