@@ -7,7 +7,6 @@ on:
       - main
       - stable/*
       - release-*
-      - merge-optimize-in
   pull_request: {}
   merge_group: {}
   workflow_dispatch: {}
@@ -339,12 +338,17 @@ jobs:
           dockerfile: camunda.Dockerfile
           # push is needed for multi-arch images as buildkit does not support loading them locally
           push: true
+
+      # We need to free up some space to let the step after this block succeed.
+      # With this cleanup, at the time of measuring, we go from a 100% disk usage (73/74 GB) to a
+      # 94% (68/73 GB), on the runner ubuntu-latest. This allows the workflow to go through.
       - name: Check disk availability (pre-cleanup)
         run: df -h
       - name: Cleanup docker images
         run: docker system prune -af
       - name: Check disk availability (post-cleanup)
         run: df -h
+
       - name: Verify Docker image
         uses: ./.github/actions/verify-platform-docker
         with:
