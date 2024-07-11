@@ -22,6 +22,10 @@ public record RateLimit(boolean enabled, int limit, Duration rampUp, Throttling 
     if (enabled && rampUp.isNegative()) {
       throw new IllegalArgumentException("rampUp cannot be negative");
     }
+    if (enabled && throttling.enabled() && throttling.minRate() > limit) {
+      throw new IllegalArgumentException(
+          "minimum throttling rate must not be larger than the regular limit");
+    }
   }
 
   public static RateLimit disabled() {
