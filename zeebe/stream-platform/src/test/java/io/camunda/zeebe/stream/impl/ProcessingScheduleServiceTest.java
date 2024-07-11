@@ -513,7 +513,7 @@ class ProcessingScheduleServiceTest {
         final List<LogAppendEntry> appendEntries,
         final long sourcePosition) {
       if (!acceptWrites.get().getAsBoolean()) {
-        return Either.left(WriteFailure.FULL);
+        return Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED);
       }
 
       entries.addAll(appendEntries);
