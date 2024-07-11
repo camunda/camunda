@@ -19,6 +19,7 @@ import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.ex
 import static java.util.Collections.singletonList;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import org.junit.runners.Parameterized.Parameters;
 
@@ -40,6 +41,23 @@ public class ZeebeCallActivityTest extends AbstractZeebeValidationTest {
             .done(),
         singletonList(
             expect(ZeebeCalledElement.class, "Attribute 'processId' must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .callActivity(
+                "call",
+                c ->
+                    c.zeebeProcessId("x")
+                        .getElement()
+                        .getSingleExtensionElement(ZeebeCalledElement.class)
+                        .setAttributeValue(ZeebeConstants.ATTRIBUTE_BINDING_TYPE, "foo"))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeCalledElement.class,
+                "Attribute 'bindingType' must be one of: deployment, latest"))
       },
       {
         Bpmn.createExecutableProcess("process")

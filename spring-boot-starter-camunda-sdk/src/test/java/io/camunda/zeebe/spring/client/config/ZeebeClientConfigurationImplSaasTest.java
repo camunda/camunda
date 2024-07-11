@@ -157,6 +157,12 @@ public class ZeebeClientConfigurationImplSaasTest {
   }
 
   @Test
+  void shouldHaveMaxMetadataSize() {
+    assertThat(zeebeClientConfiguration.getMaxMetadataSize())
+        .isEqualTo(DEFAULT.getMaxMetadataSize());
+  }
+
+  @Test
   void shouldHaveJobWorkerExecutor() {
     assertThat(zeebeClientConfiguration.jobWorkerExecutor())
         .isEqualTo(zeebeClientExecutorService.get());

@@ -195,7 +195,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
           config.metadataVersion(), config.initializedFrom().orElse(null));
     }
 
-    // TODO: This case won't happen after https://github.com/camunda/zeebe/issues/18296 and we
+    // TODO: This case won't happen after https://github.com/camunda/camunda/issues/18296 and we
     // handle the default behaviour for newly added exporters.
     return new ExporterInitializationInfo(0, null);
   }

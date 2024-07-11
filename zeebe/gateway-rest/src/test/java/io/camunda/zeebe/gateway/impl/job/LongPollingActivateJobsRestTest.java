@@ -67,6 +67,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -265,12 +266,35 @@ public class LongPollingActivateJobsRestTest {
 
     // when
     final InflightActivateJobsRequest<JobActivationResponse> otherRequest =
-        getLongPollingJobActivationRequest(otherType);
+        getLongPollingJobActivationRequest(otherType, MAX_JOBS_TO_ACTIVATE);
     handler.internalActivateJobsRetry(otherRequest);
     Awaitility.await().until(otherRequest::isCompleted);
 
     // then
     verify(otherRequest.getResponseObserver(), times(1)).onCompleted();
+  }
+
+  @Test
+  void shouldReturnAllCollectedJobsIfDeliveredInChunks() {
+    // given
+    final int availableJobs = 10;
+    activateJobsStub.addAvailableJobs(TYPE, 5);
+    registerCustomHandlerWithNotification((r) -> activateJobsStub.addAvailableJobs(TYPE, 5));
+
+    // when
+    final InflightActivateJobsRequest<JobActivationResponse> request =
+        getLongPollingJobActivationRequest(TYPE, availableJobs);
+    handler.internalActivateJobsRetry(request);
+    Awaitility.await().timeout(Duration.ofMinutes(5)).until(request::isCompleted);
+
+    // then
+    verify(request.getResponseObserver(), times(2)).onNext(any());
+    verify(request.getResponseObserver(), times(1)).onCompleted();
+    assertThat(
+            ((InspectableJobActivationRequestResponseObserver) request.getResponseObserver())
+                .getResponse()
+                .getJobs())
+        .hasSize(10);
   }
 
   @Test
@@ -997,15 +1021,15 @@ public class LongPollingActivateJobsRestTest {
   }
 
   private InflightActivateJobsRequest<JobActivationResponse> getLongPollingJobActivationRequest() {
-    return getLongPollingJobActivationRequest(TYPE);
+    return getLongPollingJobActivationRequest(TYPE, MAX_JOBS_TO_ACTIVATE);
   }
 
   private InflightActivateJobsRequest<JobActivationResponse> getLongPollingJobActivationRequest(
-      final String jobType) {
+      final String jobType, final int maxJobsToActivate) {
     return toInflightActivateJobsRequest(
         new JobActivationRequest()
             .type(jobType)
-            .maxJobsToActivate(MAX_JOBS_TO_ACTIVATE)
+            .maxJobsToActivate(maxJobsToActivate)
             .timeout(1L)
             .requestTimeout(0L));
   }
@@ -1027,7 +1051,7 @@ public class LongPollingActivateJobsRestTest {
     return new InflightActivateJobsRequest<>(
         getNextRequestId(),
         brokerRequest,
-        spy(new JobActivationRequestResponseObserver(new CompletableFuture<>())),
+        spy(new InspectableJobActivationRequestResponseObserver(new CompletableFuture<>())),
         activateJobsRequest.requestTimeout());
   }
 
@@ -1055,5 +1079,18 @@ public class LongPollingActivateJobsRestTest {
             .build();
     actorScheduler.submitActor(actor);
     future.join();
+  }
+
+  private static class InspectableJobActivationRequestResponseObserver
+      extends JobActivationRequestResponseObserver {
+
+    public InspectableJobActivationRequestResponseObserver(
+        final CompletableFuture<ResponseEntity<Object>> result) {
+      super(result);
+    }
+
+    public JobActivationResponse getResponse() {
+      return response;
+    }
   }
 }

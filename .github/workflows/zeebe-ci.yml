@@ -487,6 +487,7 @@ jobs:
   java-checks:
     name: Java checks
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
@@ -590,7 +591,7 @@ jobs:
       - go-apidiff
       - docker-checks
     steps:
-      - run: exit ${{ ((contains(needs.*.result, 'skipped') || contains(needs.*.result, 'failure')) && 1) || 0 }}
+      - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
   deploy-snapshots:
     name: Deploy snapshot artifacts
     needs: [ test-summary ]

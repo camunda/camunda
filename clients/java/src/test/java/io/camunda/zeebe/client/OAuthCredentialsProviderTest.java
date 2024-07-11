@@ -37,7 +37,7 @@ import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.protocol.rest.TopologyResponse;
 import io.camunda.zeebe.client.util.RecordingGatewayService;
-import io.camunda.zeebe.client.util.RestGatewayService;
+import io.camunda.zeebe.client.util.RestGatewayPaths;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
 import io.grpc.Server;
@@ -574,7 +574,7 @@ public final class OAuthCredentialsProviderTest {
       wireMockInfo
           .getWireMock()
           .register(
-              WireMock.get(RestGatewayService.URL_TOPOLOGY)
+              WireMock.get(RestGatewayPaths.getTopologyUrl())
                   .withHeader("Authorization", WireMock.equalTo(TOKEN_TYPE + " " + ACCESS_TOKEN))
                   .willReturn(
                       WireMock.aResponse()
@@ -595,7 +595,7 @@ public final class OAuthCredentialsProviderTest {
       wireMockInfo
           .getWireMock()
           .register(
-              WireMock.get(RestGatewayService.URL_TOPOLOGY)
+              WireMock.get(RestGatewayPaths.getTopologyUrl())
                   .willReturn(
                       WireMock.unauthorized()
                           .withBody(JSON_MAPPER.writeValueAsBytes(new ProblemDetail()))

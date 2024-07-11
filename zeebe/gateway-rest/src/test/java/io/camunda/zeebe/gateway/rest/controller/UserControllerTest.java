@@ -11,9 +11,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.identity.usermanagement.CamundaUser;
-import io.camunda.identity.usermanagement.CamundaUserWithPassword;
-import io.camunda.identity.usermanagement.service.UserService;
+import io.camunda.identity.automation.usermanagement.CamundaUser;
+import io.camunda.identity.automation.usermanagement.CamundaUserWithPassword;
+import io.camunda.identity.automation.usermanagement.service.UserService;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
@@ -61,6 +61,7 @@ public class UserControllerTest extends RestControllerTest {
     when(userService.findUserById(1L)).thenThrow(new IllegalArgumentException(message));
 
     final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
+    expectedBody.setTitle(IllegalArgumentException.class.getName());
     expectedBody.setInstance(URI.create("/v2/users/1"));
 
     webClient
@@ -126,6 +127,7 @@ public class UserControllerTest extends RestControllerTest {
         .thenThrow(new IllegalArgumentException(message));
 
     final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
+    expectedBody.setTitle(IllegalArgumentException.class.getName());
     expectedBody.setInstance(URI.create("/v2/users"));
 
     webClient
@@ -197,6 +199,7 @@ public class UserControllerTest extends RestControllerTest {
         .thenThrow(new IllegalArgumentException(message));
 
     final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
+    expectedBody.setTitle(IllegalArgumentException.class.getName());
     expectedBody.setInstance(URI.create("/v2/users/1"));
 
     webClient
