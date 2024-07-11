@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -76,6 +77,7 @@ public final class EventAppliers implements EventApplier {
     registerDeploymentAppliers(state);
 
     registerMessageAppliers(state);
+    registerMessageCorrelationAppliers(state);
     registerMessageSubscriptionAppliers(state);
     registerMessageStartEventSubscriptionAppliers(state);
 
@@ -219,6 +221,11 @@ public final class EventAppliers implements EventApplier {
   private void registerMessageAppliers(final MutableProcessingState state) {
     register(MessageIntent.PUBLISHED, new MessagePublishedApplier(state.getMessageState()));
     register(MessageIntent.EXPIRED, new MessageExpiredApplier(state.getMessageState()));
+  }
+
+  private void registerMessageCorrelationAppliers(final MutableProcessingState state) {
+    register(MessageCorrelationIntent.CORRELATED, NOOP_EVENT_APPLIER);
+    register(MessageCorrelationIntent.NOT_CORRELATED, NOOP_EVENT_APPLIER);
   }
 
   private void registerMessageSubscriptionAppliers(final MutableProcessingState state) {
