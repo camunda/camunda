@@ -188,7 +188,7 @@ public class ReceivedSnapshotTest {
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(SnapshotAlreadyExistsException.class)
         .withMessageContaining(
-            "Expected to receive snapshot with id 1-0-1-0, but was already persisted");
+            "Expected to receive snapshot with id 1-0-1-0-0, but was already persisted");
   }
 
   @Test

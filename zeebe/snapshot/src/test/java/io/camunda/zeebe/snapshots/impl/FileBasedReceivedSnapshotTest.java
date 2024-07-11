@@ -260,7 +260,7 @@ public class FileBasedReceivedSnapshotTest {
           .hasMessageContaining(
               "Expected to have checksum "
                   + 0xCAFEL
-                  + " for snapshot chunk file1 (1-0-1-0), but calculated 3806033162");
+                  + " for snapshot chunk file1 (1-0-1-0-0), but calculated 3806033162");
     }
   }
 
