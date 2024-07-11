@@ -93,7 +93,8 @@ public class RestoreManager {
       LOG.warn("Restoring without validating backup");
       validator = BackupValidator.none();
     }
-    return new PartitionRestoreService(backupStore, partition)
+    return new PartitionRestoreService(
+            backupStore, partition, configuration.getCluster().getNodeId())
         .restore(backupId, validator)
         .thenAccept(backup -> logSuccessfulRestore(backup, partition.id().id(), backupId));
   }

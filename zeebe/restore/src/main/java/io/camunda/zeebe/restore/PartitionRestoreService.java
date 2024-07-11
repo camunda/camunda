@@ -40,12 +40,15 @@ public class PartitionRestoreService {
 
   final Path rootDirectory;
   private final RaftPartition partition;
+  private final int brokerId;
 
-  public PartitionRestoreService(final BackupStore backupStore, final RaftPartition partition) {
+  public PartitionRestoreService(
+      final BackupStore backupStore, final RaftPartition partition, final int brokerId) {
     this.backupStore = backupStore;
     partitionId = partition.id().id();
     rootDirectory = partition.dataDirectory().toPath();
     this.partition = partition;
+    this.brokerId = brokerId;
   }
 
   /**
@@ -176,7 +179,8 @@ public class PartitionRestoreService {
 
     @SuppressWarnings("resource")
     final RestorableSnapshotStore snapshotStore =
-        new FileBasedSnapshotStore(partition.id().id(), partition.dataDirectory().toPath());
+        new FileBasedSnapshotStore(
+            brokerId, partition.id().id(), partition.dataDirectory().toPath());
 
     try {
       snapshotStore.restore(
