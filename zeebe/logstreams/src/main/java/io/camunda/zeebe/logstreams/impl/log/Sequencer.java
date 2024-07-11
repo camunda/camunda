@@ -71,6 +71,8 @@ final class Sequencer implements LogStreamWriter, Closeable {
 
   /** {@inheritDoc} */
   @Override
+  // False positive: https://github.com/checkstyle/checkstyle/issues/14891
+  @SuppressWarnings("checkstyle:MissingSwitchDefault")
   public Either<WriteFailure, Long> tryWrite(
       final WriteContext context,
       final List<LogAppendEntry> appendEntries,
