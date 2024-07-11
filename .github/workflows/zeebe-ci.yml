@@ -131,7 +131,7 @@ jobs:
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests
-          -pl "${{ matrix.maven-modules }},!optimize,!optimize-distro,!optimize/client,!optimize/upgrade,!optimize/backend,!optimize/util,!optimize/util/dependency-doc-creation,!optimize/util/optimize-reimport-preparation,!optimize/util/optimize-commons,!optimize/plugins,!optimize/plugins/plugin,!optimize/plugins/optimize-test-plugins/optimize-main-test-plugin,!optimize/plugins/optimize-test-plugins/optimize-pluginloading-test-plugin"
+          -pl ${{ matrix.maven-modules }}
           -f zeebe
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
