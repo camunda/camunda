@@ -71,14 +71,17 @@ final class ElasticsearchExporterTest {
 
     // when
     exporter.open(controller);
+    final Record mockRecord = mock(Record.class);
+    when(mockRecord.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
 
     // then
-    assertThatThrownBy(() -> exporter.export(mock(Record.class)))
+    assertThatThrownBy(() -> exporter.export(mockRecord))
         .isInstanceOf(ElasticsearchExporterException.class);
   }
 
   @Nested
   final class RecordFilterTest {
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
     void shouldRejectDisabledValueType(final ValueType valueType) {
@@ -156,6 +159,7 @@ final class ElasticsearchExporterTest {
 
   @Nested
   final class TemplatesTest {
+
     @Test
     void shouldCreateComponentTemplate() {
       // given
@@ -227,6 +231,7 @@ final class ElasticsearchExporterTest {
 
   @Nested
   final class FlushTest {
+
     @Test
     void shouldFlushWhenClientDecides() {
       // given
@@ -315,6 +320,7 @@ final class ElasticsearchExporterTest {
 
   @Nested
   final class ValidationTest {
+
     @Test
     void shouldNotAllowUnderscoreInIndexPrefix() {
       // given
