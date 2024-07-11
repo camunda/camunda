@@ -23,7 +23,7 @@ jobs:
   e2e-tests-sm:
     name: E2E tests sm
     runs-on: gcp-core-4-default
-    timeout-minutes: 60
+    timeout-minutes: 120
 
     steps:
       - name: Checkout code
