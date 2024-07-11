@@ -50,6 +50,22 @@ public final class Subscriptions {
     newSubscription.isStartEventSubscription = true;
   }
 
+  private void add(final Subscription subscription) {
+    final var newSubscription = subscriptions.add();
+    newSubscription.setBpmnProcessId(subscription.getBpmnProcessId());
+    newSubscription.processInstanceKey = subscription.processInstanceKey;
+    newSubscription.elementInstanceKey = subscription.elementInstanceKey;
+    newSubscription.isStartEventSubscription = subscription.isStartEventSubscription;
+  }
+
+  public void addAll(final Subscriptions subscriptions) {
+    subscriptions.visitSubscriptions(
+        (subscription) -> {
+          add(subscription);
+          return true;
+        });
+  }
+
   public void visitBpmnProcessIds(final Consumer<DirectBuffer> bpmnProcessIdConsumer) {
     for (final Subscription subscription : subscriptions) {
       bpmnProcessIdConsumer.accept(subscription.getBpmnProcessId());

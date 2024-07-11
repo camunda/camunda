@@ -37,12 +37,11 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
 
   private final MessageState messageState;
   private final MessageSubscriptionState subscriptionState;
-  private final MessageStartEventSubscriptionState startEventSubscriptionState;
   private final SubscriptionCommandSender commandSender;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
+  private final MessageCorrelateBehavior correlateBehavior;
 
-  private final EventHandle eventHandle;
   private final Subscriptions correlatingSubscriptions = new Subscriptions();
 
   private MessageRecord messageRecord;
@@ -63,13 +62,12 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final BpmnStateBehavior stateBehavior) {
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;
-    this.startEventSubscriptionState = startEventSubscriptionState;
     this.commandSender = commandSender;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
-    eventHandle =
+    final var eventHandle =
         new EventHandle(
             keyGenerator,
             eventScopeInstanceState,
@@ -77,6 +75,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
             processState,
             eventTriggerBehavior,
             stateBehavior);
+    correlateBehavior =
+        new MessageCorrelateBehavior(startEventSubscriptionState, messageState, eventHandle);
   }
 
   @Override
@@ -155,28 +155,14 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   }
 
   private void correlateToMessageStartEvents(final MessageRecord messageRecord) {
-
-    startEventSubscriptionState.visitSubscriptionsByMessageName(
-        messageRecord.getTenantId(),
-        messageRecord.getNameBuffer(),
-        subscription -> {
-          final var subscriptionRecord = subscription.getRecord();
-          final var bpmnProcessIdBuffer = subscriptionRecord.getBpmnProcessIdBuffer();
-          final var correlationKeyBuffer = messageRecord.getCorrelationKeyBuffer();
-
-          // create only one instance of a process per correlation key
-          // - allow multiple instance if correlation key is empty
-          if (!correlatingSubscriptions.contains(bpmnProcessIdBuffer)
-              && (correlationKeyBuffer.capacity() == 0
-                  || !messageState.existActiveProcessInstance(
-                      messageRecord.getTenantId(), bpmnProcessIdBuffer, correlationKeyBuffer))) {
-
-            correlatingSubscriptions.add(subscriptionRecord);
-
-            eventHandle.triggerMessageStartEvent(
-                subscription.getKey(), subscriptionRecord, messageKey, messageRecord);
-          }
-        });
+    final var correlatedSubscriptions =
+        correlateBehavior.correlateToMessageStartEvents(
+            messageRecord.getTenantId(),
+            messageRecord.getNameBuffer(),
+            messageRecord.getCorrelationKeyBuffer(),
+            messageRecord.getVariablesBuffer(),
+            messageKey);
+    correlatingSubscriptions.addAll(correlatedSubscriptions);
   }
 
   private boolean sendCorrelateCommand() {
