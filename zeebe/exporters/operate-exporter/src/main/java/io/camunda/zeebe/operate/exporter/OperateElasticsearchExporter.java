@@ -23,6 +23,7 @@ import io.camunda.operate.util.ElasticsearchScriptBuilder;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.operate.exporter.handlers.FlowNodeInstanceIncidentHandler;
 import io.camunda.zeebe.operate.exporter.handlers.FlowNodeInstanceProcessInstanceHandler;
 import io.camunda.zeebe.operate.exporter.handlers.ProcessHandler;
 import io.camunda.zeebe.operate.exporter.handlers.SequenceFlowHandler;
@@ -162,6 +163,10 @@ public class OperateElasticsearchExporter implements Exporter {
                 (SequenceFlowTemplate) (new SequenceFlowTemplate().setIndexPrefix(indexPrefix))))
         .withHandler(
             new FlowNodeInstanceProcessInstanceHandler(
+                (FlowNodeInstanceTemplate)
+                    (new FlowNodeInstanceTemplate().setIndexPrefix(indexPrefix))))
+        .withHandler(
+            new FlowNodeInstanceIncidentHandler(
                 (FlowNodeInstanceTemplate)
                     (new FlowNodeInstanceTemplate().setIndexPrefix(indexPrefix))))
         .build();
