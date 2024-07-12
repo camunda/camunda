@@ -183,7 +183,7 @@ public final class EventHandle {
     }
   }
 
-  public void triggerMessageStartEvent(
+  public long triggerMessageStartEvent(
       final long subscriptionKey,
       final MessageStartEventSubscriptionRecord subscription,
       final long messageKey,
@@ -214,6 +214,8 @@ public final class EventHandle {
         startEventSubscriptionRecord.getStartEventIdBuffer(),
         variables,
         subscription.getTenantId());
+
+    return newProcessInstanceKey;
   }
 
   public void activateProcessInstanceForStartEvent(

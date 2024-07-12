@@ -49,15 +49,17 @@ public final class MessageCorrelateBehavior {
                   || !messageState.existActiveProcessInstance(
                       tenantId, bpmnProcessIdBuffer, correlationKey))) {
 
-            correlatingSubscriptions.add(subscriptionRecord);
+            final var processInstanceKey =
+                eventHandle.triggerMessageStartEvent(
+                    subscription.getKey(),
+                    subscriptionRecord,
+                    messageKey,
+                    messageName,
+                    correlationKey,
+                    variables);
 
-            eventHandle.triggerMessageStartEvent(
-                subscription.getKey(),
-                subscriptionRecord,
-                messageKey,
-                messageName,
-                correlationKey,
-                variables);
+            subscriptionRecord.setProcessInstanceKey(processInstanceKey);
+            correlatingSubscriptions.add(subscriptionRecord);
           }
         });
 

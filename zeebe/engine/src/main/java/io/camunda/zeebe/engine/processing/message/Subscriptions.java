@@ -48,6 +48,7 @@ public final class Subscriptions {
     final var newSubscription = subscriptions.add();
     newSubscription.setBpmnProcessId(cloneBuffer(subscription.getBpmnProcessIdBuffer()));
     newSubscription.isStartEventSubscription = true;
+    newSubscription.processInstanceKey = subscription.getProcessInstanceKey();
   }
 
   private void add(final Subscription subscription) {
@@ -63,7 +64,16 @@ public final class Subscriptions {
         (subscription) -> {
           add(subscription);
           return true;
-        });
+        },
+        true);
+  }
+
+  public boolean isEmpty() {
+    return subscriptions.size() <= 0;
+  }
+
+  public Subscription peek() {
+    return subscriptions.peek();
   }
 
   public void visitBpmnProcessIds(final Consumer<DirectBuffer> bpmnProcessIdConsumer) {
@@ -73,8 +83,13 @@ public final class Subscriptions {
   }
 
   public boolean visitSubscriptions(final SubscriptionVisitor subscriptionConsumer) {
+    return visitSubscriptions(subscriptionConsumer, false);
+  }
+
+  public boolean visitSubscriptions(
+      final SubscriptionVisitor subscriptionConsumer, final boolean visitStartEvents) {
     for (final Subscription subscription : subscriptions) {
-      if (!subscription.isStartEventSubscription) {
+      if (visitStartEvents || !subscription.isStartEventSubscription) {
 
         final var applied = subscriptionConsumer.apply(subscription);
         if (!applied) {

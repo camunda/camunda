@@ -75,6 +75,17 @@ public final class ReusableObjectList<T extends Reusable> implements Iterable<T>
     return null;
   }
 
+  public T peek() {
+    for (int i = 0; i < elements.size(); i++) {
+      final ReusableElement element = elements.get(i);
+
+      if (element.isSet()) {
+        return element.getElement();
+      }
+    }
+    return null;
+  }
+
   public int size() {
     return size;
   }
