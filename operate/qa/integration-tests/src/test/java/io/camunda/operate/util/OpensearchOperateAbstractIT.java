@@ -9,12 +9,16 @@ package io.camunda.operate.util;
 
 import static org.junit.Assume.assumeTrue;
 
-import io.camunda.operate.conditions.DatabaseInfo;
-import org.junit.BeforeClass;
+import io.camunda.operate.conditions.DatabaseInfoProvider;
+import org.junit.Before;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public abstract class OpensearchOperateAbstractIT extends OperateAbstractIT {
-  @BeforeClass
-  public static void beforeClass() {
-    assumeTrue(DatabaseInfo.isOpensearch());
+
+  @Autowired private DatabaseInfoProvider databaseInfoProvider;
+
+  @Before
+  public void beforeClass() {
+    assumeTrue(databaseInfoProvider.isOpensearch());
   }
 }

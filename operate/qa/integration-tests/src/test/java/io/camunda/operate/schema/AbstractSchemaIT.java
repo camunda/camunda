@@ -56,7 +56,7 @@ public class AbstractSchemaIT {
   }
 
   protected void failIfOpensearch() {
-    if (databaseInfo.isOpensearchDb()) {
+    if (databaseInfo.isOpensearch()) {
       fail("Cannot proceed because this case is not yet implemented for OpenSearch");
     }
   }

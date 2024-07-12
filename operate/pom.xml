@@ -17,6 +17,7 @@
   <modules>
     <module>client</module>
     <module>common</module>
+    <module>schema-common</module>
     <module>schema</module>
     <module>data-generator</module>
     <module>importer-common</module>

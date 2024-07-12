@@ -15,7 +15,7 @@ import java.net.URISyntaxException;
 import java.util.function.Function;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-public class OpensearchProperties {
+public class OpensearchProperties implements DatastoreProperties {
   public static final String OS_DATE_FORMAT_DEFAULT = "date_time";
 
   public static final int BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT = 1024 * 1024 * 90; // 90 MB

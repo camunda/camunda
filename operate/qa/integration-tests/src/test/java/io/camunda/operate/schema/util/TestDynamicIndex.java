@@ -7,9 +7,16 @@
  */
 package io.camunda.operate.schema.util;
 
+import io.camunda.operate.conditions.DatabaseInfoProvider;
 import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
 
 public class TestDynamicIndex extends AbstractIndexDescriptor {
+
+  public TestDynamicIndex(
+      final String indexPrefix, final DatabaseInfoProvider databaseInfoProvider) {
+    super(indexPrefix, databaseInfoProvider);
+  }
+
   @Override
   public String getIndexName() {
     return "testdynamicindex";

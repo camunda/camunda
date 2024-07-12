@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.property;
 
-import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.conditions.DatabaseType;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -365,19 +365,22 @@ public class OperateProperties {
     this.rfc3339ApiDateFormat = rfc3339ApiDateFormat;
   }
 
-  public String getIndexPrefix() {
-    if (DatabaseInfo.isElasticsearch()) {
-      if (getElasticsearch() != null) {
-        return getElasticsearch().getIndexPrefix();
-      } else {
+  public String getIndexPrefix(final DatabaseType databaseType) {
+    switch (databaseType) {
+      case Elasticsearch:
+        if (getElasticsearch() != null) {
+          return getElasticsearch().getIndexPrefix();
+        } else {
+          return null;
+        }
+      case Opensearch:
+        if (getOpensearch() != null) {
+          return getOpensearch().getIndexPrefix();
+        } else {
+          return null;
+        }
+      default:
         return null;
-      }
-    } else {
-      if (getOpensearch() != null) {
-        return getOpensearch().getIndexPrefix();
-      } else {
-        return null;
-      }
     }
   }
 }

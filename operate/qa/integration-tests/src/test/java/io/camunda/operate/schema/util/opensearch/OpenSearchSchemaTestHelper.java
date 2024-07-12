@@ -10,6 +10,7 @@ package io.camunda.operate.schema.util.opensearch;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.conditions.DatabaseInfoProvider;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
@@ -50,6 +51,8 @@ public class OpenSearchSchemaTestHelper implements SchemaTestHelper {
   @Autowired private ObjectMapper objectMapper;
 
   @Autowired private OperateProperties properties;
+
+  @Autowired private DatabaseInfoProvider databaseInfoProvider;
 
   @Override
   public void dropSchema() {
@@ -102,7 +105,8 @@ public class OpenSearchSchemaTestHelper implements SchemaTestHelper {
       final String indexName,
       final String indexSchemaFilename) {
     schemaManager.createIndex(
-        new AbstractIndexDescriptor() {
+        new AbstractIndexDescriptor(
+            properties.getElasticsearch().getIndexPrefix(), databaseInfoProvider) {
           @Override
           public String getIndexName() {
             return indexDescriptor.getIndexName();

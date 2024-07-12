@@ -29,7 +29,7 @@ public class OperateDateTimeFormatter {
 
   public OperateDateTimeFormatter(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    if (databaseInfo.isOpensearchDb()) {
+    if (databaseInfo.isOpensearch()) {
       generalDateTimeFormatString = operateProperties.getOpensearch().getDateFormat();
     } else {
       generalDateTimeFormatString = operateProperties.getElasticsearch().getDateFormat();

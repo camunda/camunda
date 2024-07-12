@@ -26,7 +26,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-schema</artifactId>
+      <artifactId>operate-schema-common</artifactId>
     </dependency>
 
     <dependency>

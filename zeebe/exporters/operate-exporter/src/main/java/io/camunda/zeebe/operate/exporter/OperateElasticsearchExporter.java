@@ -13,11 +13,17 @@ import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.conditions.DatabaseInfoProvider;
+import io.camunda.operate.conditions.DatabaseType;
+import io.camunda.operate.connect.ElasticsearchConnectorHelper;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.indices.ProcessIndex;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
-import io.camunda.operate.schema.templates.SequenceFlowTemplate;
-import io.camunda.operate.schema.templates.VariableTemplate;
+import io.camunda.operate.property.DatastoreProperties;
+import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
+import io.camunda.operate.schema.factories.DatastoreClientHolder;
+import io.camunda.operate.schema.factories.IndexDescriptorHolder;
+import io.camunda.operate.schema.factories.SchemaManagerHolder;
+import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.store.elasticsearch.NewElasticsearchBatchRequest;
 import io.camunda.operate.util.ElasticsearchScriptBuilder;
 import io.camunda.zeebe.exporter.api.Exporter;
@@ -33,14 +39,19 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class OperateElasticsearchExporter implements Exporter {
 
+  private static final ObjectMapper MAPPER = new ObjectMapper();
   private Logger log = LoggerFactory.getLogger(getClass().getPackageName());
   private Controller controller;
   private OperateElasticsearchExporterConfiguration configuration;
+  private RestHighLevelClient restHighLevelClient;
   private ElasticsearchClient client;
   private ExportBatchWriter writer;
   private ElasticsearchScriptBuilder scriptBuilder;
@@ -70,6 +81,10 @@ public class OperateElasticsearchExporter implements Exporter {
     xmlUtil = new XMLUtil();
 
     client = createClient();
+
+    restHighLevelClient = createRestHighLevelClient();
+
+    createSchemaWhenNeeded();
 
     writer = createBatchWriter();
 
@@ -108,12 +123,79 @@ public class OperateElasticsearchExporter implements Exporter {
     }
   }
 
+  private void createSchemaWhenNeeded() {
+    // TODO Opensearch
+    final DatabaseInfoProvider databaseInfoProvider =
+        new DatabaseInfoProvider() {
+          @Override
+          public DatabaseType getCurrent() {
+            return DatabaseType.Elasticsearch;
+          }
+
+          @Override
+          public boolean isElasticsearch() {
+            return true;
+          }
+
+          @Override
+          public boolean isOpensearch() {
+            return false;
+          }
+        };
+
+    final DatastoreProperties datastoreProperties = configuration.elasticsearch;
+    DatastoreClientHolder.init(client, restHighLevelClient);
+    new SchemaManagerHolder()
+        .init(
+            databaseInfoProvider, datastoreProperties, DatastoreClientHolder.getInstance(), MAPPER);
+
+    SchemaManagerHolder.getInstance().getSchemaStartup().initializeSchema();
+
+    try {
+      log.info("SchemaStartup started.");
+      log.info("SchemaStartup: validate Operate index mappings.");
+      final SchemaManagerHolder schemaManagerHolder = SchemaManagerHolder.getInstance();
+      final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields =
+          schemaManagerHolder.getIndexSchemaValidator().validateIndexMappings();
+      if (configuration.elasticsearch.isCreateSchema()
+          && !schemaManagerHolder.getIndexSchemaValidator().schemaExists()) {
+        log.info(
+            "SchemaStartup: Operate schema is empty or not complete. Indices will be created.");
+        schemaManagerHolder.getSchemaManager().createSchema();
+        log.info("SchemaStartup: update Operate index mappings.");
+      } else {
+        log.info(
+            "SchemaStartup: schema won't be created, it either already exist, or schema creation is disabled in configuration.");
+      }
+      if (configuration.elasticsearch.isCreateSchema()) {
+        schemaManagerHolder.getSchemaManager().checkAndUpdateIndices();
+      }
+      if (!newFields.isEmpty()) {
+        if (configuration.elasticsearch.isCreateSchema()) {
+          schemaManagerHolder.getSchemaManager().updateSchema(newFields);
+        } else {
+          log.info(
+              "SchemaStartup: schema won't be updated as schema creation is disabled in configuration.");
+        }
+      }
+      log.info("SchemaStartup finished.");
+    } catch (final Exception ex) {
+      log.error("Schema startup failed: " + ex.getMessage(), ex);
+      throw ex;
+    }
+  }
+
   private void validate(final OperateElasticsearchExporterConfiguration configuration) {
     // FIXME
   }
 
   protected ElasticsearchClient createClient() {
-    return new ElasticsearchConnector().elasticsearchClient(configuration.elasticsearch);
+    return ElasticsearchConnectorHelper.INSTANCE.createElasticsearchClient(
+        configuration.elasticsearch);
+  }
+
+  protected RestHighLevelClient createRestHighLevelClient() {
+    return ElasticsearchConnectorHelper.INSTANCE.createEsClient(configuration.elasticsearch);
   }
 
   private void flushAndReschedule() {
@@ -151,19 +233,16 @@ public class OperateElasticsearchExporter implements Exporter {
         // #processProcessRecords
         // processZeebeRecordProcessor.processDeploymentRecord
         .withHandler(
-            new ProcessHandler(
-                (ProcessIndex) (new ProcessIndex().setIndexPrefix(indexPrefix)), xmlUtil))
+            new ProcessHandler(IndexDescriptorHolder.getInstance().getProcessIndex(), xmlUtil))
         .withHandler(
             new VariableHandler(
-                (VariableTemplate) (new VariableTemplate().setIndexPrefix(indexPrefix)),
+                IndexDescriptorHolder.getInstance().getVariableTemplate(),
                 configuration.elasticsearch.getVariableSizeThreshold()))
         .withHandler(
-            new SequenceFlowHandler(
-                (SequenceFlowTemplate) (new SequenceFlowTemplate().setIndexPrefix(indexPrefix))))
+            new SequenceFlowHandler(IndexDescriptorHolder.getInstance().getSequenceFlowTemplate()))
         .withHandler(
             new FlowNodeInstanceProcessInstanceHandler(
-                (FlowNodeInstanceTemplate)
-                    (new FlowNodeInstanceTemplate().setIndexPrefix(indexPrefix))))
+                IndexDescriptorHolder.getInstance().getFlowNodeInstanceTemplate()))
         .build();
   }
 

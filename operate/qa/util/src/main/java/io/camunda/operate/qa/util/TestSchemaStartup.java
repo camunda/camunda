@@ -7,22 +7,25 @@
  */
 package io.camunda.operate.qa.util;
 
-import io.camunda.operate.exceptions.MigrationException;
-import io.camunda.operate.schema.SchemaStartup;
-import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
 
-@Component("schemaStartup")
-@Profile("test")
-public class TestSchemaStartup extends SchemaStartup {
+// @Component("schemaStartup")
+// @Profile("test")
+public class TestSchemaStartup /*extends SchemaStartup*/ {
   private static final Logger LOGGER = LoggerFactory.getLogger(TestSchemaStartup.class);
 
-  @PostConstruct
-  @Override
-  public void initializeSchema() throws MigrationException {
+  /*public TestSchemaStartup(
+      final SchemaManager schemaManager,
+      final IndexSchemaValidator schemaValidator,
+      final Migrator migrator,
+      final DatastoreProperties datastoreProperties,
+      final MigrationProperties migrationProperties) {
+    super(schemaManager, schemaValidator, datastoreProperties, migrator, migrationProperties);
+  }*/
+
+  //  @Override
+  public void initializeSchema() {
     LOGGER.info("TestSchemaStartup: no schema will be created, validated or migrated.");
   }
 }

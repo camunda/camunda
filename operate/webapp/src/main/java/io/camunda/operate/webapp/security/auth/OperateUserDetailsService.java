@@ -10,7 +10,7 @@ package io.camunda.operate.webapp.security.auth;
 import static io.camunda.operate.util.CollectionUtil.map;
 
 import io.camunda.operate.OperateProfileService;
-import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.conditions.DatabaseInfoProvider;
 import io.camunda.operate.entities.UserEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.UserStore;
@@ -52,6 +52,7 @@ public class OperateUserDetailsService implements UserDetailsService {
   private static final String ACT_PASSWORD = ACT_USERNAME;
   @Autowired private UserStore userStore;
   @Autowired private OperateProperties operateProperties;
+  @Autowired private DatabaseInfoProvider databaseInfoProvider;
 
   @Bean
   @Primary
@@ -79,7 +80,7 @@ public class OperateUserDetailsService implements UserDetailsService {
   }
 
   private boolean needsToCreateUser() {
-    if (DatabaseInfo.isOpensearch()) {
+    if (databaseInfoProvider.isOpensearch()) {
       return operateProperties.getOpensearch().isCreateSchema();
     } else {
       return operateProperties.getElasticsearch().isCreateSchema();
@@ -91,7 +92,8 @@ public class OperateUserDetailsService implements UserDetailsService {
       final String displayName,
       final String password,
       final List<String> roles) {
-    LOGGER.info("Create user in {} for userId {}", DatabaseInfo.getCurrent().getCode(), userId);
+    LOGGER.info(
+        "Create user in {} for userId {}", databaseInfoProvider.getCurrent().getCode(), userId);
     final String passwordEncoded = getPasswordEncoder().encode(password);
     final UserEntity userEntity =
         new UserEntity()

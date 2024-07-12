@@ -42,7 +42,7 @@ public class OperateDateTimeFormatterTest {
 
   @Test
   public void testElasticsearchConfig() {
-    when(mockDatabaseInfo.isOpensearchDb()).thenReturn(false);
+    when(mockDatabaseInfo.isOpensearch()).thenReturn(false);
     when(mockOperateProperties.isRfc3339ApiDateFormat()).thenReturn(false);
     when(mockOperateProperties.getElasticsearch()).thenReturn(mockElasticsearchProperties);
     when(mockElasticsearchProperties.getDateFormat())
@@ -57,7 +57,7 @@ public class OperateDateTimeFormatterTest {
 
   @Test
   public void testOpensearchConfig() {
-    when(mockDatabaseInfo.isOpensearchDb()).thenReturn(true);
+    when(mockDatabaseInfo.isOpensearch()).thenReturn(true);
     when(mockOperateProperties.isRfc3339ApiDateFormat()).thenReturn(false);
     when(mockOperateProperties.getOpensearch()).thenReturn(mockOpensearchProperties);
     when(mockOpensearchProperties.getDateFormat())
@@ -72,7 +72,7 @@ public class OperateDateTimeFormatterTest {
 
   @Test
   public void testRfc3339Config() {
-    when(mockDatabaseInfo.isOpensearchDb()).thenReturn(false);
+    when(mockDatabaseInfo.isOpensearch()).thenReturn(false);
     when(mockOperateProperties.isRfc3339ApiDateFormat()).thenReturn(true);
     when(mockOperateProperties.getElasticsearch()).thenReturn(mockElasticsearchProperties);
     when(mockElasticsearchProperties.getDateFormat())
@@ -114,7 +114,7 @@ public class OperateDateTimeFormatterTest {
 
   @Test
   public void testDefaultConfig() {
-    when(mockDatabaseInfo.isOpensearchDb()).thenReturn(false);
+    when(mockDatabaseInfo.isOpensearch()).thenReturn(false);
     when(mockOperateProperties.isRfc3339ApiDateFormat()).thenReturn(false);
     when(mockOperateProperties.getElasticsearch()).thenReturn(mockElasticsearchProperties);
     when(mockElasticsearchProperties.getDateFormat())

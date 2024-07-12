@@ -18,20 +18,14 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.MigrationProperties;
 import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
-import io.camunda.operate.schema.indices.MigrationRepositoryIndex;
 import io.camunda.operate.schema.migration.Migrator;
 import io.camunda.operate.schema.migration.elasticsearch.ElasticsearchMigrationPlanFactory;
 import io.camunda.operate.schema.migration.elasticsearch.ElasticsearchStepsRepository;
-import io.camunda.operate.schema.opensearch.OpensearchMigrationPlanFactory;
+import io.camunda.operate.schema.migration.opensearch.OpensearchMigrationPlanFactory;
+import io.camunda.operate.schema.migration.opensearch.OpensearchStepsRepository;
 import io.camunda.operate.schema.opensearch.OpensearchSchemaManager;
-import io.camunda.operate.schema.opensearch.OpensearchStepsRepository;
-import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.schema.templates.PostImporterQueueTemplate;
 import io.camunda.operate.schema.util.SchemaTestHelper;
 import io.camunda.operate.schema.util.TestIndex;
-import io.camunda.operate.schema.util.TestSchemaStartup;
-import io.camunda.operate.schema.util.TestTemplate;
 import io.camunda.operate.schema.util.elasticsearch.ElasticsearchSchemaTestHelper;
 import io.camunda.operate.schema.util.elasticsearch.TestElasticsearchConnector;
 import io.camunda.operate.schema.util.opensearch.OpenSearchSchemaTestHelper;
@@ -61,16 +55,11 @@ import org.springframework.test.context.ContextConfiguration;
       OpenSearchSchemaTestHelper.class,
       OpensearchTaskStore.class,
       TestOpenSearchConnector.class,
-      MigrationRepositoryIndex.class,
-      ListViewTemplate.class,
-      IncidentTemplate.class,
-      PostImporterQueueTemplate.class,
-      TestTemplate.class,
-      TestIndex.class,
       MigrationProperties.class,
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
-      TestSchemaStartup.class
+      SchemaStartupConfigurator.class,
+      IndexTemplateDescriptorsConfigurator.class
     })
 @SpringBootTest(properties = {"spring.profiles.active="})
 public class SchemaStartupIT extends AbstractSchemaIT {
@@ -78,7 +67,7 @@ public class SchemaStartupIT extends AbstractSchemaIT {
   @Autowired public SchemaManager schemaManager;
   @Autowired public SchemaTestHelper schemaHelper;
 
-  @Autowired public TestSchemaStartup schemaStartup;
+  @Autowired public SchemaWithMigrationStartup schemaStartup;
   @Autowired public TestIndex testIndex;
 
   @Test
@@ -93,7 +82,7 @@ public class SchemaStartupIT extends AbstractSchemaIT {
         testIndex, "/schema/elasticsearch/create/index/operate-testindex-property-removed.json");
 
     // when
-    schemaStartup.initializeSchemaOnDemand();
+    schemaStartup.initializeSchema();
 
     // then
     // the index should have been updated
@@ -132,7 +121,7 @@ public class SchemaStartupIT extends AbstractSchemaIT {
         testIndex, "/schema/elasticsearch/create/index/operate-testindex-nullvalue.json");
 
     // when / then
-    assertThatThrownBy(() -> schemaStartup.initializeSchemaOnDemand())
+    assertThatThrownBy(() -> schemaStartup.initializeSchema())
         .isInstanceOf(OperateRuntimeException.class)
         .hasMessageContaining("Not supported index changes are introduced");
   }

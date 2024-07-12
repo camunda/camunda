@@ -1,0 +1,39 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "decisionDefinitionId": {
+        "type": "keyword",
+        "eager_global_ordinals": true
+      },
+      "xml": {
+        "type": "text",
+        "index": false
+      },
+      "id": {
+        "type": "keyword"
+      },
+      "key": {
+        "type": "long"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "partitionId": {
+        "type": "integer"
+      },
+      "decisionRequirementsId": {
+        "type": "keyword"
+      },
+      "resourceName": {
+        "type": "keyword"
+      },
+      "version": {
+        "type": "long"
+      },
+      "tenantId": {
+        "type": "keyword"
+      }
+    }
+  }
+}

@@ -7,9 +7,14 @@
  */
 package io.camunda.operate.schema.util;
 
+import io.camunda.operate.conditions.DatabaseInfoProvider;
 import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
 
 public class TestIndex extends AbstractIndexDescriptor {
+
+  public TestIndex(final String indexPrefix, final DatabaseInfoProvider databaseInfoProvider) {
+    super(indexPrefix, databaseInfoProvider);
+  }
 
   @Override
   public String getIndexName() {

@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.conditions.DatabaseInfoProvider;
 import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -77,6 +78,8 @@ public class IndexOldSchemaValidatorIT {
 
   @Autowired OperateProperties operateProperties;
 
+  @Autowired DatabaseInfoProvider databaseInfoProvider;
+
   private String operatePrefix;
 
   private List<String> allIndexNames;
@@ -89,7 +92,7 @@ public class IndexOldSchemaValidatorIT {
   @Before
   public void setUp() {
     operatePrefix =
-        DatabaseInfo.isOpensearch()
+        databaseInfoProvider.isOpensearch()
             ? operateProperties.getOpensearch().getIndexPrefix()
             : operateProperties.getElasticsearch().getIndexPrefix();
     allIndexNames =

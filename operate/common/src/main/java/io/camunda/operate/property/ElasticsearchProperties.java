@@ -15,7 +15,7 @@ import java.net.URISyntaxException;
 import java.util.function.Function;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-public class ElasticsearchProperties {
+public class ElasticsearchProperties implements DatastoreProperties {
   public static final String ELS_DATE_FORMAT_DEFAULT = "date_time";
 
   public static final int BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT = 1024 * 1024 * 90; // 90 MB
@@ -108,6 +108,7 @@ public class ElasticsearchProperties {
     this.batchSize = batchSize;
   }
 
+  @Override
   public boolean isCreateSchema() {
     return createSchema;
   }

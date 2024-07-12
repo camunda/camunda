@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
-import io.camunda.operate.ListenerState;
 import io.camunda.operate.entities.ListenerEventType;
+import io.camunda.operate.entities.ListenerState;
 import io.camunda.operate.entities.ListenerType;
 import java.time.OffsetDateTime;
 import java.util.Objects;

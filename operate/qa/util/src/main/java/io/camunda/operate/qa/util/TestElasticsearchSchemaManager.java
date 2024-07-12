@@ -7,8 +7,14 @@
  */
 package io.camunda.operate.qa.util;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
+import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
+import io.camunda.operate.schema.templates.TemplateDescriptor;
+import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
@@ -24,9 +30,23 @@ public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager
   private static final Logger LOGGER =
       LoggerFactory.getLogger(TestElasticsearchSchemaManager.class);
 
+  public TestElasticsearchSchemaManager(
+      final RetryElasticsearchClient retryElasticsearchClient,
+      final OperateProperties operateProperties,
+      final List<AbstractIndexDescriptor> indexDescriptors,
+      final List<TemplateDescriptor> templateDescriptors,
+      final ObjectMapper objectMapper) {
+    super(
+        retryElasticsearchClient,
+        operateProperties.getElasticsearch(),
+        indexDescriptors,
+        templateDescriptors,
+        objectMapper);
+  }
+
   @Override
   public void deleteSchema() {
-    final String prefix = this.operateProperties.getElasticsearch().getIndexPrefix();
+    final String prefix = operateElasticsearchProperties.getIndexPrefix();
     LOGGER.info("Removing indices {}*", prefix);
     retryElasticsearchClient.deleteIndicesFor(prefix + "*");
     retryElasticsearchClient.deleteTemplatesFor(prefix + "*");
@@ -36,23 +56,23 @@ public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager
   public void deleteSchemaQuietly() {
     try {
       deleteSchema();
-    } catch (Exception t) {
+    } catch (final Exception t) {
       LOGGER.debug(t.getMessage());
     }
   }
 
   @Override
-  public void setCreateSchema(boolean createSchema) {
-    operateProperties.getElasticsearch().setCreateSchema(createSchema);
+  public void setCreateSchema(final boolean createSchema) {
+    operateElasticsearchProperties.setCreateSchema(createSchema);
   }
 
   @Override
-  public void setIndexPrefix(String indexPrefix) {
-    operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
+  public void setIndexPrefix(final String indexPrefix) {
+    operateElasticsearchProperties.setIndexPrefix(indexPrefix);
   }
 
   @Override
   public void setDefaultIndexPrefix() {
-    operateProperties.getElasticsearch().setDefaultIndexPrefix();
+    operateElasticsearchProperties.setDefaultIndexPrefix();
   }
 }

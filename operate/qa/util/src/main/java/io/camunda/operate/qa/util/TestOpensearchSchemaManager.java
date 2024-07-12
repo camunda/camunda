@@ -8,8 +8,8 @@
 package io.camunda.operate.qa.util;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.indices.IndexDescriptor;
+import io.camunda.operate.property.OperateOpensearchProperties;
+import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
 import io.camunda.operate.schema.opensearch.OpensearchSchemaManager;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -31,16 +31,16 @@ public class TestOpensearchSchemaManager extends OpensearchSchemaManager
 
   @Autowired
   public TestOpensearchSchemaManager(
-      final OperateProperties operateProperties,
+      final OperateOpensearchProperties operateOpensearchProperties,
       final RichOpenSearchClient richOpenSearchClient,
       final List<TemplateDescriptor> templateDescriptors,
-      final List<IndexDescriptor> indexDescriptors) {
-    super(operateProperties, richOpenSearchClient, templateDescriptors, indexDescriptors);
+      final List<AbstractIndexDescriptor> indexDescriptors) {
+    super(operateOpensearchProperties, richOpenSearchClient, indexDescriptors, templateDescriptors);
   }
 
   @Override
   public void deleteSchema() {
-    final String prefix = this.operateProperties.getOpensearch().getIndexPrefix();
+    final String prefix = operateOpensearchProperties.getIndexPrefix();
     LOGGER.info("Removing indices {}*", prefix);
     richOpenSearchClient.index().deleteIndicesWithRetries(prefix + "*");
     richOpenSearchClient.template().deleteTemplatesWithRetries(prefix + "*");
@@ -50,23 +50,23 @@ public class TestOpensearchSchemaManager extends OpensearchSchemaManager
   public void deleteSchemaQuietly() {
     try {
       deleteSchema();
-    } catch (Exception t) {
+    } catch (final Exception t) {
       LOGGER.debug(t.getMessage());
     }
   }
 
   @Override
-  public void setCreateSchema(boolean createSchema) {
-    operateProperties.getOpensearch().setCreateSchema(createSchema);
+  public void setCreateSchema(final boolean createSchema) {
+    operateOpensearchProperties.setCreateSchema(createSchema);
   }
 
   @Override
-  public void setIndexPrefix(String indexPrefix) {
-    operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
+  public void setIndexPrefix(final String indexPrefix) {
+    operateOpensearchProperties.setIndexPrefix(indexPrefix);
   }
 
   @Override
   public void setDefaultIndexPrefix() {
-    operateProperties.getOpensearch().setDefaultIndexPrefix();
+    operateOpensearchProperties.setDefaultIndexPrefix();
   }
 }

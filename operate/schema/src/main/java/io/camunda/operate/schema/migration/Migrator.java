@@ -10,7 +10,7 @@ package io.camunda.operate.schema.migration;
 import static io.camunda.operate.schema.SchemaManager.*;
 import static io.camunda.operate.util.CollectionUtil.filter;
 
-import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.conditions.DatabaseInfoProvider;
 import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.property.MigrationProperties;
 import io.camunda.operate.property.OperateProperties;
@@ -21,6 +21,7 @@ import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.PostImporterQueueTemplate;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
+import io.camunda.operate.util.SemanticVersion;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -44,6 +45,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Configuration
+@Deprecated
 public class Migrator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Migrator.class);
@@ -66,6 +68,8 @@ public class Migrator {
 
   @Autowired private MigrationPlanFactory migrationPlanFactory;
 
+  @Autowired private DatabaseInfoProvider databaseInfoProvider;
+
   @Bean("migrationThreadPoolExecutor")
   public ThreadPoolTaskExecutor getTaskExecutor() {
     final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -79,18 +83,18 @@ public class Migrator {
   public void migrateData() throws MigrationException {
     try {
       stepsRepository.updateSteps();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new MigrationException(String.format("Migration failed due to %s", e.getMessage()));
     }
     boolean failed = false;
     final List<Future<Boolean>> results =
         indexDescriptors.stream().map(this::migrateIndexInThread).collect(Collectors.toList());
-    for (Future<Boolean> result : results) {
+    for (final Future<Boolean> result : results) {
       try {
         if (!result.get()) {
           failed = true;
         }
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOGGER.error("Migration failed: ", e);
         failed = true;
       }
@@ -101,13 +105,13 @@ public class Migrator {
     }
   }
 
-  private Future<Boolean> migrateIndexInThread(IndexDescriptor indexDescriptor) {
+  private Future<Boolean> migrateIndexInThread(final IndexDescriptor indexDescriptor) {
     return getTaskExecutor()
         .submit(
             () -> {
               try {
                 migrateIndexIfNecessary(indexDescriptor);
-              } catch (Exception e) {
+              } catch (final Exception e) {
                 LOGGER.error("Migration for {} failed:", indexDescriptor.getIndexName(), e);
                 return false;
               }
@@ -115,7 +119,7 @@ public class Migrator {
             });
   }
 
-  private void migrateIndexIfNecessary(IndexDescriptor indexDescriptor)
+  private void migrateIndexIfNecessary(final IndexDescriptor indexDescriptor)
       throws MigrationException, IOException {
     LOGGER.info("Check if index {} needs to migrate.", indexDescriptor.getIndexName());
     final Set<String> olderVersions = indexSchemaValidator.olderVersionsForIndex(indexDescriptor);
@@ -149,10 +153,7 @@ public class Migrator {
           createPlanFor(
               indexDescriptor.getIndexName(), olderVersion, currentVersion, stepsForIndex);
       migrateIndex(indexDescriptor, plan);
-      final var indexPrefix =
-          DatabaseInfo.isOpensearch()
-              ? operateProperties.getOpensearch().getIndexPrefix()
-              : operateProperties.getElasticsearch().getIndexPrefix();
+      final var indexPrefix = operateProperties.getIndexPrefix(databaseInfoProvider.getCurrent());
       if (migrationProperties.isDeleteSrcSchema()) {
         final String olderBaseIndexName =
             String.format("%s-%s-%s_", indexPrefix, indexDescriptor.getIndexName(), olderVersion);
@@ -172,7 +173,7 @@ public class Migrator {
       throws IOException, MigrationException {
     final String refreshInterval;
     final Integer numberOfReplicas;
-    if (DatabaseInfo.isOpensearch()) {
+    if (databaseInfoProvider.isOpensearch()) {
       refreshInterval = operateProperties.getOpensearch().getRefreshInterval();
       numberOfReplicas = operateProperties.getOpensearch().getNumberOfReplicas();
     } else {
@@ -216,7 +217,9 @@ public class Migrator {
   }
 
   private Map<String, String> getIndexSettingsOrDefaultsFor(
-      final IndexDescriptor indexDescriptor, String refreshInterval, Integer numberOfReplicas) {
+      final IndexDescriptor indexDescriptor,
+      final String refreshInterval,
+      final Integer numberOfReplicas) {
     final Map<String, String> settings = new HashMap<>();
     settings.put(
         REFRESH_INTERVAL,
@@ -248,10 +251,7 @@ public class Migrator {
                 SemanticVersion.fromVersion(s.getVersion())
                     .isBetween(sourceVersion, destinationVersion));
 
-    final String indexPrefix =
-        DatabaseInfo.isOpensearch()
-            ? operateProperties.getOpensearch().getIndexPrefix()
-            : operateProperties.getElasticsearch().getIndexPrefix();
+    final var indexPrefix = operateProperties.getIndexPrefix(databaseInfoProvider.getCurrent());
     final String srcIndex = String.format("%s-%s-%s", indexPrefix, indexName, srcVersion);
     final String dstIndex = String.format("%s-%s-%s", indexPrefix, indexName, dstVersion);
 

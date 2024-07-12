@@ -9,7 +9,7 @@ package io.camunda.operate.elasticsearch;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.conditions.DatabaseInfoProvider;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.migration.MigrationPlanFactory;
 import io.camunda.operate.schema.migration.Plan;
@@ -31,6 +31,7 @@ public class ReindexIT extends OperateSearchAbstractIT {
   @Autowired private SchemaManager schemaManager;
   @Autowired private TestSearchRepository searchRepository;
   @Autowired private MigrationPlanFactory migrationPlanFactory;
+  @Autowired private DatabaseInfoProvider databaseInfoProvider;
 
   @Override
   protected void runAdditionalBeforeEachSetup() throws Exception {
@@ -74,7 +75,7 @@ public class ReindexIT extends OperateSearchAbstractIT {
 
   private void createIndex(final String indexName, final List<Map<String, String>> documents)
       throws Exception {
-    if (DatabaseInfo.isElasticsearch()) {
+    if (databaseInfoProvider.isElasticsearch()) {
       final Map<String, ?> mapping =
           Map.of("properties", Map.of("test_name", Map.of("type", "keyword")));
       searchRepository.createIndex(indexName, mapping);

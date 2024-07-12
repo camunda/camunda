@@ -7,9 +7,14 @@
  */
 package io.camunda.operate.schema.util;
 
+import io.camunda.operate.conditions.DatabaseInfoProvider;
 import io.camunda.operate.schema.templates.AbstractTemplateDescriptor;
 
 public class TestTemplate extends AbstractTemplateDescriptor {
+
+  public TestTemplate(final String indexPrefix, final DatabaseInfoProvider databaseInfoProvider) {
+    super(indexPrefix, databaseInfoProvider);
+  }
 
   @Override
   public String getIndexName() {

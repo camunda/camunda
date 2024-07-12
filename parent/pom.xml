@@ -608,6 +608,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>operate-schema-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>operate-mvc-auth-commons</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -2654,6 +2660,9 @@
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-maven-plugin</artifactId>
           <version>${version.spring-boot}</version>
+          <configuration>
+            <wait>40000</wait>
+          </configuration>
         </plugin>
 
         <plugin>

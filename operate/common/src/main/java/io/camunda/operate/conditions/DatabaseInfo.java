@@ -17,13 +17,13 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
 @Component("databaseInfo")
-public class DatabaseInfo implements ApplicationContextAware {
+public class DatabaseInfo implements ApplicationContextAware, DatabaseInfoProvider {
 
   static final DatabaseType DEFAULT_DATABASE = DatabaseType.Elasticsearch;
   private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseInfo.class);
   private static ApplicationContext applicationContext;
 
-  public static DatabaseType getCurrent() {
+  private static DatabaseType getCurrentStatic() {
     if (applicationContext == null) {
       LOGGER.warn("getCurrent() called on DatabaseInfo before application context has been set");
       return DEFAULT_DATABASE;
@@ -33,30 +33,36 @@ public class DatabaseInfo implements ApplicationContextAware {
     return DatabaseType.byCode(code).orElse(DEFAULT_DATABASE);
   }
 
-  public static boolean isCurrent(DatabaseType databaseType) {
-    return databaseType == getCurrent();
+  @Override
+  public DatabaseType getCurrent() {
+    if (applicationContext == null) {
+      LOGGER.warn("getCurrent() called on DatabaseInfo before application context has been set");
+      return DEFAULT_DATABASE;
+    }
+
+    final var code = applicationContext.getEnvironment().getProperty(DATABASE_PROPERTY);
+    return DatabaseType.byCode(code).orElse(DEFAULT_DATABASE);
   }
 
-  public static boolean isElasticsearch() {
+  @Override
+  public boolean isElasticsearch() {
     return isCurrent(DatabaseType.Elasticsearch);
-  }
-
-  public static boolean isOpensearch() {
-    return isCurrent(DatabaseType.Opensearch);
   }
 
   // Helper methods that allow the component to be autowired and safely check the db type instead of
   // using static methods
-  public boolean isOpensearchDb() {
-    return isOpensearch();
+  @Override
+  public boolean isOpensearch() {
+    return isCurrent(DatabaseType.Opensearch);
   }
 
-  public boolean isElasticsearchDb() {
-    return isElasticsearch();
+  private static boolean isCurrent(final DatabaseType databaseType) {
+    return databaseType == getCurrentStatic();
   }
 
   @Override
-  public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+  public void setApplicationContext(final ApplicationContext applicationContext)
+      throws BeansException {
     DatabaseInfo.applicationContext = applicationContext;
   }
 }
