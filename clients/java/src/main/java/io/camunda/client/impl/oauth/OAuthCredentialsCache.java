@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import net.jcip.annotations.ThreadSafe;
 
 @ThreadSafe
@@ -45,29 +46,30 @@ public final class OAuthCredentialsCache {
       new TypeReference<Map<String, OAuthCachedCredentials>>() {};
   private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
 
-  private final Map<String, OAuthCachedCredentials> audiences;
+  private final AtomicReference<Map<String, OAuthCachedCredentials>> audiences;
   private final File cacheFile;
 
   public OAuthCredentialsCache(final File cacheFile) {
     this.cacheFile = cacheFile;
-    audiences = new HashMap<>();
+    audiences = new AtomicReference<>(new HashMap<>());
   }
 
-  public synchronized OAuthCredentialsCache readCache() throws IOException {
+  public OAuthCredentialsCache readCache() throws IOException {
     if (!cacheFile.exists() || cacheFile.length() == 0) {
       return this;
     }
 
     final Map<String, OAuthCachedCredentials> cache = MAPPER.readValue(cacheFile, TYPE_REFERENCE);
-    audiences.clear();
-    audiences.putAll(cache);
+    audiences.set(cache);
 
     return this;
   }
 
-  public synchronized void writeCache() throws IOException {
-    final Map<String, Map<String, OAuthCachedCredentials>> cache = new HashMap<>(audiences.size());
-    for (final Entry<String, OAuthCachedCredentials> audience : audiences.entrySet()) {
+  public void writeCache() throws IOException {
+    final Map<String, OAuthCachedCredentials> values = audiences.get();
+
+    final Map<String, Map<String, OAuthCachedCredentials>> cache = new HashMap<>(values.size());
+    for (final Entry<String, OAuthCachedCredentials> audience : values.entrySet()) {
       cache.put(audience.getKey(), Collections.singletonMap(KEY_AUTH, audience.getValue()));
     }
 
@@ -75,8 +77,10 @@ public final class OAuthCredentialsCache {
     MAPPER.writer().writeValue(cacheFile, cache);
   }
 
-  public synchronized Optional<CamundaClientCredentials> get(final String endpoint) {
-    return Optional.ofNullable(audiences.get(endpoint)).map(OAuthCachedCredentials::getCredentials);
+  public Optional<CamundaClientCredentials> get(final String endpoint) {
+    final Map<String, OAuthCachedCredentials> cache = audiences.get();
+    return Optional.ofNullable(cache.get(endpoint)).map(
+        OAuthCachedCredentials::getCredentials);
   }
 
   public synchronized CamundaClientCredentials computeIfMissingOrInvalid(
@@ -103,7 +107,7 @@ public final class OAuthCredentialsCache {
     }
   }
 
-  public synchronized <T> Optional<T> withCache(
+  public <T> Optional<T> withCache(
       final String endpoint, final FunctionWithIO<CamundaClientCredentials, T> function)
       throws IOException {
     final Optional<CamundaClientCredentials> optionalCredentials = readCache().get(endpoint);
@@ -114,14 +118,19 @@ public final class OAuthCredentialsCache {
     }
   }
 
-  public synchronized OAuthCredentialsCache put(
+  public OAuthCredentialsCache put(
       final String endpoint, final CamundaClientCredentials credentials) {
-    audiences.put(endpoint, new OAuthCachedCredentials(credentials));
+    audiences.getAndUpdate(
+        current -> {
+          final HashMap<String, OAuthCachedCredentials> cache = new HashMap<>(current);
+          cache.put(endpoint, new OAuthCachedCredentials(credentials));
+          return cache;
+        });
     return this;
   }
 
   public synchronized int size() {
-    return audiences.size();
+    return audiences.get().size();
   }
 
   private void ensureCacheFileExists() throws IOException {
