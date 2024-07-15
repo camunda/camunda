@@ -142,9 +142,8 @@ public class UserTaskController {
 
   private ResponseEntity<Object> search(final UserTaskQuery query) {
     try {
-      final var tenantIds = TenantAttributeHolder.tenantIds();
       final var result =
-          userTaskServices.withAuthentication((a) -> a.tenants(tenantIds)).search(query);
+          userTaskServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result));
     } catch (final ValidationException e) {
       final var problemDetail =
