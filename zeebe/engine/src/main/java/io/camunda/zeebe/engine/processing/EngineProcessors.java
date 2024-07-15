@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionAcknow
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
+import io.camunda.zeebe.engine.processing.identity.UserEventProcessors;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
@@ -184,6 +185,8 @@ public final class EngineProcessors {
 
     UserTaskEventProcessors.addUserTaskProcessors(
         typedRecordProcessors, processingState, bpmnBehaviors, writers);
+
+    UserEventProcessors.addUserProcessors(typedRecordProcessors, processingState, writers);
 
     return typedRecordProcessors;
   }

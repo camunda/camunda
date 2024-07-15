@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
 import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.engine.util.client.ResourceDeletionClient;
 import io.camunda.zeebe.engine.util.client.SignalClient;
+import io.camunda.zeebe.engine.util.client.UserClient;
 import io.camunda.zeebe.engine.util.client.UserTaskClient;
 import io.camunda.zeebe.engine.util.client.VariableClient;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
@@ -267,6 +268,10 @@ public final class EngineRule extends ExternalResource {
 
   public long getLastProcessedPosition() {
     return lastProcessedPosition;
+  }
+
+  public UserClient user() {
+    return new UserClient(environmentRule);
   }
 
   public DeploymentClient deployment() {
