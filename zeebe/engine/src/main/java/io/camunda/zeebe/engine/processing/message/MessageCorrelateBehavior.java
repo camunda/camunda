@@ -8,23 +8,36 @@
 package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.common.EventHandle;
+import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
+import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import org.agrona.DirectBuffer;
 
 public final class MessageCorrelateBehavior {
 
   private final MessageStartEventSubscriptionState startEventSubscriptionState;
+  private final MessageSubscriptionState messageSubscriptionState;
   private final MessageState messageState;
   private final EventHandle eventHandle;
+  private final StateWriter stateWriter;
+  private final SubscriptionCommandSender commandSender;
 
   public MessageCorrelateBehavior(
       final MessageStartEventSubscriptionState startEventSubscriptionState,
       final MessageState messageState,
-      final EventHandle eventHandle) {
+      final EventHandle eventHandle,
+      final StateWriter stateWriter,
+      final MessageSubscriptionState messageSubscriptionState,
+      final SubscriptionCommandSender commandSender) {
     this.startEventSubscriptionState = startEventSubscriptionState;
+    this.messageSubscriptionState = messageSubscriptionState;
     this.messageState = messageState;
     this.eventHandle = eventHandle;
+    this.stateWriter = stateWriter;
+    this.commandSender = commandSender;
   }
 
   public Subscriptions correlateToMessageStartEvents(
@@ -63,6 +76,51 @@ public final class MessageCorrelateBehavior {
           }
         });
 
+    return correlatingSubscriptions;
+  }
+
+  public Subscriptions correlateToMessageEvents(
+      final String tenantId,
+      final DirectBuffer messageName,
+      final DirectBuffer correlationKey,
+      final DirectBuffer variables,
+      final long messageKey) {
+    final var correlatingSubscriptions = new Subscriptions();
+
+    messageSubscriptionState.visitSubscriptions(
+        tenantId,
+        messageName,
+        correlationKey,
+        subscription -> {
+
+          // correlate the message only once per process
+          if (!subscription.isCorrelating()
+              && !correlatingSubscriptions.contains(
+                  subscription.getRecord().getBpmnProcessIdBuffer())) {
+
+            final var correlatingSubscription =
+                subscription.getRecord().setMessageKey(messageKey).setVariables(variables);
+
+            stateWriter.appendFollowUpEvent(
+                subscription.getKey(),
+                MessageSubscriptionIntent.CORRELATING,
+                correlatingSubscription);
+
+            correlatingSubscriptions.add(correlatingSubscription);
+
+            commandSender.correlateProcessMessageSubscription(
+                correlatingSubscription.getProcessInstanceKey(),
+                correlatingSubscription.getElementInstanceKey(),
+                correlatingSubscription.getBpmnProcessIdBuffer(),
+                messageName,
+                messageKey,
+                variables,
+                correlationKey,
+                tenantId);
+          }
+
+          return true;
+        });
     return correlatingSubscriptions;
   }
 }
