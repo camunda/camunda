@@ -151,7 +151,8 @@ public final class CredentialsTest {
 
               @Override
               public boolean shouldRetryRequest(final StatusCode code) {
-                return retryCounter-- > 0;
+                retryCounter--;
+                return true;
               }
             });
     builder.usePlaintext().credentialsProvider(provider);

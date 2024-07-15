@@ -19,12 +19,14 @@ import io.camunda.client.CredentialsProvider.StatusCode;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 public final class RetriableClientFutureImpl<R, T> extends CamundaClientFutureImpl<R, T> {
 
+  private final AtomicInteger retries = new AtomicInteger(2);
   private final Predicate<StatusCode> retryPredicate;
   private final Consumer<StreamObserver<T>> retryAction;
 
@@ -50,7 +52,7 @@ public final class RetriableClientFutureImpl<R, T> extends CamundaClientFutureIm
     final Status status = Status.fromThrowable(throwable);
     final StatusCode statusCode = new GrpcStatusCode(status.getCode());
 
-    if (retryPredicate.test(statusCode)) {
+    if (retries.getAndDecrement() > 0 && retryPredicate.test(statusCode)) {
       retryAction.accept(this);
     } else {
       super.onError(throwable);
