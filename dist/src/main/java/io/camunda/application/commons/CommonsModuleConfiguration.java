@@ -8,10 +8,8 @@
 package io.camunda.application.commons;
 
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import graphql.kickstart.autoconfigure.annotations.GraphQLAnnotationsAutoConfiguration;
 
 @Configuration(proxyBeanMethods = false)
 @ComponentScan("io.camunda.application.commons")

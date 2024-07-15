@@ -25,7 +25,9 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(basePackages = {"io.camunda.identity.automation"})
 @EnableConfigurationProperties(IdentityConfiguration.class)
-@EnableJpaRepositories(basePackages = "io.camunda.identity.automation", enableDefaultTransactions = false)
+@EnableJpaRepositories(
+    basePackages = "io.camunda.identity.automation",
+    enableDefaultTransactions = false)
 @EntityScan("io.camunda.identity.automation")
 @Import(
     value = {

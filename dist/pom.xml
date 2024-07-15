@@ -682,7 +682,6 @@
 
             <!-- Needed for configuring the Identity SDK by providing an IdentityConfiguration bean -->
             <dependency>io.camunda:identity-spring-boot-autoconfigure</dependency>
-            <dependency>io.camunda:identity-backend</dependency>
             <dependency>io.camunda:identity-common</dependency>
             <dependency>io.camunda:identity-webjar</dependency>
 

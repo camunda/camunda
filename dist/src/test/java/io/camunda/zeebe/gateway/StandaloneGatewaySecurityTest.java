@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.actor.ActorClockConfiguration;
-import io.camunda.application.commons.actor.ActorSchedulerConfiguration;
 import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
+import io.camunda.application.commons.actor.ActorSchedulerConfiguration;
 import io.camunda.application.commons.broker.client.BrokerClientConfiguration;
 import io.camunda.application.commons.clustering.AtomixClusterConfiguration;
 import io.camunda.application.commons.clustering.DynamicClusterServices;

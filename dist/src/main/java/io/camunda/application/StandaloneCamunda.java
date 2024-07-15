@@ -8,6 +8,7 @@
 package io.camunda.application;
 
 import static org.springframework.core.env.AbstractEnvironment.ACTIVE_PROFILES_PROPERTY_NAME;
+
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
