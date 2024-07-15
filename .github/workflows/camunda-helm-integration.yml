@@ -8,7 +8,7 @@ on:
 jobs:
   helm-deploy:
     name: Helm chart Integration Tests
-    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
+    uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@fix_it_template
     secrets: inherit
     with:
       identifier: camunda-helm-int
