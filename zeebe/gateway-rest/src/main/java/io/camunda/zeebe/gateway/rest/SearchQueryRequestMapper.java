@@ -29,8 +29,10 @@ import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterRequest;
 import io.camunda.zeebe.util.Either;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
@@ -40,9 +42,29 @@ public final class SearchQueryRequestMapper {
 
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQuery(
       final ProcessInstanceSearchQueryRequest request) {
-    final var page = toSearchQueryPage(request.getPage()).get();
-    final var sorting = toSearchQuerySort(request.getSort()).get();
-    final var processInstanceFilter = toProcessInstanceFilter(request.getFilter()).get();
+    final List<String> validationErrors = new ArrayList<>();
+
+    final var pageResult = toSearchQueryPage(request.getPage());
+    if (pageResult.isLeft()) {
+      validationErrors.addAll(pageResult.getLeft());
+    }
+    final var sortingResult = toSearchQuerySort(request.getSort());
+    if (sortingResult.isLeft()) {
+      validationErrors.addAll(sortingResult.getLeft());
+    }
+    final var processInstanceFilterResult = toProcessInstanceFilter(request.getFilter());
+    if (processInstanceFilterResult.isLeft()) {
+      validationErrors.addAll(processInstanceFilterResult.getLeft());
+    }
+
+    if (!validationErrors.isEmpty()) {
+      return Either.left(createProblemDetail(validationErrors));
+    }
+
+    final var page = pageResult.get();
+    final var sorting = sortingResult.get();
+    final var processInstanceFilter = processInstanceFilterResult.get();
+
     return Either.right(
         SearchQueryBuilders.processInstanceSearchQuery()
             .page(page)
@@ -51,42 +73,60 @@ public final class SearchQueryRequestMapper {
             .build());
   }
 
-  public static Either<ProblemDetail, ProcessInstanceFilter> toProcessInstanceFilter(
+  public static Either<List<String>, ProcessInstanceFilter> toProcessInstanceFilter(
       final ProcessInstanceFilterRequest filter) {
     final var builder = FilterBuilders.processInstance();
+    final List<String> validationErrors = new ArrayList<>();
 
     if (filter != null) {
-      final var variableFilters = toVariableValueFilter(filter.getVariables()).get();
-      if (variableFilters != null) {
-        builder.variable(variableFilters);
+      final var variableFiltersResult = toVariableValueFilter(filter.getVariables());
+      if (variableFiltersResult.isLeft()) {
+        validationErrors.addAll(variableFiltersResult.getLeft());
+      } else {
+        final var variableFilters = variableFiltersResult.get();
+        if (variableFilters != null) {
+          builder.variable(variableFilters);
+        }
       }
       if (filter.getKey() != null && !filter.getKey().isEmpty()) {
         builder.processInstanceKeys(filter.getKey());
       }
     }
 
+    if (!validationErrors.isEmpty()) {
+      return Either.left(validationErrors);
+    }
+
     return Either.right(builder.build());
   }
 
-  public static Either<ProblemDetail, List<VariableValueFilter>> toVariableValueFilter(
+  public static Either<List<String>, List<VariableValueFilter>> toVariableValueFilter(
       final List<VariableValueFilterRequest> filters) {
 
-    final List<VariableValueFilter> result;
+    if (filters == null || filters.isEmpty()) {
+      return Either.right(null);
+    }
 
-    if (filters != null && !filters.isEmpty()) {
-      result =
-          filters.stream()
-              .map(SearchQueryRequestMapper::toVariableValueFilter)
-              .map(Either::get)
-              .toList();
-    } else {
-      result = null;
+    final List<String> validationErrors = new ArrayList<>();
+    final List<VariableValueFilter> result = filters.stream()
+        .map(SearchQueryRequestMapper::toVariableValueFilter)
+        .peek(either -> {
+          if (either.isLeft()) {
+            validationErrors.add(either.getLeft());
+          }
+        })
+        .filter(Either::isRight)
+        .map(Either::get)
+        .collect(Collectors.toList());
+
+    if (!validationErrors.isEmpty()) {
+      return Either.left(validationErrors);
     }
 
     return Either.right(result);
   }
 
-  public static Either<ProblemDetail, VariableValueFilter> toVariableValueFilter(
+  public static Either<String, VariableValueFilter> toVariableValueFilter(
       final VariableValueFilterRequest f) {
     return Either.right(
         FilterBuilders.variableValue(
@@ -99,116 +139,103 @@ public final class SearchQueryRequestMapper {
                     .lte(f.getLte())));
   }
 
-  public static Either<ProblemDetail, SearchQueryPage> toSearchQueryPage(
+  public static Either<List<String>, SearchQueryPage> toSearchQueryPage(
       final SearchQueryPageRequest requestedPage) {
-    if (requestedPage != null) {
-      return Either.right(
-          SearchQueryPage.of(
-              (p) ->
-                  p.size(requestedPage.getLimit())
-                      .from(requestedPage.getFrom())
-                      .searchAfter(toArrayOrNull(requestedPage.getSearchAfter()))
-                      .searchBefore(toArrayOrNull(requestedPage.getSearchBefore()))));
+    if (requestedPage == null) {
+      return Either.right(null);
     }
 
-    return Either.right(null);
+    return Either.right(
+        SearchQueryPage.of(
+            (p) ->
+                p.size(requestedPage.getLimit())
+                    .from(requestedPage.getFrom())
+                    .searchAfter(toArrayOrNull(requestedPage.getSearchAfter()))
+                    .searchBefore(toArrayOrNull(requestedPage.getSearchBefore()))));
   }
 
-  public static Either<ProblemDetail, ProcessInstanceSort> toSearchQuerySort(
+  public static Either<List<String>, ProcessInstanceSort> toSearchQuerySort(
       final List<SearchQuerySortRequest> sorting) {
-    if (sorting != null && !sorting.isEmpty()) {
-      final var builder = SortOptionBuilders.processInstance();
-      final List<ProblemDetail> validationErrors = new ArrayList<>();
-
-      for (final SearchQuerySortRequest sort : sorting) {
-        final var field = sort.getField();
-        final var order = sort.getOrder();
-
-        if ("processInstanceKey".equals(field)) {
-          builder.processInstanceKey();
-        } else if ("startDate".equals(field)) {
-          builder.startDate();
-        } else if ("endDate".equals(field)) {
-          builder.endDate();
-        } else {
-          // Collect validation error for unknown sortBy field
-          validationErrors.add(
-              ProblemDetail.forStatusAndDetail(
-                  HttpStatus.BAD_REQUEST, "Unknown sortBy field: " + field));
-          continue;
-        }
-
-        if ("asc".equalsIgnoreCase(order)) {
-          builder.asc();
-        } else if ("desc".equalsIgnoreCase(order)) {
-          builder.desc();
-        } else {
-          // Collect validation error for unknown sortOrder
-          validationErrors.add(
-              ProblemDetail.forStatusAndDetail(
-                  HttpStatus.BAD_REQUEST, "Unknown sortOrder: " + order));
-        }
-      }
-
-      if (!validationErrors.isEmpty()) {
-        return Either.left(
-            validationErrors.get(0)); // Return the first encountered error for simplicity
-      }
-
-      return Either.right(builder.build());
+    if (sorting == null || sorting.isEmpty()) {
+      return Either.right(null);
     }
 
-    return Either.right(null);
+    final var builder = SortOptionBuilders.processInstance();
+    final List<String> validationErrors = new ArrayList<>();
+
+    for (final SearchQuerySortRequest sort : sorting) {
+      final var field = sort.getField();
+      final var order = sort.getOrder();
+
+      if ("processInstanceKey".equals(field)) {
+        builder.processInstanceKey();
+      } else if ("startDate".equals(field)) {
+        builder.startDate();
+      } else if ("endDate".equals(field)) {
+        builder.endDate();
+      } else {
+        validationErrors.add("Unknown sortBy field: " + field);
+        continue;
+      }
+
+      if ("asc".equalsIgnoreCase(order)) {
+        builder.asc();
+      } else if ("desc".equalsIgnoreCase(order)) {
+        builder.desc();
+      } else {
+        validationErrors.add("Unknown sortOrder: " + order);
+      }
+    }
+
+    if (!validationErrors.isEmpty()) {
+      return Either.left(validationErrors);
+    }
+
+    return Either.right(builder.build());
   }
 
-  public static Either<ProblemDetail, UserTaskSort> toUserTaskSearchQuerySort(
+  public static Either<List<String>, UserTaskSort> toUserTaskSearchQuerySort(
       final List<SearchQuerySortRequest> sorting) {
-
-    if (sorting != null && !sorting.isEmpty()) {
-      final var builder = SortOptionBuilders.userTask();
-      final List<ProblemDetail> validationErrors = new ArrayList<>();
-
-      for (final SearchQuerySortRequest sort : sorting) {
-        final var field = sort.getField();
-        final var order = sort.getOrder();
-
-        if ("creationTime".equals(field)) {
-          builder.creationDate();
-        } else if ("completionTime".equals(field)) {
-          builder.completionDate();
-        } else {
-          // Collect validation error for unknown sortBy field
-          validationErrors.add(
-              ProblemDetail.forStatusAndDetail(
-                  HttpStatus.BAD_REQUEST, "Unknown sortBy field: " + field));
-          continue;
-        }
-
-        if ("asc".equalsIgnoreCase(order)) {
-          builder.asc();
-        } else if ("desc".equalsIgnoreCase(order)) {
-          builder.desc();
-        } else {
-          // Collect validation error for unknown sortOrder
-          validationErrors.add(
-              ProblemDetail.forStatusAndDetail(
-                  HttpStatus.BAD_REQUEST, "Unknown sortOrder: " + order));
-        }
-      }
-
-      if (!validationErrors.isEmpty()) {
-        return Either.left(
-            validationErrors.get(0)); // Return the first encountered error for simplicity
-      }
-
-      return Either.right(builder.build());
+    if (sorting == null || sorting.isEmpty()) {
+      return Either.right(null);
     }
 
-    return Either.right(null);
+    final var builder = SortOptionBuilders.userTask();
+    final List<String> validationErrors = new ArrayList<>();
+
+    for (final SearchQuerySortRequest sort : sorting) {
+      final var field = sort.getField();
+      final var order = sort.getOrder();
+
+      if ("creationTime".equals(field)) {
+        builder.creationDate();
+      } else if ("completionTime".equals(field)) {
+        builder.completionDate();
+      } else {
+        validationErrors.add("Unknown sortBy field: " + field);
+        continue;
+      }
+
+      if ("asc".equalsIgnoreCase(order)) {
+        builder.asc();
+      } else if ("desc".equalsIgnoreCase(order)) {
+        builder.desc();
+      } else {
+        validationErrors.add("Unknown sortOrder: " + order);
+      }
+    }
+
+    if (!validationErrors.isEmpty()) {
+      return Either.left(validationErrors);
+    }
+
+    return Either.right(builder.build());
   }
 
-  public static UserTaskFilter toUserTaskFilter(final UserTaskFilterRequest filter) {
+  public static Either<List<String>, UserTaskFilter> toUserTaskFilter(
+      final UserTaskFilterRequest filter) {
     final var builder = FilterBuilders.userTask();
+    final List<String> validationErrors = new ArrayList<>();
 
     if (filter != null) {
       // key
@@ -253,43 +280,76 @@ public final class SearchQueryRequestMapper {
 
       // creationTime
       if (filter.getCreationTime() != null) {
-        builder.creationDate(toDateValueFilter(filter.getCreationTime()));
+        final var dateFilterResult = toDateValueFilter(filter.getCreationTime());
+        if (dateFilterResult.isLeft()) {
+          validationErrors.add(dateFilterResult.getLeft());
+        } else {
+          builder.creationDate(dateFilterResult.get());
+        }
       }
 
       // completionTime
       if (filter.getCompletionTime() != null) {
-        builder.completionDate(toDateValueFilter(filter.getCompletionTime()));
+        final var dateFilterResult = toDateValueFilter(filter.getCompletionTime());
+        if (dateFilterResult.isLeft()) {
+          validationErrors.add(dateFilterResult.getLeft());
+        } else {
+          builder.completionDate(dateFilterResult.get());
+        }
       }
 
       // dueDate
       if (filter.getDueDate() != null) {
-        builder.dueDate(toDateValueFilter(filter.getDueDate()));
+        final var dateFilterResult = toDateValueFilter(filter.getDueDate());
+        if (dateFilterResult.isLeft()) {
+          validationErrors.add(dateFilterResult.getLeft());
+        } else {
+          builder.dueDate(dateFilterResult.get());
+        }
       }
 
       // followUpDate
       if (filter.getFollowUpDate() != null) {
-        builder.followUpDate(toDateValueFilter(filter.getFollowUpDate()));
+        final var dateFilterResult = toDateValueFilter(filter.getFollowUpDate());
+        if (dateFilterResult.isLeft()) {
+          validationErrors.add(dateFilterResult.getLeft());
+        } else {
+          builder.followUpDate(dateFilterResult.get());
+        }
       }
     }
 
-    return builder.build();
+    if (!validationErrors.isEmpty()) {
+      return Either.left(validationErrors);
+    }
+
+    return Either.right(builder.build());
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
       final UserTaskSearchQueryRequest request) {
+    final List<String> validationErrors = new ArrayList<>();
+
     final var pageResult = toSearchQueryPage(request.getPage());
     if (pageResult.isLeft()) {
-      return Either.left(pageResult.getLeft());
+      validationErrors.addAll(pageResult.getLeft());
     }
-    final var page = pageResult.get();
-
     final var sortingResult = toUserTaskSearchQuerySort(request.getSort());
     if (sortingResult.isLeft()) {
-      return Either.left(sortingResult.getLeft());
+      validationErrors.addAll(sortingResult.getLeft());
     }
-    final var sorting = sortingResult.get();
+    final var userTaskFilterResult = toUserTaskFilter(request.getFilter());
+    if (userTaskFilterResult.isLeft()) {
+      validationErrors.addAll(userTaskFilterResult.getLeft());
+    }
 
-    final var userTaskFilter = toUserTaskFilter(request.getFilter());
+    if (!validationErrors.isEmpty()) {
+      return Either.left(createProblemDetail(validationErrors));
+    }
+
+    final var page = pageResult.get();
+    final var sorting = sortingResult.get();
+    final var userTaskFilter = userTaskFilterResult.get();
 
     return Either.right(
         SearchQueryBuilders.userTaskSearchQuery()
@@ -307,9 +367,18 @@ public final class SearchQueryRequestMapper {
     }
   }
 
-  private static DateValueFilter toDateValueFilter(final DateFilter dateFilter) {
-    return new DateValueFilter(
-        dateFilter.getFrom() != null ? OffsetDateTime.parse(dateFilter.getFrom()) : null,
-        dateFilter.getTo() != null ? OffsetDateTime.parse(dateFilter.getTo()) : null);
+  private static Either<String, DateValueFilter> toDateValueFilter(final DateFilter dateFilter) {
+    try {
+      return Either.right(new DateValueFilter(
+          dateFilter.getFrom() != null ? OffsetDateTime.parse(dateFilter.getFrom()) : null,
+          dateFilter.getTo() != null ? OffsetDateTime.parse(dateFilter.getTo()) : null));
+    } catch (final DateTimeParseException e) {
+      return Either.left("Invalid date format: " + e.getMessage());
+    }
+  }
+
+  private static ProblemDetail createProblemDetail(final List<String> validationErrors) {
+    return ProblemDetail.forStatusAndDetail(
+        HttpStatus.BAD_REQUEST, String.join(", ", validationErrors));
   }
 }
