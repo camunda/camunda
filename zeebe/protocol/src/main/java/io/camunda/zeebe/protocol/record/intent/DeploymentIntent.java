@@ -18,6 +18,8 @@ package io.camunda.zeebe.protocol.record.intent;
 public enum DeploymentIntent implements Intent {
   CREATE((short) 0),
   CREATED((short) 1),
+  REQUEST((short) 5),
+  REDEPLOY((short) 6),
 
   /**
    * Intent related to distribution are deprecated as of 8.3.0. A generalised way of distributing
@@ -53,6 +55,10 @@ public enum DeploymentIntent implements Intent {
         return DISTRIBUTED;
       case 4:
         return FULLY_DISTRIBUTED;
+      case 5:
+        return REQUEST;
+      case 6:
+        return REDEPLOY;
       default:
         return UNKNOWN;
     }

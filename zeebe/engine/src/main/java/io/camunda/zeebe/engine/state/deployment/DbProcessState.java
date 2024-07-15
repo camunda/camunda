@@ -39,6 +39,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -383,6 +384,11 @@ public final class DbProcessState implements MutableProcessState {
     processByTenantAndKeyCache.invalidateAll();
     processesByTenantAndProcessIdAndVersionCache.invalidateAll();
     versionManager.clear();
+  }
+
+  @Override
+  public void forEachDeployedDefinition(final Consumer<PersistedProcess> consumer) {
+    processColumnFamily.forEach((key, value) -> consumer.accept(value));
   }
 
   private DeployedProcess lookupProcessByIdAndPersistedVersion(

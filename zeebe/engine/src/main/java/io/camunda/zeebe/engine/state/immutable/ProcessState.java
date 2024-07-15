@@ -9,7 +9,9 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 public interface ProcessState {
@@ -58,4 +60,6 @@ public interface ProcessState {
 
   /** TODO: Remove the cache entirely from the immutable state */
   void clearCache();
+
+  void forEachDeployedDefinition(Consumer<PersistedProcess> consumer);
 }

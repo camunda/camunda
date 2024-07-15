@@ -151,6 +151,12 @@ public final class CommandDistributionBehavior {
         (partition) -> distributeToPartition(partition, distributionRecord, distributionKey));
   }
 
+  public <T extends UnifiedRecordValue> void distributeCommand(
+      final long distributionKey, final ValueType valueType, final Intent intent, final T value) {
+    distributeCommand(
+        distributionKey, valueType, intent, value, partitionProvider.partitionIds().toList());
+  }
+
   private <T extends UnifiedRecordValue> void distributeToPartition(
       final int partition,
       final CommandDistributionRecord distributionRecord,
