@@ -278,6 +278,15 @@ public class ZeebeClientConfigurationImpl
   }
 
   @Override
+  public int getMaxMetadataSize() {
+    return getOrDefault(
+        "MaxMetadataSize",
+        () -> camundaClientProperties.getZeebe().getMaxMessageSize(),
+        DEFAULT.getMaxMetadataSize(),
+        configCache);
+  }
+
+  @Override
   public ScheduledExecutorService jobWorkerExecutor() {
     return zeebeClientExecutorService.get();
   }

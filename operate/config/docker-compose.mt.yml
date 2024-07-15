@@ -2,7 +2,7 @@ version: "3.6"
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.1
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -101,7 +101,7 @@ services:
       start_period: 30s
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:8.5.4
+    image: camunda/zeebe:8.5.5
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}

@@ -230,7 +230,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @param processInstanceKey the key which refers to the process instance to migrate
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/14907")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/14907")
   MigrateProcessInstanceCommandStep1 newMigrateProcessInstanceCommand(long processInstanceKey);
 
   /**
@@ -489,7 +489,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @param userTaskKey the key of the user task
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   CompleteUserTaskCommandStep1 newUserTaskCompleteCommand(long userTaskKey);
 
   /**
@@ -515,7 +515,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @param userTaskKey the key of the user task
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   AssignUserTaskCommandStep1 newUserTaskAssignCommand(long userTaskKey);
 
   /**
@@ -541,7 +541,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @param userTaskKey the key of the user task
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   UpdateUserTaskCommandStep1 newUserTaskUpdateCommand(long userTaskKey);
 
   /**
@@ -566,7 +566,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @param userTaskKey the key of the user task
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   UnassignUserTaskCommandStep1 newUserTaskUnassignCommand(long userTaskKey);
 
   /**

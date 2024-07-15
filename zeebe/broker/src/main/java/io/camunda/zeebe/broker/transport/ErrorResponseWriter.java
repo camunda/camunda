@@ -134,10 +134,15 @@ public final class ErrorResponseWriter implements BufferWriter {
                           + " but the writer is closed. Most likely, this node is not the"
                           + " leader for this partition.")
                       .formatted(partitionId));
-      case FULL ->
+      case WRITE_LIMIT_EXHAUSTED ->
           resourceExhausted(
               String.format(
-                  "Failed to write client request to partition '%d', because the writer buffer is full.",
+                  "Failed to write client request to partition '%d', because the write limit is exhausted.",
+                  partitionId));
+      case REQUEST_LIMIT_EXHAUSTED ->
+          resourceExhausted(
+              String.format(
+                  "Failed to write client request to partition '%d', because the request limit is exhausted.",
                   partitionId));
       case INVALID_ARGUMENT -> raiseInternalError("due to invalid entry.", partitionId);
     };

@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,20 +42,10 @@ public class IncidentZeebeRecordProcessorIT extends OperateSearchAbstractIT {
   @Autowired private BeanFactory beanFactory;
   @MockBean private PartitionHolder partitionHolder;
   @Autowired private ImportPositionHolder importPositionHolder;
-  private boolean concurrencyModeBefore;
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
     when(partitionHolder.getPartitionIds()).thenReturn(List.of(1));
-    concurrencyModeBefore = importPositionHolder.getConcurrencyMode();
-    importPositionHolder.setConcurrencyMode(true);
-  }
-
-  @Override
-  @AfterAll
-  public void afterAllTeardown() {
-    importPositionHolder.setConcurrencyMode(concurrencyModeBefore);
-    super.afterAllTeardown();
   }
 
   @Test
@@ -176,7 +165,7 @@ public class IncidentZeebeRecordProcessorIT extends OperateSearchAbstractIT {
   private void importIncidentZeebeRecord(final Record<IncidentRecordValue> zeebeRecord)
       throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
-    incidentZeebeRecordProcessor.processIncidentRecord(List.of(zeebeRecord), batchRequest);
+    incidentZeebeRecordProcessor.processIncidentRecord(List.of(zeebeRecord), batchRequest, true);
     batchRequest.execute();
     searchContainerManager.refreshIndices(incidentTemplate.getFullQualifiedName());
   }

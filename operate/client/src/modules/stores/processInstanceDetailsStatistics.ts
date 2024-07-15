@@ -26,7 +26,10 @@ import {modificationsStore} from './modifications';
 import {isProcessEndEvent} from 'modules/bpmn-js/utils/isProcessEndEvent';
 import isEqual from 'lodash/isEqual';
 
-type Statistic = ProcessInstanceDetailStatisticsDto & {filteredActive: number};
+type Statistic = ProcessInstanceDetailStatisticsDto & {
+  filteredActive: number;
+  completedEndEvents: number;
+};
 
 type State = {
   statistics: ProcessInstanceDetailStatisticsDto[];
@@ -152,7 +155,13 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
 
   get flowNodeStatistics() {
     return Object.keys(this.statisticsByFlowNode).flatMap((flowNodeId) => {
-      const types = ['active', 'incidents', 'canceled', 'completed'] as const;
+      const types = [
+        'active',
+        'incidents',
+        'canceled',
+        'completed',
+        'completedEndEvents',
+      ] as const;
 
       const statistic = this.statisticsByFlowNode[flowNodeId]!;
 
@@ -160,7 +169,7 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
         {
           flowNodeId: string;
           count: number;
-          flowNodeState: FlowNodeState;
+          flowNodeState: FlowNodeState | 'completedEndEvents';
         }[]
       >((states, flowNodeState) => {
         const count =
@@ -171,7 +180,6 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
         if (count === 0) {
           return states;
         }
-
         return [
           ...states,
           {
@@ -200,13 +208,16 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
         filteredActive:
           businessObject?.$type !== 'bpmn:SubProcess' ? active : 0,
         incidents,
-        completed:
-          modificationsStore.isModificationModeEnabled ||
-          !isProcessEndEvent(businessObject)
-            ? 0
-            : completed,
-
-        canceled: modificationsStore.isModificationModeEnabled ? 0 : canceled,
+        completed: !isProcessEndEvent(businessObject) ? completed : 0,
+        completedEndEvents: isProcessEndEvent(businessObject) ? completed : 0,
+        canceled,
+        ...(modificationsStore.isModificationModeEnabled
+          ? {
+              completed: 0,
+              completedEndEvents: 0,
+              canceled: 0,
+            }
+          : {}),
       };
 
       return statistics;

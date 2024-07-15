@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -228,6 +229,8 @@ public final class OAuthCredentialsCacheTest {
     assertThat(copy.size()).isEqualTo(2);
   }
 
+  @Ignore(
+      "Can be enabled when not flaky anymore, see https://github.com/camunda/camunda/issues/20136")
   @Test
   public void shouldBeThreadSafe() throws InterruptedException {
     // given

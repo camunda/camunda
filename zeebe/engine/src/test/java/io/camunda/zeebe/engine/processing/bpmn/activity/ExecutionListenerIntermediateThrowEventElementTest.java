@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.oneOf;
 import static org.junit.Assume.assumeThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -152,6 +153,41 @@ public class ExecutionListenerIntermediateThrowEventElementTest {
               tuple(BpmnElementType.MANUAL_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
               tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
               tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+    }
+
+    @Test
+    public void startExecutionListenersShouldAccessInputVariablesOfIntermediateThrowEvent() {
+      // Invoke test only for `signal` and `message job` Intermediate Throw events
+      // as only they are supporting input mappings
+      assumeThat(scenario.name, is(oneOf("signal", "message_job")));
+
+      // given
+      final var modelInstance =
+          Bpmn.createExecutableProcess(PROCESS_ID)
+              .startEvent()
+              .intermediateThrowEvent(
+                  scenario.name,
+                  c ->
+                      scenario
+                          .builderFunction
+                          .apply(c)
+                          .zeebeInput("=contains(\"ABC\",\"B\")", "boolInputVar"))
+              .zeebeStartExecutionListener(START_EL_TYPE)
+              .endEvent()
+              .done();
+
+      // when: deploy process
+      final long processInstanceKey = createProcessInstance(ENGINE, modelInstance);
+
+      // then: `boolInputVar` variable accessible in start EL
+      final Optional<JobRecordValue> startElJobActivated =
+          ENGINE.jobs().withType(START_EL_TYPE).activate().getValue().getJobs().stream()
+              .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
+              .findFirst();
+
+      assertThat(startElJobActivated)
+          .hasValueSatisfying(
+              job -> assertThat(job.getVariables()).contains(entry("boolInputVar", true)));
     }
 
     @Test

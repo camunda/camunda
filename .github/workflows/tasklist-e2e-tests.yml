@@ -3,27 +3,27 @@ name: Tasklist E2E Tests
 on:
   push:
     branches:
-      - 'main'
-      - 'stable/**'
+      - "main"
+      - "stable/**"
     paths:
-      - '.github/actions/**'
-      - '.github/workflows/tasklist-*'
-      - 'bom/*'
-      - 'parent/*'
-      - 'pom.xml'
-      - 'tasklist/**'
-      - 'tasklist.Dockerfile'
-      - 'webapps-common/**'
+      - ".github/actions/**"
+      - ".github/workflows/tasklist-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "tasklist/**"
+      - "tasklist.Dockerfile"
+      - "webapps-common/**"
   pull_request:
     paths:
-      - '.github/actions/**'
-      - '.github/workflows/tasklist-*'
-      - 'bom/*'
-      - 'parent/*'
-      - 'pom.xml'
-      - 'tasklist/**'
-      - 'tasklist.Dockerfile'
-      - 'webapps-common/**'
+      - ".github/actions/**"
+      - ".github/workflows/tasklist-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "tasklist/**"
+      - "tasklist.Dockerfile"
+      - "webapps-common/**"
 
 # This will limit the workflow to 1 concurrent run per ref (branch / PR).
 # If a new commits occurs, the current run will be canceled to save costs.
@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.14.1
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
@@ -48,7 +48,7 @@ jobs:
           - 9200:9200
           - 9300:9300
       zeebe:
-        image: camunda/zeebe:8.5.4
+        image: camunda/zeebe:8.6.0-alpha3
         env:
           JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m"
           ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME: io.camunda.zeebe.exporter.ElasticsearchExporter
@@ -57,6 +57,7 @@ jobs:
           ZEEBE_BROKER_BACKPRESSURE_ENABLED: false
         ports:
           - 26500:26500
+          - 8089:8080
     steps:
       - name: Check out repository code
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4

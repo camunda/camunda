@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Marks a class as a process test and adds the JUnit extension {@link CamundaProcessTestExtension}.
+ * Use {@link CamundaAssert} to verify the expected result of a test.
  *
  * <p>Example usage:
  *
@@ -37,19 +38,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
  *   &#064;Test
  *   void shouldWork() {
  *     // given
- *     final long processInstanceKey =
+ *     final ProcessInstanceEvent processInstance =
  *         zeebeClient
  *             .newCreateInstanceCommand()
  *             .bpmnProcessId("process")
  *             .latestVersion()
  *             .send()
- *             .join()
- *             .getProcessInstanceKey();
+ *             .join();
  *
  *     // when
  *
  *     // then
- *
+ *     CamundaAssert.assertThat(processInstance)
+ *         .isCompleted()
+ *         .hasCompletedElements("A", "B");
  *   }
  * }
  * </pre>
