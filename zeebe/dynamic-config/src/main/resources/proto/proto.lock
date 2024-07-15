@@ -125,6 +125,21 @@
             ]
           },
           {
+            "name": "PartitionScaleRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "dryRun",
+                "type": "bool"
+              },
+              {
+                "id": 2,
+                "name": "newPartitionCount",
+                "type": "uint32"
+              }
+            ]
+          },
+          {
             "name": "ReassignAllPartitionsRequest",
             "fields": [
               {
@@ -296,6 +311,10 @@
               {
                 "name": "LEFT",
                 "integer": 4
+              },
+              {
+                "name": "BOOTSTRAPPING",
+                "integer": 5
               }
             ]
           },
@@ -603,6 +622,11 @@
                 "id": 10,
                 "name": "partitionEnableExporter",
                 "type": "PartitionEnableExporterOperation"
+              },
+              {
+                "id": 11,
+                "name": "partitionBootstrap",
+                "type": "PartitionBootstrapOperation"
               }
             ]
           },
@@ -623,6 +647,21 @@
           },
           {
             "name": "PartitionJoinOperation",
+            "fields": [
+              {
+                "id": 1,
+                "name": "partitionId",
+                "type": "int32"
+              },
+              {
+                "id": 2,
+                "name": "priority",
+                "type": "int32"
+              }
+            ]
+          },
+          {
+            "name": "PartitionBootstrapOperation",
             "fields": [
               {
                 "id": 1,
