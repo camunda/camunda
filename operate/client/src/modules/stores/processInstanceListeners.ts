@@ -33,7 +33,7 @@ const DEFAULT_STATE: State = {
   status: 'initial',
 };
 
-const DEFAULT_PAYLOAD: ListenerPayload = {flowNodeId: '', pageSize: 20};
+const DEFAULT_PAYLOAD: ListenerPayload = {flowNodeId: '', pageSize: 6};
 
 class ProcessInstanceListeners {
   state: State = {...DEFAULT_STATE};
@@ -66,6 +66,14 @@ class ProcessInstanceListeners {
   ) => {
     if (fetchType === 'initial') {
       this.startFetching();
+    }
+
+    if (!payload.flowNodeId) {
+      payload.flowNodeId = DEFAULT_PAYLOAD.flowNodeId;
+    }
+
+    if (!payload.pageSize) {
+      payload.pageSize = DEFAULT_PAYLOAD.pageSize;
     }
 
     const response = await fetchProcessInstanceListeners({

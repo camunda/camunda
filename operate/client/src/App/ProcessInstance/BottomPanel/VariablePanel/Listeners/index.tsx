@@ -20,12 +20,12 @@ const Listeners: React.FC<Props> = observer(({listeners}) => {
       <StructuredList
         dataTestId="listeners-list"
         headerColumns={[
-          {cellContent: 'Listener type', width: '20%'},
+          {cellContent: 'Listener type', width: '15%'},
           {cellContent: 'Listener key', width: '20%'},
           {cellContent: 'State', width: '15%'},
           {cellContent: 'Job type', width: '15%'},
           {cellContent: 'Event', width: '15%'},
-          {cellContent: 'Time', width: '15%'},
+          {cellContent: 'Time', width: '20%'},
         ]}
         headerSize="sm"
         verticalCellPadding="var(--cds-spacing-02)"
