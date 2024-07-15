@@ -126,6 +126,11 @@ public interface ZeebeClientConfiguration {
   int getMaxMessageSize();
 
   /**
+   * @see ZeebeClientBuilder#maxMetadataSize(int)
+   */
+  int getMaxMetadataSize();
+
+  /**
    * @see ZeebeClientBuilder#jobWorkerExecutor(ScheduledExecutorService)
    */
   ScheduledExecutorService jobWorkerExecutor();
@@ -148,6 +153,6 @@ public interface ZeebeClientConfiguration {
   /**
    * @see ZeebeClientBuilder#preferRestOverGrpc(boolean)
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   boolean preferRestOverGrpc();
 }

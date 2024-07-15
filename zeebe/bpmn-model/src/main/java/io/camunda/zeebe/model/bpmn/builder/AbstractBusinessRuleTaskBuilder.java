@@ -18,6 +18,7 @@ package io.camunda.zeebe.model.bpmn.builder;
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 
 /**
@@ -78,6 +79,19 @@ public abstract class AbstractBusinessRuleTaskBuilder<B extends AbstractBusiness
     final ZeebeCalledDecision calledDecision =
         getCreateSingleExtensionElement(ZeebeCalledDecision.class);
     calledDecision.setResultVariable(resultVariable);
+    return myself;
+  }
+
+  /**
+   * Sets the binding type for the decision that is called.
+   *
+   * @param bindingType the binding type for the decision
+   * @return the builder object
+   */
+  public B zeebeBindingType(final ZeebeBindingType bindingType) {
+    final ZeebeCalledDecision calledDecision =
+        getCreateSingleExtensionElement(ZeebeCalledDecision.class);
+    calledDecision.setBindingType(bindingType);
     return myself;
   }
 }

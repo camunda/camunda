@@ -11,6 +11,7 @@ import com.netflix.concurrency.limits.Limit;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -47,18 +48,16 @@ public final class LogStreamImpl extends Actor
   private Sequencer sequencer;
   private final String actorName;
   private HealthReport healthReport = HealthReport.healthy(this);
-  private final Limit appendLimit;
-  private final Limit requestLimit;
   private final LogStreamMetrics logStreamMetrics;
-  private FlowControl flowControl;
+  private final FlowControl flowControl;
 
   LogStreamImpl(
       final String logName,
       final int partitionId,
       final int maxFragmentSize,
       final LogStorage logStorage,
-      final Limit appendLimit,
-      final Limit requestLimit) {
+      final Limit requestLimit,
+      final RateLimit writeRateLimit) {
     this.logName = logName;
 
     this.partitionId = partitionId;
@@ -66,11 +65,10 @@ public final class LogStreamImpl extends Actor
 
     this.maxFragmentSize = maxFragmentSize;
     this.logStorage = logStorage;
-    this.appendLimit = appendLimit;
-    this.requestLimit = requestLimit;
     logStreamMetrics = new LogStreamMetrics(partitionId);
     closeFuture = new CompletableActorFuture<>();
     readers = new ArrayList<>();
+    flowControl = new FlowControl(logStreamMetrics, requestLimit, writeRateLimit);
   }
 
   @Override
@@ -163,7 +161,6 @@ public final class LogStreamImpl extends Actor
         () -> {
           try {
             if (sequencer == null) {
-              flowControl = new FlowControl(logStreamMetrics, appendLimit, requestLimit);
               sequencer =
                   new Sequencer(
                       logStorage,

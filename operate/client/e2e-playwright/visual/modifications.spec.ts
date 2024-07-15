@@ -12,7 +12,7 @@ import {
   instanceWithIncident,
   mockResponses,
   runningInstance,
-} from '../mocks/processInstance.mocks';
+} from '../mocks/processInstance';
 
 test.describe('modifications', () => {
   for (const theme of ['light', 'dark']) {

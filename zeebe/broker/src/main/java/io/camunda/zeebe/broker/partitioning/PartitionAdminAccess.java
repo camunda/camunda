@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControlLimits;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Optional;
 
@@ -26,4 +28,8 @@ public interface PartitionAdminAccess {
   ActorFuture<Void> resumeProcessing();
 
   ActorFuture<Void> banInstance(final long processInstanceKey);
+
+  ActorFuture<Void> configureFlowControl(final FlowControlCfg flowControlCfg);
+
+  ActorFuture<FlowControlLimits> getFlowControlConfiguration();
 }

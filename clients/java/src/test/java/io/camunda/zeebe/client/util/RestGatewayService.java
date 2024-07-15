@@ -15,8 +15,6 @@
  */
 package io.camunda.zeebe.client.util;
 
-import static io.camunda.zeebe.client.impl.http.HttpClientFactory.REST_API_PATH;
-
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
@@ -30,12 +28,6 @@ import java.util.function.Supplier;
 import org.assertj.core.api.Assertions;
 
 public class RestGatewayService {
-
-  /** The topology request URL */
-  public static final String URL_TOPOLOGY = REST_API_PATH + "/topology";
-
-  /** The job activation request URL */
-  public static final String URL_JOB_ACTIVATION = REST_API_PATH + "/jobs/activation";
 
   private static final ZeebeObjectMapper JSON_MAPPER = new ZeebeObjectMapper();
 
@@ -52,7 +44,7 @@ public class RestGatewayService {
   }
 
   /**
-   * Register the given response for POST requests to {@value #URL_JOB_ACTIVATION}
+   * Register the given response for job activation requests.
    *
    * @param jobActivationResponse the response to provide upon a job activation request
    */
@@ -60,12 +52,12 @@ public class RestGatewayService {
     mockInfo
         .getWireMock()
         .register(
-            WireMock.post(URL_JOB_ACTIVATION)
+            WireMock.post(RestGatewayPaths.getJobActivationUrl())
                 .willReturn(WireMock.okJson(JSON_MAPPER.toJson(jobActivationResponse))));
   }
 
   /**
-   * Register the given response for GET requests to {@value #URL_TOPOLOGY}
+   * Register the given response for topology requests.
    *
    * @param topologyResponse the response to provide upon a topology request
    */
@@ -73,7 +65,7 @@ public class RestGatewayService {
     mockInfo
         .getWireMock()
         .register(
-            WireMock.get(URL_TOPOLOGY)
+            WireMock.get(RestGatewayPaths.getTopologyUrl())
                 .willReturn(WireMock.okJson(JSON_MAPPER.toJson(topologyResponse))));
   }
 
@@ -89,8 +81,23 @@ public class RestGatewayService {
   }
 
   /**
-   * Register the given error response for a URL. The client will receive a BAD_REQUEST (HTTP status
-   * 400) response with the given problem detail upon a request to the URL with any HTTP method.
+   * Fetch the last request that was served. This is a generic {@link LoggedRequest}, provided by
+   * the test framework.
+   *
+   * @return the last logged request
+   */
+  public static LoggedRequest getLastRequest() {
+    final List<ServeEvent> serveEvents = WireMock.getAllServeEvents();
+    if (serveEvents.isEmpty()) {
+      Assertions.fail("No request was found");
+    }
+    return serveEvents.get(serveEvents.size() - 1).getRequest();
+  }
+
+  /**
+   * Register the given error response for a URL. The client will receive a response with the status
+   * provided by the given problem detail upon a request to the URL with any HTTP method. If the
+   * problem detail does not contain a status, BAD_REQUEST (HTTP status 400) is used.
    *
    * @param url the URL to register the error response for
    * @param problemDetailSupplier the supplier for the error details the client will receive upon a
@@ -98,21 +105,15 @@ public class RestGatewayService {
    */
   public void errorOnRequest(
       final String url, final Supplier<ProblemDetail> problemDetailSupplier) {
+    final ProblemDetail problemDetail = problemDetailSupplier.get();
     mockInfo
         .getWireMock()
         .register(
             WireMock.any(WireMock.urlEqualTo(url))
                 .willReturn(
-                    WireMock.badRequest()
-                        .withBody(JSON_MAPPER.toJson(problemDetailSupplier.get()))
+                    WireMock.jsonResponse(
+                            JSON_MAPPER.toJson(problemDetail),
+                            problemDetail.getStatus() == null ? 400 : problemDetail.getStatus())
                         .withHeader("Content-Type", "application/problem+json")));
-  }
-
-  private static LoggedRequest getLastRequest() {
-    final List<ServeEvent> serveEvents = WireMock.getAllServeEvents();
-    if (serveEvents.isEmpty()) {
-      Assertions.fail("No request was found");
-    }
-    return serveEvents.get(serveEvents.size() - 1).getRequest();
   }
 }

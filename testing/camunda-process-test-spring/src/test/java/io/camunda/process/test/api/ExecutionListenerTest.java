@@ -21,6 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
+import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.containers.ZeebeContainer;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
@@ -56,6 +57,7 @@ public class ExecutionListenerTest {
 
   @Mock private CamundaContainerRuntime camundaContainerRuntime;
   @Mock private ZeebeContainer zeebeContainer;
+  @Mock private OperateContainer operateContainer;
 
   @Mock private ZeebeClientProxy zeebeClientProxy;
   @Mock private CamundaProcessTestContextProxy camundaProcessTestContextProxy;
@@ -78,6 +80,10 @@ public class ExecutionListenerTest {
     when(camundaContainerRuntime.getZeebeContainer()).thenReturn(zeebeContainer);
     when(zeebeContainer.getGrpcApiAddress()).thenReturn(GRPC_API_ADDRESS);
     when(zeebeContainer.getRestApiAddress()).thenReturn(REST_API_ADDRESS);
+
+    when(camundaContainerRuntime.getOperateContainer()).thenReturn(operateContainer);
+    when(operateContainer.getHost()).thenReturn("my-host");
+    when(operateContainer.getRestApiPort()).thenReturn(100);
 
     when(testContext.getApplicationContext()).thenReturn(applicationContext);
     when(applicationContext.getBean(ZeebeClientProxy.class)).thenReturn(zeebeClientProxy);

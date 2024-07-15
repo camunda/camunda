@@ -55,6 +55,7 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
       handleFetchSuccess: action,
       areDiagramDefinitionsAvailable: computed,
       hasCalledProcessInstances: computed,
+      compensationAssociations: computed,
       flowNodes: computed,
       businessObjects: computed,
       processBusinessObject: computed,
@@ -257,6 +258,19 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
   get hasCalledProcessInstances() {
     return Object.values(this.businessObjects).some(
       ({$type}) => $type === 'bpmn:CallActivity',
+    );
+  }
+
+  get compensationAssociations() {
+    if (this.state.diagramModel === null) {
+      return [];
+    }
+
+    return Object.values(this.state.diagramModel.elementsById).filter(
+      (element) => {
+        const isAssociation = element.$type === 'bpmn:Association';
+        return isAssociation && element.targetRef?.isForCompensation;
+      },
     );
   }
 

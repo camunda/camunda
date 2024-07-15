@@ -34,89 +34,116 @@ describe('stores/processStatistics.base', () => {
 
     processStatisticsStore.fetchProcessStatistics();
 
+    // wait for statistics to be fetched
     await waitFor(() =>
-      expect(processStatisticsStore.flowNodeStates).toEqual([
-        {
-          count: 1,
-          flowNodeId: 'userTask',
-          flowNodeState: 'active',
-        },
-        {
-          count: 2,
-          flowNodeId: 'userTask',
-          flowNodeState: 'canceled',
-        },
-        {
-          count: 3,
-          flowNodeId: 'EndEvent_0crvjrk',
-          flowNodeState: 'incidents',
-        },
-        {
-          count: 4,
-          flowNodeId: 'EndEvent_0crvjrk',
-          flowNodeState: 'canceled',
-        },
-      ]),
+      expect(processStatisticsStore.statistics).not.toEqual([]),
     );
+
+    expect(processStatisticsStore.flowNodeStates).toEqual([
+      {
+        count: 1,
+        flowNodeId: 'userTask',
+        flowNodeState: 'active',
+      },
+      {
+        count: 2,
+        flowNodeId: 'userTask',
+        flowNodeState: 'canceled',
+      },
+      {
+        count: 3,
+        flowNodeId: 'EndEvent_0crvjrk',
+        flowNodeState: 'incidents',
+      },
+      {
+        count: 4,
+        flowNodeId: 'EndEvent_0crvjrk',
+        flowNodeState: 'canceled',
+      },
+    ]);
   });
 
   it('should get overlaysData', async () => {
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
+    mockFetchProcessInstancesStatistics().withSuccess([
+      ...mockProcessStatistics,
+      {
+        activityId: 'EndEvent_2',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 5,
+      },
+    ]);
 
     processStatisticsStore.fetchProcessStatistics();
 
+    // wait for statistics to be fetched
     await waitFor(() =>
-      expect(processStatisticsStore.overlaysData).toEqual([
-        {
-          flowNodeId: 'userTask',
-          payload: {
-            count: 1,
-            flowNodeState: 'active',
-          },
-          position: {
-            bottom: 9,
-            left: 0,
-          },
-          type: 'statistics-active',
-        },
-        {
-          flowNodeId: 'userTask',
-          payload: {
-            count: 2,
-            flowNodeState: 'canceled',
-          },
-          position: {
-            left: 0,
-            top: -16,
-          },
-          type: 'statistics-canceled',
-        },
-        {
-          flowNodeId: 'EndEvent_0crvjrk',
-          payload: {
-            count: 3,
-            flowNodeState: 'incidents',
-          },
-          position: {
-            bottom: 9,
-            right: 0,
-          },
-          type: 'statistics-incidents',
-        },
-        {
-          flowNodeId: 'EndEvent_0crvjrk',
-          payload: {
-            count: 4,
-            flowNodeState: 'canceled',
-          },
-          position: {
-            left: 0,
-            top: -16,
-          },
-          type: 'statistics-canceled',
-        },
-      ]),
+      expect(processStatisticsStore.overlaysData).not.toEqual([]),
     );
+
+    expect(processStatisticsStore.overlaysData).toEqual([
+      {
+        flowNodeId: 'userTask',
+        payload: {
+          count: 1,
+          flowNodeState: 'active',
+        },
+        position: {
+          bottom: 9,
+          left: 0,
+        },
+        type: 'statistics-active',
+      },
+      {
+        flowNodeId: 'userTask',
+        payload: {
+          count: 2,
+          flowNodeState: 'canceled',
+        },
+        position: {
+          left: 0,
+          top: -16,
+        },
+        type: 'statistics-canceled',
+      },
+      {
+        flowNodeId: 'EndEvent_0crvjrk',
+        payload: {
+          count: 3,
+          flowNodeState: 'incidents',
+        },
+        position: {
+          bottom: 9,
+          right: 0,
+        },
+        type: 'statistics-incidents',
+      },
+      {
+        flowNodeId: 'EndEvent_0crvjrk',
+        payload: {
+          count: 4,
+          flowNodeState: 'canceled',
+        },
+        position: {
+          left: 0,
+          top: -16,
+        },
+        type: 'statistics-canceled',
+      },
+      {
+        flowNodeId: 'EndEvent_2',
+        payload: {
+          count: 5,
+          flowNodeState: 'completedEndEvents',
+        },
+        position: {
+          bottom: 1,
+          left: 17,
+        },
+        type: 'statistics-completedEndEvents',
+      },
+    ]);
   });
 
   it('should retry fetch on network reconnection', async () => {

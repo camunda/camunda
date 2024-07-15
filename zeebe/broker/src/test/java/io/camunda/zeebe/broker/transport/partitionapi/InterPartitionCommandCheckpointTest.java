@@ -157,7 +157,7 @@ final class InterPartitionCommandCheckpointTest {
   void shouldNotWriteCommandIfCheckpointCreateFailed() {
     // given
     when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
-        .thenReturn(Either.left(WriteFailure.FULL), Either.right(1L));
+        .thenReturn(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED), Either.right(1L));
     receiver.setCheckpointId(5);
     sender.setCheckpointId(17);
 

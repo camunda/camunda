@@ -183,6 +183,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
     channelBuilder.keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS);
     channelBuilder.userAgent("camunda-client-java/" + VersionUtil.getVersion());
     channelBuilder.maxInboundMessageSize(config.getMaxMessageSize());
+    channelBuilder.maxInboundMetadataSize(config.getMaxMetadataSize());
 
     if (config.useDefaultRetryPolicy()) {
       final Map<String, Object> serviceConfig = defaultServiceConfig();
@@ -470,6 +471,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new UnassignUserTaskCommandImpl(httpClient, userTaskKey);
   }
 
+  @Override
+  public ProcessInstanceQuery newProcessInstanceQuery() {
+    return new ProcessInstanceQueryImpl(httpClient, jsonMapper);
+  }
+
   private JobClient newJobClient() {
     return new JobClientImpl(
         asyncStub, httpClient, config, jsonMapper, credentialsProvider::shouldRetryRequest);
@@ -514,10 +520,5 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public StreamJobsCommandStep1 newStreamJobsCommand() {
     return new StreamJobsCommandImpl(
         asyncStub, jsonMapper, credentialsProvider::shouldRetryRequest, config);
-  }
-
-  @Override
-  public ProcessInstanceQuery newProcessInstanceQuery() {
-    return new ProcessInstanceQueryImpl(httpClient, jsonMapper);
   }
 }

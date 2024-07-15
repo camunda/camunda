@@ -9,16 +9,20 @@ package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
+import io.camunda.identity.automation.usermanagement.CamundaGroup;
+import io.camunda.identity.automation.usermanagement.CamundaUserWithPassword;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupRequest;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
+import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequestChangeset;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.util.Either;
 import java.time.ZonedDateTime;
@@ -138,7 +142,7 @@ public class RequestMapper {
       violations.add(ERROR_MESSAGE_EMPTY_UPDATE_CHANGESET);
     }
     if (updateRequest != null && !isEmpty(updateRequest.getChangeset())) {
-      final UserTaskUpdateRequestChangeset changeset = updateRequest.getChangeset();
+      final Changeset changeset = updateRequest.getChangeset();
       validateDate(changeset.getDueDate(), "due date", violations);
       validateDate(changeset.getFollowUpDate(), "follow-up date", violations);
     }
@@ -189,7 +193,7 @@ public class RequestMapper {
     }
   }
 
-  private static boolean isEmpty(final UserTaskUpdateRequestChangeset changeset) {
+  private static boolean isEmpty(final Changeset changeset) {
     return changeset == null
         || (changeset.getFollowUpDate() == null
             && changeset.getDueDate() == null
@@ -231,7 +235,7 @@ public class RequestMapper {
     if (updateRequest == null || updateRequest.getChangeset() == null) {
       return record;
     }
-    final UserTaskUpdateRequestChangeset changeset = updateRequest.getChangeset();
+    final Changeset changeset = updateRequest.getChangeset();
     if (changeset.getCandidateGroups() != null) {
       record.setCandidateGroupsList(changeset.getCandidateGroups()).setCandidateGroupsChanged();
     }
@@ -245,6 +249,24 @@ public class RequestMapper {
       record.setFollowUpDate(changeset.getFollowUpDate()).setFollowUpDateChanged();
     }
     return record;
+  }
+
+  public static CamundaUserWithPassword toUserWithPassword(
+      final CamundaUserWithPasswordRequest dto) {
+    final CamundaUserWithPassword camundaUserWithPassword = new CamundaUserWithPassword();
+
+    camundaUserWithPassword.setId(dto.getId());
+    camundaUserWithPassword.setUsername(dto.getUsername());
+    camundaUserWithPassword.setPassword(dto.getPassword());
+    camundaUserWithPassword.setName(dto.getName());
+    camundaUserWithPassword.setEmail(dto.getEmail());
+    camundaUserWithPassword.setEnabled(dto.getEnabled());
+
+    return camundaUserWithPassword;
+  }
+
+  public static CamundaGroup toGroup(final CamundaGroupRequest groupRequest) {
+    return new CamundaGroup(groupRequest.getId(), groupRequest.getName());
   }
 
   private static Map<String, Object> getMapOrEmpty(

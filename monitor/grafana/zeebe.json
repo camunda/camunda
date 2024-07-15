@@ -102,6 +102,17 @@
         "iconColor": "light-blue",
         "name": "Scaling",
         "titleFormat": "Scaling"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "enable": true,
+        "expr": "zeebe_flow_control_write_rate_maximum{namespace=~\"$namespace\", pod=~\"$pod\"} > zeebe_flow_control_write_rate_limit{namespace=~\"$namespace\", pod=~\"$pod\"}",
+        "iconColor": "orange",
+        "name": "Throttling",
+        "titleFormat": "Throttled write rate"
       }
     ]
   },
@@ -21797,6 +21808,6 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "zeebe-dashboard",
-  "version": 12,
+  "version": 13,
   "weekStart": ""
 }

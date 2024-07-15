@@ -7,6 +7,10 @@
  */
 package io.camunda.identity.automation.permissions;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import java.util.Arrays;
+import java.util.stream.Stream;
+
 public enum PermissionEnum {
   CREATE_ALL("*:create"),
   READ_ALL("*:read"),
@@ -21,5 +25,18 @@ public enum PermissionEnum {
 
   public String getValue() {
     return value;
+  }
+
+  @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
+  public static PermissionEnum fromString(final String value) {
+    return Stream.of(PermissionEnum.values())
+        .filter(entityType -> entityType.name().equals(value.toUpperCase()))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    """
+                    Invalid Enum value "%s" for Permission, expected one of %s"""
+                        .formatted(value, Arrays.toString(PermissionEnum.values()))));
   }
 }

@@ -17,34 +17,34 @@
   "dependencies": {
     "@camunda/camunda-composite-components": "0.8.0",
     "@carbon/react": "1.59.0",
-    "i18next": "23.11.5",
+    "i18next": "23.12.1",
     "react": "18.3.1",
     "react-debounced": "1.1.2",
     "react-dom": "18.3.1",
     "react-i18next": "14.1.2",
-    "react-router": "6.24.0",
-    "react-router-dom": "6.24.0",
+    "react-router": "6.24.1",
+    "react-router-dom": "6.24.1",
     "react-transition-group": "4.4.5",
     "styled-components": "6.1.11"
   },
   "devDependencies": {
     "@types/event-source-polyfill": "1.0.5",
-    "@types/node": "20.14.9",
+    "@types/node": "20.14.10",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "@types/react-transition-group": "4.4.10",
-    "@typescript-eslint/eslint-plugin": "7.15.0",
-    "@typescript-eslint/parser": "7.15.0",
+    "@typescript-eslint/eslint-plugin": "7.16.0",
+    "@typescript-eslint/parser": "7.16.0",
     "@vitejs/plugin-react": "4.3.1",
     "eslint": "8.57.0",
     "eslint-plugin-react-hooks": "4.6.2",
-    "eslint-plugin-react-refresh": "0.4.7",
+    "eslint-plugin-react-refresh": "0.4.8",
     "event-source-polyfill": "1.0.31",
     "license-checker": "25.0.1",
     "prettier": "3.3.2",
-    "sass": "1.77.6",
+    "sass": "1.77.8",
     "typescript": "5.5.3",
-    "vite": "5.3.2"
+    "vite": "5.3.3"
   },
   "packageManager": "yarn@4.3.1"
 }

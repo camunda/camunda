@@ -31,7 +31,7 @@ import io.camunda.zeebe.client.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.client.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.util.ClientRestTest;
-import io.camunda.zeebe.client.util.RestGatewayService;
+import io.camunda.zeebe.client.util.RestGatewayPaths;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -214,7 +214,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
   void shouldRaiseExceptionOnError() {
     // given
     gatewayService.errorOnRequest(
-        RestGatewayService.URL_JOB_ACTIVATION,
+        RestGatewayPaths.getJobActivationUrl(),
         () -> new ProblemDetail().title("Invalid request").status(400));
 
     // when
@@ -317,7 +317,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     assertThat(request.getTenantIds()).containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 
-  // Regression: https://github.com/camunda/zeebe/issues/17513
+  // Regression: https://github.com/camunda/camunda/issues/17513
   @Test
   void shouldNotAccumulateTenantsOnSuccessiveOpen() {
     // given
