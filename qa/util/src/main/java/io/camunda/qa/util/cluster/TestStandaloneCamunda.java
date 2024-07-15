@@ -16,7 +16,6 @@ import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
-import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
@@ -69,11 +68,11 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   public TestStandaloneCamunda() {
     super(
         CommonsModuleConfiguration.class,
+        // test overrides - to control data clean up; (and some components are not installed on)
         OperateModuleConfiguration.class,
         TasklistModuleConfiguration.class,
         WebappsModuleConfiguration.class,
         BrokerModuleConfiguration.class,
-        GatewayModuleConfiguration.class,
         DefaultObjectMapperConfiguration.class,
         TestOperateElasticsearchSchemaManager.class,
         TestTasklistElasticsearchSchemaManager.class,
@@ -236,6 +235,13 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     return this;
   }
 
+  /**
+   * Sets the broker's working directory, aka its data directory. If a path is given, the broker
+   * will not delete it on shutdown.
+   *
+   * @param directory path to the broker's root data directory
+   * @return itself for chaining
+   */
   public TestStandaloneCamunda withWorkingDirectory(final Path directory) {
     return withBean(
         "workingDirectory", new WorkingDirectory(directory, false), WorkingDirectory.class);
