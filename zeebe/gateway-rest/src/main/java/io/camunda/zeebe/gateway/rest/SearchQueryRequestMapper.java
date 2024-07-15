@@ -37,7 +37,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
 public final class SearchQueryRequestMapper {
-
   private SearchQueryRequestMapper() {}
 
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQuery(
@@ -108,16 +107,18 @@ public final class SearchQueryRequestMapper {
     }
 
     final List<String> validationErrors = new ArrayList<>();
-    final List<VariableValueFilter> result = filters.stream()
-        .map(SearchQueryRequestMapper::toVariableValueFilter)
-        .peek(either -> {
-          if (either.isLeft()) {
-            validationErrors.add(either.getLeft());
-          }
-        })
-        .filter(Either::isRight)
-        .map(Either::get)
-        .collect(Collectors.toList());
+    final List<VariableValueFilter> result =
+        filters.stream()
+            .map(SearchQueryRequestMapper::toVariableValueFilter)
+            .peek(
+                either -> {
+                  if (either.isLeft()) {
+                    validationErrors.add(either.getLeft());
+                  }
+                })
+            .filter(Either::isRight)
+            .map(Either::get)
+            .collect(Collectors.toList());
 
     if (!validationErrors.isEmpty()) {
       return Either.left(validationErrors);
@@ -282,7 +283,7 @@ public final class SearchQueryRequestMapper {
       if (filter.getCreationTime() != null) {
         final var dateFilterResult = toDateValueFilter(filter.getCreationTime());
         if (dateFilterResult.isLeft()) {
-          validationErrors.add(dateFilterResult.getLeft());
+          validationErrors.addAll(dateFilterResult.getLeft());
         } else {
           builder.creationDate(dateFilterResult.get());
         }
@@ -292,7 +293,7 @@ public final class SearchQueryRequestMapper {
       if (filter.getCompletionTime() != null) {
         final var dateFilterResult = toDateValueFilter(filter.getCompletionTime());
         if (dateFilterResult.isLeft()) {
-          validationErrors.add(dateFilterResult.getLeft());
+          validationErrors.addAll(dateFilterResult.getLeft());
         } else {
           builder.completionDate(dateFilterResult.get());
         }
@@ -302,7 +303,7 @@ public final class SearchQueryRequestMapper {
       if (filter.getDueDate() != null) {
         final var dateFilterResult = toDateValueFilter(filter.getDueDate());
         if (dateFilterResult.isLeft()) {
-          validationErrors.add(dateFilterResult.getLeft());
+          validationErrors.addAll(dateFilterResult.getLeft());
         } else {
           builder.dueDate(dateFilterResult.get());
         }
@@ -312,7 +313,7 @@ public final class SearchQueryRequestMapper {
       if (filter.getFollowUpDate() != null) {
         final var dateFilterResult = toDateValueFilter(filter.getFollowUpDate());
         if (dateFilterResult.isLeft()) {
-          validationErrors.add(dateFilterResult.getLeft());
+          validationErrors.addAll(dateFilterResult.getLeft());
         } else {
           builder.followUpDate(dateFilterResult.get());
         }
@@ -330,23 +331,35 @@ public final class SearchQueryRequestMapper {
       final UserTaskSearchQueryRequest request) {
     final List<String> validationErrors = new ArrayList<>();
 
+    // If the request is null, return an empty UserTaskQuery
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.userTaskSearchQuery().build());
+    }
+
+    // Process page if it is not null
     final var pageResult = toSearchQueryPage(request.getPage());
     if (pageResult.isLeft()) {
       validationErrors.addAll(pageResult.getLeft());
     }
+
+    // Process sorting if it is not null
     final var sortingResult = toUserTaskSearchQuerySort(request.getSort());
     if (sortingResult.isLeft()) {
       validationErrors.addAll(sortingResult.getLeft());
     }
+
+    // Process filter if it is not null
     final var userTaskFilterResult = toUserTaskFilter(request.getFilter());
     if (userTaskFilterResult.isLeft()) {
       validationErrors.addAll(userTaskFilterResult.getLeft());
     }
 
+    // If there are validation errors, return them
     if (!validationErrors.isEmpty()) {
       return Either.left(createProblemDetail(validationErrors));
     }
 
+    // Build the query with the processed components
     final var page = pageResult.get();
     final var sorting = sortingResult.get();
     final var userTaskFilter = userTaskFilterResult.get();
@@ -367,14 +380,33 @@ public final class SearchQueryRequestMapper {
     }
   }
 
-  private static Either<String, DateValueFilter> toDateValueFilter(final DateFilter dateFilter) {
+  private static Either<List<String>, DateValueFilter> toDateValueFilter(
+      final DateFilter dateFilter) {
+    final List<String> errors = new ArrayList<>();
+    OffsetDateTime from = null;
+    OffsetDateTime to = null;
+
     try {
-      return Either.right(new DateValueFilter(
-          dateFilter.getFrom() != null ? OffsetDateTime.parse(dateFilter.getFrom()) : null,
-          dateFilter.getTo() != null ? OffsetDateTime.parse(dateFilter.getTo()) : null));
+      if (dateFilter.getFrom() != null) {
+        from = OffsetDateTime.parse(dateFilter.getFrom());
+      }
     } catch (final DateTimeParseException e) {
-      return Either.left("Invalid date format: " + e.getMessage());
+      errors.add("Invalid date format for 'from': " + e.getMessage());
     }
+
+    try {
+      if (dateFilter.getTo() != null) {
+        to = OffsetDateTime.parse(dateFilter.getTo());
+      }
+    } catch (final DateTimeParseException e) {
+      errors.add("Invalid date format for 'to': " + e.getMessage());
+    }
+
+    if (!errors.isEmpty()) {
+      return Either.left(errors);
+    }
+
+    return Either.right(new DateValueFilter(from, to));
   }
 
   private static ProblemDetail createProblemDetail(final List<String> validationErrors) {

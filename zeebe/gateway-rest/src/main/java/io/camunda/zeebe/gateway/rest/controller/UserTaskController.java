@@ -20,7 +20,6 @@ import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateUserTaskRequest;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import io.camunda.zeebe.gateway.rest.TenantAttributeHolder;
 import jakarta.validation.ValidationException;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -135,8 +134,7 @@ public class UserTaskController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Object> searchUserTasks(
       @RequestBody(required = false) final UserTaskSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toUserTaskQuery(
-            query == null ? new UserTaskSearchQueryRequest() : query)
+    return SearchQueryRequestMapper.toUserTaskQuery(query)
         .fold(this::search, RestErrorMapper::mapProblemToResponse);
   }
 
