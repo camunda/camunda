@@ -213,7 +213,7 @@ public interface JobWorkerBuilderStep1 {
      *
      * @return the builder for this worker
      */
-    @ExperimentalApi("https://github.com/camunda/zeebe/issues/11231")
+    @ExperimentalApi("https://github.com/camunda/camunda/issues/11231")
     JobWorkerBuilderStep3 streamEnabled(boolean isStreamEnabled);
 
     /**
@@ -230,7 +230,7 @@ public interface JobWorkerBuilderStep1 {
      * @param timeout a timeout, after which the stream is recreated
      * @return the builder for this worker
      */
-    @ExperimentalApi("https://github.com/camunda/zeebe/issues/11231")
+    @ExperimentalApi("https://github.com/camunda/camunda/issues/11231")
     JobWorkerBuilderStep3 streamTimeout(final Duration timeout);
 
     /**

@@ -37,7 +37,7 @@ public interface CommandWithCommunicationApiStep<T> {
    * @deprecated since 8.5, to be removed with 8.8
    * @return the configured command
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   @Deprecated
   T useRest();
 
@@ -58,7 +58,7 @@ public interface CommandWithCommunicationApiStep<T> {
    * @deprecated since 8.5, to be removed with 8.8
    * @return the configured command
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/16166")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   @Deprecated
   T useGrpc();
 }

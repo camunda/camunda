@@ -18,7 +18,7 @@ package io.camunda.client.api.command;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.response.MigrateProcessInstanceResponse;
 
-@ExperimentalApi("https://github.com/camunda/zeebe/issues/14907")
+@ExperimentalApi("https://github.com/camunda/camunda/issues/14907")
 public interface MigrateProcessInstanceCommandStep1 {
 
   /**

@@ -112,6 +112,6 @@ public interface ActivatedJob {
   /**
    * @return the identifier of the tenant that owns the job
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/13560")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/13560")
   String getTenantId();
 }

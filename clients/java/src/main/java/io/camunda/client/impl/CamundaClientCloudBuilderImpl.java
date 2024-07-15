@@ -134,18 +134,18 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/14106")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/14106")
   public CamundaClientBuilder defaultTenantId(final String tenantId) {
     Loggers.LOGGER.debug(
-        "Multi-tenancy in Camunda 8 SaaS will be supported with https://github.com/camunda/zeebe/issues/14106.");
+        "Multi-tenancy in Camunda 8 SaaS will be supported with https://github.com/camunda/camunda/issues/14106.");
     return this;
   }
 
   @Override
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/14106")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/14106")
   public CamundaClientBuilder defaultJobWorkerTenantIds(final List<String> tenantIds) {
     Loggers.LOGGER.debug(
-        "Multi-tenancy in Camunda 8 SaaS will be supported with https://github.com/camunda/zeebe/issues/14106.");
+        "Multi-tenancy in Camunda 8 SaaS will be supported with https://github.com/camunda/camunda/issues/14106.");
     return this;
   }
 

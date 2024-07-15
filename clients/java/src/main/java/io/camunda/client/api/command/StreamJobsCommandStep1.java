@@ -22,7 +22,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 
-@ExperimentalApi("https://github.com/camunda/zeebe/issues/11231")
+@ExperimentalApi("https://github.com/camunda/camunda/issues/11231")
 public interface StreamJobsCommandStep1 {
   /**
    * Set the type of jobs to work on; only jobs of this type will be activated and consumed by this
