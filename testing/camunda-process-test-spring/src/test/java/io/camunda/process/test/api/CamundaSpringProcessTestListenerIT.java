@@ -15,10 +15,8 @@
  */
 package io.camunda.process.test.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import org.junit.jupiter.api.Test;
@@ -49,12 +47,7 @@ public class CamundaSpringProcessTestListenerIT {
 
     // when
     final ProcessInstanceEvent processInstance =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId("process")
-            .latestVersion()
-            .send()
-            .join();
+        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
     // then
     CamundaAssert.assertThat(processInstance)

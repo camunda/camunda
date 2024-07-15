@@ -23,7 +23,6 @@ import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

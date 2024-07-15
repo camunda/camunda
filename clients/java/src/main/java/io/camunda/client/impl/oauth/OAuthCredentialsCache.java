@@ -79,8 +79,7 @@ public final class OAuthCredentialsCache {
 
   public Optional<CamundaClientCredentials> get(final String endpoint) {
     final Map<String, OAuthCachedCredentials> cache = audiences.get();
-    return Optional.ofNullable(cache.get(endpoint)).map(
-        OAuthCachedCredentials::getCredentials);
+    return Optional.ofNullable(cache.get(endpoint)).map(OAuthCachedCredentials::getCredentials);
   }
 
   public synchronized CamundaClientCredentials computeIfMissingOrInvalid(

@@ -15,9 +15,9 @@
  */
 package io.camunda.process.test.api;
 
-import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
 import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
@@ -90,9 +90,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .setContext(camundaProcessTestContext);
 
     // publish Zeebe client
-    testContext
-        .getApplicationContext()
-        .publishEvent(new ZeebeClientCreatedEvent(this, client));
+    testContext.getApplicationContext().publishEvent(new ZeebeClientCreatedEvent(this, client));
 
     // initialize assertions
     final CamundaDataSource dataSource = createDataSource(containerRuntime);

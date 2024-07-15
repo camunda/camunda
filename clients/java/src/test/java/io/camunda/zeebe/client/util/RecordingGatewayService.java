@@ -73,7 +73,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRespo
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
