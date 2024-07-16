@@ -64,6 +64,7 @@ public final class FileBasedSnapshotStore extends Actor
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSnapshotStore.class);
   private static final String CHECKSUM_SUFFIX = ".checksum";
   private static final String TMP_CHECKSUM_SUFFIX = ".tmp";
+  private final int brokerId;
   // the root snapshotsDirectory where all snapshots should be stored
   private final Path snapshotsDirectory;
   // the root snapshotsDirectory when pending snapshots should be stored
@@ -82,12 +83,16 @@ public final class FileBasedSnapshotStore extends Actor
   private final String actorName;
   private final int partitionId;
 
-  public FileBasedSnapshotStore(final int partitionId, final Path root) {
-    this(partitionId, root, null);
+  public FileBasedSnapshotStore(final int brokerId, final int partitionId, final Path root) {
+    this(brokerId, partitionId, root, null);
   }
 
   public FileBasedSnapshotStore(
-      final int partitionId, final Path root, final ChecksumProvider checksumProvider) {
+      final int brokerId,
+      final int partitionId,
+      final Path root,
+      final ChecksumProvider checksumProvider) {
+    this.brokerId = brokerId;
     snapshotsDirectory = root.resolve(SNAPSHOTS_DIRECTORY);
     pendingDirectory = root.resolve(PENDING_DIRECTORY);
 
@@ -418,7 +423,7 @@ public final class FileBasedSnapshotStore extends Actor
       final long exportedPosition) {
 
     final var newSnapshotId =
-        new FileBasedSnapshotId(index, term, processedPosition, exportedPosition);
+        new FileBasedSnapshotId(index, term, processedPosition, exportedPosition, brokerId);
     final FileBasedSnapshot currentSnapshot = currentPersistedSnapshotRef.get();
     if (currentSnapshot != null && currentSnapshot.getSnapshotId().compareTo(newSnapshotId) == 0) {
       final String error =

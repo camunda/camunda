@@ -57,7 +57,7 @@ public class FileBasedSnapshotStoreTest {
     final var root = temporaryFolder.getRoot().toPath();
 
     // when
-    final var store = new FileBasedSnapshotStore(1, root);
+    final var store = new FileBasedSnapshotStore(0, 1, root);
 
     // then
     assertThat(root.resolve(FileBasedSnapshotStore.SNAPSHOTS_DIRECTORY)).exists().isDirectory();
@@ -253,7 +253,7 @@ public class FileBasedSnapshotStoreTest {
     final var testChecksumProvider = new TestChecksumProvider(badChecksums);
 
     // when
-    final var store = new FileBasedSnapshotStore(1, rootDirectory, testChecksumProvider);
+    final var store = new FileBasedSnapshotStore(0, 1, rootDirectory, testChecksumProvider);
     scheduler.submitActor(store).join();
     final var takenSnapshot = (FileBasedSnapshot) takeTransientSnapshot(1, store).persist().join();
 
@@ -379,7 +379,7 @@ public class FileBasedSnapshotStoreTest {
   }
 
   private FileBasedSnapshotStore createStore(final Path root) {
-    final var store = new FileBasedSnapshotStore(1, root);
+    final var store = new FileBasedSnapshotStore(0, 1, root);
     scheduler.submitActor(store).join();
 
     return store;
