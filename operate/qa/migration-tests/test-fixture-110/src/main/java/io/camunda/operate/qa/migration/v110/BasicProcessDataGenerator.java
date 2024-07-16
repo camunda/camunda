@@ -66,13 +66,13 @@ public class BasicProcessDataGenerator {
 
   @Autowired private RestHighLevelClient esClient;
 
-  private Random random = new Random();
+  private final Random random = new Random();
 
   private List<Long> processInstanceKeys = new ArrayList<>();
 
   private StatefulRestTemplate operateRestClient;
 
-  private void init(TestContext testContext) {
+  private void init(final TestContext testContext) {
     zeebeClient =
         ZeebeClient.newClientBuilder()
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
@@ -86,7 +86,7 @@ public class BasicProcessDataGenerator {
     operateRestClient.loginWhenNeeded();
   }
 
-  public void createData(TestContext testContext) throws Exception {
+  public void createData(final TestContext testContext) throws Exception {
     init(testContext);
     try {
       final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
@@ -120,7 +120,7 @@ public class BasicProcessDataGenerator {
 
       try {
         esClient.indices().refresh(new RefreshRequest("operate-*"), RequestOptions.DEFAULT);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         LOGGER.error("Error in refreshing indices", e);
       }
       LOGGER.info(
@@ -179,13 +179,13 @@ public class BasicProcessDataGenerator {
               new SearchRequest("operate-*_" + ARCHIVER_DATE_TIME_FORMATTER.format(Instant.now())),
               RequestOptions.DEFAULT);
       return search.getHits().getTotalHits().value > 0;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(
           "Exception occurred while checking archived indices: " + e.getMessage(), e);
     }
   }
 
-  private void createOperation(OperationType operationType, int maxAttempts) {
+  private void createOperation(final OperationType operationType, final int maxAttempts) {
     LOGGER.debug("Try to create Operation {} ( {} attempts)", operationType.name(), maxAttempts);
     boolean operationStarted = false;
     int attempts = 0;
@@ -202,7 +202,8 @@ public class BasicProcessDataGenerator {
     }
   }
 
-  private boolean createOperation(Long processInstanceKey, OperationType operationType) {
+  private boolean createOperation(
+      final Long processInstanceKey, final OperationType operationType) {
     final Map<String, Object> operationRequest =
         CollectionUtil.asMap("operationType", operationType.name());
     final URI url =
@@ -213,17 +214,17 @@ public class BasicProcessDataGenerator {
         && operationResponse.getBody().get(BatchOperationTemplate.ID) != null;
   }
 
-  private void createIncidents(String jobType, int numberOfIncidents) {
+  private void createIncidents(final String jobType, final int numberOfIncidents) {
     ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", numberOfIncidents);
     LOGGER.info("{} incidents in {} created", numberOfIncidents, jobType);
   }
 
-  private void completeTasks(String jobType, int count) {
+  private void completeTasks(final String jobType, final int count) {
     ZeebeTestUtil.completeTask(zeebeClient, jobType, "worker", "{\"varOut\": \"value2\"}", count);
     LOGGER.info("{} tasks {} completed", count, jobType);
   }
 
-  private List<Long> startProcessInstances(int numberOfProcessInstances) {
+  private List<Long> startProcessInstances(final int numberOfProcessInstances) {
     for (int i = 0; i < numberOfProcessInstances; i++) {
       final String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
       final long processInstanceKey =
@@ -243,7 +244,7 @@ public class BasicProcessDataGenerator {
     LOGGER.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
   }
 
-  private BpmnModelInstance createModel(String bpmnProcessId) {
+  private BpmnModelInstance createModel(final String bpmnProcessId) {
     return Bpmn.createExecutableProcess(bpmnProcessId)
         .startEvent("start")
         .serviceTask("task1")
@@ -262,17 +263,17 @@ public class BasicProcessDataGenerator {
         .done();
   }
 
-  private Long chooseKey(List<Long> keys) {
+  private Long chooseKey(final List<Long> keys) {
     return keys.get(random.nextInt(keys.size()));
   }
 
-  private long countEntitiesFor(SearchRequest searchRequest) throws IOException {
+  private long countEntitiesFor(final SearchRequest searchRequest) throws IOException {
     searchRequest.source().size(1000);
     final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     return searchResponse.getHits().getTotalHits().value;
   }
 
-  private String getAliasFor(String index) {
+  private String getAliasFor(final String index) {
     return String.format("operate-%s-*_alias", index);
   }
 }

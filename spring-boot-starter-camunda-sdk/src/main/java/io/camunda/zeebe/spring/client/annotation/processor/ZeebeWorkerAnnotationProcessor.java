@@ -17,7 +17,7 @@ package io.camunda.zeebe.spring.client.annotation.processor;
 
 import static org.springframework.util.ReflectionUtils.doWithMethods;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.spring.client.annotation.JobWorker;
 import io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCustomizer;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
@@ -83,7 +83,7 @@ public class ZeebeWorkerAnnotationProcessor extends AbstractZeebeAnnotationProce
   }
 
   @Override
-  public void start(final ZeebeClient client) {
+  public void start(final CamundaClient client) {
     zeebeWorkerValues.stream()
         .peek(
             zeebeWorkerValue ->
@@ -97,7 +97,7 @@ public class ZeebeWorkerAnnotationProcessor extends AbstractZeebeAnnotationProce
   }
 
   @Override
-  public void stop(final ZeebeClient zeebeClient) {
+  public void stop(final CamundaClient zeebeClient) {
     jobWorkerManager.closeAllOpenWorkers();
   }
 

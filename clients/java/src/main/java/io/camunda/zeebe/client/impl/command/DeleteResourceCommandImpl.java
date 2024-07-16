@@ -77,10 +77,4 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .deleteResource(request, streamObserver);
   }
-
-  @Override
-  public DeleteResourceCommandStep1 operationReference(final long operationReference) {
-    requestBuilder.setOperationReference(operationReference);
-    return this;
-  }
 }

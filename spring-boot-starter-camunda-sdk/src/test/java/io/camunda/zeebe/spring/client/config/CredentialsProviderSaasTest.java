@@ -24,8 +24,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import io.camunda.zeebe.client.CredentialsProvider;
-import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
+import io.camunda.client.CredentialsProvider;
+import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.spring.client.configuration.JsonMapperConfiguration;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;

@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.metrics;
 
-import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
+import io.camunda.client.api.worker.JobWorkerMetrics;
 
 /**
  * Bridge between spring-zeebe metrics and zeebe-client metrics. One way flow where zeebe-client

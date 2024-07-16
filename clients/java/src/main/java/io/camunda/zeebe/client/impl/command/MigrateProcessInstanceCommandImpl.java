@@ -133,10 +133,4 @@ public final class MigrateProcessInstanceCommandImpl
         .setTargetElementId(targetElementId)
         .build();
   }
-
-  @Override
-  public MigrateProcessInstanceCommandFinalStep operationReference(final long operationReference) {
-    requestBuilder.setOperationReference(operationReference);
-    return this;
-  }
 }

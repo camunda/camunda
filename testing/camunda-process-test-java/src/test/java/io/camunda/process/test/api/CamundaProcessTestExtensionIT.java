@@ -15,8 +15,8 @@
  */
 package io.camunda.process.test.api;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import org.junit.jupiter.api.Test;
@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 public class CamundaProcessTestExtensionIT {
 
   // to be injected
-  private ZeebeClient zeebeClient;
+  private CamundaClient client;
 
   @Test
   void shouldCreateProcessInstance() {
@@ -41,16 +41,11 @@ public class CamundaProcessTestExtensionIT {
             .zeebeOutputExpression("\"ok\"", "result")
             .done();
 
-    zeebeClient.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+    client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
 
     // when
     final ProcessInstanceEvent processInstance =
-        zeebeClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId("process")
-            .latestVersion()
-            .send()
-            .join();
+        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
     // then
     CamundaAssert.assertThat(processInstance)

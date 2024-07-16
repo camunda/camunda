@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.it.util;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.zeebe.broker.TestLoggers;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.it.clustering.ClusteringRule;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
@@ -25,8 +25,8 @@ public final class GrpcClientRule extends ExternalResource {
 
   private static final Logger LOG = TestLoggers.TEST_LOGGER;
 
-  protected ZeebeClient client;
-  private final Consumer<ZeebeClientBuilder> configurator;
+  protected CamundaClient client;
+  private final Consumer<CamundaClientBuilder> configurator;
   private ZeebeResourcesHelper resourcesHelper;
   private long startTime;
 
@@ -35,7 +35,7 @@ public final class GrpcClientRule extends ExternalResource {
   }
 
   public GrpcClientRule(
-      final EmbeddedBrokerRule brokerRule, final Consumer<ZeebeClientBuilder> configurator) {
+      final EmbeddedBrokerRule brokerRule, final Consumer<CamundaClientBuilder> configurator) {
     this(
         config -> {
           config
@@ -53,7 +53,7 @@ public final class GrpcClientRule extends ExternalResource {
                 .usePlaintext());
   }
 
-  public GrpcClientRule(final Consumer<ZeebeClientBuilder> configurator) {
+  public GrpcClientRule(final Consumer<CamundaClientBuilder> configurator) {
     this.configurator = configurator;
   }
 
@@ -61,7 +61,7 @@ public final class GrpcClientRule extends ExternalResource {
    * This is a hacky way to allow us to use this class in {@link
    * io.camunda.zeebe.it.clustering.ClusteringRuleExtension}
    */
-  public GrpcClientRule(final ZeebeClient client) {
+  public GrpcClientRule(final CamundaClient client) {
     this.client = client;
     configurator = config -> {};
     resourcesHelper = new ZeebeResourcesHelper(client);
@@ -70,8 +70,8 @@ public final class GrpcClientRule extends ExternalResource {
   @Override
   public void before() {
     startTime = System.currentTimeMillis();
-    final ZeebeClientBuilder builder =
-        ZeebeClient.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(10));
+    final CamundaClientBuilder builder =
+        CamundaClient.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(10));
     configurator.accept(builder);
     client = builder.build();
     resourcesHelper = new ZeebeResourcesHelper(client);
@@ -90,7 +90,7 @@ public final class GrpcClientRule extends ExternalResource {
     resourcesHelper = null;
   }
 
-  public ZeebeClient getClient() {
+  public CamundaClient getClient() {
     return client;
   }
 

@@ -39,6 +39,10 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 
+/**
+ * @deprecated since 8.6 for removal with 8.8
+ */
+@Deprecated
 public class ZeebeClientCloudBuilderImpl
     implements ZeebeClientCloudBuilderStep1,
         ZeebeClientCloudBuilderStep2,

@@ -11,7 +11,8 @@ import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Network.Ipam;
 import com.github.dockerjava.api.model.Network.Ipam.Config;
-import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.Topology;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.zeebe.containers.ZeebeBrokerNode;
@@ -86,11 +87,19 @@ final class Ipv6IntegrationTest {
     cluster.start();
 
     // when
-    try (final var client = cluster.newClientBuilder().build()) {
+    try (final var client = camundaClientFromZeebeClient()) {
       final Topology topology = client.newTopologyRequest().send().join(5, TimeUnit.SECONDS);
       // then - can find each other
       TopologyAssert.assertThat(topology).isComplete(1, 1, 1);
     }
+  }
+
+  private CamundaClient camundaClientFromZeebeClient() {
+    final var zeebeClient = cluster.newClientBuilder().build();
+    return CamundaClient.newClientBuilder()
+        .gatewayAddress(zeebeClient.getConfiguration().getGatewayAddress())
+        .usePlaintext()
+        .build();
   }
 
   private void configureBroker(final ZeebeBrokerNode<?> broker) {
