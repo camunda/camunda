@@ -47,6 +47,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.RoutingAddPartitionOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
@@ -457,6 +458,11 @@ public class ProtoBufSerializer
       case final PartitionEnableExporterOperation enableExporterOperation ->
           builder.setPartitionEnableExporter(
               encodeEnabledExporterOperation(enableExporterOperation));
+      case final RoutingAddPartitionOperation routingAddPartitionOperation ->
+          builder.setRoutingAddPartition(
+              Topology.RoutingAddPartitionOperation.newBuilder()
+                  .setPartitionId(routingAddPartitionOperation.partitionId())
+                  .build());
       default ->
           throw new IllegalArgumentException(
               "Unknown operation type: " + operation.getClass().getSimpleName());
@@ -571,6 +577,10 @@ public class ProtoBufSerializer
           enableExporterOperation.getPartitionId(),
           enableExporterOperation.getExporterId(),
           initializeFrom);
+    } else if (topologyChangeOperation.hasRoutingAddPartition()) {
+      return new RoutingAddPartitionOperation(
+          MemberId.from(topologyChangeOperation.getMemberId()),
+          topologyChangeOperation.getRoutingAddPartition().getPartitionId());
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
