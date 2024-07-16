@@ -15,19 +15,6 @@
   <name>Camunda QA Integration Tests</name>
 
   <dependencies>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-qa-util</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-qa-util</artifactId>
-      <scope>test</scope>
-    </dependency>
-
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
@@ -45,7 +32,17 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-qa-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>operate-webapp</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-qa-util</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -66,7 +63,6 @@
       <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
 
   <build>

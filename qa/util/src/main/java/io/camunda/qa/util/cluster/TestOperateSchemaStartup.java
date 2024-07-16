@@ -13,4 +13,4 @@ import org.springframework.stereotype.Component;
 
 @Component("schemaStartup")
 @Profile("test")
-public class TestSchemaStartup extends SchemaStartup {}
+public class TestOperateSchemaStartup extends SchemaStartup {}

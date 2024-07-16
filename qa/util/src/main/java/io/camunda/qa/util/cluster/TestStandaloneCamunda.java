@@ -10,13 +10,15 @@ package io.camunda.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
+import io.camunda.application.sources.DefaultObjectMapperConfiguration;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.commons.CommonsModuleConfiguration;
 import io.camunda.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.SchemaManager;
+import io.camunda.tasklist.TasklistModuleConfiguration;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -58,7 +60,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
           // use JVM option files to avoid overwriting default options set by the ES container class
           .withClasspathResourceMapping(
               "elasticsearch-fast-startup.options",
-              "/usr/share/elasticsearch/config/jvm.options.d/ elasticsearch-fast-startup.options",
+              "/usr/share/elasticsearch/config/jvm.options.d/elasticsearch-fast-startup.options",
               BindMode.READ_ONLY)
           // can be slow in CI
           .withStartupTimeout(Duration.ofMinutes(5))
@@ -69,17 +71,22 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
           .withEnv("action.destructive_requires_name", "false");
   private final BrokerBasedProperties brokerProperties;
   private final OperateProperties operateProperties;
+  private final TasklistProperties tasklistProperties;
 
   public TestStandaloneCamunda() {
     super(
-        BrokerModuleConfiguration.class,
-        OperateModuleConfiguration.class,
-        WebappsModuleConfiguration.class,
         CommonsModuleConfiguration.class,
+        OperateModuleConfiguration.class,
+        TasklistModuleConfiguration.class,
+        WebappsModuleConfiguration.class,
+        BrokerModuleConfiguration.class,
+        DefaultObjectMapperConfiguration.class,
         // test overrides - to control data clean up; (and some components are not installed on
         // Tests)
-        TestElasticsearchSchemaManager.class,
-        TestSchemaStartup.class);
+        TestOperateElasticsearchSchemaManager.class,
+        TestTasklistElasticsearchSchemaManager.class,
+        TestOperateSchemaStartup.class,
+        TestTasklistSchemaStartup.class);
 
     brokerProperties = new BrokerBasedProperties();
 
@@ -94,12 +101,15 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     brokerProperties.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
 
     operateProperties = new OperateProperties();
+    tasklistProperties = new TasklistProperties();
 
     //noinspection resource
     withBean("config", brokerProperties, BrokerBasedProperties.class)
         .withBean("operate-config", operateProperties, OperateProperties.class)
+        .withBean("tasklist-config", tasklistProperties, TasklistProperties.class)
         .withAdditionalProfile(Profile.BROKER)
         .withAdditionalProfile(Profile.OPERATE)
+        .withAdditionalProfile(Profile.TASKLIST)
         .withAdditionalInitializer(new WebappsConfigurationInitializer());
   }
 
@@ -116,7 +126,8 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
 
     operateProperties.getElasticsearch().setUrl(esURL);
     operateProperties.getZeebeElasticsearch().setUrl(esURL);
-
+    tasklistProperties.getElasticsearch().setUrl(esURL);
+    tasklistProperties.getZeebeElasticsearch().setUrl(esURL);
     return super.start();
   }
 
@@ -124,7 +135,8 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   public TestStandaloneCamunda stop() {
     // clean up ES/OS indices
     LOGGER.info("Stopping standalone camunda test...");
-    ((TestElasticsearchSchemaManager) bean(SchemaManager.class)).deleteSchema();
+    (bean(TestOperateElasticsearchSchemaManager.class)).deleteSchema();
+    (bean(TestTasklistElasticsearchSchemaManager.class)).deleteSchema();
 
     return super.stop();
   }

@@ -18,10 +18,10 @@ import org.springframework.stereotype.Component;
 @Component("schemaManager")
 @Conditional(ElasticsearchCondition.class)
 @Profile("test")
-public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager {
+public class TestOperateElasticsearchSchemaManager extends ElasticsearchSchemaManager {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(TestElasticsearchSchemaManager.class);
+      LoggerFactory.getLogger(TestOperateElasticsearchSchemaManager.class);
 
   public void deleteSchema() {
     final String prefix = operateProperties.getElasticsearch().getIndexPrefix();
