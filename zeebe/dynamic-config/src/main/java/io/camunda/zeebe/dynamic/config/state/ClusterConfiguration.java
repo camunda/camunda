@@ -36,7 +36,7 @@ import java.util.stream.Stream;
 public record ClusterConfiguration(
     long version,
     Map<MemberId, MemberState> members,
-    RoutingConfiguration routing,
+    RoutingState routing,
     Optional<CompletedChange> lastChange,
     Optional<ClusterChangePlan> pendingChanges) {
 
@@ -47,7 +47,7 @@ public record ClusterConfiguration(
     return new ClusterConfiguration(
         UNINITIALIZED_VERSION,
         Map.of(),
-        RoutingConfiguration.fixed(1), // TODO
+        RoutingState.ofFixed(1), // TODO
         Optional.empty(),
         Optional.empty());
   }

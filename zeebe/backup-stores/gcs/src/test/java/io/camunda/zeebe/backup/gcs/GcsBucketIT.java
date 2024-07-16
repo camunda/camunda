@@ -16,7 +16,7 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.gcs.util.GcsContainer;
-import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration;
+import io.camunda.zeebe.dynamic.config.state.MessageRoutingConfiguration;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -68,7 +68,7 @@ public class GcsBucketIT {
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
             new BackupDescriptorImpl(
-                Optional.empty(), 1, 1, "version", RoutingConfiguration.fixed(1)),
+                Optional.empty(), 1, 1, "version", MessageRoutingConfiguration.fixed(1)),
             new NamedFileSetImpl(
                 Map.of(
                     "snapshotFile1",
@@ -116,7 +116,7 @@ public class GcsBucketIT {
         new BackupImpl(
             new BackupIdentifierImpl(1, 2, 3),
             new BackupDescriptorImpl(
-                Optional.empty(), 1, 1, "version", RoutingConfiguration.fixed(1)),
+                Optional.empty(), 1, 1, "version", MessageRoutingConfiguration.fixed(1)),
             new NamedFileSetImpl(
                 Map.of(
                     "snapshotFile1",

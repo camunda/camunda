@@ -14,7 +14,7 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.metrics.BackupManagerMetrics;
-import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration;
+import io.camunda.zeebe.dynamic.config.state.MessageRoutingConfiguration;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -37,7 +37,7 @@ public final class BackupService extends Actor implements BackupManager {
   private final Supplier<Integer> partitionCountSupplier;
   private final PersistedSnapshotStore snapshotStore;
   private final Path segmentsDirectory;
-  private final Supplier<RoutingConfiguration> routingSupplier;
+  private final Supplier<MessageRoutingConfiguration> routingSupplier;
   private final Predicate<Path> isSegmentsFile;
   private final BackupManagerMetrics metrics;
 
@@ -48,7 +48,7 @@ public final class BackupService extends Actor implements BackupManager {
       final BackupStore backupStore,
       final PersistedSnapshotStore snapshotStore,
       final Path segmentsDirectory,
-      final Supplier<RoutingConfiguration> routingSupplier,
+      final Supplier<MessageRoutingConfiguration> routingSupplier,
       final Predicate<Path> isSegmentsFile) {
     this.nodeId = nodeId;
     this.partitionId = partitionId;

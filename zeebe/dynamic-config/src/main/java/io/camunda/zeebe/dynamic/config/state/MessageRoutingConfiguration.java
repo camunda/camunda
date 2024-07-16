@@ -7,14 +7,14 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
-public sealed interface RoutingConfiguration {
+public sealed interface MessageRoutingConfiguration {
   String name();
 
-  static RoutingConfiguration fixed(final int partitionCount) {
+  static MessageRoutingConfiguration fixed(final int partitionCount) {
     return new FixedPartitionCount(partitionCount);
   }
 
-  record FixedPartitionCount(int partitionCount) implements RoutingConfiguration {
+  record FixedPartitionCount(int partitionCount) implements MessageRoutingConfiguration {
 
     @Override
     public String name() {

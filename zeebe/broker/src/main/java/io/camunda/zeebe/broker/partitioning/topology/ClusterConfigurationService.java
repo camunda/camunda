@@ -11,14 +11,14 @@ import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration;
+import io.camunda.zeebe.dynamic.config.state.MessageRoutingConfiguration;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 public interface ClusterConfigurationService extends AsyncClosable {
   PartitionDistribution getPartitionDistribution();
 
-  RoutingConfiguration getRoutingConfiguration();
+  MessageRoutingConfiguration getRoutingConfiguration();
 
   void registerPartitionChangeExecutor(PartitionChangeExecutor executor);
 

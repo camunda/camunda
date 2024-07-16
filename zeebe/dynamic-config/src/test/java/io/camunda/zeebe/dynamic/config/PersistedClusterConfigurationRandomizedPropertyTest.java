@@ -16,7 +16,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
-import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.util.ReflectUtil;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -72,8 +72,7 @@ final class PersistedClusterConfigurationRandomizedPropertyTest {
       final var arbitraryVersion = Arbitraries.integers().greaterOrEqual(0);
       final var arbitraryMembers =
           Arbitraries.maps(memberIds(), Arbitraries.forType(MemberState.class).enableRecursion());
-      final var arbitraryRouting =
-          Arbitraries.forType(RoutingConfiguration.class).enableRecursion();
+      final var arbitraryRouting = Arbitraries.forType(RoutingState.class).enableRecursion();
       final var arbitraryCompletedChange =
           Arbitraries.forType(CompletedChange.class).enableRecursion().optional();
       final var arbitraryChangePlan =

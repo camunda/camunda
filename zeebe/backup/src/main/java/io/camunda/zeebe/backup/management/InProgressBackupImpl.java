@@ -13,7 +13,7 @@ import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
-import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration;
+import io.camunda.zeebe.dynamic.config.state.MessageRoutingConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -47,7 +47,7 @@ final class InProgressBackupImpl implements InProgressBackup {
   private final BackupIdentifier backupId;
   private final long checkpointPosition;
   private final int numberOfPartitions;
-  private final RoutingConfiguration routingConfiguration;
+  private final MessageRoutingConfiguration routingConfiguration;
   private final ConcurrencyControl concurrencyControl;
 
   private final Path segmentsDirectory;
@@ -67,7 +67,7 @@ final class InProgressBackupImpl implements InProgressBackup {
       final BackupIdentifier backupId,
       final long checkpointPosition,
       final int numberOfPartitions,
-      final RoutingConfiguration routingConfiguration,
+      final MessageRoutingConfiguration routingConfiguration,
       final ConcurrencyControl concurrencyControl,
       final Path segmentsDirectory,
       final Predicate<Path> isSegmentsFile) {

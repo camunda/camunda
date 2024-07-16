@@ -20,6 +20,8 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -29,6 +31,7 @@ import java.nio.file.Path;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,11 +118,16 @@ public class RestoreManager {
         StaticConfigurationGenerator.getStaticConfiguration(
             configuration, MemberId.from(String.valueOf(configuration.getCluster().getNodeId())));
     final var clusterConfiguration = staticConfig.generateTopology();
+    final var activePartitions =
+        IntStream.rangeClosed(Protocol.START_PARTITION_ID, backupDescriptor.numberOfPartitions())
+            .boxed()
+            .collect(Collectors.toSet());
+
     final var withRestoredRouting =
         new ClusterConfiguration(
             clusterConfiguration.version(),
             clusterConfiguration.members(),
-            backupDescriptor.routingConfiguration(),
+            new RoutingState(activePartitions, backupDescriptor.routingConfiguration()),
             clusterConfiguration.lastChange(),
             clusterConfiguration.pendingChanges());
     try {

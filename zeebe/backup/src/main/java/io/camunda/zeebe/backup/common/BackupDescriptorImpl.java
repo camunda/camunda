@@ -8,7 +8,7 @@
 package io.camunda.zeebe.backup.common;
 
 import io.camunda.zeebe.backup.api.BackupDescriptor;
-import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration;
+import io.camunda.zeebe.dynamic.config.state.MessageRoutingConfiguration;
 import java.util.Optional;
 
 public record BackupDescriptorImpl(
@@ -16,7 +16,7 @@ public record BackupDescriptorImpl(
     long checkpointPosition,
     int numberOfPartitions,
     String brokerVersion,
-    RoutingConfiguration routingConfiguration)
+    MessageRoutingConfiguration routingConfiguration)
     implements BackupDescriptor {
 
   public static BackupDescriptorImpl from(final BackupDescriptor descriptor) {

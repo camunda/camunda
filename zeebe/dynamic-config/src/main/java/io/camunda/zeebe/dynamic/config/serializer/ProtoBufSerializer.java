@@ -31,6 +31,7 @@ import io.camunda.zeebe.dynamic.config.protocol.Topology;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.ChangeStatus;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.CompletedChange;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.PartitionConfig;
+import io.camunda.zeebe.dynamic.config.protocol.Topology.RoutingInfo;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -50,12 +51,14 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.MessageRoutingConfiguration;
+import io.camunda.zeebe.dynamic.config.state.MessageRoutingConfiguration.FixedPartitionCount;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
-import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration;
-import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration.FixedPartitionCount;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.util.Either;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -148,9 +151,19 @@ public class ProtoBufSerializer
         currentChange);
   }
 
-  private RoutingConfiguration decodeRoutingConfiguration(
-      final Topology.RoutingConfiguration encodedRouting) {
-    return RoutingConfiguration.fixed(encodedRouting.getPartitionCount());
+  private RoutingState decodeRoutingConfiguration(final RoutingInfo routing) {
+    try {
+      return new RoutingState(
+          new HashSet<>(routing.getActivePartitionsList()),
+          decodeMessageRoutingConfiguration(routing.getMessageRouting()));
+    } catch (final Exception e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  private MessageRoutingConfiguration decodeMessageRoutingConfiguration(
+      final Topology.MessageRoutingConfiguration encodedRouting) {
+    return MessageRoutingConfiguration.fixed(encodedRouting.getPartitionCount());
   }
 
   private Map<MemberId, io.camunda.zeebe.dynamic.config.state.MemberState> decodeMemberStateMap(
@@ -180,11 +193,18 @@ public class ProtoBufSerializer
     return builder.build();
   }
 
-  private Topology.RoutingConfiguration encodeRoutingConfiguration(
-      final RoutingConfiguration configuration) {
+  private RoutingInfo encodeRoutingConfiguration(final RoutingState routing) {
+    return RoutingInfo.newBuilder()
+        .addAllActivePartitions(routing.activePartitions())
+        .setMessageRouting(encodeMessageRoutingConfiguration(routing.messageRoutingConfiguration()))
+        .build();
+  }
+
+  private Topology.MessageRoutingConfiguration encodeMessageRoutingConfiguration(
+      final MessageRoutingConfiguration configuration) {
     return switch (configuration) {
       case final FixedPartitionCount fixed ->
-          Topology.RoutingConfiguration.newBuilder()
+          Topology.MessageRoutingConfiguration.newBuilder()
               .setPartitionCount(fixed.partitionCount())
               .build();
     };

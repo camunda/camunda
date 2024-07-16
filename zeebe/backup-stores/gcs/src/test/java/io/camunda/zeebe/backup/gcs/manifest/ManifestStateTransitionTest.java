@@ -16,7 +16,7 @@ import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.Manifest;
-import io.camunda.zeebe.dynamic.config.state.RoutingConfiguration;
+import io.camunda.zeebe.dynamic.config.state.MessageRoutingConfiguration;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +31,11 @@ final class ManifestStateTransitionTest {
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
-                    Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT", RoutingConfiguration.fixed(1)),
+                    Optional.empty(),
+                    2345234L,
+                    3,
+                    "1.2.0-SNAPSHOT",
+                    MessageRoutingConfiguration.fixed(1)),
                 null,
                 null));
 
@@ -50,7 +54,11 @@ final class ManifestStateTransitionTest {
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
-                    Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT", RoutingConfiguration.fixed(1)),
+                    Optional.empty(),
+                    2345234L,
+                    3,
+                    "1.2.0-SNAPSHOT",
+                    MessageRoutingConfiguration.fixed(1)),
                 null,
                 null));
 
@@ -74,7 +82,11 @@ final class ManifestStateTransitionTest {
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
-                    Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT", RoutingConfiguration.fixed(1)),
+                    Optional.empty(),
+                    2345234L,
+                    3,
+                    "1.2.0-SNAPSHOT",
+                    MessageRoutingConfiguration.fixed(1)),
                 null,
                 null));
 
@@ -99,7 +111,11 @@ final class ManifestStateTransitionTest {
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(
-                    Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT", RoutingConfiguration.fixed(1)),
+                    Optional.empty(),
+                    2345234L,
+                    3,
+                    "1.2.0-SNAPSHOT",
+                    MessageRoutingConfiguration.fixed(1)),
                 null,
                 null));
 
