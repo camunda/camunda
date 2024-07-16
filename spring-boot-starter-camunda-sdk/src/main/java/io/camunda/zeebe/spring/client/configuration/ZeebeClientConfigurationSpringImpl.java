@@ -168,6 +168,11 @@ public class ZeebeClientConfigurationSpringImpl implements ZeebeClientConfigurat
   }
 
   @Override
+  public int getMaxMetadataSize() {
+    return properties.getMaxMetadataSize();
+  }
+
+  @Override
   public ScheduledExecutorService jobWorkerExecutor() {
     return zeebeClientExecutorService.get();
   }

@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.config;
 
+import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -68,6 +69,7 @@ public class ZeebeClientConfigurationDefaultPropertiesTest {
         .isEqualTo(new URI("https://0.0.0.0:26500"));
     assertThat(client.getConfiguration().getKeepAlive()).isEqualTo(Duration.ofSeconds(45));
     assertThat(client.getConfiguration().getMaxMessageSize()).isEqualTo(4 * ONE_MB);
+    assertThat(client.getConfiguration().getMaxMetadataSize()).isEqualTo(16 * ONE_KB);
     assertThat(client.getConfiguration().getNumJobWorkerExecutionThreads()).isEqualTo(1);
     assertThat(client.getConfiguration().getOverrideAuthority()).isNull();
     assertThat(client.getConfiguration().getRestAddress())

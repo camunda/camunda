@@ -58,6 +58,7 @@ import org.springframework.test.util.ReflectionTestUtils;
       "zeebe.client.security.plaintext=true",
       "zeebe.client.cloud.clientSecret=client-secret",
       "zeebe.client.cloud.clientId=client-id",
+      "zeebe.client.maxMetadataSize=8000",
     })
 public class ZeebeClientStarterAutoConfigurationTest {
 
@@ -107,6 +108,7 @@ public class ZeebeClientStarterAutoConfigurationTest {
     assertThat(client.getConfiguration().getDefaultJobWorkerMaxJobsActive()).isEqualTo(99);
     assertThat(client.getConfiguration().getDefaultJobPollInterval())
         .isEqualTo(Duration.ofSeconds(99));
+    assertThat(client.getConfiguration().getMaxMetadataSize()).isEqualTo(8000);
   }
 
   @Test
