@@ -7,8 +7,8 @@
  */
 package io.camunda.optimize.service.importing;
 
-import static io.camunda.optimize.util.BpmnModels.START_EVENT;
 import static io.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
+import static io.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
