@@ -202,7 +202,8 @@ public class BasicProcessDataGenerator {
     }
   }
 
-  private boolean createOperation(final Long processInstanceKey, final OperationType operationType) {
+  private boolean createOperation(
+      final Long processInstanceKey, final OperationType operationType) {
     final Map<String, Object> operationRequest =
         CollectionUtil.asMap("operationType", operationType.name());
     final URI url =

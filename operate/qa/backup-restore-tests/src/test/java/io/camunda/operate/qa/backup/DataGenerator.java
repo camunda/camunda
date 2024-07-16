@@ -217,7 +217,8 @@ public class DataGenerator {
     LOGGER.info("{} tasks {} completed", count, jobType);
   }
 
-  private List<Long> startProcessInstances(final String bpmnProcessId, final int numberOfProcessInstances) {
+  private List<Long> startProcessInstances(
+      final String bpmnProcessId, final int numberOfProcessInstances) {
     final List<Long> processInstanceKeys = new ArrayList<>();
     for (int i = 0; i < numberOfProcessInstances; i++) {
       final long processInstanceKey =

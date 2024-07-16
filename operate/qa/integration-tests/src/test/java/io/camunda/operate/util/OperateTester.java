@@ -210,7 +210,9 @@ public class OperateTester {
   private List<String> processDefinitions;
 
   public OperateTester(
-      final ZeebeClient zeebeClient, final MockMvcTestRule mockMvcTestRule, final SearchTestRule searchTestRule) {
+      final ZeebeClient zeebeClient,
+      final MockMvcTestRule mockMvcTestRule,
+      final SearchTestRule searchTestRule) {
     this.zeebeClient = zeebeClient;
     this.mockMvcTestRule = mockMvcTestRule;
     this.searchTestRule = searchTestRule;
@@ -241,7 +243,8 @@ public class OperateTester {
     return operationReader.getOperationsByBatchOperationId(operation.getId());
   }
 
-  public OperateTester createAndDeploySimpleProcess(final String processId, final String activityId) {
+  public OperateTester createAndDeploySimpleProcess(
+      final String processId, final String activityId) {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
@@ -267,7 +270,8 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester deployProcess(final BpmnModelInstance processModel, final String resourceName) {
+  public OperateTester deployProcess(
+      final BpmnModelInstance processModel, final String resourceName) {
     processDefinitionKey =
         ZeebeTestUtil.deployProcess(zeebeClient, null, processModel, resourceName);
     return this;
@@ -309,7 +313,10 @@ public class OperateTester {
   }
 
   public OperateTester startProcessInstance(
-      final String bpmnProcessId, final Integer processVersion, final String payload, final String tenantId) {
+      final String bpmnProcessId,
+      final Integer processVersion,
+      final String payload,
+      final String tenantId) {
     LOGGER.debug(
         "Start process instance '{}' version '{}' with payload '{}' and tenant '{}'",
         bpmnProcessId,
@@ -369,7 +376,8 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester throwError(final String taskName, final String errorCode, final String errorMessage) {
+  public OperateTester throwError(
+      final String taskName, final String errorCode, final String errorMessage) {
     ZeebeTestUtil.throwErrorInTask(
         zeebeClient, taskName, UUID.randomUUID().toString(), 1, errorCode, errorMessage);
     return this;
@@ -417,7 +425,8 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester eventIsImportedForFlowNode(final String flowNodeId, final EventType eventType) {
+  public OperateTester eventIsImportedForFlowNode(
+      final String flowNodeId, final EventType eventType) {
     searchTestRule.processAllRecordsAndWait(
         eventIsImportedForFlowNodeCheck, processInstanceKey, flowNodeId, eventType);
     return this;
@@ -508,7 +517,8 @@ public class OperateTester {
     return completeTask(jobKey, jobKey, null);
   }
 
-  public OperateTester completeTask(final String activityId, final String jobKey, final String payload) {
+  public OperateTester completeTask(
+      final String activityId, final String jobKey, final String payload) {
     ZeebeTestUtil.completeTask(zeebeClient, jobKey, TestUtil.createRandomString(10), payload);
     return flowNodeIsCompleted(activityId);
   }
@@ -521,7 +531,8 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester updateVariableOperation(final String varName, final String varValue) throws Exception {
+  public OperateTester updateVariableOperation(final String varName, final String varValue)
+      throws Exception {
     final CreateOperationRequestDto op =
         new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
     op.setVariableName(varName);
@@ -544,7 +555,8 @@ public class OperateTester {
     return this;
   }
 
-  private MvcResult postOperation(final CreateOperationRequestDto operationRequest) throws Exception {
+  private MvcResult postOperation(final CreateOperationRequestDto operationRequest)
+      throws Exception {
     final MockHttpServletRequestBuilder postOperationRequest =
         post(format("/api/process-instances/%s/operation", processInstanceKey))
             .content(mockMvcTestRule.json(operationRequest))
@@ -597,7 +609,8 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester activateFlowNode(final String flowNodeId, final Long ancestorElementInstanceKey) {
+  public OperateTester activateFlowNode(
+      final String flowNodeId, final Long ancestorElementInstanceKey) {
     zeebeClient
         .newModifyProcessInstanceCommand(processInstanceKey)
         .activateElement(flowNodeId, ancestorElementInstanceKey)
@@ -734,7 +747,8 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester conditionIsMet(final Predicate<Object[]> elsCheck, final Object... arguments) {
+  public OperateTester conditionIsMet(
+      final Predicate<Object[]> elsCheck, final Object... arguments) {
     searchTestRule.processAllRecordsAndWait(elsCheck, arguments);
     return this;
   }
@@ -798,8 +812,8 @@ public class OperateTester {
         .isEmpty();
   }
 
-  public List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(final String processInstanceId)
-      throws Exception {
+  public List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(
+      final String processInstanceId) throws Exception {
     return getFlowNodeInstanceOneListFromRest(
         new FlowNodeInstanceQueryDto(processInstanceId, processInstanceId));
   }
@@ -831,7 +845,8 @@ public class OperateTester {
     return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
   }
 
-  public ListViewProcessInstanceDto getSingleProcessInstanceByBpmnProcessId(final String processId) {
+  public ListViewProcessInstanceDto getSingleProcessInstanceByBpmnProcessId(
+      final String processId) {
     final ListViewRequestDto request =
         createGetAllProcessInstancesRequest(q -> q.setProcessIds(Arrays.asList(processId)));
     request.setPageSize(100);
