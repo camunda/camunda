@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.RequestMapper.toUserWithPassword;
 import static io.camunda.zeebe.gateway.rest.ResponseMapper.toUserResponse;
+
 import io.camunda.identity.automation.usermanagement.CamundaUserWithPassword;
 import io.camunda.identity.automation.usermanagement.service.UserService;
 import io.camunda.service.CamundaServices;
@@ -20,7 +21,6 @@ import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.RequestMapper.AssignUserTaskRequest;
 import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
 import io.camunda.zeebe.protocol.impl.record.value.identity.UserRecord;
 import java.util.List;
@@ -35,6 +35,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @ZeebeRestController
 @RequestMapping("/v2/users")
@@ -59,15 +60,32 @@ public class UserController {
     return createNewUser(dto);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> createNewUser(final CamundaUserWithPassword request) {
+  private CompletableFuture<ResponseEntity<Object>> createNewUser(
+      final CamundaUserWithPassword request) {
     return RequestMapper.executeServiceMethodWithNoContenResult(
         () ->
-           identityServices
+            identityServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .createUser(
-                    request.getUsername(),
-                    request.getName(),
-                    request.getEmail()));
+                .createUser(request.getUsername(), request.getName(), request.getEmail()));
+  }
+
+  @PostMapping(
+      path = "/{username}/authorization",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public CompletableFuture<ResponseEntity<Object>> createAuthorizationForUser(
+      @PathVariable("username") final String username,
+      @RequestBody final UserAuthorizationRequest userAuthorizationRequest,
+      @RequestParam("user") final String user) {
+    return RequestMapper.executeServiceMethodWithNoContenResult(
+        () ->
+            identityServices
+                .withAuthentication(RequestMapper.getAuthentication(user))
+                .createAuthorization(
+                    username,
+                    userAuthorizationRequest.getResourceKey(),
+                    userAuthorizationRequest.getResourceType(),
+                    userAuthorizationRequest.getPermissions()));
   }
 
   @PostMapping(
@@ -136,6 +154,36 @@ public class UserController {
       return new ResponseEntity<>(camundaUserResponse, HttpStatus.OK);
     } catch (final Exception e) {
       return RestErrorMapper.mapUserManagementExceptionsToResponse(e);
+    }
+  }
+
+  public static class UserAuthorizationRequest {
+    private String resourceKey;
+    private String resourceType;
+    private List<String> permissions;
+
+    public String getResourceKey() {
+      return resourceKey;
+    }
+
+    public void setResourceKey(final String resourceKey) {
+      this.resourceKey = resourceKey;
+    }
+
+    public String getResourceType() {
+      return resourceType;
+    }
+
+    public void setResourceType(final String resourceType) {
+      this.resourceType = resourceType;
+    }
+
+    public List<String> getPermissions() {
+      return permissions;
+    }
+
+    public void setPermissions(final List<String> permissions) {
+      this.permissions = permissions;
     }
   }
 }

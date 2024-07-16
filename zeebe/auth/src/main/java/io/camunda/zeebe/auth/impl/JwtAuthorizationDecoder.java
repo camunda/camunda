@@ -81,7 +81,9 @@ public class JwtAuthorizationDecoder
     final DecodedJWT decodedJWT = withClaim(Authorization.AUTHORIZED_TENANTS).build();
     return Map.of(
         Authorization.AUTHORIZED_TENANTS,
-        decodedJWT.getClaim(Authorization.AUTHORIZED_TENANTS).asList(String.class));
+        decodedJWT.getClaim(Authorization.AUTHORIZED_TENANTS).asList(String.class),
+        "user",
+        decodedJWT.getClaim("user").asString());
   }
 
   /**

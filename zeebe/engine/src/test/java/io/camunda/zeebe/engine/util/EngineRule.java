@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
+import io.camunda.zeebe.engine.util.client.AuthorizationClient;
 import io.camunda.zeebe.engine.util.client.DecisionEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.IncidentClient;
@@ -272,6 +273,10 @@ public final class EngineRule extends ExternalResource {
 
   public UserClient user() {
     return new UserClient(environmentRule);
+  }
+
+  public AuthorizationClient authorization() {
+    return new AuthorizationClient(environmentRule);
   }
 
   public DeploymentClient deployment() {

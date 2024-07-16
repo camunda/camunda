@@ -11,8 +11,11 @@ import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserCreateRequest;
+import io.camunda.zeebe.protocol.impl.record.value.identity.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.identity.UserRecord;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class IdentityServices<T> extends ApiServices<IdentityServices<T>> {
@@ -39,5 +42,18 @@ public class IdentityServices<T> extends ApiServices<IdentityServices<T>> {
       final String username, final String name, final String email) {
     return sendBrokerRequest(
         new BrokerUserCreateRequest().setUsername(username).setName(name).setEmail(email));
+  }
+
+  public CompletableFuture<AuthorizationRecord> createAuthorization(
+      final String username,
+      final String resourceKey,
+      final String resourceType,
+      final List<String> permissions) {
+    return sendBrokerRequest(
+        new BrokerAuthorizationCreateRequest()
+            .setUsername(username)
+            .setResourceKey(resourceKey)
+            .setResourceType(resourceType)
+            .setPermissions(permissions));
   }
 }

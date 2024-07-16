@@ -229,6 +229,20 @@ public class RequestMapper {
     return new Builder().token(token).tenants(authorizedTenants).build();
   }
 
+  public static Authentication getAuthentication(final String user) {
+    final List<String> authorizedTenants = TenantAttributeHolder.tenantIds();
+
+    final String token =
+        Authorization.jwtEncoder()
+            .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
+            .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
+            .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
+            .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants)
+            .withClaim("user", user)
+            .encode();
+    return new Builder().token(token).tenants(authorizedTenants).build();
+  }
+
   private static UserTaskRecord getRecordWithChangedAttributes(
       final UserTaskUpdateRequest updateRequest) {
     final var record = new UserTaskRecord();

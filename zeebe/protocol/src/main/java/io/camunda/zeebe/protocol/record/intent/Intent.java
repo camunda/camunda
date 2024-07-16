@@ -57,7 +57,8 @@ public interface Intent {
           UserTaskIntent.class,
           ProcessInstanceMigrationIntent.class,
           CompensationSubscriptionIntent.class,
-          UserIntent.class);
+          UserIntent.class,
+          AuthorizationIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -143,6 +144,8 @@ public interface Intent {
         return CompensationSubscriptionIntent.from(intent);
       case USER:
         return UserIntent.from(intent);
+      case AUTHORIZATION:
+        return AuthorizationIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -218,6 +221,10 @@ public interface Intent {
         return ProcessInstanceMigrationIntent.valueOf(intent);
       case COMPENSATION_SUBSCRIPTION:
         return CompensationSubscriptionIntent.valueOf(intent);
+      case USER:
+        return UserIntent.valueOf(intent);
+      case AUTHORIZATION:
+        return AuthorizationIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

@@ -55,6 +55,7 @@
       <validValue name="PROCESS_INSTANCE_MIGRATION">38</validValue>
       <validValue name="COMPENSATION_SUBSCRIPTION">39</validValue>
       <validValue name="USER">40</validValue>
+      <validValue name="AUTHORIZATION">41</validValue>
 
       <!-- Management records / record not related to process automation -->
       <validValue name="CHECKPOINT">254</validValue>
@@ -73,6 +74,7 @@
       <validValue name="INVALID_STATE">3</validValue>
       <validValue name="PROCESSING_ERROR">4</validValue>
       <validValue name="EXCEEDED_BATCH_RECORD_SIZE">5</validValue>
+      <validValue name="UNAUTHORIZED">6</validValue>
     </enum>
 
     <enum name="PartitionRole" encodingType="uint8">
