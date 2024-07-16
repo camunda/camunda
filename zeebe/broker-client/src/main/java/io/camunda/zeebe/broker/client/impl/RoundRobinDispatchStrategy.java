@@ -28,12 +28,24 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
       for (int i = 0; i < topology.getPartitionsCount(); i++) {
         final int offset = partitions.getAndIncrement();
         final int partition = topology.getPartition(offset);
-        if (topology.getLeaderForPartition(partition) != BrokerClusterState.NODE_ID_NULL) {
+        if (canRouteTo(topologyManager, partition) && hasLeader(topology, partition)) {
           return partition;
         }
       }
     }
 
     return BrokerClusterState.PARTITION_ID_NULL;
+  }
+
+  private boolean canRouteTo(final BrokerTopologyManager topologyManager, final int partition) {
+    return topologyManager
+        .getClusterConfiguration()
+        .routing()
+        .activePartitions()
+        .contains(partition);
+  }
+
+  private static boolean hasLeader(final BrokerClusterState topology, final int partition) {
+    return topology.getLeaderForPartition(partition) != BrokerClusterState.NODE_ID_NULL;
   }
 }
