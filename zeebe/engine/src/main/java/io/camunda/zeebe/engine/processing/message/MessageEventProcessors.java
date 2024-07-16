@@ -115,7 +115,9 @@ public final class MessageEventProcessors {
                 processState,
                 bpmnBehaviors,
                 startEventSubscriptionState,
-                messageState))
+                messageState,
+                subscriptionState,
+                subscriptionCommandSender))
         .withListener(
             new MessageObserver(
                 scheduledTaskStateFactory,

@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
+import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -28,7 +29,6 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 public final class MessageCorrelationProcessor
     implements TypedRecordProcessor<MessageCorrelationRecord> {
 
-  SubscriptionCommandSender commandSender;
   private final MessageCorrelateBehavior correlateBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -41,7 +41,9 @@ public final class MessageCorrelationProcessor
       final ProcessState processState,
       final BpmnBehaviors bpmnBehaviors,
       final MessageStartEventSubscriptionState startEventSubscriptionState,
-      final MessageState messageState) {
+      final MessageState messageState,
+      final MessageSubscriptionState messageSubscriptionState,
+      final SubscriptionCommandSender commandSender) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     this.keyGenerator = keyGenerator;
@@ -54,7 +56,13 @@ public final class MessageCorrelationProcessor
             bpmnBehaviors.eventTriggerBehavior(),
             bpmnBehaviors.stateBehavior());
     correlateBehavior =
-        new MessageCorrelateBehavior(startEventSubscriptionState, messageState, eventHandle);
+        new MessageCorrelateBehavior(
+            startEventSubscriptionState,
+            messageState,
+            eventHandle,
+            stateWriter,
+            messageSubscriptionState,
+            commandSender);
   }
 
   @Override
@@ -72,12 +80,11 @@ public final class MessageCorrelationProcessor
 
     final var correlatingSubscriptions = new Subscriptions();
     correlateToMessageStartEventSubscriptions(command, messageKey, correlatingSubscriptions);
+    correlateToMessageEventSubscriptions(command.getValue(), messageKey, correlatingSubscriptions);
 
     if (correlatingSubscriptions.isEmpty()) {
       stateWriter.appendFollowUpEvent(
           messageKey, MessageCorrelationIntent.NOT_CORRELATED, command.getValue());
-    } else {
-      sendCorrelateCommand(command.getValue(), messageKey, correlatingSubscriptions);
     }
 
     // Message Correlate command cannot have a TTL. As a result the message expires immediately.
@@ -109,20 +116,17 @@ public final class MessageCorrelationProcessor
     }
   }
 
-  private boolean sendCorrelateCommand(
+  private void correlateToMessageEventSubscriptions(
       final MessageCorrelationRecord messageCorrelationRecord,
       final long messageKey,
       final Subscriptions correlatingSubscriptions) {
-    return correlatingSubscriptions.visitSubscriptions(
-        subscription ->
-            commandSender.correlateProcessMessageSubscription(
-                subscription.getProcessInstanceKey(),
-                subscription.getElementInstanceKey(),
-                subscription.getBpmnProcessId(),
-                messageCorrelationRecord.getNameBuffer(),
-                messageKey,
-                messageCorrelationRecord.getVariablesBuffer(),
-                messageCorrelationRecord.getCorrelationKeyBuffer(),
-                messageCorrelationRecord.getTenantId()));
+    final var correlatedSubscriptions =
+        correlateBehavior.correlateToMessageEvents(
+            messageCorrelationRecord.getTenantId(),
+            messageCorrelationRecord.getNameBuffer(),
+            messageCorrelationRecord.getCorrelationKeyBuffer(),
+            messageCorrelationRecord.getVariablesBuffer(),
+            messageKey);
+    correlatingSubscriptions.addAll(correlatedSubscriptions);
   }
 }
