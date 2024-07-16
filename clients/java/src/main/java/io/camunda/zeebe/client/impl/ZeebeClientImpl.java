@@ -482,7 +482,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public UserTaskQuery newUserTaskQuery() {
     return new UserTaskQueryImpl(httpClient, jsonMapper);
   }
-  
+
   private JobClient newJobClient() {
     return new JobClientImpl(
         asyncStub, httpClient, config, jsonMapper, credentialsProvider::shouldRetryRequest);
