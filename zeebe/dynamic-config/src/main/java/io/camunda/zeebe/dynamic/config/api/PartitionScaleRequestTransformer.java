@@ -78,6 +78,11 @@ public class PartitionScaleRequestTransformer implements ConfigurationChangeRequ
                       new ClusterConfigurationChangeOperation.PartitionChangeOperation
                           .PartitionJoinOperation(
                           m, partitionId, partitionMetadata.getPriority(m))));
+
+      // allow routing requests to partition
+      operations.add(
+          new ClusterConfigurationChangeOperation.RoutingAddPartitionOperation(
+              primary, partitionId));
     }
 
     return Either.right(operations);
