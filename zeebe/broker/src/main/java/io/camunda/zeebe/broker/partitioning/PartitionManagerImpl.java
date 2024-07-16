@@ -162,6 +162,32 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
     return result;
   }
 
+  private ActorFuture<Void> bootstrap2Partition(
+      final PartitionMetadata partitionMetadata,
+      final DynamicPartitionConfig initialPartitionConfig) {
+    final var result = concurrencyControl.<Void>createFuture();
+    final var id = partitionMetadata.id().id();
+    final var context =
+        new PartitionStartupContext(
+            actorSchedulingService,
+            concurrencyControl,
+            topologyManager,
+            diskSpaceUsageMonitor,
+            healthCheckService,
+            managementService,
+            partitionMetadata,
+            raftPartitionFactory,
+            zeebePartitionFactory,
+            brokerCfg,
+            initialPartitionConfig);
+    final var partition = Partition.bootstrapping2(context);
+    partitions.put(id, partition);
+
+    concurrencyControl.runOnCompletion(
+        partition.start(), (started, error) -> completePartitionStart(id, error, result));
+    return result;
+  }
+
   private ActorFuture<Void> joinPartition(
       final PartitionMetadata partitionMetadata,
       final DynamicPartitionConfig initialPartitionConfig) {
@@ -426,7 +452,7 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
     final ActorFuture<Void> future = concurrencyControl.createFuture();
 
     concurrencyControl.run(
-        () -> bootstrapPartition(partitionMetadata, partitionConfig).onComplete(future));
+        () -> bootstrap2Partition(partitionMetadata, partitionConfig).onComplete(future));
     return future;
   }
 

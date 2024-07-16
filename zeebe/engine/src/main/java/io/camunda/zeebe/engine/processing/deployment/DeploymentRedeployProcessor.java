@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -20,6 +19,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.LoggerFactory;
 
 public class DeploymentRedeployProcessor implements TypedRecordProcessor<DeploymentRecord> {
   private final KeyGenerator keyGenerator;
@@ -43,6 +43,8 @@ public class DeploymentRedeployProcessor implements TypedRecordProcessor<Deploym
 
   @Override
   public void processRecord(final TypedRecord<DeploymentRecord> record) {
+    LoggerFactory.getLogger("FINDME")
+        .info("DeploymentRedeployProcessor.processRecord: {} {}", record.getKey(), record);
     // for all deployments, use commandDistributor to redeploy on all partitions
     processState.forEachDeployedDefinition(
         deployedProcess -> {
@@ -50,21 +52,26 @@ public class DeploymentRedeployProcessor implements TypedRecordProcessor<Deploym
           final var deploymentResource = new DeploymentResource();
           deploymentResource.setResource(deployedProcess.getResource());
           deploymentResource.setResourceName(deployedProcess.getResourceName());
-          final var processMetadata = new ProcessMetadata();
-
-          processMetadata.setBpmnProcessId(deployedProcess.getBpmnProcessId());
-          processMetadata.setKey(deployedProcess.getKey());
-          processMetadata.setVersion(deployedProcess.getVersion());
-          processMetadata.setResourceName(deployedProcess.getResourceName());
-          processMetadata.setChecksum(
-              new UnsafeBuffer(checksumGenerator.digest(deploymentResource.getResource())));
-          processMetadata.setTenantId(deployedProcess.getTenantId());
 
           final var deployment = new DeploymentRecord();
 
-          deployment.getResources().add(deploymentResource);
-          deployment.getProcessesMetadata().add(processMetadata);
+          deployment
+              .resources()
+              .add()
+              .setResource(deploymentResource.getResource())
+              .setResourceName(deployedProcess.getResourceName());
+          deployment
+              .processesMetadata()
+              .add()
+              .setBpmnProcessId(deployedProcess.getBpmnProcessId())
+              .setKey(deployedProcess.getKey())
+              .setVersion(deployedProcess.getVersion())
+              .setResourceName(deployedProcess.getResourceName())
+              .setChecksum(
+                  new UnsafeBuffer(checksumGenerator.digest(deploymentResource.getResource())))
+              .setTenantId(deployedProcess.getTenantId());
 
+          // TODO: Distribute only to requested partition
           distributionBehavior.distributeCommand(
               distributionKey, ValueType.DEPLOYMENT, DeploymentIntent.CREATE, deployment);
         });

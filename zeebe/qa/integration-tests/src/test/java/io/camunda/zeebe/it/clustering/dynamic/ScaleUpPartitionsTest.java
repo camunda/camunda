@@ -34,8 +34,8 @@ import org.junit.jupiter.api.Timeout;
 @Timeout(2 * 60) // 2 minutes
 @ZeebeIntegration
 final class ScaleUpPartitionsTest {
-  private static final int BROKER_COUNT = 3;
-  private static final int PARTITION_COUNT = 1;
+  private static final int BROKER_COUNT = 1;
+  private static final int PARTITION_COUNT = 2;
 
   @TestZeebe
   private final TestCluster cluster =
@@ -52,7 +52,7 @@ final class ScaleUpPartitionsTest {
           .withEmbeddedGateway(false)
           .withBrokersCount(BROKER_COUNT)
           .withPartitionsCount(PARTITION_COUNT)
-          .withReplicationFactor(3)
+          .withReplicationFactor(1)
           .build();
 
   private ZeebeClient client;
@@ -71,17 +71,35 @@ final class ScaleUpPartitionsTest {
 
   @Test
   void canCreateInstancesOnNewPartitions() {
+    // given
+    final String jobType = "test-job";
+    final var process =
+        Bpmn.createExecutableProcess("processId")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(jobType))
+            .endEvent()
+            .done();
+    final var deploymentKey =
+        client
+            .newDeployResourceCommand()
+            .addProcessModel(process, "process.bpmn")
+            .send()
+            .join()
+            .getKey();
+    new ZeebeResourcesHelper(client).waitUntilDeploymentIsDone(deploymentKey);
+
     // when
-    final var response = actuator.scalePartitions(2);
+    final var response = actuator.scalePartitions(3);
     Awaitility.await()
         .untilAsserted(
             () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(response));
 
     // then
     // can create instance on all partitions
-    final var processInstanceKeys = createInstanceWithAJobOnAllPartitions(client, "test-job", 2);
 
-    assertThatAllJobsCanBeCompleted(processInstanceKeys, client, "test-job");
+    final var processInstanceKeys = createInstanceWithAJobOnAllPartitions(client, jobType, 3);
+
+    assertThatAllJobsCanBeCompleted(processInstanceKeys, client, jobType);
   }
 
   @Test

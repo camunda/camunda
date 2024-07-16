@@ -11,9 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
-import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -93,20 +91,20 @@ final class Utils {
 
   static List<Long> createInstanceWithAJobOnAllPartitions(
       final ZeebeClient zeebeClient, final String jobType, final int partitionsCount) {
-    final var process =
-        Bpmn.createExecutableProcess("processId")
-            .startEvent()
-            .serviceTask("task", t -> t.zeebeJobType(jobType))
-            .endEvent()
-            .done();
-    final var deploymentKey =
-        zeebeClient
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .send()
-            .join()
-            .getKey();
-    new ZeebeResourcesHelper(zeebeClient).waitUntilDeploymentIsDone(deploymentKey);
+    //    final var process =
+    //        Bpmn.createExecutableProcess("processId")
+    //            .startEvent()
+    //            .serviceTask("task", t -> t.zeebeJobType(jobType))
+    //            .endEvent()
+    //            .done();
+    //    final var deploymentKey =
+    //        zeebeClient
+    //            .newDeployResourceCommand()
+    //            .addProcessModel(process, "process.bpmn")
+    //            .send()
+    //            .join()
+    //            .getKey();
+    //    new ZeebeResourcesHelper(zeebeClient).waitUntilDeploymentIsDone(deploymentKey);
 
     final List<Long> createdProcessInstances = new ArrayList<>();
     Awaitility.await("Process instances are created in all partitions")

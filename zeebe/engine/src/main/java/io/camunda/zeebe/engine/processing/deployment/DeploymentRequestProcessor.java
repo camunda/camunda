@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
+import org.slf4j.LoggerFactory;
 
 public class DeploymentRequestProcessor implements TypedRecordProcessor<DeploymentRecord> {
   private final KeyGenerator keyGenerator;
@@ -29,6 +30,9 @@ public class DeploymentRequestProcessor implements TypedRecordProcessor<Deployme
   @Override
   public void processRecord(final TypedRecord<DeploymentRecord> record) {
     final var distributionKey = keyGenerator.nextKey();
+
+    LoggerFactory.getLogger("FINDME")
+        .info("DeploymentRequestProcessor.processRecord: {} {}", distributionKey, record);
 
     // TODO: Use different value to request redeploy to specific partition(s) only.
     final var deploymentRecord = new DeploymentRecord();

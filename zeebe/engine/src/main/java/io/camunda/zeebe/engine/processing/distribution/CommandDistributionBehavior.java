@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.List;
+import org.slf4j.LoggerFactory;
 
 /**
  * The network communication between the partitions is unreliable. To allow communication between
@@ -184,6 +185,10 @@ public final class CommandDistributionBehavior {
     // have to copy this value for every partition.
     final var commandValue = distributionRecord.getCommandValue();
 
+    LoggerFactory.getLogger(CommandDistributionBehavior.class)
+        .info(
+            "Distributing to partition: {} {} {}", partition, distributionKey, distributionRecord);
+
     sideEffectWriter.appendSideEffect(
         () -> {
           interPartitionCommandSender.sendCommand(
@@ -209,6 +214,14 @@ public final class CommandDistributionBehavior {
             .setIntent(command.getIntent());
 
     final int receiverPartitionId = Protocol.decodePartitionId(distributionKey);
+
+    LoggerFactory.getLogger(CommandDistributionBehavior.class)
+        .info(
+            "Acknowledging to partition: {} {} {}",
+            receiverPartitionId,
+            distributionKey,
+            distributionRecord);
+
     sideEffectWriter.appendSideEffect(
         () -> {
           interPartitionCommandSender.sendCommand(
