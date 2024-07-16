@@ -13,6 +13,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.queries.TaskQuery;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
+import io.camunda.tasklist.util.TestUtil;
 import io.camunda.tasklist.util.ZeebeTestUtil;
 import io.camunda.tasklist.views.TaskSearchView;
 import io.camunda.zeebe.protocol.Protocol;
@@ -38,7 +39,7 @@ public class ZeebeImportWithMissedDataIT extends TasklistZeebeIntegrationTest {
   @DynamicPropertySource
   protected static void registerProperties(final DynamicPropertyRegistry registry) {
     // make batch size smaller
-    if (IS_ELASTIC) {
+    if (TestUtil.isElasticSearch()) {
       registry.add(
           TasklistProperties.PREFIX + ".zeebeElasticsearch.batchSize", () -> IMPORTER_BATCH_SIZE);
     } else {

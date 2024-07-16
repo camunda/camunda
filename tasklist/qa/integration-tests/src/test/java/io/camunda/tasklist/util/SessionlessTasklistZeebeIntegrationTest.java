@@ -40,7 +40,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.test.util.ReflectionTestUtils;
 
 public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIntegrationTest {
-  public static final Boolean IS_ELASTIC = !TasklistPropertiesUtil.isOpenSearchDatabase();
 
   @Autowired public BeanFactory beanFactory;
 

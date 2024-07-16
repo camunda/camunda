@@ -15,6 +15,7 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.qa.backup.generator.BackupRestoreDataGenerator;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
+import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.util.TasklistPropertiesUtil;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupResponseDto;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -41,7 +42,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.GenericContainer;
@@ -291,5 +294,7 @@ public class BackupRestoreTest {
       "io.camunda.tasklist.qa.backup",
       "io.camunda.tasklist.webapp.graphql.entity",
       "io.camunda.tasklist.qa.util.rest"
-    })
+    },
+    includeFilters =
+        @Filter(type = FilterType.ASSIGNABLE_TYPE, classes = SpringContextHolder.class))
 class TestConfig {}

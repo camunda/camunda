@@ -43,7 +43,7 @@ public class TestApplication {
   @Bean(name = "dataGenerator")
   @ConditionalOnMissingBean
   public DataGenerator stubDataGenerator() {
-    return TasklistZeebeIntegrationTest.IS_ELASTIC
+    return TestUtil.isElasticSearch()
         ? new DevDataGeneratorElasticSearch()
         : new DevDataGeneratorOpenSearch();
   }

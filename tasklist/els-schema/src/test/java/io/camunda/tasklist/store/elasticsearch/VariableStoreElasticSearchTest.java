@@ -22,6 +22,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
+import io.camunda.tasklist.util.SpringContextHolder;
 import java.util.List;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -33,12 +34,14 @@ import org.elasticsearch.search.SearchHits;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationContext;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,6 +54,7 @@ class VariableStoreElasticSearchTest {
   @Spy private TaskVariableTemplate taskVariableTemplate = new TaskVariableTemplate();
   @Spy private TasklistProperties tasklistProperties = new TasklistProperties();
   @Spy private ObjectMapper objectMapper = CommonUtils.OBJECT_MAPPER;
+  @Spy private SpringContextHolder springContextHolder;
   @InjectMocks private VariableStoreElasticSearch instance;
 
   @BeforeEach
@@ -58,6 +62,8 @@ class VariableStoreElasticSearchTest {
     ReflectionTestUtils.setField(taskVariableTemplate, "tasklistProperties", tasklistProperties);
     ReflectionTestUtils.setField(variableIndex, "tasklistProperties", tasklistProperties);
     ReflectionTestUtils.setField(flowNodeInstanceIndex, "tasklistProperties", tasklistProperties);
+    springContextHolder.setApplicationContext(
+        mock(ApplicationContext.class, Answers.RETURNS_DEEP_STUBS));
   }
 
   @Test

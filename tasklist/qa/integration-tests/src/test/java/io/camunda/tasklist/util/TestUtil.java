@@ -7,6 +7,8 @@
  */
 package io.camunda.tasklist.util;
 
+import static io.camunda.tasklist.util.TasklistPropertiesUtil.DATABASE_PROPERTY_NAME;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
@@ -82,10 +84,10 @@ public abstract class TestUtil {
   }
 
   public static boolean isElasticSearch() {
-    return !TasklistPropertiesUtil.isOpenSearchDatabase();
+    return !isOpenSearch();
   }
 
   public static boolean isOpenSearch() {
-    return TasklistPropertiesUtil.isOpenSearchDatabase();
+    return "opensearch".equalsIgnoreCase(System.getProperty(DATABASE_PROPERTY_NAME));
   }
 }

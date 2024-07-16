@@ -9,17 +9,25 @@ package io.camunda.tasklist.util;
 
 public final class TasklistPropertiesUtil {
 
-  private static final String DATABASE_PROPERTY_NAME = "camunda.tasklist.database";
+  public static final String DATABASE_PROPERTY_NAME = "camunda.tasklist.database";
+  private static volatile Boolean isOpenSearchDatabaseCache = null;
 
   private TasklistPropertiesUtil() {
     /*utility class*/
   }
 
-  public static String getTasklistDatabase() {
-    return System.getProperty(DATABASE_PROPERTY_NAME, System.getenv(DATABASE_PROPERTY_NAME));
+  public static boolean isOpenSearchDatabase() {
+    if (isOpenSearchDatabaseCache == null) {
+      synchronized (TasklistPropertiesUtil.class) {
+        if (isOpenSearchDatabaseCache == null) {
+          isOpenSearchDatabaseCache = "opensearch".equalsIgnoreCase(getTasklistDatabase());
+        }
+      }
+    }
+    return Boolean.TRUE.equals(isOpenSearchDatabaseCache);
   }
 
-  public static boolean isOpenSearchDatabase() {
-    return "opensearch".equalsIgnoreCase(TasklistPropertiesUtil.getTasklistDatabase());
+  private static String getTasklistDatabase() {
+    return SpringContextHolder.getProperty(DATABASE_PROPERTY_NAME);
   }
 }

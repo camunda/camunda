@@ -12,8 +12,8 @@ import io.camunda.tasklist.archiver.security.ArchiverSecurityModuleConfiguration
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.es.DevDataGeneratorElasticSearch;
 import io.camunda.tasklist.data.os.DevDataGeneratorOpenSearch;
-import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
+import io.camunda.tasklist.util.TestUtil;
 import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
 import io.camunda.tasklist.webapp.security.WebappSecurityModuleConfiguration;
 import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfiguration;
@@ -69,7 +69,7 @@ public class ModulesTestApplication {
   @Bean(name = "dataGenerator")
   @ConditionalOnMissingBean
   public DataGenerator stubDataGenerator() {
-    return TasklistZeebeIntegrationTest.IS_ELASTIC
+    return TestUtil.isElasticSearch()
         ? new DevDataGeneratorElasticSearch()
         : new DevDataGeneratorOpenSearch();
   }

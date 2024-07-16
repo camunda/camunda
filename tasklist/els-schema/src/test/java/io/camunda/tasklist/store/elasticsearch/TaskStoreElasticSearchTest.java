@@ -25,6 +25,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.queries.TaskQuery;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
+import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.views.TaskSearchView;
 import java.io.IOException;
 import java.util.List;
@@ -38,12 +39,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationContext;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,11 +60,15 @@ class TaskStoreElasticSearchTest {
 
   @Spy private ObjectMapper objectMapper = CommonUtils.OBJECT_MAPPER;
 
+  @Spy private SpringContextHolder springContextHolder;
+
   @InjectMocks private TaskStoreElasticSearch instance;
 
   @BeforeEach
   public void setUp() {
     ReflectionTestUtils.setField(taskTemplate, "tasklistProperties", new TasklistProperties());
+    springContextHolder.setApplicationContext(
+        mock(ApplicationContext.class, Answers.RETURNS_DEEP_STUBS));
   }
 
   @ParameterizedTest

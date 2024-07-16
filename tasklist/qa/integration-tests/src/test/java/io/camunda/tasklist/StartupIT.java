@@ -13,6 +13,7 @@ import com.github.dockerjava.api.command.CreateContainerCmd;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestContext;
+import io.camunda.tasklist.util.SpringContextHolder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -23,12 +24,14 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 @ExtendWith(SpringExtension.class)
 @EnabledIfSystemProperty(named = "spring.profiles.active", matches = "docker-test")
+@ContextConfiguration(classes = SpringContextHolder.class)
 public class StartupIT {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(StartupIT.class);

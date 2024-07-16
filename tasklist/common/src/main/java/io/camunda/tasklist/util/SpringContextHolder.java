@@ -28,6 +28,17 @@ public class SpringContextHolder implements ApplicationContextAware {
     return context.getBean(beanClass);
   }
 
+  /**
+   * Retrieves the property value associated with the given key from Spring's application context
+   * environment.
+   *
+   * @param key The key whose associated value is to be retrieved.
+   * @return The value associated with the specified key, or null if the key is not found.
+   */
+  public static String getProperty(String key) {
+    return context.getEnvironment().getProperty(key);
+  }
+
   @Override
   public void setApplicationContext(ApplicationContext context) throws BeansException {
     // store ApplicationContext reference to access required beans later on
