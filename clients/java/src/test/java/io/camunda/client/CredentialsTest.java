@@ -162,7 +162,7 @@ public final class CredentialsTest {
     assertThatThrownBy(() -> client.newTopologyRequest().send().join())
         .isInstanceOf(ClientException.class);
 
-    Mockito.verify(provider, times(retries + 1)).shouldRetryRequest(any(StatusCode.class));
+    Mockito.verify(provider, times(retries)).shouldRetryRequest(any(StatusCode.class));
     assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY)).isEqualTo("Bearer token-0");
   }
 

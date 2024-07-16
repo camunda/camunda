@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.worker.JobHandler;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
@@ -124,8 +123,7 @@ final class RollingUpdateTest {
       Awaitility.await()
           .atMost(Duration.ofSeconds(120))
           .pollInterval(Duration.ofMillis(100))
-          .untilAsserted(
-              () -> assertTopologyContainsUpdatedBroker(client, index, to));
+          .untilAsserted(() -> assertTopologyContainsUpdatedBroker(client, index, to));
     }
   }
 
@@ -157,8 +155,7 @@ final class RollingUpdateTest {
       Awaitility.await("broker is removed from topology")
           .atMost(Duration.ofSeconds(120))
           .pollInterval(Duration.ofMillis(100))
-          .untilAsserted(
-              () -> assertTopologyDoesNotContainerBroker(client, brokerId));
+          .untilAsserted(() -> assertTopologyDoesNotContainerBroker(client, brokerId));
 
       for (int i = 0; i < 100; i++) {
         Awaitility.await("process instance creation")
@@ -187,8 +184,7 @@ final class RollingUpdateTest {
       Awaitility.await("updated broker is added to topology")
           .atMost(Duration.ofSeconds(120))
           .pollInterval(Duration.ofMillis(100))
-          .untilAsserted(
-              () -> assertTopologyContainsUpdatedBroker(client, brokerId, to));
+          .untilAsserted(() -> assertTopologyContainsUpdatedBroker(client, brokerId, to));
     }
 
     Awaitility.await("until restarted broker has snapshot")
@@ -345,7 +341,10 @@ final class RollingUpdateTest {
 
   private CamundaClient camundaClientFromZeebeClient() {
     final var zeebeClient = cluster.newClientBuilder().build();
-    return CamundaClient.newClientBuilder().gatewayAddress(zeebeClient.getConfiguration().getGatewayAddress()).usePlaintext().build();
+    return CamundaClient.newClientBuilder()
+        .gatewayAddress(zeebeClient.getConfiguration().getGatewayAddress())
+        .usePlaintext()
+        .build();
   }
 
   private void assertTopologyDoesNotContainerBroker(
