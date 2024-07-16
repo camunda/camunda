@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.exporter;
 import static io.camunda.zeebe.test.StableValuePredicate.hasStableValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -66,7 +66,7 @@ final class ExporterEnableTest {
                           config -> config.setClassName(TestExporter.class.getName())))
           .build();
 
-  @AutoCloseResource private ZeebeClient client;
+  @AutoCloseResource private CamundaClient client;
   private ExportersActuator actuator;
 
   @BeforeEach

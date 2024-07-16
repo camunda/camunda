@@ -312,7 +312,7 @@ public final class ZeebeClientTest extends ClientTest {
     builder.build();
 
     // then
-    assertThat(builder.getMaxMetadataSize()).isEqualTo(10 * 1024);
+    assertThat(builder.getMaxMetadataSize()).isEqualTo(10 * ONE_KB);
   }
 
   @Test

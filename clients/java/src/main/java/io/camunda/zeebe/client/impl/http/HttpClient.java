@@ -109,17 +109,7 @@ public final class HttpClient implements AutoCloseable {
       final String body,
       final RequestConfig requestConfig,
       final HttpZeebeFuture<RespT> result) {
-    post(path, body, requestConfig, Void.class, r -> null, result);
-  }
-
-  public <HttpT, RespT> void post(
-      final String path,
-      final String body,
-      final RequestConfig requestConfig,
-      final Class<HttpT> responseType,
-      final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpZeebeFuture<RespT> result) {
-    sendRequest(Method.POST, path, body, requestConfig, responseType, transformer, result);
+    sendRequest(Method.POST, path, body, requestConfig, Void.class, r -> null, result);
   }
 
   public <RespT> void patch(

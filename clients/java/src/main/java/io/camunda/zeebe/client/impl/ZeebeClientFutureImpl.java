@@ -30,6 +30,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
+/**
+ * @deprecated since 8.6 for removal with 8.8
+ */
+@Deprecated
 public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
     extends CompletableFuture<ClientResponse>
     implements ZeebeFuture<ClientResponse>,

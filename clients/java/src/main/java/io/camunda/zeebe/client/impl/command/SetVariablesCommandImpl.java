@@ -120,10 +120,4 @@ public final class SetVariablesCommandImpl
     builder.setVariables(jsonDocument);
     return this;
   }
-
-  @Override
-  public SetVariablesCommandStep2 operationReference(final long operationReference) {
-    builder.setOperationReference(operationReference);
-    return this;
-  }
 }

@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
@@ -31,7 +31,7 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    * <p>You can build your client like this:
    *
    * <pre>@{code
-   *   ZeebeClient.newClientBuilder()
+   *   CamundaClient.newClientBuilder()
    *     .gatewayAddress(gateway.gatewayAddress())
    *     .usePlaintext()
    *     .build();
@@ -50,7 +50,7 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    * <p>You can build your client like this:
    *
    * <pre>@{code
-   *    ZeebeClient.newClientBuilder()
+   *    CamundaClient.newClientBuilder()
    *      .restAddress(gateway.restAddress())
    *      .usePlaintext()
    *      .build();
@@ -92,9 +92,9 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
   GatewayCfg gatewayConfig();
 
   /** Returns a new pre-configured client builder for this gateway */
-  default ZeebeClientBuilder newClientBuilder() {
+  default CamundaClientBuilder newClientBuilder() {
     final var builder =
-        ZeebeClient.newClientBuilder().grpcAddress(grpcAddress()).restAddress(restAddress());
+        CamundaClient.newClientBuilder().grpcAddress(grpcAddress()).restAddress(restAddress());
     final var security = gatewayConfig().getSecurity();
     final var restSSL = property("server.ssl.enabled", Boolean.class, false);
     if (security.isEnabled() || restSSL) {

@@ -27,6 +27,7 @@ public final class SnapshotStoreStep implements StartupStep<PartitionStartupCont
 
     final var snapshotStore =
         new FileBasedSnapshotStore(
+            context.brokerConfig().getCluster().getNodeId(),
             context.partitionMetadata().id().id(),
             context.partitionDirectory(),
             new ChecksumProviderRocksDBImpl());

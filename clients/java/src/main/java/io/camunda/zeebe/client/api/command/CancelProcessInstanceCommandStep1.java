@@ -18,8 +18,7 @@ package io.camunda.zeebe.client.api.command;
 import io.camunda.zeebe.client.api.response.CancelProcessInstanceResponse;
 
 public interface CancelProcessInstanceCommandStep1
-    extends CommandWithOperationReferenceStep<CancelProcessInstanceCommandStep1>,
-        FinalCommandStep<CancelProcessInstanceResponse> {
+    extends FinalCommandStep<CancelProcessInstanceResponse> {
   // the place for new optional parameters
 
 }

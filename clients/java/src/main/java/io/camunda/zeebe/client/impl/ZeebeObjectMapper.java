@@ -26,6 +26,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
+/**
+ * @deprecated since 8.6 for removal with 8.8
+ */
+@Deprecated
 public final class ZeebeObjectMapper implements JsonMapper {
 
   private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE =
@@ -40,7 +44,7 @@ public final class ZeebeObjectMapper implements JsonMapper {
     this(new ObjectMapper());
   }
 
-  public ZeebeObjectMapper(ObjectMapper objectMapper) {
+  public ZeebeObjectMapper(final ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
     this.objectMapper
         .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)

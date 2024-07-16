@@ -19,11 +19,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
-import io.camunda.zeebe.client.api.response.DeploymentEvent;
-import io.camunda.zeebe.client.api.response.Process;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.command.DeployResourceCommandStep1;
+import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.Process;
 import io.camunda.zeebe.spring.client.annotation.Deployment;
 import io.camunda.zeebe.spring.client.annotation.processor.ZeebeDeploymentAnnotationProcessor;
 import io.camunda.zeebe.spring.client.bean.ClassInfo;
@@ -40,13 +40,13 @@ import org.springframework.core.io.Resource;
 @ExtendWith(MockitoExtension.class)
 public class DeploymentPostProcessorTest {
 
-  @Mock private ZeebeClient client;
+  @Mock private CamundaClient client;
 
   @Mock private DeployResourceCommandStep1 deployStep1;
 
   @Mock private DeployResourceCommandStep1.DeployResourceCommandStep2 deployStep2;
 
-  @Mock private ZeebeFuture<DeploymentEvent> zeebeFuture;
+  @Mock private CamundaFuture<DeploymentEvent> camundaFuture;
 
   @Mock private DeploymentEvent deploymentEvent;
 
@@ -72,9 +72,9 @@ public class DeploymentPostProcessorTest {
 
     when(deployStep1.addResourceStream(any(), anyString())).thenReturn(deployStep2);
 
-    when(deployStep2.send()).thenReturn(zeebeFuture);
+    when(deployStep2.send()).thenReturn(camundaFuture);
 
-    when(zeebeFuture.join()).thenReturn(deploymentEvent);
+    when(camundaFuture.join()).thenReturn(deploymentEvent);
 
     when(deploymentEvent.getProcesses()).thenReturn(Collections.singletonList(getProcess()));
 
@@ -85,7 +85,7 @@ public class DeploymentPostProcessorTest {
     // then
     verify(deployStep1).addResourceStream(any(), eq("1.bpmn"));
     verify(deployStep2).send();
-    verify(zeebeFuture).join();
+    verify(camundaFuture).join();
   }
 
   @Test
@@ -108,9 +108,9 @@ public class DeploymentPostProcessorTest {
 
     when(deployStep1.addResourceStream(any(), anyString())).thenReturn(deployStep2);
 
-    when(deployStep2.send()).thenReturn(zeebeFuture);
+    when(deployStep2.send()).thenReturn(camundaFuture);
 
-    when(zeebeFuture.join()).thenReturn(deploymentEvent);
+    when(camundaFuture.join()).thenReturn(deploymentEvent);
 
     when(deploymentEvent.getProcesses()).thenReturn(Collections.singletonList(getProcess()));
 
@@ -123,7 +123,7 @@ public class DeploymentPostProcessorTest {
     verify(deployStep1).addResourceStream(any(), eq("1.bpmn"));
 
     verify(deployStep2).send();
-    verify(zeebeFuture).join();
+    verify(camundaFuture).join();
   }
 
   @Test

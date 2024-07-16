@@ -48,7 +48,7 @@ public class TransientSnapshotTest {
     final int partitionId = 1;
     final File root = temporaryFolder.getRoot();
 
-    snapshotStore = new FileBasedSnapshotStore(partitionId, root.toPath());
+    snapshotStore = new FileBasedSnapshotStore(0, partitionId, root.toPath());
     scheduler.submitActor(snapshotStore).join();
   }
 
