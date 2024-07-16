@@ -23,6 +23,12 @@
   <name>Zeebe Backup Restore</name>
 
   <dependencies>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-backup</artifactId>
