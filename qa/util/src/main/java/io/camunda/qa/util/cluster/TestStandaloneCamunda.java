@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 package io.camunda.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
@@ -9,7 +16,6 @@ import io.camunda.commons.configuration.BrokerBasedConfiguration.BrokerBasedProp
 import io.camunda.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.SchemaManager;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.WebappsModuleConfiguration;
@@ -51,10 +57,12 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private final ElasticsearchContainer esContainer =
       new ElasticsearchContainer(ELASTIC_IMAGE)
+          // use JVM option files to avoid overwriting default options set by the ES container class
           .withClasspathResourceMapping(
               "elasticsearch-fast-startup.options",
               "/usr/share/elasticsearch/config/jvm.options.d/elasticsearch-fast-startup.options",
               BindMode.READ_ONLY)
+          // can be slow in CI
           .withStartupTimeout(Duration.ofMinutes(5))
           .withEnv("action.auto_create_index", "true")
           .withEnv("xpack.security.enabled", "false")
@@ -68,12 +76,13 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   public TestStandaloneCamunda() {
     super(
         CommonsModuleConfiguration.class,
-        // test overrides - to control data clean up; (and some components are not installed on)
         OperateModuleConfiguration.class,
         TasklistModuleConfiguration.class,
         WebappsModuleConfiguration.class,
         BrokerModuleConfiguration.class,
         DefaultObjectMapperConfiguration.class,
+        // test overrides - to control data clean up; (and some components are not installed on
+        // Tests)
         TestOperateElasticsearchSchemaManager.class,
         TestTasklistElasticsearchSchemaManager.class,
         TestOperateSchemaStartup.class,
@@ -85,6 +94,8 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     brokerProperties.getNetwork().getInternalApi().setPort(SocketUtil.getNextAddress().getPort());
     brokerProperties.getGateway().getNetwork().setPort(SocketUtil.getNextAddress().getPort());
 
+    // set a smaller default log segment size since we pre-allocate, which might be a lot in tests
+    // for local development; also lower the watermarks for local testing
     brokerProperties.getData().setLogSegmentSize(DataSize.ofMegabytes(16));
     brokerProperties.getData().getDisk().getFreeSpace().setProcessing(DataSize.ofMegabytes(128));
     brokerProperties.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
@@ -92,6 +103,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     operateProperties = new OperateProperties();
     tasklistProperties = new TasklistProperties();
 
+    //noinspection resource
     withBean("config", brokerProperties, BrokerBasedProperties.class)
         .withBean("operate-config", operateProperties, OperateProperties.class)
         .withBean("tasklist-config", tasklistProperties, TasklistProperties.class)
@@ -109,7 +121,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
 
     final ExporterCfg exporterCfg = new ExporterCfg();
     exporterCfg.setClassName("io.camunda.zeebe.exporter.ElasticsearchExporter");
-    exporterCfg.setArgs(Map.of("url", esURL));
+    exporterCfg.setArgs(Map.of("url", esURL)); // new ElasticsearchExporterConfiguration();
     brokerProperties.getExporters().put("elasticsearch", exporterCfg);
 
     operateProperties.getElasticsearch().setUrl(esURL);
@@ -121,8 +133,10 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
 
   @Override
   public TestStandaloneCamunda stop() {
+    // clean up ES/OS indices
     LOGGER.info("Stopping standalone camunda test...");
-    ((TestOperateElasticsearchSchemaManager) bean(SchemaManager.class)).deleteSchema();
+    (bean(TestOperateElasticsearchSchemaManager.class)).deleteSchema();
+    (bean(TestTasklistElasticsearchSchemaManager.class)).deleteSchema();
 
     return super.stop();
   }
@@ -139,6 +153,9 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
 
   @Override
   protected SpringApplicationBuilder createSpringBuilder() {
+    // because @ConditionalOnRestGatewayEnabled relies on the zeebe.broker.gateway.enable property,
+    // we need to hook in at the last minute and set the property as it won't resolve from the
+    // config bean
     withProperty("zeebe.broker.gateway.enable", brokerProperties.getGateway().isEnable());
     return super.createSpringBuilder();
   }
@@ -208,15 +225,28 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     return TestGateway.super.newClientBuilder();
   }
 
+  /** Returns the broker configuration */
   public BrokerBasedProperties brokerConfig() {
     return brokerProperties;
   }
 
+  /**
+   * Modifies the broker configuration. Will still mutate the configuration if the broker is
+   * started, but likely has no effect until it's restarted.
+   */
   public TestStandaloneCamunda withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
     modifier.accept(brokerProperties);
     return this;
   }
 
+  /**
+   * Enables/disables usage of the recording exporter using {@link #RECORDING_EXPORTER_ID} as its
+   * unique ID.
+   *
+   * @param useRecordingExporter if true, will enable the exporter; if false, will remove it from
+   *     the config
+   * @return itself for chaining
+   */
   public TestStandaloneCamunda withRecordingExporter(final boolean useRecordingExporter) {
     if (!useRecordingExporter) {
       brokerProperties.getExporters().remove(RECORDING_EXPORTER_ID);
@@ -227,6 +257,14 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
         RECORDING_EXPORTER_ID, cfg -> cfg.setClassName(RecordingExporter.class.getName()));
   }
 
+  /**
+   * Adds or replaces a new exporter with the given ID. If it was already existing, the existing
+   * configuration is passed to the modifier. If it's new, a blank configuration is passed.
+   *
+   * @param id the ID of the exporter
+   * @param modifier a configuration function
+   * @return itself for chaining
+   */
   public TestStandaloneCamunda withExporter(final String id, final Consumer<ExporterCfg> modifier) {
     final var exporterConfig =
         brokerProperties.getExporters().computeIfAbsent(id, ignored -> new ExporterCfg());

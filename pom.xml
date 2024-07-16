@@ -32,7 +32,6 @@
     <module>testing/camunda-process-test-java</module>
     <module>testing/camunda-process-test-spring</module>
     <module>clients/java</module>
-    <module>qa</module>
   </modules>
 
   <scm>
@@ -41,20 +40,6 @@
     <tag>HEAD</tag>
     <url>https://github.com/camunda/camunda</url>
   </scm>
-  <dependencies>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-qa-util</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>elasticsearch</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-common</artifactId>
-    </dependency>
-  </dependencies>
 
   <build>
     <plugins>
