@@ -1,8 +1,0 @@
-{
-  "description": "Delete field pending. This may be needed in case of upgrade path 8.1.x -> 8.2.8+ -> 8.3.0+",
-  "@type": "processorStep",
-  "indexName": "incident",
-  "version": "8.3.1",
-  "order": 0,
-  "content": "{ \"remove\": { \"field\": \"pending\" , \"ignore_missing\": true} }"
-}
