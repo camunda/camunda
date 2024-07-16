@@ -1003,6 +1003,8 @@ final class JsonSerializableToJsonTest {
               final long processInstanceKey = 2L;
               final String correlationKey = "key";
               final long messageKey = 3L;
+              final long requestId = 4L;
+              final int requestStreamId = 5;
 
               return new MessageSubscriptionRecord()
                   .setElementInstanceKey(elementInstanceKey)
@@ -1011,7 +1013,9 @@ final class JsonSerializableToJsonTest {
                   .setMessageName(wrapString(messageName))
                   .setProcessInstanceKey(processInstanceKey)
                   .setCorrelationKey(wrapString(correlationKey))
-                  .setVariables(VARIABLES_MSGPACK);
+                  .setVariables(VARIABLES_MSGPACK)
+                  .setRequestId(requestId)
+                  .setRequestStreamId(requestStreamId);
             },
         """
         {
@@ -1025,7 +1029,9 @@ final class JsonSerializableToJsonTest {
             "foo": "bar"
           },
           "interrupting": true,
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "requestId": 4,
+          "requestStreamId": 5
         }
         """
       },
@@ -1054,7 +1060,9 @@ final class JsonSerializableToJsonTest {
           "messageKey": -1,
           "variables": {},
           "interrupting": true,
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "requestId": -1,
+          "requestStreamId": -1
         }
         """
       },
