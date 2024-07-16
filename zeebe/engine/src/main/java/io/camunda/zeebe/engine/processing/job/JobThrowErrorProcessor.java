@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.StringUtil.limitString;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
+import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -153,6 +154,12 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   private void raiseIncident(
       final long key, final JobRecord job, final StateWriter stateWriter, final Failure failure) {
 
+    final var treePathProperties =
+        new ElementTreePathBuilder()
+            .withElementInstanceState(elementInstanceState)
+            .withElementInstanceKey(job.getElementInstanceKey())
+            .build();
+
     incidentEvent.reset();
     incidentEvent
         .setErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
@@ -164,7 +171,10 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
         .setElementInstanceKey(job.getElementInstanceKey())
         .setTenantId(job.getTenantId())
         .setJobKey(key)
-        .setVariableScopeKey(job.getElementInstanceKey());
+        .setVariableScopeKey(job.getElementInstanceKey())
+        .setElementInstancePath(treePathProperties.elementInstancePath())
+        .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
+        .setCallingElementPath(treePathProperties.callingElementPath());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
   }
