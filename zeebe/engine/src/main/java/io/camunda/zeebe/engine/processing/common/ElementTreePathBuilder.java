@@ -9,9 +9,10 @@ package io.camunda.zeebe.engine.processing.common;
 
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import java.util.Deque;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
+import org.agrona.DirectBuffer;
 
 public class ElementTreePathBuilder {
   private ElementInstanceState elementInstanceState;
@@ -41,7 +42,7 @@ public class ElementTreePathBuilder {
   }
 
   private void buildElementTreePathProperties(final long elementInstanceKey) {
-    final Deque<Long> elementInstancePath = new LinkedList<>();
+    final List<Long> elementInstancePath = new LinkedList<>();
     elementInstancePath.add(elementInstanceKey);
     ElementInstance instance = elementInstanceState.getInstance(elementInstanceKey);
     long parentElementInstanceKey = instance.getParentKey();
@@ -56,12 +57,21 @@ public class ElementTreePathBuilder {
 
     final long callingElementInstanceKey = processInstanceRecord.getParentElementInstanceKey();
     if (callingElementInstanceKey != -1) {
+      properties.callingElementPath.addFirst(getCallActivityId(callingElementInstanceKey));
       buildElementTreePathProperties(callingElementInstanceKey);
     }
   }
 
+  private DirectBuffer getCallActivityId(final long callingElementInstanceKey) {
+    final ElementInstance callActivityElementInstance =
+        elementInstanceState.getInstance(callingElementInstanceKey);
+    final var callActivityInstanceRecord = callActivityElementInstance.getValue();
+
+    return callActivityInstanceRecord.getElementIdBuffer();
+  }
+
   public record ElementTreePathProperties(
-      Deque<Deque<Long>> elementInstancePath,
-      Deque<Long> processDefinitionPath,
-      Deque<Long> callingElementPath) {}
+      List<List<Long>> elementInstancePath,
+      List<Long> processDefinitionPath,
+      List<DirectBuffer> callingElementPath) {}
 }
