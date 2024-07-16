@@ -43,6 +43,9 @@ public sealed interface ClusterConfigurationChangeOperation {
   record MemberRemoveOperation(MemberId memberId, MemberId memberToRemove)
       implements ClusterConfigurationChangeOperation {}
 
+  record RoutingAddPartitionOperation(MemberId memberId, int partitionId)
+      implements ClusterConfigurationChangeOperation {}
+
   sealed interface PartitionChangeOperation extends ClusterConfigurationChangeOperation {
     int partitionId();
 

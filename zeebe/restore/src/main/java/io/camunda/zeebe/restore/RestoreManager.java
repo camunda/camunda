@@ -127,7 +127,7 @@ public class RestoreManager {
         new ClusterConfiguration(
             clusterConfiguration.version(),
             clusterConfiguration.members(),
-            new RoutingState(activePartitions, backupDescriptor.routingConfiguration()),
+            new RoutingState(0, activePartitions, backupDescriptor.routingConfiguration()),
             clusterConfiguration.lastChange(),
             clusterConfiguration.pendingChanges());
     try {

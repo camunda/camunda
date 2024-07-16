@@ -7,19 +7,36 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import com.google.common.collect.ImmutableSet;
 import io.camunda.zeebe.protocol.Protocol;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public record RoutingState(
-    Set<Integer> activePartitions, MessageRoutingConfiguration messageRoutingConfiguration) {
+    long version,
+    Set<Integer> activePartitions,
+    MessageRoutingConfiguration messageRoutingConfiguration) {
 
   public static RoutingState ofFixed(final int partitionCount) {
     final var activePartitions =
         IntStream.rangeClosed(Protocol.START_PARTITION_ID, partitionCount)
             .boxed()
             .collect(Collectors.toSet());
-    return new RoutingState(activePartitions, MessageRoutingConfiguration.fixed(partitionCount));
+    return new RoutingState(0, activePartitions, MessageRoutingConfiguration.fixed(partitionCount));
+  }
+
+  public RoutingState addActivePartition(final int partitionId) {
+    final var updatedPartitions =
+        ImmutableSet.<Integer>builder().addAll(activePartitions).add(partitionId).build();
+    return new RoutingState(version + 1, updatedPartitions, messageRoutingConfiguration);
+  }
+
+  public RoutingState merge(final RoutingState other) {
+    if (version >= other.version) {
+      return this;
+    } else {
+      return other;
+    }
   }
 }

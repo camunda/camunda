@@ -18,8 +18,9 @@ message ClusterTopology {
 }
 
 message RoutingInfo {
-  MessageRoutingConfiguration messageRouting = 1;
-  repeated int32 activePartitions = 2;
+  int64 version = 1;
+  MessageRoutingConfiguration messageRouting = 2;
+  repeated int32 activePartitions = 3;
 }
 
 message MessageRoutingConfiguration {
@@ -82,6 +83,7 @@ message TopologyChangeOperation {
     PartitionDisableExporterOperation partitionDisableExporter = 9;
     PartitionEnableExporterOperation partitionEnableExporter = 10;
     PartitionBootstrapOperation partitionBootstrap = 11;
+    RoutingAddPartitionOperation routingAddPartition = 12;
   }
 }
 
@@ -131,6 +133,10 @@ message MemberLeaveOperation {}
 
 message MemberRemoveOperation {
   string memberToRemove = 1;
+}
+
+message RoutingAddPartitionOperation {
+  int32 partitionId = 1;
 }
 
 enum State {

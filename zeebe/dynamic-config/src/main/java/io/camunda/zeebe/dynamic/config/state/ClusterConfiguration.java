@@ -156,9 +156,9 @@ public record ClusterConfiguration(
               .flatMap(Optional::stream)
               .reduce(ClusterChangePlan::merge);
 
-      // TODO: merge routing configuration
+      final var mergedRouting = routing.merge(other.routing);
       return new ClusterConfiguration(
-          version, ImmutableMap.copyOf(mergedMembers), routing, lastChange, mergedChanges);
+          version, ImmutableMap.copyOf(mergedMembers), mergedRouting, lastChange, mergedChanges);
     }
   }
 
@@ -304,5 +304,10 @@ public record ClusterConfiguration(
     } else {
       return this;
     }
+  }
+
+  public ClusterConfiguration updateRouting(final UnaryOperator<RoutingState> routingUpdater) {
+    return new ClusterConfiguration(
+        version, members, routingUpdater.apply(routing), lastChange, pendingChanges);
   }
 }

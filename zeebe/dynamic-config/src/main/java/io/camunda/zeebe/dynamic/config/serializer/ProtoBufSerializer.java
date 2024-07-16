@@ -154,6 +154,7 @@ public class ProtoBufSerializer
   private RoutingState decodeRoutingConfiguration(final RoutingInfo routing) {
     try {
       return new RoutingState(
+          routing.getVersion(),
           new HashSet<>(routing.getActivePartitionsList()),
           decodeMessageRoutingConfiguration(routing.getMessageRouting()));
     } catch (final Exception e) {
@@ -195,6 +196,7 @@ public class ProtoBufSerializer
 
   private RoutingInfo encodeRoutingConfiguration(final RoutingState routing) {
     return RoutingInfo.newBuilder()
+        .setVersion(routing.version())
         .addAllActivePartitions(routing.activePartitions())
         .setMessageRouting(encodeMessageRoutingConfiguration(routing.messageRoutingConfiguration()))
         .build();
