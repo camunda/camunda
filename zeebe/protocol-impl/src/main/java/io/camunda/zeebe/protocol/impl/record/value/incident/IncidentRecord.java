@@ -232,15 +232,16 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
-  public List<DirectBuffer> getCallingElementPath() {
-    final var callingElementPath = new ArrayList<DirectBuffer>();
-    callingElementPathProp.forEach(e -> callingElementPath.add(e.getValue()));
+  public List<String> getCallingElementPath() {
+    final var callingElementPath = new ArrayList<String>();
+    callingElementPathProp.forEach(
+        e -> callingElementPath.add(BufferUtil.bufferAsString(e.getValue())));
     return callingElementPath;
   }
 
-  public IncidentRecord setCallingElementPath(final List<DirectBuffer> callingElementPath) {
+  public IncidentRecord setCallingElementPath(final List<String> callingElementPath) {
     callingElementPathProp.reset();
-    callingElementPath.forEach(e -> callingElementPathProp.add().wrap(e));
+    callingElementPath.forEach(e -> callingElementPathProp.add().wrap(BufferUtil.wrapString(e)));
     return this;
   }
 }

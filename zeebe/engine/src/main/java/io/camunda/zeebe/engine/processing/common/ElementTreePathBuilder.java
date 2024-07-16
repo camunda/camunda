@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import org.agrona.DirectBuffer;
 
 public class ElementTreePathBuilder {
   private ElementInstanceState elementInstanceState;
@@ -62,16 +61,16 @@ public class ElementTreePathBuilder {
     }
   }
 
-  private DirectBuffer getCallActivityId(final long callingElementInstanceKey) {
+  private String getCallActivityId(final long callingElementInstanceKey) {
     final ElementInstance callActivityElementInstance =
         elementInstanceState.getInstance(callingElementInstanceKey);
     final var callActivityInstanceRecord = callActivityElementInstance.getValue();
 
-    return callActivityInstanceRecord.getElementIdBuffer();
+    return callActivityInstanceRecord.getElementId();
   }
 
   public record ElementTreePathProperties(
       List<List<Long>> elementInstancePath,
       List<Long> processDefinitionPath,
-      List<DirectBuffer> callingElementPath) {}
+      List<String> callingElementPath) {}
 }
