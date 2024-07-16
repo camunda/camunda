@@ -834,16 +834,18 @@ public class CompactRecordLogger {
 
   private String summarizeMessageCorrelation(final Record<?> record) {
     final var value = (MessageCorrelationRecordValue) record.getValue();
+    final var correlationKey = value.getCorrelationKey();
 
     final var result = new StringBuilder().append("\"").append(value.getName()).append("\"");
 
-    if (!StringUtils.isEmpty(value.getCorrelationKey())) {
-      result.append(" correlationKey: ").append(value.getCorrelationKey());
+    if (correlationKey != null && !correlationKey.isEmpty()) {
+      result.append(" correlationKey: ").append(correlationKey);
     }
 
-    result.append(" processInstanceKey: ").append(value.getProcessInstanceKey());
-
-    result.append(summarizeVariables(value.getVariables()));
+    result
+        .append(" processInstanceKey: ")
+        .append(value.getProcessInstanceKey())
+        .append(summarizeVariables(value.getVariables()));
 
     return result.toString();
   }
