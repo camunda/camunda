@@ -1,0 +1,20 @@
+name: Zeebe Repo dispatch E2E tests
+
+on:
+  repository_dispatch:
+    types: [e2e_run_testbench]
+
+env:
+  # This URL is used as the business key for the various QA workflows
+  BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+jobs:
+  e2e:
+    strategy:
+      # do not cancel other jobs if one fails
+      fail-fast: false
+    name: E2E tests on release
+    uses: ./.github/workflows/zeebe-e2e-testbench.yaml
+    with:
+      branch: ${{ github.event.client_payload.branch }}
+    secrets: inherit
