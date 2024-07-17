@@ -24,6 +24,6 @@ public final class ProtocolTest {
 
   @Test
   public void testEndiannessConstant() {
-    assertThat(Protocol.ENDIANNESS).isEqualTo(ByteOrder.LITTLE_ENDIAN);
+    assertThat(Protocol.ENDIANNESS).isEqualTo(ByteOrder.BIG_ENDIAN);
   }
 }
