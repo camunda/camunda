@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.ClientRequest;
@@ -147,6 +148,11 @@ final class BrokerRequestManager extends Actor {
                 BrokerClientMetrics.registerSuccessfulRequest(
                     request.getPartitionId(), request.getType(), elapsedTime);
                 return;
+              } else if (result.retryable) {
+                final var newPartitionId =
+                    request.requestDispatchStrategy().get().determinePartition(topologyManager);
+                request.setPartitionId(newPartitionId);
+                sendRequestInternal(request, returnFuture, sender, requestTimeout);
               }
             } else {
               returnFuture.completeExceptionally(error);
@@ -189,6 +195,9 @@ final class BrokerRequestManager extends Actor {
         responseFuture.complete(response);
         return RequestResult.processed();
       } else if (response.isRejection()) {
+        if (response.getRejection().type() == RejectionType.MESSAGE_MIGRATED) {
+          return RequestResult.retry();
+        }
         responseFuture.completeExceptionally(new BrokerRejectionException(response.getRejection()));
         return RequestResult.processed();
       } else if (response.isError()) {
@@ -256,10 +265,12 @@ final class BrokerRequestManager extends Actor {
 
   private static class RequestResult {
     private final boolean processed;
+    private final boolean retryable;
     private final ErrorCode errorCode;
 
-    RequestResult(final boolean processed, final ErrorCode errorCode) {
+    RequestResult(final boolean processed, final boolean retryable, final ErrorCode errorCode) {
       this.processed = processed;
+      this.retryable = retryable;
       this.errorCode = errorCode;
     }
 
@@ -272,11 +283,15 @@ final class BrokerRequestManager extends Actor {
     }
 
     static RequestResult processed() {
-      return new RequestResult(true, null);
+      return new RequestResult(true, false, null);
     }
 
     static RequestResult failed(final ErrorCode code) {
-      return new RequestResult(false, code);
+      return new RequestResult(false, false, code);
+    }
+
+    static RequestResult retry() {
+      return new RequestResult(false, true, null);
     }
   }
 

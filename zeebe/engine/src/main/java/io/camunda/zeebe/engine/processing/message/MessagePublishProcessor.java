@@ -23,12 +23,17 @@ import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionStat
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil.Routing;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil.Routing.FixedPartitionCount;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil.Routing.Migrating;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import org.agrona.collections.MutableBoolean;
 
 public final class MessagePublishProcessor implements TypedRecordProcessor<MessageRecord> {
 
@@ -49,6 +54,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   private long messageKey;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final Routing routing;
 
   public MessagePublishProcessor(
       final MessageState messageState,
@@ -60,7 +66,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final Writers writers,
       final ProcessState processState,
       final EventTriggerBehavior eventTriggerBehavior,
-      final BpmnStateBehavior stateBehavior) {
+      final BpmnStateBehavior stateBehavior,
+      final SubscriptionUtil.Routing routing) {
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;
     this.startEventSubscriptionState = startEventSubscriptionState;
@@ -69,6 +76,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
+    this.routing = routing;
     eventHandle =
         new EventHandle(
             keyGenerator,
@@ -104,6 +112,47 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   }
 
   private void handleNewMessage(final TypedRecord<MessageRecord> command) {
+    switch (routing) {
+      case final Migrating migrating -> handleMessageWhileMigrating(migrating, command);
+      case final FixedPartitionCount fixed -> handleMessageNormally(command);
+    }
+  }
+
+  private void handleMessageWhileMigrating(
+      final Migrating migrating, final TypedRecord<MessageRecord> command) {
+    final var correlationKey = messageRecord.getCorrelationKeyBuffer();
+    final var oldPartition = migrating.partitionForCorrelationKey(correlationKey);
+    final var newPartition = migrating.alternativePartition(correlationKey);
+    if (oldPartition == newPartition) {
+      handleMessageNormally(command);
+      return;
+    }
+
+    // Check for local subscription
+    final var hasSubscription = new MutableBoolean();
+    subscriptionState.visitSubscriptions(
+        messageRecord.getTenantId(),
+        messageRecord.getNameBuffer(),
+        messageRecord.getCorrelationKeyBuffer(),
+        subscription -> {
+          hasSubscription.set(true);
+          return false;
+        });
+
+    if (hasSubscription.get()) {
+      handleMessageNormally(command);
+      return;
+    }
+
+    // Reject so that gateway can retry on new partition
+    final var rejectionReason =
+        "Message migrated from %s to %s".formatted(oldPartition, newPartition);
+    rejectionWriter.appendRejection(command, RejectionType.MESSAGE_MIGRATED, rejectionReason);
+    responseWriter.writeRejectionOnCommand(
+        command, RejectionType.MESSAGE_MIGRATED, rejectionReason);
+  }
+
+  private void handleMessageNormally(final TypedRecord<MessageRecord> command) {
     messageKey = keyGenerator.nextKey();
 
     // calculate the deadline based on the command's timestamp

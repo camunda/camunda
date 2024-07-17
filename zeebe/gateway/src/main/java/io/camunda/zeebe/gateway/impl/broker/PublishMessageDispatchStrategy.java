@@ -11,11 +11,13 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.dynamic.config.state.MessageRoutingConfiguration.FixedPartitionCount;
+import io.camunda.zeebe.dynamic.config.state.MessageRoutingConfiguration.Migrating;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil.Routing;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public final class PublishMessageDispatchStrategy implements RequestDispatchStrategy {
   private final String correlationKey;
+  private boolean hasCheckedFirstPartition;
 
   public PublishMessageDispatchStrategy(final String correlationKey) {
     this.correlationKey = correlationKey;
@@ -31,12 +33,23 @@ public final class PublishMessageDispatchStrategy implements RequestDispatchStra
               correlationKey));
     }
 
-    final var routing =
-        switch (topologyManager.getClusterConfiguration().routing().messageRoutingConfiguration()) {
-          case final FixedPartitionCount fixed ->
-              Routing.ofFixedPartitionCount(fixed.partitionCount());
-        };
-
-    return routing.partitionForCorrelationKey(BufferUtil.wrapString(correlationKey));
+    return switch (topologyManager
+        .getClusterConfiguration()
+        .routing()
+        .messageRoutingConfiguration()) {
+      case final FixedPartitionCount fixed ->
+          Routing.ofFixedPartitionCount(fixed.partitionCount())
+              .partitionForCorrelationKey(BufferUtil.wrapString(correlationKey));
+      case final Migrating migrating -> {
+        if (hasCheckedFirstPartition) {
+          yield Routing.ofMigrating(migrating.newPartitionCount(), migrating.newPartitionCount())
+              .alternativePartition(BufferUtil.wrapString(correlationKey));
+        } else {
+          hasCheckedFirstPartition = true;
+          yield Routing.ofMigrating(migrating.newPartitionCount(), migrating.newPartitionCount())
+              .partitionForCorrelationKey(BufferUtil.wrapString(correlationKey));
+        }
+      }
+    };
   }
 }

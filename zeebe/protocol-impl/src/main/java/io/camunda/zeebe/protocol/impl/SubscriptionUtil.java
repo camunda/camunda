@@ -51,6 +51,26 @@ public final class SubscriptionUtil {
       return new FixedPartitionCount(partitionCount);
     }
 
+    static Migrating ofMigrating(final int oldPartitionCount, final int newParititionCount) {
+      return new Migrating(oldPartitionCount, newParititionCount);
+    }
+
+    record Migrating(int oldPartitionCount, int newPartitionCount) implements Routing {
+
+      @Override
+      public int partitionForCorrelationKey(final DirectBuffer correlationKey) {
+        final int hashCode = getSubscriptionHashCode(correlationKey);
+        // partition ids range from START_PARTITION_ID .. START_PARTITION_ID + partitionCount
+        return Math.abs(hashCode % oldPartitionCount) + START_PARTITION_ID;
+      }
+
+      public int alternativePartition(final DirectBuffer correlationKey) {
+        final int hashCode = getSubscriptionHashCode(correlationKey);
+        // partition ids range from START_PARTITION_ID .. START_PARTITION_ID + partitionCount
+        return Math.abs(hashCode % newPartitionCount) + START_PARTITION_ID;
+      }
+    }
+
     record FixedPartitionCount(int partitionCount) implements Routing {
 
       @Override
