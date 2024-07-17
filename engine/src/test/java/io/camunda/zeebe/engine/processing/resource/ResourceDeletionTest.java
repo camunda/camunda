@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
@@ -248,12 +249,17 @@ public class ResourceDeletionTest {
             .get(0)
             .getProcessDefinitionKey();
     final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var partitionId = Protocol.decodePartitionId(processInstanceKey);
 
     // Note! We don't register the banned instance using an event. You won't see the Error Event in
     // the log!
+    // We need to pause processing to prevent potential transaction corruption when modifying the
+    // state from the test thread concurrently to processing.
+    engine.pauseProcessing(partitionId);
     final var bannedInstanceState =
         (MutableBannedInstanceState) engine.getProcessingState().getBannedInstanceState();
     bannedInstanceState.banProcessInstance(processInstanceKey);
+    engine.resumeProcessing(partitionId);
 
     // when
     engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
