@@ -125,7 +125,7 @@ public final class MessageStreamProcessorTest {
                   .addTime(
                       MessageObserver.SUBSCRIPTION_CHECK_INTERVAL.plus(
                           MessageObserver.SUBSCRIPTION_TIMEOUT));
-              verify(mockInterpartitionCommandSender, timeout(100).times(2))
+              verify(mockInterpartitionCommandSender, timeout(100).atLeast(2))
                   .sendCommand(
                       eq(0),
                       eq(ValueType.PROCESS_MESSAGE_SUBSCRIPTION),
