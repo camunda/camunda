@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.Before;
 import org.junit.Rule;
@@ -117,8 +116,7 @@ public class ElementTreePathBuilderTest {
         .containsExactly(
             processARecord.getProcessDefinitionKey(), processBRecord.getProcessDefinitionKey());
     assertThat(properties.callingElementPath()).hasSize(1);
-    assertThat(properties.callingElementPath().getFirst())
-        .isEqualTo(BufferUtil.wrapString("callActivity"));
+    assertThat(properties.callingElementPath().getFirst()).isEqualTo("callActivity");
   }
 
   private ProcessInstanceRecord createProcessInstanceRecord() {
