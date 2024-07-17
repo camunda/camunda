@@ -55,6 +55,7 @@ public class ReadZeebeWorkerValueTest {
     assertEquals(false, zeebeWorkerValue.get().getAutoComplete());
     assertEquals(List.of(), zeebeWorkerValue.get().getFetchVariables());
     assertEquals(methodInfo, zeebeWorkerValue.get().getMethodInfo());
+    assertEquals(Duration.ofHours(1), zeebeWorkerValue.get().getStreamTimeout());
   }
 
   @Test
