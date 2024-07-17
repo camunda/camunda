@@ -111,7 +111,7 @@ it('should render without crashing', () => {
 it('should display a loading indicator', () => {
   const node = shallow(<DefinitionSelection {...props} />);
 
-  expect(node.find('Loading')).toExist();
+  expect(node.find('.LoadingDefinitions')).toExist();
 });
 
 it('should initially load all definitions', () => {

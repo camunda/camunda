@@ -9,9 +9,9 @@
 import React from 'react';
 import classnames from 'classnames';
 import {withRouter} from 'react-router-dom';
-import {ComboBox, FormLabel} from '@carbon/react';
+import {ComboBox, FormLabel, SelectSkeleton} from '@carbon/react';
 
-import {BPMNDiagram, Loading, Popover, TenantInfo} from 'components';
+import {BPMNDiagram, Popover, TenantInfo} from 'components';
 import {withErrorHandling} from 'HOC';
 import {getCollection, getRandomId, loadDefinitions} from 'services';
 import {t} from 'translation';
@@ -314,7 +314,7 @@ export class DefinitionSelection extends React.Component {
     if (!availableDefinitions) {
       return (
         <div className="DefinitionSelection">
-          <Loading small />
+          <SelectSkeleton hideLabel={!selectedDefinitions} className="LoadingDefinitions" />
         </div>
       );
     }
