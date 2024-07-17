@@ -52,7 +52,7 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
   private static final int VERSION_LENGTH = Byte.BYTES;
 
   private final Logger log = LoggerFactory.getLogger(getClass());
-  private final ByteBuffer metaBuffer = ByteBuffer.allocate(256).order(ByteOrder.LITTLE_ENDIAN);
+  private final ByteBuffer metaBuffer = ByteBuffer.allocate(256).order(ByteOrder.BIG_ENDIAN);
   private final FileChannel configurationChannel;
   private final File confFile;
   private final MetaStoreSerializer serializer = new MetaStoreSerializer();
