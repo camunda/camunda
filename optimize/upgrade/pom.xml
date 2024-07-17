@@ -10,6 +10,10 @@
 
   <artifactId>upgrade-optimize</artifactId>
 
+  <properties>
+    <skip.docker>${skipTests}</skip.docker>
+  </properties>
+
   <dependencies>
 
     <!-- Optimize dependencies -->
