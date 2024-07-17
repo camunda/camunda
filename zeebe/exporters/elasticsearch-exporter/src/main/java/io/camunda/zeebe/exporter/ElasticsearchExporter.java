@@ -333,6 +333,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.compensationSubscription) {
         createValueIndexTemplate(ValueType.COMPENSATION_SUBSCRIPTION);
       }
+      if (index.user) {
+        createValueIndexTemplate(ValueType.USER);
+      }
     }
 
     indexTemplatesCreated = true;
