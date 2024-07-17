@@ -758,23 +758,37 @@ public final class CallActivityTest {
   }
 
   @Test
-  public void shouldPropagateCallingElementPathWithIncident() {
+  public void shouldPropagateTreePathPropertiesWithIncident() {
     // given
+    final String rootProcessId = "root";
+    final String callActivity1Id = "callParent";
+    final String callActivity2Id = "callChild";
+
     ENGINE
         .deployment()
-        .withXmlResource("wf-parent.bpmn", parentProcess(c -> c.zeebeProcessId(PROCESS_ID_CHILD)))
+        .withXmlResource(
+            "wf-root.bpmn",
+            Bpmn.createExecutableProcess(rootProcessId)
+                .startEvent()
+                .callActivity(callActivity1Id, c -> c.zeebeProcessId(PROCESS_ID_PARENT))
+                .done())
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentProcess(c -> c.id(callActivity2Id).zeebeProcessId(PROCESS_ID_CHILD)))
         .withXmlResource(
             "wf-child.bpmn",
             childProcess(jobType, c -> c.zeebeOutputExpression("assert(x, x != null)", "y")))
         .deploy();
 
-    final var parentInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+    final var rootInstanceKey = ENGINE.processInstance().ofBpmnProcessId(rootProcessId).create();
 
-    final var parentInstance = getProcessInstanceRecordValue(parentInstanceKey);
+    final var rootInstance = getProcessInstanceRecordValue(rootInstanceKey);
+    final var parentInstance = getChildInstanceOf(rootInstanceKey);
+    final var parentInstanceKey = parentInstance.getProcessInstanceKey();
     final var childInstance = getChildInstanceOf(parentInstanceKey);
     final long childInstanceKey = childInstance.getProcessInstanceKey();
-    final var callActivityInstance = getCallActivityInstance(parentInstanceKey);
+    final var callActivity1Key = getCallActivityInstanceKey(rootInstanceKey);
+    final var callActivity2Key = getCallActivityInstanceKey(parentInstanceKey);
 
     completeJobWith(Map.of());
 
@@ -786,12 +800,15 @@ public final class CallActivityTest {
             .getValue();
 
     Assertions.assertThat(incident)
-        .hasElementInstancePath(
-            List.of(parentInstanceKey, callActivityInstance.getKey()),
+        .hasOnlyElementInstancePath(
+            List.of(rootInstanceKey, callActivity1Key),
+            List.of(parentInstanceKey, callActivity2Key),
             List.of(childInstanceKey, incident.getElementInstanceKey()))
-        .hasProcessDefinitionPath(
-            parentInstance.getProcessDefinitionKey(), childInstance.getProcessDefinitionKey())
-        .hasCallingElementPath("call");
+        .hasOnlyProcessDefinitionPath(
+            rootInstance.getProcessDefinitionKey(),
+            parentInstance.getProcessDefinitionKey(),
+            childInstance.getProcessDefinitionKey())
+        .hasOnlyCallingElementPath(callActivity1Id, callActivity2Id);
   }
 
   private static ProcessInstanceRecordValue getProcessInstanceRecordValue(
