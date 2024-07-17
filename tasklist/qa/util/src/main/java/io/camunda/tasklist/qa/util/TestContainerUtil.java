@@ -10,7 +10,6 @@ package io.camunda.tasklist.qa.util;
 import com.github.dockerjava.api.model.Bind;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.util.RetryOperation;
-import io.camunda.tasklist.util.TasklistPropertiesUtil;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebePort;
 import jakarta.annotation.PreDestroy;
@@ -432,7 +431,7 @@ public class TestContainerUtil {
   // for newer versions
   private void applyConfiguration(
       final GenericContainer<?> tasklistContainer, final TestContext testContext) {
-    if (TasklistPropertiesUtil.isOpenSearchDatabase()) {
+    if (TestUtil.isOpenSearch()) {
       final String osHost = testContext.getInternalOsHost();
       final Integer osPort = testContext.getInternalOsPort();
       tasklistContainer
@@ -507,7 +506,7 @@ public class TestContainerUtil {
   }
 
   protected void addConfig(final ZeebeContainer zeebeBroker, final TestContext testContext) {
-    if (TasklistPropertiesUtil.isOpenSearchDatabase()) {
+    if (TestUtil.isOpenSearch()) {
       zeebeBroker
           .withEnv(
               "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME",

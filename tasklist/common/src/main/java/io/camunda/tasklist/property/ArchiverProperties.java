@@ -90,10 +90,6 @@ public class ArchiverProperties {
   }
 
   public String getRolloverInterval() {
-    if (rolloverInterval == null) {
-      rolloverInterval =
-          TasklistProperties.getDatabase().equals(TasklistProperties.ELASTIC_SEARCH) ? "1d" : "Day";
-    }
     return rolloverInterval;
   }
 

@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
-import io.camunda.tasklist.util.TestUtil;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import java.io.File;
 import java.util.Map;
