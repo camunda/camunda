@@ -226,7 +226,12 @@ paths:
               $ref: '#/components/schemas/ProcessInstanceSearchQueryRequest'
       responses:
         '200':
-          $ref: "#/components/schemas/ProcessInstanceSearchQueryResponse"
+          description: >
+            The Process Instance Search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessInstanceSearchQueryResponse"
         '400':
           description: >
             The Process Instance Search Query failed.
