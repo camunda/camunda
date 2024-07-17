@@ -199,6 +199,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
+  @Override
   public List<List<Long>> getElementInstancePath() {
     final var elementInstancePath = new ArrayList<List<Long>>();
     elementInstancePathProp.forEach(
@@ -220,6 +221,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
+  @Override
   public List<Long> getProcessDefinitionPath() {
     final var processDefinitionPath = new ArrayList<Long>();
     processDefinitionPathProp.forEach(e -> processDefinitionPath.add(e.getValue()));
@@ -232,6 +234,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
+  @Override
   public List<String> getCallingElementPath() {
     final var callingElementPath = new ArrayList<String>();
     callingElementPathProp.forEach(
