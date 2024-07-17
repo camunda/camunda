@@ -143,7 +143,7 @@ export function DefinitionEditor({
               />
             </div>
           )}
-          {showOnlyTenant && <TenantInfo tenant={availableTenants[0]} useCarbonVariant />}
+          {showOnlyTenant && <TenantInfo tenant={availableTenants[0]} />}
           <TextInput
             id="ProcessRenameInput"
             size="sm"

@@ -393,7 +393,7 @@ export class DefinitionSelection extends React.Component {
                 />
               </div>
               {this.isOnlyTenant() ? (
-                <TenantInfo tenant={this.getAvailableTenants()[0]} useCarbonVariant />
+                <TenantInfo tenant={this.getAvailableTenants()[0]} />
               ) : (
                 <div className="tenant entry">
                   <TenantPopover

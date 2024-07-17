@@ -52,7 +52,6 @@ export const reportTile = Selector('.OptimizeReportTile');
 export const textTile = Selector('.TextTile');
 export const externalUrlTile = Selector('.ExternalUrlTile');
 export const customValueAddButton = Selector('.customValueAddButton');
-export const typeaheadInput = Selector('.Typeahead .Input');
 export const alertsDropdown = Selector('.AlertsDropdown button');
 export const alertDeleteButton = Selector('.AlertModal .deleteAlertButton');
 export const collectionLink = Selector('.NavItem a').withText('New collection');
