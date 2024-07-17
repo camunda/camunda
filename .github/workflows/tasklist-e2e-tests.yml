@@ -116,7 +116,7 @@ jobs:
       - name: Build backend
         # Currently, the e2e environment of tasklist conflicts with the optimize build. For the moment,
         # we're excluding optimize from the build, not to impact this tasklist's workflow.
-        run: mvn clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true -pl '!optimize,!optimize-distro,!optimize/client,!optimize/upgrade,!optimize/backend,!optimize/util,!optimize/util/dependency-doc-creation,!optimize/util/optimize-reimport-preparation,!optimize/util/optimize-commons,!optimize/plugins,!optimize/plugins/plugin,!optimize/plugins/optimize-test-plugins/optimize-main-test-plugin,!optimize/plugins/optimize-test-plugins/optimize-pluginloading-test-plugin'
+        run: mvn clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true -pl '!optimize,!optimize-distro,!optimize/client,!optimize/upgrade,!optimize/backend,!optimize/util,!optimize/util/dependency-doc-creation,!optimize/util/optimize-commons,!optimize/plugins,!optimize/plugins/plugin,!optimize/plugins/optimize-test-plugins/optimize-main-test-plugin,!optimize/plugins/optimize-test-plugins/optimize-pluginloading-test-plugin'
       - name: Start Tasklist
         run: mvn -q -B spring-boot:start -pl dist -Dspring-boot.run.main-class=io.camunda.application.StandaloneTasklist -Dspring-boot.run.fork=true -Dspring-boot.run.profiles=e2e-test -Dspring-boot.run.arguments="--camunda.tasklist.cloud.clusterId=449ac2ad-d3c6-4c73-9c68-7752e39ae616 --camunda.tasklist.csrfPreventionEnabled=false"
       - name: Python setup
