@@ -15,6 +15,9 @@
  */
 package io.camunda.client.impl;
 
+import java.util.Properties;
+import java.util.function.Consumer;
+
 final class BuilderUtils {
 
   private BuilderUtils() {}
@@ -22,5 +25,27 @@ final class BuilderUtils {
   static void appendProperty(
       final StringBuilder sb, final String propertyName, final Object value) {
     sb.append(propertyName).append(": ").append(value).append("\n");
+  }
+
+  static void applyIfNotNull(
+      final Properties properties,
+      final String propertyName,
+      final String legacyPropertyName,
+      final Consumer<String> action) {
+    final String value = getOrLegacy(properties, propertyName, legacyPropertyName);
+    if (value != null) {
+      action.accept(value);
+    }
+  }
+
+  static String getOrLegacy(
+      final Properties properties, final String propertyName, final String legacyPropertyName) {
+    if (properties.containsKey(propertyName)) {
+      return properties.getProperty(propertyName);
+    }
+    if (properties.containsKey(legacyPropertyName)) {
+      return properties.getProperty(legacyPropertyName);
+    }
+    return null;
   }
 }
