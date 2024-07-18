@@ -50,7 +50,7 @@ public class TaskService {
   @Autowired private UserReader userReader;
 
   @Autowired
-  @Qualifier("tasklistZeebeClient")
+  @Qualifier("tasklistCamundaClient")
   private CamundaClient camundaClient;
 
   @Autowired private TaskStore taskStore;
