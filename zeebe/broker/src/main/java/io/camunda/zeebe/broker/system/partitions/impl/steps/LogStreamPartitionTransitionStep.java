@@ -38,18 +38,10 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
         && (shouldInstallOnTransition(targetRole, context.getCurrentRole())
             || targetRole == Role.INACTIVE)) {
       context.getComponentHealthMonitor().removeComponent(logStream.getLogName());
-      final ActorFuture<Void> future = logStream.closeAsync();
-      future.onComplete(
-          (ok, error) -> {
-            if (error == null) {
-              context.setLogStream(null);
-            }
-          });
-
-      return future;
-    } else {
-      return CompletableActorFuture.completed(null);
+      logStream.close();
+      context.setLogStream(null);
     }
+    return CompletableActorFuture.completed(null);
   }
 
   @Override
@@ -65,10 +57,6 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
               ((logStream, err) -> {
                 if (err == null) {
                   context.setLogStream(logStream);
-
-                  context
-                      .getComponentHealthMonitor()
-                      .registerComponent(logStream.getLogName(), logStream);
                   openFuture.complete(null);
                 } else {
                   openFuture.completeExceptionally(err);

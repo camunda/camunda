@@ -54,7 +54,7 @@ public class SyncLogStream implements SynchronousLogStream {
 
   @Override
   public void close() {
-    logStream.closeAsync().join();
+    logStream.close();
   }
 
   @Override

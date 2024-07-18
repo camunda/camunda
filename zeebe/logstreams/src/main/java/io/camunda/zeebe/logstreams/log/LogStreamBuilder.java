@@ -58,7 +58,7 @@ public interface LogStreamBuilder {
    */
   LogStreamBuilder withLogName(String logName);
 
-  LogStreamBuilder withRequestLimit(Limit appendLimit);
+  LogStreamBuilder withRequestLimit(Limit requestLimit);
 
   LogStreamBuilder withWriteRateLimit(RateLimit writeRateLimit);
 
