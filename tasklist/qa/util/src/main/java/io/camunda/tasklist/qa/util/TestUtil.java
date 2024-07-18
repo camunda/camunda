@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.util;
+package io.camunda.tasklist.qa.util;
 
 import java.io.IOException;
 import java.util.List;
@@ -21,10 +21,12 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class TestUtil {
+public final class TestUtil {
 
   public static final String DATE_TIME_GRAPHQL_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSSxxxx";
   private static final Logger LOGGER = LoggerFactory.getLogger(TestUtil.class);
+
+  private TestUtil() {}
 
   public static String createRandomString(int length) {
     return UUID.randomUUID().toString().substring(0, length);
@@ -82,10 +84,10 @@ public abstract class TestUtil {
   }
 
   public static boolean isElasticSearch() {
-    return !TasklistPropertiesUtil.isOpenSearchDatabase();
+    return !isOpenSearch();
   }
 
   public static boolean isOpenSearch() {
-    return TasklistPropertiesUtil.isOpenSearchDatabase();
+    return "opensearch".equalsIgnoreCase(System.getProperty("camunda.tasklist.database"));
   }
 }

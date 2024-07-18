@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -182,7 +183,9 @@ public class TaskArchiverJobElasticSearch extends AbstractArchiverJobElasticSear
     return dateHistogram(datesAggName)
         .field(TaskTemplate.COMPLETION_TIME)
         .calendarInterval(
-            new DateHistogramInterval(tasklistProperties.getArchiver().getRolloverInterval()))
+            new DateHistogramInterval(
+                Optional.ofNullable(tasklistProperties.getArchiver().getRolloverInterval())
+                    .orElse("1d")))
         .format(tasklistProperties.getArchiver().getElsRolloverDateFormat())
         .keyed(true) // get result as a map (not an array)
         // we want to get only one bucket at a time

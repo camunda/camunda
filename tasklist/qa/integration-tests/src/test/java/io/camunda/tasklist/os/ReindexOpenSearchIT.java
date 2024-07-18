@@ -10,9 +10,9 @@ package io.camunda.tasklist.os;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.schema.migration.os.ReindexPlanOpenSearch;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
-import io.camunda.tasklist.util.TestUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
