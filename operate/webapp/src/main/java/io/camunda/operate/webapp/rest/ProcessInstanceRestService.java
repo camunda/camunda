@@ -13,6 +13,7 @@ import io.camunda.operate.Metrics;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.SequenceFlowEntity;
+import io.camunda.operate.schema.templates.JobTemplate;
 import io.camunda.operate.store.SequenceFlowStore;
 import io.camunda.operate.util.rest.ValidLongId;
 import io.camunda.operate.webapp.InternalAPIErrorController;
@@ -209,6 +210,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       @RequestBody final ListenerRequestDto request) {
     checkIdentityReadPermission(Long.parseLong(processInstanceId));
     processInstanceRequestValidator.validateListenerRequest(request);
+    request.setSorting(new SortingDto().setSortBy(JobTemplate.TIME).setSortOrder("desc"));
     return listenerReader.getListenerExecutions(processInstanceId, request);
   }
 

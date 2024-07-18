@@ -8,16 +8,20 @@
 package io.camunda.operate.webapp.opensearch.reader;
 
 import io.camunda.operate.conditions.OpensearchCondition;
+import io.camunda.operate.schema.templates.JobTemplate;
 import io.camunda.operate.webapp.reader.ListenerReader;
 import io.camunda.operate.webapp.rest.dto.ListenerDto;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchListenerReader extends OpensearchAbstractReader implements ListenerReader {
+
+  @Autowired private JobTemplate jobTemplate;
 
   @Override
   public List<ListenerDto> getListenerExecutions(
