@@ -157,6 +157,7 @@
     }
   ],
   "dockerfile": {
+    "fileMatch": ["(^|/)([\\w-]+\\.)?[Dd]ockerfile$"],
     "ignorePaths": [
       "zeebe/benchmarks/**",
       "clients/go/vendor/**"
