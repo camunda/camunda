@@ -21,23 +21,12 @@ public class PartitionSupplierConfigurer {
 
   private final Gateway gateway;
   private final CamundaClient camundaClient;
-  private final ZeebeClient zeebeClient; // Used for Operate
 
   public PartitionSupplierConfigurer(
       final Broker broker, final Gateway gateway, final CamundaClient camundaClient) {
     this.broker = broker;
     this.gateway = gateway;
     this.camundaClient = camundaClient;
-    zeebeClient = null;
-  }
-
-  // Delete this method after migrate to CamundaClient on Operate Application
-  public PartitionSupplierConfigurer(
-      final Broker broker, final Gateway gateway, final ZeebeClient zeebeClient) {
-    this.broker = broker;
-    this.gateway = gateway;
-    camundaClient = null;
-    this.zeebeClient = zeebeClient;
   }
 
   public PartitionSupplier createPartitionSupplier() {

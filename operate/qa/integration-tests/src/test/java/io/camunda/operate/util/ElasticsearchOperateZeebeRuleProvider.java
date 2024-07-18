@@ -70,6 +70,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
     startZeebe();
   }
 
+  @Override
   public void updateRefreshInterval(String value) {
     try {
       final GetComponentTemplatesRequest getRequest = new GetComponentTemplatesRequest(prefix);
@@ -96,6 +97,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
     }
   }
 
+  @Override
   public void refreshIndices(Instant instant) {
     try {
       final String date =
@@ -130,6 +132,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
    *
    * @throws IllegalStateException if no exporter has previously been configured
    */
+  @Override
   public void startZeebe() {
 
     final String zeebeVersion =
@@ -148,10 +151,12 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   }
 
   /** Stops the broker and destroys the client. Does nothing if not started yet. */
+  @Override
   public void stopZeebe() {
     testContainerUtil.stopZeebe(null);
   }
 
+  @Override
   public String getPrefix() {
     return prefix;
   }
@@ -160,10 +165,12 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
     this.prefix = prefix;
   }
 
+  @Override
   public ZeebeContainer getZeebeContainer() {
     return zeebeContainer;
   }
 
+  @Override
   public ZeebeClient getClient() {
     return client;
   }
