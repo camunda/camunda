@@ -55,10 +55,12 @@ public class JavaClientPropertiesTest {
     assertThat(properties.getGatewayAddress()).isEqualTo("localhost12345");
   }
 
+  @Test
   public void hasGrpcAddress() {
     assertThat(properties.getGrpcAddress().toString()).isEqualTo("https://localhost:1234");
   }
 
+  @Test
   public void hasRestAddress() {
     assertThat(properties.getRestAddress().toString()).isEqualTo("https://localhost:8080");
   }

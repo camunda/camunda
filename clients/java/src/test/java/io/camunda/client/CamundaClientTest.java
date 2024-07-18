@@ -16,9 +16,12 @@
 package io.camunda.client;
 
 import static io.camunda.client.ClientProperties.CLOUD_REGION;
+import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_NAME;
 import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static io.camunda.client.ClientProperties.DEFAULT_TENANT_ID;
+import static io.camunda.client.ClientProperties.GATEWAY_ADDRESS;
 import static io.camunda.client.ClientProperties.GRPC_ADDRESS;
+import static io.camunda.client.ClientProperties.JOB_WORKER_MAX_JOBS_ACTIVE;
 import static io.camunda.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.client.ClientProperties.MAX_METADATA_SIZE;
 import static io.camunda.client.ClientProperties.PREFER_REST_OVER_GRPC;
@@ -63,6 +66,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Executors;
@@ -987,5 +991,94 @@ public final class CamundaClientTest extends ClientTest {
 
     // then
     assertThat(builder.useDefaultRetryPolicy()).isFalse();
+  }
+
+  @Test
+  public void shouldUseLegacyProperties() throws URISyntaxException {
+    // given
+    final Properties properties = new Properties();
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    properties.setProperty(
+        io.camunda.zeebe.client.ClientProperties.GATEWAY_ADDRESS, "localhost:28500");
+    properties.setProperty(io.camunda.zeebe.client.ClientProperties.REST_ADDRESS, "localhost:8080");
+    properties.setProperty(
+        io.camunda.zeebe.client.ClientProperties.GRPC_ADDRESS, "https://localhost:8080");
+    properties.setProperty(
+        io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID, "legacyDefaultTenantId");
+    properties.setProperty(
+        io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS,
+        "legacyDefaultJobWorkerTenantIds");
+    properties.setProperty(
+        io.camunda.zeebe.client.ClientProperties.JOB_WORKER_MAX_JOBS_ACTIVE, "2");
+    properties.setProperty(
+        io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_NAME,
+        "legacyDefaultJobWorkerName");
+    properties.setProperty(io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE, "200");
+    properties.setProperty(io.camunda.zeebe.client.ClientProperties.MAX_METADATA_SIZE, "200");
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getGatewayAddress()).isEqualTo("localhost:28500");
+    assertThat(builder.getRestAddress()).isEqualTo(new URI("localhost:8080"));
+    assertThat(builder.getGrpcAddress()).isEqualTo(new URI("https://localhost:8080"));
+    assertThat(builder.getDefaultTenantId()).isEqualTo("legacyDefaultTenantId");
+    assertThat(builder.getDefaultJobWorkerTenantIds())
+        .isEqualTo(Collections.singletonList("legacyDefaultJobWorkerTenantIds"));
+    assertThat(builder.getDefaultJobWorkerMaxJobsActive()).isEqualTo(2);
+    assertThat(builder.getDefaultJobWorkerName()).isEqualTo("legacyDefaultJobWorkerName");
+    assertThat(builder.getMaxMessageSize()).isEqualTo(200);
+    assertThat(builder.getMaxMetadataSize()).isEqualTo(200);
+  }
+
+  @Test
+  public void shouldPreferNewPropertiesOverLegacyProperties() throws URISyntaxException {
+    // given
+    final Properties properties = new Properties();
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    properties.setProperty(GATEWAY_ADDRESS, "localhost:26500");
+    properties.setProperty(
+        io.camunda.zeebe.client.ClientProperties.GATEWAY_ADDRESS, "localhost:28500");
+    properties.setProperty(REST_ADDRESS, "localhost:9090");
+    properties.setProperty(io.camunda.zeebe.client.ClientProperties.REST_ADDRESS, "localhost:8080");
+    properties.setProperty(GRPC_ADDRESS, "https://localhost:9090");
+    properties.setProperty(
+        io.camunda.zeebe.client.ClientProperties.GRPC_ADDRESS, "https://localhost:8080");
+    properties.setProperty(DEFAULT_TENANT_ID, "defaultTenantId");
+    properties.setProperty(
+        io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID, "legacyDefaultTenantId");
+    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_IDS, "defaultJobWorkerTenantIds");
+    properties.setProperty(
+        io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS,
+        "legacyDefaultJobWorkerTenantIds");
+    properties.setProperty(JOB_WORKER_MAX_JOBS_ACTIVE, "1");
+    properties.setProperty(
+        io.camunda.zeebe.client.ClientProperties.JOB_WORKER_MAX_JOBS_ACTIVE, "2");
+    properties.setProperty(DEFAULT_JOB_WORKER_NAME, "jobWorkerName");
+    properties.setProperty(
+        io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_NAME,
+        "legacyDefaultJobWorkerName");
+    properties.setProperty(MAX_MESSAGE_SIZE, "100");
+    properties.setProperty(io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE, "200");
+    properties.setProperty(MAX_METADATA_SIZE, "100");
+    properties.setProperty(io.camunda.zeebe.client.ClientProperties.MAX_METADATA_SIZE, "200");
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getGatewayAddress()).isEqualTo("localhost:26500");
+    assertThat(builder.getRestAddress()).isEqualTo(new URI("localhost:9090"));
+    assertThat(builder.getGrpcAddress()).isEqualTo(new URI("https://localhost:9090"));
+    assertThat(builder.getDefaultTenantId()).isEqualTo("defaultTenantId");
+    assertThat(builder.getDefaultJobWorkerTenantIds())
+        .isEqualTo(Collections.singletonList("defaultJobWorkerTenantIds"));
+    assertThat(builder.getDefaultJobWorkerMaxJobsActive()).isEqualTo(1);
+    assertThat(builder.getDefaultJobWorkerName()).isEqualTo("jobWorkerName");
+    assertThat(builder.getMaxMessageSize()).isEqualTo(100);
+    assertThat(builder.getMaxMetadataSize()).isEqualTo(100);
   }
 }
