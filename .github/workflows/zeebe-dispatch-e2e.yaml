@@ -1,7 +1,7 @@
 name: Zeebe Repo dispatch E2E tests
 
 on:
-  repository_dispatch:
+  workflow_dispatch:
     types: [e2e_run_testbench]
 
 jobs:
