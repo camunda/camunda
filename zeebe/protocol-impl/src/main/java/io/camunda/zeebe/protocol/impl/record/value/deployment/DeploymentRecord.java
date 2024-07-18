@@ -9,7 +9,9 @@ package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -46,14 +48,17 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
+  private final LongProperty keyProp = new LongProperty("key", -1);
+
   public DeploymentRecord() {
-    super(6);
+    super(7);
     declareProperty(resourcesProp)
         .declareProperty(processesMetadataProp)
         .declareProperty(decisionRequirementsMetadataProp)
         .declareProperty(decisionMetadataProp)
         .declareProperty(formMetadataProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(keyProp);
   }
 
   public ValueArray<ProcessMetadata> processesMetadata() {
@@ -145,6 +150,17 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
     }
 
     return metadataList;
+  }
+
+  @Override
+  @JsonIgnore
+  public long getKey() {
+    return keyProp.getValue();
+  }
+
+  public DeploymentRecord setKey(final long key) {
+    keyProp.setValue(key);
+    return this;
   }
 
   public void resetResources() {

@@ -58,4 +58,9 @@ public interface DeploymentRecordValue extends RecordValue, TenantOwned {
    * @return the deployed forms
    */
   List<FormMetadataValue> getFormMetadata();
+
+  /**
+   * @return the unique key of the deployment
+   */
+  long getKey();
 }
