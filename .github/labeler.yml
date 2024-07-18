@@ -15,7 +15,6 @@ component/zeebe:
         - 'monitor/**'
         - 'parent/*'
         - 'pom.xml'
-        - 'spring-boot-starter-camunda-sdk/**'
         - 'zeebe/**'
 component/operate:
   - changed-files:

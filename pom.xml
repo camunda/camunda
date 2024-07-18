@@ -20,7 +20,6 @@
     <module>parent</module>
     <module>dist</module>
     <module>build-tools</module>
-    <module>spring-boot-starter-camunda-sdk</module>
     <module>zeebe</module>
     <module>operate</module>
     <module>tasklist</module>
@@ -29,9 +28,10 @@
     <module>authentication</module>
     <module>search</module>
     <module>service</module>
+    <module>clients/java</module>
+    <module>clients/spring-boot-starter-camunda-sdk</module>
     <module>testing/camunda-process-test-java</module>
     <module>testing/camunda-process-test-spring</module>
-    <module>clients/java</module>
   </modules>
 
   <scm>
