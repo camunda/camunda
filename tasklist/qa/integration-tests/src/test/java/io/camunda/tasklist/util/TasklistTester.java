@@ -16,6 +16,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import com.graphql.spring.boot.test.GraphQLTestTemplate;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.MigrationPlanBuilderImpl;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -23,8 +25,6 @@ import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.oauth.IdentityJwt2AuthenticationTokenConverter;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
@@ -59,8 +59,8 @@ public class TasklistTester {
       "mutation {claimTask(taskId: \"%s\")" + TASK_RESULT_PATTERN + "}";
   private static final String VARIABLE_INPUT_PATTERN = "{name: \"%s\", value: \"%s\"}";
 
-  private ZeebeClient zeebeClient;
-  private DatabaseTestExtension databaseTestExtension;
+  private final CamundaClient camundaClient;
+  private final DatabaseTestExtension databaseTestExtension;
   private JwtDecoder jwtDecoder;
   //
   private String processDefinitionKey;
@@ -133,14 +133,17 @@ public class TasklistTester {
   //
   //  private Long jobKey;
   //
-  public TasklistTester(ZeebeClient zeebeClient, DatabaseTestExtension elasticsearchTestRule) {
-    this.zeebeClient = zeebeClient;
-    this.databaseTestExtension = elasticsearchTestRule;
+  public TasklistTester(
+      final CamundaClient camundaClient, final DatabaseTestExtension elasticsearchTestRule) {
+    this.camundaClient = camundaClient;
+    databaseTestExtension = elasticsearchTestRule;
   }
 
   public TasklistTester(
-      ZeebeClient zeebeClient, DatabaseTestExtension elasticsearchTestRule, JwtDecoder jwtDecoder) {
-    this(zeebeClient, elasticsearchTestRule);
+      final CamundaClient camundaClient,
+      final DatabaseTestExtension elasticsearchTestRule,
+      final JwtDecoder jwtDecoder) {
+    this(camundaClient, elasticsearchTestRule);
     this.jwtDecoder = jwtDecoder;
   }
 
@@ -149,24 +152,25 @@ public class TasklistTester {
   //    return processInstanceKey;
   //  }
   //
-  public TasklistTester createAndDeploySimpleProcess(String processId, String flowNodeBpmnId) {
+  public TasklistTester createAndDeploySimpleProcess(
+      final String processId, final String flowNodeBpmnId) {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
             .userTask(flowNodeBpmnId)
             .endEvent()
             .done();
-    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
+    processDefinitionKey = ZeebeTestUtil.deployProcess(camundaClient, process, processId + ".bpmn");
     return this;
   }
 
   public TasklistTester createAndDeploySimpleProcessZeebeUserTask(
-      String processId, String flowNodeBpmnId) {
+      final String processId, final String flowNodeBpmnId) {
     return createAndDeploySimpleProcessZeebeUserTask(processId, flowNodeBpmnId, null);
   }
 
   public TasklistTester createAndDeploySimpleProcessZeebeUserTask(
-      String processId, String flowNodeBpmnId, String assignee) {
+      final String processId, final String flowNodeBpmnId, final String assignee) {
 
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
@@ -176,12 +180,12 @@ public class TasklistTester {
             .zeebeUserTask()
             .endEvent("end")
             .done();
-    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
+    processDefinitionKey = ZeebeTestUtil.deployProcess(camundaClient, process, processId + ".bpmn");
     return this;
   }
 
   public TasklistTester createAndDeploySimpleProcessWithZeebeUserTask(
-      String processId, String flowNodeBpmnId) {
+      final String processId, final String flowNodeBpmnId) {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
@@ -189,19 +193,20 @@ public class TasklistTester {
             .zeebeUserTask()
             .endEvent()
             .done();
-    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
+    processDefinitionKey = ZeebeTestUtil.deployProcess(camundaClient, process, processId + ".bpmn");
     return this;
   }
 
-  public TasklistTester createAndDeployProcess(BpmnModelInstance process) {
+  public TasklistTester createAndDeployProcess(final BpmnModelInstance process) {
     processDefinitionKey =
         ZeebeTestUtil.deployProcess(
-            zeebeClient, process, process.getDefinitions().getId() + ".bpmn");
+            camundaClient, process, process.getDefinitions().getId() + ".bpmn");
     return this;
   }
 
-  public TasklistTester migrateProcessInstance(String oldTaskMapping, String newTaskMapping) {
-    zeebeClient
+  public TasklistTester migrateProcessInstance(
+      final String oldTaskMapping, final String newTaskMapping) {
+    camundaClient
         .newMigrateProcessInstanceCommand(Long.valueOf(processInstanceId))
         .migrationPlan(
             new MigrationPlanBuilderImpl()
@@ -214,7 +219,7 @@ public class TasklistTester {
   }
 
   public TasklistTester createAndDeploySimpleProcessWithCandidateGroup(
-      String processId, String flowNodeBpmnId, String candidateGroup) {
+      final String processId, final String flowNodeBpmnId, final String candidateGroup) {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
@@ -222,12 +227,12 @@ public class TasklistTester {
             .zeebeCandidateGroups(candidateGroup)
             .endEvent()
             .done();
-    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
+    processDefinitionKey = ZeebeTestUtil.deployProcess(camundaClient, process, processId + ".bpmn");
     return this;
   }
 
   public TasklistTester createAndDeploySimpleProcessWithCandidateUser(
-      String processId, String flowNodeBpmnId, String candidateUser) {
+      final String processId, final String flowNodeBpmnId, final String candidateUser) {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
@@ -235,12 +240,12 @@ public class TasklistTester {
             .zeebeCandidateUsers(candidateUser)
             .endEvent()
             .done();
-    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
+    processDefinitionKey = ZeebeTestUtil.deployProcess(camundaClient, process, processId + ".bpmn");
     return this;
   }
 
   public TasklistTester createAndDeploySimpleProcessWithAssignee(
-      String processId, String flowNodeBpmnId, String user) {
+      final String processId, final String flowNodeBpmnId, final String user) {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
@@ -248,12 +253,12 @@ public class TasklistTester {
             .zeebeAssignee(user)
             .endEvent()
             .done();
-    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
+    processDefinitionKey = ZeebeTestUtil.deployProcess(camundaClient, process, processId + ".bpmn");
     return this;
   }
 
   public TasklistTester createAndDeploySimpleProcess(
-      String processId, String flowNodeBpmnId, String tenantId) {
+      final String processId, final String flowNodeBpmnId, final String tenantId) {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
@@ -261,12 +266,12 @@ public class TasklistTester {
             .endEvent()
             .done();
     processDefinitionKey =
-        ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn", tenantId);
+        ZeebeTestUtil.deployProcess(camundaClient, process, processId + ".bpmn", tenantId);
     return this;
   }
 
   public TasklistTester createCreatedAndCompletedTasks(
-      String processId, String flowNodeBpmnId, int created, int completed) {
+      final String processId, final String flowNodeBpmnId, final int created, final int completed) {
     createAndDeploySimpleProcess(processId, flowNodeBpmnId).waitUntil().processIsDeployed();
     // complete tasks
     for (int i = 0; i < completed; i++) {
@@ -284,7 +289,10 @@ public class TasklistTester {
   }
 
   public TasklistTester createFailedTasks(
-      String processId, String flowNodeBpmnId, int numberOfTasks, int numberOfRetries)
+      final String processId,
+      final String flowNodeBpmnId,
+      final int numberOfTasks,
+      final int numberOfRetries)
       throws IOException {
     createAndDeploySimpleProcess(processId, flowNodeBpmnId).waitUntil().processIsDeployed();
 
@@ -293,7 +301,7 @@ public class TasklistTester {
     }
 
     ZeebeTestUtil.failTaskWithRetries(
-        zeebeClient,
+        camundaClient,
         Protocol.USER_TASK_JOB_TYPE,
         TestUtil.createRandomString(10),
         numberOfTasks,
@@ -303,35 +311,36 @@ public class TasklistTester {
     return this;
   }
 
-  public GraphQLResponse getByQueryResource(String resource) throws IOException {
+  public GraphQLResponse getByQueryResource(final String resource) throws IOException {
     graphQLResponse = graphQLTestTemplate.postForResource(resource);
     return graphQLResponse;
   }
 
-  public GraphQLResponse getByQuery(String query) {
+  public GraphQLResponse getByQuery(final String query) {
     graphQLResponse = graphQLTestTemplate.postMultipart(query, "{}");
     return graphQLResponse;
   }
 
-  public GraphQLResponse getTaskByQuery(String query) {
+  public GraphQLResponse getTaskByQuery(final String query) {
     graphQLResponse = graphQLTestTemplate.postMultipart(query, "{}");
     return graphQLResponse;
   }
 
-  public List<TaskDTO> getTasksByQuery(String query) {
+  public List<TaskDTO> getTasksByQuery(final String query) {
     graphQLResponse = graphQLTestTemplate.postMultipart(query, "{}");
     return getTasksByPath("$.data.tasks");
   }
 
-  public GraphQLResponse getGraphTasksByQuery(String query) {
+  public GraphQLResponse getGraphTasksByQuery(final String query) {
     return graphQLTestTemplate.postMultipart(query, "{}");
   }
 
-  public GraphQLResponse getTaskById(String taskId) throws IOException {
+  public GraphQLResponse getTaskById(final String taskId) throws IOException {
     return getTaskById(taskId, GRAPHQL_DEFAULT_VARIABLE_FRAGMENT);
   }
 
-  public GraphQLResponse getTaskById(String taskId, String fragmentResource) throws IOException {
+  public GraphQLResponse getTaskById(final String taskId, final String fragmentResource)
+      throws IOException {
     final ObjectNode taskIdQ = objectMapper.createObjectNode().put("taskId", taskId);
     return graphQLTestTemplate.perform(
         "graphql/taskIT/get-task.graphql", taskIdQ, Collections.singletonList(fragmentResource));
@@ -353,30 +362,30 @@ public class TasklistTester {
     return getAllTasks(GRAPHQL_DEFAULT_VARIABLE_FRAGMENT);
   }
 
-  public GraphQLResponse getAllTasks(String fragmentResource) throws IOException {
+  public GraphQLResponse getAllTasks(final String fragmentResource) throws IOException {
     final ObjectNode query = objectMapper.createObjectNode();
     query.putObject("query");
-    return this.getTasksByQueryAsVariable(query, fragmentResource);
+    return getTasksByQueryAsVariable(query, fragmentResource);
   }
 
-  public GraphQLResponse getAllProcesses(String search) throws IOException {
+  public GraphQLResponse getAllProcesses(final String search) throws IOException {
     final ObjectNode query = objectMapper.createObjectNode().put("search", search);
-    return this.getProcessesByQuery(query);
+    return getProcessesByQuery(query);
   }
 
-  public GraphQLResponse getAllProcessesWithBearerAuth(String search, String token)
+  public GraphQLResponse getAllProcessesWithBearerAuth(final String search, final String token)
       throws IOException {
     final ObjectNode query = objectMapper.createObjectNode().put("search", search);
-    return this.getProcessesByQueryWithBearerAuth(query, token);
+    return getProcessesByQueryWithBearerAuth(query, token);
   }
 
-  public GraphQLResponse getProcessesByQuery(ObjectNode variables) throws IOException {
+  public GraphQLResponse getProcessesByQuery(final ObjectNode variables) throws IOException {
     graphQLResponse = graphQLTestTemplate.perform("graphql/get-processes.graphql", variables);
     return graphQLResponse;
   }
 
-  public GraphQLResponse getProcessesByQueryWithBearerAuth(ObjectNode variables, String token)
-      throws IOException {
+  public GraphQLResponse getProcessesByQueryWithBearerAuth(
+      final ObjectNode variables, final String token) throws IOException {
     graphQLResponse =
         graphQLTestTemplate
             .withBearerAuth(token)
@@ -384,12 +393,12 @@ public class TasklistTester {
     return graphQLResponse;
   }
 
-  public GraphQLResponse getTasksByQueryAsVariable(ObjectNode variables) throws IOException {
+  public GraphQLResponse getTasksByQueryAsVariable(final ObjectNode variables) throws IOException {
     return getTasksByQueryAsVariable(variables, GRAPHQL_DEFAULT_VARIABLE_FRAGMENT);
   }
 
-  public GraphQLResponse getTasksByQueryAsVariable(ObjectNode variables, String fragmentResource)
-      throws IOException {
+  public GraphQLResponse getTasksByQueryAsVariable(
+      final ObjectNode variables, final String fragmentResource) throws IOException {
     graphQLResponse =
         graphQLTestTemplate.perform(
             "graphql/get-tasks-by-query.graphql",
@@ -398,23 +407,24 @@ public class TasklistTester {
     return graphQLResponse;
   }
 
-  public GraphQLResponse getVariablesByTaskIdAndNames(ObjectNode variables) throws IOException {
+  public GraphQLResponse getVariablesByTaskIdAndNames(final ObjectNode variables)
+      throws IOException {
     return getVariablesByTaskIdAndNames(variables, GRAPHQL_DEFAULT_VARIABLE_FRAGMENT);
   }
 
   public List<VariableDTO> getTaskVariables() throws IOException {
-    assertThat(this.taskId).isNotNull();
-    return getTaskVariablesByTaskId(this.taskId).getList("$.data.variables", VariableDTO.class);
+    assertThat(taskId).isNotNull();
+    return getTaskVariablesByTaskId(taskId).getList("$.data.variables", VariableDTO.class);
   }
 
-  public GraphQLResponse getTaskVariablesByTaskId(String taskId) throws IOException {
+  public GraphQLResponse getTaskVariablesByTaskId(final String taskId) throws IOException {
     final ObjectNode variablesQ = objectMapper.createObjectNode();
     variablesQ.put("taskId", taskId).putArray("variableNames");
     return getVariablesByTaskIdAndNames(variablesQ);
   }
 
-  public GraphQLResponse getVariablesByTaskIdAndNames(ObjectNode variables, String fragmentResource)
-      throws IOException {
+  public GraphQLResponse getVariablesByTaskIdAndNames(
+      final ObjectNode variables, final String fragmentResource) throws IOException {
     graphQLResponse =
         graphQLTestTemplate.perform(
             "graphql/variableIT/get-variables.graphql",
@@ -423,7 +433,7 @@ public class TasklistTester {
     return graphQLResponse;
   }
 
-  public GraphQLResponse getVariableById(String variableId) throws IOException {
+  public GraphQLResponse getVariableById(final String variableId) throws IOException {
     final ObjectNode variableQ = objectMapper.createObjectNode().put("variableId", variableId);
     graphQLResponse =
         graphQLTestTemplate.perform(
@@ -433,7 +443,7 @@ public class TasklistTester {
     return graphQLResponse;
   }
 
-  public GraphQLResponse getVariableById(String variableId, String fragmentResource)
+  public GraphQLResponse getVariableById(final String variableId, final String fragmentResource)
       throws IOException {
     final ObjectNode variableQ = objectMapper.createObjectNode().put("variableId", variableId);
     graphQLResponse =
@@ -444,37 +454,37 @@ public class TasklistTester {
     return graphQLResponse;
   }
 
-  public List<TaskDTO> getTasksByPath(String path) {
+  public List<TaskDTO> getTasksByPath(final String path) {
     return graphQLResponse.getList(path, TaskDTO.class);
   }
 
   @SuppressWarnings("unchecked")
-  public Map<String, Object> getByPath(String path) {
+  public Map<String, Object> getByPath(final String path) {
     return graphQLResponse.get(path, Map.class);
   }
 
-  public String get(String path) {
+  public String get(final String path) {
     return graphQLResponse.get(path);
   }
 
-  public GraphQLResponse getForm(String id) throws IOException {
+  public GraphQLResponse getForm(final String id) throws IOException {
     final ObjectNode args = objectMapper.createObjectNode();
     args.put("id", id).put("processDefinitionId", processDefinitionKey);
     graphQLResponse = graphQLTestTemplate.perform("graphql/formIT/get-form.graphql", args);
     return graphQLResponse;
   }
 
-  public TasklistTester claimTask(String claimRequest) {
+  public TasklistTester claimTask(final String claimRequest) {
     getByQuery(claimRequest);
     return this;
   }
 
-  public TasklistTester unclaimTask(String unclaimRequest) {
+  public TasklistTester unclaimTask(final String unclaimRequest) {
     getByQuery(unclaimRequest);
     return this;
   }
 
-  public Boolean deleteProcessInstance(String processInstanceId) {
+  public Boolean deleteProcessInstance(final String processInstanceId) {
     final String mutation =
         String.format(
             "mutation { deleteProcessInstance(processInstanceId: \"%s\") }", processInstanceId);
@@ -482,25 +492,27 @@ public class TasklistTester {
     return graphQLResponse.get("$.data.deleteProcessInstance", Boolean.class);
   }
 
-  public GraphQLResponse startProcess(String processDefinitionId) {
+  public GraphQLResponse startProcess(final String processDefinitionId) {
     final String mutation =
         String.format(
             "mutation { startProcess (processDefinitionId: \"%s\"){id}} ", processDefinitionId);
     return graphQLTestTemplate.postMultipart(mutation, "{}");
   }
 
-  public TasklistTester deployProcess(String... classpathResources) {
-    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, classpathResources);
+  public TasklistTester deployProcess(final String... classpathResources) {
+    processDefinitionKey = ZeebeTestUtil.deployProcess(camundaClient, classpathResources);
     return this;
   }
 
-  public TasklistTester deployProcessForTenant(String tenantId, String... classpathResources) {
-    processDefinitionKey = ZeebeTestUtil.deployProcess(tenantId, zeebeClient, classpathResources);
+  public TasklistTester deployProcessForTenant(
+      final String tenantId, final String... classpathResources) {
+    processDefinitionKey = ZeebeTestUtil.deployProcess(tenantId, camundaClient, classpathResources);
     return this;
   }
 
-  public TasklistTester deployProcess(BpmnModelInstance processModel, String resourceName) {
-    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, processModel, resourceName);
+  public TasklistTester deployProcess(
+      final BpmnModelInstance processModel, final String resourceName) {
+    processDefinitionKey = ZeebeTestUtil.deployProcess(camundaClient, processModel, resourceName);
     return this;
   }
 
@@ -514,24 +526,25 @@ public class TasklistTester {
     return this;
   }
 
-  public TasklistTester startProcessInstance(String bpmnProcessId) {
+  public TasklistTester startProcessInstance(final String bpmnProcessId) {
     return startProcessInstance(bpmnProcessId, null);
   }
 
-  public TasklistTester startProcessInstances(String bpmnProcessId, Integer numberOfInstances) {
+  public TasklistTester startProcessInstances(
+      final String bpmnProcessId, final Integer numberOfInstances) {
     IntStream.range(0, numberOfInstances).forEach(i -> startProcessInstance(bpmnProcessId));
     return this;
   }
 
-  public TasklistTester startProcessInstance(String bpmnProcessId, String payload) {
-    processInstanceId = ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, payload);
+  public TasklistTester startProcessInstance(final String bpmnProcessId, final String payload) {
+    processInstanceId = ZeebeTestUtil.startProcessInstance(camundaClient, bpmnProcessId, payload);
     return this;
   }
 
   public TasklistTester startProcessInstance(
-      String tenantId, String bpmnProcessId, String payload) {
+      final String tenantId, final String bpmnProcessId, final String payload) {
     processInstanceId =
-        ZeebeTestUtil.startProcessInstance(tenantId, zeebeClient, bpmnProcessId, payload);
+        ZeebeTestUtil.startProcessInstance(tenantId, camundaClient, bpmnProcessId, payload);
     return this;
   }
 
@@ -553,7 +566,7 @@ public class TasklistTester {
   //  }
   //
 
-  public TasklistTester taskIsCreated(String flowNodeBpmnId) {
+  public TasklistTester taskIsCreated(final String flowNodeBpmnId) {
     databaseTestExtension.processAllRecordsAndWait(
         taskIsCreatedCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
@@ -561,7 +574,7 @@ public class TasklistTester {
     return this;
   }
 
-  public TasklistTester taskHasCandidateUsers(String flowNodeBpmnId) {
+  public TasklistTester taskHasCandidateUsers(final String flowNodeBpmnId) {
     databaseTestExtension.processAllRecordsAndWait(
         taskHasCandidateUsers, processInstanceId, flowNodeBpmnId);
     // update taskId
@@ -570,7 +583,10 @@ public class TasklistTester {
   }
 
   public TasklistTester createZeebeUserTask(
-      String bpmnProcessId, String flowNodeBpmnId, String assignee, int numberOfInstances) {
+      final String bpmnProcessId,
+      final String flowNodeBpmnId,
+      final String assignee,
+      final int numberOfInstances) {
     return createAndDeploySimpleProcessZeebeUserTask(bpmnProcessId, flowNodeBpmnId, assignee)
         .processIsDeployed()
         .then()
@@ -580,18 +596,18 @@ public class TasklistTester {
   }
 
   public TasklistTester createZeebeUserTask(
-      String bpmnProcessId, String flowNodeBpmnId, int numberOfInstances) {
+      final String bpmnProcessId, final String flowNodeBpmnId, final int numberOfInstances) {
     return createZeebeUserTask(bpmnProcessId, flowNodeBpmnId, null, numberOfInstances);
   }
 
-  public TasklistTester tasksAreCreated(String flowNodeBpmnId, int taskCount) {
+  public TasklistTester tasksAreCreated(final String flowNodeBpmnId, final int taskCount) {
     databaseTestExtension.processAllRecordsAndWait(tasksAreCreatedCheck, flowNodeBpmnId, taskCount);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
     return this;
   }
 
-  public TasklistTester taskIsCanceled(String flowNodeBpmnId) {
+  public TasklistTester taskIsCanceled(final String flowNodeBpmnId) {
     databaseTestExtension.processAllRecordsAndWait(
         taskIsCanceledCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
@@ -599,7 +615,7 @@ public class TasklistTester {
     return this;
   }
 
-  public TasklistTester taskIsFailed(String flowNodeBpmnId) {
+  public TasklistTester taskIsFailed(final String flowNodeBpmnId) {
     databaseTestExtension.processAllRecordsAndWait(
         taskIsCanceledCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
@@ -629,12 +645,12 @@ public class TasklistTester {
       } else {
         taskId = null;
       }
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       taskId = null;
     }
   }
 
-  public TasklistTester taskIsCompleted(String flowNodeBpmnId) {
+  public TasklistTester taskIsCompleted(final String flowNodeBpmnId) {
     databaseTestExtension.processAllRecordsAndWait(
         taskIsCompletedCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
@@ -642,22 +658,23 @@ public class TasklistTester {
     return this;
   }
 
-  public TasklistTester taskIsAssigned(String taskId) {
+  public TasklistTester taskIsAssigned(final String taskId) {
     databaseTestExtension.processAllRecordsAndWait(taskIsAssignedCheck, taskId);
     return this;
   }
 
-  public TasklistTester taskVariableExists(String varName) {
+  public TasklistTester taskVariableExists(final String varName) {
     databaseTestExtension.processAllRecordsAndWait(taskVariableExists, taskId, varName);
     return this;
   }
 
-  public TasklistTester variablesExist(String[] varNames) {
+  public TasklistTester variablesExist(final String[] varNames) {
     databaseTestExtension.processAllRecordsAndWait(variablesExist, varNames);
     return this;
   }
 
-  public TasklistTester claimAndCompleteHumanTask(String flowNodeBpmnId, String... variables) {
+  public TasklistTester claimAndCompleteHumanTask(
+      final String flowNodeBpmnId, final String... variables) {
     claimHumanTask(flowNodeBpmnId);
 
     return completeHumanTask(flowNodeBpmnId, variables);
@@ -681,7 +698,7 @@ public class TasklistTester {
     return this;
   }
 
-  public TasklistTester completeHumanTask(String flowNodeBpmnId, String... variables) {
+  public TasklistTester completeHumanTask(final String flowNodeBpmnId, final String... variables) {
     // resolve taskId, if not yet resolved
     if (taskId == null) {
       resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
@@ -703,7 +720,7 @@ public class TasklistTester {
   }
 
   public TasklistTester completeZeebeUserTask(
-      String flowNodeBpmnId, Map<String, Object> variables) {
+      final String flowNodeBpmnId, final Map<String, Object> variables) {
     // resolve taskId, if not yet resolved
     if (taskId == null) {
       resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
@@ -714,11 +731,11 @@ public class TasklistTester {
                 flowNodeBpmnId, processDefinitionKey, TaskState.CREATED));
       }
     }
-    zeebeClient.newUserTaskCompleteCommand(Long.valueOf(taskId)).variables(variables).send();
+    camundaClient.newUserTaskCompleteCommand(Long.valueOf(taskId)).variables(variables).send();
     return taskIsCompleted(flowNodeBpmnId);
   }
 
-  private List<VariableInputDTO> createVariablesList(String... variables) {
+  private List<VariableInputDTO> createVariablesList(final String... variables) {
     assertThat(variables.length % 2).isEqualTo(0);
     final List<VariableInputDTO> result = new ArrayList<>();
     for (int i = 0; i < variables.length; i = i + 2) {
@@ -727,7 +744,7 @@ public class TasklistTester {
     return result;
   }
 
-  private String variableAsGraphqlInput(VariableInputDTO variable) {
+  private String variableAsGraphqlInput(final VariableInputDTO variable) {
     return String.format(
         VARIABLE_INPUT_PATTERN,
         variable.getName(),
@@ -736,17 +753,17 @@ public class TasklistTester {
 
   public TasklistTester completeUserTaskInZeebe() {
     ZeebeTestUtil.completeTask(
-        zeebeClient, Protocol.USER_TASK_JOB_TYPE, TestUtil.createRandomString(10), null);
+        camundaClient, Protocol.USER_TASK_JOB_TYPE, TestUtil.createRandomString(10), null);
     return this;
   }
 
   public TasklistTester cancelProcessInstance() {
-    ZeebeTestUtil.cancelProcessInstance(zeebeClient, Long.parseLong(processInstanceId));
+    ZeebeTestUtil.cancelProcessInstance(camundaClient, Long.parseLong(processInstanceId));
     return this;
   }
 
-  public TasklistTester deleteResource(String resourceKey) {
-    ZeebeTestUtil.deleteResource(zeebeClient, Long.valueOf(resourceKey));
+  public TasklistTester deleteResource(final String resourceKey) {
+    ZeebeTestUtil.deleteResource(camundaClient, Long.valueOf(resourceKey));
     return this;
   }
 
@@ -770,7 +787,7 @@ public class TasklistTester {
     return this;
   }
 
-  public TasklistTester waitFor(long milliseconds) {
+  public TasklistTester waitFor(final long milliseconds) {
     ThreadUtil.sleepFor(milliseconds);
     return this;
   }
@@ -787,11 +804,11 @@ public class TasklistTester {
     return taskId;
   }
 
-  public TasklistTester withAuthenticationToken(String token) {
+  public TasklistTester withAuthenticationToken(final String token) {
     final Jwt jwt;
     try {
       jwt = jwtDecoder.decode(token);
-    } catch (JwtException e) {
+    } catch (final JwtException e) {
       throw new RuntimeException(e);
     }
     SecurityContextHolder.getContext().setAuthentication(jwtAuthenticationConverter.convert(jwt));
