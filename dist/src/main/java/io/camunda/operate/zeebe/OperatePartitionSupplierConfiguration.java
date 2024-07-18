@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.zeebe;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.webapps.zeebe.PartitionSupplier;
 import io.camunda.webapps.zeebe.PartitionSupplierConfigurer;
 import io.camunda.zeebe.broker.Broker;
@@ -22,7 +23,7 @@ public class OperatePartitionSupplierConfiguration {
   public PartitionSupplier operatePartitionSupplier(
       @Autowired(required = false) final Broker broker,
       @Autowired(required = false) final Gateway gateway,
-      @Autowired final ZeebeClient zeebeClient) {
-    return new PartitionSupplierConfigurer(broker, gateway, zeebeClient).createPartitionSupplier();
+      @Autowired final CamundaClient camundaClient) {
+    return new PartitionSupplierConfigurer(broker, gateway, camundaClient).createPartitionSupplier();
   }
 }
