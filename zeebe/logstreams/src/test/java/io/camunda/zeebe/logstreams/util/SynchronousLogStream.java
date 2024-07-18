@@ -8,7 +8,6 @@
 package io.camunda.zeebe.logstreams.util;
 
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 
 /**
@@ -20,25 +19,9 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
  *
  * <p>*Note:* Actor's are not allowed to join on a future.
  */
-public interface SynchronousLogStream extends AutoCloseable {
+public interface SynchronousLogStream extends LogStream {
 
   LogStream getAsyncLogStream();
-
-  /**
-   * @return the partition id of the log stream
-   */
-  int getPartitionId();
-
-  /**
-   * Returns the name of the log stream.
-   *
-   * @return the log stream name
-   */
-  String getLogName();
-
-  /** Closes the log stream synchronously. This blocks until the log stream is closed. */
-  @Override
-  void close();
 
   /**
    * @return the current commit position, or a negative value if no entry is committed.
@@ -47,13 +30,6 @@ public interface SynchronousLogStream extends AutoCloseable {
 
   /** sets the new commit position * */
   void setLastWrittenPosition(long position);
-
-  LogStreamReader newLogStreamReader();
-
-  /**
-   * @return a new created log stream record writer
-   */
-  LogStreamWriter newLogStreamWriter();
 
   /**
    * Returns a wrapped {@link #newLogStreamWriter()} which ensures that every write returns only

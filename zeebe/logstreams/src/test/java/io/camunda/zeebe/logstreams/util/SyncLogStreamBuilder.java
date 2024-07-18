@@ -69,11 +69,7 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   }
 
   @Override
-  public LogStream build() {
-    return delegate.build();
-  }
-
-  public SyncLogStream buildSync() {
-    return new SyncLogStream(build());
+  public SyncLogStream build() {
+    return new SyncLogStream(delegate.build());
   }
 }
