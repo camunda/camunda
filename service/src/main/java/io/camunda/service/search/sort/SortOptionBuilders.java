@@ -26,6 +26,14 @@ public final class SortOptionBuilders {
     return new VariableSort.Builder();
   }
 
+  public static UserSort.Builder user() {
+    return new UserSort.Builder();
+  }
+
+  public static AuthorizationSort.Builder authorization() {
+    return new AuthorizationSort.Builder();
+  }
+
   public static ProcessInstanceSort processInstance(
       final Function<ProcessInstanceSort.Builder, ObjectBuilder<ProcessInstanceSort>> fn) {
     return fn.apply(processInstance()).build();
@@ -39,5 +47,14 @@ public final class SortOptionBuilders {
   public static VariableSort variable(
       final Function<VariableSort.Builder, ObjectBuilder<VariableSort>> fn) {
     return fn.apply(variable()).build();
+  }
+
+  public static UserSort user(final Function<UserSort.Builder, ObjectBuilder<UserSort>> fn) {
+    return fn.apply(user()).build();
+  }
+
+  public static AuthorizationSort authorization(
+      final Function<AuthorizationSort.Builder, ObjectBuilder<AuthorizationSort>> fn) {
+    return fn.apply(authorization()).build();
   }
 }

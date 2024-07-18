@@ -9,26 +9,34 @@ package io.camunda.service.transformers;
 
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.service.search.filter.AuthorizationFilter;
 import io.camunda.service.search.filter.DateValueFilter;
 import io.camunda.service.search.filter.FilterBase;
 import io.camunda.service.search.filter.ProcessInstanceFilter;
+import io.camunda.service.search.filter.UserFilter;
 import io.camunda.service.search.filter.UserTaskFilter;
 import io.camunda.service.search.filter.VariableFilter;
 import io.camunda.service.search.filter.VariableValueFilter;
+import io.camunda.service.search.query.AuthorizationQuery;
 import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.TypedSearchQuery;
+import io.camunda.service.search.query.UserQuery;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.service.search.query.VariableQuery;
+import io.camunda.service.search.sort.AuthorizationSort;
 import io.camunda.service.search.sort.ProcessInstanceSort;
 import io.camunda.service.search.sort.SortOption;
+import io.camunda.service.search.sort.UserSort;
 import io.camunda.service.search.sort.UserTaskSort;
 import io.camunda.service.search.sort.VariableSort;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.filter.AuthenticationTransformer;
+import io.camunda.service.transformers.filter.AuthorizationFilterTransformer;
 import io.camunda.service.transformers.filter.DateValueFilterTransformer;
 import io.camunda.service.transformers.filter.FilterTransformer;
 import io.camunda.service.transformers.filter.ProcessInstanceFilterTransformer;
+import io.camunda.service.transformers.filter.UserFilterTransformer;
 import io.camunda.service.transformers.filter.UserTaskFilterTransformer;
 import io.camunda.service.transformers.filter.VariableFilterTransformer;
 import io.camunda.service.transformers.filter.VariableValueFilterTransformer;
@@ -78,6 +86,11 @@ public final class ServiceTransformers {
         UserTaskQuery.class,
         new TypedSearchQueryTransformer<UserTaskFilter, UserTaskSort>(mappers));
 
+    mappers.put(UserQuery.class, new TypedSearchQueryTransformer<UserFilter, UserSort>(mappers));
+    mappers.put(
+        AuthorizationQuery.class,
+        new TypedSearchQueryTransformer<AuthorizationFilter, AuthorizationSort>(mappers));
+
     // query -> request
     mappers.put(
         VariableQuery.class,
@@ -95,6 +108,8 @@ public final class ServiceTransformers {
     mappers.put(UserTaskFilter.class, new UserTaskFilterTransformer(mappers));
     mappers.put(VariableValueFilter.class, new VariableValueFilterTransformer());
     mappers.put(DateValueFilter.class, new DateValueFilterTransformer());
+    mappers.put(UserFilter.class, new UserFilterTransformer());
+    mappers.put(AuthorizationFilter.class, new AuthorizationFilterTransformer());
     mappers.put(
         VariableFilter.class,
         new VariableFilterTransformer(mappers, new VariableValueFilterTransformer()));

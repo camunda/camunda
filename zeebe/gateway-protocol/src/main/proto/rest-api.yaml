@@ -1584,6 +1584,22 @@ components:
           type: "string"
         enabled:
           type: "boolean"
+    AuthorizationResponse:
+      type: "object"
+      properties:
+        authorizationKey:
+          type: "integer"
+          format: "int64"
+        username:
+          type: "string"
+        resourceType:
+          type: "string"
+        resourceKey:
+          type: "string"
+        permissions:
+          type: "array"
+          items:
+            type: "string"
     CamundaUserWithPasswordRequest:
       allOf:
         - $ref: '#/components/schemas/CamundaUserResponse'
@@ -1600,6 +1616,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CamundaUserResponse"
+    AuthorizationSearchResponse:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuthorizationResponse"
     CamundaGroupRequest:
       type: "object"
       properties:

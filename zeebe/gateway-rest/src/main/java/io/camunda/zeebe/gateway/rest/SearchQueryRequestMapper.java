@@ -13,11 +13,13 @@ import io.camunda.service.search.filter.VariableValueFilter;
 import io.camunda.service.search.page.SearchQueryPage;
 import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
+import io.camunda.service.search.query.UserQuery;
 import io.camunda.service.search.sort.ProcessInstanceSort;
 import io.camunda.service.search.sort.SortOptionBuilders;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
+import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQuerySortRequest;
 import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterRequest;
 import io.camunda.zeebe.util.Either;
@@ -39,6 +41,10 @@ public final class SearchQueryRequestMapper {
             .filter(processInstanceFilter)
             .sort(sorting)
             .build());
+  }
+
+  public static Either<ProblemDetail, UserQuery> toUserQuery(SearchQueryRequest request) {
+    return Either.right(SearchQueryBuilders.userSearchQuery().build());
   }
 
   public static Either<ProblemDetail, ProcessInstanceFilter> toProcessInstanceFilter(
