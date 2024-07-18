@@ -9,12 +9,14 @@ package io.camunda.zeebe.engine.processing.distribution;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public class CommandDistributionAcknowledgeProcessor
@@ -30,12 +32,14 @@ public class CommandDistributionAcknowledgeProcessor
   private final DistributionState distributionState;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final TypedCommandWriter commandWriter;
 
   public CommandDistributionAcknowledgeProcessor(
       final DistributionState distributionState, final Writers writers) {
     this.distributionState = distributionState;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
+    commandWriter = writers.command();
   }
 
   @Override
@@ -56,6 +60,17 @@ public class CommandDistributionAcknowledgeProcessor
         distributionKey, CommandDistributionIntent.ACKNOWLEDGED, recordValue);
 
     if (!distributionState.hasPendingDistribution(distributionKey)) {
+
+      // Write the followup command requested originally
+      final var distributionRecord =
+          distributionState.getCommandDistributionRecord(distributionKey);
+      if (distributionRecord.getIntentForFollowup() != Intent.UNKNOWN) {
+        commandWriter.appendFollowUpCommand(
+            record.getKey(), // may be -1
+            distributionRecord.getIntentForFollowup(),
+            distributionRecord.getCommandValueForFollowup());
+      }
+
       // We write an empty command here as a distribution could contain a lot of data. Because of
       // this we could exceed the max message size. As we only need the distributionKey in the
       // FINISHED event applier an empty record will suffice here.

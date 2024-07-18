@@ -107,7 +107,10 @@ public final class CommandDistributionBehavior {
         command.getValueType(),
         command.getIntent(),
         command.getValue(),
-        partitions);
+        partitions,
+        ValueType.NULL_VAL,
+        Intent.UNKNOWN,
+        null);
   }
 
   /**
@@ -126,12 +129,15 @@ public final class CommandDistributionBehavior {
    * @param value the value of the command to distribute
    * @param partitions the partitions to distribute the command to
    */
-  public <T extends UnifiedRecordValue> void distributeCommand(
+  public <T extends UnifiedRecordValue, U extends UnifiedRecordValue> void distributeCommand(
       final long distributionKey,
       final ValueType valueType,
       final Intent intent,
       final T value,
-      final List<Integer> partitions) {
+      final List<Integer> partitions,
+      final ValueType valueTypeForFollowup,
+      final Intent intentForFollowup,
+      final U valueForFollowup) {
     if (partitions.isEmpty()) {
       return;
     }
@@ -143,7 +149,10 @@ public final class CommandDistributionBehavior {
             .setPartitionId(currentPartitionId)
             .setValueType(valueType)
             .setIntent(intent)
-            .setCommandValue(value);
+            .setCommandValue(value)
+            .setValueTypeForFollowup(valueTypeForFollowup)
+            .setIntentForFollowup(intentForFollowup)
+            .setCommandValueForFollowup(valueForFollowup);
 
     stateWriter.appendFollowUpEvent(
         distributionKey, CommandDistributionIntent.STARTED, distributionRecord);
@@ -155,7 +164,14 @@ public final class CommandDistributionBehavior {
   public <T extends UnifiedRecordValue> void distributeCommand(
       final long distributionKey, final ValueType valueType, final Intent intent, final T value) {
     distributeCommand(
-        distributionKey, valueType, intent, value, partitionProvider.partitionIds().toList());
+        distributionKey,
+        valueType,
+        intent,
+        value,
+        partitionProvider.partitionIds().toList(),
+        ValueType.NULL_VAL,
+        Intent.UNKNOWN,
+        null);
   }
 
   private <T extends UnifiedRecordValue> void distributeToPartition(

@@ -37,6 +37,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     RECORDS_BY_TYPE.put(ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionRecord::new);
     RECORDS_BY_TYPE.put(ValueType.RESOURCE_DELETION, ResourceDeletionRecord::new);
     RECORDS_BY_TYPE.put(ValueType.SIGNAL, SignalRecord::new);
+    // TODO: define value types for follow up
   }
 
   /*
@@ -54,19 +55,34 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   private final MsgPackWriter commandValueWriter = new MsgPackWriter();
   private final MsgPackReader commandValueReader = new MsgPackReader();
 
+  private final EnumProperty<ValueType> valueTypeForFollowupProperty =
+      new EnumProperty<>("valueTypeForFollowup", ValueType.class, ValueType.NULL_VAL);
+  private final IntegerProperty intentForFollowupProperty =
+      new IntegerProperty("intentForFollowup", Intent.NULL_VAL);
+  private final ObjectProperty<UnifiedRecordValue> commandValueForFollowupProperty =
+      new ObjectProperty<>("commandValueForFollowup", new UnifiedRecordValue(10));
+  private final MsgPackWriter commandValueForFollowupWriter = new MsgPackWriter();
+  private final MsgPackReader commandValueForFollowupReader = new MsgPackReader();
+
   public CommandDistributionRecord() {
-    super(4);
+    super(7);
     declareProperty(partitionIdProperty)
         .declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
-        .declareProperty(commandValueProperty);
+        .declareProperty(commandValueProperty)
+        .declareProperty(valueTypeForFollowupProperty)
+        .declareProperty(intentForFollowupProperty)
+        .declareProperty(commandValueForFollowupProperty);
   }
 
   public CommandDistributionRecord wrap(final CommandDistributionRecord other) {
     setPartitionId(other.getPartitionId())
         .setValueType(other.getValueType())
         .setIntent(other.getIntent())
-        .setCommandValue(other.getCommandValue());
+        .setCommandValue(other.getCommandValue())
+        .setCommandValueForFollowup(other.getCommandValueForFollowup())
+        .setValueTypeForFollowup(other.getValueTypeForFollowup())
+        .setIntentForFollowup(other.getIntentForFollowup());
     return this;
   }
 
@@ -153,6 +169,82 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
 
   public CommandDistributionRecord setPartitionId(final int partitionId) {
     partitionIdProperty.setValue(partitionId);
+    return this;
+  }
+
+  public UnifiedRecordValue getCommandValueForFollowup() {
+    // fetch a concrete instance of the record value by type
+    final var valueType = getValueTypeForFollowup();
+    if (valueType == ValueType.NULL_VAL) {
+      return null;
+    }
+
+    final var storedCommandValue = commandValueForFollowupProperty.getValue();
+    if (storedCommandValue.isEmpty()) {
+      return storedCommandValue;
+    }
+
+    final var concrecteCommandValueSupplier = RECORDS_BY_TYPE.get(valueType);
+    if (concrecteCommandValueSupplier == null) {
+      throw new IllegalStateException(
+          "Expected to read the record value, but it's type `"
+              + valueType.name()
+              + "` is unknown. Please add it to CommandDistributionRecord.RECORDS_BY_TYPE");
+    }
+    final var concreteCommandValue = concrecteCommandValueSupplier.get();
+
+    // write the command value property's content into a buffer
+    final var commandValueBuffer = new UnsafeBuffer(0, 0);
+    final int encodedLength = storedCommandValue.getEncodedLength();
+    commandValueBuffer.wrap(new byte[encodedLength]);
+    storedCommandValue.write(commandValueForFollowupWriter.wrap(commandValueBuffer, 0));
+
+    // read the value back from the buffer into the concrete command value
+    concreteCommandValue.wrap(commandValueBuffer);
+    return concreteCommandValue;
+  }
+
+  public CommandDistributionRecord setCommandValueForFollowup(
+      final UnifiedRecordValue commandValue) {
+    if (commandValue == null) {
+      commandValueForFollowupProperty.reset();
+      return this;
+    }
+
+    // inspired by IndexedRecord.setValue
+    final var valueBuffer = new UnsafeBuffer(0, 0);
+    final int encodedLength = commandValue.getLength();
+    valueBuffer.wrap(new byte[encodedLength]);
+
+    commandValue.write(valueBuffer, 0);
+    commandValueForFollowupProperty
+        .getValue()
+        .read(commandValueForFollowupReader.wrap(valueBuffer, 0, encodedLength));
+    return this;
+  }
+
+  public ValueType getValueTypeForFollowup() {
+    return valueTypeForFollowupProperty.getValue();
+  }
+
+  public CommandDistributionRecord setValueTypeForFollowup(final ValueType valueType) {
+    valueTypeForFollowupProperty.setValue(valueType);
+    return this;
+  }
+
+  public Intent getIntentForFollowup() {
+    final int intentValue = intentForFollowupProperty.getValue();
+    if (intentValue < 0 || intentValue > Short.MAX_VALUE) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to read the intent, but it's persisted value '%d' is not a short integer",
+              intentValue));
+    }
+    return Intent.fromProtocolValue(getValueTypeForFollowup(), (short) intentValue);
+  }
+
+  public CommandDistributionRecord setIntentForFollowup(final Intent intent) {
+    intentForFollowupProperty.setValue(intent.value());
     return this;
   }
 }

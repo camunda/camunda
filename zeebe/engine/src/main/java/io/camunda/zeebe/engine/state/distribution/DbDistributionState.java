@@ -165,4 +165,25 @@ public class DbDistributionState implements MutableDistributionState {
           visitor.visit(distributionKey, commandDistributionRecord);
         });
   }
+
+  @Override
+  public CommandDistributionRecord getCommandDistributionRecord(
+      final long distributionKey) {
+    this.distributionKey.wrapLong(distributionKey);
+
+    final var persistedDistribution =
+        commandDistributionRecordColumnFamily.get(this.distributionKey);
+
+    if (persistedDistribution == null) {
+      return null;
+    }
+
+    return new CommandDistributionRecord()
+        .setValueType(persistedDistribution.getValueType())
+        .setIntent(persistedDistribution.getIntent())
+        .setCommandValue(persistedDistribution.getCommandValue())
+        .setCommandValueForFollowup(persistedDistribution.getCommandValueForFollowup())
+        .setIntentForFollowup(persistedDistribution.getIntentForFollowup())
+        .setValueTypeForFollowup(persistedDistribution.getValueTypeForFollowup());
+  }
 }

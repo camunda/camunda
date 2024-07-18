@@ -51,6 +51,8 @@ public interface DistributionState {
    */
   void foreachPendingDistribution(PendingDistributionVisitor visitor);
 
+  CommandDistributionRecord getCommandDistributionRecord(long distributionKey);
+
   /** This visitor can visit pending distributions of {@link CommandDistributionRecord}. */
   @FunctionalInterface
   interface PendingDistributionVisitor {

@@ -26,11 +26,21 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
       new ObjectProperty<>("commandValue", new UnifiedRecordValue(10));
 
+  private final EnumProperty<ValueType> valueTypeFollowupProperty =
+      new EnumProperty<>("valueTypeFollowup", ValueType.class);
+  private final IntegerProperty intentFollowupProperty =
+      new IntegerProperty("intentFollowup", Intent.NULL_VAL);
+  private final ObjectProperty<UnifiedRecordValue> commandValueFollowupProperty =
+      new ObjectProperty<>("commandValueFollowup", new UnifiedRecordValue(10));
+
   public PersistedCommandDistribution() {
-    super(3);
+    super(6);
     declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
-        .declareProperty(commandValueProperty);
+        .declareProperty(commandValueProperty)
+        .declareProperty(valueTypeFollowupProperty)
+        .declareProperty(intentFollowupProperty)
+        .declareProperty(commandValueFollowupProperty);
   }
 
   public PersistedCommandDistribution wrap(
@@ -44,6 +54,16 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
     valueBuffer.wrap(new byte[encodedLength]);
     commandValue.write(valueBuffer, 0);
     commandValueProperty.getValue().wrap(valueBuffer, 0, encodedLength);
+
+    valueTypeFollowupProperty.setValue(commandDistributionRecord.getValueTypeForFollowup());
+    intentFollowupProperty.setValue(commandDistributionRecord.getIntentForFollowup().value());
+
+    final var commandValueFollowup = commandDistributionRecord.getCommandValueForFollowup();
+    final var valueBufferFollowup = new UnsafeBuffer(0, 0);
+    final int encodedLengthFollowup = commandValueFollowup.getLength();
+    valueBufferFollowup.wrap(new byte[encodedLengthFollowup]);
+    commandValueFollowup.write(valueBufferFollowup, 0);
+    commandValueFollowupProperty.getValue().wrap(valueBufferFollowup, 0, encodedLengthFollowup);
 
     return this;
   }
@@ -65,5 +85,24 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
 
   public UnifiedRecordValue getCommandValue() {
     return commandValueProperty.getValue();
+  }
+
+  public ValueType getValueTypeForFollowup() {
+    return valueTypeFollowupProperty.getValue();
+  }
+
+  public Intent getIntentForFollowup() {
+    final int intentValue = intentFollowupProperty.getValue();
+    if (intentValue < 0 || intentValue > Short.MAX_VALUE) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to read the intent, but it's persisted value '%d' is not a short integer",
+              intentValue));
+    }
+    return Intent.fromProtocolValue(getValueTypeForFollowup(), (short) intentValue);
+  }
+
+  public UnifiedRecordValue getCommandValueForFollowup() {
+    return commandValueFollowupProperty.getValue();
   }
 }
