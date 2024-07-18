@@ -14,9 +14,12 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchAll;
 import static io.camunda.search.clients.query.SearchQueryBuilders.not;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.service.entities.AuthorizationEntity;
+import io.camunda.service.entities.AuthorizationEntity.Authorization;
 import io.camunda.service.search.filter.DateValueFilter;
 import io.camunda.service.search.filter.ProcessInstanceFilter;
 import io.camunda.service.search.filter.VariableValueFilter;
@@ -47,6 +50,7 @@ public final class ProcessInstanceFilterTransformer
     final var variablesQuery = getVariablesQuery(filter.variableFilters());
     final var startDateQuery = getStartDateQuery(filter.startDateFilter());
     final var endDateQuery = getEndDateQuery(filter.endDateFilter());
+    final var authorizationsQuery = getAuthorizationsQuery(filter.authorizations());
 
     return and(
         joinRelationQuery,
@@ -55,7 +59,21 @@ public final class ProcessInstanceFilterTransformer
         retriesLeftQuery,
         variablesQuery,
         startDateQuery,
-        endDateQuery);
+        endDateQuery,
+        authorizationsQuery);
+  }
+
+  @Override
+  public List<String> toIndices(final ProcessInstanceFilter filter) {
+    final var finished = filter.finished();
+    final var completed = filter.completed();
+    final var canceled = filter.canceled();
+
+    if (finished || completed || canceled) {
+      return Arrays.asList("operate-list-view-8.3.0_alias");
+    } else {
+      return Arrays.asList("operate-list-view-8.3.0_");
+    }
   }
 
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
@@ -176,24 +194,28 @@ public final class ProcessInstanceFilterTransformer
     return null;
   }
 
+  private SearchQuery getAuthorizationsQuery(final List<AuthorizationEntity> authorizations) {
+    if (authorizations != null && !authorizations.isEmpty()) {
+      final var resourceKeys =
+          authorizations.stream()
+              .map(AuthorizationEntity::value)
+              .map(Authorization::resourceKey)
+              .collect(Collectors.toList());
+
+      // no authorizations == matchNone()
+
+      // if authorizations contain a `*` == matchAll()
+
+      return stringTerms("bpmnProcessId", resourceKeys);
+    }
+    return null;
+  }
+
   private FilterTransformer<DateFieldFilter> getDateValueFilterTransformer() {
     return transformers.getFilterTransformer(DateValueFilter.class);
   }
 
   private FilterTransformer<VariableValueFilter> getVariableValueFilterTransformer() {
     return transformers.getFilterTransformer(VariableValueFilter.class);
-  }
-
-  @Override
-  public List<String> toIndices(ProcessInstanceFilter filter) {
-    final var finished = filter.finished();
-    final var completed = filter.completed();
-    final var canceled = filter.canceled();
-
-    if (finished || completed || canceled) {
-      return Arrays.asList("operate-list-view-8.3.0_alias");
-    } else {
-      return Arrays.asList("operate-list-view-8.3.0_");
-    }
   }
 }

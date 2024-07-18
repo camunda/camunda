@@ -7,6 +7,7 @@
  */
 package io.camunda.service.transformers.filter;
 
+import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -17,10 +18,18 @@ public class AuthorizationFilterTransformer implements FilterTransformer<Authori
 
   @Override
   public SearchQuery toSearchQuery(final AuthorizationFilter filter) {
-    if (filter.username() == null) {
-      return null;
+
+    SearchQuery usernameTermQuery = null;
+    if (filter.username() != null) {
+      usernameTermQuery = term("value.username", filter.username());
     }
-    return term("value.username", filter.username());
+
+    SearchQuery resourceTypeTermQuery = null;
+    if (filter.resourceType() != null) {
+      resourceTypeTermQuery = term("value.resourceType", filter.resourceType());
+    }
+
+    return and(usernameTermQuery, resourceTypeTermQuery);
   }
 
   @Override

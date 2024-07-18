@@ -23,6 +23,8 @@ public final class ProcessInstanceServices
     extends SearchQueryService<
         ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
 
+  private final AuthorizationServices authorizationServices;
+
   public ProcessInstanceServices(
       final BrokerClient brokerClient, final CamundaSearchClient dataStoreClient) {
     this(brokerClient, dataStoreClient, null, null);
@@ -34,6 +36,8 @@ public final class ProcessInstanceServices
       final ServiceTransformers transformers,
       final Authentication authentication) {
     super(brokerClient, searchClient, transformers, authentication);
+    authorizationServices =
+        new AuthorizationServices(brokerClient, searchClient, transformers, null);
   }
 
   @Override
@@ -43,6 +47,18 @@ public final class ProcessInstanceServices
 
   @Override
   public SearchQueryResult<ProcessInstanceEntity> search(final ProcessInstanceQuery query) {
+    final var authorizationQuery =
+        SearchQueryBuilders.authorizationSearchQuery(
+            (fn) ->
+                fn.filter(
+                    (f) ->
+                        f.username(authentication.authenticatedUserId())
+                            .resourceType("process-definition")));
+
+    final var authorizations = authorizationServices.search(authorizationQuery).items();
+
+    query.filter().setAuthorizations(authorizations);
+
     return executor.search(query, ProcessInstanceEntity.class);
   }
 

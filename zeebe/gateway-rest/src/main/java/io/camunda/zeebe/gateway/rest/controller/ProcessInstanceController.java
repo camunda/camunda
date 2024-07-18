@@ -42,7 +42,9 @@ public class ProcessInstanceController {
     try {
       final var tenantIds = TenantAttributeHolder.tenantIds();
       final var result =
-          processInstanceServices.withAuthentication((a) -> a.tenants(tenantIds)).search(query);
+          processInstanceServices
+              .withAuthentication((a) -> a.tenants(tenantIds).user("ben"))
+              .search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result).get());
     } catch (final Throwable e) {
