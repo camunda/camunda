@@ -1163,10 +1163,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
               });
     }
 
-    // TO-DO: This test is not working. It is necessary migrate from ZeebeClient to CamundaClient
-    // It will be reactivated after the migration
-    // Github issue: https://github.com/camunda/camunda/issues/20341
-    // @Test
+    @Test
     public void shouldUpdateUserTask() {
       final String taskId = tester.createZeebeUserTask(BPMN_PROCESS_ID, ELEMENT_ID, 1).getTaskId();
       final List<String> candidateGroups = new ArrayList<>();
