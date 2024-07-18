@@ -16,7 +16,7 @@ import {
   documentationHref,
   DocumentationLink,
 } from "src/components/documentation";
-import { getGroups, Group } from "src/utility/api/groups";
+import { Group, searchGroups } from "src/utility/api/groups";
 import { useNavigate } from "react-router";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
@@ -31,11 +31,17 @@ const List: FC = () => {
   const navigate = useNavigate();
   const [, setSearch] = useState("");
 
-  const { data: groups, loading, reload, success } = useApi(getGroups);
+  const {
+    data: groupsSearchResponse,
+    loading,
+    reload,
+    success,
+  } = useApi(searchGroups);
   const [addGroup, addModal] = useModal(AddModal, reload);
   const [updateGroup, editModal] = useEntityModal(EditModal, reload);
   const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, reload);
-  const areGroupsEmpty = !groups || groups.length === 0;
+  const areGroupsEmpty =
+    !groupsSearchResponse || groupsSearchResponse?.items.length === 0;
   const showDetails = ({ id }: Group) => navigate(`${id}`);
 
   if (success && areGroupsEmpty) {
@@ -66,7 +72,7 @@ const List: FC = () => {
     <Page>
       <EntityList
         title={t("Groups")}
-        data={groups}
+        data={groupsSearchResponse?.items || []}
         headers={[{ header: t("name"), key: "name" }]}
         sortProperty="name"
         addEntityLabel={t("Create group")}

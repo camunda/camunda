@@ -5,7 +5,7 @@ import { AddFormModal, UseEntityModalCustomProps } from "src/components/modal";
 import { useApi, useApiCall } from "src/utility/api/hooks";
 import { User } from "src/utility/api/users";
 import { assignUserRole } from "src/utility/api/users/roles";
-import { getRoles, Role } from "src/utility/api/roles";
+import { searchRoles, Role } from "src/utility/api/roles";
 import { useNavigate } from "react-router";
 import {
   TranslatedErrorInlineNotification,
@@ -27,11 +27,11 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
   const [showSelectRoleError, setShowSelectRoleError] = useState(false);
 
   const {
-    data: roles,
+    data: searchRolesResponse,
     loading: loadingRoles,
     reload: reloadRoles,
     success: getRolesSuccess,
-  } = useApi(getRoles);
+  } = useApi(searchRoles);
 
   const [callAssignRole, { loading: loadingAssignRole }] =
     useApiCall(assignUserRole);
@@ -40,8 +40,10 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
 
   const unassignedRoles = (
     userRoles
-      ? roles?.filter(({ id }) => !userRoles.some((role) => role.id === id))
-      : roles
+      ? searchRolesResponse?.items.filter(
+          ({ name }) => !userRoles.some((role) => role.name === name),
+        )
+      : searchRolesResponse?.items
   )?.sort((a, b) => ascendingSort(a.name, b.name));
 
   const handleSubmit = async () => {
@@ -55,7 +57,9 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
     setShowSelectRoleError(false);
 
     const results = await Promise.all(
-      selectedRoles.map((roleId) => callAssignRole({ id: user.id, roleId })),
+      selectedRoles.map((roleName) =>
+        callAssignRole({ id: user.id, roleName }),
+      ),
     );
 
     if (results.every(({ success }) => success)) {
@@ -93,17 +97,18 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
       {showSelectRoleError && (
         <TranslatedErrorInlineNotification title="Please select at least one role." />
       )}
-      {loadingRoles && (!roles || roles.length === 0) && <CheckboxSkeleton />}
+      {loadingRoles &&
+        (!searchRolesResponse?.items ||
+          searchRolesResponse.items.length === 0) && <CheckboxSkeleton />}
       {unassignedRoles && (
         <fieldset>
           <legend>{t("Select one or multiple roles")}</legend>
-          {unassignedRoles.map(({ id, name, description }) => (
+          {unassignedRoles.map(({ name, description }) => (
             <Checkbox
               key={name}
-              id={id}
               labelText={`${name} ${description ? `(${description})` : ""}`}
-              checked={selectedRoles.some((roleId) => roleId === id)}
-              onChange={onRoleChange(id)}
+              checked={selectedRoles.some((roleName) => roleName === name)}
+              onChange={onRoleChange(name)}
             />
           ))}
         </fieldset>
@@ -114,17 +119,19 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
           actionButton={{ label: "Retry", onClick: reloadRoles }}
         />
       )}
-      {!loading && getRolesSuccess && roles?.length === 0 && (
-        <TranslatedInlineNotification
-          title="Please configure a role first, then come back to assign it."
-          actionButton={{ label: "Go to roles", onClick: goToRolesPage }}
-        />
-      )}
       {!loading &&
         getRolesSuccess &&
-        roles &&
-        roles.length > 0 &&
-        roles.length === userRoles?.length && (
+        searchRolesResponse?.items.length === 0 && (
+          <TranslatedInlineNotification
+            title="Please configure a role first, then come back to assign it."
+            actionButton={{ label: "Go to roles", onClick: goToRolesPage }}
+          />
+        )}
+      {!loading &&
+        getRolesSuccess &&
+        searchRolesResponse?.items &&
+        searchRolesResponse.items.length > 0 &&
+        searchRolesResponse.items.length === userRoles?.length && (
           <TranslatedInlineNotification
             title="All configured roles are already assigned to the user. You can configure a new role and then assign it to the user."
             actionButton={{ label: "Go to roles", onClick: goToRolesPage }}

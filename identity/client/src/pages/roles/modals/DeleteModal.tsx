@@ -9,7 +9,7 @@ import { useNotifications } from "src/components/notifications";
 import { deleteRole, Role } from "src/utility/api/roles";
 
 const DeleteModal: FC<UseEntityModalProps<Role>> = ({
-  entity: { id, name },
+  entity: { name },
   open,
   onClose,
   onSuccess,
@@ -21,7 +21,7 @@ const DeleteModal: FC<UseEntityModalProps<Role>> = ({
 
   const handleSubmit = async () => {
     const { success } = await callDeleteApi({
-      id: id,
+      name: name,
     });
 
     if (success) {

@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { ApiDefinition, apiDelete, apiGet, apiPost, apiPut } from "../request";
+import { SearchResponse } from "src/utility/api";
 
 export const GROUPS_ENDPOINT = "/groups";
 
@@ -14,7 +15,8 @@ export type Group = {
   name: string;
 };
 
-export const getGroups: ApiDefinition<Group[]> = () => apiGet(GROUPS_ENDPOINT);
+export const searchGroups: ApiDefinition<SearchResponse<Group>> = () =>
+  apiPost(`${GROUPS_ENDPOINT}/search`);
 
 export type GetGroupParams = {
   id: string;
@@ -30,7 +32,7 @@ export const createGroup: ApiDefinition<undefined, CreateGroupParams> = (
 ) => apiPost(GROUPS_ENDPOINT, params);
 
 export const updateGroup: ApiDefinition<undefined, Group> = ({ id, name }) =>
-  apiPut(`${GROUPS_ENDPOINT}/${id}`, { name });
+  apiPut(`${GROUPS_ENDPOINT}/${id}`, { id, name });
 
 type DeleteGroupParams = GetGroupParams;
 

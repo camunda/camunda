@@ -8,12 +8,15 @@
 import { FC, useState } from "react";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
-import Page from "src/components/layout/Page";
+import Page, { PageTitle } from "src/components/layout/Page";
 import EntityList, {
   DocumentationDescription,
 } from "src/components/entityList";
-import { DocumentationLink } from "src/components/documentation";
-import { getRoles, Role } from "src/utility/api/roles";
+import {
+  documentationHref,
+  DocumentationLink,
+} from "src/components/documentation";
+import { Role, searchRoles } from "src/utility/api/roles";
 import { useNavigate } from "react-router";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
@@ -21,22 +24,51 @@ import AddModal from "./modals/AddModal";
 import EditModal from "./modals/EditModal";
 import { Edit, TrashCan } from "@carbon/react/icons";
 import DeleteModal from "src/pages/roles/modals/DeleteModal";
+import { C3EmptyState } from "@camunda/camunda-composite-components";
 
 const List: FC = () => {
   const { t, Translate } = useTranslate();
   const navigate = useNavigate();
   const [, setSearch] = useState("");
-  const { data: roles, loading, reload, success } = useApi(getRoles);
+  const {
+    data: rolesSearchResponse,
+    loading,
+    reload,
+    success,
+  } = useApi(searchRoles);
   const [addRole, addRoleModal] = useModal(AddModal, reload);
   const [editRole, editRoleModal] = useEntityModal(EditModal, reload);
   const [deleteRole, deleteRoleModal] = useEntityModal(DeleteModal, reload);
-  const showDetails = ({ id }: Role) => navigate(`${id}`);
+  const showDetails = ({ name }: Role) => navigate(`${name}`);
+
+  if (success && !rolesSearchResponse?.items.length) {
+    return (
+      <Page>
+        <PageTitle>
+          <Translate>Users</Translate>
+        </PageTitle>
+        <C3EmptyState
+          heading={t("You don’t have any roles yet")}
+          description={t("Roles can be applied to a user.")}
+          button={{
+            label: t("Create a role"),
+            onClick: addRole,
+          }}
+          link={{
+            href: documentationHref("/concepts/access-control/roles", ""),
+            label: t("Learn more about roles"),
+          }}
+        />
+        {addRoleModal}
+      </Page>
+    );
+  }
 
   return (
     <Page>
       <EntityList
         title={t("Roles")}
-        data={roles}
+        data={rolesSearchResponse?.items || []}
         headers={[
           { header: t("Name"), key: "name" },
           { header: t("Description"), key: "description" },
