@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.spring.client.properties;
 
-import io.camunda.client.ClientProperties;
-import io.camunda.client.impl.CamundaClientBuilderImpl;
-import io.camunda.client.impl.util.Environment;
+import io.camunda.zeebe.client.ClientProperties;
+import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
+import io.camunda.zeebe.client.impl.util.Environment;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 import jakarta.annotation.PostConstruct;
 import java.net.URI;
@@ -39,8 +39,8 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 @Deprecated
 public class ZeebeClientConfigurationProperties {
   // Used to read default config values
-  public static final CamundaClientBuilderImpl DEFAULT =
-      (CamundaClientBuilderImpl) new CamundaClientBuilderImpl().withProperties(new Properties());
+  public static final ZeebeClientBuilderImpl DEFAULT =
+      (ZeebeClientBuilderImpl) new ZeebeClientBuilderImpl().withProperties(new Properties());
   public static final String CONNECTION_MODE_CLOUD = "CLOUD";
   public static final String CONNECTION_MODE_ADDRESS = "ADDRESS";
   private static final Logger LOGGER =
