@@ -7,11 +7,23 @@
  */
 package io.camunda.commons.identity;
 
-import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Profile;
+import static org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder;
 
+import io.camunda.identity.automation.security.CamundaPasswordEncoder;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+@Configuration(proxyBeanMethods = false)
 @ComponentScan(basePackages = {"io.camunda.authentication"})
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.authentication"})
 @Profile("auth-basic")
-public class AuthenticationConfiguration {}
+public class AuthenticationConfiguration {
+  @Bean
+  public PasswordEncoder passwordEncoder() {
+    return new CamundaPasswordEncoder(createDelegatingPasswordEncoder());
+  }
+}

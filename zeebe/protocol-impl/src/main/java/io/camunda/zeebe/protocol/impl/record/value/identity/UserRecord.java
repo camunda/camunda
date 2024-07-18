@@ -20,26 +20,26 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
   private final StringProperty usernameProp = new StringProperty("username");
   private final StringProperty nameProp = new StringProperty("name");
   private final StringProperty emailProp = new StringProperty("email");
+  private final StringProperty passwordProp = new StringProperty("password");
 
   public UserRecord() {
     super(3);
-    declareProperty(usernameProp).declareProperty(nameProp).declareProperty(emailProp);
+    declareProperty(usernameProp)
+        .declareProperty(nameProp)
+        .declareProperty(emailProp)
+        .declareProperty(passwordProp);
   }
 
   public void wrap(final UserRecord record) {
     usernameProp.setValue(record.getUsernameBuffer());
     nameProp.setValue(record.getNameBuffer());
     emailProp.setValue(record.getEmailBuffer());
+    passwordProp.setValue(record.getEmailBuffer());
   }
 
   @Override
   public String getUsername() {
     return bufferAsString(usernameProp.getValue());
-  }
-
-  @JsonIgnore
-  public DirectBuffer getUsernameBuffer() {
-    return usernameProp.getValue();
   }
 
   public UserRecord setUsername(final String username) {
@@ -57,11 +57,6 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
     return bufferAsString(nameProp.getValue());
   }
 
-  @JsonIgnore
-  public DirectBuffer getNameBuffer() {
-    return nameProp.getValue();
-  }
-
   public UserRecord setName(final String name) {
     nameProp.setValue(name);
     return this;
@@ -77,11 +72,6 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
     return bufferAsString(emailProp.getValue());
   }
 
-  @JsonIgnore
-  public DirectBuffer getEmailBuffer() {
-    return emailProp.getValue();
-  }
-
   public UserRecord setEmail(final String email) {
     emailProp.setValue(email);
     return this;
@@ -90,5 +80,40 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
   public UserRecord setEmail(final DirectBuffer email) {
     emailProp.setValue(email);
     return this;
+  }
+
+  @Override
+  public String getPassword() {
+    return bufferAsString(passwordProp.getValue());
+  }
+
+  public UserRecord setPassword(final String password) {
+    passwordProp.setValue(password);
+    return this;
+  }
+
+  public UserRecord setPassword(final DirectBuffer password) {
+    passwordProp.setValue(password);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getUsernameBuffer() {
+    return usernameProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getNameBuffer() {
+    return nameProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getEmailBuffer() {
+    return emailProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getPasswordBuffer() {
+    return passwordProp.getValue();
   }
 }

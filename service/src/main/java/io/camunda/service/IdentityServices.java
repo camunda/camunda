@@ -39,9 +39,13 @@ public class IdentityServices<T> extends ApiServices<IdentityServices<T>> {
   }
 
   public CompletableFuture<UserRecord> createUser(
-      final String username, final String name, final String email) {
+      final String username, final String name, final String email, final String password) {
     return sendBrokerRequest(
-        new BrokerUserCreateRequest().setUsername(username).setName(name).setEmail(email));
+        new BrokerUserCreateRequest()
+            .setUsername(username)
+            .setName(name)
+            .setEmail(email)
+            .setPassword(password));
   }
 
   public CompletableFuture<AuthorizationRecord> createAuthorization(

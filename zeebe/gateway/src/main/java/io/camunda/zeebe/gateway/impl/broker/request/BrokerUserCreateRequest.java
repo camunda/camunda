@@ -29,6 +29,11 @@ public class BrokerUserCreateRequest extends BrokerExecuteCommand<UserRecord> {
     return this;
   }
 
+  public BrokerUserCreateRequest setPassword(final String password) {
+    requestDto.setPassword(password);
+    return this;
+  }
+
   @Override
   public UserRecord getRequestWriter() {
     return requestDto;

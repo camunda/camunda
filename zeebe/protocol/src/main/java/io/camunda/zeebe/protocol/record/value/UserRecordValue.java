@@ -28,4 +28,6 @@ public interface UserRecordValue extends RecordValue {
   String getName();
 
   String getEmail();
+
+  String getPassword();
 }

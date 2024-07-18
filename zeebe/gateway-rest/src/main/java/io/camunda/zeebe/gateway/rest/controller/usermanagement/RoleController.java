@@ -14,7 +14,6 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleResponse;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
 import java.util.HashSet;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -26,10 +25,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 
-@ZeebeRestController
-@RequestMapping("/v2/roles")
+// @ZeebeRestController
+// @RequestMapping("/v2/roles")
 public class RoleController {
 
   private final RoleService roleService;
