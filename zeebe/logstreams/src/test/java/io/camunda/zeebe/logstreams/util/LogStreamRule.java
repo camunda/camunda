@@ -71,7 +71,7 @@ public final class LogStreamRule extends ExternalResource {
         LogStream.builder()
             .withActorSchedulingService(actorScheduler)
             .withPartitionId(0)
-            .withLogName("0")
+            .withLogName("logStream-0")
             .withLogStorage(listLogStorage);
 
     // apply additional configs

@@ -35,6 +35,7 @@ public final class LogStreamImpl implements LogStream, CommitListener {
   private final LogStreamMetrics logStreamMetrics;
   private final FlowControl flowControl;
   private final Sequencer sequencer;
+  private volatile boolean closed;
 
   LogStreamImpl(
       final String logName,
@@ -60,6 +61,7 @@ public final class LogStreamImpl implements LogStream, CommitListener {
 
   @Override
   public void close() {
+    closed = true;
     LOG.info("Closing {} with {} readers", logName, readers.size());
     readers.forEach(LogStreamReader::close);
     logStorage.removeCommitListener(this);
@@ -78,11 +80,13 @@ public final class LogStreamImpl implements LogStream, CommitListener {
 
   @Override
   public LogStreamReader newLogStreamReader() {
+    ensureOpen();
     return createLogStreamReader();
   }
 
   @Override
   public LogStreamWriter newLogStreamWriter() {
+    ensureOpen();
     return sequencer;
   }
 
@@ -93,21 +97,26 @@ public final class LogStreamImpl implements LogStream, CommitListener {
 
   @Override
   public void registerRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
+    ensureOpen();
     recordAwaiters.add(recordAwaiter);
   }
 
   @Override
   public void removeRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
+    ensureOpen();
     recordAwaiters.remove(recordAwaiter);
-  }
-
-  private void notifyRecordAwaiters() {
-    recordAwaiters.forEach(LogRecordAwaiter::onRecordAvailable);
   }
 
   @Override
   public void onCommit() {
-    notifyRecordAwaiters();
+    ensureOpen();
+    recordAwaiters.forEach(LogRecordAwaiter::onRecordAvailable);
+  }
+
+  private void ensureOpen() {
+    if (closed) {
+      throw new IllegalStateException("%s is closed".formatted(logName));
+    }
   }
 
   private LogStreamReader createLogStreamReader() {
