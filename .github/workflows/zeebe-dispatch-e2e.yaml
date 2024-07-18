@@ -1,8 +1,8 @@
 name: Zeebe Repo dispatch E2E tests
 
 on:
-  pull_request:
-    branches: [main]
+  repository_dispatch:
+    types: [e2e_run_testbench]
 
 jobs:
   e2e:
