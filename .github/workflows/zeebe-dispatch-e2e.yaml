@@ -1,20 +1,21 @@
 name: Zeebe Repo dispatch E2E tests
 
 on:
-  repository_dispatch:
+  pull_request:
+    branches: [main]
     types: [e2e_run_testbench]
-
-env:
-  # This URL is used as the business key for the various QA workflows
-  BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
 jobs:
   e2e:
     strategy:
       # do not cancel other jobs if one fails
       fail-fast: false
-    name: E2E tests on release
-    uses: ./.github/workflows/zeebe-e2e-testbench.yaml
-    with:
-      branch: ${{ github.event.client_payload.branch }}
-    secrets: inherit
+    runs-on: ubuntu-latest
+    name: Release E2E
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trigger Weekly E2E on ${{ github.ref_name }}
+#      - name: Trigger Weekly E2E on ${{ github.event.client_payload.branch }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run --ref ${{ github.ref_name }} zeebe-e2e-testbench.yaml -F generation='Zeebe SNAPSHOT' -F branch=${{ github.ref_name }} -F maxTestDuration='P5D' -F maxInstanceDuration='40m'
