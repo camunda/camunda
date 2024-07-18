@@ -13,8 +13,6 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Objects;
 
 public final class LogStreamBuilderImpl implements LogStreamBuilder {
@@ -71,12 +69,11 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   }
 
   @Override
-  public ActorFuture<LogStream> buildAsync() {
+  public LogStream build() {
     validate();
 
-    return CompletableActorFuture.completed(
-        new LogStreamImpl(
-            logName, partitionId, maxFragmentSize, logStorage, requestLimit, writeRateLimit));
+    return new LogStreamImpl(
+        logName, partitionId, maxFragmentSize, logStorage, requestLimit, writeRateLimit);
   }
 
   private void validate() {

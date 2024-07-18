@@ -52,7 +52,7 @@ class LogStreamPartitionTransitionStepTest {
     when(raftPartition.getServer()).thenReturn(raftServer);
     transitionContext.setRaftPartition(raftPartition);
 
-    doReturn(TestActorFuture.completedFuture(logStream)).when(logStreamBuilder).buildAsync();
+    doReturn(TestActorFuture.completedFuture(logStream)).when(logStreamBuilder).build();
 
     step = new LogStreamPartitionTransitionStep(() -> logStreamBuilder);
   }
@@ -83,7 +83,7 @@ class LogStreamPartitionTransitionStepTest {
 
     // then
     assertThat(transitionContext.getLogStream()).isNotNull().isNotEqualTo(existingLogStream);
-    verify(logStreamBuilder).buildAsync();
+    verify(logStreamBuilder).build();
   }
 
   @ParameterizedTest
@@ -98,7 +98,7 @@ class LogStreamPartitionTransitionStepTest {
 
     // then
     assertThat(transitionContext.getLogStream()).isEqualTo(existingLogStream);
-    verify(logStreamBuilder, never()).buildAsync();
+    verify(logStreamBuilder, never()).build();
   }
 
   @ParameterizedTest
@@ -115,7 +115,7 @@ class LogStreamPartitionTransitionStepTest {
     // then
     assertThat(transitionContext.getStreamProcessor()).isNull();
     verify(logStreamFromPrevRole).close();
-    verify(logStreamBuilder, never()).buildAsync();
+    verify(logStreamBuilder, never()).build();
   }
 
   private void initializeContext(final Role currentRole) {

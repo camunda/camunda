@@ -49,21 +49,10 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     if ((context.getLogStream() == null && targetRole != Role.INACTIVE)
         || shouldInstallOnTransition(targetRole, context.getCurrentRole())) {
-      final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
-
       final var logStorage = context.getLogStorage();
-      buildLogStream(context, logStorage)
-          .onComplete(
-              ((logStream, err) -> {
-                if (err == null) {
-                  context.setLogStream(logStream);
-                  openFuture.complete(null);
-                } else {
-                  openFuture.completeExceptionally(err);
-                }
-              }));
+      context.setLogStream(buildLogStream(context, logStorage));
 
-      return openFuture;
+      return CompletableActorFuture.completed(null);
     } else {
       return CompletableActorFuture.completed(null);
     }
@@ -74,7 +63,7 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
     return "LogStream";
   }
 
-  private ActorFuture<LogStream> buildLogStream(
+  private LogStream buildLogStream(
       final PartitionTransitionContext context, final AtomixLogStorage atomixLogStorage) {
     final var flowControlCfg = context.getBrokerCfg().getFlowControl();
     return logStreamBuilderSupplier
@@ -90,7 +79,7 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
                 : context.getBrokerCfg().getBackpressure().buildLimit())
         .withWriteRateLimit(
             flowControlCfg.getWrite() != null ? flowControlCfg.getWrite().buildLimit() : null)
-        .buildAsync();
+        .build();
   }
 
   private boolean shouldInstallOnTransition(final Role newRole, final Role currentRole) {
