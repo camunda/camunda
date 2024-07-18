@@ -18,8 +18,6 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorage.CommitListener;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
@@ -79,13 +77,13 @@ public final class LogStreamImpl implements LogStream, CommitListener {
   }
 
   @Override
-  public ActorFuture<LogStreamReader> newLogStreamReader() {
-    return CompletableActorFuture.completed(createLogStreamReader());
+  public LogStreamReader newLogStreamReader() {
+    return createLogStreamReader();
   }
 
   @Override
-  public ActorFuture<LogStreamWriter> newLogStreamWriter() {
-    return CompletableActorFuture.completed(sequencer);
+  public LogStreamWriter newLogStreamWriter() {
+    return sequencer;
   }
 
   @Override

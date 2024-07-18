@@ -9,7 +9,6 @@ package io.camunda.zeebe.logstreams.log;
 
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.impl.log.LogStreamBuilderImpl;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 /**
  * Represents a stream of events. New events are append to the end of the log. With {@link
@@ -45,13 +44,13 @@ public interface LogStream extends AutoCloseable {
   /**
    * @return a future, when successfully completed it returns a newly created log stream reader
    */
-  ActorFuture<LogStreamReader> newLogStreamReader();
+  LogStreamReader newLogStreamReader();
 
   /**
    * @return a future, when successfully completed it returns a newly created log stream record
    *     writer
    */
-  ActorFuture<LogStreamWriter> newLogStreamWriter();
+  LogStreamWriter newLogStreamWriter();
 
   /**
    * @return a handle to the flow control used by this log stream.

@@ -69,12 +69,12 @@ public class SyncLogStream implements SynchronousLogStream {
 
   @Override
   public LogStreamReader newLogStreamReader() {
-    return logStream.newLogStreamReader().join();
+    return logStream.newLogStreamReader();
   }
 
   @Override
   public LogStreamWriter newLogStreamWriter() {
-    return logStream.newLogStreamWriter().join();
+    return logStream.newLogStreamWriter();
   }
 
   @Override
