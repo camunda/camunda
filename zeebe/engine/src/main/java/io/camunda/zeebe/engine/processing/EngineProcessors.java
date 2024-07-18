@@ -33,6 +33,7 @@ import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
+import io.camunda.zeebe.engine.processing.scale.ScaleRelocateMessagesStartProcessor;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -52,6 +53,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.ScaleIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -191,7 +193,25 @@ public final class EngineProcessors {
     UserTaskEventProcessors.addUserTaskProcessors(
         typedRecordProcessors, processingState, bpmnBehaviors, writers);
 
+    addScaleProcessors(
+        typedRecordProcessors,
+        commandDistributionBehavior,
+        processingState.getKeyGenerator(),
+        writers);
+
     return typedRecordProcessors;
+  }
+
+  private static void addScaleProcessors(
+      final TypedRecordProcessors typedRecordProcessors,
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final KeyGenerator keyGenerator,
+      final Writers writers) {
+    typedRecordProcessors.onCommand(
+        ValueType.SCALE,
+        ScaleIntent.RELOCATE_MESSAGES_START,
+        new ScaleRelocateMessagesStartProcessor(
+            commandDistributionBehavior, keyGenerator, writers));
   }
 
   private static BpmnBehaviorsImpl createBehaviors(
