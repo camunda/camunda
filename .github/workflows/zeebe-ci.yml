@@ -157,10 +157,13 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           job_name: "integration-tests/${{ matrix.group }}"
-          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   unit-tests:
     name: Unit tests
     runs-on: [ self-hosted, linux, amd64, "16" ]
@@ -212,10 +215,13 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   smoke-tests:
     name: "[Smoke] ${{ matrix.os }} with ${{ matrix.arch }}"
     timeout-minutes: 20
