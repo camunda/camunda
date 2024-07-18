@@ -42,7 +42,7 @@ public class ProcessService {
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessService.class);
 
   @Autowired
-  @Qualifier("tasklistZeebeClient")
+  @Qualifier("tasklistCamundaClient")
   private CamundaClient camundaClient;
 
   @Autowired

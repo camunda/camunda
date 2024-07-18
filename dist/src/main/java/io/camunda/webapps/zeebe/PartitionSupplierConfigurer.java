@@ -11,19 +11,32 @@ import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.util.Either;
 
 public class PartitionSupplierConfigurer {
 
   private final Broker broker;
+
   private final Gateway gateway;
-  private final CamundaClient zeebeClient;
+  private final CamundaClient camundaClient;
+  private final ZeebeClient zeebeClient; // Used for Operate
 
   public PartitionSupplierConfigurer(
-      final Broker broker, final Gateway gateway, final CamundaClient zeebeClient) {
+      final Broker broker, final Gateway gateway, final CamundaClient camundaClient) {
     this.broker = broker;
     this.gateway = gateway;
+    this.camundaClient = camundaClient;
+    zeebeClient = null;
+  }
+
+  // Delete this method after migrate to CamundaClient on Operate Application
+  public PartitionSupplierConfigurer(
+      final Broker broker, final Gateway gateway, final ZeebeClient zeebeClient) {
+    this.broker = broker;
+    this.gateway = gateway;
+    camundaClient = null;
     this.zeebeClient = zeebeClient;
   }
 
@@ -36,7 +49,7 @@ public class PartitionSupplierConfigurer {
       return new BrokerClientPartitionSupplier(brokerClient);
     } else {
       // default use Standalone Partition Holder by using the Zeebe Client
-      return new StandalonePartitionSupplier(zeebeClient);
+      return new StandalonePartitionSupplier(camundaClient);
     }
   }
 
