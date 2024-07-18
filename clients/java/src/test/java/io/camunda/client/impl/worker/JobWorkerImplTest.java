@@ -15,7 +15,7 @@
  */
 package io.camunda.client.impl.worker;
 
-import static io.camunda.client.impl.CamundaClientBuilderImpl.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
+import static io.camunda.client.impl.CamundaClientBuilderImpl.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -181,7 +181,7 @@ public final class JobWorkerImplTest {
   @Test
   public void workerBuilderShouldOverrideEnvVariables() {
     // given
-    Environment.system().put(ZEEBE_CLIENT_WORKER_STREAM_ENABLED, "false");
+    Environment.system().put(CAMUNDA_CLIENT_WORKER_STREAM_ENABLED, "false");
 
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
     builder.applyEnvironmentVariableOverrides(true).build();
