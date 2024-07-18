@@ -12,19 +12,19 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "profiles")
-public class Profile {
+@Table(name = "native_users")
+public class NativeUser {
   @Id private Long id;
   private String email;
   private String name;
 
-  public Profile() {}
+  public NativeUser() {}
 
-  public Profile(final Long id, final String email) {
+  public NativeUser(final Long id, final String email) {
     this(id, email, null);
   }
 
-  public Profile(final Long id, final String email, final String name) {
+  public NativeUser(final Long id, final String email, final String name) {
     this.id = id;
     this.email = email;
     this.name = name;
