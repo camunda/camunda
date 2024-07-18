@@ -87,7 +87,7 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
     super.before();
     tester =
         beanFactory
-            .getBean(TasklistTester.class, zeebeClient, databaseTestExtension, jwtDecoder)
+            .getBean(TasklistTester.class, camundaClient, databaseTestExtension, jwtDecoder)
             .withAuthenticationToken(generateCamundaIdentityToken());
   }
 
