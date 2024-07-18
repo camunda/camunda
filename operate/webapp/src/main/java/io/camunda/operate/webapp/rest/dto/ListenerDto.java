@@ -8,6 +8,7 @@
 package io.camunda.operate.webapp.rest.dto;
 
 import io.camunda.operate.ListenerState;
+import io.camunda.operate.entities.JobEntity;
 import io.camunda.operate.entities.ListenerEventType;
 import io.camunda.operate.entities.ListenerType;
 import java.time.OffsetDateTime;
@@ -73,6 +74,16 @@ public class ListenerDto {
   public ListenerDto setTime(final OffsetDateTime time) {
     this.time = time;
     return this;
+  }
+
+  public static ListenerDto fromJobEntity(final JobEntity jobEntity) {
+    return new ListenerDto()
+        .setListenerType(ListenerType.fromZeebeJobKind(jobEntity.getJobKind()))
+        .setListenerKey(Long.toString(jobEntity.getKey()))
+        .setJobType(jobEntity.getType())
+        .setState(ListenerState.fromZeebeJobIntent(jobEntity.getState()))
+        .setEvent(ListenerEventType.fromZeebeListenerEventType(jobEntity.getListenerEventType()))
+        .setTime(jobEntity.getEndTime());
   }
 
   @Override
