@@ -1,7 +1,7 @@
 name: Zeebe Repo dispatch E2E tests
 
 on:
-  workflow_dispatch:
+  repository_dispatch:
     types: [e2e_run_testbench]
 
 jobs:
@@ -9,12 +9,8 @@ jobs:
     strategy:
       # do not cancel other jobs if one fails
       fail-fast: false
-    runs-on: ubuntu-latest
     name: Release E2E
-    steps:
-      - uses: actions/checkout@v4
-      - name: Trigger Weekly E2E on ${{ github.ref_name }}
-#      - name: Trigger Weekly E2E on ${{ github.event.client_payload.branch }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run --ref ${{ github.ref_name }} zeebe-e2e-testbench.yaml -F generation='Zeebe SNAPSHOT' -F branch=${{ github.ref_name }} -F maxTestDuration='P5D' -F maxInstanceDuration='40m'
+    uses: ./.github/workflows/zeebe-e2e-testbench.yaml
+    with:
+      branch: ${{ github.ref_name }}
+    secrets: inherit
