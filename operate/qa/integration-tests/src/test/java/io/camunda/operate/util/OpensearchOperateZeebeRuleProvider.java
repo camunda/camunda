@@ -61,6 +61,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
     startZeebe();
   }
 
+  @Override
   public void updateRefreshInterval(String value) {
     final ComponentTemplateSummary template =
         zeebeRichOpenSearchClient.template().getComponentTemplate().get(prefix).template();
@@ -76,6 +77,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
             .createComponentTemplateWithRetries(requestBuilder.build()));
   }
 
+  @Override
   public void refreshIndices(Instant instant) {
     final String date =
         DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
@@ -106,6 +108,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
    *
    * @throws IllegalStateException if no exporter has previously been configured
    */
+  @Override
   public void startZeebe() {
 
     final String zeebeVersion =
@@ -124,10 +127,12 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   }
 
   /** Stops the broker and destroys the client. Does nothing if not started yet. */
+  @Override
   public void stopZeebe() {
     testContainerUtil.stopZeebe(null);
   }
 
+  @Override
   public String getPrefix() {
     return prefix;
   }
@@ -136,10 +141,12 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
     this.prefix = prefix;
   }
 
+  @Override
   public ZeebeContainer getZeebeContainer() {
     return zeebeContainer;
   }
 
+  @Override
   public ZeebeClient getClient() {
     return client;
   }

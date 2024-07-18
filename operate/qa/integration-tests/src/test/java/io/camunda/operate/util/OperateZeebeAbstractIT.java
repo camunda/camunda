@@ -17,6 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CamundaClient;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationType;
@@ -72,10 +73,10 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
 
   @MockBean
-  protected ZeebeClient
+  protected CamundaClient
       mockedZeebeClient; // we don't want to create ZeebeClient, we will rather use the one from
 
-  protected ZeebeClient zeebeClient;
+  protected CamundaClient zeebeClient;
   @Autowired protected PartitionHolder partitionHolder;
   @Autowired protected ImportPositionHolder importPositionHolder;
   @Autowired protected ProcessCache processCache;
@@ -227,7 +228,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     importPositionHolder.clearCache();
   }
 
-  public ZeebeClient getClient() {
+  public CamundaClient getClient() {
     return zeebeRule.getClient();
   }
 
