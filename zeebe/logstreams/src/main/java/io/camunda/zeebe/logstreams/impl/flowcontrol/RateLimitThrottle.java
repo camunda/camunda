@@ -61,7 +61,7 @@ final class RateLimitThrottle {
     final var factor = limit.throttling().acceptableBacklog() / (double) backlog;
     final var rate = measurement.rate();
     final double adjustedRate =
-        factor > 2 ? limit.limit() : min(limit.limit(), max(factor * rate, minRate));
+        factor > 2 ? limit.limit() : clamp(factor * rate, minRate, limit.limit());
     if (adjustedRate < limit.limit()) {
       LOG.debug(
           "Throttling to {}, {} of observed rate {}, Current backlog {}, acceptable {}",
