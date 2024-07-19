@@ -589,7 +589,6 @@ public final class RecordingGatewayService extends GatewayImplBase {
         });
   }
 
-  @SuppressWarnings("unchecked")
   public <T extends GeneratedMessageV3> T getLastRequest() {
     return (T) requests.getLast();
   }

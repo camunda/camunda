@@ -48,8 +48,6 @@ import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.search.ProcessInstanceQuery;
-import io.camunda.zeebe.client.api.search.UserTaskQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.command.AssignUserTaskCommandImpl;
@@ -74,8 +72,6 @@ import io.camunda.zeebe.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.UpdateUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpClientFactory;
-import io.camunda.zeebe.client.impl.search.ProcessInstanceQueryImpl;
-import io.camunda.zeebe.client.impl.search.UserTaskQueryImpl;
 import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
 import io.camunda.zeebe.client.impl.worker.JobClientImpl;
@@ -101,6 +97,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * @deprecated since 8.6 for removal with 8.8
+ */
+@Deprecated
 public final class ZeebeClientImpl implements ZeebeClient {
   private final ZeebeClientConfiguration config;
   private final JsonMapper jsonMapper;
@@ -185,7 +185,6 @@ public final class ZeebeClientImpl implements ZeebeClient {
     channelBuilder.keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS);
     channelBuilder.userAgent("camunda-client-java/" + VersionUtil.getVersion());
     channelBuilder.maxInboundMessageSize(config.getMaxMessageSize());
-    channelBuilder.maxInboundMetadataSize(config.getMaxMetadataSize());
 
     if (config.useDefaultRetryPolicy()) {
       final Map<String, Object> serviceConfig = defaultServiceConfig();
@@ -473,19 +472,9 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new UnassignUserTaskCommandImpl(httpClient, userTaskKey);
   }
 
-  @Override
-  public ProcessInstanceQuery newProcessInstanceQuery() {
-    return new ProcessInstanceQueryImpl(httpClient, jsonMapper);
-  }
-
-  @Override
-  public UserTaskQuery newUserTaskQuery() {
-    return new UserTaskQueryImpl(httpClient, jsonMapper);
-  }
-
   private JobClient newJobClient() {
     return new JobClientImpl(
-        asyncStub, httpClient, config, jsonMapper, credentialsProvider::shouldRetryRequest);
+        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
   }
 
   @Override

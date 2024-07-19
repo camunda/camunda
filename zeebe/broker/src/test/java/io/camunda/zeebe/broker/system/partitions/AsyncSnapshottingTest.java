@@ -60,7 +60,7 @@ public final class AsyncSnapshottingTest {
   public void setup() throws IOException {
     final var rootDirectory = tempFolderRule.getRoot().toPath();
     final int partitionId = 1;
-    persistedSnapshotStore = new FileBasedSnapshotStore(partitionId, rootDirectory);
+    persistedSnapshotStore = new FileBasedSnapshotStore(0, partitionId, rootDirectory);
     actorSchedulerRule.submitActor(persistedSnapshotStore).join();
 
     snapshotController =

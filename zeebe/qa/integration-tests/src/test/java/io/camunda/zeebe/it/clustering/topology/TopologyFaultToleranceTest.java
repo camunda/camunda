@@ -9,8 +9,8 @@ package io.camunda.zeebe.it.clustering.topology;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;

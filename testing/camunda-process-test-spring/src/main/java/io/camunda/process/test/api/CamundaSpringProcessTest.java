@@ -37,13 +37,13 @@ import org.springframework.test.context.TestExecutionListeners.MergeMode;
  * public class MyProcessTest {
  *
  *   &#064;Autowired
- *   private ZeebeClient zeebeClient;
+ *   private CamundaClient client;
  *
  *   &#064;Test
  *   void shouldWork() {
  *     // given
  *     final ProcessInstanceEvent processInstance =
- *         zeebeClient
+ *         client
  *             .newCreateInstanceCommand()
  *             .bpmnProcessId("process")
  *             .latestVersion()

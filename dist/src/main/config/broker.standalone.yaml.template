@@ -828,6 +828,7 @@
         #     jobBatch: false
         #     message: true
         #     messageBatch: false
+        #     messageCorrelation: true
         #     messageStartSubscription: true
         #     messageSubscription: true
         #     process: true
@@ -909,6 +910,7 @@
         #     jobBatch: false
         #     message: true
         #     messageBatch: false
+        #     messageCorrelation: true
         #     messageStartSubscription: true
         #     messageSubscription: true
         #     process: true

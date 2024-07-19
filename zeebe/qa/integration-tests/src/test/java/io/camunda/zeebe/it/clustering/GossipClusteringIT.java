@@ -8,7 +8,7 @@
 package io.camunda.zeebe.it.clustering;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestClusterBuilder;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -42,7 +42,7 @@ final class GossipClusteringIT {
           .withReplicationFactor(3)
           .build();
 
-  @AutoCloseResource private ZeebeClient client;
+  @AutoCloseResource private CamundaClient client;
 
   @BeforeEach
   void beforeEach() {

@@ -44,7 +44,7 @@ final class TestState {
             .build();
     actorScheduler.start();
 
-    final var snapshotStore = new FileBasedSnapshotStore(1, tempDirectory);
+    final var snapshotStore = new FileBasedSnapshotStore(0, 1, tempDirectory);
     actorScheduler.submitActor(snapshotStore).join();
 
     generateSnapshot(snapshotStore, sizeInBytes);

@@ -60,7 +60,7 @@ public final class StateControllerImplTest {
   @Before
   public void setup() throws IOException {
 
-    store = new FileBasedSnapshotStore(1, tempFolderRule.newFolder("data").toPath());
+    store = new FileBasedSnapshotStore(0, 1, tempFolderRule.newFolder("data").toPath());
     actorSchedulerRule.submitActor(store).join();
 
     runtimeDirectory = tempFolderRule.getRoot().toPath().resolve("runtime");

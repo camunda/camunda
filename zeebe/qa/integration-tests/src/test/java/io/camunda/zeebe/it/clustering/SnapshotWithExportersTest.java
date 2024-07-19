@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.clustering;
 import static io.camunda.zeebe.test.StableValuePredicate.hasStableValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 final class SnapshotWithExportersTest {
 
-  private void publishMessages(final ZeebeClient client) {
+  private void publishMessages(final CamundaClient client) {
     IntStream.range(0, 10)
         .forEach(
             (i) ->

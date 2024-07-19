@@ -53,13 +53,13 @@ public class DMNDataGenerator {
 
   @Autowired private RestHighLevelClient esClient;
 
-  private Random random = new Random();
+  private final Random random = new Random();
 
   private List<Long> processInstanceKeys = new ArrayList<>();
 
   private StatefulRestTemplate operateRestClient;
 
-  private void init(TestContext testContext) {
+  private void init(final TestContext testContext) {
     zeebeClient =
         ZeebeClient.newClientBuilder()
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
@@ -73,7 +73,7 @@ public class DMNDataGenerator {
     operateRestClient.loginWhenNeeded();
   }
 
-  public void createData(TestContext testContext) throws Exception {
+  public void createData(final TestContext testContext) throws Exception {
     init(testContext);
     try {
       final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
@@ -87,7 +87,7 @@ public class DMNDataGenerator {
 
       try {
         esClient.indices().refresh(new RefreshRequest("operate-*"), RequestOptions.DEFAULT);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         LOGGER.error("Error in refreshing indices", e);
       }
       LOGGER.info(
@@ -136,7 +136,7 @@ public class DMNDataGenerator {
     }
   }
 
-  private List<Long> startProcessInstances(int numberOfProcessInstances) {
+  private List<Long> startProcessInstances(final int numberOfProcessInstances) {
     for (int i = 0; i < numberOfProcessInstances; i++) {
       final String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
       final long processInstanceKey =
@@ -170,13 +170,13 @@ public class DMNDataGenerator {
     LOGGER.info("Deployed decision {}", demoDecisionId2);
   }
 
-  private long countEntitiesFor(SearchRequest searchRequest) throws IOException {
+  private long countEntitiesFor(final SearchRequest searchRequest) throws IOException {
     searchRequest.source().size(1000);
     final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     return searchResponse.getHits().getTotalHits().value;
   }
 
-  private String getAliasFor(String index) {
+  private String getAliasFor(final String index) {
     return String.format("operate-%s-*_alias", index);
   }
 }
