@@ -29,6 +29,7 @@ import static io.camunda.client.ClientProperties.REST_ADDRESS;
 import static io.camunda.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
+import static io.camunda.client.impl.CamundaClientBuilderImpl.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.CA_CERTIFICATE_VAR;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_GATEWAY_ADDRESS;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_GRPC_ADDRESS;
@@ -42,7 +43,6 @@ import static io.camunda.client.impl.CamundaClientBuilderImpl.PLAINTEXT_CONNECTI
 import static io.camunda.client.impl.CamundaClientBuilderImpl.PREFER_REST_VAR;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.REST_ADDRESS_VAR;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.USE_DEFAULT_RETRY_POLICY_VAR;
-import static io.camunda.client.impl.CamundaClientBuilderImpl.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,6 +61,7 @@ import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.client.impl.util.Environment;
 import io.camunda.client.impl.util.EnvironmentRule;
 import io.camunda.client.util.ClientTest;
+import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import java.io.FileNotFoundException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -199,7 +200,7 @@ public final class CamundaClientTest extends ClientTest {
   @Test
   public void shouldEnableStreamingWithEnvironmentVariableWhenApplied() {
     // given
-    Environment.system().put(ZEEBE_CLIENT_WORKER_STREAM_ENABLED, "true");
+    Environment.system().put(CAMUNDA_CLIENT_WORKER_STREAM_ENABLED, "true");
 
     final CamundaClientBuilderImpl builder1 = new CamundaClientBuilderImpl();
     final CamundaClientBuilderImpl builder2 = new CamundaClientBuilderImpl();
@@ -216,7 +217,7 @@ public final class CamundaClientTest extends ClientTest {
   @Test
   public void environmentVariableShouldOverrideProperty() {
     // given
-    Environment.system().put(ZEEBE_CLIENT_WORKER_STREAM_ENABLED, "true");
+    Environment.system().put(CAMUNDA_CLIENT_WORKER_STREAM_ENABLED, "true");
     final Properties properties = new Properties();
     properties.putIfAbsent(STREAM_ENABLED, "false");
 
@@ -350,36 +351,6 @@ public final class CamundaClientTest extends ClientTest {
 
     // then
     assertThat(builder.getMaxMetadataSize()).isEqualTo(10 * ONE_KB);
-  }
-
-  @Test
-  public void shouldOverrideMaxMessageSizeWithEnvVar() {
-    // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
-    builder.applyEnvironmentVariableOverrides(Boolean.TRUE);
-    builder.maxMessageSize(4 * ONE_MB);
-    Environment.system().put(MAX_MESSAGE_SIZE, "10MB");
-
-    // when
-    builder.build();
-
-    // then
-    assertThat(builder.getMaxMessageSize()).isEqualTo(10 * ONE_MB);
-  }
-
-  @Test
-  public void shouldOverrideMaxMetadataSizeWithEnvVar() {
-    // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
-    builder.applyEnvironmentVariableOverrides(Boolean.TRUE);
-    builder.maxMetadataSize(16 * ONE_KB);
-    Environment.system().put(MAX_METADATA_SIZE, "8KB");
-
-    // when
-    builder.build();
-
-    // then
-    assertThat(builder.getMaxMetadataSize()).isEqualTo(8 * ONE_KB);
   }
 
   @Test
@@ -1080,5 +1051,117 @@ public final class CamundaClientTest extends ClientTest {
     assertThat(builder.getDefaultJobWorkerName()).isEqualTo("jobWorkerName");
     assertThat(builder.getMaxMessageSize()).isEqualTo(100);
     assertThat(builder.getMaxMetadataSize()).isEqualTo(100);
+  }
+
+  @Test
+  public void shouldUseNewEnvVars() throws URISyntaxException {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    Environment.system().put(PLAINTEXT_CONNECTION_VAR, "true");
+    Environment.system().put(CA_CERTIFICATE_VAR, "this/is/a/path");
+    Environment.system().put(KEEP_ALIVE_VAR, "100");
+    Environment.system().put(OVERRIDE_AUTHORITY_VAR, "virtualhost");
+    Environment.system().put(GRPC_ADDRESS_VAR, "https://localhost:8080");
+    Environment.system().put(REST_ADDRESS_VAR, "localhost:8080");
+    Environment.system().put(DEFAULT_TENANT_ID_VAR, "defaultTenantId");
+    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_IDS_VAR, "defaultJobWorkerTenantIds");
+    Environment.system().put(CAMUNDA_CLIENT_WORKER_STREAM_ENABLED, "true");
+    Environment.system().put(USE_DEFAULT_RETRY_POLICY_VAR, "true");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.isPlaintextConnectionEnabled()).isTrue();
+    assertThat(builder.getCaCertificatePath()).isEqualTo("this/is/a/path");
+    assertThat(builder.getKeepAlive()).isEqualTo(Duration.ofMillis(100));
+    assertThat(builder.getOverrideAuthority()).isEqualTo("virtualhost");
+    assertThat(builder.getRestAddress()).isEqualTo(new URI("localhost:8080"));
+    assertThat(builder.getGrpcAddress()).isEqualTo(new URI("https://localhost:8080"));
+    assertThat(builder.getDefaultTenantId()).isEqualTo("defaultTenantId");
+    assertThat(builder.getDefaultJobWorkerTenantIds())
+        .isEqualTo(Collections.singletonList("defaultJobWorkerTenantIds"));
+    assertThat(builder.getDefaultJobWorkerStreamEnabled()).isTrue();
+    assertThat(builder.useDefaultRetryPolicy()).isTrue();
+  }
+
+  @Test
+  public void shouldUseLegacyEnvVars() throws URISyntaxException {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    Environment.system().put(ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_VAR, "true");
+    Environment.system().put(ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR, "this/is/a/path");
+    Environment.system().put(ZeebeClientBuilderImpl.KEEP_ALIVE_VAR, "100");
+    Environment.system().put(ZeebeClientBuilderImpl.OVERRIDE_AUTHORITY_VAR, "virtualhost");
+    Environment.system().put(ZeebeClientBuilderImpl.GRPC_ADDRESS_VAR, "https://localhost:8080");
+    Environment.system().put(ZeebeClientBuilderImpl.REST_ADDRESS_VAR, "localhost:8080");
+    Environment.system().put(ZeebeClientBuilderImpl.DEFAULT_TENANT_ID_VAR, "legacyDefaultTenantId");
+    Environment.system()
+        .put(
+            ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS_VAR,
+            "legacyDefaultJobWorkerTenantIds");
+    Environment.system().put(ZeebeClientBuilderImpl.ZEEBE_CLIENT_WORKER_STREAM_ENABLED, "true");
+    Environment.system().put(ZeebeClientBuilderImpl.USE_DEFAULT_RETRY_POLICY_VAR, "true");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.isPlaintextConnectionEnabled()).isTrue();
+    assertThat(builder.getCaCertificatePath()).isEqualTo("this/is/a/path");
+    assertThat(builder.getKeepAlive()).isEqualTo(Duration.ofMillis(100));
+    assertThat(builder.getOverrideAuthority()).isEqualTo("virtualhost");
+    assertThat(builder.getRestAddress()).isEqualTo(new URI("localhost:8080"));
+    assertThat(builder.getGrpcAddress()).isEqualTo(new URI("https://localhost:8080"));
+    assertThat(builder.getDefaultTenantId()).isEqualTo("legacyDefaultTenantId");
+    assertThat(builder.getDefaultJobWorkerTenantIds())
+        .isEqualTo(Collections.singletonList("legacyDefaultJobWorkerTenantIds"));
+    assertThat(builder.getDefaultJobWorkerStreamEnabled()).isTrue();
+    assertThat(builder.useDefaultRetryPolicy()).isTrue();
+  }
+
+  @Test
+  public void shouldPreferNewEnvVars() throws URISyntaxException {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    Environment.system().put(PLAINTEXT_CONNECTION_VAR, "true");
+    Environment.system().put(CA_CERTIFICATE_VAR, "this/is/a/path");
+    Environment.system().put(KEEP_ALIVE_VAR, "100");
+    Environment.system().put(OVERRIDE_AUTHORITY_VAR, "virtualhost");
+    Environment.system().put(GRPC_ADDRESS_VAR, "https://localhost:8080");
+    Environment.system().put(REST_ADDRESS_VAR, "localhost:8080");
+    Environment.system().put(DEFAULT_TENANT_ID_VAR, "defaultTenantId");
+    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_IDS_VAR, "defaultJobWorkerTenantIds");
+    Environment.system().put(CAMUNDA_CLIENT_WORKER_STREAM_ENABLED, "true");
+    Environment.system().put(USE_DEFAULT_RETRY_POLICY_VAR, "true");
+    Environment.system().put(ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_VAR, "false");
+    Environment.system().put(ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR, "this/is/a/legacy/path");
+    Environment.system().put(ZeebeClientBuilderImpl.KEEP_ALIVE_VAR, "200");
+    Environment.system().put(ZeebeClientBuilderImpl.OVERRIDE_AUTHORITY_VAR, "localhost");
+    Environment.system().put(ZeebeClientBuilderImpl.GRPC_ADDRESS_VAR, "https://localhost:8888");
+    Environment.system().put(ZeebeClientBuilderImpl.REST_ADDRESS_VAR, "localhost:8888");
+    Environment.system().put(ZeebeClientBuilderImpl.DEFAULT_TENANT_ID_VAR, "legacyDefaultTenantId");
+    Environment.system()
+        .put(
+            ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS_VAR,
+            "legacyDefaultJobWorkerTenantIds");
+    Environment.system().put(ZeebeClientBuilderImpl.ZEEBE_CLIENT_WORKER_STREAM_ENABLED, "false");
+    Environment.system().put(ZeebeClientBuilderImpl.USE_DEFAULT_RETRY_POLICY_VAR, "false");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.isPlaintextConnectionEnabled()).isTrue();
+    assertThat(builder.getCaCertificatePath()).isEqualTo("this/is/a/path");
+    assertThat(builder.getKeepAlive()).isEqualTo(Duration.ofMillis(100));
+    assertThat(builder.getOverrideAuthority()).isEqualTo("virtualhost");
+    assertThat(builder.getRestAddress()).isEqualTo(new URI("localhost:8080"));
+    assertThat(builder.getGrpcAddress()).isEqualTo(new URI("https://localhost:8080"));
+    assertThat(builder.getDefaultTenantId()).isEqualTo("defaultTenantId");
+    assertThat(builder.getDefaultJobWorkerTenantIds())
+        .isEqualTo(Collections.singletonList("defaultJobWorkerTenantIds"));
+    assertThat(builder.getDefaultJobWorkerStreamEnabled()).isTrue();
+    assertThat(builder.useDefaultRetryPolicy()).isTrue();
   }
 }
