@@ -49,6 +49,7 @@ final class BuilderUtils {
       return properties.getProperty(propertyName);
     }
     if (properties.containsKey(legacyPropertyName)) {
+      LOG.warn("{} is deprecated. Use {} instead", legacyPropertyName, propertyName);
       return properties.getProperty(legacyPropertyName);
     }
     return null;
