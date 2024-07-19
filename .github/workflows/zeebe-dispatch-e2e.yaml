@@ -1,15 +1,11 @@
 name: Zeebe Repo dispatch E2E tests
 
 on:
-  repository_dispatch:
+  workflow_dispatch:
     types: [e2e_run_testbench]
 
 jobs:
   e2e:
-    permissions:
-      contents: write
-      pull-requests: write
-      repository-projects: write
     strategy:
       # do not cancel other jobs if one fails
       fail-fast: false
