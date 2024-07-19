@@ -30,10 +30,10 @@ public class ZeebeConnector {
 
   @Bean // will be closed automatically
   public CamundaClient tasklistCamundaClient() {
-    return newCamundaClient(tasklistProperties.getZeebe());
+    return newZeebeClient(tasklistProperties.getZeebe());
   }
 
-  public CamundaClient newCamundaClient(final ZeebeProperties zeebeProperties) {
+  public CamundaClient newZeebeClient(final ZeebeProperties zeebeProperties) {
     LOGGER.info(
         "Zeebe Client - Using REST Configuration: {}",
         getURIFromSaaSOrProperties(zeebeProperties.getRestAddress()));
