@@ -602,5 +602,4 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the user task query
    */
   UserTaskQuery newUserTaskInstanceQuery();
-
 }

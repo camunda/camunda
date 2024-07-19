@@ -20,15 +20,14 @@ import static io.camunda.client.api.search.SearchRequestBuilders.userTaskFilter;
 import static io.camunda.client.api.search.SearchRequestBuilders.userTaskSort;
 
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.search.FinalSearchQueryStep;
 import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.UserTaskFilter;
 import io.camunda.client.api.search.UserTaskQuery;
 import io.camunda.client.api.search.UserTaskSort;
 import io.camunda.client.api.search.response.SearchQueryResponse;
-import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpCamundaFuture;
+import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.protocol.rest.UserTaskItem;
 import io.camunda.client.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.client.protocol.rest.UserTaskSearchQueryResponse;

@@ -15,15 +15,12 @@
  */
 package io.camunda.client.api.search;
 
-
-import io.camunda.client.impl.search.UserTaskFilterImpl;
-import io.camunda.client.impl.search.UserTaskSortImpl;
-
 import io.camunda.client.impl.search.ProcessInstanceFilterImpl;
 import io.camunda.client.impl.search.ProcessInstanceSortImpl;
 import io.camunda.client.impl.search.SearchRequestPageImpl;
+import io.camunda.client.impl.search.UserTaskFilterImpl;
+import io.camunda.client.impl.search.UserTaskSortImpl;
 import io.camunda.client.impl.search.VariableValueFilterImpl;
-
 import java.util.function.Consumer;
 
 public final class SearchRequestBuilders {

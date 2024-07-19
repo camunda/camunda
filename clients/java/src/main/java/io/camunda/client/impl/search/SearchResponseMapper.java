@@ -15,17 +15,16 @@
  */
 package io.camunda.client.impl.search;
 
-import io.camunda.client.impl.search.response.UserTaskImpl;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.response.SearchResponsePage;
 import io.camunda.client.impl.search.response.ProcessInstanceImpl;
 import io.camunda.client.impl.search.response.SearchQueryResponseImpl;
 import io.camunda.client.impl.search.response.SearchResponsePageImpl;
+import io.camunda.client.impl.search.response.UserTaskImpl;
 import io.camunda.client.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.client.protocol.rest.SearchQueryPageResponse;
 import io.camunda.client.protocol.rest.UserTaskItem;
-
 import io.camunda.client.protocol.rest.UserTaskSearchQueryResponse;
 import java.util.Collections;
 import java.util.List;
