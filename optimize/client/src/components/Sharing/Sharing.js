@@ -147,9 +147,8 @@ export class Sharing extends React.Component {
                       <LastModifiedInfo entity={evaluationResult} />
                     )
                   }
-                >
-                  {evaluationResult.name}
-                </EntityName>
+                  name={evaluationResult.name}
+                />
               )}
               {header !== 'titleOnly' && (
                 <a

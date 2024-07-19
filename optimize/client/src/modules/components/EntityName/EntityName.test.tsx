@@ -13,14 +13,14 @@ import {Popover} from 'components';
 import EntityName from './EntityName';
 
 it('should show details content in a popover', () => {
-  const node = shallow(<EntityName details="some details">My Report</EntityName>);
+  const node = shallow(<EntityName details="some details" name="My Report" />);
 
   expect(node.find(Popover)).toExist();
   expect(node.find(Popover).prop('children')).toBe('some details');
 });
 
 it('should render a Link if linkTo is set', () => {
-  const node = shallow(<EntityName linkTo="report/1/">My Report</EntityName>);
+  const node = shallow(<EntityName linkTo="report/1/" name="My Report" />);
 
   expect(node.find('h1')).not.toExist();
   expect(node.find('Link')).toExist();

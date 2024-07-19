@@ -127,9 +127,8 @@ export default function OptimizeReportTile({
             onClick={() => {
               track('drillDownToReport');
             }}
-          >
-            {data.name}
-          </EntityName>
+            name={data.name}
+          />
           <InstanceCount
             key="instanceCount"
             trigger={

@@ -115,7 +115,7 @@ it('should display the report name and include report details', () => {
   });
 
   expect(node.find('EntityName')).toExist();
-  expect(node.find('EntityName').prop('children')).toBe('My report name');
+  expect(node.find('EntityName').prop('name')).toBe('My report name');
   expect(node.find('EntityName').prop('details').props.report).toEqual({name: 'My report name'});
 });
 
@@ -182,7 +182,7 @@ it('should display the dashboard name and last modification info', () => {
   });
 
   expect(node.find('EntityName')).toExist();
-  expect(node.find('EntityName').prop('children')).toBe('My dashboard name');
+  expect(node.find('EntityName').prop('name')).toBe('My dashboard name');
   expect(node.find('EntityName').prop('details').props.entity).toEqual({name: 'My dashboard name'});
 });
 

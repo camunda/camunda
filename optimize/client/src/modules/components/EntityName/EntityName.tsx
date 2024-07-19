@@ -9,6 +9,7 @@
 import {MouseEventHandler, ReactNode} from 'react';
 import {Link} from 'react-router-dom';
 import {ChevronDown} from '@carbon/icons-react';
+
 import {t} from 'translation';
 
 import {Popover, Tooltip} from 'components';
@@ -16,23 +17,23 @@ import {Popover, Tooltip} from 'components';
 import './EntityName.scss';
 
 interface EntityNameProps {
-  children: ReactNode;
+  name: string;
   details?: ReactNode;
   linkTo?: string;
   onClick?: MouseEventHandler<HTMLAnchorElement>;
 }
 
-export default function EntityName({children, details, linkTo, onClick}: EntityNameProps) {
+export default function EntityName({name, details, linkTo, onClick}: EntityNameProps) {
   return (
     <div className="EntityName">
       <div className="name-container">
-        <Tooltip content={children} overflowOnly position="bottom" theme="dark" delay={0}>
+        <Tooltip content={name} overflowOnly position="bottom" theme="dark" delay={0}>
           {linkTo ? (
             <Link to={linkTo} onClick={onClick} className="cds--link name">
-              {children}
+              {name}
             </Link>
           ) : (
-            <h1 className="name">{children}</h1>
+            <h1 className="name">{name}</h1>
           )}
         </Tooltip>
         {details && (
