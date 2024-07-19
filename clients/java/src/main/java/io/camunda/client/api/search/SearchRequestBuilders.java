@@ -16,8 +16,8 @@
 package io.camunda.client.api.search;
 
 
-import io.camunda.zeebe.client.impl.search.UserTaskFilterImpl;
-import io.camunda.zeebe.client.impl.search.UserTaskSortImpl;
+import io.camunda.client.impl.search.UserTaskFilterImpl;
+import io.camunda.client.impl.search.UserTaskSortImpl;
 
 import io.camunda.client.impl.search.ProcessInstanceFilterImpl;
 import io.camunda.client.impl.search.ProcessInstanceSortImpl;
