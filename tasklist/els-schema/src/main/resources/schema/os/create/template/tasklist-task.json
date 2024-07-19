@@ -76,6 +76,12 @@
     },
     "externalFormReference": {
       "type": "keyword"
+    },
+    "processDefinitionVersion": {
+      "type": "integer"
+    },
+    "customHeaders": {
+      "type": "object"
     }
   }
 }
