@@ -1624,14 +1624,14 @@ components:
       description: User task filter request.
       type: object
       properties:
-        key:
+        userTaskKey:
           type: integer
           format: int64
         taskState:
           type: string
         assignee:
           type: string
-        taskDefinitionId:
+        elementId:
           type: string
         candidateGroup:
           type: string
@@ -1643,31 +1643,27 @@ components:
         processInstanceKey:
           type: integer
           format: int64
-        creationTime:
+        creationDate:
           $ref: "#/components/schemas/DateFilter"
-        completionTime:
+        completionDate:
           $ref: "#/components/schemas/DateFilter"
         followUpDate:
           $ref: "#/components/schemas/DateFilter"
         dueDate:
           $ref: "#/components/schemas/DateFilter"
-        variables:
-          type: array
-          items:
-            $ref: "#/components/schemas/VariableFilter"
         tenantIds:
           type: string
     UserTaskItem:
       type: object
       properties:
-        key:
+        userTaskKey:
           type: integer
           format: int64
         taskState:
           type: string
         assignee:
           type: string
-        taskDefinitionId:
+        elementId:
           type: string
         candidateGroup:
           type: array
@@ -1699,6 +1695,8 @@ components:
           type: string
           format: date-time
         tenantIds:
+          type: string
+        externalFormReference:
           type: string
     VariableFilter:
       type: object

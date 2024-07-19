@@ -36,10 +36,10 @@ public class UserTaskImpl {
   private final String tenantIds;
 
   public UserTaskImpl(final UserTaskItem item) {
-    key = item.getKey();
+    key = item.getUserTaskKey();
     taskState = item.getTaskState();
     assignee = item.getAssignee();
-    taskDefinitionId = item.getTaskDefinitionId();
+    taskDefinitionId = item.getElementId();
     candidateGroup = item.getCandidateGroup();
     candidateUser = item.getCandidateUser();
     processDefinitionKey = item.getProcessDefinitionKey();

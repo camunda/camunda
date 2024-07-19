@@ -34,7 +34,7 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
 
   @Override
   public UserTaskFilter userTaskKey(final Long value) {
-    filter.setKey(value);
+    filter.setUserTaskKey(value);
     return this;
   }
 
@@ -52,7 +52,7 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
 
   @Override
   public UserTaskFilter userTaskTaskDefinitionId(final String taskDefinitionId) {
-    filter.setTaskDefinitionId(taskDefinitionId);
+    filter.setElementId(taskDefinitionId);
     return this;
   }
 
@@ -94,13 +94,13 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
 
   @Override
   public UserTaskFilter userTaskCreationDate(final DateFilter dateFilter) {
-    filter.setCreationTime(dateFilter);
+    filter.setCreationDate(dateFilter);
     return this;
   }
 
   @Override
   public UserTaskFilter userTaskCompletionDate(final DateFilter dateFilter) {
-    filter.setCompletionTime(dateFilter);
+    filter.setCompletionDate(dateFilter);
     return this;
   }
 

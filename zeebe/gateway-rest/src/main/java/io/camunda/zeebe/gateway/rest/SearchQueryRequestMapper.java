@@ -240,8 +240,8 @@ public final class SearchQueryRequestMapper {
 
     if (filter != null) {
       // key
-      if (filter.getKey() != null) {
-        builder.userTaskKeys(filter.getKey());
+      if (filter.getUserTaskKey() != null) {
+        builder.userTaskKeys(filter.getUserTaskKey());
       }
 
       // state
@@ -280,8 +280,8 @@ public final class SearchQueryRequestMapper {
       }
 
       // creationTime
-      if (filter.getCreationTime() != null) {
-        final var dateFilterResult = toDateValueFilter(filter.getCreationTime());
+      if (filter.getCreationDate() != null) {
+        final var dateFilterResult = toDateValueFilter(filter.getCreationDate());
         if (dateFilterResult.isLeft()) {
           validationErrors.addAll(dateFilterResult.getLeft());
         } else {
@@ -290,8 +290,8 @@ public final class SearchQueryRequestMapper {
       }
 
       // completionTime
-      if (filter.getCompletionTime() != null) {
-        final var dateFilterResult = toDateValueFilter(filter.getCompletionTime());
+      if (filter.getCompletionDate() != null) {
+        final var dateFilterResult = toDateValueFilter(filter.getCompletionDate());
         if (dateFilterResult.isLeft()) {
           validationErrors.addAll(dateFilterResult.getLeft());
         } else {

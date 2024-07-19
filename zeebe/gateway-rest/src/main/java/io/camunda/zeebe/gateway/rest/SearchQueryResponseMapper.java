@@ -98,7 +98,7 @@ public final class SearchQueryResponseMapper {
   public static UserTaskItem toUserTask(final UserTaskEntity t) {
     return new UserTaskItem()
         .tenantIds(t.tenantId())
-        .key(t.key())
+        .userTaskKey(t.key())
         .processInstanceKey(t.processInstanceId())
         .processDefinitionKey(t.processDefinitionId())
         .taskState(t.state())
@@ -106,7 +106,7 @@ public final class SearchQueryResponseMapper {
         .candidateUser(t.candidateUsers())
         .candidateGroup(t.candidateGroups())
         .formKey(t.formKey())
-        .taskDefinitionId(t.flowNodeBpmnId())
+        .elementId(t.flowNodeBpmnId())
         .creationDate(t.creationTime())
         .completionDate(t.completionTime())
         .dueDate(t.dueDate())
