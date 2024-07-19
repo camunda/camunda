@@ -12,7 +12,7 @@ import {ChevronDown} from '@carbon/icons-react';
 
 import {t} from 'translation';
 
-import {Popover, Tooltip} from 'components';
+import {Popover} from 'components';
 
 import './EntityName.scss';
 
@@ -27,15 +27,15 @@ export default function EntityName({name, details, linkTo, onClick}: EntityNameP
   return (
     <div className="EntityName">
       <div className="name-container">
-        <Tooltip content={name} overflowOnly position="bottom" theme="dark" delay={0}>
-          {linkTo ? (
-            <Link to={linkTo} onClick={onClick} className="cds--link name">
-              {name}
-            </Link>
-          ) : (
-            <h1 className="name">{name}</h1>
-          )}
-        </Tooltip>
+        {linkTo ? (
+          <Link to={linkTo} onClick={onClick} className="cds--link name" title={name}>
+            {name}
+          </Link>
+        ) : (
+          <h1 className="name" title={name}>
+            {name}
+          </h1>
+        )}
         {details && (
           <Popover
             trigger={
