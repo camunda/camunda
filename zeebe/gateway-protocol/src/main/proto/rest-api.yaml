@@ -1676,6 +1676,8 @@ components:
           type: array
           items:
             type: string
+        bpmnProcessId:
+          type: string
         processDefinitionKey:
           type: integer
           format: int64

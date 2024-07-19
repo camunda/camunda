@@ -102,6 +102,7 @@ public final class SearchQueryResponseMapper {
         .processInstanceKey(t.processInstanceId())
         .processDefinitionKey(t.processDefinitionId())
         .elementInstanceKey(t.flowNodeInstanceId())
+        .bpmnProcessId(t.bpmnProcessId())
         .taskState(t.state())
         .assignee(t.assignee())
         .candidateUser(t.candidateUsers())
