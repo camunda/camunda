@@ -6,6 +6,10 @@ on:
 
 jobs:
   e2e:
+    permissions:
+      contents: write
+      pull-requests: write
+      repository-projects: write
     strategy:
       # do not cancel other jobs if one fails
       fail-fast: false
