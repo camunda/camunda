@@ -668,6 +668,13 @@
         <scope>test</scope>
       </dependency>
 
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-qa-migration-tests-test-fixture-850</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+
       <!-- Tasklist Modules -->
       <dependency>
         <groupId>io.camunda</groupId>
