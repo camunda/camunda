@@ -23,7 +23,7 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
   private final StringProperty passwordProp = new StringProperty("password");
 
   public UserRecord() {
-    super(3);
+    super(4);
     declareProperty(usernameProp)
         .declareProperty(nameProp)
         .declareProperty(emailProp)

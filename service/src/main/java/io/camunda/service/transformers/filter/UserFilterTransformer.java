@@ -20,7 +20,7 @@ public class UserFilterTransformer implements FilterTransformer<UserFilter> {
     if (filter.username() == null) {
       return null;
     }
-    return term("username", filter.username());
+    return term("value.username", filter.username());
   }
 
   @Override
