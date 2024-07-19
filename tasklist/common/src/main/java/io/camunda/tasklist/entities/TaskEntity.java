@@ -31,12 +31,13 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
   private OffsetDateTime followUpDate;
   private OffsetDateTime dueDate;
   private TaskImplementation implementation;
+  private String externalFormReference;
 
   public String getBpmnProcessId() {
     return bpmnProcessId;
   }
 
-  public TaskEntity setBpmnProcessId(String bpmnProcessId) {
+  public TaskEntity setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -45,7 +46,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return processDefinitionId;
   }
 
-  public TaskEntity setProcessDefinitionId(String processDefinitionId) {
+  public TaskEntity setProcessDefinitionId(final String processDefinitionId) {
     this.processDefinitionId = processDefinitionId;
     return this;
   }
@@ -54,7 +55,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return flowNodeBpmnId;
   }
 
-  public TaskEntity setFlowNodeBpmnId(String flowNodeBpmnId) {
+  public TaskEntity setFlowNodeBpmnId(final String flowNodeBpmnId) {
     this.flowNodeBpmnId = flowNodeBpmnId;
     return this;
   }
@@ -72,7 +73,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return processInstanceId;
   }
 
-  public TaskEntity setProcessInstanceId(String processInstanceId) {
+  public TaskEntity setProcessInstanceId(final String processInstanceId) {
     this.processInstanceId = processInstanceId;
     return this;
   }
@@ -81,7 +82,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return creationTime;
   }
 
-  public TaskEntity setCreationTime(OffsetDateTime creationTime) {
+  public TaskEntity setCreationTime(final OffsetDateTime creationTime) {
     this.creationTime = creationTime;
     return this;
   }
@@ -90,7 +91,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return completionTime;
   }
 
-  public TaskEntity setCompletionTime(OffsetDateTime completionTime) {
+  public TaskEntity setCompletionTime(final OffsetDateTime completionTime) {
     this.completionTime = completionTime;
     return this;
   }
@@ -99,7 +100,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return state;
   }
 
-  public TaskEntity setState(TaskState state) {
+  public TaskEntity setState(final TaskState state) {
     this.state = state;
     return this;
   }
@@ -108,7 +109,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return assignee;
   }
 
-  public TaskEntity setAssignee(String assignee) {
+  public TaskEntity setAssignee(final String assignee) {
     this.assignee = assignee;
     return this;
   }
@@ -127,7 +128,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
   }
 
   public TaskEntity setFormKey(final String formId) {
-    this.formKey = formId;
+    formKey = formId;
     return this;
   }
 
@@ -135,7 +136,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return formId;
   }
 
-  public TaskEntity setFormId(String formId) {
+  public TaskEntity setFormId(final String formId) {
     this.formId = formId;
     return this;
   }
@@ -144,7 +145,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return formVersion;
   }
 
-  public TaskEntity setFormVersion(Long formVersion) {
+  public TaskEntity setFormVersion(final Long formVersion) {
     this.formVersion = formVersion;
     return this;
   }
@@ -153,7 +154,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return isFormEmbedded;
   }
 
-  public TaskEntity setIsFormEmbedded(Boolean isFormEmbedded) {
+  public TaskEntity setIsFormEmbedded(final Boolean isFormEmbedded) {
     this.isFormEmbedded = isFormEmbedded;
     return this;
   }
@@ -162,7 +163,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return followUpDate;
   }
 
-  public TaskEntity setFollowUpDate(OffsetDateTime followUpDate) {
+  public TaskEntity setFollowUpDate(final OffsetDateTime followUpDate) {
     this.followUpDate = followUpDate;
     return this;
   }
@@ -171,7 +172,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return dueDate;
   }
 
-  public TaskEntity setDueDate(OffsetDateTime dueDate) {
+  public TaskEntity setDueDate(final OffsetDateTime dueDate) {
     this.dueDate = dueDate;
     return this;
   }
@@ -180,7 +181,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return candidateUsers;
   }
 
-  public TaskEntity setCandidateUsers(String[] candidateUsers) {
+  public TaskEntity setCandidateUsers(final String[] candidateUsers) {
     this.candidateUsers = candidateUsers;
     return this;
   }
@@ -189,37 +190,74 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return implementation;
   }
 
-  public TaskEntity setImplementation(TaskImplementation implementation) {
+  public TaskEntity setImplementation(final TaskImplementation implementation) {
     this.implementation = implementation;
+    return this;
+  }
+
+  public String getExternalFormReference() {
+    return externalFormReference;
+  }
+
+  public TaskEntity setExternalFormReference(final String externalFormReference) {
+    this.externalFormReference = externalFormReference;
     return this;
   }
 
   public TaskEntity makeCopy() {
     return new TaskEntity()
-        .setId(this.getId())
-        .setKey(this.getKey())
-        .setPartitionId(this.getPartitionId())
-        .setBpmnProcessId(this.getBpmnProcessId())
-        .setProcessDefinitionId(this.getProcessDefinitionId())
-        .setFlowNodeBpmnId(this.getFlowNodeBpmnId())
-        .setFlowNodeInstanceId(this.getFlowNodeInstanceId())
-        .setProcessInstanceId(this.getProcessInstanceId())
-        .setCreationTime(this.getCreationTime())
-        .setCompletionTime(this.getCompletionTime())
-        .setState(this.getState())
-        .setAssignee(this.getAssignee())
-        .setCandidateGroups(this.getCandidateGroups())
-        .setCandidateUsers(this.getCandidateUsers())
-        .setFormKey(this.getFormKey())
-        .setFormId(this.getFormId())
-        .setFormVersion(this.getFormVersion())
-        .setIsFormEmbedded(this.getIsFormEmbedded())
-        .setTenantId(this.getTenantId())
-        .setImplementation(this.getImplementation());
+        .setId(getId())
+        .setKey(getKey())
+        .setPartitionId(getPartitionId())
+        .setBpmnProcessId(getBpmnProcessId())
+        .setProcessDefinitionId(getProcessDefinitionId())
+        .setFlowNodeBpmnId(getFlowNodeBpmnId())
+        .setFlowNodeInstanceId(getFlowNodeInstanceId())
+        .setProcessInstanceId(getProcessInstanceId())
+        .setCreationTime(getCreationTime())
+        .setCompletionTime(getCompletionTime())
+        .setState(getState())
+        .setAssignee(getAssignee())
+        .setCandidateGroups(getCandidateGroups())
+        .setCandidateUsers(getCandidateUsers())
+        .setFormKey(getFormKey())
+        .setFormId(getFormId())
+        .setFormVersion(getFormVersion())
+        .setIsFormEmbedded(getIsFormEmbedded())
+        .setTenantId(getTenantId())
+        .setImplementation(getImplementation())
+        .setExternalFormReference(getExternalFormReference());
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    int result =
+        Objects.hash(
+            super.hashCode(),
+            bpmnProcessId,
+            processDefinitionId,
+            flowNodeBpmnId,
+            flowNodeInstanceId,
+            processInstanceId,
+            creationTime,
+            completionTime,
+            state,
+            assignee,
+            formKey,
+            formId,
+            formVersion,
+            isFormEmbedded,
+            followUpDate,
+            dueDate,
+            implementation,
+            externalFormReference);
+    result = 31 * result + Arrays.hashCode(candidateGroups);
+    result = 31 * result + Arrays.hashCode(candidateUsers);
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -247,32 +285,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
         && Objects.equals(formKey, that.formKey)
         && Objects.equals(formId, that.formId)
         && Objects.equals(formVersion, that.formVersion)
-        && Objects.equals(isFormEmbedded, that.isFormEmbedded);
-  }
-
-  @Override
-  public int hashCode() {
-    int result =
-        Objects.hash(
-            super.hashCode(),
-            bpmnProcessId,
-            processDefinitionId,
-            flowNodeBpmnId,
-            flowNodeInstanceId,
-            processInstanceId,
-            creationTime,
-            completionTime,
-            state,
-            assignee,
-            formKey,
-            formId,
-            formVersion,
-            isFormEmbedded,
-            followUpDate,
-            dueDate,
-            implementation);
-    result = 31 * result + Arrays.hashCode(candidateGroups);
-    result = 31 * result + Arrays.hashCode(candidateUsers);
-    return result;
+        && Objects.equals(isFormEmbedded, that.isFormEmbedded)
+        && Objects.equals(externalFormReference, that.externalFormReference);
   }
 }

@@ -73,7 +73,8 @@ public class UserTaskRecordToTaskEntityMapper {
             .setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()))
             .setBpmnProcessId(recordValue.getBpmnProcessId())
             .setProcessDefinitionId(processDefinitionId)
-            .setTenantId(recordValue.getTenantId());
+            .setTenantId(recordValue.getTenantId())
+            .setExternalFormReference(recordValue.getExternalFormReference());
 
     switch (intent) {
       case CANCELED ->

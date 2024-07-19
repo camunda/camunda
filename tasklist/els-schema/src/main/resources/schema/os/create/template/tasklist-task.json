@@ -73,6 +73,9 @@
     },
     "implementation": {
       "type": "keyword"
+    },
+    "externalFormReference": {
+      "type": "keyword"
     }
   }
 }
