@@ -22,6 +22,6 @@ jobs:
     name: Release E2E
     uses: ./.github/workflows/zeebe-e2e-testbench.yaml
     with:
-      branch: ${{ input.branch }}
-      generation: ${{ input.generation }}
+      branch: ${{ inputs.branch }}
+      generation: ${{ inputs.generation }}
     secrets: inherit
