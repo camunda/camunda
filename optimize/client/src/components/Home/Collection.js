@@ -29,7 +29,6 @@ import {withErrorHandling} from 'HOC';
 import {
   Deleter,
   BulkDeleter,
-  Tooltip,
   ReportTemplateModal,
   DashboardTemplateModal,
   PageTitle,
@@ -167,9 +166,9 @@ export class Collection extends Component {
               <Folder size="24" />
               {collection && (
                 <>
-                  <Tooltip content={collection.name} position="bottom" overflowOnly>
-                    <span className="text">{collection.name}</span>
-                  </Tooltip>
+                  <span title={collection.name} className="text">
+                    {collection.name}
+                  </span>
                   {collection.currentUserRole === 'manager' && (
                     <OverflowMenu>
                       <OverflowMenuItem
