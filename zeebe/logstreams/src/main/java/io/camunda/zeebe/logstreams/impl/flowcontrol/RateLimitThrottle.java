@@ -7,8 +7,7 @@
  */
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
+import static java.lang.Math.clamp;
 
 import com.google.common.util.concurrent.RateLimiter;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
@@ -43,10 +42,6 @@ final class RateLimitThrottle {
     resolution = limit == null ? -1 : limit.throttling().resolution().toMillis();
     enabled = limit != null && limit.enabled() && limit.throttling().enabled();
     minRate = limit == null ? -1 : limit.throttling().minRate();
-    if (enabled) {
-      metrics.setWriteRateMaxLimit(limit.limit());
-      metrics.setWriteRateLimit(limiter.getRate());
-    }
   }
 
   public void update(final long timestamp, final long backlog) {
@@ -72,6 +67,7 @@ final class RateLimitThrottle {
           limit.throttling().acceptableBacklog());
     }
     limiter.setRate(adjustedRate);
+    metrics.setWriteRateMaxLimit(limit.limit());
     metrics.setWriteRateLimit(adjustedRate);
   }
 
