@@ -41,7 +41,7 @@
     <version.bouncycastle>1.78.1</version.bouncycastle>
     <version.camunda>7.22.0-alpha3</version.camunda>
     <version.checkstyle>10.17.0</version.checkstyle>
-    <version.commons-lang>3.14.0</version.commons-lang>
+    <version.commons-lang>3.15.0</version.commons-lang>
     <version.commons-logging>1.3.3</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.17.1</version.commons-codec>
@@ -75,7 +75,7 @@
     <version.netty>4.1.111.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.8.0</version.opensearch>
-    <version.opensearch.testcontainers>2.0.1</version.opensearch.testcontainers>
+    <version.opensearch.testcontainers>2.0.2</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.25.3</version.protobuf>
     <version.protobuf-common>2.41.0</version.protobuf-common>
@@ -89,7 +89,7 @@
     <version.wiremock>3.8.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
-    <version.testcontainers>1.19.8</version.testcontainers>
+    <version.testcontainers>1.20.0</version.testcontainers>
     <version.netflix.concurrency>0.5.1</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.5</version.zeebe-test-container>
     <version.feel-scala>1.18.0-alpha1</version.feel-scala>
@@ -154,8 +154,8 @@
     <version.yarn>v1.22.21</version.yarn>
 
     <version.aws-java-sdk>1.12.761</version.aws-java-sdk>
-    <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
-    <version.postgres-test-container>1.19.8</version.postgres-test-container>
+    <version.elasticsearch-test-container>1.20.0</version.elasticsearch-test-container>
+    <version.postgres-test-container>1.20.0</version.postgres-test-container>
     <version.elasticsearch7>7.17.22</version.elasticsearch7>
     <version.lucene>8.11.3</version.lucene>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
@@ -173,7 +173,7 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>9.40</version.nimbus-jose-jwt>
-    <version.keycloak>25.0.1</version.keycloak>
+    <version.keycloak>25.0.2</version.keycloak>
     <version.jna>5.14.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
 

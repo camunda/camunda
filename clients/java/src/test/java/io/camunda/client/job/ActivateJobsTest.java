@@ -408,7 +408,7 @@ public final class ActivateJobsTest extends ClientTest {
 
     // then
     final ActivateJobsRequest request = gatewayService.getLastRequest();
-    assertThat(request.getWorker()).isEqualTo(CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_NAME);
+    assertThat(request.getWorker()).isEqualTo(CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_NAME_VAR);
   }
 
   @Test

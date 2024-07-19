@@ -31,7 +31,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
       - name: Install node dependencies
         working-directory: ./operate/client
         run: yarn
@@ -50,3 +50,13 @@ jobs:
           name: Playwright report
           path: operate/client/playwright-report/
           retention-days: 30
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
