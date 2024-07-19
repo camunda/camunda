@@ -77,7 +77,7 @@ public class ZeebeConnectorSecureIT {
                     .withStartupTimeout(Duration.ofSeconds(101)));
     zeebeContainer.start();
     camundaClient =
-        zeebeConnector.newZeebeClient(
+        zeebeConnector.newCamundaClient(
             new ZeebeProperties()
                 .setGatewayAddress(zeebeContainer.getExternalGatewayAddress())
                 .setSecure(true)
