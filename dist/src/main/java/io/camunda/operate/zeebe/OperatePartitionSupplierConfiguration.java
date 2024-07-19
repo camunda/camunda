@@ -11,7 +11,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.webapps.zeebe.PartitionSupplier;
 import io.camunda.webapps.zeebe.PartitionSupplierConfigurer;
 import io.camunda.zeebe.broker.Broker;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.gateway.Gateway;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -24,6 +23,7 @@ public class OperatePartitionSupplierConfiguration {
       @Autowired(required = false) final Broker broker,
       @Autowired(required = false) final Gateway gateway,
       @Autowired final CamundaClient camundaClient) {
-    return new PartitionSupplierConfigurer(broker, gateway, camundaClient).createPartitionSupplier();
+    return new PartitionSupplierConfigurer(broker, gateway, camundaClient)
+        .createPartitionSupplier();
   }
 }
