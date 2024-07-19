@@ -1164,8 +1164,6 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     }
 
     @Test
-    @Disabled(
-        "This test fails with the legacy ZeebeClient, to be re-enabled after the use of the new CamundaClient")
     public void shouldUpdateUserTask() {
       final String taskId = tester.createZeebeUserTask(BPMN_PROCESS_ID, ELEMENT_ID, 1).getTaskId();
       final List<String> candidateGroups = new ArrayList<>();

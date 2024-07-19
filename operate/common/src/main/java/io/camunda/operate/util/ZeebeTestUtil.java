@@ -11,6 +11,7 @@ import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.*;
+import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DeploymentEvent;
@@ -44,7 +45,10 @@ public abstract class ZeebeTestUtil {
   }
 
   public static Long deployProcess(
-      final boolean ignoreException, final CamundaClient client, final String tenantId, final String... classpathResources) {
+      final boolean ignoreException,
+      final CamundaClient client,
+      final String tenantId,
+      final String... classpathResources) {
     try {
       if (classpathResources.length == 0) {
         return null;
@@ -108,18 +112,16 @@ public abstract class ZeebeTestUtil {
    * @return process id
    */
   public static Long deployProcess(
-      final CamundaClient client, final String tenantId, final BpmnModelInstance processModel, final String resourceName) {
-    DeployResourceCommandStep1 deployProcessCommandStep1 =
+      final CamundaClient client,
+      final String tenantId,
+      final BpmnModelInstance processModel,
+      final String resourceName) {
+    DeployResourceCommandStep2 deployProcessCommandStep1 =
         client.newDeployResourceCommand().addProcessModel(processModel, resourceName);
     if (tenantId != null) {
-      deployProcessCommandStep1 =
-          ((DeployResourceCommandStep1.DeployResourceCommandStep2) deployProcessCommandStep1)
-              .tenantId(tenantId);
+      deployProcessCommandStep1 = deployProcessCommandStep1.tenantId(tenantId);
     }
-    final DeploymentEvent deploymentEvent =
-        ((DeployResourceCommandStep1.DeployResourceCommandStep2) deployProcessCommandStep1)
-            .send()
-            .join();
+    final DeploymentEvent deploymentEvent = deployProcessCommandStep1.send().join();
     LOGGER.debug("Deployment of resource [{}] was performed", resourceName);
     return deploymentEvent.getProcesses().get(0).getProcessDefinitionKey();
   }
@@ -136,7 +138,10 @@ public abstract class ZeebeTestUtil {
    * @return process instance id
    */
   public static long startProcessInstance(
-      final CamundaClient client, final String tenantId, final String bpmnProcessId, final String payload) {
+      final CamundaClient client,
+      final String tenantId,
+      final String bpmnProcessId,
+      final String payload) {
     return startProcessInstance(false, client, tenantId, bpmnProcessId, payload);
   }
 
@@ -205,17 +210,25 @@ public abstract class ZeebeTestUtil {
     }
   }
 
-  public static void cancelProcessInstance(final CamundaClient client, final long processInstanceKey) {
+  public static void cancelProcessInstance(
+      final CamundaClient client, final long processInstanceKey) {
     cancelProcessInstance(false, client, processInstanceKey);
   }
 
   public static void completeTask(
-      final CamundaClient client, final String jobType, final String workerName, final String payload) {
+      final CamundaClient client,
+      final String jobType,
+      final String workerName,
+      final String payload) {
     completeTask(client, jobType, workerName, payload, 1);
   }
 
   public static void completeTask(
-      final CamundaClient client, final String jobType, final String workerName, final String payload, final int count) {
+      final CamundaClient client,
+      final String jobType,
+      final String workerName,
+      final String payload,
+      final int count) {
     handleTasks(
         client,
         jobType,
@@ -323,17 +336,23 @@ public abstract class ZeebeTestUtil {
     return jobKeys;
   }
 
-  public static void resolveIncident(final CamundaClient client, final Long jobKey, final Long incidentKey) {
+  public static void resolveIncident(
+      final CamundaClient client, final Long jobKey, final Long incidentKey) {
     client.newUpdateRetriesCommand(jobKey).retries(3).send().join();
     client.newResolveIncidentCommand(incidentKey).send().join();
   }
 
-  public static void updateVariables(final CamundaClient client, final Long scopeKey, final String newPayload) {
+  public static void updateVariables(
+      final CamundaClient client, final Long scopeKey, final String newPayload) {
     client.newSetVariablesCommand(scopeKey).variables(newPayload).local(true).send().join();
   }
 
   public static void sendMessages(
-      final CamundaClient client, final String messageName, final String payload, final int count, final String correlationKey) {
+      final CamundaClient client,
+      final String messageName,
+      final String payload,
+      final int count,
+      final String correlationKey) {
     for (int i = 0; i < count; i++) {
       client
           .newPublishMessageCommand()
@@ -347,7 +366,8 @@ public abstract class ZeebeTestUtil {
     }
   }
 
-  public static void sendSignal(final CamundaClient client, final String signalName, final String payload, final int count) {
+  public static void sendSignal(
+      final CamundaClient client, final String signalName, final String payload, final int count) {
     for (int i = 0; i < count; i++) {
       client.newBroadcastSignalCommand().signalName(signalName).variables(payload).send().join();
     }
