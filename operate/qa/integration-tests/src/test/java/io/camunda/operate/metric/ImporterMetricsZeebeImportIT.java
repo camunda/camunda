@@ -50,14 +50,14 @@ public class ImporterMetricsZeebeImportIT extends OperateZeebeAbstractIT {
   @Before
   public void before() {
     super.before();
-    injectZeebeClientIntoOperationHandler();
+    injectCamundaClientIntoOperationHandler();
     clearMetrics();
   }
 
-  private void injectZeebeClientIntoOperationHandler() {
-    cancelProcessInstanceHandler.setZeebeClient(zeebeClient);
-    updateRetriesHandler.setZeebeClient(zeebeClient);
-    updateVariableHandler.setZeebeClient(zeebeClient);
+  private void injectCamundaClientIntoOperationHandler() {
+    cancelProcessInstanceHandler.setCamundaClient(camundaClient);
+    updateRetriesHandler.setCamundaClient(camundaClient);
+    updateVariableHandler.setCamundaClient(camundaClient);
   }
 
   @Test // OPE-624
@@ -194,7 +194,7 @@ public class ImporterMetricsZeebeImportIT extends OperateZeebeAbstractIT {
       implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
     @Override
-    public void initialize(ConfigurableApplicationContext ctx) {
+    public void initialize(final ConfigurableApplicationContext ctx) {
       final var modifiedPropertySource = new HashMap<String, Object>();
 
       final var environment = ctx.getEnvironment();
@@ -217,12 +217,12 @@ public class ImporterMetricsZeebeImportIT extends OperateZeebeAbstractIT {
       }
 
       if (applicationPropertySource != null
-          && applicationPropertySource instanceof MapPropertySource mapPropertySource) {
+          && applicationPropertySource instanceof final MapPropertySource mapPropertySource) {
         final var propertyNames = mapPropertySource.getPropertyNames();
         final var applicationPropertySourceName = applicationPropertySource.getName();
 
         // copy all all properties
-        for (String propName : propertyNames) {
+        for (final String propName : propertyNames) {
           final var propValue = (String) mapPropertySource.getProperty(propName);
           modifiedPropertySource.put(propName, propValue);
         }

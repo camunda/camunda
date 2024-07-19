@@ -10,13 +10,13 @@ package io.camunda.operate.util;
 import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.response.Topology;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.response.Topology;
 import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
 import java.time.Duration;
@@ -56,14 +56,14 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
 
   protected ZeebeContainer zeebeContainer;
   @Autowired private TestContainerUtil testContainerUtil;
-  private ZeebeClient client;
+  private CamundaClient client;
 
   private String prefix;
   private boolean failed = false;
 
   @Override
-  public void starting(Description description) {
-    this.prefix = TestUtil.createRandomString(10);
+  public void starting(final Description description) {
+    prefix = TestUtil.createRandomString(10);
     LOGGER.info("Starting Zeebe with ELS prefix: " + prefix);
     operateProperties.getZeebeElasticsearch().setPrefix(prefix);
 
@@ -71,7 +71,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   }
 
   @Override
-  public void updateRefreshInterval(String value) {
+  public void updateRefreshInterval(final String value) {
     try {
       final GetComponentTemplatesRequest getRequest = new GetComponentTemplatesRequest(prefix);
       final GetComponentTemplatesResponse response =
@@ -92,25 +92,25 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
                   .putComponentTemplate(request, RequestOptions.DEFAULT)
                   .isAcknowledged())
           .isTrue();
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       throw new RuntimeException(ex);
     }
   }
 
   @Override
-  public void refreshIndices(Instant instant) {
+  public void refreshIndices(final Instant instant) {
     try {
       final String date =
           DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
       final RefreshRequest refreshRequest = new RefreshRequest(prefix + "*" + date);
       zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       throw new RuntimeException(ex);
     }
   }
 
   @Override
-  public void finished(Description description) {
+  public void finished(final Description description) {
     stopZeebe();
     if (client != null) {
       client.close();
@@ -122,8 +122,8 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   }
 
   @Override
-  public void failed(Throwable e, Description description) {
-    this.failed = true;
+  public void failed(final Throwable e, final Description description) {
+    failed = true;
   }
 
   /**
@@ -141,7 +141,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
         testContainerUtil.startZeebe(zeebeVersion, prefix, 2, isMultitTenancyEnabled());
 
     client =
-        ZeebeClient.newClientBuilder()
+        CamundaClient.newClientBuilder()
             .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
             .usePlaintext()
             .defaultRequestTimeout(REQUEST_TIMEOUT)
@@ -161,7 +161,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
     return prefix;
   }
 
-  public void setPrefix(String prefix) {
+  public void setPrefix(final String prefix) {
     this.prefix = prefix;
   }
 
@@ -171,7 +171,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   }
 
   @Override
-  public ZeebeClient getClient() {
+  public CamundaClient getClient() {
     return client;
   }
 
@@ -186,10 +186,10 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
     while (topology == null) {
       try {
         topology = client.newTopologyRequest().send().join();
-      } catch (ClientException ex) {
+      } catch (final ClientException ex) {
         ex.printStackTrace();
         // retry
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOGGER.error("Topology cannot be retrieved.");
         e.printStackTrace();
         break;

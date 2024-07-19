@@ -55,7 +55,7 @@ public class ImportMultitenancyDisabledZeebeImportIT extends OperateZeebeAbstrac
 
     // when
     final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
 
     // then

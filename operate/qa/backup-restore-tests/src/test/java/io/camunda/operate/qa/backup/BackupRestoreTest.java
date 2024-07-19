@@ -12,12 +12,12 @@ import static io.camunda.operate.webapp.management.dto.BackupStateDto.COMPLETED;
 import static io.camunda.operate.webapp.management.dto.BackupStateDto.IN_PROGRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.util.RetryOperation;
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
 import io.camunda.operate.webapp.management.dto.TakeBackupResponseDto;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -59,7 +59,7 @@ public class BackupRestoreTest {
 
   private GenericContainer operateContainer;
 
-  private TestContainerUtil testContainerUtil = new TestContainerUtil();
+  private final TestContainerUtil testContainerUtil = new TestContainerUtil();
   private BackupRestoreTestContext testContext;
   private List<String> snapshots;
 
@@ -110,7 +110,7 @@ public class BackupRestoreTest {
           .build()
           .retry();
       LOGGER.info("************ Operate indices deleted ************");
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OperateRuntimeException(
           "Exception occurred while removing Operate and Zeebe indices: " + e.getMessage(), e);
     }
@@ -145,7 +145,7 @@ public class BackupRestoreTest {
                 new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))));
     createSnapshotRepository(testContext);
 
-    String zeebeVersion = ZeebeClient.class.getPackage().getImplementationVersion();
+    String zeebeVersion = CamundaClient.class.getPackage().getImplementationVersion();
     if (zeebeVersion.toLowerCase().contains("snapshot")) {
       zeebeVersion = "SNAPSHOT";
     }
@@ -184,7 +184,7 @@ public class BackupRestoreTest {
                         new RestoreSnapshotRequest(REPOSITORY_NAME, snapshot)
                             .waitForCompletion(true),
                         RequestOptions.DEFAULT);
-              } catch (IOException e) {
+              } catch (final IOException e) {
                 throw new OperateRuntimeException(
                     "Exception occurred while restoring the backup: " + e.getMessage(), e);
               }
@@ -192,7 +192,8 @@ public class BackupRestoreTest {
     LOGGER.info("************ Backup restored ************");
   }
 
-  private void createSnapshotRepository(BackupRestoreTestContext testContext) throws IOException {
+  private void createSnapshotRepository(final BackupRestoreTestContext testContext)
+      throws IOException {
     testContext
         .getEsClient()
         .snapshot()

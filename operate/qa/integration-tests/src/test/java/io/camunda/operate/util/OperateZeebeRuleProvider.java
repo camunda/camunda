@@ -8,7 +8,6 @@
 package io.camunda.operate.util;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.zeebe.containers.ZeebeContainer;
 import java.time.Instant;
 import org.junit.runner.Description;

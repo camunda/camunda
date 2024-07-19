@@ -56,7 +56,7 @@ public class IncidentZeebeImportIT extends OperateZeebeAbstractIT {
   @Before
   public void before() {
     super.before();
-    updateVariableHandler.setZeebeClient(zeebeClient);
+    updateVariableHandler.setCamundaClient(camundaClient);
   }
 
   @Test
@@ -158,10 +158,10 @@ public class IncidentZeebeImportIT extends OperateZeebeAbstractIT {
     final String processId = "complexProcess";
     deployProcess("complexProcess_v_3.bpmn");
     final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"count\":3}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"count\":3}");
     final String errorMsg = "some error";
     final String activityId = "alwaysFailingTask";
-    ZeebeTestUtil.failTask(zeebeClient, activityId, getWorkerName(), 3, errorMsg);
+    ZeebeTestUtil.failTask(camundaClient, activityId, getWorkerName(), 3, errorMsg);
     searchTestRule.processAllRecordsAndWait(incidentsInAnyInstanceAreActiveCheck, 4L);
     // elasticsearchTestRule.refreshIndexesInElasticsearch();
 

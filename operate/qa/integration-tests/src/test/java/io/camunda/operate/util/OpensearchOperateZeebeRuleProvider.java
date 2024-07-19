@@ -11,14 +11,14 @@ import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERS
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.componentTemplateRequestBuilder;
 import static org.junit.Assert.assertTrue;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.response.Topology;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.response.Topology;
 import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
 import java.time.Instant;
@@ -47,14 +47,14 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   @Autowired protected ZeebeRichOpenSearchClient zeebeRichOpenSearchClient;
   protected ZeebeContainer zeebeContainer;
   @Autowired private TestContainerUtil testContainerUtil;
-  private ZeebeClient client;
+  private CamundaClient client;
 
   private String prefix;
   private boolean failed = false;
 
   @Override
-  public void starting(Description description) {
-    this.prefix = TestUtil.createRandomString(10);
+  public void starting(final Description description) {
+    prefix = TestUtil.createRandomString(10);
     LOGGER.info("Starting Zeebe with OS prefix: " + prefix);
     operateProperties.getZeebeOpensearch().setPrefix(prefix);
 
@@ -62,7 +62,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   }
 
   @Override
-  public void updateRefreshInterval(String value) {
+  public void updateRefreshInterval(final String value) {
     final ComponentTemplateSummary template =
         zeebeRichOpenSearchClient.template().getComponentTemplate().get(prefix).template();
     final IndexSettings indexSettings = template.settings().get("index");
@@ -78,14 +78,14 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   }
 
   @Override
-  public void refreshIndices(Instant instant) {
+  public void refreshIndices(final Instant instant) {
     final String date =
         DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
     zeebeRichOpenSearchClient.index().refresh(prefix + "*" + date);
   }
 
   @Override
-  public void finished(Description description) {
+  public void finished(final Description description) {
     stopZeebe();
     if (client != null) {
       client.close();
@@ -98,8 +98,8 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   }
 
   @Override
-  public void failed(Throwable e, Description description) {
-    this.failed = true;
+  public void failed(final Throwable e, final Description description) {
+    failed = true;
   }
 
   /**
@@ -117,7 +117,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
         testContainerUtil.startZeebe(zeebeVersion, prefix, 2, isMultitTenancyEnabled());
 
     client =
-        ZeebeClient.newClientBuilder()
+        CamundaClient.newClientBuilder()
             .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
             .usePlaintext()
             .defaultRequestTimeout(REQUEST_TIMEOUT)
@@ -137,7 +137,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
     return prefix;
   }
 
-  public void setPrefix(String prefix) {
+  public void setPrefix(final String prefix) {
     this.prefix = prefix;
   }
 
@@ -147,7 +147,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   }
 
   @Override
-  public ZeebeClient getClient() {
+  public CamundaClient getClient() {
     return client;
   }
 
@@ -162,7 +162,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
     while (topology == null) {
       try {
         topology = client.newTopologyRequest().send().join();
-      } catch (ClientException ex) {
+      } catch (final ClientException ex) {
         ex.printStackTrace();
       }
     }
