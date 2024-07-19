@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
+import {MouseEventHandler, ReactNode} from 'react';
 import {Link} from 'react-router-dom';
 import {ChevronDown} from '@carbon/icons-react';
 import {t} from 'translation';
@@ -15,7 +15,14 @@ import {Popover, Tooltip} from 'components';
 
 import './EntityName.scss';
 
-export default function EntityName({children, details, linkTo, onClick}) {
+interface EntityNameProps {
+  children: ReactNode;
+  details?: ReactNode;
+  linkTo?: string;
+  onClick?: MouseEventHandler<HTMLAnchorElement>;
+}
+
+export default function EntityName({children, details, linkTo, onClick}: EntityNameProps) {
   return (
     <div className="EntityName">
       <div className="name-container">
