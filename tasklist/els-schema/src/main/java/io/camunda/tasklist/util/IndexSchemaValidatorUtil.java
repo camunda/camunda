@@ -42,7 +42,7 @@ public class IndexSchemaValidatorUtil {
   @Autowired SchemaManager schemaManager;
 
   public String getIndexPrefix() {
-    return TasklistProperties.OPEN_SEARCH.equals(tasklistProperties.getDatabaseType())
+    return TasklistProperties.OPEN_SEARCH.equals(tasklistProperties.getDatabase())
         ? tasklistProperties.getOpenSearch().getIndexPrefix()
         : tasklistProperties.getElasticsearch().getIndexPrefix();
   }
