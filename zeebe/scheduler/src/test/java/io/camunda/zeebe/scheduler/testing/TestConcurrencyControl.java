@@ -11,8 +11,12 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Test implementation of {@code ConcurrencyControl}. The main goal is to use this in tests without
@@ -42,6 +46,30 @@ public class TestConcurrencyControl implements ConcurrencyControl {
   public <T> void runOnCompletion(
       final ActorFuture<T> future, final BiConsumer<T, Throwable> callback) {
     future.onComplete(callback);
+  }
+
+  @Override
+  public <T> void runOnCompletion(
+      final Collection<ActorFuture<T>> actorFutures, final Consumer<Throwable> callback) {
+    final var error = new AtomicReference<Throwable>();
+    final var futuresCompleted = new AtomicInteger(actorFutures.size());
+    final var finalFuture = new TestActorFuture<>();
+    for (final ActorFuture<T> f : actorFutures) {
+      f.onComplete(
+          (r, e) -> {
+            if (e != null) {
+              error.set(e);
+            }
+            if (futuresCompleted.decrementAndGet() == 0) {
+              if (error.get() != null) {
+                finalFuture.completeExceptionally(error.get());
+              } else {
+                finalFuture.complete(null);
+              }
+            }
+          });
+    }
+    finalFuture.onComplete((ignore, throwable) -> callback.accept(throwable));
   }
 
   @Override

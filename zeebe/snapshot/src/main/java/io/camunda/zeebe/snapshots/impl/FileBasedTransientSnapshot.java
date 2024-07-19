@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.ChecksumProvider;
@@ -34,8 +34,8 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedTransientSnapshot.class);
 
   private final Path directory;
-  private final ActorControl actor;
-  private final FileBasedSnapshotStore snapshotStore;
+  private final ConcurrencyControl actor;
+  private final FileBasedSnapshotStoreImpl snapshotStore;
   private final FileBasedSnapshotId snapshotId;
   private final ActorFuture<Void> takenFuture = new CompletableActorFuture<>();
   private boolean isValid = false;
@@ -47,8 +47,8 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   FileBasedTransientSnapshot(
       final FileBasedSnapshotId snapshotId,
       final Path directory,
-      final FileBasedSnapshotStore snapshotStore,
-      final ActorControl actor,
+      final FileBasedSnapshotStoreImpl snapshotStore,
+      final ConcurrencyControl actor,
       final ChecksumProvider checksumProvider) {
     this.snapshotId = snapshotId;
     this.snapshotStore = snapshotStore;
@@ -114,7 +114,11 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   @Override
   public ActorFuture<PersistedSnapshot> persist() {
     final CompletableActorFuture<PersistedSnapshot> future = new CompletableActorFuture<>();
-    actor.call(() -> persistInternal(future));
+    actor.call(
+        () -> {
+          persistInternal(future);
+          return null;
+        });
     return future;
   }
 
@@ -148,7 +152,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     try {
       final var metadata =
           new FileBasedSnapshotMetadata(
-              FileBasedSnapshotStore.VERSION,
+              FileBasedSnapshotStoreImpl.VERSION,
               snapshotId.getProcessedPosition(),
               snapshotId.getExportedPosition(),
               lastFollowupEventPosition);
@@ -164,7 +168,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
 
   private void writeMetadataAndUpdateChecksum(final FileBasedSnapshotMetadata metadata)
       throws IOException {
-    final var metadataPath = directory.resolve(FileBasedSnapshotStore.METADATA_FILE_NAME);
+    final var metadataPath = directory.resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME);
     // Write metadata file along with snapshot files
     try (final var channel =
             FileChannel.open(
