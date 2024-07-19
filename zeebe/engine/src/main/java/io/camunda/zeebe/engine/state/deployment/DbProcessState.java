@@ -53,6 +53,8 @@ public final class DbProcessState implements MutableProcessState {
   private final Cache<TenantIdAndProcessIdAndVersion, DeployedProcess>
       processesByTenantAndProcessIdAndVersionCache;
   private final Cache<TenantIdAndProcessDefinitionKey, DeployedProcess> processByTenantAndKeyCache;
+  private final Cache<TenantIdAndProcessIdAndDeploymentKey, Long>
+      processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache;
 
   /** [tenant id | process definition key] => process */
   private final ColumnFamily<DbTenantAwareKey<DbLong>, PersistedProcess> processColumnFamily;
@@ -61,6 +63,7 @@ public final class DbProcessState implements MutableProcessState {
   private final PersistedProcess persistedProcess;
   private final DbString tenantIdKey;
   private final DbTenantAwareKey<DbLong> tenantAwareProcessDefinitionKey;
+  private final DbForeignKey<DbTenantAwareKey<DbLong>> fkProcessDefinitionKey;
 
   private final ColumnFamily<DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>, PersistedProcess>
       processByIdAndVersionColumnFamily;
@@ -77,6 +80,14 @@ public final class DbProcessState implements MutableProcessState {
       digestByIdColumnFamily;
   private final Digest digest = new Digest();
 
+  private final DbLong deploymentKey;
+  private final DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>
+      tenantAwareProcessIdAndDeploymentKey;
+  private final ColumnFamily<
+          DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>,
+          DbForeignKey<DbTenantAwareKey<DbLong>>>
+      processDefinitionKeyByProcessIdAndDeploymentKeyColumnFamily;
+
   private final VersionManager versionManager;
 
   public DbProcessState(
@@ -88,6 +99,8 @@ public final class DbProcessState implements MutableProcessState {
     tenantIdKey = new DbString();
     tenantAwareProcessDefinitionKey =
         new DbTenantAwareKey<>(tenantIdKey, processDefinitionKey, PlacementType.PREFIX);
+    fkProcessDefinitionKey =
+        new DbForeignKey<>(tenantAwareProcessDefinitionKey, ZbColumnFamilies.PROCESS_CACHE);
     processColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PROCESS_CACHE,
@@ -120,13 +133,26 @@ public final class DbProcessState implements MutableProcessState {
             fkTenantAwareProcessId,
             digest);
 
-    processByTenantAndKeyCache =
-        CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
+    deploymentKey = new DbLong();
+    tenantAwareProcessIdAndDeploymentKey =
+        new DbTenantAwareKey<>(
+            tenantIdKey, new DbCompositeKey<>(processId, deploymentKey), PlacementType.PREFIX);
+    processDefinitionKeyByProcessIdAndDeploymentKeyColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.PROCESS_DEFINITION_KEY_BY_PROCESS_ID_AND_DEPLOYMENT_KEY,
+            transactionContext,
+            tenantAwareProcessIdAndDeploymentKey,
+            fkProcessDefinitionKey);
 
     versionManager =
         new VersionManager(
             DEFAULT_VERSION_VALUE, zeebeDb, ZbColumnFamilies.PROCESS_VERSION, transactionContext);
+
+    processByTenantAndKeyCache =
+        CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
     processesByTenantAndProcessIdAndVersionCache =
+        CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
+    processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache =
         CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
   }
 
@@ -160,6 +186,17 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
+  public void storeProcessDefinitionKeyByProcessIdAndDeploymentKey(
+      final ProcessRecord processRecord) {
+    tenantIdKey.wrapString(processRecord.getTenantId());
+    processDefinitionKey.wrapLong(processRecord.getProcessDefinitionKey());
+    processId.wrapBuffer(processRecord.getBpmnProcessIdBuffer());
+    deploymentKey.wrapLong(processRecord.getDeploymentKey());
+    processDefinitionKeyByProcessIdAndDeploymentKeyColumnFamily.upsert(
+        tenantAwareProcessIdAndDeploymentKey, fkProcessDefinitionKey);
+  }
+
+  @Override
   public void updateProcessState(
       final ProcessRecord processRecord, final PersistedProcessState state) {
     tenantIdKey.wrapString(processRecord.getTenantId());
@@ -177,9 +214,14 @@ public final class DbProcessState implements MutableProcessState {
     processDefinitionKey.wrapLong(processRecord.getProcessDefinitionKey());
     processId.wrapString(processRecord.getBpmnProcessId());
     processVersion.wrapLong(processRecord.getVersion());
+    deploymentKey.wrapLong(processRecord.getDeploymentKey());
 
     processColumnFamily.deleteExisting(tenantAwareProcessDefinitionKey);
     processByIdAndVersionColumnFamily.deleteExisting(tenantAwareProcessIdAndVersionKey);
+
+    // use deleteIfExists as no entry exists for older records that do not have a deployment key yet
+    processDefinitionKeyByProcessIdAndDeploymentKeyColumnFamily.deleteIfExists(
+        tenantAwareProcessIdAndDeploymentKey);
 
     final var tenantIdAndProcessIdAndVersion =
         new TenantIdAndProcessIdAndVersion(
@@ -192,6 +234,14 @@ public final class DbProcessState implements MutableProcessState {
         new TenantIdAndProcessDefinitionKey(
             processRecord.getTenantId(), processRecord.getProcessDefinitionKey());
     processByTenantAndKeyCache.invalidate(key);
+
+    final var tenantIdAndProcessIdAndDeploymentKey =
+        new TenantIdAndProcessIdAndDeploymentKey(
+            processRecord.getTenantId(),
+            processRecord.getBpmnProcessIdBuffer(),
+            processRecord.getDeploymentKey());
+    processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache.invalidate(
+        tenantIdAndProcessIdAndDeploymentKey);
 
     final long latestVersion =
         versionManager.getLatestResourceVersion(
@@ -315,6 +365,25 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
+  public DeployedProcess getProcessByProcessIdAndDeploymentKey(
+      final DirectBuffer processIdBuffer, final long deploymentKey, final String tenantId) {
+    final var tenantIdAndProcessIdAndDeploymentKey =
+        new TenantIdAndProcessIdAndDeploymentKey(tenantId, processIdBuffer, deploymentKey);
+    var cachedProcessDefinitionKey =
+        processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache.getIfPresent(
+            tenantIdAndProcessIdAndDeploymentKey);
+
+    if (cachedProcessDefinitionKey == null) {
+      cachedProcessDefinitionKey =
+          lookupPersistenceStateForProcessDefinitionKey(processIdBuffer, deploymentKey, tenantId);
+    }
+
+    return (cachedProcessDefinitionKey != null)
+        ? getProcessByKeyAndTenant(cachedProcessDefinitionKey, tenantId)
+        : null;
+  }
+
+  @Override
   public DeployedProcess getProcessByKeyAndTenant(final long key, final String tenantId) {
     final var tenantIdAndProcessDefinitionKey = new TenantIdAndProcessDefinitionKey(tenantId, key);
     final DeployedProcess cachedProcess =
@@ -382,6 +451,7 @@ public final class DbProcessState implements MutableProcessState {
   public void clearCache() {
     processByTenantAndKeyCache.invalidateAll();
     processesByTenantAndProcessIdAndVersionCache.invalidateAll();
+    processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache.invalidateAll();
     versionManager.clear();
   }
 
@@ -439,7 +509,30 @@ public final class DbProcessState implements MutableProcessState {
     return null;
   }
 
+  private Long lookupPersistenceStateForProcessDefinitionKey(
+      final DirectBuffer processIdBuffer, final long deploymentKey, final String tenantId) {
+    tenantIdKey.wrapString(tenantId);
+    processId.wrapBuffer(processIdBuffer);
+    this.deploymentKey.wrapLong(deploymentKey);
+
+    final var foreignKey =
+        processDefinitionKeyByProcessIdAndDeploymentKeyColumnFamily.get(
+            tenantAwareProcessIdAndDeploymentKey);
+    if (foreignKey != null) {
+      final var processDefinitionKey = foreignKey.inner().wrappedKey().getValue();
+      processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache.put(
+          new TenantIdAndProcessIdAndDeploymentKey(tenantId, processIdBuffer, deploymentKey),
+          processDefinitionKey);
+      return processDefinitionKey;
+    }
+    // does not exist in persistence and in memory state
+    return null;
+  }
+
   record TenantIdAndProcessIdAndVersion(String tenantId, DirectBuffer processId, long Version) {}
 
   record TenantIdAndProcessDefinitionKey(String tenantId, long processDefinitionKey) {}
+
+  record TenantIdAndProcessIdAndDeploymentKey(
+      String tenantId, DirectBuffer processId, long deploymentKey) {}
 }

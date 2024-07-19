@@ -472,6 +472,7 @@ public final class CreateDeploymentMultiplePartitionsTest {
                   .limit(1)
                   .getFirst();
           assertThat(record).isNotNull();
+          assertThat(record.getRecordVersion()).isEqualTo(2);
           assertThat(record.getValue().getResourceName()).isEqualTo("process.bpmn");
           assertThat(record.getValue().getVersion()).isEqualTo(1);
           assertThat(record.getValue().getDeploymentKey()).isEqualTo(deployment.getKey());
