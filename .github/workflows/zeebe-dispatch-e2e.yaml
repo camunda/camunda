@@ -2,7 +2,17 @@ name: Zeebe Repo dispatch E2E tests
 
 on:
   workflow_dispatch:
-    types: [e2e_run_testbench]
+    inputs:
+      generation:
+        description: 'Specifies the generation template which should be used by the testbench run'
+        required: false
+        default: 'Zeebe SNAPSHOT'
+        type: string
+      branch:
+        description: 'Specifies the branch, for which the QA Testbench run should be executed'
+        default: 'main'
+        required: false
+        type: string
 
 jobs:
   e2e:
