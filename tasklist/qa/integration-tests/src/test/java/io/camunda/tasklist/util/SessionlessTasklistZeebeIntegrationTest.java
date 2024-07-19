@@ -58,7 +58,7 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
   public ZeebeContainer zeebeContainer;
 
   @MockBean protected CamundaClient mockedCamundaClient;
-  // we don't want to create ZeebeClient, we will rather use the one from
+  // we don't want to create CamundaClient, we will rather use the one from
   // test rule
   protected CamundaClient camundaClient;
   @Autowired protected PartitionHolder partitionHolder;

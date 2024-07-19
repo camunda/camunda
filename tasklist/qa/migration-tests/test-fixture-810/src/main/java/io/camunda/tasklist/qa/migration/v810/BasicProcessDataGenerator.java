@@ -7,11 +7,11 @@
  */
 package io.camunda.tasklist.qa.migration.v810;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.qa.util.ZeebeTestUtil;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.ThreadUtil;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
@@ -48,10 +48,10 @@ public class BasicProcessDataGenerator {
   //  private static final DateTimeFormatter ARCHIVER_DATE_TIME_FORMATTER =
   // DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
   /**
-   * ZeebeClient must not be reused between different test fixtures, as this may be different
+   * CamundaClient must not be reused between different test fixtures, as this may be different
    * versions of client in the future.
    */
-  private ZeebeClient zeebeClient;
+  private CamundaClient camundaClient;
 
   @Autowired
   @Qualifier("tasklistEsClient")
@@ -62,8 +62,8 @@ public class BasicProcessDataGenerator {
   private List<Long> processInstanceKeys = new ArrayList<>();
 
   private void init(final TestContext testContext) {
-    zeebeClient =
-        ZeebeClient.newClientBuilder()
+    camundaClient =
+        CamundaClient.newClientBuilder()
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
             .usePlaintext()
             .build();
@@ -115,9 +115,9 @@ public class BasicProcessDataGenerator {
   }
 
   private void closeClients() {
-    if (zeebeClient != null) {
-      zeebeClient.close();
-      zeebeClient = null;
+    if (camundaClient != null) {
+      camundaClient.close();
+      camundaClient = null;
     }
   }
 
@@ -141,7 +141,8 @@ public class BasicProcessDataGenerator {
     for (int i = 0; i < numberOfProcessInstances; i++) {
       final String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
       final long processInstanceKey =
-          ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, "{\"var1\": \"value1\"}");
+          ZeebeTestUtil.startProcessInstance(
+              camundaClient, bpmnProcessId, "{\"var1\": \"value1\"}");
       LOGGER.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
       processInstanceKeys.add(processInstanceKey);
     }
@@ -153,7 +154,7 @@ public class BasicProcessDataGenerator {
     final String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
     final String processDefinitionKey =
         ZeebeTestUtil.deployProcess(
-            zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
+            camundaClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
     LOGGER.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
   }
 
