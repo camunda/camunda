@@ -62,8 +62,6 @@ public class UserTaskRecordToTaskEntityMapper {
 
     final UserTaskRecordValue recordValue = record.getValue();
     final String processDefinitionId = String.valueOf(recordValue.getProcessDefinitionKey());
-    System.out.println("processDefinitionVersion: " + recordValue.getProcessDefinitionVersion());
-    System.out.println("customHeaders: " + recordValue.getCustomHeaders());
 
     final TaskEntity entity =
         new TaskEntity()
