@@ -9,6 +9,7 @@ package io.camunda.tasklist.entities;
 
 import java.time.OffsetDateTime;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
 
 public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
@@ -32,6 +33,8 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
   private OffsetDateTime dueDate;
   private TaskImplementation implementation;
   private String externalFormReference;
+  private Map<String, String> customHeaders;
+  private Integer processDefinitionVersion;
 
   public String getBpmnProcessId() {
     return bpmnProcessId;
@@ -204,6 +207,24 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return this;
   }
 
+  public Map<String, String> getCustomHeaders() {
+    return customHeaders;
+  }
+
+  public TaskEntity setCustomHeaders(final Map<String, String> customHeaders) {
+    this.customHeaders = customHeaders;
+    return this;
+  }
+
+  public Integer getProcessDefinitionVersion() {
+    return processDefinitionVersion;
+  }
+
+  public TaskEntity setProcessDefinitionVersion(final Integer processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
+    return this;
+  }
+
   public TaskEntity makeCopy() {
     return new TaskEntity()
         .setId(getId())
@@ -226,7 +247,9 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
         .setIsFormEmbedded(getIsFormEmbedded())
         .setTenantId(getTenantId())
         .setImplementation(getImplementation())
-        .setExternalFormReference(getExternalFormReference());
+        .setExternalFormReference(getExternalFormReference())
+        .setCustomHeaders(getCustomHeaders())
+        .setProcessDefinitionVersion(getProcessDefinitionVersion());
   }
 
   @Override
@@ -250,7 +273,9 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
             followUpDate,
             dueDate,
             implementation,
-            externalFormReference);
+            externalFormReference,
+            customHeaders,
+            processDefinitionVersion);
     result = 31 * result + Arrays.hashCode(candidateGroups);
     result = 31 * result + Arrays.hashCode(candidateUsers);
     return result;

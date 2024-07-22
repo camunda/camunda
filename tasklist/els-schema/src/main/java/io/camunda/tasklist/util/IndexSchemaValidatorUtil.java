@@ -13,6 +13,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.IndexMapping;
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.IndexMappingDifference;
+import io.camunda.tasklist.schema.IndexMappingDifference.PropertyDifference;
 import io.camunda.tasklist.schema.SemanticVersion;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
@@ -93,6 +94,24 @@ public class IndexSchemaValidatorUtil {
           String.format(
               "Index fields are up to date. Index name: %s.", indexDescriptor.getIndexName()));
       return;
+    }
+
+    // Validate if the difference is dynamic
+    if (difference.getEntriesDiffering() != null) {
+      for (final PropertyDifference propertyDifference : difference.getEntriesDiffering()) {
+        final Object typeDefinition = propertyDifference.getLeftValue().getTypeDefinition();
+        if (propertyDifference.getLeftValue().getTypeDefinition() instanceof Map) {
+          final Map<String, Object> typeDefMap = (Map<String, Object>) typeDefinition;
+          final Object dynamicValue = typeDefMap.get("dynamic");
+          if (dynamicValue.equals(true)) {
+            LOGGER.debug(
+                String.format(
+                    "Difference is on dynamic field - continue initialization: %s.",
+                    indexDescriptor.getIndexName()));
+            return;
+          }
+        }
+      }
     }
 
     LOGGER.debug(
