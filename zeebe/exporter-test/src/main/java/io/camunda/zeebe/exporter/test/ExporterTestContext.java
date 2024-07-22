@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.test;
 
 import io.camunda.zeebe.exporter.api.context.Configuration;
 import io.camunda.zeebe.exporter.api.context.Context;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
 import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
@@ -25,6 +26,11 @@ public final class ExporterTestContext implements Context {
 
   private Configuration configuration;
   private RecordFilter recordFilter;
+
+  @Override
+  public MeterRegistry getMeterRegistry() {
+    return null;
+  }
 
   @Override
   public Logger getLogger() {
