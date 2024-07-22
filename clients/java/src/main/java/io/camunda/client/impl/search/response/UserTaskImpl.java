@@ -17,6 +17,7 @@ package io.camunda.client.impl.search.response;
 
 import io.camunda.client.protocol.rest.UserTaskItem;
 import java.util.List;
+import java.util.Map;
 
 public class UserTaskImpl {
 
@@ -35,6 +36,8 @@ public class UserTaskImpl {
   private final String dueDate;
   private final String tenantIds;
   private final String externalFormReference;
+  private final Integer processDefinitionVersion;
+  private final Map<String, String> customHeaders;
 
   public UserTaskImpl(final UserTaskItem item) {
     key = item.getUserTaskKey();
@@ -52,6 +55,8 @@ public class UserTaskImpl {
     dueDate = item.getDueDate();
     tenantIds = item.getTenantIds();
     externalFormReference = item.getExternalFormReference();
+    processDefinitionVersion = item.getProcessDefinitionVersion();
+    customHeaders = item.getCustomHeaders();
   }
 
   public Long getKey() {
@@ -116,5 +121,13 @@ public class UserTaskImpl {
 
   public String getExternalFormReference() {
     return externalFormReference;
+  }
+
+  public Integer getProcessDefinitionVersion() {
+    return processDefinitionVersion;
+  }
+
+  public Map<String, String> getCustomHeaders() {
+    return customHeaders;
   }
 }

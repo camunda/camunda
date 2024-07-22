@@ -113,6 +113,8 @@ public final class SearchQueryResponseMapper {
         .completionDate(t.completionTime())
         .dueDate(t.dueDate())
         .followUpDate(t.followUpDate())
-        .externalFormReference(t.externalFormReference());
+        .externalFormReference(t.externalFormReference())
+        .processDefinitionVersion(t.processDefinitionVersion())
+        .customHeaders(t.customHeaders());
   }
 }

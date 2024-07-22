@@ -1708,6 +1708,13 @@ components:
           type: string
         externalFormReference:
           type: string
+        processDefinitionVersion:
+          type: integer
+          format: int32
+        customHeaders:
+          type: object
+          additionalProperties:
+              type: string
     VariableFilter:
       type: object
       properties:
