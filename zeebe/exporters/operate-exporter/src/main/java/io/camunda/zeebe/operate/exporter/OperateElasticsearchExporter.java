@@ -208,6 +208,14 @@ public class OperateElasticsearchExporter implements Exporter {
             new DecisionEvaluationHandler(
                 (DecisionInstanceTemplate)
                     new DecisionInstanceTemplate().setIndexPrefix(indexPrefix)))
+        .withHandler(
+            new IncidentHandler(
+                (IncidentTemplate) (new IncidentTemplate().setIndexPrefix(indexPrefix)),
+                concurrencyMode))
+        .withHandler(
+            new PostImporterQueueFromIncidentHandler(
+                (PostImporterQueueTemplate)
+                    (new PostImporterQueueTemplate().setIndexPrefix(indexPrefix))))
         .build();
   }
 
