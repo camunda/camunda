@@ -83,10 +83,6 @@ public final class FileBasedSnapshotStore extends Actor
   private final String actorName;
   private final int partitionId;
 
-  public FileBasedSnapshotStore(final int brokerId, final int partitionId, final Path root) {
-    this(brokerId, partitionId, root, null);
-  }
-
   public FileBasedSnapshotStore(
       final int brokerId,
       final int partitionId,

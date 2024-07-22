@@ -51,10 +51,12 @@ public class ReceivedSnapshotTest {
     final var senderDirectory = temporaryFolder.newFolder("sender").toPath();
     final var receiverDirectory = temporaryFolder.newFolder("receiver").toPath();
 
-    senderSnapshotStore = new FileBasedSnapshotStore(0, partitionId, senderDirectory);
+    senderSnapshotStore =
+        new FileBasedSnapshotStore(0, partitionId, senderDirectory, snapshotPath -> Map.of());
     scheduler.get().submitActor((Actor) senderSnapshotStore).join();
 
-    receiverSnapshotStore = new FileBasedSnapshotStore(0, partitionId, receiverDirectory);
+    receiverSnapshotStore =
+        new FileBasedSnapshotStore(0, partitionId, receiverDirectory, snapshotPath -> Map.of());
 
     scheduler.get().submitActor((Actor) receiverSnapshotStore).join();
   }

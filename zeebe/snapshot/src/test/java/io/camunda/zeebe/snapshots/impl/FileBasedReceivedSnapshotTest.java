@@ -407,7 +407,7 @@ public class FileBasedReceivedSnapshotTest {
   }
 
   private FileBasedSnapshotStore createStore(final Path root) {
-    final var store = new FileBasedSnapshotStore(0, PARTITION_ID, root);
+    final var store = new FileBasedSnapshotStore(0, PARTITION_ID, root, snapshotPath -> Map.of());
     scheduler.submitActor(store);
 
     return store;
