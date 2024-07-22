@@ -7,8 +7,8 @@
  */
 package io.camunda.tasklist.util;
 
+import static io.camunda.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
-import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;
