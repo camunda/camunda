@@ -80,7 +80,8 @@ class PartitionRestoreServiceTest {
   void setUp() {
     backupStore = new TestRestorableBackupStore();
 
-    snapshotStore = new FileBasedSnapshotStore(partitionId, dataDirectory);
+    snapshotStore =
+        new FileBasedSnapshotStore(partitionId, dataDirectory, snapshotPath -> Map.of());
     actorScheduler.submitActor(snapshotStore, SchedulingHints.IO_BOUND);
 
     backupService =
