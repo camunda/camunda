@@ -38,7 +38,8 @@ public class UserTaskSearchQueryStub implements RequestStub<UserTaskEntity> {
             "2020-01-03T00:00:00Z",
             "2020-01-04T00:00:00Z",
             List.of("group1"),
-            List.of("user1"));
+            List.of("user1"),
+            "externalFormReference1");
 
     final SearchQueryHit<UserTaskEntity> hit =
         new SearchQueryHit.Builder<UserTaskEntity>().id("1234").source(userTask).build();
