@@ -304,9 +304,13 @@ func (s *integrationTestSuite) TestCommonCommands() {
 	for _, test := range tests {
 		passed := s.T().Run(test.name, func(t *testing.T) {
 			for _, cmd := range test.setupCmds {
-				if cmdOut, err := s.runCommand(cmd, false); err != nil {
+				fmt.Printf("Executing setup cmd '%s'\n", cmd)
+				cmdOut, err := s.runCommand(cmd, false)
+				if err != nil {
 					t.Fatalf("failed while executing set up command '%s' (%v). Output: \n%s",
 						strings.Join(cmd, " "), err, cmdOut)
+				} else {
+					fmt.Printf("Setup cmd execution success. Result:\n'%s'", cmdOut)
 				}
 
 				// to mitigate race conditions between setup commands,
