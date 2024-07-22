@@ -10,7 +10,7 @@ package io.camunda.optimize.service.db.es.report.command.modules.distributed_by.
 import static io.camunda.optimize.service.db.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import io.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
@@ -92,10 +92,10 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
       final SearchResponse response,
       final Aggregations aggregations,
       final ExecutionContext<ProcessReportDataDto> context) {
-    List<CompositeCommandResult.DistributedByResult> results = new ArrayList<>();
-    Map<String, List<ProcessBucket>> bucketsByDefKey =
+    final List<CompositeCommandResult.DistributedByResult> results = new ArrayList<>();
+    final Map<String, List<ProcessBucket>> bucketsByDefKey =
         extractBucketsByDefKey(response, aggregations, context);
-    for (ReportDataDefinitionDto definition : context.getReportData().getDefinitions()) {
+    for (final ReportDataDefinitionDto definition : context.getReportData().getDefinitions()) {
       final CompositeCommandResult.ViewResult result;
       if (bucketsByDefKey.containsKey(definition.getKey())) {
         result = calculateMergedResult(bucketsByDefKey, definition, context);
@@ -107,6 +107,12 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
               definition.getIdentifier(), definition.getDisplayName(), result));
     }
     return results;
+  }
+
+  @Override
+  protected void addAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto dataForCommandKey) {
+    dataForCommandKey.setDistributedBy(new ProcessDistributedByDto());
   }
 
   @Override
@@ -131,7 +137,7 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
     if (processBuckets.isEmpty()) {
       return viewPart.createEmptyResult(context);
     }
-    List<CompositeCommandResult.ViewMeasure> viewMeasures = new ArrayList<>();
+    final List<CompositeCommandResult.ViewMeasure> viewMeasures = new ArrayList<>();
     if (viewPart instanceof ProcessViewFrequency) {
       final Double totalCount =
           processBuckets.stream()
@@ -140,11 +146,11 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
               .sum();
       viewMeasures.add(CompositeCommandResult.ViewMeasure.builder().value(totalCount).build());
     } else if (viewPart instanceof ProcessViewUserTaskDuration) {
-      for (UserTaskDurationTime userTaskDurationTime :
+      for (final UserTaskDurationTime userTaskDurationTime :
           context.getReportConfiguration().getUserTaskDurationTimes()) {
-        for (AggregationDto aggregationType :
+        for (final AggregationDto aggregationType :
             context.getReportConfiguration().getAggregationTypes()) {
-          Double mergedAggResult =
+          final Double mergedAggResult =
               calculateMergedAggregationResult(
                   processBuckets, aggregationType, userTaskDurationTime);
           viewMeasures.add(
@@ -156,9 +162,9 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
         }
       }
     } else {
-      for (AggregationDto aggregationType :
+      for (final AggregationDto aggregationType :
           context.getReportConfiguration().getAggregationTypes()) {
-        Double mergedAggResult =
+        final Double mergedAggResult =
             calculateMergedAggregationResult(processBuckets, aggregationType, null);
         viewMeasures.add(
             CompositeCommandResult.ViewMeasure.builder()
@@ -174,13 +180,13 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
       final List<ProcessBucket> processBuckets,
       final AggregationDto aggregationType,
       final UserTaskDurationTime userTaskDurationTime) {
-    Map<AggregationDto, List<CompositeCommandResult.ViewMeasure>> measuresByAggType =
+    final Map<AggregationDto, List<CompositeCommandResult.ViewMeasure>> measuresByAggType =
         processBuckets.stream()
             .map(ProcessBucket::getResult)
             .flatMap(results -> results.getViewMeasures().stream())
             .filter(measure -> measure.getUserTaskDurationTime() == userTaskDurationTime)
             .collect(Collectors.groupingBy(CompositeCommandResult.ViewMeasure::getAggregationType));
-    Double mergedAggResult;
+    final Double mergedAggResult;
     switch (aggregationType.getType()) {
       case MAX:
         mergedAggResult =
@@ -284,13 +290,13 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
       final SearchResponse response,
       final Aggregations aggregations,
       final ExecutionContext<ProcessReportDataDto> context) {
-    Map<String, List<ProcessBucket>> bucketsByDefKey = new HashMap<>();
+    final Map<String, List<ProcessBucket>> bucketsByDefKey = new HashMap<>();
     final Terms procDefKeyAgg = aggregations.get(PROC_DEF_KEY_AGG);
     if (procDefKeyAgg != null) {
-      for (Terms.Bucket keyBucket : procDefKeyAgg.getBuckets()) {
+      for (final Terms.Bucket keyBucket : procDefKeyAgg.getBuckets()) {
         final Terms procDefVersionAgg = keyBucket.getAggregations().get(PROC_DEF_VERSION_AGG);
         if (procDefVersionAgg != null) {
-          for (Terms.Bucket versionBucket : procDefVersionAgg.getBuckets()) {
+          for (final Terms.Bucket versionBucket : procDefVersionAgg.getBuckets()) {
             final Terms tenantTermsAgg = versionBucket.getAggregations().get(TENANT_AGG);
             if (tenantTermsAgg != null) {
               final List<ProcessBucket> bucketsForKey =
@@ -340,12 +346,6 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
 
   private boolean isProcessReport(final ExecutionContext<ProcessReportDataDto> context) {
     return context.getReportData().getView().getEntity() == ProcessViewEntity.PROCESS_INSTANCE;
-  }
-
-  @Override
-  protected void addAdjustmentsForCommandKeyGeneration(
-      final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.setDistributedBy(new ProcessDistributedByDto());
   }
 
   @AllArgsConstructor

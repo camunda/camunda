@@ -14,6 +14,7 @@ import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import io.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
+import io.camunda.optimize.upgrade.steps.schema.DeleteIndexTemplateIfExistsStep;
 import io.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,6 +33,14 @@ public class Upgrade313To86PlanFactory implements UpgradePlanFactory {
         .fromVersion("3.13")
         .toVersion("8.6.0")
         .addUpgradeStep(new DeleteIndexIfExistsStep("onboarding-state", 2))
+        .addUpgradeStep(new DeleteIndexIfExistsStep("import-index", 3))
+        .addUpgradeStep(new DeleteIndexIfExistsStep("event", 4))
+        .addUpgradeStep(new DeleteIndexTemplateIfExistsStep("event", 4))
+        .addUpgradeStep(new DeleteIndexIfExistsStep("event-process-definition", 5))
+        .addUpgradeStep(new DeleteIndexIfExistsStep("event-process-mapping", 4))
+        .addUpgradeStep(new DeleteIndexIfExistsStep("event-process-publish-state", 4))
+        .addUpgradeStep(new DeleteIndexIfExistsStep("event-sequence-count-external", 4))
+        .addUpgradeStep(new DeleteIndexIfExistsStep("event-trace-state-external", 2))
         .addUpgradeStep(new DeleteIndexIfExistsStep("license", 3))
         .addUpgradeStep(deleteLastModifierAndTelemetryInitializedSettingFields())
         .addUpgradeSteps(

@@ -26,13 +26,9 @@ public class EntityNameRequestDto {
   @QueryParam("reportId")
   private String reportId;
 
-  @QueryParam("eventBasedProcessId")
-  private String eventBasedProcessId;
-
   public enum Fields {
     collectionId,
     dashboardId,
-    reportId,
-    eventBasedProcessId
+    reportId
   }
 }

@@ -9,7 +9,6 @@ package io.camunda.optimize;
 
 import static io.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 import static io.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
-import static io.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
 
@@ -21,7 +20,6 @@ import io.camunda.optimize.jetty.NoCachingFilter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import jakarta.servlet.DispatcherType;
 import java.util.concurrent.Callable;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -59,45 +57,12 @@ public class FilterBeansConfig {
   }
 
   @Bean
-  public MaxRequestSizeFilter maxRequestSizeFilter(
-      @Qualifier("optimizeMapper") final ObjectMapper objectMapper,
-      final ConfigurationService configurationService) {
-    return new MaxRequestSizeFilter(
-        () -> objectMapper,
-        () -> configurationService.getEventIngestionConfiguration().getMaxBatchRequestBytes());
-  }
-
-  @Bean
-  public FilterRegistrationBean<MaxRequestSizeFilter> maxRequestSizeFilterRegistrationBean(
-      final MaxRequestSizeFilter maxRequestSizeFilter) {
-    final FilterRegistrationBean<MaxRequestSizeFilter> registrationBean =
-        new FilterRegistrationBean<>();
-
-    registrationBean.setFilter(maxRequestSizeFilter);
-    registrationBean.addUrlPatterns(REST_API_PATH + INGESTION_PATH + EVENT_BATCH_SUB_PATH);
-    registrationBean.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.ASYNC);
-
-    registrationBean.setName("eventIngestionMaxRequestSizeFilter");
-
-    return registrationBean;
-  }
-
-  @Bean
   public FilterRegistrationBean<IngestionQoSFilter> variableIngestionQoSFilterRegistrationBean(
       final ConfigurationService configurationService) {
     return getIngestionQoSFilterRegistrationBean(
         () -> configurationService.getVariableIngestionConfiguration().getMaxRequests(),
         VARIABLE_SUB_PATH,
         "variableIngestionQoSFilter");
-  }
-
-  @Bean
-  public FilterRegistrationBean<IngestionQoSFilter> eventIngestionQoSFilterRegistrationBean(
-      final ConfigurationService configurationService) {
-    return getIngestionQoSFilterRegistrationBean(
-        () -> configurationService.getEventIngestionConfiguration().getMaxRequests(),
-        EVENT_BATCH_SUB_PATH,
-        "eventIngestionQoSFilter");
   }
 
   private FilterRegistrationBean<IngestionQoSFilter> getIngestionQoSFilterRegistrationBean(

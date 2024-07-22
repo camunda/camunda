@@ -32,11 +32,6 @@ import io.camunda.optimize.service.db.es.schema.index.TenantIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.VariableLabelIndexES;
 import io.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
-import io.camunda.optimize.service.db.es.schema.index.events.EventIndexES;
-import io.camunda.optimize.service.db.es.schema.index.events.EventProcessDefinitionIndexES;
-import io.camunda.optimize.service.db.es.schema.index.events.EventProcessMappingIndexES;
-import io.camunda.optimize.service.db.es.schema.index.events.EventProcessPublishStateIndexES;
-import io.camunda.optimize.service.db.es.schema.index.index.ImportIndexIndexES;
 import io.camunda.optimize.service.db.es.schema.index.index.PositionBasedImportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.index.TimestampBasedImportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.CombinedReportIndexES;
@@ -78,9 +73,8 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class ElasticSearchSchemaManager
     extends DatabaseSchemaManager<OptimizeElasticsearchClient, XContentBuilder> {
-  private static final String INDEX_READ_ONLY_SETTING = "index.blocks.read_only_allow_delete";
   public static final int INDEX_EXIST_BATCH_SIZE = 10;
-
+  private static final String INDEX_READ_ONLY_SETTING = "index.blocks.read_only_allow_delete";
   protected final ElasticSearchMetadataService metadataService;
 
   @Autowired
@@ -123,7 +117,7 @@ public class ElasticSearchSchemaManager
   }
 
   @Override
-  public boolean schemaExists(OptimizeElasticsearchClient esClient) {
+  public boolean schemaExists(final OptimizeElasticsearchClient esClient) {
     return indicesExist(esClient, getMappings());
   }
 
@@ -202,7 +196,7 @@ public class ElasticSearchSchemaManager
             prefixedReadOnlyAliases,
             indexSettings);
       }
-    } catch (ElasticsearchStatusException e) {
+    } catch (final ElasticsearchStatusException e) {
       if (e.status() == RestStatus.BAD_REQUEST
           && e.getMessage().contains(INDEX_ALREADY_EXISTS_EXCEPTION_TYPE)) {
         log.debug(
@@ -211,8 +205,8 @@ public class ElasticSearchSchemaManager
       } else {
         throw e;
       }
-    } catch (Exception e) {
-      String message = String.format("Could not create Index [%s]", suffixedIndexName);
+    } catch (final Exception e) {
+      final String message = String.format("Could not create Index [%s]", suffixedIndexName);
       log.warn(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
@@ -224,7 +218,7 @@ public class ElasticSearchSchemaManager
       final IndexMappingCreator<XContentBuilder> mapping) {
     try {
       esClient.deleteIndex(mapping);
-    } catch (ElasticsearchStatusException e) {
+    } catch (final ElasticsearchStatusException e) {
       if (e.status() == RestStatus.NOT_FOUND) {
         log.debug("Index {} was not found.", mapping.getIndexName());
       } else {
@@ -242,7 +236,7 @@ public class ElasticSearchSchemaManager
     final Settings indexSettings = createIndexSettings(mappingCreator);
 
     log.debug("Creating or updating template with name {}.", templateName);
-    PutIndexTemplateRequest templateRequest =
+    final PutIndexTemplateRequest templateRequest =
         new PutIndexTemplateRequest(templateName)
             .version(mappingCreator.getVersion())
             .mapping(mappingCreator.getSource())
@@ -253,7 +247,7 @@ public class ElasticSearchSchemaManager
                         mappingCreator)));
     try {
       esClient.createTemplate(templateRequest);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String message = String.format("Could not create or update template %s.", templateName);
       throw new OptimizeRuntimeException(message, e);
     }
@@ -261,7 +255,8 @@ public class ElasticSearchSchemaManager
 
   @Override
   public void updateDynamicSettingsAndMappings(
-      OptimizeElasticsearchClient esClient, IndexMappingCreator<XContentBuilder> indexMapping) {
+      final OptimizeElasticsearchClient esClient,
+      final IndexMappingCreator<XContentBuilder> indexMapping) {
     updateIndexDynamicSettingsAndMappings(esClient, indexMapping);
     if (indexMapping.isCreateFromTemplate()) {
       updateTemplateDynamicSettingsAndMappings(esClient, indexMapping);
@@ -277,7 +272,7 @@ public class ElasticSearchSchemaManager
               final GetIndexRequest request = new GetIndexRequest(indices.toArray(new String[] {}));
               try {
                 return esClient.exists(request);
-              } catch (IOException e) {
+              } catch (final IOException e) {
                 final String message =
                     String.format(
                         "Could not check if [%s] index(es) already exist.",
@@ -324,8 +319,8 @@ public class ElasticSearchSchemaManager
     }
     try {
       esClient.createIndex(createIndexRequest);
-    } catch (IOException e) {
-      String message =
+    } catch (final IOException e) {
+      final String message =
           String.format("Could not create index %s from template.", indexNameWithSuffix);
       log.warn(message, e);
       throw new OptimizeRuntimeException(message, e);
@@ -342,7 +337,7 @@ public class ElasticSearchSchemaManager
         indexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(mappingCreator);
     log.info("Creating or updating template with name {}", templateName);
 
-    PutIndexTemplateRequest templateRequest =
+    final PutIndexTemplateRequest templateRequest =
         new PutIndexTemplateRequest(templateName)
             .version(mappingCreator.getVersion())
             .mapping(mappingCreator.getSource())
@@ -364,22 +359,22 @@ public class ElasticSearchSchemaManager
 
     try {
       esClient.createTemplate(templateRequest);
-    } catch (IOException e) {
-      String message = String.format("Could not create or update template %s", templateName);
+    } catch (final IOException e) {
+      final String message = String.format("Could not create or update template %s", templateName);
       log.warn(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
   }
 
-  private void updateAllMappingsAndDynamicSettings(OptimizeElasticsearchClient esClient) {
+  private void updateAllMappingsAndDynamicSettings(final OptimizeElasticsearchClient esClient) {
     log.info("Updating Optimize schema...");
-    for (IndexMappingCreator<XContentBuilder> mapping : mappings) {
+    for (final IndexMappingCreator<XContentBuilder> mapping : mappings) {
       updateDynamicSettingsAndMappings(esClient, mapping);
     }
 
     final List<IndexMappingCreator<?>> allDynamicMappings =
         new MappingMetadataUtil(esClient).getAllDynamicMappings(indexNameService.getIndexPrefix());
-    for (IndexMappingCreator<?> mapping : allDynamicMappings) {
+    for (final IndexMappingCreator<?> mapping : allDynamicMappings) {
       updateDynamicSettingsAndMappings(esClient, (IndexMappingCreator<XContentBuilder>) mapping);
     }
     log.info("Finished updating Optimize schema.");
@@ -392,7 +387,7 @@ public class ElasticSearchSchemaManager
       indexBlocked =
           Streams.stream(settingsResponse.getIndexToSettings().valuesIt())
               .anyMatch(settings -> settings.getAsBoolean(INDEX_READ_ONLY_SETTING, false));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Could not retrieve index settings!", e);
       throw new OptimizeRuntimeException("Could not retrieve index settings!", e);
     }
@@ -404,14 +399,15 @@ public class ElasticSearchSchemaManager
       updateSettingsRequest.settings(Settings.builder().put(INDEX_READ_ONLY_SETTING, false));
       try {
         esClient.updateSettings(updateSettingsRequest);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new OptimizeRuntimeException("Could not unblock Elasticsearch indices!", e);
       }
     }
   }
 
   private void updateTemplateDynamicSettingsAndMappings(
-      OptimizeElasticsearchClient esClient, IndexMappingCreator<XContentBuilder> mappingCreator) {
+      final OptimizeElasticsearchClient esClient,
+      final IndexMappingCreator<XContentBuilder> mappingCreator) {
     final String defaultAliasName =
         indexNameService.getOptimizeIndexAliasForIndex(mappingCreator.getIndexName());
     final Settings indexSettings = createIndexSettings(mappingCreator);
@@ -420,7 +416,8 @@ public class ElasticSearchSchemaManager
   }
 
   private void updateIndexDynamicSettingsAndMappings(
-      OptimizeElasticsearchClient esClient, IndexMappingCreator<XContentBuilder> indexMapping) {
+      final OptimizeElasticsearchClient esClient,
+      final IndexMappingCreator<XContentBuilder> indexMapping) {
     final String indexName =
         indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(indexMapping);
     try {
@@ -429,8 +426,8 @@ public class ElasticSearchSchemaManager
       updateSettingsRequest.indices(indexName);
       updateSettingsRequest.settings(indexSettings);
       esClient.updateSettings(updateSettingsRequest);
-    } catch (IOException e) {
-      String message =
+    } catch (final IOException e) {
+      final String message =
           String.format(
               "Could not update index settings for index [%s].", indexMapping.getIndexName());
       throw new OptimizeRuntimeException(message, e);
@@ -440,19 +437,20 @@ public class ElasticSearchSchemaManager
       final PutMappingRequest putMappingRequest = new PutMappingRequest(indexName);
       putMappingRequest.source(indexMapping.getSource());
       esClient.createMapping(putMappingRequest);
-    } catch (IOException e) {
-      String message =
+    } catch (final IOException e) {
+      final String message =
           String.format(
               "Could not update index mappings for index [%s].", indexMapping.getIndexName());
       throw new OptimizeRuntimeException(message, e);
     }
   }
 
-  private Settings createIndexSettings(IndexMappingCreator<XContentBuilder> indexMappingCreator) {
+  private Settings createIndexSettings(
+      final IndexMappingCreator<XContentBuilder> indexMappingCreator) {
     try {
       return ElasticSearchIndexSettingsBuilder.buildAllSettings(
           configurationService, indexMappingCreator);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Could not create settings!", e);
       throw new OptimizeRuntimeException("Could not create index settings");
     }
@@ -473,11 +471,6 @@ public class ElasticSearchSchemaManager
         new TenantIndexES(),
         new TerminatedUserSessionIndexES(),
         new VariableUpdateInstanceIndexES(),
-        new EventIndexES(),
-        new EventProcessDefinitionIndexES(),
-        new EventProcessMappingIndexES(),
-        new EventProcessPublishStateIndexES(),
-        new ImportIndexIndexES(),
         new TimestampBasedImportIndexES(),
         new PositionBasedImportIndexES(),
         new CombinedReportIndexES(),

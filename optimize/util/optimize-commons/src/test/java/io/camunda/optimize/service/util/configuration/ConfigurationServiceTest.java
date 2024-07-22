@@ -64,7 +64,6 @@ public class ConfigurationServiceTest {
   private static final String CUSTOM_PACKAGE_3 = "pack_3";
   private static final String API_SECRET = "secret";
   private static final String ACCESS_URL = "accessUrl";
-  private static final String CUSTOM_EVENT_BASED_USER_IDS = "[demo,kermit]";
   private static final String CUSTOM_SUPER_USER_IDS = "[demo, kermit]";
   private static final String CUSTOM_SUPER_GROUP_IDS = "[demoGroup, kermitGroup]";
   private static final Boolean CUSTOM_ZEEBE_ENABLED = true;
@@ -203,8 +202,6 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set("PACKAGE_3", CUSTOM_PACKAGE_3);
     environmentVariablesExtension.set("OPTIMIZE_API_ACCESS_TOKEN", API_SECRET);
     environmentVariablesExtension.set("ACCESS_URL", ACCESS_URL);
-    environmentVariablesExtension.set(
-        "OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
     environmentVariablesExtension.set("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ENTERPRISE", String.valueOf(false));
     environmentVariablesExtension.set(
@@ -260,8 +257,6 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
     environmentVariablesExtension.set(
-        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(true));
-    environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
     environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(true));
@@ -287,7 +282,6 @@ public class ConfigurationServiceTest {
     System.setProperty("PACKAGE_3", CUSTOM_PACKAGE_3);
     System.setProperty("OPTIMIZE_API_ACCESS_TOKEN", API_SECRET);
     System.setProperty("ACCESS_URL", ACCESS_URL);
-    System.setProperty("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
     System.setProperty("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
     System.setProperty("OPTIMIZE_SUPER_GROUP_IDS", CUSTOM_SUPER_GROUP_IDS);
     System.setProperty("CAMUNDA_OPTIMIZE_ENTERPRISE", String.valueOf(false));
@@ -338,8 +332,6 @@ public class ConfigurationServiceTest {
         String.valueOf(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
-    System.setProperty(
-        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(true));
@@ -414,8 +406,6 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(false));
     environmentVariablesExtension.set(
-        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(false));
-    environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED",
         String.valueOf(false));
     environmentVariablesExtension.set(
@@ -431,7 +421,6 @@ public class ConfigurationServiceTest {
     System.setProperty("PACKAGE_3", CUSTOM_PACKAGE_3);
     System.setProperty("OPTIMIZE_API_ACCESS_TOKEN", API_SECRET);
     System.setProperty("ACCESS_URL", ACCESS_URL);
-    System.setProperty("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
     System.setProperty("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
     System.setProperty("OPTIMIZE_SUPER_GROUP_IDS", CUSTOM_SUPER_GROUP_IDS);
     System.setProperty("CAMUNDA_OPTIMIZE_ENTERPRISE", String.valueOf(false));
@@ -484,8 +473,6 @@ public class ConfigurationServiceTest {
     System.setProperty(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty(
-        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(true));
-    System.setProperty(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(true));
 
@@ -524,7 +511,6 @@ public class ConfigurationServiceTest {
     System.setProperty("PACKAGE_3", CUSTOM_PACKAGE_3);
     System.setProperty("OPTIMIZE_API_ACCESS_TOKEN", API_SECRET);
     System.setProperty("ACCESS_URL", ACCESS_URL);
-    System.setProperty("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
     System.setProperty("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
     System.setProperty("OPTIMIZE_SUPER_GROUP_IDS", CUSTOM_SUPER_GROUP_IDS);
     System.setProperty(
@@ -575,8 +561,6 @@ public class ConfigurationServiceTest {
         String.valueOf(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(true));
-    System.setProperty(
-        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_EXTERNAL_VARIABLE_CLEANUP_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED", String.valueOf(true));
@@ -669,8 +653,6 @@ public class ConfigurationServiceTest {
                 .map(DatabaseConnectionNodeConfiguration::getHttpPort)
                 .collect(toList()))
         .contains(DEFAULT_FIRST_ES_PORT, DEFAULT_SECOND_ES_PORT);
-    assertThat(underTest.getEventBasedProcessConfiguration().getAuthorizedUserIds()).isEmpty();
-    assertThat(underTest.getEventBasedProcessConfiguration().getAuthorizedGroupIds()).isEmpty();
     assertThat(underTest.getOptimizeApiConfiguration().getAccessToken()).isNull();
     assertThat(underTest.getContainerAccessUrl()).isNotPresent();
     assertThat(underTest.getSecurityConfiguration().getLicense().isEnterprise()).isFalse();
@@ -730,12 +712,6 @@ public class ConfigurationServiceTest {
     assertThat(
             underTest
                 .getCleanupServiceConfiguration()
-                .getIngestedEventCleanupConfiguration()
-                .isEnabled())
-        .isFalse();
-    assertThat(
-            underTest
-                .getCleanupServiceConfiguration()
                 .getExternalVariableCleanupConfiguration()
                 .isEnabled())
         .isFalse();
@@ -762,8 +738,6 @@ public class ConfigurationServiceTest {
                 .map(DatabaseConnectionNodeConfiguration::getHttpPort)
                 .collect(toList()))
         .contains(CUSTOM_FIRST_ES_PORT, CUSTOM_SECOND_ES_PORT);
-    assertThat(underTest.getEventBasedProcessConfiguration().getAuthorizedUserIds())
-        .isEqualTo(ImmutableList.of("demo", "kermit"));
     assertThat(underTest.getOptimizeApiConfiguration().getAccessToken()).isEqualTo(API_SECRET);
     assertThat(underTest.getContainerAccessUrl()).isPresent().get().isEqualTo(ACCESS_URL);
     assertThat(underTest.getAuthConfiguration().getSuperUserIds())
@@ -837,12 +811,6 @@ public class ConfigurationServiceTest {
             underTest
                 .getCleanupServiceConfiguration()
                 .getDecisionCleanupConfiguration()
-                .isEnabled())
-        .isTrue();
-    assertThat(
-            underTest
-                .getCleanupServiceConfiguration()
-                .getIngestedEventCleanupConfiguration()
                 .isEnabled())
         .isTrue();
     assertThat(

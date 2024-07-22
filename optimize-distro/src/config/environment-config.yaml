@@ -57,9 +57,6 @@ engines:
     rest: 'http://localhost:8080/engine-rest'
     # Determines whether this instance of Optimize should import definition & historical data from this engine.
     importEnabled: true
-    # Determines whether this instance of Optimize should convert historical data to event data
-    # usable for event based processes.
-    eventImportEnabled: false
     authentication:
       # Toggles basic authentication on or off. When enabling basic
       # authentication, please be aware that you also need to adjust the values
@@ -259,9 +256,6 @@ historyCleanup:
     perDecisionDefinitionConfig:
     # 'myDecisionDefinitionKey':
     #   ttl: 'P2M'
-  ingestedEventCleanup:
-    # switch for the ingested event data cleanup, defaults to false
-    enabled: false
 
 locales:
   # all locales available
@@ -273,15 +267,6 @@ locales:
 ui:
   # If you have SSO enabled, you can set the property below to hide the logout option if it is not needed
   logoutHidden: false
-
-eventBasedProcess:
-  # A list of userIds that are authorized to manage (Create, Update, Publish & Delete) event based processes.
-  authorizedUserIds: []
-  # A list of groupIds that are authorized to manage (Create, Update, Publish & Delete) event based processes.
-  authorizedGroupIds: []
-  eventImport:
-    # Determines whether this Optimize instance performs event based process instance import.
-    enabled: false
 
 telemetry:
   # Sets the initial property value of telemetry configuration once when it has never been enabled/disabled before.

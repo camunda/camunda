@@ -23,7 +23,6 @@ import io.camunda.optimize.test.optimize.CollectionClient;
 import io.camunda.optimize.test.optimize.DashboardClient;
 import io.camunda.optimize.test.optimize.DefinitionClient;
 import io.camunda.optimize.test.optimize.EntitiesClient;
-import io.camunda.optimize.test.optimize.EventProcessClient;
 import io.camunda.optimize.test.optimize.ExportClient;
 import io.camunda.optimize.test.optimize.FlowNodeNamesClient;
 import io.camunda.optimize.test.optimize.IdentityClient;
@@ -82,8 +81,6 @@ public abstract class AbstractIT {
   protected ReportClient reportClient = new ReportClient(optimizeRequestExecutorSupplier);
   protected AlertClient alertClient = new AlertClient(optimizeRequestExecutorSupplier);
   protected DashboardClient dashboardClient = new DashboardClient(optimizeRequestExecutorSupplier);
-  protected EventProcessClient eventProcessClient =
-      new EventProcessClient(optimizeRequestExecutorSupplier);
   protected SharingClient sharingClient = new SharingClient(optimizeRequestExecutorSupplier);
   protected AnalysisClient analysisClient = new AnalysisClient(optimizeRequestExecutorSupplier);
   protected UiConfigurationClient uiConfigurationClient =
@@ -114,8 +111,9 @@ public abstract class AbstractIT {
 
   protected abstract void startAndUseNewOptimizeInstance();
 
-  protected void startAndUseNewOptimizeInstance(Map<String, String> argMap, String activeProfile) {
-    String[] arguments = prepareArgs(argMap);
+  protected void startAndUseNewOptimizeInstance(
+      final Map<String, String> argMap, final String activeProfile) {
+    final String[] arguments = prepareArgs(argMap);
 
     // run after-test cleanups with the old context
     embeddedOptimizeExtension.afterTest();
@@ -157,14 +155,14 @@ public abstract class AbstractIT {
     return argList.toArray(String[]::new);
   }
 
-  private String getPortArg(String portKey) {
+  private String getPortArg(final String portKey) {
     return getArg(
         portKey,
         String.valueOf(
             embeddedOptimizeExtension.getBean(JettyConfig.class).getPort(portKey) + 100));
   }
 
-  private String getArg(String key, String value) {
+  private String getArg(final String key, final String value) {
     return String.format("--%s=%s", key, value);
   }
 }

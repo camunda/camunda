@@ -271,7 +271,7 @@ jobs:
         includedGroups: [ 'reportEvaluation', '' ]
         include:
           - includedGroups: ''
-            excludedGroups: 'ccsm-test,import,eventBasedProcess,reportEvaluation'
+            excludedGroups: 'ccsm-test,import,reportEvaluation'
             profiles: 'it,engine-latest'
           - includedGroups: 'reportEvaluation'
             excludedGroups: ''
