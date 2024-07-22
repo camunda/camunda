@@ -21,7 +21,6 @@ import io.camunda.client.api.search.response.SearchResponsePage;
 import io.camunda.client.impl.search.response.ProcessInstanceImpl;
 import io.camunda.client.impl.search.response.SearchQueryResponseImpl;
 import io.camunda.client.impl.search.response.SearchResponsePageImpl;
-import io.camunda.client.impl.search.response.UserTaskImpl;
 import io.camunda.client.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.client.protocol.rest.SearchQueryPageResponse;
 import io.camunda.client.protocol.rest.UserTaskItem;
@@ -58,17 +57,7 @@ public final class SearchResponseMapper {
     final SearchQueryPageResponse pageResponse = response.getPage();
     final SearchResponsePage page = toSearchResponsePage(pageResponse);
 
-    final List<UserTaskItem> userTasks =
-        Optional.ofNullable(response.getItems())
-            .map(
-                (i) ->
-                    i.stream()
-                        .map(UserTaskImpl::new)
-                        .map(UserTaskItem.class::cast)
-                        .collect(Collectors.toList()))
-            .orElse(Collections.emptyList());
-
-    return new SearchQueryResponseImpl<>(userTasks, page);
+    return new SearchQueryResponseImpl<>(response.getItems(), page);
   }
 
   private static SearchResponsePage toSearchResponsePage(

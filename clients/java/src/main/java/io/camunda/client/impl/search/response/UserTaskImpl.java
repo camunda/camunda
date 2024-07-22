@@ -21,12 +21,14 @@ import java.util.Map;
 
 public class UserTaskImpl {
 
-  private final Long key;
+  private final Long userTaskKey;
   private final String taskState;
   private final String assignee;
-  private final String taskDefinitionId;
+  private final String elementId;
+  private final Long elementInstanceKey;
   private final List<String> candidateGroup;
   private final List<String> candidateUser;
+  private final String bpmnProcessId;
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
   private final Long formKey;
@@ -40,14 +42,16 @@ public class UserTaskImpl {
   private final Map<String, String> customHeaders;
 
   public UserTaskImpl(final UserTaskItem item) {
-    key = item.getUserTaskKey();
+    userTaskKey = item.getUserTaskKey();
     taskState = item.getTaskState();
     assignee = item.getAssignee();
-    taskDefinitionId = item.getElementId();
+    elementId = item.getElementId();
+    elementInstanceKey = item.getElementInstanceKey();
     candidateGroup = item.getCandidateGroup();
     candidateUser = item.getCandidateUser();
     processDefinitionKey = item.getProcessDefinitionKey();
     processInstanceKey = item.getProcessInstanceKey();
+    bpmnProcessId = item.getBpmnProcessId();
     formKey = item.getFormKey();
     creationDate = item.getCreationDate();
     completionDate = item.getCompletionDate();
@@ -59,8 +63,8 @@ public class UserTaskImpl {
     customHeaders = item.getCustomHeaders();
   }
 
-  public Long getKey() {
-    return key;
+  public Long getUserTaskKey() {
+    return userTaskKey;
   }
 
   public String getTaskState() {
@@ -71,8 +75,8 @@ public class UserTaskImpl {
     return assignee;
   }
 
-  public String getTaskDefinitionId() {
-    return taskDefinitionId;
+  public String getElementId() {
+    return elementId;
   }
 
   public List<String> getCandidateGroup() {
@@ -93,6 +97,14 @@ public class UserTaskImpl {
 
   public Long getFormKey() {
     return formKey;
+  }
+
+  public Long getElementInstanceKey() {
+    return elementInstanceKey;
+  }
+
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
   }
 
   public Long setFormKey() {
