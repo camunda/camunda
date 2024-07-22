@@ -110,7 +110,6 @@ public class IndexSchemaValidatorUtil {
                     indexDescriptor.getIndexName()));
             return;
           }
-          ;
         }
       }
     }
