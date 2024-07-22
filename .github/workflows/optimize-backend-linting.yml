@@ -1,11 +1,5 @@
 name: Optimize Backend Linting
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - "optimize/client/**"
-      - ".ci/**"
   pull_request:
     paths-ignore:
       - "optimize/client/**"
