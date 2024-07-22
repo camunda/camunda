@@ -309,7 +309,8 @@ class ClusterConfigurationManagementIntegrationTest {
             if (error == null) {
               service.registerPartitionChangeExecutor(new NoopPartitionChangeExecutor());
             }
-          });
+          },
+          Runnable::run);
       return startFuture;
     }
 
