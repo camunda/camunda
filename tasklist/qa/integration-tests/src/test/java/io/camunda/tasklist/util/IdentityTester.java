@@ -15,12 +15,12 @@ import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTIT
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.impl.util.Environment;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.webapp.security.oauth.IdentityJwt2AuthenticationTokenConverter;
-import io.camunda.zeebe.client.impl.util.Environment;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import java.util.Collections;
