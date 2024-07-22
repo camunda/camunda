@@ -12,12 +12,12 @@ import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 
-public final class DecisionCreatedApplier
+public final class DecisionCreatedV1Applier
     implements TypedEventApplier<DecisionIntent, DecisionRecord> {
 
   private final MutableDecisionState decisionState;
 
-  public DecisionCreatedApplier(final MutableDecisionState decisionState) {
+  public DecisionCreatedV1Applier(final MutableDecisionState decisionState) {
     this.decisionState = decisionState;
   }
 

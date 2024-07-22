@@ -839,7 +839,8 @@ public class ResourceDeletionTest {
             DecisionRecordValue::getDecisionKey,
             DecisionRecordValue::getDecisionRequirementsId,
             DecisionRecordValue::getDecisionRequirementsKey,
-            DecisionRecordValue::isDuplicate)
+            DecisionRecordValue::isDuplicate,
+            DecisionRecordValue::getDeploymentKey)
         .containsOnly(
             decisionCreatedRecord.getDecisionId(),
             decisionCreatedRecord.getDecisionName(),
@@ -847,7 +848,8 @@ public class ResourceDeletionTest {
             decisionCreatedRecord.getDecisionKey(),
             decisionCreatedRecord.getDecisionRequirementsId(),
             decisionCreatedRecord.getDecisionRequirementsKey(),
-            decisionCreatedRecord.isDuplicate());
+            decisionCreatedRecord.isDuplicate(),
+            decisionCreatedRecord.getDeploymentKey());
   }
 
   private void verifyProcessIdWithVersionIsDeleted(final String processId, final int version) {
