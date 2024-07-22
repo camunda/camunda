@@ -93,6 +93,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.agrona.CloseHelper;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -488,7 +489,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private CompletableFuture<Void> loadServerSslContext() {
     try {
       serverSslContext =
-          SslContextBuilder.forServer(config.getCertificateChain(), config.getPrivateKey())
+          sslContextBuilder()
               .sslProvider(SslProvider.OPENSSL_REFCNT)
               .protocols(TLS_PROTOCOL)
               .build();
@@ -497,6 +498,15 @@ public final class NettyMessagingService implements ManagedMessagingService {
       return CompletableFuture.failedFuture(
           new MessagingException(
               "Failed to start messaging service; invalid server TLS configuration", e));
+    }
+  }
+
+  private SslContextBuilder sslContextBuilder() {
+    if (StringUtils.isBlank(config.getPrivateKeyPassword())) {
+      return SslContextBuilder.forServer(config.getCertificateChain(), config.getPrivateKey());
+    } else {
+      return SslContextBuilder.forServer(
+          config.getCertificateChain(), config.getPrivateKey(), config.getPrivateKeyPassword());
     }
   }
 

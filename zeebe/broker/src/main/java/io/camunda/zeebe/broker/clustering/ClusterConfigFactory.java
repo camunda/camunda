@@ -85,7 +85,8 @@ public final class ClusterConfigFactory {
       messaging
           .setTlsEnabled(true)
           .setCertificateChain(network.getSecurity().getCertificateChainPath())
-          .setPrivateKey(network.getSecurity().getPrivateKeyPath());
+          .setPrivateKey(network.getSecurity().getPrivateKeyPath())
+          .setPrivateKeyPassword(network.getSecurity().getPrivateKeyPassword());
     }
     return messaging;
   }

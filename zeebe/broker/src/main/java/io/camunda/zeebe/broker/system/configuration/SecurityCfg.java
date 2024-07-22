@@ -17,6 +17,7 @@ public final class SecurityCfg implements ConfigurationEntry {
   private boolean enabled = DEFAULT_ENABLED;
   private File certificateChainPath;
   private File privateKeyPath;
+  private String privateKeyPassword;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -57,9 +58,18 @@ public final class SecurityCfg implements ConfigurationEntry {
     return this;
   }
 
+  public String getPrivateKeyPassword() {
+    return privateKeyPassword;
+  }
+
+  public SecurityCfg setPrivateKeyPassword(final String privateKeyPassword) {
+    this.privateKeyPassword = privateKeyPassword;
+    return this;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(enabled, certificateChainPath, privateKeyPath);
+    return Objects.hash(enabled, certificateChainPath, privateKeyPath, privateKeyPassword);
   }
 
   @Override
@@ -74,7 +84,8 @@ public final class SecurityCfg implements ConfigurationEntry {
     final var that = (SecurityCfg) o;
     return enabled == that.enabled
         && Objects.equals(certificateChainPath, that.certificateChainPath)
-        && Objects.equals(privateKeyPath, that.privateKeyPath);
+        && Objects.equals(privateKeyPath, that.privateKeyPath)
+        && Objects.equals(privateKeyPassword, that.privateKeyPassword);
   }
 
   @Override
@@ -87,6 +98,8 @@ public final class SecurityCfg implements ConfigurationEntry {
         + "'"
         + ", privateKeyPath='"
         + privateKeyPath
+        + ", privateKeyPassword='"
+        + privateKeyPassword
         + "'}";
   }
 }

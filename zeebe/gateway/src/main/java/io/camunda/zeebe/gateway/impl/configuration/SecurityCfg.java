@@ -18,6 +18,7 @@ public final class SecurityCfg {
   private File certificateChainPath;
   private File privateKeyPath;
   private AuthenticationCfg authentication = new AuthenticationCfg();
+  private String privateKeyPassword;
 
   public boolean isEnabled() {
     return enabled;
@@ -54,9 +55,19 @@ public final class SecurityCfg {
     this.authentication = authentication;
   }
 
+  public String getPrivateKeyPassword() {
+    return privateKeyPassword;
+  }
+
+  public SecurityCfg setPrivateKeyPassword(final String privateKeyPassword) {
+    this.privateKeyPassword = privateKeyPassword;
+    return this;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(enabled, certificateChainPath, privateKeyPath, authentication);
+    return Objects.hash(
+        enabled, certificateChainPath, privateKeyPath, authentication, privateKeyPassword);
   }
 
   @Override
@@ -71,7 +82,8 @@ public final class SecurityCfg {
     return enabled == that.enabled
         && Objects.equals(certificateChainPath, that.certificateChainPath)
         && Objects.equals(privateKeyPath, that.privateKeyPath)
-        && Objects.equals(authentication, that.authentication);
+        && Objects.equals(authentication, that.authentication)
+        && Objects.equals(privateKeyPassword, that.privateKeyPassword);
   }
 
   @Override

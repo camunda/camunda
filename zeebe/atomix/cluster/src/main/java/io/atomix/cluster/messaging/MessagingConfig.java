@@ -33,6 +33,7 @@ public class MessagingConfig implements Config {
   private File certificateChain;
   private File privateKey;
   private CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.NONE;
+  private String privateKeyPassword;
 
   /**
    * Returns the local interfaces to which to bind the node.
@@ -222,6 +223,15 @@ public class MessagingConfig implements Config {
     }
 
     this.privateKey = privateKey;
+    return this;
+  }
+
+  public String getPrivateKeyPassword() {
+    return privateKeyPassword;
+  }
+
+  public MessagingConfig setPrivateKeyPassword(final String privateKeyPassword) {
+    this.privateKeyPassword = privateKeyPassword;
     return this;
   }
 
