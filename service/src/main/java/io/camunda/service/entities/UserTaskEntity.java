@@ -27,4 +27,5 @@ public final record UserTaskEntity(
     String dueDate,
     String followUpDate,
     List<String> candidateGroups,
-    List<String> candidateUsers) {}
+    List<String> candidateUsers,
+    String externalFormReference) {}

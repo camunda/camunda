@@ -112,6 +112,7 @@ public final class SearchQueryResponseMapper {
         .creationDate(t.creationTime())
         .completionDate(t.completionTime())
         .dueDate(t.dueDate())
-        .followUpDate(t.followUpDate());
+        .followUpDate(t.followUpDate())
+        .externalFormReference(t.externalFormReference());
   }
 }
