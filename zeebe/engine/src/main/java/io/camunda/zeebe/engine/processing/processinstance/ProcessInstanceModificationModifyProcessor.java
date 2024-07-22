@@ -61,11 +61,6 @@ public final class ProcessInstanceModificationModifyProcessor
 
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to modify process instance but no process instance found with key '%d'";
-  private static final String ERROR_MESSAGE_PROCESS_INSTANCE_BELONGS_TO_SPECIFIC_TENANT =
-      "Expected to modify process instance but process instance belongs to tenant '%s'"
-          + " while modification is not yet supported with multi-tenancy."
-          + " Only process instances belonging to the default tenant '<default>' can be modified."
-          + " See https://github.com/camunda/zeebe/issues/13288 for more details.";
   private static final String ERROR_MESSAGE_ACTIVATE_ELEMENT_NOT_FOUND =
       "Expected to modify instance of process '%s' but it contains one or more activate instructions"
           + " with an element that could not be found: '%s'";
