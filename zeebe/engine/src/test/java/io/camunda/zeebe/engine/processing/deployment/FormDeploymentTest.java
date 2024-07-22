@@ -95,7 +95,7 @@ public class FormDeploymentTest {
   @Test
   public void shouldWriteFormRecord() {
     // when
-    engine.deployment().withJsonClasspathResource(TEST_FORM_1).deploy();
+    final var deployment = engine.deployment().withJsonClasspathResource(TEST_FORM_1).deploy();
 
     // then
     final Record<Form> record = RecordingExporter.formRecords().getFirst();
@@ -111,7 +111,8 @@ public class FormDeploymentTest {
     Assertions.assertThat(formRecord)
         .hasFormId(TEST_FORM_1_ID)
         .hasResourceName(TEST_FORM_1)
-        .hasVersion(1);
+        .hasVersion(1)
+        .hasDeploymentKey(deployment.getKey());
 
     assertThat(formRecord.getFormKey()).isPositive();
     assertThat(formRecord.isDuplicate()).isFalse();
@@ -138,19 +139,19 @@ public class FormDeploymentTest {
   @Test
   public void shouldOmitRecordsForDuplicate() {
     // given
-    engine.deployment().withJsonClasspathResource(TEST_FORM_1).deploy();
+    final var deployment1 = engine.deployment().withJsonClasspathResource(TEST_FORM_1).deploy();
 
     // when
     engine.deployment().withJsonClasspathResource(TEST_FORM_1).deploy();
 
-    engine.deployment().withJsonClasspathResource(TEST_FORM_1_V2).deploy();
+    final var deployment3 = engine.deployment().withJsonClasspathResource(TEST_FORM_1_V2).deploy();
 
     // then
     assertThat(RecordingExporter.formRecords().limit(2))
         .extracting(Record::getValue)
-        .extracting(FormMetadataValue::getVersion)
+        .extracting(FormMetadataValue::getVersion, FormMetadataValue::getDeploymentKey)
         .describedAs("Expect to omit form record for duplicate")
-        .containsExactly(1, 2);
+        .containsExactly(tuple(1, deployment1.getKey()), tuple(2, deployment3.getKey()));
   }
 
   @Test
@@ -173,14 +174,13 @@ public class FormDeploymentTest {
   @Test
   public void shouldIncreaseVersionIfFormJSONDiffers() {
     // given
-    engine.deployment().withJsonClasspathResource(TEST_FORM_1).deploy();
+    final var deployment1 = engine.deployment().withJsonClasspathResource(TEST_FORM_1).deploy();
 
     // when
-    final var deploymentEvent =
-        engine.deployment().withJsonClasspathResource(TEST_FORM_1_V2).deploy();
+    final var deployment2 = engine.deployment().withJsonClasspathResource(TEST_FORM_1_V2).deploy();
 
     // then
-    assertThat(deploymentEvent.getValue().getFormMetadata())
+    assertThat(deployment2.getValue().getFormMetadata())
         .extracting(FormMetadataValue::getVersion)
         .describedAs("Expect that the Form version is increased")
         .containsExactly(2);
@@ -188,8 +188,13 @@ public class FormDeploymentTest {
     assertThat(RecordingExporter.formRecords().limit(2))
         .hasSize(2)
         .extracting(Record::getValue)
-        .extracting(FormMetadataValue::getFormId, FormMetadataValue::getVersion)
-        .contains(tuple(TEST_FORM_1_ID, 1), tuple(TEST_FORM_1_ID, 2));
+        .extracting(
+            FormMetadataValue::getFormId,
+            FormMetadataValue::getVersion,
+            FormMetadataValue::getDeploymentKey)
+        .contains(
+            tuple(TEST_FORM_1_ID, 1, deployment1.getKey()),
+            tuple(TEST_FORM_1_ID, 2, deployment2.getKey()));
   }
 
   @Test

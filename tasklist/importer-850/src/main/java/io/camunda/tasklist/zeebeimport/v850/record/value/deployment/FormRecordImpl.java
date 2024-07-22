@@ -21,13 +21,14 @@ public class FormRecordImpl implements Form {
   private byte[] checksum;
   private boolean duplicate;
   private String tenantId;
+  private long deploymentKey;
 
   @Override
   public byte[] getResource() {
     return resource;
   }
 
-  public FormRecordImpl setResource(byte[] resource) {
+  public FormRecordImpl setResource(final byte[] resource) {
     this.resource = resource;
     return this;
   }
@@ -37,7 +38,7 @@ public class FormRecordImpl implements Form {
     return formId;
   }
 
-  public void setFormId(String formId) {
+  public void setFormId(final String formId) {
     this.formId = formId;
   }
 
@@ -46,7 +47,7 @@ public class FormRecordImpl implements Form {
     return version;
   }
 
-  public void setVersion(int version) {
+  public void setVersion(final int version) {
     this.version = version;
   }
 
@@ -55,7 +56,7 @@ public class FormRecordImpl implements Form {
     return formKey;
   }
 
-  public void setFormKey(long formKey) {
+  public void setFormKey(final long formKey) {
     this.formKey = formKey;
   }
 
@@ -64,7 +65,7 @@ public class FormRecordImpl implements Form {
     return resourceName;
   }
 
-  public void setResourceName(String resourceName) {
+  public void setResourceName(final String resourceName) {
     this.resourceName = resourceName;
   }
 
@@ -73,7 +74,7 @@ public class FormRecordImpl implements Form {
     return checksum;
   }
 
-  public FormRecordImpl setChecksum(byte[] checksum) {
+  public FormRecordImpl setChecksum(final byte[] checksum) {
     this.checksum = checksum;
     return this;
   }
@@ -83,8 +84,17 @@ public class FormRecordImpl implements Form {
     return duplicate;
   }
 
-  public void setDuplicate(boolean duplicate) {
+  public void setDuplicate(final boolean duplicate) {
     this.duplicate = duplicate;
+  }
+
+  @Override
+  public long getDeploymentKey() {
+    return deploymentKey;
+  }
+
+  public void setDeploymentKey(final long deploymentKey) {
+    this.deploymentKey = deploymentKey;
   }
 
   @Override
@@ -92,30 +102,8 @@ public class FormRecordImpl implements Form {
     return tenantId;
   }
 
-  public void setTenantId(String tenantId) {
+  public void setTenantId(final String tenantId) {
     this.tenantId = tenantId;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final FormRecordImpl that = (FormRecordImpl) o;
-    return version == that.version
-        && formKey == that.formKey
-        && duplicate == that.duplicate
-        && Objects.equals(resource, that.resource)
-        && Objects.equals(formId, that.formId)
-        && Objects.equals(resourceName, that.resourceName)
-        && Objects.equals(checksum, that.checksum)
-        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
@@ -129,7 +117,31 @@ public class FormRecordImpl implements Form {
         resourceName,
         checksum,
         duplicate,
-        tenantId);
+        tenantId,
+        deploymentKey);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final FormRecordImpl that = (FormRecordImpl) o;
+    return version == that.version
+        && formKey == that.formKey
+        && duplicate == that.duplicate
+        && deploymentKey == that.deploymentKey
+        && Objects.equals(resource, that.resource)
+        && Objects.equals(formId, that.formId)
+        && Objects.equals(resourceName, that.resourceName)
+        && Objects.equals(checksum, that.checksum)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
@@ -154,6 +166,8 @@ public class FormRecordImpl implements Form {
         + ", tenantId='"
         + tenantId
         + '\''
+        + ", deploymentKey="
+        + deploymentKey
         + "} "
         + super.toString();
   }
