@@ -25,6 +25,10 @@ public interface MessageSubscriptionState {
 
   boolean existSubscriptionForElementInstance(long elementInstanceKey, DirectBuffer messageName);
 
+  void visitSubscriptions(MessageSubscriptionVisitor visitor);
+
+  void visitSubscriptions(DirectBuffer correlationKey, MessageSubscriptionVisitor visitor);
+
   @FunctionalInterface
   interface MessageSubscriptionVisitor {
     boolean visit(MessageSubscription subscription);
