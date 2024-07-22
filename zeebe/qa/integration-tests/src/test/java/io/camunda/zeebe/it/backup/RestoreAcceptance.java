@@ -16,6 +16,7 @@ import io.camunda.zeebe.management.backups.BackupInfo;
 import io.camunda.zeebe.management.backups.StateCode;
 import io.camunda.zeebe.management.backups.TakeBackupResponse;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
+import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.restore.BackupNotFoundException;
@@ -56,6 +57,9 @@ public interface RestoreAcceptance {
       try (final var client = zeebe.newClientBuilder().build()) {
         client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
       }
+
+      final PartitionsActuator partitions = PartitionsActuator.of(zeebe);
+      partitions.takeSnapshot();
 
       assertThat(actuator.take(backupId)).isInstanceOf(TakeBackupResponse.class);
       Awaitility.await("until a backup exists with the given ID")
