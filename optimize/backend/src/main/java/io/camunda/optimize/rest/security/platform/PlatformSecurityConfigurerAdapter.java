@@ -12,7 +12,6 @@ import static io.camunda.optimize.jetty.OptimizeResourceConstants.INDEX_PAGE;
 import static io.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 import static io.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
 import static io.camunda.optimize.rest.HealthRestService.READYZ_PATH;
-import static io.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
 import static io.camunda.optimize.rest.LicenseCheckingRestService.LICENSE_PATH;
@@ -83,7 +82,8 @@ public class PlatformSecurityConfigurerAdapter extends AbstractSecurityConfigure
   }
 
   @Bean
-  public AuthenticationCookieFilter authenticationCookieFilter(final HttpSecurity http) throws Exception {
+  public AuthenticationCookieFilter authenticationCookieFilter(final HttpSecurity http)
+      throws Exception {
     return new AuthenticationCookieFilter(
         sessionService,
         http.getSharedObject(AuthenticationManagerBuilder.class)
@@ -100,7 +100,6 @@ public class PlatformSecurityConfigurerAdapter extends AbstractSecurityConfigure
             securityMatchers ->
                 securityMatchers.requestMatchers(
                     new AntPathRequestMatcher(PUBLIC_API_PATH),
-                    new AntPathRequestMatcher(createApiPath(INGESTION_PATH, EVENT_BATCH_SUB_PATH)),
                     new AntPathRequestMatcher(createApiPath(INGESTION_PATH, VARIABLE_SUB_PATH))));
     return applyPublicApiOptions(httpSecurityBuilder);
   }
@@ -171,7 +170,9 @@ public class PlatformSecurityConfigurerAdapter extends AbstractSecurityConfigure
   }
 
   private void failureHandler(
-      final HttpServletRequest request, final HttpServletResponse response, final AuthenticationException ex) {
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final AuthenticationException ex) {
     if (isCSVRequest(request.getPathInfo())) {
       response.setStatus(TEMPORARY_REDIRECT.value());
       response.setHeader(HttpHeaders.LOCATION, INDEX_PAGE);

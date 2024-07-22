@@ -48,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.optimize.AbstractCCSMIT;
 import io.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import io.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;

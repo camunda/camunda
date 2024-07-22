@@ -29,7 +29,6 @@ public class EngineConfiguration {
   private String rest;
   private EngineWebappsConfiguration webapps;
   @Builder.Default private boolean importEnabled = false;
-  @Builder.Default private boolean eventImportEnabled = false;
   @Builder.Default private List<String> excludedTenants = new ArrayList<>();
 
   private EngineAuthenticationConfiguration authentication;

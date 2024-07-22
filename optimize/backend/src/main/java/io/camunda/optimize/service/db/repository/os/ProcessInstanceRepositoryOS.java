@@ -11,7 +11,6 @@ import static io.camunda.optimize.dto.optimize.ProcessInstanceConstants.ACTIVE_S
 import static io.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.and;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.exists;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.json;
@@ -20,12 +19,9 @@ import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.nested;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.script;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.sourceInclude;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.stringTerms;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
 import static io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
-import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLE_ID;
@@ -33,13 +29,10 @@ import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInsta
 import static java.lang.Math.min;
 import static java.lang.String.format;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import io.camunda.optimize.dto.optimize.importing.EventProcessGatewayDto;
 import io.camunda.optimize.dto.optimize.query.PageResultDto;
-import io.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.repository.ProcessInstanceRepository;
 import io.camunda.optimize.service.db.repository.script.ProcessInstanceScriptFactory;
@@ -54,7 +47,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -86,6 +78,25 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
   private final DateTimeFormatter dateTimeFormatter;
 
   @Override
+  public void bulkImportProcessInstances(
+      final String importItemName, final List<ProcessInstanceDto> processInstanceDtos) {
+    osClient.doImportBulkRequestWithList(
+        importItemName,
+        processInstanceDtos,
+        dto ->
+            UpdateOperation.<ProcessInstanceDto>of(
+                    operation ->
+                        operation
+                            .index(aliasForProcessDefinitionKey(dto.getProcessDefinitionKey()))
+                            .id(dto.getProcessInstanceId())
+                            .script(createUpdateStateScript(dto.getState()))
+                            .upsert(dto)
+                            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT))
+                ._toBulkOperation(),
+        configurationService.getSkipDataAfterNestedDocLimitReached());
+  }
+
+  @Override
   public void updateProcessInstanceStateForProcessDefinitionId(
       final String importItemName,
       final String definitionKey,
@@ -113,28 +124,9 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
   }
 
   @Override
-  public void bulkImportProcessInstances(
-      final String importItemName, final List<ProcessInstanceDto> processInstanceDtos) {
-    osClient.doImportBulkRequestWithList(
-        importItemName,
-        processInstanceDtos,
-        dto ->
-            UpdateOperation.<ProcessInstanceDto>of(
-                    operation ->
-                        operation
-                            .index(aliasForProcessDefinitionKey(dto.getProcessDefinitionKey()))
-                            .id(dto.getProcessInstanceId())
-                            .script(createUpdateStateScript(dto.getState()))
-                            .upsert(dto)
-                            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT))
-                ._toBulkOperation(),
-        configurationService.getSkipDataAfterNestedDocLimitReached());
-  }
-
-  @Override
   public void deleteByIds(
-      final String index, String itemName, final List<String> processInstanceIds) {
-    List<BulkOperation> bulkOperations =
+      final String index, final String itemName, final List<String> processInstanceIds) {
+    final List<BulkOperation> bulkOperations =
         processInstanceIds.stream()
             .map(
                 id ->
@@ -155,44 +147,6 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
     osClient.executeImportRequestsAsBulk(
         bulkRequestName,
         importRequests,
-        configurationService.getSkipDataAfterNestedDocLimitReached());
-  }
-
-  @Override
-  public void bulkImportEvents(
-      final String index,
-      final String importItemName,
-      final List<EventProcessInstanceDto> processInstanceDtos,
-      final List<EventProcessGatewayDto> gatewayLookup) {
-    final List<Map> gatewayLookupMaps =
-        gatewayLookup.stream()
-            .map(gateway -> objectMapper.convertValue(gateway, new TypeReference<Map>() {}))
-            .toList();
-    final Function<EventProcessInstanceDto, Script> scriptBuilder =
-        dto -> {
-          final Map<String, JsonData> params =
-              Map.of(
-                  "processInstance", json(dto),
-                  "gatewayLookup", json(gatewayLookupMaps),
-                  "dateFormatPattern", json(OPTIMIZE_DATE_FORMAT));
-          return createDefaultScriptWithPrimitiveParams(
-              ProcessInstanceScriptFactory.createEventInlineUpdateScript(), params);
-        };
-
-    osClient.doImportBulkRequestWithList(
-        importItemName,
-        processInstanceDtos,
-        dto ->
-            UpdateOperation.<ProcessInstanceDto>of(
-                    operation ->
-                        operation
-                            .scriptedUpsert(true)
-                            .index(indexNameService.getOptimizeIndexAliasForIndex(index))
-                            .id(dto.getProcessInstanceId())
-                            .script(scriptBuilder.apply(dto))
-                            .upsert(dto)
-                            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT))
-                ._toBulkOperation(),
         configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 
@@ -219,21 +173,6 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
   }
 
   @Override
-  public void deleteEventsWithIdsInFromAllInstances(
-      final String index, final List<String> eventIdsToDelete, final String updateItem) {
-    osClient.updateByQueryTask(
-        updateItem,
-        script(
-            ProcessInstanceScriptFactory.createDeleteEventsWithIdsInScript(),
-            Map.of("eventIdsToDelete", eventIdsToDelete)),
-        nested(
-            FLOW_NODE_INSTANCES,
-            stringTerms(FLOW_NODE_INSTANCES + "." + FLOW_NODE_INSTANCE_ID, eventIdsToDelete),
-            ChildScoreMode.None),
-        indexNameService.getOptimizeIndexAliasForIndex(index));
-  }
-
-  @Override
   public boolean processDefinitionHasStartedInstances(final String processDefinitionKey) {
     final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
@@ -252,7 +191,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
               .total()
               .value()
           > 0;
-    } catch (OpenSearchException e) {
+    } catch (final OpenSearchException e) {
       if (e.getMessage().contains(INDEX_NOT_FOUND_ERROR_MESSAGE_KEYWORD)) {
         // If the index doesn't exist yet, then this exception is thrown. No need to worry, just
         // return false
@@ -308,14 +247,15 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
 
       return pageResult;
 
-    } catch (OpenSearchException e) {
+    } catch (final OpenSearchException e) {
       if (HttpStatus.NOT_FOUND.value() == e.response().status()) {
         // this error occurs when the scroll id expired in the meantime, thus just restart it
         return firstPageFetchFunction.get();
       }
       throw e;
-    } catch (IOException e) {
-      String reason = format("Could not close scroll for class [%s].", getClass().getSimpleName());
+    } catch (final IOException e) {
+      final String reason =
+          format("Could not close scroll for class [%s].", getClass().getSimpleName());
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
@@ -390,7 +330,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
         "newState", json(newState));
   }
 
-  private String aliasForProcessDefinitionKey(String processDefinitionKey) {
+  private String aliasForProcessDefinitionKey(final String processDefinitionKey) {
     return indexNameService.getOptimizeIndexAliasForIndex(
         getProcessInstanceIndexAliasName(processDefinitionKey));
   }

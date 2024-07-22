@@ -23,7 +23,7 @@ import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import io.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus;
 import io.camunda.optimize.dto.optimize.persistence.incident.IncidentType;
-import io.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.dto.zeebe.incident.ZeebeIncidentDataDto;
 import io.camunda.optimize.dto.zeebe.incident.ZeebeIncidentRecordDto;
@@ -243,7 +243,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
   }
 
   private TermsQueryContainer getQueryForIncidentEvents() {
-    TermsQueryContainer query = new TermsQueryContainer();
+    final TermsQueryContainer query = new TermsQueryContainer();
     query.addTermQuery(
         ZeebeProcessInstanceRecordDto.Fields.intent,
         List.of(IncidentIntent.CREATED.name(), IncidentIntent.RESOLVED.name()));

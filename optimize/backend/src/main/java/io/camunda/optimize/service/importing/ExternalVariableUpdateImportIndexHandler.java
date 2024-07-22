@@ -7,8 +7,6 @@
  */
 package io.camunda.optimize.service.importing;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.ENGINE_ALIAS_OPTIMIZE;
-
 import io.camunda.optimize.dto.optimize.datasource.IngestedDataSourceDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -19,15 +17,10 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ExternalVariableUpdateImportIndexHandler
-    extends TimestampBasedDataSourceImportIndexHandler<IngestedDataSourceDto> {
+    extends TimestampBasedExternalDataImportIndexHandler<IngestedDataSourceDto> {
 
   public static final String EXTERNAL_VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID =
       "externalVariableUpdateImportIndex";
-
-  @Override
-  public String getEngineAlias() {
-    return ENGINE_ALIAS_OPTIMIZE;
-  }
 
   @Override
   protected String getDatabaseDocID() {

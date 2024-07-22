@@ -165,9 +165,6 @@ engines:
     rest: '${OPTIMIZE_CAMUNDABPM_REST_URL:http://localhost:8080/engine-rest}'
     # Determines whether this instance of Optimize should import definition & historical data from this engine.
     importEnabled: true
-    # Determines whether this instance of Optimize should convert historical data to event data
-    # usable for event based processes.
-    eventImportEnabled: ${OPTIMIZE_CAMUNDA_BPM_EVENT_IMPORT_ENABLED:false}
     authentication:
       # Toggles basic authentication on or off. When enabling basic
       # authentication, please be aware that you also need to adjust the values
@@ -634,7 +631,7 @@ sharing:
 historyCleanup:
   # cron expression for when the cleanup should run
   cronTrigger: '${CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_CRON_TRIGGER:0 1 * * *}'
-  # default time to live (ttl) for data, when reached the corresponding process/decision/event instances will get cleaned up
+  # default time to live (ttl) for data, when reached the corresponding process/decision instances will get cleaned up
   # Format is ISO_8601 duration  https://en.wikipedia.org/wiki/ISO_8601#Durations
   ttl: ${CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_TTL:P2Y}
   processDataCleanup:
@@ -661,9 +658,6 @@ historyCleanup:
     perDecisionDefinitionConfig:
     # 'myDecisionDefinitionKey':
     #   ttl: 'P2M'
-  ingestedEventCleanup:
-    # switch for the ingested event data cleanup, defaults to false
-    enabled: ${CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_INGESTED_EVENT_CLEANUP_ENABLED:false}
   externalVariableCleanup:
     # switch for the ingested variable data cleanup, defaults to false. Note that this cleans the external variable index,
     # not external variables already imported into process instances.
@@ -694,29 +688,6 @@ ui:
   consoleUrl: ${CAMUNDA_OPTIMIZE_CLOUD_CONSOLE_URL:}
   # The URL for Optimize to use to navigate to modeler in the sidebar
   modelerUrl: ${CAMUNDA_OPTIMIZE_CLOUD_MODELER_URL:}
-
-eventBasedProcess:
-  # A list of userIds that are authorized to manage (Create, Update, Publish & Delete) event based processes.
-  authorizedUserIds: ${OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS:[]}
-  # A list of groupIds that are authorized to manage (Create, Update, Publish & Delete) event based processes.
-  authorizedGroupIds: [ ]
-  eventImport:
-    # Determines whether this Optimize instance performs event based process instance import.
-    enabled: ${OPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED:false}
-    maxPageSize: 5000
-  eventIngestion:
-    # Content length limit for an ingestion REST API Bulk request in bytes.
-    # Requests will be rejected when exceeding that limit.
-    # Defaults to 10MB.
-    maxBatchRequestBytes: 10485760
-    # The maximum number of requests to the event ingestion endpoint that can be served at a time
-    maxRequests: 5
-  eventIndexRollover:
-    # scheduleIntervalInMinutes specifies how frequently the rollover API should be called to see if a rollover of the
-    # event index is required (whether the rollover is triggered depends on the conditions specified by maxIndexSizeGB).
-    scheduleIntervalInMinutes: 10
-    # A rollover is triggered when the size of the current event index matches or exceeds the maxIndexSizeGB threshold.
-    maxIndexSizeGB: 50
 
 telemetry:
   # Is telemetry initialized
@@ -769,12 +740,6 @@ caches:
   # It helps to optimize the performance for listings of reports, collection data sources and collection roles.
   definitionEngines:
     maxSize: 1000
-    # the time a read result will be cached
-    defaultTtlMillis: 10000
-  # This cache is used to cache the roles/permissions of an event based process by event process id.
-  # It helps to optimize the performance of listing reports.
-  eventProcessRoles:
-    maxSize: 100
     # the time a read result will be cached
     defaultTtlMillis: 10000
   # This cache is used to cache the latest definition available on each tenant.

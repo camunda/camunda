@@ -9,7 +9,7 @@ package io.camunda.optimize.service.importing.ingested.mediator;
 
 import io.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import io.camunda.optimize.service.importing.ExternalVariableUpdateImportIndexHandler;
-import io.camunda.optimize.service.importing.TimestampBasedImportMediator;
+import io.camunda.optimize.service.importing.TimestampBasedExternalDataImportMediator;
 import io.camunda.optimize.service.importing.engine.mediator.MediatorRank;
 import io.camunda.optimize.service.importing.ingested.fetcher.ExternalVariableUpdateInstanceFetcher;
 import io.camunda.optimize.service.importing.ingested.service.ExternalVariableUpdateImportService;
@@ -26,8 +26,8 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ExternalVariableUpdateEngineImportMediator
-    extends TimestampBasedImportMediator<
-        ExternalVariableUpdateImportIndexHandler, ExternalProcessVariableDto> {
+    extends TimestampBasedExternalDataImportMediator<
+            ExternalVariableUpdateImportIndexHandler, ExternalProcessVariableDto> {
 
   private final ExternalVariableUpdateInstanceFetcher entityFetcher;
 

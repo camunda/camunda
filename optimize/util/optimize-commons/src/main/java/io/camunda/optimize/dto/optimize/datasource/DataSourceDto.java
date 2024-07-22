@@ -28,7 +28,6 @@ import lombok.experimental.FieldNameConstants;
 @JsonSubTypes({
   @JsonSubTypes.Type(value = EngineDataSourceDto.class, name = "engine"),
   @JsonSubTypes.Type(value = ZeebeDataSourceDto.class, name = "zeebe"),
-  @JsonSubTypes.Type(value = EventsDataSourceDto.class, name = "events"),
   @JsonSubTypes.Type(value = IngestedDataSourceDto.class, name = "ingested")
 })
 public abstract class DataSourceDto implements OptimizeDto, Serializable {

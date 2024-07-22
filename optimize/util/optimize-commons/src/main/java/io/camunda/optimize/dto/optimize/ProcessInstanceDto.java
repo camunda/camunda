@@ -12,7 +12,7 @@ import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NOD
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import io.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
-import io.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;

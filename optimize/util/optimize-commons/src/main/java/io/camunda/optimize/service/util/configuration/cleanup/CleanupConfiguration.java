@@ -36,9 +36,6 @@ public class CleanupConfiguration {
   @JsonProperty("decisionDataCleanup")
   private DecisionCleanupConfiguration decisionCleanupConfiguration;
 
-  @JsonProperty("ingestedEventCleanup")
-  private IngestedEventCleanupConfiguration ingestedEventCleanupConfiguration;
-
   @JsonProperty("externalVariableCleanup")
   private ExternalVariableCleanupConfiguration externalVariableCleanupConfiguration;
 
@@ -51,25 +48,10 @@ public class CleanupConfiguration {
       final Period ttl,
       final ProcessCleanupConfiguration processDataCleanupConfiguration,
       final DecisionCleanupConfiguration decisionCleanupConfiguration) {
-    this(
-        cronTrigger,
-        ttl,
-        processDataCleanupConfiguration,
-        decisionCleanupConfiguration,
-        new IngestedEventCleanupConfiguration());
-  }
-
-  public CleanupConfiguration(
-      final String cronTrigger,
-      final Period ttl,
-      final ProcessCleanupConfiguration processDataCleanupConfiguration,
-      final DecisionCleanupConfiguration decisionCleanupConfiguration,
-      final IngestedEventCleanupConfiguration ingestedEventCleanupConfiguration) {
     setCronTrigger(cronTrigger);
     this.ttl = ttl;
     this.processDataCleanupConfiguration = processDataCleanupConfiguration;
     this.decisionCleanupConfiguration = decisionCleanupConfiguration;
-    this.ingestedEventCleanupConfiguration = ingestedEventCleanupConfiguration;
   }
 
   public void validate() {
@@ -87,8 +69,7 @@ public class CleanupConfiguration {
   @JsonIgnore
   public boolean isEnabled() {
     return processDataCleanupConfiguration.isEnabled()
-        || decisionCleanupConfiguration.isEnabled()
-        || ingestedEventCleanupConfiguration.isEnabled();
+        || decisionCleanupConfiguration.isEnabled();
   }
 
   public final void setCronTrigger(String cronTrigger) {

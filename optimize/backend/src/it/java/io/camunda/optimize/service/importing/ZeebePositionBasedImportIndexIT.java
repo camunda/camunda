@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.ImmutableMap;
 import io.camunda.optimize.AbstractCCSMIT;
 import io.camunda.optimize.dto.optimize.ProcessInstanceConstants;
-import io.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
