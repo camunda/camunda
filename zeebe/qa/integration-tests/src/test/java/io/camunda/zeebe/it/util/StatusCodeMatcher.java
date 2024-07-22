@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.it.util;
 
-import io.camunda.zeebe.client.api.command.ClientStatusException;
+import io.camunda.client.api.command.ClientStatusException;
 import io.grpc.Status.Code;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;

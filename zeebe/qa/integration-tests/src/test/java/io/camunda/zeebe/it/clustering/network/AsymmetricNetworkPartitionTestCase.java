@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.it.clustering.network;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import java.util.concurrent.CompletableFuture;
 
 interface AsymmetricNetworkPartitionTestCase {
@@ -18,7 +18,7 @@ interface AsymmetricNetworkPartitionTestCase {
    *
    * @param client the zeebe client which can be used by the test case
    */
-  void given(ZeebeClient client);
+  void given(CamundaClient client);
 
   /**
    * The when part is called when the asymmetric partition is set up. This can be used by the test
@@ -28,7 +28,7 @@ interface AsymmetricNetworkPartitionTestCase {
    * @param client the zeebe client which can be used by the test case
    * @return the future which can be awaited in the then part, or null
    */
-  CompletableFuture<?> when(ZeebeClient client);
+  CompletableFuture<?> when(CamundaClient client);
 
   /**
    * The then part is called when the asymmetric partition is taken down again and we expect that
@@ -40,5 +40,5 @@ interface AsymmetricNetworkPartitionTestCase {
    * @param client the zeebe client which can be used by the test case
    * @param whenFuture the future which can be awaited, or null
    */
-  void then(ZeebeClient client, CompletableFuture<?> whenFuture);
+  void then(CamundaClient client, CompletableFuture<?> whenFuture);
 }

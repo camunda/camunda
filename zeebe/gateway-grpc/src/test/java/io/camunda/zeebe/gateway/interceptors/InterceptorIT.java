@@ -11,11 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.utils.net.Address;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ClientStatusException;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -118,7 +118,7 @@ final class InterceptorIT {
 
     // when
     gateway.start().join();
-    try (final var client = createZeebeClient()) {
+    try (final var client = createCamundaClient()) {
       final Future<DeploymentEvent> result =
           client
               .newDeployResourceCommand()
@@ -145,7 +145,7 @@ final class InterceptorIT {
 
     // when
     gateway.start().join();
-    try (final var client = createZeebeClient()) {
+    try (final var client = createCamundaClient()) {
       try {
         client.newTopologyRequest().send().join();
       } catch (final ClientStatusException ignored) {
@@ -172,7 +172,7 @@ final class InterceptorIT {
 
     // when
     gateway.start().join();
-    try (final var client = createZeebeClient()) {
+    try (final var client = createCamundaClient()) {
       try {
         client.newTopologyRequest().send().join();
       } catch (final ClientStatusException ignored) {
@@ -208,7 +208,7 @@ final class InterceptorIT {
 
     // when
     gateway.start().join();
-    try (final var client = createZeebeClient()) {
+    try (final var client = createCamundaClient()) {
       try {
         client.newTopologyRequest().send().join();
       } catch (final ClientStatusException ignored) {
@@ -241,7 +241,7 @@ final class InterceptorIT {
 
     // when
     gateway.start().join();
-    try (final var client = createZeebeClient()) {
+    try (final var client = createCamundaClient()) {
       try {
         // TODO: capture Broker request to assert that tenant id is set to <default>
         final DeploymentEvent response =
@@ -264,8 +264,8 @@ final class InterceptorIT {
     }
   }
 
-  private ZeebeClient createZeebeClient() {
-    return ZeebeClient.newClientBuilder()
+  private CamundaClient createCamundaClient() {
+    return CamundaClient.newClientBuilder()
         .gatewayAddress(
             NetUtil.toSocketAddressString(gateway.getGatewayCfg().getNetwork().toSocketAddress()))
         .usePlaintext()

@@ -11,13 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.application.Profile;
+import io.camunda.client.CredentialsProvider;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.api.command.CommandWithCommunicationApiStep;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.identity.sdk.Identity;
-import io.camunda.zeebe.client.CredentialsProvider;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
-import io.camunda.zeebe.client.api.command.CommandWithCommunicationApiStep;
-import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -141,7 +141,7 @@ public class GatewayAuthenticationIdentityIT {
   void getTopologyRequestFailsWithInvalidAuthToken(final InvalidTokenTestCase testCase) {
     // given
     try (final var client =
-        createZeebeClientBuilder().credentialsProvider(new InvalidAuthTokenProvider()).build()) {
+        createCamundaClientBuilder().credentialsProvider(new InvalidAuthTokenProvider()).build()) {
       // when
       final Future<?> topologyFuture = testCase.apiPicker.apply(client.newTopologyRequest()).send();
 
@@ -158,7 +158,7 @@ public class GatewayAuthenticationIdentityIT {
   @MethodSource("provideInvalidTokenCases")
   void getTopologyRequestFailsWithoutAuthToken(final InvalidTokenTestCase testCase) {
     // given
-    try (final var client = createZeebeClientBuilder().build()) {
+    try (final var client = createCamundaClientBuilder().build()) {
       // when
       final Future<?> topologyFuture = testCase.apiPicker.apply(client.newTopologyRequest()).send();
 
@@ -177,7 +177,7 @@ public class GatewayAuthenticationIdentityIT {
       final UnaryOperator<TopologyRequestStep1> apiPicker) {
     // given
     try (final var client =
-        createZeebeClientBuilder()
+        createCamundaClientBuilder()
             .credentialsProvider(
                 CredentialsProvider.newCredentialsProviderBuilder()
                     .clientId(ZEEBE_CLIENT_ID)
@@ -237,8 +237,8 @@ public class GatewayAuthenticationIdentityIT {
         + KEYCLOAK_PATH_CAMUNDA_REALM;
   }
 
-  private ZeebeClientBuilder createZeebeClientBuilder() {
-    return ZeebeClient.newClientBuilder()
+  private CamundaClientBuilder createCamundaClientBuilder() {
+    return CamundaClient.newClientBuilder()
         .grpcAddress(zeebe.grpcAddress())
         .restAddress(zeebe.restAddress())
         .defaultRequestTimeout(Duration.ofMinutes(1))

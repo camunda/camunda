@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.it.clustering.network;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
 import java.time.Duration;
@@ -24,17 +24,17 @@ final class DeploymentDistributionTestCase implements AsymmetricNetworkPartition
       LoggerFactory.getLogger(DeploymentDistributionTestCase.class);
 
   @Override
-  public void given(final ZeebeClient client) {}
+  public void given(final CamundaClient client) {}
 
   @Override
-  public CompletableFuture<?> when(final ZeebeClient client) {
+  public CompletableFuture<?> when(final CamundaClient client) {
     final var process = Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
     client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
     return null;
   }
 
   @Override
-  public void then(final ZeebeClient client, final CompletableFuture<?> whenFuture) {
+  public void then(final CamundaClient client, final CompletableFuture<?> whenFuture) {
     final var topology = client.newTopologyRequest().send().join();
 
     final var partitions =

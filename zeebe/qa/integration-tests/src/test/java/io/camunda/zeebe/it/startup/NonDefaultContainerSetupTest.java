@@ -10,8 +10,8 @@ package io.camunda.zeebe.it.startup;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.ZeebeBrokerContainer;
@@ -84,8 +84,8 @@ public class NonDefaultContainerSetupTest {
       gateway.start();
       final var process = Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
       final ProcessInstanceResult result;
-      try (final ZeebeClient client =
-          ZeebeClient.newClientBuilder()
+      try (final CamundaClient client =
+          CamundaClient.newClientBuilder()
               .usePlaintext()
               .gatewayAddress(gateway.getExternalGatewayAddress())
               .build()) {
