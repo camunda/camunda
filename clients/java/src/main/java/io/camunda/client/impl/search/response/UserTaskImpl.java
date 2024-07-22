@@ -34,6 +34,7 @@ public class UserTaskImpl {
   private final String followUpDate;
   private final String dueDate;
   private final String tenantIds;
+  private final String externalFormReference;
 
   public UserTaskImpl(final UserTaskItem item) {
     key = item.getUserTaskKey();
@@ -50,6 +51,7 @@ public class UserTaskImpl {
     followUpDate = item.getFollowUpDate();
     dueDate = item.getDueDate();
     tenantIds = item.getTenantIds();
+    externalFormReference = item.getExternalFormReference();
   }
 
   public Long getKey() {
@@ -110,5 +112,9 @@ public class UserTaskImpl {
 
   public String getTenantIds() {
     return tenantIds;
+  }
+
+  public String getExternalFormReference() {
+    return externalFormReference;
   }
 }
