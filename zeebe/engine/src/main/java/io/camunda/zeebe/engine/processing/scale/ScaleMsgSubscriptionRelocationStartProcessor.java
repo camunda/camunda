@@ -19,13 +19,14 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
 
-public class ScaleMsgSubscriptionRelocationStart implements TypedRecordProcessor<ScaleRecord> {
+public class ScaleMsgSubscriptionRelocationStartProcessor
+    implements TypedRecordProcessor<ScaleRecord> {
 
   private final MessageSubscriptionState messageSubscriptionState;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final KeyGenerator keyGenerator;
 
-  public ScaleMsgSubscriptionRelocationStart(
+  public ScaleMsgSubscriptionRelocationStartProcessor(
       final ProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior,
       final KeyGenerator keyGenerator) {
@@ -53,7 +54,7 @@ public class ScaleMsgSubscriptionRelocationStart implements TypedRecordProcessor
               ScaleIntent.MSG_SUBSCRIPTION_RELOCATION_ACKNOWLEDGE,
               new ScaleRecord().setCorrelationKey(record.getValue().getCorrelationKey()));
 
-          // on processing ACKNOWLEDGE -> write MOVED, if this is that last subscription to be
+          // on processing ACKNOWLEDGE -> write MOVED, if this is the last subscription to be
           // moved, then write  MSG_SUBSCRIPTION_RELOCATION_COMPLETED for this correlationKey
 
           return true;

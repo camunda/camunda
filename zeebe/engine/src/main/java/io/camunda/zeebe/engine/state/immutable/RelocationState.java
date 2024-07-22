@@ -7,4 +7,17 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-public interface RelocationState {}
+import io.camunda.zeebe.protocol.record.value.ScaleRecordValue.RoutingInfoRecordValue;
+import org.agrona.DirectBuffer;
+
+public interface RelocationState {
+  void setRoutingInfo(RoutingInfoRecordValue routingInfo);
+
+  void setRelocationStarted();
+
+  void setRelocationStartedFor(DirectBuffer correlationKey);
+
+  boolean isRelocationInProgress(DirectBuffer correlationKey);
+
+  boolean isRelocationInProgressForAnyCorrelationKey();
+}
