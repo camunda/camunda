@@ -34,6 +34,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public final class CorrelateMessageTest {
+
+  public static final String CORRELATION_KEY = "correlationKey";
+  public static final String MESSAGE_NAME = "messageName";
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   @Rule
@@ -45,8 +48,8 @@ public final class CorrelateMessageTest {
     // when
     engine
         .messageCorrelation()
-        .withCorrelationKey("correlationKey")
-        .withName("messageName")
+        .withCorrelationKey(CORRELATION_KEY)
+        .withName(MESSAGE_NAME)
         .expectNotCorrelated()
         .correlate();
 
@@ -68,8 +71,8 @@ public final class CorrelateMessageTest {
     // when
     engine
         .messageCorrelation()
-        .withCorrelationKey("correlationKey")
-        .withName("messageName")
+        .withCorrelationKey(CORRELATION_KEY)
+        .withName(MESSAGE_NAME)
         .correlate();
 
     // then
@@ -97,15 +100,13 @@ public final class CorrelateMessageTest {
   @Ignore("Enable in https://github.com/camunda/camunda/issues/20175")
   public void shouldHaveCorrectCorrelatedLifeCycleForMessageEvent() {
     // given
-    final var messageName = "messageName";
-    final var correlationKey = "correlationKey";
-    deployAndStartProcessWithIntermediaryMessageEvent(messageName, correlationKey);
+    deployAndStartProcessWithIntermediaryMessageEvent(MESSAGE_NAME, CORRELATION_KEY);
 
     // when
     engine
         .messageCorrelation()
-        .withName(messageName)
-        .withCorrelationKey(correlationKey)
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey(CORRELATION_KEY)
         .correlate();
 
     // then
@@ -137,14 +138,13 @@ public final class CorrelateMessageTest {
   public void shouldCorrelateMessageToStartEvent() {
     // given
     deployProcessWithMessageStartEvent();
-    final var correlationKey = "correlationKey";
 
     // when
     final var record =
         engine
             .messageCorrelation()
-            .withCorrelationKey(correlationKey)
-            .withName("messageName")
+            .withCorrelationKey(CORRELATION_KEY)
+            .withName(MESSAGE_NAME)
             .correlate();
 
     // then
@@ -155,16 +155,14 @@ public final class CorrelateMessageTest {
   @Ignore("Enable in https://github.com/camunda/camunda/issues/20175")
   public void shouldCorrelateToMessageIntermediaryEvent() {
     // given
-    final var messageName = "messageName";
-    final var correlationKey = "correlationKey";
-    deployAndStartProcessWithIntermediaryMessageEvent(messageName, correlationKey);
+    deployAndStartProcessWithIntermediaryMessageEvent(MESSAGE_NAME, CORRELATION_KEY);
 
     // when
     final var record =
         engine
             .messageCorrelation()
-            .withName(messageName)
-            .withCorrelationKey(correlationKey)
+            .withName(MESSAGE_NAME)
+            .withCorrelationKey(CORRELATION_KEY)
             .correlate();
 
     // then
@@ -175,16 +173,14 @@ public final class CorrelateMessageTest {
   @Ignore("Enable in https://github.com/camunda/camunda/issues/20175")
   public void shouldCorrelateToMessageBoundaryEvent() {
     // given
-    final var messageName = "messageName";
-    final var correlationKey = "correlationKey";
-    deployAndStartProcessWithMessageBoundaryEvent(messageName, correlationKey);
+    deployAndStartProcessWithMessageBoundaryEvent(MESSAGE_NAME, CORRELATION_KEY);
 
     // when
     final var record =
         engine
             .messageCorrelation()
-            .withName(messageName)
-            .withCorrelationKey(correlationKey)
+            .withName(MESSAGE_NAME)
+            .withCorrelationKey(CORRELATION_KEY)
             .correlate();
 
     // then
@@ -194,12 +190,11 @@ public final class CorrelateMessageTest {
   @Test
   public void shouldNotCorrelateMessageIfNoProcess() {
     // when
-    final var correlationKey = "correlationKey";
     final var record =
         engine
             .messageCorrelation()
-            .withName("messageName")
-            .withCorrelationKey(correlationKey)
+            .withName(MESSAGE_NAME)
+            .withCorrelationKey(CORRELATION_KEY)
             .expectNotCorrelated()
             .correlate();
 
@@ -212,15 +207,13 @@ public final class CorrelateMessageTest {
     // given
     deployProcessWithMessageStartEvent("process1");
     deployProcessWithMessageStartEvent("process2");
-    final var correlationKey = "correlationKey";
-    final var messageName = "messageName";
 
     // when
     final var record =
         engine
             .messageCorrelation()
-            .withName(messageName)
-            .withCorrelationKey(correlationKey)
+            .withName(MESSAGE_NAME)
+            .withCorrelationKey(CORRELATION_KEY)
             .correlate();
 
     // then
@@ -237,18 +230,16 @@ public final class CorrelateMessageTest {
   public void
       shouldResponseWithCreatedProcessInstanceWhenCorrelatedToStartEventAndIntermediateEvent() {
     // given
-    final var correlationKey = "correlationKey";
-    final var messageName = "messageName";
     deployProcessWithMessageStartEvent("processStartEvent");
     final var intermediaryProcessKey =
-        deployAndStartProcessWithIntermediaryMessageEvent(messageName, correlationKey);
+        deployAndStartProcessWithIntermediaryMessageEvent(MESSAGE_NAME, CORRELATION_KEY);
 
     // when
     final var record =
         engine
             .messageCorrelation()
-            .withName(messageName)
-            .withCorrelationKey(correlationKey)
+            .withName(MESSAGE_NAME)
+            .withCorrelationKey(CORRELATION_KEY)
             .correlate();
 
     // then
@@ -272,15 +263,14 @@ public final class CorrelateMessageTest {
     // given
     final var processId = "processId";
     deployProcessWithMessageStartEvent(processId);
-    final var correlationKey = "correlationKey";
     final var variables = asMsgPack("foo", "bar");
 
     // when
     final var record =
         engine
             .messageCorrelation()
-            .withCorrelationKey(correlationKey)
-            .withName("messageName")
+            .withCorrelationKey(CORRELATION_KEY)
+            .withName(MESSAGE_NAME)
             .withVariables(variables)
             .correlate();
 
@@ -304,17 +294,15 @@ public final class CorrelateMessageTest {
   public void shouldCorrelateMessageWithVariablesToIntermediaryEvent() {
     // given
     final var processId = "processId";
-    final var messageName = "messageName";
-    final var correlationKey = "correlationKey";
     final var variables = asMsgPack("foo", "bar");
-    deployAndStartProcessWithIntermediaryMessageEvent(messageName, correlationKey);
+    deployAndStartProcessWithIntermediaryMessageEvent(MESSAGE_NAME, CORRELATION_KEY);
 
     // when
     final var record =
         engine
             .messageCorrelation()
-            .withCorrelationKey(correlationKey)
-            .withName(messageName)
+            .withCorrelationKey(CORRELATION_KEY)
+            .withName(MESSAGE_NAME)
             .withVariables(variables)
             .correlate();
 
@@ -338,17 +326,15 @@ public final class CorrelateMessageTest {
   public void shouldCorrelateMessageWithVariablesToBoundaryEvent() {
     // given
     final var processId = "processId";
-    final var messageName = "messageName";
-    final var correlationKey = "correlationKey";
     final var variables = asMsgPack("foo", "bar");
-    deployAndStartProcessWithMessageBoundaryEvent(messageName, correlationKey);
+    deployAndStartProcessWithMessageBoundaryEvent(MESSAGE_NAME, CORRELATION_KEY);
 
     // when
     final var record =
         engine
             .messageCorrelation()
-            .withCorrelationKey(correlationKey)
-            .withName(messageName)
+            .withCorrelationKey(CORRELATION_KEY)
+            .withName(MESSAGE_NAME)
             .withVariables(variables)
             .correlate();
 
@@ -374,8 +360,8 @@ public final class CorrelateMessageTest {
         .hasRecordType(RecordType.EVENT)
         .hasValueType(ValueType.MESSAGE_CORRELATION);
     Assertions.assertThat(record.getValue())
-        .hasCorrelationKey("correlationKey")
-        .hasName("messageName")
+        .hasCorrelationKey(CORRELATION_KEY)
+        .hasName(MESSAGE_NAME)
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
@@ -386,8 +372,8 @@ public final class CorrelateMessageTest {
         .hasRecordType(RecordType.EVENT)
         .hasValueType(ValueType.MESSAGE_CORRELATION);
     Assertions.assertThat(record.getValue())
-        .hasCorrelationKey("correlationKey")
-        .hasName("messageName")
+        .hasCorrelationKey(CORRELATION_KEY)
+        .hasName(MESSAGE_NAME)
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
@@ -397,7 +383,7 @@ public final class CorrelateMessageTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
-                .message("messageName")
+                .message(MESSAGE_NAME)
                 .endEvent()
                 .done())
         .deploy();
