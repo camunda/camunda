@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.logstreams.impl;
 
+import static io.camunda.zeebe.logstreams.impl.LogStreamMetrics.FlowControlOutComeLabels.labelForContext;
+import static io.camunda.zeebe.logstreams.impl.LogStreamMetrics.FlowControlOutComeLabels.labelForReason;
+
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.WriteContext;
@@ -22,6 +25,7 @@ import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 import io.prometheus.client.Histogram.Timer;
+import java.util.EnumSet;
 import java.util.List;
 
 public final class LogStreamMetrics {
@@ -253,26 +257,13 @@ public final class LogStreamMetrics {
     COMMIT_LATENCY.remove(partitionLabel);
     WRITE_LATENCY.remove(partitionLabel);
     EXPORTING_RATE.remove(partitionLabel);
-    FLOW_CONTROL_OUTCOME.remove(partitionLabel);
     WRITE_RATE_MAX_LIMIT.remove(partitionLabel);
     WRITE_RATE_LIMIT.remove(partitionLabel);
-  }
-
-  private String contextLabel(final WriteContext context) {
-    return switch (context) {
-      case final UserCommand ignored -> "userCommand";
-      case final ProcessingResult ignored -> "processingResult";
-      case final InterPartition ignored -> "interPartition";
-      case final Scheduled ignored -> "scheduled";
-      case final Internal ignored -> "internal";
-    };
-  }
-
-  private String reasonLabel(final Rejection reason) {
-    return switch (reason) {
-      case Rejection.WriteRateLimitExhausted -> "writeRateLimitExhausted";
-      case Rejection.RequestLimitExhausted -> "requestLimitExhausted";
-    };
+    for (final var contextLabel : FlowControlOutComeLabels.allContextLabels()) {
+      for (final var reasonLabel : FlowControlOutComeLabels.allReasonLabels()) {
+        FLOW_CONTROL_OUTCOME.remove(partitionLabel, contextLabel, reasonLabel);
+      }
+    }
   }
 
   public void flowControlAccepted(
@@ -282,7 +273,7 @@ public final class LogStreamMetrics {
       receivedRequests.inc();
     }
     FLOW_CONTROL_OUTCOME
-        .labels(partitionLabel, contextLabel(context), "accepted")
+        .labels(partitionLabel, labelForContext(context), "accepted")
         .inc(batchMetadata.size());
   }
 
@@ -297,7 +288,7 @@ public final class LogStreamMetrics {
       droppedRequests.inc();
     }
     FLOW_CONTROL_OUTCOME
-        .labels(partitionLabel, contextLabel(context), reasonLabel(reason))
+        .labels(partitionLabel, labelForContext(context), labelForReason(reason))
         .inc(batchMetadata.size());
   }
 
@@ -311,5 +302,55 @@ public final class LogStreamMetrics {
 
   public void setWriteRateLimit(final double value) {
     writeRateLimit.set(value);
+  }
+
+  static final class FlowControlOutComeLabels {
+
+    private FlowControlOutComeLabels() {}
+
+    static String[] allReasonLabels() {
+      return EnumSet.allOf(Rejection.class).stream()
+          .map(FlowControlOutComeLabels::labelForReason)
+          .toArray(String[]::new);
+    }
+
+    static String[] allContextLabels() {
+      final var labels = WriteContextLabel.values();
+      final var labelNames = new String[labels.length];
+      for (var i = 0; i < labels.length; i++) {
+        labelNames[i] = labels[i].labelName;
+      }
+      return labelNames;
+    }
+
+    static String labelForReason(final Rejection reason) {
+      return switch (reason) {
+        case WriteRateLimitExhausted -> "writeRateLimitExhausted";
+        case RequestLimitExhausted -> "requestLimitExhausted";
+      };
+    }
+
+    static String labelForContext(final WriteContext context) {
+      return switch (context) {
+        case final UserCommand ignored -> WriteContextLabel.UserCommand.labelName;
+        case final ProcessingResult ignored -> WriteContextLabel.ProcessingResult.labelName;
+        case final InterPartition ignored -> WriteContextLabel.InterPartition.labelName;
+        case final Scheduled ignored -> WriteContextLabel.Scheduled.labelName;
+        case final Internal ignored -> WriteContextLabel.Internal.labelName;
+      };
+    }
+
+    private enum WriteContextLabel {
+      UserCommand("userCommand"),
+      ProcessingResult("processingResult"),
+      InterPartition("interPartition"),
+      Scheduled("scheduled"),
+      Internal("internal");
+      private final String labelName;
+
+      WriteContextLabel(final String labelName) {
+        this.labelName = labelName;
+      }
+    }
   }
 }
