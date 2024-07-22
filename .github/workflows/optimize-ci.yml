@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches:
-    - master
+    - main
     - maintenance/*
     - release/*
     - optimize-c8
@@ -228,110 +228,11 @@ jobs:
         with:
           archive_name: integration-tests-opensearch-${{ matrix.includedGroups }}-docker
 
-  integration-tests-os-dev:
-    name: Integration Tests OpenSearch Development
-    runs-on: gcp-core-32-default
-    # checks that the PR isn't closed AND check whether the labeled event contains 'opensearch' as substring || check whether on new commit of PR the label 'opensearch'' is part of label array
-    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'opensearch') || contains( github.event.pull_request.labels.*.name, 'opensearch'))
-    timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        includedGroups: [ 'reportEvaluation', '' ]
-        include:
-          - includedGroups: ''
-            excludedGroups: 'ccsm-test,import,eventBasedProcess,reportEvaluation'
-            profiles: 'it,engine-latest'
-          - includedGroups: 'reportEvaluation'
-            excludedGroups: ''
-            profiles: 'it,engine-latest'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
-
-      - name: Fetch main branch
-        run: git fetch origin main:refs/remote/origin/main
-
-      - name: Setup Maven
-        uses: ./.github/actions/setup-maven
-        with:
-          secrets: ${{ toJSON(secrets) }}
-
-      - name: Login to Harbor registry
-        uses: ./.github/actions/login-registry
-        with:
-          secrets: ${{ toJSON(secrets) }}
-
-      - name: "Read Java / Version Info"
-        id: "pom-info"
-        uses: YunaBraska/java-info-action@main
-
-      - name: Expose Parsed OpenSearch Version
-        run: echo "OPENSEARCH_VERSION=${{ steps.pom-info.outputs.x_opensearch_test_version }}" >> "$GITHUB_ENV"
-
-      - name: Start Cambpm
-        uses: ./.github/actions/compose
-        with:
-          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
-          project_name: cambpm
-        env:
-          CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
-          CAMBPM_JVM_MEMORY: 8
-
-      - name: Start OpenSearch
-        uses: ./.github/actions/compose
-        with:
-          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.opensearch.yml
-          project_name: opensearch
-        env:
-          OPENSEARCH_VERSION: ${{ env.OPENSEARCH_VERSION }}
-          OPENSEARCH_JVM_MEMORY: 16
-          OPENSEARCH_HTTP_PORT: 9205
-
-      - name: Verify integration
-        uses: ./.github/actions/run-maven
-        env:
-          LIMITS_CPU: 8
-        with:
-          threads: 8
-          parameters: >
-            verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }}
-            -Dit.test.includedGroups=${{ matrix.includedGroups }}
-            -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
-            -Dfailsafe.rerunFailingTestsCount=2
-            -Ddatabase.type=opensearch -pl optimize/backend -am
-
-      - name: Upload Test Results
-        if: always()
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
-        with:
-          name: integration-test-opensearch-dev-${{ matrix.includedGroups }}-junit
-          path: |
-            **/failsafe-reports/**/*.xml
-          retention-days: 7
-          if-no-files-found: ignore
-
-      - name: Docker log dump
-        uses: ./.github/actions/docker-logs
-        if: always()
-        with:
-          archive_name: integration-tests-opensearch-dev-${{ matrix.includedGroups }}-docker
-
-  # Only deploy artifacts on push event, which in this case can only be triggered by master and maintenance
-  deploy-artifacts:
-    if: github.event_name == 'push' && (github.ref_name == 'master' || startsWith(github.ref_name, 'maintenance/'))
-    name: Deploy Artifacts
-    needs: [unit-tests, integration-tests]
-    uses: ./.github/workflows/optimize-deploy-artifacts.yml
-    secrets: inherit
-
   # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
   rerun-failed-jobs:
     needs:
       - integration-tests
-      - integration-tests-os
       - unit-tests
-      - deploy-artifacts
     if: failure() && fromJSON(github.run_attempt) < 3
     runs-on: ubuntu-latest
     steps:

@@ -2,7 +2,7 @@ name: Optimize Backend Linting
 on:
   push:
     branches:
-      - master
+      - main
     paths-ignore:
       - "optimize/client/**"
       - ".ci/**"

@@ -3,7 +3,7 @@ name: Optimize Javascript code scan
 on:
   pull_request:
     branches:
-      - "master"
+      - "main"
       - "maintenance/**"
       - "release/**"
     paths:
