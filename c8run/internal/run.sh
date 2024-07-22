@@ -21,7 +21,7 @@ OPTIONS_HELP="Options:
   --rest       - Enables the REST API
   --swaggerui  - Enables the Swagger UI
   --example    - Enables the example application
-  --production - Applies the production.yaml configuration file
+  --config     - Applies the specified configuration file
   --detached   - Starts Camunda Run as a detached process
 "
 
@@ -55,10 +55,8 @@ fi
 optionalComponentChosen=false
 restChosen=false
 swaggeruiChosen=false
-productionChosen=false
 detachProcess=false
 classPath=$PARENTDIR/configuration/userlib/,$PARENTDIR/configuration/keystore/
-configuration=$PARENTDIR/configuration/default.yml
 
 
 if [ "$1" = "start" ] ; then
@@ -107,8 +105,12 @@ if [ "$1" = "start" ] ; then
                      classPath=$EXAMPLE_PATH,$classPath
                      echo Invoice Example included - needs to be enabled in application configuration as well
                      ;;
-      --production ) configuration=$PARENTDIR/configuration/production.yml
-                     productionChosen=true
+      --config )     shift
+                     if [[ "$1" == "" ]]; then
+                       printf "%s" "$OPTIONS_HELP"
+                       exit 0
+                     fi
+                     configuration="$1"
                      ;;
       # the background flag shouldn't influence the optional component flags
       --detached )   detachProcess=true
@@ -199,6 +201,14 @@ if [ "$1" = "start" ] ; then
   echo classpath: $classPath
 
   # start the application
+  if [[ "$configuration" != "" ]]; then
+    if [[ "$configuration" == "/*" ]]; then
+      extraArgs="--spring.config.location=$configuration"
+    else
+      extraArgs="--spring.config.location=$(pwd)/$configuration"
+    fi
+  fi
+
   if [ "$detachProcess" = "true" ]; then
 
     # check if a Camunda Run instance is already in operation
@@ -211,7 +221,8 @@ Please stop it or remove the file $PID_PATH."
     fi
 
     pushd $PARENTDIR/camunda-zeebe-$CAMUNDA_VERSION/
-    ./bin/camunda >> $PARENTDIR/log/camunda.log 2>> $PARENTDIR/log/camunda.log &
+    echo ./bin/camunda $extraArgs >> $PARENTDIR/log/camunda.log 2>> $PARENTDIR/log/camunda.log &
+    ./bin/camunda $extraArgs >> $PARENTDIR/log/camunda.log 2>> $PARENTDIR/log/camunda.log &
     echo $! > "$PID_PATH"
     popd
 
@@ -223,7 +234,8 @@ Please stop it or remove the file $PID_PATH."
     echo $! > "$CONNECTORS_PID_PATH"
 
     pushd $PARENTDIR/camunda-zeebe-$CAMUNDA_VERSION/
-    ./bin/camunda 2>&1 | tee $PARENTDIR/log/camunda.log
+    echo ./bin/camunda $extraArgs 2>&1 | tee $PARENTDIR/log/camunda.log
+    ./bin/camunda $extraArgs 2>&1 | tee $PARENTDIR/log/camunda.log
     popd
 
   fi
