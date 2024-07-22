@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -23,7 +24,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public final class MessageSubscriptionCreateProcessor
-    implements TypedRecordProcessor<MessageSubscriptionRecord> {
+    implements DistributedTypedRecordProcessor<MessageSubscriptionRecord> {
 
   private static final String SUBSCRIPTION_ALREADY_OPENED_MESSAGE =
       "Expected to open a new message subscription for element with key '%d' and message name '%s', "
@@ -34,6 +35,8 @@ public final class MessageSubscriptionCreateProcessor
   private final SubscriptionCommandSender commandSender;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
+
+  private final CommandDistributionBehavior commandDistributionBehavior;
 
   private MessageSubscriptionRecord subscriptionRecord;
   private final TypedRejectionWriter rejectionWriter;
@@ -46,13 +49,15 @@ public final class MessageSubscriptionCreateProcessor
       final MessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender,
       final Writers writers,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final CommandDistributionBehavior commandDistributionBehavior) {
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
     this.keyGenerator = keyGenerator;
+    this.commandDistributionBehavior = commandDistributionBehavior;
     messageCorrelator =
         new MessageCorrelator(
             partitionId, messageState, commandSender, stateWriter, sideEffectWriter);
@@ -60,7 +65,7 @@ public final class MessageSubscriptionCreateProcessor
   }
 
   @Override
-  public void processRecord(final TypedRecord<MessageSubscriptionRecord> record) {
+  public void processNewCommand(final TypedRecord<MessageSubscriptionRecord> record) {
     subscriptionRecord = record.getValue();
 
     if (subscriptionState.existSubscriptionForElementInstance(
@@ -78,6 +83,37 @@ public final class MessageSubscriptionCreateProcessor
     }
 
     handleNewSubscription(sideEffectWriter);
+  }
+
+  @Override
+  public void processDistributedCommand(final TypedRecord<MessageSubscriptionRecord> record) {
+    // The command is received due to relocation from other partition
+
+    subscriptionRecord = record.getValue();
+
+    if (subscriptionState.existSubscriptionForElementInstance(
+        subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer())) {
+      sendAcknowledgeToDistributedCommand(record);
+
+      rejectionWriter.appendRejection(
+          record,
+          RejectionType.INVALID_STATE,
+          String.format(
+              SUBSCRIPTION_ALREADY_OPENED_MESSAGE,
+              subscriptionRecord.getElementInstanceKey(),
+              BufferUtil.bufferAsString(subscriptionRecord.getMessageNameBuffer())));
+      return;
+    }
+
+    final var subscriptionKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(
+        subscriptionKey, MessageSubscriptionIntent.CREATED, subscriptionRecord);
+    sendAcknowledgeToDistributedCommand(record);
+  }
+
+  private void sendAcknowledgeToDistributedCommand(
+      final TypedRecord<MessageSubscriptionRecord> record) {
+    commandDistributionBehavior.acknowledgeCommand(record);
   }
 
   private void handleNewSubscription(final SideEffectWriter sideEffectWriter) {

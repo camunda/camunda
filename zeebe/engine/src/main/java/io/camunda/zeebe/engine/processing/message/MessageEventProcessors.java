@@ -83,7 +83,8 @@ public final class MessageEventProcessors {
                 subscriptionState,
                 subscriptionCommandSender,
                 writers,
-                keyGenerator))
+                keyGenerator,
+                commandDistributionBehavior))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CORRELATE,
