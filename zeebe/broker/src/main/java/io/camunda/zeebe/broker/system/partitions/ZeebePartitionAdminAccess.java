@@ -183,21 +183,8 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
     concurrencyControl.run(
         () -> {
           try {
-            adminControl
-                .getLogStream()
-                .newLogStreamWriter()
-                .onComplete(
-                    (writer, error) -> {
-                      if (error != null) {
-                        LOG.error(
-                            "Could not retrieve writer to write error record for process instance.",
-                            error);
-                        future.completeExceptionally(error);
-                        return;
-                      }
-
-                      writeErrorEventAndBanInstance(processInstanceKey, writer, future);
-                    });
+            final var logStreamWriter = adminControl.getLogStream().newLogStreamWriter();
+            writeErrorEventAndBanInstance(processInstanceKey, logStreamWriter, future);
           } catch (final Exception e) {
             LOG.error(
                 "Failure on writing error record to ban instance {} onto the LogStream.",

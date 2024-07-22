@@ -43,7 +43,7 @@ public class BrokerRestartTest {
 
     // then
     final var log = listener.get();
-    final var reader = log.newLogStreamReader().join();
+    final var reader = log.newLogStreamReader();
     reader.seekToFirstEvent();
     assertThat(reader.hasNext()).isTrue();
 

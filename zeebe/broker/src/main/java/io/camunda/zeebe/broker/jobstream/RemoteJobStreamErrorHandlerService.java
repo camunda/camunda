@@ -48,25 +48,10 @@ public final class RemoteJobStreamErrorHandlerService extends Actor
       final long term,
       final LogStream logStream,
       final QueryService queryService) {
-    final var result = new CompletableActorFuture<Void>();
-    final var onLogStreamWriter =
+    final var writer =
         Objects.requireNonNull(logStream, "must specify a log stream").newLogStreamWriter();
-    actor.run(
-        () -> {
-          actor.runOnCompletion(
-              onLogStreamWriter,
-              (writer, error) -> {
-                if (error != null) {
-                  result.completeExceptionally(error);
-                  return;
-                }
-
-                delegate.addWriter(partitionId, writer);
-                result.complete(null);
-              });
-        });
-
-    return result;
+    delegate.addWriter(partitionId, writer);
+    return CompletableActorFuture.completed(null);
   }
 
   @Override

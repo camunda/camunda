@@ -11,7 +11,6 @@ import com.netflix.concurrency.limits.Limit;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 /** Builder pattern for the {@link LogStream} */
 public interface LogStreamBuilder {
@@ -58,7 +57,7 @@ public interface LogStreamBuilder {
    */
   LogStreamBuilder withLogName(String logName);
 
-  LogStreamBuilder withRequestLimit(Limit appendLimit);
+  LogStreamBuilder withRequestLimit(Limit requestLimit);
 
   LogStreamBuilder withWriteRateLimit(RateLimit writeRateLimit);
 
@@ -67,5 +66,5 @@ public interface LogStreamBuilder {
    *
    * @return a future which on complete contains the log stream
    */
-  ActorFuture<LogStream> buildAsync();
+  LogStream build();
 }
