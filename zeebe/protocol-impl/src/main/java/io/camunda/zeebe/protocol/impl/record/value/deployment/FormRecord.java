@@ -30,16 +30,18 @@ public final class FormRecord extends UnifiedRecordValue implements Form {
   private final BinaryProperty resourceProp = new BinaryProperty("resource", new UnsafeBuffer());
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
 
   public FormRecord() {
-    super(7);
+    super(8);
     declareProperty(formIdProp)
         .declareProperty(versionProp)
         .declareProperty(formKeyProp)
         .declareProperty(resourceNameProp)
         .declareProperty(checksumProp)
         .declareProperty(resourceProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(deploymentKeyProp);
   }
 
   public FormRecord wrap(final FormMetadataRecord metadata, final byte[] resource) {
@@ -50,6 +52,7 @@ public final class FormRecord extends UnifiedRecordValue implements Form {
     resourceNameProp.setValue(metadata.getResourceNameBuffer());
     resourceProp.setValue(BufferUtil.wrapArray(resource));
     tenantIdProp.setValue(metadata.getTenantId());
+    deploymentKeyProp.setValue(metadata.getDeploymentKey());
     return this;
   }
 
@@ -116,6 +119,16 @@ public final class FormRecord extends UnifiedRecordValue implements Form {
   @Override
   public boolean isDuplicate() {
     return false;
+  }
+
+  @Override
+  public long getDeploymentKey() {
+    return deploymentKeyProp.getValue();
+  }
+
+  public FormRecord setDeploymentKey(final long deploymentKey) {
+    deploymentKeyProp.setValue(deploymentKey);
+    return this;
   }
 
   @JsonIgnore
