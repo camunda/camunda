@@ -8,11 +8,11 @@
 
 import {t} from 'translation';
 
-export function formatLink(id, type) {
+export function formatLink(id: string, type: string) {
   return `${type}/${id}/`;
 }
 
-export function formatType(entityType) {
+export function formatType(entityType: string) {
   switch (entityType) {
     case 'collection':
       return t('common.collection.label');
@@ -25,7 +25,7 @@ export function formatType(entityType) {
   }
 }
 
-export function formatSubEntities({dashboard, report}) {
+export function formatSubEntities({dashboard, report}: {dashboard?: number; report?: number}) {
   let string = '';
   if (dashboard) {
     string += dashboard + ' ';
@@ -42,6 +42,6 @@ export function formatSubEntities({dashboard, report}) {
   return string;
 }
 
-export function formatRole(role) {
+export function formatRole(role: string) {
   return t('home.roles.' + role);
 }
