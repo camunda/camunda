@@ -664,7 +664,9 @@ public final class ProcessingStateMachine {
                   updateState();
                 });
           } else {
-            scheduledCommandCache.remove(metadata.getIntent(), currentRecord.getKey());
+            if (!currentProcessingResult.isSkipped()) {
+              scheduledCommandCache.remove(metadata.getIntent(), currentRecord.getKey());
+            }
             executeSideEffects();
           }
         });
