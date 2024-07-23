@@ -62,6 +62,7 @@ func TestJobWorkerActivateJobsDefault(t *testing.T) {
 		Timeout:           commands.DefaultJobTimeoutInMs,
 		Worker:            commands.DefaultJobWorkerName,
 		RequestTimeout:    int64(utils.DefaultTestTimeout / time.Millisecond),
+		TenantIds:         []string{commands.DefaultJobTenantID},
 	}
 
 	response := &pb.ActivateJobsResponse{
@@ -108,6 +109,7 @@ func TestJobWorkerActivateJobsCustom(t *testing.T) {
 		Timeout:           int64(timeout / time.Millisecond),
 		Worker:            "fooWorker",
 		RequestTimeout:    int64(utils.DefaultTestTimeout / time.Millisecond),
+		TenantIds:         []string{commands.DefaultJobTenantID},
 	}
 
 	response := &pb.ActivateJobsResponse{
@@ -154,6 +156,7 @@ func TestJobWorkerStreamDisabled(t *testing.T) {
 		Timeout:           int64(timeout / time.Millisecond),
 		Worker:            "fooWorker",
 		RequestTimeout:    int64(utils.DefaultTestTimeout / time.Millisecond),
+		TenantIds:         []string{commands.DefaultJobTenantID},
 	}
 
 	response := &pb.ActivateJobsResponse{
@@ -193,9 +196,10 @@ func TestJobWorkerStreamEnabled(t *testing.T) {
 	activateJobsStream := mock_pb.NewMockGateway_ActivateJobsClient(ctrl)
 	timeout := 7 * time.Minute
 	request := &pb.StreamActivatedJobsRequest{
-		Type:    "foo",
-		Timeout: int64(timeout / time.Millisecond),
-		Worker:  "fooWorker",
+		Type:      "foo",
+		Timeout:   int64(timeout / time.Millisecond),
+		Worker:    "fooWorker",
+		TenantIds: []string{commands.DefaultJobTenantID},
 	}
 	activateJobsRequest := &pb.ActivateJobsRequest{
 		Type:              "foo",
@@ -203,6 +207,7 @@ func TestJobWorkerStreamEnabled(t *testing.T) {
 		Timeout:           int64(timeout / time.Millisecond),
 		Worker:            "fooWorker",
 		RequestTimeout:    int64(utils.DefaultTestTimeout / time.Millisecond),
+		TenantIds:         []string{commands.DefaultJobTenantID},
 	}
 
 	response := &pb.ActivatedJob{Key: 1}
@@ -248,9 +253,10 @@ func TestStreamingJobWorkerClose(t *testing.T) {
 	activateJobsStream := mock_pb.NewMockGateway_ActivateJobsClient(ctrl)
 	timeout := 7 * time.Minute
 	request := &pb.StreamActivatedJobsRequest{
-		Type:    "foo",
-		Timeout: int64(timeout / time.Millisecond),
-		Worker:  "default",
+		Type:      "foo",
+		Timeout:   int64(timeout / time.Millisecond),
+		Worker:    "default",
+		TenantIds: []string{commands.DefaultJobTenantID},
 	}
 	activateJobsRequest := &pb.ActivateJobsRequest{
 		Type:              "foo",
@@ -258,6 +264,7 @@ func TestStreamingJobWorkerClose(t *testing.T) {
 		Timeout:           int64(timeout / time.Millisecond),
 		Worker:            "default",
 		RequestTimeout:    10000,
+		TenantIds:         []string{commands.DefaultJobTenantID},
 	}
 
 	stream.EXPECT().Recv().Return(nil, io.EOF).AnyTimes()
@@ -303,6 +310,7 @@ func TestJobWorkerClose(t *testing.T) {
 		Timeout:           int64(timeout / time.Millisecond),
 		Worker:            "default",
 		RequestTimeout:    10000,
+		TenantIds:         []string{commands.DefaultJobTenantID},
 	}
 
 	stream.EXPECT().Recv().Return(nil, io.EOF).AnyTimes()
