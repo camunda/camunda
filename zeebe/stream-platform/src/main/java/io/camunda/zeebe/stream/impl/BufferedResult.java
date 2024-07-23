@@ -26,14 +26,17 @@ final class BufferedResult implements ProcessingResult, TaskResult {
   private final List<PostCommitTask> postCommitTasks;
   private final ImmutableRecordBatch immutableRecordBatch;
   private final ProcessingResponseImpl processingResponse;
+  private final boolean skipped;
 
   BufferedResult(
       final ImmutableRecordBatch immutableRecordBatch,
       final ProcessingResponseImpl processingResponse,
-      final List<PostCommitTask> postCommitTasks) {
+      final List<PostCommitTask> postCommitTasks,
+      final boolean skipped) {
     this.postCommitTasks = new ArrayList<>(postCommitTasks);
     this.processingResponse = processingResponse;
     this.immutableRecordBatch = immutableRecordBatch;
+    this.skipped = skipped;
   }
 
   @Override
@@ -66,5 +69,10 @@ final class BufferedResult implements ProcessingResult, TaskResult {
     return getProcessingResponse().isEmpty()
         && getRecordBatch().isEmpty()
         && postCommitTasks.isEmpty();
+  }
+
+  @Override
+  public boolean isSkipped() {
+    return skipped;
   }
 }

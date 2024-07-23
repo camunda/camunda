@@ -100,4 +100,7 @@ public class FakeProcessingResultBuilder<V extends UnifiedRecordValue>
   public boolean canWriteEventOfLength(final int eventLength) {
     return true;
   }
+
+  @Override
+  public void setSkipped(final boolean skipped) {}
 }

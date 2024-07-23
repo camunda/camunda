@@ -41,6 +41,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   private final RecordBatch mutableRecordBatch;
   private ProcessingResponseImpl processingResponse;
   private final long operationReference;
+  private boolean skipped = false;
 
   BufferedProcessingResultBuilder(final RecordBatchSizePredicate predicate) {
     this(predicate, operationReferenceNullValue());
@@ -121,12 +122,17 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
 
   @Override
   public ProcessingResult build() {
-    return new BufferedResult(mutableRecordBatch, processingResponse, postCommitTasks);
+    return new BufferedResult(mutableRecordBatch, processingResponse, postCommitTasks, skipped);
   }
 
   @Override
   public boolean canWriteEventOfLength(final int eventLength) {
     return mutableRecordBatch.canAppendRecordOfLength(eventLength);
+  }
+
+  @Override
+  public void setSkipped(final boolean skipped) {
+    this.skipped = skipped;
   }
 
   record ProcessingResponseImpl(RecordBatchEntry responseValue, long requestId, int requestStreamId)

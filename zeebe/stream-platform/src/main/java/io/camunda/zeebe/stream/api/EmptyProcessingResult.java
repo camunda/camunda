@@ -39,4 +39,9 @@ public final class EmptyProcessingResult implements ProcessingResult {
   public boolean isEmpty() {
     return true;
   }
+
+  @Override
+  public boolean isSkipped() {
+    return false;
+  }
 }

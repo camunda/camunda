@@ -49,4 +49,6 @@ public interface ProcessingResult {
    *     false otherwise.
    */
   boolean isEmpty();
+
+  boolean isSkipped();
 }

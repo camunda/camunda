@@ -47,6 +47,11 @@ record MockProcessingResult(List<Event> records) implements ProcessingResult {
     return records().isEmpty();
   }
 
+  @Override
+  public boolean isSkipped() {
+    return false;
+  }
+
   record Event(
       Intent intent,
       RecordType type,
@@ -108,5 +113,8 @@ record MockProcessingResult(List<Event> records) implements ProcessingResult {
     public boolean canWriteEventOfLength(final int eventLength) {
       return false;
     }
+
+    @Override
+    public void setSkipped(final boolean skipped) {}
   }
 }
