@@ -156,11 +156,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>identity-backend</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>identity-webjar</artifactId>
     </dependency>
 
