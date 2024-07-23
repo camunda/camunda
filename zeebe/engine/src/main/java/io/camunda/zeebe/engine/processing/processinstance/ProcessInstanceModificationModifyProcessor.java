@@ -53,6 +53,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Stack;
 import java.util.stream.Collectors;
 import org.agrona.Strings;
 
@@ -676,36 +677,50 @@ public final class ProcessInstanceModificationModifyProcessor
   }
 
   private void terminateElement(final ElementInstance elementInstance) {
-    final var elementInstanceKey = elementInstance.getKey();
-    final var elementInstanceRecord = elementInstance.getValue();
-    final BpmnElementType elementType = elementInstance.getValue().getBpmnElementType();
+    final var elementInstancesToTerminate = new Stack<ElementInstance>();
+    final var elementsTerminating = new Stack<ElementInstance>();
+    elementInstancesToTerminate.push(elementInstance);
 
-    stateWriter.appendFollowUpEvent(
-        elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATING, elementInstanceRecord);
+    while (!elementInstancesToTerminate.isEmpty()) {
+      final var currentElement = elementInstancesToTerminate.pop();
+      final var elementInstanceKey = currentElement.getKey();
+      final var elementInstanceRecord = currentElement.getValue();
+      final BpmnElementType elementType = currentElement.getValue().getBpmnElementType();
 
-    jobBehavior.cancelJob(elementInstance);
-    incidentBehavior.resolveIncidents(elementInstanceKey);
+      stateWriter.appendFollowUpEvent(
+          elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATING, elementInstanceRecord);
 
-    catchEventBehavior.unsubscribeFromEvents(elementInstanceKey);
+      jobBehavior.cancelJob(currentElement);
+      incidentBehavior.resolveIncidents(elementInstanceKey);
 
-    // terminate all child instances if the element is an event subprocess
-    if (elementType == BpmnElementType.EVENT_SUB_PROCESS
-        || elementType == BpmnElementType.SUB_PROCESS
-        || elementType == BpmnElementType.PROCESS
-        || elementType == BpmnElementType.MULTI_INSTANCE_BODY) {
-      elementInstanceState.getChildren(elementInstanceKey).stream()
-          .filter(ElementInstance::canTerminate)
-          .forEach(this::terminateElement);
-    } else if (elementType == BpmnElementType.CALL_ACTIVITY) {
-      final var calledActivityElementInstance =
-          elementInstanceState.getInstance(elementInstance.getCalledChildInstanceKey());
-      if (calledActivityElementInstance != null && calledActivityElementInstance.canTerminate()) {
-        terminateElement(calledActivityElementInstance);
+      catchEventBehavior.unsubscribeFromEvents(elementInstanceKey);
+
+      // terminate all child instances if the element is an event subprocess
+      if (elementType == BpmnElementType.EVENT_SUB_PROCESS
+          || elementType == BpmnElementType.SUB_PROCESS
+          || elementType == BpmnElementType.PROCESS
+          || elementType == BpmnElementType.MULTI_INSTANCE_BODY) {
+        elementInstanceState.getChildren(elementInstanceKey).stream()
+            .filter(ElementInstance::canTerminate)
+            .forEach(elementInstancesToTerminate::add);
+      } else if (elementType == BpmnElementType.CALL_ACTIVITY) {
+        final var calledActivityElementInstance =
+            elementInstanceState.getInstance(currentElement.getCalledChildInstanceKey());
+        if (calledActivityElementInstance != null && calledActivityElementInstance.canTerminate()) {
+          elementInstancesToTerminate.add(calledActivityElementInstance);
+        }
       }
+
+      elementsTerminating.push(currentElement);
     }
 
-    stateWriter.appendFollowUpEvent(
-        elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATED, elementInstanceRecord);
+    while (!elementsTerminating.isEmpty()) {
+      final var currentElement = elementsTerminating.pop();
+      stateWriter.appendFollowUpEvent(
+          currentElement.getKey(),
+          ProcessInstanceIntent.ELEMENT_TERMINATED,
+          currentElement.getValue());
+    }
   }
 
   private void terminateFlowScopes(
