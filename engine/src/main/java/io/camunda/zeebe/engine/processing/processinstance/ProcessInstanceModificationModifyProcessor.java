@@ -47,6 +47,7 @@ import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -677,43 +678,60 @@ public final class ProcessInstanceModificationModifyProcessor
   }
 
   private void terminateElement(final ElementInstance elementInstance) {
-    final var elementInstancesToTerminate = new Stack<ElementInstance>();
-    final var elementsTerminating = new Stack<ElementInstance>();
-    elementInstancesToTerminate.push(elementInstance);
+    final var elementsTerminating = startTerminatingElementAndChildren(elementInstance);
+    terminateElements(elementsTerminating);
+  }
 
-    while (!elementInstancesToTerminate.isEmpty()) {
-      final var currentElement = elementInstancesToTerminate.pop();
+  private Stack<ElementInstance> startTerminatingElementAndChildren(
+      final ElementInstance elementInstance) {
+    final var elementInstancesToTerminate = new Stack<ElementInstance>();
+    final var elementInstancesTerminating = new Stack<ElementInstance>();
+    elementInstancesTerminating.push(elementInstance);
+
+    while (!elementInstancesTerminating.isEmpty()) {
+      final var currentElement = elementInstancesTerminating.pop();
       final var elementInstanceKey = currentElement.getKey();
       final var elementInstanceRecord = currentElement.getValue();
       final BpmnElementType elementType = currentElement.getValue().getBpmnElementType();
 
       stateWriter.appendFollowUpEvent(
           elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATING, elementInstanceRecord);
+      elementInstancesToTerminate.push(currentElement);
 
       jobBehavior.cancelJob(currentElement);
       incidentBehavior.resolveIncidents(elementInstanceKey);
-
       catchEventBehavior.unsubscribeFromEvents(elementInstanceKey);
 
-      // terminate all child instances if the element is an event subprocess
-      if (elementType == BpmnElementType.EVENT_SUB_PROCESS
-          || elementType == BpmnElementType.SUB_PROCESS
-          || elementType == BpmnElementType.PROCESS
-          || elementType == BpmnElementType.MULTI_INSTANCE_BODY) {
-        elementInstanceState.getChildren(elementInstanceKey).stream()
-            .filter(ElementInstance::canTerminate)
-            .forEach(elementInstancesToTerminate::add);
-      } else if (elementType == BpmnElementType.CALL_ACTIVITY) {
-        final var calledActivityElementInstance =
-            elementInstanceState.getInstance(currentElement.getCalledChildInstanceKey());
-        if (calledActivityElementInstance != null && calledActivityElementInstance.canTerminate()) {
-          elementInstancesToTerminate.add(calledActivityElementInstance);
-        }
-      }
-
-      elementsTerminating.push(currentElement);
+      elementInstancesTerminating.addAll(
+          getChildInstances(elementType, elementInstanceKey, currentElement));
     }
+    return elementInstancesToTerminate;
+  }
 
+  private List<ElementInstance> getChildInstances(
+      final BpmnElementType elementType,
+      final long elementInstanceKey,
+      final ElementInstance currentElement) {
+    final var childInstances = new ArrayList<ElementInstance>();
+    // terminate all child instances if the element is an event subprocess
+    if (elementType == BpmnElementType.EVENT_SUB_PROCESS
+        || elementType == BpmnElementType.SUB_PROCESS
+        || elementType == BpmnElementType.PROCESS
+        || elementType == BpmnElementType.MULTI_INSTANCE_BODY) {
+      elementInstanceState.getChildren(elementInstanceKey).stream()
+          .filter(ElementInstance::canTerminate)
+          .forEach(childInstances::add);
+    } else if (elementType == BpmnElementType.CALL_ACTIVITY) {
+      final var calledActivityElementInstance =
+          elementInstanceState.getInstance(currentElement.getCalledChildInstanceKey());
+      if (calledActivityElementInstance != null && calledActivityElementInstance.canTerminate()) {
+        childInstances.add(calledActivityElementInstance);
+      }
+    }
+    return childInstances;
+  }
+
+  private void terminateElements(final Stack<ElementInstance> elementsTerminating) {
     while (!elementsTerminating.isEmpty()) {
       final var currentElement = elementsTerminating.pop();
       stateWriter.appendFollowUpEvent(
