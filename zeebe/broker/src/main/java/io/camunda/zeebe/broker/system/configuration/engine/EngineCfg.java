@@ -16,14 +16,12 @@ public final class EngineCfg implements ConfigurationEntry {
   private MessagesCfg messages = new MessagesCfg();
   private CachesCfg caches = new CachesCfg();
   private JobsCfg jobs = new JobsCfg();
-  private ValidatorsCfg validators = new ValidatorsCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
     messages.init(globalConfig, brokerBase);
     caches.init(globalConfig, brokerBase);
     jobs.init(globalConfig, brokerBase);
-    validators.init(globalConfig, brokerBase);
   }
 
   public MessagesCfg getMessages() {
@@ -50,26 +48,9 @@ public final class EngineCfg implements ConfigurationEntry {
     this.jobs = jobs;
   }
 
-  public ValidatorsCfg getValidators() {
-    return validators;
-  }
-
-  public void setValidators(final ValidatorsCfg validators) {
-    this.validators = validators;
-  }
-
   @Override
   public String toString() {
-    return "EngineCfg{"
-        + "messages="
-        + messages
-        + ", caches="
-        + caches
-        + ", jobs="
-        + jobs
-        + ", validators="
-        + validators
-        + '}';
+    return "EngineCfg{" + "messages=" + messages + ", caches=" + caches + ", jobs=" + jobs + '}';
   }
 
   public EngineConfiguration createEngineConfiguration() {
@@ -77,8 +58,9 @@ public final class EngineCfg implements ConfigurationEntry {
         .setMessagesTtlCheckerBatchLimit(messages.getTtlCheckerBatchLimit())
         .setMessagesTtlCheckerInterval(messages.getTtlCheckerInterval())
         .setDrgCacheCapacity(caches.getDrgCacheCapacity())
+        .setFormCacheCapacity(caches.getFormCacheCapacity())
+        .setProcessCacheCapacity(caches.getProcessCacheCapacity())
         .setJobsTimeoutCheckerPollingInterval(jobs.getTimeoutCheckerPollingInterval())
-        .setJobsTimeoutCheckerBatchLimit(jobs.getTimeoutCheckerBatchLimit())
-        .setValidatorsResultsOutputMaxSize(validators.getResultsOutputMaxSize());
+        .setJobsTimeoutCheckerBatchLimit(jobs.getTimeoutCheckerBatchLimit());
   }
 }

@@ -21,17 +21,19 @@ public final class EngineConfiguration {
   public static final int BATCH_SIZE_CALCULATION_BUFFER = 1024 * 8;
 
   public static final int DEFAULT_DRG_CACHE_CAPACITY = 1000;
+  public static final int DEFAULT_FORM_CACHE_CAPACITY = 1000;
+  public static final int DEFAULT_PROCESS_CACHE_CAPACITY = 1000;
   public static final Duration DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL = Duration.ofSeconds(1);
   public static final int DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT = Integer.MAX_VALUE;
-  public static final int DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE = 12 * 1024;
 
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
   private int drgCacheCapacity = DEFAULT_DRG_CACHE_CAPACITY;
+  private int formCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
+  private int processCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
+
   private Duration jobsTimeoutCheckerPollingInterval = DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
   private int jobsTimeoutCheckerBatchLimit = DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT;
-
-  private int validatorsResultsOutputMaxSize = DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -62,6 +64,24 @@ public final class EngineConfiguration {
     return this;
   }
 
+  public int getFormCacheCapacity() {
+    return formCacheCapacity;
+  }
+
+  public EngineConfiguration setFormCacheCapacity(final int formCacheCapacity) {
+    this.formCacheCapacity = formCacheCapacity;
+    return this;
+  }
+
+  public int getProcessCacheCapacity() {
+    return processCacheCapacity;
+  }
+
+  public EngineConfiguration setProcessCacheCapacity(final int processCacheCapacity) {
+    this.processCacheCapacity = processCacheCapacity;
+    return this;
+  }
+
   public Duration getJobsTimeoutCheckerPollingInterval() {
     return jobsTimeoutCheckerPollingInterval;
   }
@@ -79,15 +99,6 @@ public final class EngineConfiguration {
   public EngineConfiguration setJobsTimeoutCheckerBatchLimit(
       final int jobsTimeoutCheckerBatchLimit) {
     this.jobsTimeoutCheckerBatchLimit = jobsTimeoutCheckerBatchLimit;
-    return this;
-  }
-
-  public int getValidatorsResultsOutputMaxSize() {
-    return validatorsResultsOutputMaxSize;
-  }
-
-  public EngineConfiguration setValidatorsResultsOutputMaxSize(final int maxSize) {
-    validatorsResultsOutputMaxSize = maxSize;
     return this;
   }
 }

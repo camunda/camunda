@@ -12,6 +12,8 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 
 public final class CachesCfg implements ConfigurationEntry {
   private int drgCacheCapacity = EngineConfiguration.DEFAULT_DRG_CACHE_CAPACITY;
+  private int formCacheCapacity = EngineConfiguration.DEFAULT_FORM_CACHE_CAPACITY;
+  private int processCacheCapacity = EngineConfiguration.DEFAULT_PROCESS_CACHE_CAPACITY;
 
   public int getDrgCacheCapacity() {
     return drgCacheCapacity;
@@ -21,8 +23,31 @@ public final class CachesCfg implements ConfigurationEntry {
     this.drgCacheCapacity = drgCacheCapacity;
   }
 
+  public int getFormCacheCapacity() {
+    return formCacheCapacity;
+  }
+
+  public void setFormCacheCapacity(final int formCacheCapacity) {
+    this.formCacheCapacity = formCacheCapacity;
+  }
+
+  public int getProcessCacheCapacity() {
+    return processCacheCapacity;
+  }
+
+  public void setProcessCacheCapacity(final int processCacheCapacity) {
+    this.processCacheCapacity = processCacheCapacity;
+  }
+
   @Override
   public String toString() {
-    return "CachesCfg{" + "drgCacheCapacity=" + drgCacheCapacity + '}';
+    return "CachesCfg{"
+        + "drgCacheCapacity="
+        + drgCacheCapacity
+        + ", formCacheCapacity="
+        + formCacheCapacity
+        + ", processCacheCapacity="
+        + processCacheCapacity
+        + '}';
   }
 }
