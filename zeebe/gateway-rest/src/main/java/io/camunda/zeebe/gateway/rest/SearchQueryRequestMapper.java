@@ -146,13 +146,21 @@ public final class SearchQueryRequestMapper {
       return Either.right(null);
     }
 
+    final Object[] searchAfter = toArrayOrNull(requestedPage.getSearchAfter());
+    final Object[] searchBefore = toArrayOrNull(requestedPage.getSearchBefore());
+
+    if (searchAfter != null && searchBefore != null) {
+      return Either.left(
+          List.of("Error: Both searchAfter and searchBefore cannot be set at the same time."));
+    }
+
     return Either.right(
         SearchQueryPage.of(
             (p) ->
                 p.size(requestedPage.getLimit())
                     .from(requestedPage.getFrom())
-                    .searchAfter(toArrayOrNull(requestedPage.getSearchAfter()))
-                    .searchBefore(toArrayOrNull(requestedPage.getSearchBefore()))));
+                    .searchAfter(searchAfter)
+                    .searchBefore(searchBefore)));
   }
 
   public static Either<List<String>, ProcessInstanceSort> toSearchQuerySort(

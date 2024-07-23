@@ -479,7 +479,7 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public UserTaskQuery newUserTaskInstanceQuery() {
+  public UserTaskQuery newUserTaskQuery() {
     return new UserTaskQueryImpl(httpClient, jsonMapper);
   }
 

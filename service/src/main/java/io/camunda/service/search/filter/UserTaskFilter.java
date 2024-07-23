@@ -42,7 +42,7 @@ public final record UserTaskFilter(
     private List<String> userTaskDefinitionIds;
     private List<String> processNames;
     private List<String> assignees;
-    private List<String> userTaskState;
+    private List<String> state;
     private List<Long> processInstanceKeys;
     private List<Long> processDefinitionKeys;
     private List<String> candidateUsers;
@@ -98,7 +98,7 @@ public final record UserTaskFilter(
     }
 
     public Builder userTaskState(final List<String> values) {
-      userTaskState = addValuesToList(userTaskState, values);
+      state = addValuesToList(state, values);
       return this;
     }
 
@@ -223,7 +223,7 @@ public final record UserTaskFilter(
           Objects.requireNonNullElse(userTaskDefinitionIds, Collections.emptyList()),
           Objects.requireNonNullElse(processNames, Collections.emptyList()),
           Objects.requireNonNullElse(assignees, Collections.emptyList()),
-          Objects.requireNonNullElse(userTaskState, Collections.emptyList()),
+          Objects.requireNonNullElse(state, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(candidateUsers, Collections.emptyList()),

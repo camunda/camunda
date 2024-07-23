@@ -223,13 +223,6 @@ paths:
             schema:
               $ref: '#/components/schemas/ProcessInstanceSearchQueryRequest'
       responses:
-        '200':
-          description: >
-            The Process Instance Search successful response.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProcessInstanceSearchQueryResponse"
         '400':
           description: >
             The Process Instance Search Query failed.
@@ -1715,13 +1708,6 @@ components:
           type: object
           additionalProperties:
               type: string
-    VariableFilter:
-      type: object
-      properties:
-        name:
-          type: string
-        value:
-          type: string
     DateFilter:
       type: object
       properties:

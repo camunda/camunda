@@ -59,7 +59,6 @@ public class UserTaskQueryImpl
   @Override
   public HttpCamundaFuture<SearchQueryResponse<UserTaskItem>> send() {
     final HttpCamundaFuture<SearchQueryResponse<UserTaskItem>> result = new HttpCamundaFuture<>();
-    // TODO: Implement the following method on the PR with the mappers
     httpClient.post(
         "/user-tasks/search",
         jsonMapper.toJson(request),
