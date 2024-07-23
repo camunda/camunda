@@ -14,7 +14,9 @@ import io.camunda.service.search.page.SearchQueryPage;
 import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.sort.ProcessInstanceSort;
+import io.camunda.service.search.sort.SortOption.AbstractBuilder;
 import io.camunda.service.search.sort.SortOptionBuilders;
+import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
@@ -22,6 +24,8 @@ import io.camunda.zeebe.gateway.protocol.rest.SearchQuerySortRequest;
 import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterRequest;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import org.springframework.http.ProblemDetail;
 
 public final class SearchQueryRequestMapper {
@@ -31,7 +35,12 @@ public final class SearchQueryRequestMapper {
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQuery(
       final ProcessInstanceSearchQueryRequest request) {
     final var page = toSearchQueryPage(request.getPage()).get();
-    final var sorting = toSearchQuerySort(request.getSort()).get();
+    final var sorting =
+        toSearchQuerySort(
+                request.getSort(),
+                SortOptionBuilders::processInstance,
+                SearchQueryRequestMapper::applyProcessInstanceSortField)
+            .get();
     final var processInstanceFilter = toProcessInstanceFilter(request.getFilter()).get();
     return Either.right(
         SearchQueryBuilders.processInstanceSearchQuery()
@@ -104,38 +113,46 @@ public final class SearchQueryRequestMapper {
     return Either.right(null);
   }
 
-  public static Either<ProblemDetail, ProcessInstanceSort> toSearchQuerySort(
-      final List<SearchQuerySortRequest> sorting) {
+  private static <T, B extends AbstractBuilder<B> & ObjectBuilder<T>>
+      Either<ProblemDetail, T> toSearchQuerySort(
+          final List<SearchQuerySortRequest> sorting,
+          final Supplier<B> builderSupplier,
+          BiConsumer<String, B> sortFieldConsumer) {
     if (sorting != null && !sorting.isEmpty()) {
-      final var builder = SortOptionBuilders.processInstance();
-
+      final var builder = builderSupplier.get();
       for (SearchQuerySortRequest sort : sorting) {
-        final var field = sort.getField();
-        final var order = sort.getOrder();
-
-        if ("processInstanceKey".equals(field)) {
-          builder.processInstanceKey();
-        } else if ("startDate".equals(field)) {
-          builder.startDate();
-        } else if ("endDate".equals(field)) {
-          builder.endDate();
-        } else {
-          throw new RuntimeException("unkown sortBy " + field);
+        if (sort.getField() == null) {
+          throw new IllegalArgumentException("Sort field must not be null");
         }
-
-        if ("asc".equalsIgnoreCase(order)) {
-          builder.asc();
-        } else if ("desc".equalsIgnoreCase(order)) {
-          builder.desc();
-        } else {
-          throw new RuntimeException("unkown sortOrder " + order);
+        if (sort.getOrder() == null) {
+          throw new IllegalArgumentException("Sort order must not be null");
         }
+        sortFieldConsumer.accept(sort.getField(), builder);
+        applySortOrder(sort.getOrder(), builder);
       }
 
       return Either.right(builder.build());
     }
 
     return Either.right(null);
+  }
+
+  private static void applyProcessInstanceSortField(
+      final String field, final ProcessInstanceSort.Builder builder) {
+    switch (field) {
+      case "processInstanceKey" -> builder.processInstanceKey();
+      case "startDate" -> builder.startDate();
+      case "endDate" -> builder.endDate();
+      default -> throw new IllegalArgumentException("Unknown sortBy: " + field);
+    }
+  }
+
+  private static void applySortOrder(final String order, final AbstractBuilder<?> builder) {
+    switch (order.toLowerCase()) {
+      case "asc" -> builder.asc();
+      case "desc" -> builder.desc();
+      default -> throw new IllegalArgumentException("Unknown sortOrder " + order);
+    }
   }
 
   private static Object[] toArrayOrNull(final List<Object> values) {
