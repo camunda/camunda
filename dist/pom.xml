@@ -156,11 +156,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>identity-backend</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>identity-webjar</artifactId>
     </dependency>
 
@@ -212,11 +207,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-authentication</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.data</groupId>
-      <artifactId>spring-data-jpa</artifactId>
     </dependency>
 
     <dependency>
@@ -682,7 +672,6 @@
 
             <!-- Needed for configuring the Identity SDK by providing an IdentityConfiguration bean -->
             <dependency>io.camunda:identity-spring-boot-autoconfigure</dependency>
-            <dependency>io.camunda:identity-backend</dependency>
             <dependency>io.camunda:identity-common</dependency>
             <dependency>io.camunda:identity-webjar</dependency>
 

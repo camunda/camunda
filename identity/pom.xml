@@ -12,7 +12,6 @@
   <packaging>pom</packaging>
   <name>Identity Parent</name>
   <modules>
-    <module>backend</module>
     <module>client</module>
     <module>common</module>
   </modules>
