@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import net.jcip.annotations.ThreadSafe;
 
 @ThreadSafe
@@ -46,6 +47,15 @@ public final class OAuthCredentialsCache {
       new TypeReference<Map<String, OAuthCachedCredentials>>() {};
   private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
 
+  /**
+   * This lock is used to make access to the cache file thread-safe. It allows multiple threads to
+   * read at once, as long as no threads are writing. Only one thread is allowed to write at a time.
+   */
+  private static final ReentrantReadWriteLock READ_WRITE_LOCK = new ReentrantReadWriteLock();
+
+  private static final ReentrantReadWriteLock.ReadLock READ_LOCK = READ_WRITE_LOCK.readLock();
+  private static final ReentrantReadWriteLock.WriteLock WRITE_LOCK = READ_WRITE_LOCK.writeLock();
+
   private final File cacheFile;
   private final AtomicReference<Map<String, OAuthCachedCredentials>> audiences;
 
@@ -55,12 +65,17 @@ public final class OAuthCredentialsCache {
   }
 
   public OAuthCredentialsCache readCache() throws IOException {
-    if (!cacheFile.exists() || cacheFile.length() == 0) {
-      return this;
-    }
+    READ_LOCK.lock();
+    try {
+      if (!cacheFile.exists() || cacheFile.length() == 0) {
+        return this;
+      }
 
-    final Map<String, OAuthCachedCredentials> cache = MAPPER.readValue(cacheFile, TYPE_REFERENCE);
-    audiences.set(cache);
+      final Map<String, OAuthCachedCredentials> cache = MAPPER.readValue(cacheFile, TYPE_REFERENCE);
+      audiences.set(cache);
+    } finally {
+      READ_LOCK.unlock();
+    }
 
     return this;
   }
@@ -73,8 +88,13 @@ public final class OAuthCredentialsCache {
       cache.put(audience.getKey(), Collections.singletonMap(KEY_AUTH, audience.getValue()));
     }
 
-    ensureCacheFileExists();
-    MAPPER.writer().writeValue(cacheFile, cache);
+    WRITE_LOCK.lock();
+    try {
+      ensureCacheFileExists();
+      MAPPER.writer().writeValue(cacheFile, cache);
+    } finally {
+      WRITE_LOCK.unlock();
+    }
   }
 
   public Optional<ZeebeClientCredentials> get(final String endpoint) {
