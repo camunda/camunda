@@ -20,7 +20,7 @@ public enum ScaleIntent implements Intent {
   RELOCATE_MESSAGES_STARTED(1),
   RELOCATE_MESSAGES_COMPLETED(2),
 
-  // per correlationKey
+  // per correlationKey (TODO: This could be per messageName and correlationKey)
   MSG_SUBSCRIPTION_RELOCATION_START(3),
   MSG_SUBSCRIPTION_RELOCATION_STARTED(4),
   MSG_SUBSCRIPTION_RELOCATION_CONTINUE(5),
