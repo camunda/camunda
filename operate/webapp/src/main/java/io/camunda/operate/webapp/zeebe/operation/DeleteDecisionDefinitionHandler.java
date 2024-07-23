@@ -35,7 +35,7 @@ public class DeleteDecisionDefinitionHandler extends AbstractOperationHandler
   @Autowired private DecisionWriter decisionWriter;
 
   @Override
-  public void handleWithException(OperationEntity operation) throws Exception {
+  public void handleWithException(final OperationEntity operation) throws Exception {
 
     if (operation.getDecisionDefinitionKey() == null) {
       failOperation(operation, "No decision definition key is provided.");
@@ -51,7 +51,7 @@ public class DeleteDecisionDefinitionHandler extends AbstractOperationHandler
         String.format(
             "Operation [%s]: Sending Zeebe delete command for decisionRequirementsKey [%s]...",
             operation.getId(), decisionRequirementsKey));
-    zeebeClient.newDeleteResourceCommand(decisionRequirementsKey).send().join();
+    camundaClient.newDeleteResourceCommand(decisionRequirementsKey).send().join();
     markAsSent(operation);
     LOGGER.info(
         String.format(
@@ -84,8 +84,8 @@ public class DeleteDecisionDefinitionHandler extends AbstractOperationHandler
     operationsManager.completeOperation(operation);
   }
 
-  private void updateInstancesInBatchOperation(final OperationEntity operation, long increment)
-      throws PersistenceException {
+  private void updateInstancesInBatchOperation(
+      final OperationEntity operation, final long increment) throws PersistenceException {
     operationsManager.updateInstancesInBatchOperation(operation.getBatchOperationId(), increment);
   }
 }

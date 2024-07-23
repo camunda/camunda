@@ -9,6 +9,7 @@ package io.camunda.tasklist.data;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CamundaClient;
 import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.FormIndex;
@@ -16,7 +17,6 @@ import io.camunda.tasklist.schema.indices.UserIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.PayloadUtil;
 import io.camunda.tasklist.util.ZeebeTestUtil;
-import io.camunda.zeebe.client.ZeebeClient;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.text.SimpleDateFormat;
@@ -43,9 +43,7 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
   @Autowired protected UserIndex userIndex;
   protected PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-  @Autowired
-  @Qualifier("tasklistZeebeClient")
-  private ZeebeClient zeebeClient;
+  @Autowired private CamundaClient camundaClient;
 
   @Autowired private FormIndex formIndex;
 
@@ -148,30 +146,30 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
     } else if (choice == 1) {
       payload = payloadUtil.readJSONStringFromClasspath("/large-payload.json");
     }
-    ZeebeTestUtil.startProcessInstance(zeebeClient, "simpleProcess", payload);
+    ZeebeTestUtil.startProcessInstance(camundaClient, "simpleProcess", payload);
   }
 
   private void startBigFormProcess() {
-    ZeebeTestUtil.startProcessInstance(zeebeClient, "bigFormProcess", null);
+    ZeebeTestUtil.startProcessInstance(camundaClient, "bigFormProcess", null);
   }
 
   private void startCarForRentProcess() {
-    ZeebeTestUtil.startProcessInstance(zeebeClient, "registerCarForRent", null);
+    ZeebeTestUtil.startProcessInstance(camundaClient, "registerCarForRent", null);
   }
 
   private void startTwoUserTasks() {
-    ZeebeTestUtil.startProcessInstance(zeebeClient, "twoUserTasks", null);
+    ZeebeTestUtil.startProcessInstance(camundaClient, "twoUserTasks", null);
   }
 
   private void startMultipleVersionsProcess() {
-    ZeebeTestUtil.startProcessInstance(zeebeClient, "multipleVersions", null);
+    ZeebeTestUtil.startProcessInstance(camundaClient, "multipleVersions", null);
   }
 
   private void startOrderProcess() {
     final float price1 = Math.round(random.nextFloat() * 100000) / 100;
     final float price2 = Math.round(random.nextFloat() * 10000) / 100;
     ZeebeTestUtil.startProcessInstance(
-        zeebeClient,
+        camundaClient,
         "orderProcess",
         "{\n"
             + "  \"clientNo\": \"CNT-1211132-02\",\n"
@@ -226,40 +224,40 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
             + followUpDate
             + "\"}";
 
-    ZeebeTestUtil.startProcessInstance(zeebeClient, "flightRegistration", payload);
+    ZeebeTestUtil.startProcessInstance(camundaClient, "flightRegistration", payload);
   }
 
   private void deployProcesses() {
     // Deploy Forms
-    zeebeClient
+    camundaClient
         .newDeployResourceCommand()
         .addResourceFromClasspath("formDeployedV1.form")
         .send()
         .join();
 
-    zeebeClient
+    camundaClient
         .newDeployResourceCommand()
         .addResourceFromClasspath("formDeployedV2.form")
         .send()
         .join();
 
     // Deploy Processes
-    ZeebeTestUtil.deployProcess(zeebeClient, "startedByLinkedForm.bpmn");
-    ZeebeTestUtil.deployProcess(zeebeClient, "formIdProcessDeployed.bpmn");
-    ZeebeTestUtil.deployProcess(zeebeClient, "orderProcess.bpmn");
-    ZeebeTestUtil.deployProcess(zeebeClient, "registerPassenger.bpmn");
-    ZeebeTestUtil.deployProcess(zeebeClient, "simpleProcess.bpmn");
-    ZeebeTestUtil.deployProcess(zeebeClient, "bigFormProcess.bpmn");
-    ZeebeTestUtil.deployProcess(zeebeClient, "registerCarForRent.bpmn");
-    ZeebeTestUtil.deployProcess(zeebeClient, "twoUserTasks.bpmn");
-    ZeebeTestUtil.deployProcess(zeebeClient, "multipleVersions.bpmn");
-    ZeebeTestUtil.deployProcess(zeebeClient, "multipleVersions-v2.bpmn");
-    ZeebeTestUtil.deployProcess(zeebeClient, "subscribeFormProcess.bpmn");
-    ZeebeTestUtil.deployProcess(zeebeClient, "startedByFormProcessWithoutPublic.bpmn");
-    ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess.bpmn");
-    ZeebeTestUtil.deployProcess(zeebeClient, "travelSearchProcess_v2.bpmn");
-    ZeebeTestUtil.deployProcess(zeebeClient, "requestAnnualLeave.bpmn");
-    ZeebeTestUtil.deployProcess(zeebeClient, "two_processes.bpmn");
+    ZeebeTestUtil.deployProcess(camundaClient, "startedByLinkedForm.bpmn");
+    ZeebeTestUtil.deployProcess(camundaClient, "formIdProcessDeployed.bpmn");
+    ZeebeTestUtil.deployProcess(camundaClient, "orderProcess.bpmn");
+    ZeebeTestUtil.deployProcess(camundaClient, "registerPassenger.bpmn");
+    ZeebeTestUtil.deployProcess(camundaClient, "simpleProcess.bpmn");
+    ZeebeTestUtil.deployProcess(camundaClient, "bigFormProcess.bpmn");
+    ZeebeTestUtil.deployProcess(camundaClient, "registerCarForRent.bpmn");
+    ZeebeTestUtil.deployProcess(camundaClient, "twoUserTasks.bpmn");
+    ZeebeTestUtil.deployProcess(camundaClient, "multipleVersions.bpmn");
+    ZeebeTestUtil.deployProcess(camundaClient, "multipleVersions-v2.bpmn");
+    ZeebeTestUtil.deployProcess(camundaClient, "subscribeFormProcess.bpmn");
+    ZeebeTestUtil.deployProcess(camundaClient, "startedByFormProcessWithoutPublic.bpmn");
+    ZeebeTestUtil.deployProcess(camundaClient, "travelSearchProcess.bpmn");
+    ZeebeTestUtil.deployProcess(camundaClient, "travelSearchProcess_v2.bpmn");
+    ZeebeTestUtil.deployProcess(camundaClient, "requestAnnualLeave.bpmn");
+    ZeebeTestUtil.deployProcess(camundaClient, "two_processes.bpmn");
   }
 
   @PreDestroy

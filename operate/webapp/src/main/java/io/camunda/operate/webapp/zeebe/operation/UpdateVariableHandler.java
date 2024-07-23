@@ -10,9 +10,9 @@ package io.camunda.operate.webapp.zeebe.operation;
 import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
 import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
 
+import io.camunda.client.api.response.SetVariablesResponse;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
-import io.camunda.zeebe.client.api.response.SetVariablesResponse;
 import java.util.Set;
 import org.springframework.stereotype.Component;
 
@@ -21,11 +21,11 @@ import org.springframework.stereotype.Component;
 public class UpdateVariableHandler extends AbstractOperationHandler implements OperationHandler {
 
   @Override
-  public void handleWithException(OperationEntity operation) throws Exception {
+  public void handleWithException(final OperationEntity operation) throws Exception {
     final String updateVariableJson =
         mergeVariableJson(operation.getVariableName(), operation.getVariableValue());
     final SetVariablesResponse response =
-        zeebeClient
+        camundaClient
             .newSetVariablesCommand(operation.getScopeKey())
             .variables(updateVariableJson)
             .local(true)
@@ -39,7 +39,7 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
     return Set.of(UPDATE_VARIABLE, ADD_VARIABLE);
   }
 
-  private String mergeVariableJson(String variableName, String variableValue) {
+  private String mergeVariableJson(final String variableName, final String variableValue) {
     return String.format("{\"%s\":%s}", variableName, variableValue);
   }
 }
