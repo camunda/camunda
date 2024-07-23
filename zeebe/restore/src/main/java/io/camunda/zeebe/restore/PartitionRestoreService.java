@@ -15,10 +15,10 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
-import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
+import io.camunda.zeebe.snapshots.ChecksumProvider;
 import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
@@ -27,6 +27,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -41,12 +42,17 @@ public class PartitionRestoreService {
 
   final Path rootDirectory;
   private final RaftPartition partition;
+  private final ChecksumProvider checksumProvider;
 
-  public PartitionRestoreService(final BackupStore backupStore, final RaftPartition partition) {
+  public PartitionRestoreService(
+      final BackupStore backupStore,
+      final RaftPartition partition,
+      final ChecksumProvider checksumProvider) {
     this.backupStore = backupStore;
     partitionId = partition.id().id();
     rootDirectory = partition.dataDirectory().toPath();
     this.partition = partition;
+    this.checksumProvider = Objects.requireNonNull(checksumProvider);
   }
 
   /**
@@ -178,9 +184,7 @@ public class PartitionRestoreService {
     @SuppressWarnings("resource")
     final RestorableSnapshotStore snapshotStore =
         new FileBasedSnapshotStore(
-            partition.id().id(),
-            partition.dataDirectory().toPath(),
-            new ChecksumProviderRocksDBImpl());
+            partition.id().id(), partition.dataDirectory().toPath(), checksumProvider);
 
     try {
       snapshotStore.restore(
