@@ -123,8 +123,14 @@ public class Engine implements RecordProcessor {
       final boolean noBanCheckNeeded =
           !(record.getIntent() instanceof ProcessInstanceRelatedIntent)
               || record.getIntent() instanceof ProcessInstanceCreationIntent;
-      if (noBanCheckNeeded || !processingState.getBannedInstanceState().isBanned(typedCommand)) {
+      final boolean isBanned = processingState.getBannedInstanceState().isBanned(typedCommand);
+      if (noBanCheckNeeded || !isBanned) {
         currentProcessor.processRecord(record);
+      }
+
+      if (isBanned) {
+        // we skip processing the banned instance
+        processingResultBuilder.setSkipped(true);
       }
     }
     return processingResultBuilder.build();
