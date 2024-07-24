@@ -213,6 +213,29 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /user-tasks/search:
+    post:
+      tags:
+        - User task
+      summary: User Task Search Query
+      description: Search for user tasks based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserTaskSearchQueryRequest'
+      responses:
+        '200':
+          $ref: "#/components/responses/UserTaskSearchQueryResponse"
+        '400':
+          description: >
+            The User Task Search Query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /process-instances/search:
     post:
       tags:
@@ -1149,8 +1172,130 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/TopologyResponse"
-
+    UserTaskSearchQueryResponse:
+      description: User task search response.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/UserTaskSearchQueryResponse"
   schemas:
+    UserTaskSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      description: User task search query request.
+      type: object
+      properties:
+        filter:
+          $ref: "#/components/schemas/UserTaskFilterRequest"
+    UserTaskSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      description: User task search query response.
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserTaskItem"
+    UserTaskFilterRequest:
+      description: User task filter request.
+      type: object
+      properties:
+        userTaskKey:
+          type: integer
+          format: int64
+        taskState:
+          type: string
+        assignee:
+          type: string
+        elementId:
+          type: string
+        candidateGroup:
+          type: string
+        candidateUser:
+          type: string
+        processDefinitionKey:
+          type: integer
+          format: int64
+        processInstanceKey:
+          type: integer
+          format: int64
+        creationDate:
+          $ref: "#/components/schemas/DateFilter"
+        completionDate:
+          $ref: "#/components/schemas/DateFilter"
+        followUpDate:
+          $ref: "#/components/schemas/DateFilter"
+        dueDate:
+          $ref: "#/components/schemas/DateFilter"
+        tenantIds:
+          type: string
+    UserTaskItem:
+      type: object
+      properties:
+        userTaskKey:
+          type: integer
+          format: int64
+        taskState:
+          type: string
+        assignee:
+          type: string
+        elementId:
+          type: string
+        elementInstanceKey:
+          type: integer
+          format: int64
+        candidateGroup:
+          type: array
+          items:
+            type: string
+        candidateUser:
+          type: array
+          items:
+            type: string
+        bpmnProcessId:
+          type: string
+        processDefinitionKey:
+          type: integer
+          format: int64
+        processInstanceKey:
+          type: integer
+          format: int64
+        formKey:
+          type: integer
+          format: int64
+        creationDate:
+          type: string
+          format: date-time
+        completionDate:
+          type: string
+          format: date-time
+        followUpDate:
+          type: string
+          format: date-time
+        dueDate:
+          type: string
+          format: date-time
+        tenantIds:
+          type: string
+        externalFormReference:
+          type: string
+        processDefinitionVersion:
+          type: integer
+          format: int32
+        customHeaders:
+          type: object
+          additionalProperties:
+            type: string
+    DateFilter:
+      type: object
+      properties:
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
     TopologyResponse:
       description: The response of a topology request.
       type: object
