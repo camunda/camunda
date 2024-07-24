@@ -51,6 +51,11 @@ public class TestConcurrencyControl implements ConcurrencyControl {
   @Override
   public <T> void runOnCompletion(
       final Collection<ActorFuture<T>> actorFutures, final Consumer<Throwable> callback) {
+    if (actorFutures.isEmpty()) {
+      callback.accept(null);
+      return;
+    }
+
     final var error = new AtomicReference<Throwable>();
     final var futuresCompleted = new AtomicInteger(actorFutures.size());
     final var finalFuture = new TestActorFuture<>();
