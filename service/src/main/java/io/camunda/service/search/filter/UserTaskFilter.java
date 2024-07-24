@@ -21,9 +21,9 @@ public final record UserTaskFilter(
     List<String> userTaskDefinitionIds,
     List<String> processNames,
     List<String> assignees,
-    List<String> state,
+    List<String> userTaskState,
     List<Long> processInstanceKeys,
-    List<Long> processDefinitionKeys,
+    List<String> processDefinitionKeys,
     List<String> candidateUsers,
     List<String> candidateGroups,
     boolean created,
@@ -44,7 +44,7 @@ public final record UserTaskFilter(
     private List<String> assignees;
     private List<String> userTaskState;
     private List<Long> processInstanceKeys;
-    private List<Long> processDefinitionKeys;
+    private List<String> processDefinitionKeys;
     private List<String> candidateUsers;
     private List<String> candidateGroups;
     private boolean created;
@@ -165,11 +165,11 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder processDefinitionKeys(final Long value, final Long... values) {
+    public Builder processDefinitionKeys(final String value, final String... values) {
       return processDefinitionKeys(collectValues(value, values));
     }
 
-    public Builder processDefinitionKeys(final List<Long> values) {
+    public Builder processDefinitionKeys(final List<String> values) {
       processDefinitionKeys = addValuesToList(processDefinitionKeys, values);
       return this;
     }

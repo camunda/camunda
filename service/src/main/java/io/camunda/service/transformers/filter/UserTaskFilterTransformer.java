@@ -47,7 +47,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     final var candidateGroupsQuery = getCandidateGroupsQuery(filter.candidateGroups());
 
     final var assigneesQuery = getAssigneesQuery(filter.assignees());
-    final var stateQuery = getStateQuery(filter.state());
+    final var stateQuery = getStateQuery(filter.userTaskState());
     final var tenantQuery = getTenantQuery(filter.tenantIds());
 
     // Temporary internal condition - in order to bring only Zeebe User Tasks from Tasklist Indices
@@ -72,12 +72,13 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
   @Override
   public List<String> toIndices(final UserTaskFilter filter) {
-    final var created = filter.created();
+    final var completed = filter.completed();
+    final var canceled = filter.canceled();
 
-    if (created) {
-      return Arrays.asList("tasklist-task-8.5.0_");
-    } else {
+    if (completed || canceled) {
       return Arrays.asList("tasklist-task-8.5.0_alias");
+    } else {
+      return Arrays.asList("tasklist-task-8.5.0_");
     }
   }
 
@@ -93,8 +94,8 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     return longTerms("processInstanceId", processInstanceKeys);
   }
 
-  private SearchQuery getProcessDefinitionKeyQuery(final List<Long> processDefinitionIds) {
-    return longTerms("processDefinitionId", processDefinitionIds);
+  private SearchQuery getProcessDefinitionKeyQuery(final List<String> processDefinitionIds) {
+    return stringTerms("processDefinitionId", processDefinitionIds);
   }
 
   private SearchQuery getUserTaskKeysQuery(final List<Long> userTaskKeys) {

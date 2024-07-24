@@ -280,7 +280,7 @@ public class UserTaskFilterTest {
   public void shouldQueryByProcessDefinitionKey() {
     // given
     final var processDefinitionKeyFilter =
-        FilterBuilders.userTask((f) -> f.processDefinitionKeys(123L));
+        FilterBuilders.userTask((f) -> f.processDefinitionKeys("processDef1"));
     final var searchQuery =
         SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(processDefinitionKeyFilter));
 
