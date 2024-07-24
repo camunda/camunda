@@ -20,6 +20,7 @@ import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.service.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilter> {
 
@@ -47,7 +48,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     final var candidateGroupsQuery = getCandidateGroupsQuery(filter.candidateGroups());
 
     final var assigneesQuery = getAssigneesQuery(filter.assignees());
-    final var stateQuery = getStateQuery(filter.userTaskState());
+    final var stateQuery = getStateQuery(filter.states());
     final var tenantQuery = getTenantQuery(filter.tenantIds());
 
     // Temporary internal condition - in order to bring only Zeebe User Tasks from Tasklist Indices
@@ -72,14 +73,10 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
   @Override
   public List<String> toIndices(final UserTaskFilter filter) {
-    final var completed = filter.completed();
-    final var canceled = filter.canceled();
-
-    if (completed || canceled) {
-      return Arrays.asList("tasklist-task-8.5.0_alias");
-    } else {
-      return Arrays.asList("tasklist-task-8.5.0_");
+    if(Objects.equals(filter.states().getFirst(), "CREATED") && filter.states().size() == 1){
+      return Arrays.asList("tasklist-task-8.5.0_"); //Not necessary visit alias on this case
     }
+    return Arrays.asList("tasklist-task-8.5.0_alias");
   }
 
   private SearchQuery getDateFilter(final DateValueFilter filter, final String field) {
