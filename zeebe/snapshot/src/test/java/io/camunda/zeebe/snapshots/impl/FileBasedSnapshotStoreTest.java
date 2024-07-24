@@ -61,7 +61,7 @@ public class FileBasedSnapshotStoreTest {
     final var root = temporaryFolder.getRoot().toPath();
 
     // when
-    final var store = new FileBasedSnapshotStore(0, 1, root);
+    final var store = new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of());
 
     // then
     assertThat(root.resolve(FileBasedSnapshotStore.SNAPSHOTS_DIRECTORY)).exists().isDirectory();
@@ -423,7 +423,7 @@ public class FileBasedSnapshotStoreTest {
   }
 
   private FileBasedSnapshotStore createStore(final Path root) {
-    final var store = new FileBasedSnapshotStore(0, 1, root);
+    final var store = new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of());
     scheduler.submitActor(store).join();
 
     return store;
