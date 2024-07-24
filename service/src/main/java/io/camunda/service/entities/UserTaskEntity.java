@@ -9,6 +9,7 @@ package io.camunda.service.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
+import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public final record UserTaskEntity(
@@ -27,4 +28,7 @@ public final record UserTaskEntity(
     String dueDate,
     String followUpDate,
     List<String> candidateGroups,
-    List<String> candidateUsers) {}
+    List<String> candidateUsers,
+    String externalFormReference,
+    Integer processDefinitionVersion,
+    Map<String, String> customHeaders) {}
