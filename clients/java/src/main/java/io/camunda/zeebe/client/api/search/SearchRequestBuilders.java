@@ -18,6 +18,8 @@ package io.camunda.zeebe.client.api.search;
 import io.camunda.zeebe.client.impl.search.ProcessInstanceFilterImpl;
 import io.camunda.zeebe.client.impl.search.ProcessInstanceSortImpl;
 import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;
+import io.camunda.zeebe.client.impl.search.UserTaskFilterImpl;
+import io.camunda.zeebe.client.impl.search.UserTaskSortImpl;
 import io.camunda.zeebe.client.impl.search.VariableValueFilterImpl;
 import java.util.function.Consumer;
 
@@ -72,5 +74,25 @@ public final class SearchRequestBuilders {
     final SearchRequestPage filter = searchRequestPage();
     fn.accept(filter);
     return filter;
+  }
+
+  public static UserTaskFilter userTaskFilter() {
+    return new UserTaskFilterImpl();
+  }
+
+  public static UserTaskFilter userTaskFilter(final Consumer<UserTaskFilter> fn) {
+    final UserTaskFilter filter = userTaskFilter();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static UserTaskSort userTaskSort() {
+    return new UserTaskSortImpl();
+  }
+
+  public static UserTaskSort userTaskSort(final Consumer<UserTaskSort> fn) {
+    final UserTaskSort sort = userTaskSort();
+    fn.accept(sort);
+    return sort;
   }
 }
