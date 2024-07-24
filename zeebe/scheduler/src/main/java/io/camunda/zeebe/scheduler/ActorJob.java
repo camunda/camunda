@@ -24,7 +24,6 @@ public final class ActorJob {
   TaskSchedulingState schedulingState;
   Actor actor;
   ActorTask task;
-  ActorThread actorThread;
   private Callable<?> callable;
   private Runnable runnable;
   private Object invocationResult;
@@ -41,7 +40,6 @@ public final class ActorJob {
 
   @Async.Execute
   void execute(final ActorThread runner) {
-    actorThread = runner;
     observeSchedulingLatency(runner.getActorMetrics());
     try {
       invoke();
@@ -55,8 +53,6 @@ public final class ActorJob {
       FATAL_ERROR_HANDLER.handleError(e);
       task.onFailure(e);
     } finally {
-      actorThread = null;
-
       // in any case, success or exception, decide if the job should be resubmitted
       if (isTriggeredBySubscription() || runnable == null) {
         schedulingState = TaskSchedulingState.TERMINATED;
@@ -116,7 +112,6 @@ public final class ActorJob {
     actor = null;
 
     task = null;
-    actorThread = null;
 
     callable = null;
     runnable = null;
