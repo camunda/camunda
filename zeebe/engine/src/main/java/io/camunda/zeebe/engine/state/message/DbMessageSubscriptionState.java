@@ -166,8 +166,13 @@ public final class DbMessageSubscriptionState
               record.getElementInstanceKey(), record.getMessageName()));
     }
 
-    // update the message key and the variables
-    subscription.getRecord().setMessageKey(messageKey).setVariables(messageVariables);
+    // update the message key, variables and request data
+    subscription
+        .getRecord()
+        .setMessageKey(messageKey)
+        .setVariables(messageVariables)
+        .setRequestId(record.getRequestId())
+        .setRequestStreamId(record.getRequestStreamId());
 
     updateCorrelatingFlag(subscription, true);
 
