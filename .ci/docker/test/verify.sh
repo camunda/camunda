@@ -91,7 +91,6 @@ else
 fi
 
 BASE_IMAGE_REGEX='ARG BASE_IMAGE="([^"]+)"'
-DOCKERFILE=$(<"${BASH_SOURCE%/*}/../../../${DOCKERFILENAME}")
 if [[ $DOCKERFILE =~ $BASE_IMAGE_REGEX ]]; then
     BASE_IMAGE="${BASH_REMATCH[1]}"
     echo "Base image found: $BASE_IMAGE"
