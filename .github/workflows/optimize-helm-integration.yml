@@ -21,7 +21,7 @@ jobs:
     with:
       identifier: optimize-int
       test-enabled: true
-      caller-git-ref: master
+      caller-git-ref: merge-optimize-in
       extra-values: |
         optimize:
           image:
