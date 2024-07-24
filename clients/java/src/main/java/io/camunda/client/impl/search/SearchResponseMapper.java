@@ -23,6 +23,8 @@ import io.camunda.client.impl.search.response.SearchQueryResponseImpl;
 import io.camunda.client.impl.search.response.SearchResponsePageImpl;
 import io.camunda.client.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.client.protocol.rest.SearchQueryPageResponse;
+import io.camunda.client.protocol.rest.UserTaskItem;
+import io.camunda.client.protocol.rest.UserTaskSearchQueryResponse;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -52,5 +54,21 @@ public final class SearchResponseMapper {
             .orElse(Collections.emptyList());
 
     return new SearchQueryResponseImpl<>(instances, page);
+  }
+
+  public static SearchQueryResponse<UserTaskItem> toUserTaskSearchResponse(
+      final UserTaskSearchQueryResponse response) {
+    final SearchQueryPageResponse pageResponse = response.getPage();
+    final SearchResponsePage page = toSearchResponsePage(pageResponse);
+
+    return new SearchQueryResponseImpl<>(response.getItems(), page);
+  }
+
+  private static SearchResponsePage toSearchResponsePage(
+      final SearchQueryPageResponse pageResponse) {
+    return new SearchResponsePageImpl(
+        pageResponse.getTotalItems(),
+        pageResponse.getFirstSortValues(),
+        pageResponse.getLastSortValues());
   }
 }

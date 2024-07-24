@@ -49,6 +49,7 @@ import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.ProcessInstanceQuery;
+import io.camunda.client.api.search.UserTaskQuery;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.impl.command.AssignUserTaskCommandImpl;
@@ -74,6 +75,7 @@ import io.camunda.client.impl.command.UpdateUserTaskCommandImpl;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpClientFactory;
 import io.camunda.client.impl.search.ProcessInstanceQueryImpl;
+import io.camunda.client.impl.search.UserTaskQueryImpl;
 import io.camunda.client.impl.util.ExecutorResource;
 import io.camunda.client.impl.util.VersionUtil;
 import io.camunda.client.impl.worker.JobClientImpl;
@@ -474,6 +476,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public ProcessInstanceQuery newProcessInstanceQuery() {
     return new ProcessInstanceQueryImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public UserTaskQuery newUserTaskQuery() {
+    return new UserTaskQueryImpl(httpClient, jsonMapper);
   }
 
   private JobClient newJobClient() {

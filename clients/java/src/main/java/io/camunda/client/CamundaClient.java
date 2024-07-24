@@ -37,6 +37,7 @@ import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.ProcessInstanceQuery;
+import io.camunda.client.api.search.UserTaskQuery;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
@@ -585,4 +586,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the process instance query
    */
   ProcessInstanceQuery newProcessInstanceQuery();
+
+  /**
+   * Executes a search request to query user tasks.
+   *
+   * <pre>
+   * zeebeClient
+   *  .newUserTaskQuery()
+   *  .filter((f) -> f.userTaskKey(userTaskKey))
+   *  .sort((s) -> s.startDate().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the user task query
+   */
+  UserTaskQuery newUserTaskQuery();
 }
