@@ -448,6 +448,38 @@ public final class CreateDeploymentMultiplePartitionsTest {
   }
 
   @Test
+  public void shouldWriteProcessCreatedEventsOnAllPartitions() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                "process.bpmn",
+                Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+            .deploy();
+
+    // then
+    ENGINE.forEachPartition(
+        partitionId -> {
+          final var record =
+              RecordingExporter.processRecords()
+                  .withPartitionId(partitionId)
+                  .withIntents(ProcessIntent.CREATED)
+                  .withBpmnProcessId(processId)
+                  .limit(1)
+                  .getFirst();
+          assertThat(record).isNotNull();
+          assertThat(record.getValue().getResourceName()).isEqualTo("process.bpmn");
+          assertThat(record.getValue().getVersion()).isEqualTo(1);
+          assertThat(record.getValue().getDeploymentKey()).isEqualTo(deployment.getKey());
+          assertThat(record.getKey()).isEqualTo(record.getValue().getProcessDefinitionKey());
+        });
+  }
+
+  @Test
   public void shouldWriteProcessCreatedEventsWithSameKeys() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
