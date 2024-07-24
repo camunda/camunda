@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.processing.common;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder.ElementTreePathProperties;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
@@ -18,6 +20,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import java.nio.charset.Charset;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.Before;
 import org.junit.Rule;
@@ -27,11 +30,10 @@ public class ElementTreePathBuilderTest {
   @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableElementInstanceState elementInstanceState;
-  private MutableProcessingState processingState;
 
   @Before
   public void setUp() {
-    processingState = stateRule.getProcessingState();
+    final MutableProcessingState processingState = stateRule.getProcessingState();
     elementInstanceState = processingState.getElementInstanceState();
   }
 
@@ -76,13 +78,18 @@ public class ElementTreePathBuilderTest {
   @Test
   public void shouldIncludeProcessDefinitionAndCallingElementTreePaths() {
     // given
+    final String callActivityId = "callActivity";
+    final HashFunction hashFunction = Hashing.murmur3_128();
+    final var callActivityIdHash =
+        hashFunction.hashString(callActivityId, Charset.defaultCharset()).asLong();
+
     final var processARecord = createProcessInstanceRecord();
     final ElementInstance processA =
         elementInstanceState.newInstance(
             100, processARecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     final var callActivityRecord = createProcessInstanceRecord();
-    callActivityRecord.setElementId("callActivity");
+    callActivityRecord.setElementId(callActivityId);
     final ElementInstance callActivityElementInstance =
         elementInstanceState.newInstance(
             processA, 101, callActivityRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
@@ -116,7 +123,7 @@ public class ElementTreePathBuilderTest {
         .containsExactly(
             processARecord.getProcessDefinitionKey(), processBRecord.getProcessDefinitionKey());
     assertThat(properties.callingElementPath()).hasSize(1);
-    assertThat(properties.callingElementPath().getFirst()).isEqualTo("callActivity");
+    assertThat(properties.callingElementPath().getFirst()).isEqualTo(callActivityIdHash);
   }
 
   private ProcessInstanceRecord createProcessInstanceRecord() {

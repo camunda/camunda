@@ -7,8 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.common;
 
+import com.google.common.hash.HashCode;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import java.nio.charset.Charset;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -17,8 +21,11 @@ public class ElementTreePathBuilder {
   private ElementInstanceState elementInstanceState;
   private Long elementInstanceKey;
   private ElementTreePathProperties properties;
+  private final HashFunction hashFunction;
 
-  public ElementTreePathBuilder() {}
+  public ElementTreePathBuilder() {
+    hashFunction = Hashing.murmur3_128();
+  }
 
   public ElementTreePathBuilder withElementInstanceState(
       final ElementInstanceState elementInstanceState) {
@@ -56,21 +63,24 @@ public class ElementTreePathBuilder {
 
     final long callingElementInstanceKey = processInstanceRecord.getParentElementInstanceKey();
     if (callingElementInstanceKey != -1) {
-      properties.callingElementPath.addFirst(getCallActivityId(callingElementInstanceKey));
+      properties.callingElementPath.addFirst(getCallActivityIdHash(callingElementInstanceKey));
       buildElementTreePathProperties(callingElementInstanceKey);
     }
   }
 
-  private String getCallActivityId(final long callingElementInstanceKey) {
+  private Long getCallActivityIdHash(final long callingElementInstanceKey) {
     final ElementInstance callActivityElementInstance =
         elementInstanceState.getInstance(callingElementInstanceKey);
     final var callActivityInstanceRecord = callActivityElementInstance.getValue();
 
-    return callActivityInstanceRecord.getElementId();
+    final HashCode hashCode =
+        hashFunction.hashString(
+            callActivityInstanceRecord.getElementId(), Charset.defaultCharset());
+    return hashCode.asLong();
   }
 
   public record ElementTreePathProperties(
       List<List<Long>> elementInstancePath,
       List<Long> processDefinitionPath,
-      List<String> callingElementPath) {}
+      List<Long> callingElementPath) {}
 }
