@@ -83,10 +83,6 @@ public final class FileBasedSnapshotStore extends Actor
   private final String actorName;
   private final int partitionId;
 
-  public FileBasedSnapshotStore(final int partitionId, final Path root) {
-    this(partitionId, root, null);
-  }
-
   public FileBasedSnapshotStore(
       final int partitionId, final Path root, final ChecksumProvider checksumProvider) {
     snapshotsDirectory = root.resolve(SNAPSHOTS_DIRECTORY);
