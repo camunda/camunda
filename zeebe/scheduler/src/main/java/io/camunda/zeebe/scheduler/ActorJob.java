@@ -25,7 +25,6 @@ public final class ActorJob {
   ActorTask task;
   private Callable<?> callable;
   private Runnable runnable;
-  private Object invocationResult;
   private ActorFuture resultFuture;
   private ActorSubscription subscription;
   private long scheduledAt = -1;
@@ -41,12 +40,6 @@ public final class ActorJob {
     observeSchedulingLatency(runner.getActorMetrics());
     try {
       invoke();
-
-      if (resultFuture != null) {
-        resultFuture.complete(invocationResult);
-        resultFuture = null;
-      }
-
     } catch (final Throwable e) {
       FATAL_ERROR_HANDLER.handleError(e);
       task.onFailure(e);
@@ -78,9 +71,11 @@ public final class ActorJob {
   }
 
   private void invoke() throws Exception {
+    final Object invocationResult;
     if (callable != null) {
       invocationResult = callable.call();
     } else {
+      invocationResult = null;
       // only tasks triggered by a subscription can "yield"; everything else just executes once
       if (!isTriggeredBySubscription()) {
         final Runnable r = runnable;
@@ -89,6 +84,10 @@ public final class ActorJob {
       } else {
         runnable.run();
       }
+    }
+    if (resultFuture != null) {
+      resultFuture.complete(invocationResult);
+      resultFuture = null;
     }
   }
 
@@ -111,7 +110,6 @@ public final class ActorJob {
 
     callable = null;
     runnable = null;
-    invocationResult = null;
 
     resultFuture = null;
     subscription = null;
