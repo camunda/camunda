@@ -67,6 +67,16 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
     return this;
   }
 
+  @JsonIgnore
+  public DirectBuffer getNameBuffer() {
+    return nameProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getCorrelationKeyBuffer() {
+    return correlationKeyProp.getValue();
+  }
+
   @Override
   public Map<String, Object> getVariables() {
     return MsgPackConverter.convertToMap(variablesProp.getValue());
