@@ -9,7 +9,7 @@
 import {ReactNode} from 'react';
 import {Tag} from '@carbon/react';
 
-import {Tooltip, ModdleElement} from 'components';
+import {ModdleElement} from 'components';
 import {t} from 'translation';
 
 interface NodeListPreviewProps {
@@ -41,19 +41,15 @@ export default function NodeListPreview({nodes, operator, type}: NodeListPreview
     );
   });
 
-  const parameterName = (
-    <Tag type="blue" className="parameterName">
-      {t(
-        'common.filter.nodeModal.preview.' + (operator === 'not in' ? 'notExecutedFlowNodes' : type)
-      )}
-    </Tag>
-  );
+  const parameterName = t(
+    'common.filter.nodeModal.preview.' + (operator === 'not in' ? 'notExecutedFlowNodes' : type)
+  ).toString();
 
   return (
     <>
-      <Tooltip content={parameterName} overflowOnly>
-        {parameterName}
-      </Tooltip>
+      <Tag type="blue" className="parameterName">
+        <span title={parameterName}>{parameterName}</span>
+      </Tag>
       <ul className="previewList filterText">{previewList}</ul>
     </>
   );
