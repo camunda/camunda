@@ -19,14 +19,11 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.zip.CRC32C;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -371,21 +368,19 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
-  public void shouldRestartWithAReceivedSnapshot() throws IOException {
+  public void shouldRestartWithAReceivedSnapshot() {
     // given
-    final Map<String, Long> fileChecksums = new HashMap<>();
-    final var fileContentChecksum = new CRC32C();
-    fileContentChecksum.update(SNAPSHOT_CONTENT.getBytes(StandardCharsets.UTF_8));
-    fileChecksums.put(SNAPSHOT_CONTENT_FILE_NAME, fileContentChecksum.getValue());
-    final var receiverStorePath = temporaryFolder.newFolder("receiver").toPath();
-
     final var store =
         new FileBasedSnapshotStore(
-            1, new SnapshotMetrics(1 + "-" + 1), snapshotsDir, pendingSnapshotsDir);
-    scheduler.submitActor(store);
+            1,
+            new SnapshotMetrics(1 + "-" + 1),
+            snapshotsDir,
+            pendingSnapshotsDir,
+            snapshotPath -> Map.of());
+    scheduler.submitActor(store).join();
 
     // when
-    final var persistedSnapshot = takeTransientSnapshot().persist().join();
+    final var persistedSnapshot = takeTransientSnapshot(1L, store).persist().join();
     final var receivedSnapshot = store.newReceivedSnapshot(persistedSnapshot.getId());
     try (final var reader = persistedSnapshot.newChunkReader()) {
       while (reader.hasNext()) {
@@ -401,7 +396,11 @@ public class FileBasedSnapshotStoreTest {
 
     final var restartedStore =
         new FileBasedSnapshotStore(
-            1, new SnapshotMetrics(1 + "-" + 1), snapshotsDir, pendingSnapshotsDir);
+            1,
+            new SnapshotMetrics(1 + "-" + 1),
+            snapshotsDir,
+            pendingSnapshotsDir,
+            snapshotPath -> Map.of());
     scheduler.submitActor(restartedStore).join();
 
     assertThat(restartedStore.getLatestSnapshot())
