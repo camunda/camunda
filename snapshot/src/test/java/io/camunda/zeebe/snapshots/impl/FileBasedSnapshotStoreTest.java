@@ -368,7 +368,7 @@ public class FileBasedSnapshotStoreTest {
 
     final var store =
         new FileBasedSnapshotStore(
-            PARTITION_ID, receiverStorePath, new TestChecksumProvider(fileChecksums));
+            0, PARTITION_ID, receiverStorePath, new TestChecksumProvider(fileChecksums));
     scheduler.submitActor(store);
 
     // when
@@ -388,7 +388,7 @@ public class FileBasedSnapshotStoreTest {
 
     final var restartedStore =
         new FileBasedSnapshotStore(
-            PARTITION_ID, receiverStorePath, new TestChecksumProvider(fileChecksums));
+            0, PARTITION_ID, receiverStorePath, new TestChecksumProvider(fileChecksums));
     scheduler.submitActor(restartedStore).join();
 
     assertThat(restartedStore.getLatestSnapshot())
