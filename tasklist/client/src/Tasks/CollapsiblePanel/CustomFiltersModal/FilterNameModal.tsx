@@ -9,6 +9,7 @@
 import {TextInput, ModalHeader, ModalBody, ModalFooter} from '@carbon/react';
 import {Modal} from 'modules/components/Modal';
 import {Field, Form} from 'react-final-form';
+import {useTranslation} from 'react-i18next';
 
 type Props = {
   isOpen: boolean;
@@ -17,11 +18,14 @@ type Props = {
 };
 
 const FilterNameModal: React.FC<Props> = ({isOpen, onApply, onCancel}) => {
+  
+  const {t} = useTranslation();
+  
   return (
     <Modal
       variant="composed-modal"
       open={isOpen}
-      aria-label="Save filter"
+      aria-label={t('saveFilterAriaLabel')}
       preventCloseOnClickOutside
       size="sm"
     >
@@ -36,7 +40,7 @@ const FilterNameModal: React.FC<Props> = ({isOpen, onApply, onCancel}) => {
             } = {};
 
             if (!filterName) {
-              errors.filterName = 'Name is required';
+              errors.filterName = t('filterNameRequiredError');
             }
 
             return errors;
@@ -44,15 +48,15 @@ const FilterNameModal: React.FC<Props> = ({isOpen, onApply, onCancel}) => {
         >
           {({handleSubmit, form}) => (
             <>
-              <ModalHeader title="Save filter" buttonOnClick={onCancel} />
+              <ModalHeader title={t('saveFilterTitle')} buttonOnClick={onCancel} />
               <ModalBody hasForm>
                 <form onSubmit={handleSubmit}>
                   <Field name="filterName" required>
                     {({input, meta}) => (
                       <TextInput
                         id="filterName"
-                        labelText="Filter Name"
-                        placeholder="Type name here"
+                        labelText={t('filterNameLabel')}
+                        placeholder={t('filterNamePlaceholder')}
                         required
                         value={input.value}
                         onChange={input.onChange}
@@ -65,8 +69,8 @@ const FilterNameModal: React.FC<Props> = ({isOpen, onApply, onCancel}) => {
                 </form>
               </ModalBody>
               <ModalFooter
-                primaryButtonText="Save and apply"
-                secondaryButtonText="Cancel"
+                primaryButtonText={t('saveAndApplyButton')}
+                secondaryButtonText={t('cancelButton')}
                 onRequestSubmit={form.submit}
                 onRequestClose={onCancel}
               />

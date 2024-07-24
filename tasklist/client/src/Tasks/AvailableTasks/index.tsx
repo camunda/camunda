@@ -7,6 +7,7 @@
  */
 
 import {useEffect, useRef} from 'react';
+import {useTranslation} from 'react-i18next';
 import {Stack} from '@carbon/react';
 import {Search} from '@carbon/react/icons';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
@@ -40,12 +41,14 @@ const AvailableTasks: React.FC<Props> = ({
     scrollableListRef?.current?.scrollTo?.(0, 0);
   }, [filter]);
 
+  const {t} = useTranslation();
+
   return (
     <div
       className={cn(styles.container, {
         [styles.containerPadding]: tasks.length === 0 && !isLoading,
       })}
-      title="Available tasks"
+      title={t('availableTasksTitle')}
     >
       {isLoading ? (
         <Skeleton />
@@ -107,10 +110,10 @@ const AvailableTasks: React.FC<Props> = ({
               <Search size={24} alt="" className={styles.emptyListIcon} />
               <Stack gap={1} className={styles.emptyMessageText}>
                 <span className={styles.emptyMessageHeading}>
-                  No tasks found
+                  {t('noTasksFound')} 
                 </span>
                 <span className={styles.emptyMessageBody}>
-                  There are no tasks matching your filter criteria.
+                  {t('noTasksMatchingCriteria')} 
                 </span>
               </Stack>
             </Stack>

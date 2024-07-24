@@ -8,14 +8,18 @@
 
 import {Tag} from '@carbon/react';
 import {ModellerFormIcon} from 'modules/icons/ModellerFormIcon';
+import {useTranslation} from 'react-i18next';
 
 type Props = {
   variant: 'start-form';
 };
 
 const ProcessTag: React.FC<Props> = ({variant}) => {
+  
+  const {t} = useTranslation();
+
   if (variant === 'start-form') {
-    return <Tag renderIcon={ModellerFormIcon}>Requires form input</Tag>;
+    return <Tag renderIcon={ModellerFormIcon}>{t('requiresFormInput')}</Tag>;
   } else {
     return null;
   }

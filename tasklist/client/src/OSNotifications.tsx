@@ -16,6 +16,7 @@ import {TaskFilters} from 'modules/hooks/useTaskFilters';
 import {useIsPageBlurred} from 'modules/hooks/useIsPageBlurred';
 import {useIsOnline} from 'modules/hooks/useIsOnline';
 import {useInterval} from 'modules/hooks/useInterval';
+import {t} from 'i18next';
 
 const FIFTEEN_MINUTES_IN_MS = 15 * 60 * 1000;
 const FILTER = 'assigned-to-me';
@@ -34,12 +35,15 @@ function taskListWithRefUrl(params: Pick<TaskFilters, 'filter' | 'sortBy'>) {
 }
 
 function createNotification(numTasks: number, navigate: NavigateFunction) {
+  
+  const notificationMessage = numTasks === 1
+  ? t('oneTaskAssigned')
+  : numTasks >= 50
+    ? t('fiftyOrMoreTasksAssigned')
+    : t('multipleTasksAssigned', { count: numTasks });
+  
   const notification = new Notification(
-    numTasks === 1
-      ? '1 task is assigned to you.'
-      : numTasks >= 50
-        ? '50+ tasks are assigned to you.'
-        : `${numTasks} tasks are assigned to you.`,
+    notificationMessage,
     {
       icon: '/favicon.ico',
       body: 'Click here to see the details.',

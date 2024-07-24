@@ -12,6 +12,7 @@ import {Notification as NotificationType} from 'modules/stores/notifications';
 import {observer} from 'mobx-react-lite';
 import {useRef} from 'react';
 import {useRelativeDate} from './useRelativeDate';
+import {useTranslation} from 'react-i18next';
 import styles from './styles.module.scss';
 
 type Props = {
@@ -33,6 +34,7 @@ const Notification: React.FC<Props> = observer(
     },
     ...props
   }) => {
+    const {t} = useTranslation();
     const nodeRef = useRef<HTMLDivElement | null>(null);
     const relativeDate = useRelativeDate(date);
 
@@ -62,7 +64,7 @@ const Notification: React.FC<Props> = observer(
                 hideNotification();
                 return false;
               }}
-              actionButtonLabel={actionButtonLabel ?? ''}
+              actionButtonLabel={actionButtonLabel ? t('actionButtonLabel') : ''}
               onActionButtonClick={onActionButtonClick}
             />
           ) : (

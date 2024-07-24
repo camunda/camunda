@@ -38,6 +38,7 @@ import {
 } from '../validators';
 import styles from './styles.module.scss';
 import cn from 'classnames';
+import {useTranslation} from 'react-i18next';
 
 type Props = {
   containerRef: RefObject<HTMLElement | null>;
@@ -47,8 +48,6 @@ type Props = {
   variablesLoadingFullValue: string[];
   onEdit: (id: string) => void;
 };
-
-const CODE_EDITOR_BUTTON_TOOLTIP_LABEL = 'Open JSON code editor';
 
 function variableIndexToOrdinal(numberValue: number): string {
   const realOrderIndex = (numberValue + 1).toString();
@@ -78,16 +77,17 @@ const VariableEditor: React.FC<Props> = ({
   onEdit,
 }) => {
   const {dirtyFields} = useFormState<FormValues, Partial<FormValues>>();
+  const {t} = useTranslation();
 
   return (
     <StructuredListWrapper className={styles.list} isCondensed>
       <StructuredListHead>
         <StructuredListRow head>
           <StructuredListCell className={styles.listCell} head>
-            Name
+            {t('variableName')}
           </StructuredListCell>
           <StructuredListCell className={styles.listCell} head>
-            Value
+            {t('variableValue')}
           </StructuredListCell>
           <StructuredListCell className={styles.listCell} head />
         </StructuredListRow>
@@ -155,8 +155,8 @@ const VariableEditor: React.FC<Props> = ({
                         }}
                         isActive={meta.active}
                         type="text"
-                        labelText={`${variable.name} value`}
-                        placeholder={`${variable.name} value`}
+                        labelText={`${variable.name} ${t('valueLabel')}`}
+                        placeholder={`${variable.name} ${t('valuePlaceholder')}`}
                         hideLabel
                       />
                     )}
@@ -167,7 +167,7 @@ const VariableEditor: React.FC<Props> = ({
                 >
                   <div className={cn(styles.iconButtons, styles.extraPadding)}>
                     <IconButton
-                      label={CODE_EDITOR_BUTTON_TOOLTIP_LABEL}
+                      label={t('openJsonCodeEditor')}
                       onClick={() => {
                         if (variable.isValueTruncated) {
                           fetchFullVariable(variable.id);
@@ -232,9 +232,11 @@ const VariableEditor: React.FC<Props> = ({
                               invalid={meta.error !== undefined}
                               invalidText={meta.error}
                               type="text"
-                              labelText={`${ordinal} variable name`}
+
+                              /* @ts-ignore */
+                              labelText={t('variableName', { ordinal: ordinal })}
                               hideLabel
-                              placeholder="Name"
+                              placeholder={t('namePlaceholder')}
                               autoFocus
                             />
                           )}
@@ -256,11 +258,13 @@ const VariableEditor: React.FC<Props> = ({
                               {...input}
                               id={input.name}
                               type="text"
-                              labelText={`${ordinal} variable value`}
+                                                            
+                              /* @ts-ignore */
+                              labelText={t('variableValue', {ordinal})}
                               hideLabel
                               invalid={meta.error !== undefined}
                               invalidText={meta.error}
-                              placeholder="Value"
+                              placeholder={t('valuePlaceholder')}
                             />
                           )}
                         </DelayedErrorField>
@@ -270,7 +274,7 @@ const VariableEditor: React.FC<Props> = ({
                       >
                         <div className={styles.iconButtons}>
                           <IconButton
-                            label={CODE_EDITOR_BUTTON_TOOLTIP_LABEL}
+                            label={t('openJsonCodeEditor')}
                             onClick={() => {
                               onEdit(valueFieldName);
                             }}
@@ -282,7 +286,9 @@ const VariableEditor: React.FC<Props> = ({
                             <Popup />
                           </IconButton>
                           <IconButton
-                            label={`Remove ${ordinal} new variable`}
+                                                        
+                            /* @ts-ignore */
+                            label={`Remove ${ordinal} ${t('newVariable', {ordinal})}`}
                             onClick={() => {
                               fields.remove(index);
                             }}

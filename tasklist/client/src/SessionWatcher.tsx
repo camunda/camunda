@@ -7,6 +7,7 @@
  */
 
 import {useEffect, useRef} from 'react';
+import { useTranslation } from 'react-i18next';
 import {authenticationStore} from 'modules/stores/authentication';
 import {observer} from 'mobx-react-lite';
 import {useLocation} from 'react-router-dom';
@@ -17,12 +18,13 @@ const SessionWatcher: React.FC = observer(() => {
   const removeNotification = useRef<(() => void) | null>(null);
   const status = authenticationStore.status;
   const location = useLocation();
+  const {t} = useTranslation();
 
   useEffect(() => {
     function handleSessionExpiration() {
       removeNotification.current = notificationsStore.displayNotification({
         kind: 'info',
-        title: 'Session expired',
+        title: t('sessionExpired'),
         isDismissable: true,
       });
     }
@@ -37,7 +39,7 @@ const SessionWatcher: React.FC = observer(() => {
     ) {
       handleSessionExpiration();
     }
-  }, [status, location.pathname]);
+  }, [status, t, location.pathname]);
 
   useEffect(() => {
     if (status === 'logged-in') {

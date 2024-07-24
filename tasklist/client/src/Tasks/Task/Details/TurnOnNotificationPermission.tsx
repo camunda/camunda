@@ -9,8 +9,10 @@
 import {ActionableNotification} from '@carbon/react';
 import {requestPermission} from 'modules/os-notifications/requestPermission';
 import {useState} from 'react';
+import {useTranslation} from 'react-i18next';
 
 const TurnOnNotificationPermission: React.FC = () => {
+  const {t} = useTranslation();
   const [enabled, setEnabled] = useState(true);
   if (!(enabled && Notification.permission === 'default')) {
     return null;
@@ -20,9 +22,9 @@ const TurnOnNotificationPermission: React.FC = () => {
       <ActionableNotification
         inline
         kind="info"
-        title="Don't miss new assignments"
-        subtitle="Turn on notifications in your browser to get notified when new tasks are assigned to you"
-        actionButtonLabel="Turn on notifications"
+        title={t('turnOnNotificationTitle')}
+        subtitle={t('turnOnNotificationSubtitle')}
+        actionButtonLabel={t('turnOnNotificationsActionButton')}
         onActionButtonClick={async () => {
           const result = await requestPermission();
           if (result !== 'default') {

@@ -15,6 +15,7 @@ import {
 } from 'react-router-dom';
 import {observer} from 'mobx-react-lite';
 import {useCompleteTask} from 'modules/mutations/useCompleteTask';
+import { useTranslation } from 'react-i18next';
 import {pages, useTaskDetailsParams} from 'modules/routing';
 import {Task as TaskType, Variable} from 'modules/types';
 import {tracking} from 'modules/tracking';
@@ -51,6 +52,7 @@ const Task: React.FC = observer(() => {
 
   const filters = useTaskFilters();
   const {data, refetch: refetchAllTasks} = useTasks(filters);
+  const {t} = useTranslation();
   const tasks = data?.pages.flat() ?? [];
   const hasRemainingTasks = tasks.length > 0;
 
@@ -103,7 +105,7 @@ const Task: React.FC = observer(() => {
 
     notificationsStore.displayNotification({
       kind: 'success',
-      title: 'Task completed',
+      title: t('taskCompleted'),
       isDismissable: true,
     });
   }

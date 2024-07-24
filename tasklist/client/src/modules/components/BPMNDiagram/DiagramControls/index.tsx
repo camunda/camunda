@@ -1,14 +1,7 @@
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
- */
-
 import {IconButton} from '@carbon/react';
 import {Add, CenterCircle, Subtract} from '@carbon/react/icons';
 import styles from './styles.module.scss';
+import {useTranslation} from 'react-i18next';
 
 type Props = {
   handleZoomReset: () => void;
@@ -21,6 +14,9 @@ const DiagramControls: React.FC<Props> = ({
   handleZoomIn,
   handleZoomOut,
 }) => {
+
+  const {t} = useTranslation();
+
   return (
     <div className={styles.container}>
       <IconButton
@@ -28,8 +24,8 @@ const DiagramControls: React.FC<Props> = ({
         size="sm"
         kind="tertiary"
         align="left"
-        label="Reset diagram zoom"
-        aria-label="Reset diagram zoom"
+        label={t('resetDiagramZoom')}
+        aria-label={t('resetDiagramZoom')}
         onClick={handleZoomReset}
       >
         <CenterCircle />
@@ -39,8 +35,8 @@ const DiagramControls: React.FC<Props> = ({
         size="sm"
         kind="tertiary"
         align="left"
-        label="Zoom in diagram"
-        aria-label="Zoom in diagram"
+        label={t('zoomInDiagram')}
+        aria-label={t('zoomInDiagram')}
         onClick={handleZoomIn}
       >
         <Add />
@@ -50,8 +46,8 @@ const DiagramControls: React.FC<Props> = ({
         size="sm"
         kind="tertiary"
         align="left"
-        label="Zoom out diagram"
-        aria-label="Zoom out diagram"
+        label={t('zoomOutDiagram')}
+        aria-label={t('zoomOutDiagram')}
         onClick={handleZoomOut}
       >
         <Subtract />
