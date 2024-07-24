@@ -62,13 +62,20 @@ public final class ReusableObjectList<T extends Reusable> implements Iterable<T>
   }
 
   public T poll() {
-    for (int i = 0; i < elements.size(); i++) {
-      final ReusableElement element = elements.get(i);
-
+    for (final ReusableElement element : elements) {
       if (element.isSet()) {
         element.set(false);
         size -= 1;
 
+        return element.getElement();
+      }
+    }
+    return null;
+  }
+
+  public T peek() {
+    for (final ReusableElement element : elements) {
+      if (element.isSet()) {
         return element.getElement();
       }
     }

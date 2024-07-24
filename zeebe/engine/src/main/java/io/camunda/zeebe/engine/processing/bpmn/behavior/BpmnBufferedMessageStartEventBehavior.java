@@ -83,7 +83,9 @@ public final class BpmnBufferedMessageStartEventBehavior {
                   messageCorrelation.subscriptionKey,
                   messageCorrelation.subscriptionRecord,
                   storedMessage.getMessageKey(),
-                  storedMessage.getMessage());
+                  storedMessage.getMessage().getNameBuffer(),
+                  storedMessage.getMessage().getCorrelationKeyBuffer(),
+                  storedMessage.getMessage().getVariablesBuffer());
             });
   }
 
