@@ -117,18 +117,26 @@ public final class ActorJob {
 
   @Override
   public String toString() {
-    String toString = "";
-
-    if (runnable != null) {
-      toString += runnable.getClass().getName();
-    }
+    final StringBuilder sb = new StringBuilder("ActorJob{");
+    sb.append("schedulingState=").append(schedulingState);
+    sb.append(", task=").append(task);
     if (callable != null) {
-      toString += callable.getClass().getName();
+      sb.append(", callable=").append(callable);
     }
-
-    toString += " " + schedulingState;
-
-    return toString;
+    if (runnable != null) {
+      sb.append(", runnable=").append(runnable);
+    }
+    if (resultFuture != null) {
+      sb.append(", resultFuture=").append(resultFuture);
+    }
+    if (subscription != null) {
+      sb.append(", subscription=").append(subscription);
+    }
+    if (scheduledAt != -1) {
+      sb.append(", scheduledAt=").append(scheduledAt);
+    }
+    sb.append('}');
+    return sb.toString();
   }
 
   public boolean isTriggeredBySubscription() {
