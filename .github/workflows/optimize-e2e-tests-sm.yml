@@ -2,11 +2,6 @@ name: Optimize e2e tests sm
 
 on:
   pull_request:
-  push:
-    branches:
-      - master
-      - maintenance/*
-      - release/*
   workflow_dispatch:
 
 # Will limit the workflow to 1 concurrent run per ref (branch / PR)

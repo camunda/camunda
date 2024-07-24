@@ -2,10 +2,6 @@ name: Optimize e2e cloud test
 
 on:
   pull_request:
-  push:
-    branches:
-    - master
-    - maintenance/*
   workflow_dispatch:
 
 jobs:

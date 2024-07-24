@@ -2,10 +2,6 @@ name: Optimize Run Java checks
 env:
   JAVA_VERSION: "21"
 on:
-  push:
-    branches:
-      - merge-optimize-in
-      - main
   pull_request: { }
   merge_group: { }
   workflow_dispatch: { }
