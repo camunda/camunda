@@ -1482,9 +1482,9 @@ components:
           type: string
         order:
           type: string
+          default: asc
       required:
         - field
-        - order
     SearchQueryResponse:
       type: object
       properties:

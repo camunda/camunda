@@ -23,9 +23,12 @@ import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQuerySortRequest;
 import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterRequest;
 import io.camunda.zeebe.util.Either;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
 public final class SearchQueryRequestMapper {
@@ -34,23 +37,33 @@ public final class SearchQueryRequestMapper {
 
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQuery(
       final ProcessInstanceSearchQueryRequest request) {
-    final var page = toSearchQueryPage(request.getPage()).get();
+    final var page = toSearchQueryPage(request.getPage());
     final var sorting =
         toSearchQuerySort(
-                request.getSort(),
-                SortOptionBuilders::processInstance,
-                SearchQueryRequestMapper::applyProcessInstanceSortField)
-            .get();
-    final var processInstanceFilter = toProcessInstanceFilter(request.getFilter()).get();
-    return Either.right(
-        SearchQueryBuilders.processInstanceSearchQuery()
-            .page(page)
-            .filter(processInstanceFilter)
-            .sort(sorting)
-            .build());
+            request.getSort(),
+            SortOptionBuilders::processInstance,
+            SearchQueryRequestMapper::applyProcessInstanceSortField);
+    final var processInstanceFilter = toProcessInstanceFilter(request.getFilter());
+    final List<String> validationErrors =
+        Stream.of(page, sorting, processInstanceFilter)
+            .filter(Either::isLeft)
+            .flatMap(e -> e.getLeft().stream())
+            .toList();
+    if (validationErrors.isEmpty()) {
+      return Either.right(
+          SearchQueryBuilders.processInstanceSearchQuery()
+              .page(page.get())
+              .filter(processInstanceFilter.get())
+              .sort(sorting.get())
+              .build());
+    } else {
+      return Either.left(
+          ProblemDetail.forStatusAndDetail(
+              HttpStatus.BAD_REQUEST, String.join(", ", validationErrors)));
+    }
   }
 
-  public static Either<ProblemDetail, ProcessInstanceFilter> toProcessInstanceFilter(
+  public static Either<List<String>, ProcessInstanceFilter> toProcessInstanceFilter(
       final ProcessInstanceFilterRequest filter) {
     final var builder = FilterBuilders.processInstance();
 
@@ -98,7 +111,7 @@ public final class SearchQueryRequestMapper {
                     .lte(f.getLte())));
   }
 
-  public static Either<ProblemDetail, SearchQueryPage> toSearchQueryPage(
+  public static Either<List<String>, SearchQueryPage> toSearchQueryPage(
       final SearchQueryPageRequest requestedPage) {
     if (requestedPage != null) {
       return Either.right(
@@ -114,45 +127,50 @@ public final class SearchQueryRequestMapper {
   }
 
   private static <T, B extends AbstractBuilder<B> & ObjectBuilder<T>>
-      Either<ProblemDetail, T> toSearchQuerySort(
+      Either<List<String>, T> toSearchQuerySort(
           final List<SearchQuerySortRequest> sorting,
           final Supplier<B> builderSupplier,
-          BiConsumer<String, B> sortFieldConsumer) {
+          final BiFunction<String, B, List<String>> sortFieldMapper) {
     if (sorting != null && !sorting.isEmpty()) {
+      final List<String> validationErrors = new ArrayList<>();
       final var builder = builderSupplier.get();
       for (SearchQuerySortRequest sort : sorting) {
-        if (sort.getField() == null) {
-          throw new IllegalArgumentException("Sort field must not be null");
-        }
-        if (sort.getOrder() == null) {
-          throw new IllegalArgumentException("Sort order must not be null");
-        }
-        sortFieldConsumer.accept(sort.getField(), builder);
-        applySortOrder(sort.getOrder(), builder);
+        validationErrors.addAll(sortFieldMapper.apply(sort.getField(), builder));
+        validationErrors.addAll(applySortOrder(sort.getOrder(), builder));
       }
 
-      return Either.right(builder.build());
+      return validationErrors.isEmpty()
+          ? Either.right(builder.build())
+          : Either.left(validationErrors);
     }
 
     return Either.right(null);
   }
 
-  private static void applyProcessInstanceSortField(
+  private static List<String> applyProcessInstanceSortField(
       final String field, final ProcessInstanceSort.Builder builder) {
-    switch (field) {
-      case "processInstanceKey" -> builder.processInstanceKey();
-      case "startDate" -> builder.startDate();
-      case "endDate" -> builder.endDate();
-      default -> throw new IllegalArgumentException("Unknown sortBy: " + field);
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add("Sort field must not be null");
+    } else {
+      switch (field) {
+        case "processInstanceKey" -> builder.processInstanceKey();
+        case "startDate" -> builder.startDate();
+        case "endDate" -> builder.endDate();
+        default -> validationErrors.add("Unknown sortBy: " + field);
+      }
     }
+    return validationErrors;
   }
 
-  private static void applySortOrder(final String order, final AbstractBuilder<?> builder) {
+  private static List<String> applySortOrder(final String order, final AbstractBuilder<?> builder) {
+    final List<String> validationErrors = new ArrayList<>();
     switch (order.toLowerCase()) {
       case "asc" -> builder.asc();
       case "desc" -> builder.desc();
-      default -> throw new IllegalArgumentException("Unknown sortOrder " + order);
+      default -> validationErrors.add("Unknown sortOrder: " + order);
     }
+    return validationErrors;
   }
 
   private static Object[] toArrayOrNull(final List<Object> values) {
