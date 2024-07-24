@@ -7,6 +7,7 @@
  */
 
 import {useRef, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {FormManager} from 'modules/formManager';
 import {Variable} from 'modules/types';
 import {InlineLoadingStatus} from '@carbon/react';
@@ -40,6 +41,7 @@ const FormJS: React.FC<Props> = ({
 }) => {
   const formManagerRef = useRef<FormManager | null>(null);
   const [isSchemaValid, setIsSchemaValid] = useState(true);
+  const {t} = useTranslation();
   const [submissionState, setSubmissionState] =
     useState<InlineLoadingStatus>('inactive');
 
@@ -106,7 +108,7 @@ const FormJS: React.FC<Props> = ({
             setSubmissionState('inactive');
           }}
         >
-          Submit
+          {t('submitButtonLabel')}
         </AsyncActionButton>
         <PoweredBy />
       </div>

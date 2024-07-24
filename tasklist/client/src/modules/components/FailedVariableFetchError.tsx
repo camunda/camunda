@@ -7,16 +7,20 @@
  */
 
 import {InlineNotification} from '@carbon/react';
+import {useTranslation} from 'react-i18next';
 
 const FailedVariableFetchError: React.FC = () => {
+
+  const {t} = useTranslation();
+
   return (
     <InlineNotification
       kind="error"
       role="alert"
       hideCloseButton
       lowContrast
-      title="Something went wrong"
-      subtitle="We could not fetch the task variables. Please try again or contact your Tasklist administrator."
+      title={t('somethingWentWrongTitle')}
+      subtitle={t('failedVariableFetchSubtitle')}
     />
   );
 };

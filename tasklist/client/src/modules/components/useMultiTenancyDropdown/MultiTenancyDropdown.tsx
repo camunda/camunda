@@ -9,6 +9,7 @@
 import {Dropdown} from '@carbon/react';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {CurrentUser} from 'modules/types';
+import {useTranslation} from 'react-i18next';
 
 type Tenants = CurrentUser['tenants'][0];
 
@@ -34,6 +35,7 @@ const MultiTenancyDropdown: React.FC<Props> = ({
   ...props
 }) => {
   const {data: currentUser} = useCurrentUser();
+  const {t} = useTranslation();
   const defaultTenant = currentUser?.tenants[0];
 
   return (
@@ -43,9 +45,9 @@ const MultiTenancyDropdown: React.FC<Props> = ({
       id="tenantId"
       items={currentUser?.tenants ?? []}
       itemToString={(item) => (item ? `${item.name} - ${item.id}` : '')}
-      label="Tenant"
+      label={t('tenantLabel')}
       hideLabel={hideLabel}
-      titleText="Tenant"
+      titleText={t('tenantTitle')}
       initialSelectedItem={initialSelectedItem ?? defaultTenant}
       onChange={(event) => {
         const id = event.selectedItem?.id;

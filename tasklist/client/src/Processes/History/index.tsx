@@ -7,6 +7,7 @@
  */
 
 import {useProcessInstances} from 'modules/queries/useProcessInstances';
+import {useTranslation} from 'react-i18next';
 import capitalize from 'lodash/capitalize';
 import {formatDate} from 'modules/utils/formatDate';
 import {Skeleton} from './Skeleton';
@@ -17,22 +18,19 @@ import {ProcessInstanceStateIcon} from './ProcessInstanceStateIcon';
 
 const History: React.FC = () => {
   const {data: processInstances, status} = useProcessInstances();
+  const {t} = useTranslation();
 
   return (
     <div className={styles.container}>
-      <span className={styles.header}>History</span>
+      <span className={styles.header}>{t('historyTitle')}</span>
       <div className={styles.itemContainer}>
         {match({status})
           .with({status: 'pending'}, () => <Skeleton />)
           .with({status: 'error'}, () => (
             <Layer>
               <Stack gap={3} className={styles.message}>
-                <span className={styles.messageHeading}>
-                  Oops! Something went wrong while fetching the history
-                </span>
-                <span className={styles.messageBody}>
-                  Please check your internet connection and try again.
-                </span>
+                <span className={styles.messageHeading}>{t('errorFetchingHistoryTitle')}</span>
+                <span className={styles.messageBody}>{t('errorFetchingHistoryBody')}</span>
               </Stack>
             </Layer>
           ))
@@ -45,13 +43,8 @@ const History: React.FC = () => {
               processInstances.length === 0 ? (
                 <Layer>
                   <Stack gap={3} className={styles.message}>
-                    <span className={styles.messageHeading}>
-                      No history entries found
-                    </span>
-                    <span className={styles.messageBody}>
-                      There is no history to display. Start a new process to see
-                      it here.
-                    </span>
+                    <span className={styles.messageHeading}>{t('noHistoryEntriesFound')}</span>
+                    <span className={styles.messageBody}>{t('noHistoryToDisplay')}</span>
                   </Stack>
                 </Layer>
               ) : (

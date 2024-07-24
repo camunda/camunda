@@ -9,18 +9,22 @@
 import {Stack} from '@carbon/react';
 import {Warning} from '@carbon/react/icons';
 import styles from './styles.module.scss';
+import {useTranslation} from 'react-i18next';
 
 const ValidationMessage: React.FC<{
   fieldIds: string[];
   fieldLabels: string[];
 }> = ({fieldIds, fieldLabels}) => {
+
+  const {t} = useTranslation();
+
   const buildMessage = (opts?: {numberOfNamedFieldsToShow?: number}) => {
     const numberOfNamedFieldsToShow = opts?.numberOfNamedFieldsToShow;
     const parts: string[] = [];
     if (fieldIds.length == 1) {
-      parts.push('Please review 1 field');
+      parts.push(t('reviewOneField'));
     } else {
-      parts.push(`Please review ${fieldIds.length} fields`);
+      parts.push(t('reviewMultipleFields', { count: fieldIds.length }));
     }
     const namedFieldsSlice =
       numberOfNamedFieldsToShow !== undefined

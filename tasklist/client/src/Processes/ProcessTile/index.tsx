@@ -13,6 +13,7 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {newProcessInstance} from 'modules/stores/newProcessInstance';
 import {useState} from 'react';
 import {useNavigate, useMatch, useLocation} from 'react-router-dom';
+import {useTranslation} from 'react-i18next';
 import {pages} from 'modules/routing';
 import {logger} from 'modules/utils/logger';
 import {tracking} from 'modules/tracking';
@@ -37,20 +38,23 @@ function convertStatus(status: LoadingStatus): InlineLoadingStatus {
 }
 
 function getAsyncButtonDescription(status: LoadingStatus) {
+
+  const {t} = useTranslation();
+
   if (status === 'active') {
-    return 'Starting process...';
+    return t('startingProcess');
   }
 
   if (status === 'active-tasks') {
-    return 'Waiting for tasks...';
+    return t('waitingForTasks');
   }
 
   if (status === 'finished') {
-    return 'Process started';
+    return t('processStarted');
   }
 
   if (status === 'error') {
-    return 'Process start failed';
+    return t('processStartFailed');
   }
 
   return '';
@@ -86,6 +90,9 @@ const ProcessTile: React.FC<Props> = ({
   className,
   ...props
 }) => {
+
+  const {t} = useTranslation();
+  
   const {mutateAsync: startProcess} = useStartProcess({
     onSuccess(data) {
       tracking.track({
@@ -102,7 +109,7 @@ const ProcessTile: React.FC<Props> = ({
       notificationsStore.displayNotification({
         isDismissable: true,
         kind: 'success',
-        title: 'Process has started',
+        title: t('processStartedNotification'),
       });
     },
   });
@@ -126,7 +133,7 @@ const ProcessTile: React.FC<Props> = ({
           </span>
         </Stack>
         <div className={styles.buttonRow}>
-          <ul title="Process Attributes" aria-hidden={tags.length === 0}>
+          <ul title={t('processAttributes')} aria-hidden={tags.length === 0}>
             {tags.map((type) => (
               <li key={type}>
                 <ProcessTag variant={type} />
@@ -176,14 +183,14 @@ const ProcessTile: React.FC<Props> = ({
                 notificationsStore.displayNotification({
                   isDismissable: false,
                   kind: 'error',
-                  title: 'Process start failed. Please select a tenant.',
+                  title: t('processStartFailedNoTenant'),
                   subtitle: displayName,
                 });
               } else {
                 notificationsStore.displayNotification({
                   isDismissable: false,
                   kind: 'error',
-                  title: 'Process start failed',
+                  title: t('processStartFailed'),
                   subtitle: displayName,
                 });
               }
@@ -198,7 +205,7 @@ const ProcessTile: React.FC<Props> = ({
               },
             }}
           >
-            Start process
+            {t('startProcessButtonText')}
           </AsyncActionButton>
         </div>
       </Stack>
