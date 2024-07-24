@@ -6,7 +6,7 @@
   "io.openshift.tags": "bpmn,orchestration,workflow",
   "org.opencontainers.image.authors": "zeebe@camunda.com",
   "org.opencontainers.image.base.digest": $DIGEST,
-  "org.opencontainers.image.base.name": "docker.io/library/ubuntu:jammy",
+  "org.opencontainers.image.base.name": $BASE_IMAGE,
   "org.opencontainers.image.created": $DATE,
   "org.opencontainers.image.description": "Workflow engine for microservice orchestration",
   "org.opencontainers.image.documentation": "https://docs.camunda.io/docs/self-managed/zeebe-deployment/",

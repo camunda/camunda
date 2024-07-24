@@ -119,7 +119,7 @@ expectedLabels=$(
     --arg REVISION "${REVISION}" \
     --arg DATE "${DATE}" \
     --arg DIGEST "${DIGEST}" \
-    --arg BASE_IMAGE "${BASE_IMAGE}" \
+    --arg BASE_IMAGE "docker.io/library/${BASE_IMAGE}" \
     "$(cat "${labelsGoldenFile}")"
 )
 
