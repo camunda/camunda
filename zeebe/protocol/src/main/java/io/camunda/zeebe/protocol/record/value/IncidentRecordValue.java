@@ -103,5 +103,5 @@ public interface IncidentRecordValue extends RecordValue, ProcessInstanceRelated
    * @return tree path information about call activities in the hierarchy of the incident. Each
    *     entry is a reference to the call activity in BPMN model containing an incident.
    */
-  List<Long> getCallingElementPath();
+  List<String> getCallingElementPath();
 }

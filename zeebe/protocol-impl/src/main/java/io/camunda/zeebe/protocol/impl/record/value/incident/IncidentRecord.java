@@ -14,6 +14,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ArrayValue;
 import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
@@ -42,8 +43,8 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
       new ArrayProperty<>("elementInstancePath", () -> new ArrayValue<>(LongValue::new));
   private final ArrayProperty<LongValue> processDefinitionPathProp =
       new ArrayProperty<>("processDefinitionPath", LongValue::new);
-  private final ArrayProperty<LongValue> callingElementPathProp =
-      new ArrayProperty<>("callingElementPath", LongValue::new);
+  private final ArrayProperty<StringValue> callingElementPathProp =
+      new ArrayProperty<>("callingElementPath", StringValue::new);
 
   public IncidentRecord() {
     super(13);
@@ -199,15 +200,16 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   }
 
   @Override
-  public List<Long> getCallingElementPath() {
-    final var callingElementPath = new ArrayList<Long>();
-    callingElementPathProp.forEach(e -> callingElementPath.add(e.getValue()));
+  public List<String> getCallingElementPath() {
+    final var callingElementPath = new ArrayList<String>();
+    callingElementPathProp.forEach(
+        e -> callingElementPath.add(BufferUtil.bufferAsString(e.getValue())));
     return callingElementPath;
   }
 
-  public IncidentRecord setCallingElementPath(final List<Long> callingElementPath) {
+  public IncidentRecord setCallingElementPath(final List<String> callingElementPath) {
     callingElementPathProp.reset();
-    callingElementPath.forEach(e -> callingElementPathProp.add().setValue(e));
+    callingElementPath.forEach(e -> callingElementPathProp.add().wrap(BufferUtil.wrapString(e)));
     return this;
   }
 

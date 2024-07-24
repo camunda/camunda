@@ -81,7 +81,7 @@ public class ElementTreePathBuilderTest {
     final String callActivityId = "callActivity";
     final HashFunction hashFunction = Hashing.murmur3_128();
     final var callActivityIdHash =
-        hashFunction.hashString(callActivityId, Charset.defaultCharset()).asLong();
+        hashFunction.hashString(callActivityId, Charset.defaultCharset()).toString();
 
     final var processARecord = createProcessInstanceRecord();
     final ElementInstance processA =

@@ -68,7 +68,7 @@ public class ElementTreePathBuilder {
     }
   }
 
-  private Long getCallActivityIdHash(final long callingElementInstanceKey) {
+  private String getCallActivityIdHash(final long callingElementInstanceKey) {
     final ElementInstance callActivityElementInstance =
         elementInstanceState.getInstance(callingElementInstanceKey);
     final var callActivityInstanceRecord = callActivityElementInstance.getValue();
@@ -76,11 +76,11 @@ public class ElementTreePathBuilder {
     final HashCode hashCode =
         hashFunction.hashString(
             callActivityInstanceRecord.getElementId(), Charset.defaultCharset());
-    return hashCode.asLong();
+    return hashCode.toString();
   }
 
   public record ElementTreePathProperties(
       List<List<Long>> elementInstancePath,
       List<Long> processDefinitionPath,
-      List<Long> callingElementPath) {}
+      List<String> callingElementPath) {}
 }

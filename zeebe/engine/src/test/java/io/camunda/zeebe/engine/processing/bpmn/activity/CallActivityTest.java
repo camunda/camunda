@@ -767,8 +767,10 @@ public final class CallActivityTest {
     final String callActivity1Id = "callParent";
     final String callActivity2Id = "callChild";
     final HashFunction hashFunction = Hashing.murmur3_128();
-    final var ca1Hash = hashFunction.hashString(callActivity1Id, Charset.defaultCharset()).asLong();
-    final var ca2Hash = hashFunction.hashString(callActivity2Id, Charset.defaultCharset()).asLong();
+    final var ca1Hash =
+        hashFunction.hashString(callActivity1Id, Charset.defaultCharset()).toString();
+    final var ca2Hash =
+        hashFunction.hashString(callActivity2Id, Charset.defaultCharset()).toString();
     ENGINE
         .deployment()
         .withXmlResource(
