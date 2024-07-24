@@ -24,7 +24,6 @@ export {DefinitionSelection, VersionPopover, TenantPopover} from './DefinitionSe
 export {TargetValueBadge} from './TargetValueBadge';
 export {ErrorPage} from './ErrorPage';
 export {DatePicker} from './DatePicker';
-export {LoadingIndicator} from './LoadingIndicator';
 export {ColorPicker} from './ColorPicker';
 export {EntityName} from './EntityName';
 export {EntityNameForm} from './EntityNameForm';
