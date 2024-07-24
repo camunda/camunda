@@ -12,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ClientStatusException;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ClientStatusException;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -62,7 +62,7 @@ final class DiskSpaceRecoveryIT {
   private final ContainerLogsDumper logsDumper =
       new ContainerLogsDumper(() -> Map.of("broker", container));
 
-  private CamundaClient client;
+  private ZeebeClient client;
 
   @AfterEach
   void afterEach() {
