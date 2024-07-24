@@ -29,7 +29,6 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -97,7 +96,6 @@ public final class CorrelateMessageTest {
   }
 
   @Test
-  @Ignore("Enable in https://github.com/camunda/camunda/issues/20175")
   public void shouldHaveCorrectCorrelatedLifeCycleForMessageEvent() {
     // given
     deployAndStartProcessWithIntermediaryMessageEvent(MESSAGE_NAME, CORRELATION_KEY);
@@ -152,7 +150,6 @@ public final class CorrelateMessageTest {
   }
 
   @Test
-  @Ignore("Enable in https://github.com/camunda/camunda/issues/20175")
   public void shouldCorrelateToMessageIntermediaryEvent() {
     // given
     deployAndStartProcessWithIntermediaryMessageEvent(MESSAGE_NAME, CORRELATION_KEY);
@@ -170,7 +167,6 @@ public final class CorrelateMessageTest {
   }
 
   @Test
-  @Ignore("Enable in https://github.com/camunda/camunda/issues/20175")
   public void shouldCorrelateToMessageBoundaryEvent() {
     // given
     deployAndStartProcessWithMessageBoundaryEvent(MESSAGE_NAME, CORRELATION_KEY);
@@ -290,7 +286,6 @@ public final class CorrelateMessageTest {
   }
 
   @Test
-  @Ignore("Enable in https://github.com/camunda/camunda/issues/20175")
   public void shouldCorrelateMessageWithVariablesToIntermediaryEvent() {
     // given
     final var processId = "processId";
@@ -322,7 +317,6 @@ public final class CorrelateMessageTest {
   }
 
   @Test
-  @Ignore("Enable in https://github.com/camunda/camunda/issues/20175")
   public void shouldCorrelateMessageWithVariablesToBoundaryEvent() {
     // given
     final var processId = "processId";
