@@ -223,6 +223,13 @@ paths:
             schema:
               $ref: '#/components/schemas/ProcessInstanceSearchQueryRequest'
       responses:
+        '200':
+          description: >
+            The Process Instance Search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessInstanceSearchQueryResponse"
         '400':
           description: >
             The Process Instance Search Query failed.
@@ -1163,12 +1170,6 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/TopologyResponse"
-    ProcessInstanceSearchQueryResponse:
-      description: Process instance search response.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ProcessInstanceSearchQueryResponse"
     UserTaskSearchQueryResponse:
       description: User task search response.
       content:

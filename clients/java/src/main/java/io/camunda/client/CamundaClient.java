@@ -592,7 +592,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * zeebeClient
-   *  .newUserTaskInstanceQuery()
+   *  .newUserTaskQuery()
    *  .filter((f) -> f.userTaskKey(userTaskKey))
    *  .sort((s) -> s.startDate().asc())
    *  .page((p) -> p.limit(100))
