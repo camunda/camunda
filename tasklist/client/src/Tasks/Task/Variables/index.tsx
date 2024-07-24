@@ -24,6 +24,7 @@ import {
 } from 'modules/components/TaskDetailsLayout';
 import {Separator} from 'modules/components/Separator';
 import {useAllVariables} from 'modules/queries/useAllVariables';
+import {useTranslation} from 'react-i18next';
 import {FailedVariableFetchError} from 'modules/components/FailedVariableFetchError';
 import {CompleteTaskButton} from 'modules/components/CompleteTaskButton';
 import {createVariableFieldName} from './createVariableFieldName';
@@ -64,6 +65,7 @@ const Variables: React.FC<Props> = ({
   const formRef = useRef<HTMLFormElement | null>(null);
   const {assignee, taskState} = task;
   const {hasPermission} = usePermissions(['write']);
+  const {t} = useTranslation();
   const {
     data,
     isLoading,
@@ -147,7 +149,7 @@ const Variables: React.FC<Props> = ({
       }) => (
         <>
           <div className={styles.panelHeader}>
-            <Heading>Variables</Heading>
+            <Heading>{t('variablesTitle')}</Heading>
             {taskState !== 'COMPLETED' && (
               <Button
                 kind="ghost"
@@ -161,10 +163,10 @@ const Variables: React.FC<Props> = ({
                 title={
                   canCompleteTask
                     ? undefined
-                    : 'You must assign the task to add variables'
+                    : t('addVariableTooltip')
                 }
               >
-                Add Variable
+                {t('addVariableButton')}
               </Button>
             )}
           </div>
@@ -193,11 +195,11 @@ const Variables: React.FC<Props> = ({
                     () => (
                       <Layer className={cn(styles.container, styles.gutter)}>
                         <C3EmptyState
-                          heading="Task has no variables"
+                          heading={t('noVariablesHeading')}
                           description={
                             taskState === 'COMPLETED'
                               ? ''
-                              : 'Click on Add Variable'
+                              : t('clickOnAddVariable')
                           }
                         />
                       </Layer>
@@ -246,7 +248,7 @@ const Variables: React.FC<Props> = ({
                   {hasEmptyNewVariable(values) && (
                     <IconButton
                       className={styles.inlineIcon}
-                      label="You first have to fill all fields"
+                      label={t('fillAllFieldsTooltip')}
                       align="top"
                     >
                       <Information size={20} />
@@ -277,7 +279,7 @@ const Variables: React.FC<Props> = ({
               <Suspense>
                 <JSONEditorModal
                   isOpen={isJsonEditorModalOpen}
-                  title="Edit Variable"
+                  title={t('editVariableTitle')}
                   onClose={() => {
                     setEditingVariable(undefined);
                   }}

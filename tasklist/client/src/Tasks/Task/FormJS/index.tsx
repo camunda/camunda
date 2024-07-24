@@ -26,6 +26,7 @@ import {FormJSRenderer} from 'modules/components/FormJSRenderer';
 import {FailedVariableFetchError} from 'modules/components/FailedVariableFetchError';
 import {Pattern, match} from 'ts-pattern';
 import {CompleteTaskButton} from 'modules/components/CompleteTaskButton';
+import {useTranslation} from 'react-i18next';
 
 function formatVariablesToFormData(variables: Variable[]) {
   return variables.reduce(
@@ -70,6 +71,7 @@ const FormJS: React.FC<Props> = ({
   onSubmitFailure,
   user,
 }) => {
+  const {t} = useTranslation();
   const formManagerRef = useRef<FormManager | null>(null);
   const [submissionState, setSubmissionState] =
     useState<InlineLoadingStatus>('inactive');
@@ -147,7 +149,7 @@ const FormJS: React.FC<Props> = ({
                     removeFormReference();
                     notificationsStore.displayNotification({
                       kind: 'error',
-                      title: 'Invalid Form schema',
+                      title: t('invalidFormSchemaErrorLabel'),
                       isDismissable: true,
                     });
                   }}

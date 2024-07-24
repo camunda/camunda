@@ -8,6 +8,7 @@
 
 import {useState} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
+import {useTranslation} from 'react-i18next';
 import {Modal} from 'modules/components/Modal';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {pages} from 'modules/routing';
@@ -17,6 +18,7 @@ import styles from './styles.module.scss';
 
 const FirstTimeModal: React.FC = () => {
   const location = useLocation();
+  const {t} = useTranslation();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(
     !(getStateLocally('hasConsentedToStartProcess') ?? false),
@@ -38,10 +40,10 @@ const FirstTimeModal: React.FC = () => {
 
   return (
     <Modal
-      aria-label="Start your process on demand"
-      modalHeading="Start your process on demand"
-      secondaryButtonText="Cancel"
-      primaryButtonText="Continue"
+      aria-label={t('startProcessOnDemandAriaLabel')}
+      modalHeading={t('startProcessOnDemandModalHeading')}
+      secondaryButtonText={t('cancelButtonText')}
+      primaryButtonText={t('continueButtonText')}
       open={isOpen}
       onRequestClose={() => {
         goToInitialPage();
@@ -68,15 +70,13 @@ const FirstTimeModal: React.FC = () => {
             data-testid="alpha-warning-modal-image"
           />
           <div>
-            <p>Start processes on demand directly from your tasklist.</p>
+            <p>{t('startProcessesOnDemandText')}</p>
             <p>
-              You can execute all of your processes at any time as long as you
-              are eligible to work on tasks inside your project.
+              {t('executeProcessesText')}
             </p>
             <br />
             <p>
-              By starting processes on demand you are able to trigger tasks and
-              directly start assigning these.
+              {t('triggerTasksOnDemandText')}
             </p>
           </div>
         </div>

@@ -20,6 +20,7 @@ import {Aside} from './Aside';
 import {Header} from './Header';
 import styles from './styles.module.scss';
 import {useEffect} from 'react';
+import {useTranslation} from 'react-i18next';
 import {notificationsStore} from 'modules/stores/notifications';
 
 type OutletContext = {
@@ -31,6 +32,7 @@ type OutletContext = {
 
 const Details: React.FC = () => {
   const {id} = useTaskDetailsParams();
+  const {t} = useTranslation();
   const {data: task, refetch} = useTask(id, {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -52,7 +54,7 @@ const Details: React.FC = () => {
     if (taskState === 'CANCELED') {
       notificationsStore.displayNotification({
         kind: 'info',
-        title: 'Process instance cancelled',
+        title: t('processInstanceCancelledTitle'),
         subtitle: `${task?.processName} (${task?.processInstanceKey})`,
         isDismissable: true,
       });
@@ -63,8 +65,8 @@ const Details: React.FC = () => {
   const tabs = [
     {
       key: 'task',
-      title: 'Task',
-      label: 'Show task',
+      title: t('taskTabLabel'),
+      label: t('showTaskLabel'),
       selected: useMatch(pages.taskDetails()) !== null,
       to: {
         pathname: pages.taskDetails(id),
@@ -72,8 +74,8 @@ const Details: React.FC = () => {
     },
     {
       key: 'process',
-      title: 'Process',
-      label: 'Show associated BPMN process',
+      title: t('processTabLabel'),
+      label: t('showAssociatedBpmnProcessLabel'),
       selected: useMatch(pages.taskDetailsProcess()) !== null,
       to: {
         pathname: pages.taskDetailsProcess(id),
@@ -96,7 +98,7 @@ const Details: React.FC = () => {
           user={currentUser}
           onAssignmentError={onAssignmentError}
         />
-        <TabListNav label="Task Details Navigation" items={tabs} />
+        <TabListNav label={t('taskDetailsNavigationLabel')} items={tabs} />
         <Outlet
           context={
             {task, currentUser, refetch, process} satisfies OutletContext

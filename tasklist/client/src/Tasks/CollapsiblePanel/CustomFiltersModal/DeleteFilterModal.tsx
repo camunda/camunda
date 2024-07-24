@@ -8,6 +8,7 @@
 
 import {Modal} from 'modules/components/Modal';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
+import { useTranslation } from 'react-i18next';
 
 type Props = {
   isOpen: boolean;
@@ -24,16 +25,19 @@ const DeleteFilterModal: React.FC<Props> = ({
   filterName,
   ...props
 }) => {
+  
+  const {t} = useTranslation();
+
   return (
     <Modal
       {...props}
       danger
       open={isOpen}
       size="sm"
-      modalLabel={isOpen ? 'Delete filter' : undefined}
-      modalHeading={isOpen ? 'The custom filter will be deleted.' : undefined}
-      primaryButtonText="Confirm deletion"
-      secondaryButtonText="Cancel"
+      modalLabel={isOpen ? t('deleteFilterModalLabel') : undefined}
+      modalHeading={isOpen ? t('deleteFilterModalHeading') : undefined}
+      primaryButtonText={t('confirmDeletionButtonText')}
+      secondaryButtonText={t('cancelButtonText')}
       onRequestClose={onClose}
       onRequestSubmit={() => {
         const customFilters = Object.entries(
