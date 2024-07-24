@@ -22,7 +22,6 @@ public final class ActorJob {
   private static final FatalErrorHandler FATAL_ERROR_HANDLER = FatalErrorHandler.withLogger(LOG);
 
   TaskSchedulingState schedulingState;
-  Actor actor;
   ActorTask task;
   private Callable<?> callable;
   private Runnable runnable;
@@ -33,7 +32,6 @@ public final class ActorJob {
 
   public void onJobAddedToTask(final ActorTask task) {
     scheduledAt = System.nanoTime();
-    actor = task.actor;
     this.task = task;
     schedulingState = TaskSchedulingState.QUEUED;
   }
@@ -109,8 +107,6 @@ public final class ActorJob {
     schedulingState = TaskSchedulingState.NOT_SCHEDULED;
     scheduledAt = -1;
 
-    actor = null;
-
     task = null;
 
     callable = null;
@@ -155,7 +151,7 @@ public final class ActorJob {
   }
 
   public Actor getActor() {
-    return actor;
+    return task.actor;
   }
 
   public void setResultFuture(final ActorFuture resultFuture) {
