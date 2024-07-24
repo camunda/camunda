@@ -163,41 +163,6 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
-  public IncidentRecord setJobKey(final long jobKey) {
-    jobKeyProp.setValue(jobKey);
-    return this;
-  }
-
-  public IncidentRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
-    return this;
-  }
-
-  public IncidentRecord setErrorMessage(final DirectBuffer errorMessage) {
-    errorMessageProp.setValue(errorMessage);
-    return this;
-  }
-
-  public IncidentRecord setErrorMessage(final String errorMessage) {
-    errorMessageProp.setValue(errorMessage);
-    return this;
-  }
-
-  public IncidentRecord setErrorType(final ErrorType errorType) {
-    errorTypeProp.setValue(errorType);
-    return this;
-  }
-
-  @Override
-  public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
-  }
-
-  public IncidentRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
-    return this;
-  }
-
   @Override
   public List<List<Long>> getElementInstancePath() {
     final var elementInstancePath = new ArrayList<List<Long>>();
@@ -236,14 +201,48 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   @Override
   public List<Long> getCallingElementPath() {
     final var callingElementPath = new ArrayList<Long>();
-    callingElementPathProp.forEach(
-        e -> callingElementPath.add(e.getValue()));
+    callingElementPathProp.forEach(e -> callingElementPath.add(e.getValue()));
     return callingElementPath;
   }
 
   public IncidentRecord setCallingElementPath(final List<Long> callingElementPath) {
     callingElementPathProp.reset();
     callingElementPath.forEach(e -> callingElementPathProp.add().setValue(e));
+    return this;
+  }
+
+  public IncidentRecord setJobKey(final long jobKey) {
+    jobKeyProp.setValue(jobKey);
+    return this;
+  }
+
+  public IncidentRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
+    return this;
+  }
+
+  public IncidentRecord setErrorMessage(final DirectBuffer errorMessage) {
+    errorMessageProp.setValue(errorMessage);
+    return this;
+  }
+
+  public IncidentRecord setErrorMessage(final String errorMessage) {
+    errorMessageProp.setValue(errorMessage);
+    return this;
+  }
+
+  public IncidentRecord setErrorType(final ErrorType errorType) {
+    errorTypeProp.setValue(errorType);
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
+  public IncidentRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
     return this;
   }
 }
