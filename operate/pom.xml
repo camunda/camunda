@@ -82,7 +82,7 @@
     <version.aws-java-sdk>1.12.763</version.aws-java-sdk>
     <version.jetbrains-annotations>24.1.0</version.jetbrains-annotations>
     <version.grpc>1.62.2</version.grpc>
-    <version.protobuf>3.25.3</version.protobuf>
+    <version.protobuf>3.25.4</version.protobuf>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <zeebe-test-container.version>3.6.3</zeebe-test-container.version>
     <elasticsearch-test-container.version>1.19.8</elasticsearch-test-container.version>
