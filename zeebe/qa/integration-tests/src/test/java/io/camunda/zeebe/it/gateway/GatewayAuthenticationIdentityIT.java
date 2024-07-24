@@ -189,7 +189,7 @@ public class GatewayAuthenticationIdentityIT {
             .build()) {
 
       // when
-      final Future<io.camunda.zeebe.client.api.response.Topology> topologyFuture =
+      final Future<io.camunda.client.api.response.Topology> topologyFuture =
           apiPicker.apply(client.newTopologyRequest()).send();
 
       // then
