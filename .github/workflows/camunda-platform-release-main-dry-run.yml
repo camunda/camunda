@@ -26,7 +26,7 @@ jobs:
           - version: 0.8.2-alpha1
             latest: false
     with:
-      releaseBranch: 'docker_golden_file'
+      releaseBranch: ${{ inputs.branch || 'main' }}
       releaseVersion: ${{ matrix.version }}
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: ${{ matrix.latest }}
