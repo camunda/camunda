@@ -159,7 +159,7 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder processDefinitionKeys(final Long value, final Long... values) {
+    public Builder processDefinitionKeys(final Long... values) {
       return processDefinitionKeys(collectValues(value, values));
     }
 
