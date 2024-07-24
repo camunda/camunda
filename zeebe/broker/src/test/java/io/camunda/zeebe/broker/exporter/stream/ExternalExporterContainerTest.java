@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.jar.ExternalJarClassLoader;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -129,7 +130,7 @@ final class ExternalExporterContainerTest {
     final var jarFile = exporterClass.toJar(new File(jarDirectory, "exporter.jar"));
     final var descriptor = runtime.loadExternalExporter(jarFile, EXPORTER_CLASS_NAME);
     final var expectedClassLoader = descriptor.newInstance().getClass().getClassLoader();
-    final var container = new ExporterContainer(descriptor, 0);
+    final var container = new ExporterContainer(descriptor, 0, new SimpleMeterRegistry());
 
     // when
     container.close();

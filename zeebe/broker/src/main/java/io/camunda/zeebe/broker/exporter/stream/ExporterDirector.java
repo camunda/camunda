@@ -35,6 +35,7 @@ import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -84,15 +85,17 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private ExporterStateDistributionService exporterDistributionService;
   private final int partitionId;
   private final EventFilter positionsToSkipFilter;
+  private final MeterRegistry meterRegistry;
 
   public ExporterDirector(final ExporterDirectorContext context, final boolean shouldPauseOnStart) {
     name = context.getName();
 
     logStream = Objects.requireNonNull(context.getLogStream());
     partitionId = logStream.getPartitionId();
+    meterRegistry = context.getMeterRegistry();
     containers =
         context.getDescriptors().stream()
-            .map(descriptor -> new ExporterContainer(descriptor, partitionId))
+            .map(descriptor -> new ExporterContainer(descriptor, partitionId, meterRegistry))
             .collect(Collectors.toList());
     metrics = new ExporterMetrics(partitionId);
     recordExporter = new RecordExporter(metrics, containers, partitionId);

@@ -12,11 +12,7 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.EnsureUtil;
-import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.prometheus.PrometheusConfig;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
-import io.prometheus.client.CollectorRegistry;
 import org.slf4j.Logger;
 
 public final class ExporterContext implements Context {
@@ -31,13 +27,14 @@ public final class ExporterContext implements Context {
   private RecordFilter filter = DEFAULT_FILTER;
 
   public ExporterContext(
-      final Logger logger, final Configuration configuration, final int partitionId) {
+      final Logger logger,
+      final Configuration configuration,
+      final int partitionId,
+      final MeterRegistry meterRegistry) {
     this.logger = logger;
     this.configuration = configuration;
     this.partitionId = partitionId;
-    meterRegistry =
-        new PrometheusMeterRegistry(
-            PrometheusConfig.DEFAULT, CollectorRegistry.defaultRegistry, Clock.SYSTEM);
+    this.meterRegistry = meterRegistry;
   }
 
   @Override

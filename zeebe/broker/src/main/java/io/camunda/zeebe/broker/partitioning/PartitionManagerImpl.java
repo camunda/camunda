@@ -36,6 +36,7 @@ import io.camunda.zeebe.scheduler.startup.StartupProcessShutdownException;
 import io.camunda.zeebe.topology.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -78,7 +79,8 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
       final ExporterRepository exporterRepository,
       final AtomixServerTransport gatewayBrokerTransport,
       final JobStreamer jobStreamer,
-      final PartitionDistribution partitionDistribution) {
+      final PartitionDistribution partitionDistribution,
+      final MeterRegistry meterRegistry) {
     this.brokerCfg = brokerCfg;
     this.concurrencyControl = concurrencyControl;
     this.actorSchedulingService = actorSchedulingService;
@@ -106,7 +108,8 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
             listeners,
             partitionRaftListeners,
             topologyManager,
-            featureFlags);
+            featureFlags,
+            meterRegistry);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
