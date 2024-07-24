@@ -6,17 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {zeebeGrpcApi} from '../api/zeebe-grpc';
+import {Camunda8} from '@camunda8/sdk';
 
-const {deployProcesses, createSingleInstance} = zeebeGrpcApi;
+const camunda8 = new Camunda8({
+  CAMUNDA_OAUTH_DISABLED: true,
+  CAMUNDA_SECURE_CONNECTION: false,
+  ZEEBE_ADDRESS: process.env.ZEEBE_GATEWAY_ADDRESS || 'localhost:26500',
+});
 
-export async function setup() {
-  await deployProcesses(['callActivityProcess.bpmn', 'calledProcess.bpmn']);
-
-  return {
-    callActivityProcessInstance: await createSingleInstance(
-      'CallActivityProcess',
-      1,
-    ),
-  };
-}
+export {camunda8};
