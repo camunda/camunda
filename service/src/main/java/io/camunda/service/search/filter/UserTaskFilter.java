@@ -21,14 +21,11 @@ public final record UserTaskFilter(
     List<String> userTaskDefinitionIds,
     List<String> processNames,
     List<String> assignees,
-    List<String> state,
+    List<String> states,
     List<Long> processInstanceKeys,
     List<Long> processDefinitionKeys,
     List<String> candidateUsers,
     List<String> candidateGroups,
-    boolean created,
-    boolean completed,
-    boolean canceled,
     DateValueFilter creationDateFilter,
     DateValueFilter completionDateFilter,
     DateValueFilter dueDateFilter,
@@ -42,14 +39,11 @@ public final record UserTaskFilter(
     private List<String> userTaskDefinitionIds;
     private List<String> processNames;
     private List<String> assignees;
-    private List<String> userTaskState;
+    private List<String> states;
     private List<Long> processInstanceKeys;
     private List<Long> processDefinitionKeys;
     private List<String> candidateUsers;
     private List<String> candidateGroups;
-    private boolean created;
-    private boolean completed;
-    private boolean canceled;
     private DateValueFilter creationDateFilter;
     private DateValueFilter completionDateFilter;
     private DateValueFilter dueDateFilter;
@@ -93,12 +87,12 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder userTaskState(final String value, final String... values) {
-      return userTaskState(collectValues(value, values));
+    public Builder states(final String value, final String... values) {
+      return states(collectValues(value, values));
     }
 
-    public Builder userTaskState(final List<String> values) {
-      userTaskState = addValuesToList(userTaskState, values);
+    public Builder states(final List<String> values) {
+      states = addValuesToList(states, values);
       return this;
     }
 
@@ -201,21 +195,6 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder created() {
-      created = true;
-      return this;
-    }
-
-    public Builder completed() {
-      completed = true;
-      return this;
-    }
-
-    public Builder canceled() {
-      canceled = true;
-      return this;
-    }
-
     @Override
     public UserTaskFilter build() {
       return new UserTaskFilter(
@@ -223,14 +202,11 @@ public final record UserTaskFilter(
           Objects.requireNonNullElse(userTaskDefinitionIds, Collections.emptyList()),
           Objects.requireNonNullElse(processNames, Collections.emptyList()),
           Objects.requireNonNullElse(assignees, Collections.emptyList()),
-          Objects.requireNonNullElse(userTaskState, Collections.emptyList()),
+          Objects.requireNonNullElse(states, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(candidateUsers, Collections.emptyList()),
           Objects.requireNonNullElse(candidateGroups, Collections.emptyList()),
-          created,
-          completed,
-          canceled,
           creationDateFilter,
           completionDateFilter,
           dueDateFilter,
