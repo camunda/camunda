@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.stream.api.EventFilter;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.Map;
 
@@ -29,6 +30,7 @@ public final class ExporterDirectorContext {
   private ExporterMode exporterMode = ExporterMode.ACTIVE; // per default we export records
   private Duration distributionInterval = DEFAULT_DISTRIBUTION_INTERVAL;
   private EventFilter positionsToSkipFilter;
+  private MeterRegistry meterRegistry;
 
   public int getId() {
     return id;
@@ -66,6 +68,10 @@ public final class ExporterDirectorContext {
     return positionsToSkipFilter;
   }
 
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
+  }
+
   public ExporterDirectorContext id(final int id) {
     this.id = id;
     return this;
@@ -89,6 +95,11 @@ public final class ExporterDirectorContext {
 
   public ExporterDirectorContext zeebeDb(final ZeebeDb zeebeDb) {
     this.zeebeDb = zeebeDb;
+    return this;
+  }
+
+  public ExporterDirectorContext meterRegistry(final MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
     return this;
   }
 

@@ -45,7 +45,8 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             brokerStartupContext.getExporterRepository(),
             brokerStartupContext.getGatewayBrokerTransport(),
             brokerStartupContext.getJobStreamService().jobStreamer(),
-            brokerStartupContext.getClusterConfigurationService());
+            brokerStartupContext.getClusterConfigurationService(),
+            brokerStartupContext.getMeterRegistry());
     concurrencyControl.run(
         () -> {
           try {
