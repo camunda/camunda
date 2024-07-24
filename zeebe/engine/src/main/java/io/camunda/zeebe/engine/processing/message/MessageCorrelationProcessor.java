@@ -81,7 +81,13 @@ public final class MessageCorrelationProcessor
 
     final var correlatingSubscriptions = new Subscriptions();
     correlateToMessageStartEventSubscriptions(command, messageKey, correlatingSubscriptions);
-    correlateToMessageEventSubscriptions(command.getValue(), messageKey, correlatingSubscriptions);
+    correlateToMessageEventSubscriptions(
+        command.getValue(),
+        messageKey,
+        correlatingSubscriptions,
+        command.getRequestId(),
+        command.getRequestStreamId(),
+        correlatingSubscriptions.isEmpty());
 
     if (correlatingSubscriptions.isEmpty()) {
       stateWriter.appendFollowUpEvent(
@@ -121,15 +127,30 @@ public final class MessageCorrelationProcessor
   private void correlateToMessageEventSubscriptions(
       final MessageCorrelationRecord messageCorrelationRecord,
       final long messageKey,
-      final Subscriptions correlatingSubscriptions) {
-    final var correlatedSubscriptions =
-        correlateBehavior.correlateToMessageEvents(
-            new MessageData(
-                messageKey,
-                messageCorrelationRecord.getNameBuffer(),
-                messageCorrelationRecord.getCorrelationKeyBuffer(),
-                messageCorrelationRecord.getVariablesBuffer(),
-                messageCorrelationRecord.getTenantId()));
-    correlatingSubscriptions.addAll(correlatedSubscriptions);
+      final Subscriptions correlatingSubscriptions,
+      final long requestId,
+      final int requestStreamId,
+      final boolean shouldRespond) {
+    if (shouldRespond) {
+      correlatingSubscriptions.addAll(
+          correlateBehavior.correlateToMessageEvents(
+              new MessageData(
+                  messageKey,
+                  messageCorrelationRecord.getNameBuffer(),
+                  messageCorrelationRecord.getCorrelationKeyBuffer(),
+                  messageCorrelationRecord.getVariablesBuffer(),
+                  messageCorrelationRecord.getTenantId(),
+                  requestId,
+                  requestStreamId)));
+    } else {
+      correlatingSubscriptions.addAll(
+          correlateBehavior.correlateToMessageEvents(
+              new MessageData(
+                  messageKey,
+                  messageCorrelationRecord.getNameBuffer(),
+                  messageCorrelationRecord.getCorrelationKeyBuffer(),
+                  messageCorrelationRecord.getVariablesBuffer(),
+                  messageCorrelationRecord.getTenantId())));
+    }
   }
 }
