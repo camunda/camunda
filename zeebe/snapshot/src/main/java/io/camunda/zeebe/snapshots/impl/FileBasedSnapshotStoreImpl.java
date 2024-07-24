@@ -13,7 +13,7 @@ import static io.camunda.zeebe.util.FileUtil.ensureDirectoryExists;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.snapshots.ChecksumProvider;
+import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistableSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -75,14 +75,14 @@ public final class FileBasedSnapshotStoreImpl {
   private final AtomicLong receivingSnapshotStartCount;
   private final Set<PersistableSnapshot> pendingSnapshots = new HashSet<>();
   private final Set<FileBasedSnapshot> availableSnapshots = new HashSet<>();
-  private final ChecksumProvider checksumProvider;
+  private final CRC32CChecksumProvider checksumProvider;
   private final ConcurrencyControl actor;
 
   public FileBasedSnapshotStoreImpl(
       final int brokerId,
       final int partitionId,
       final Path root,
-      final ChecksumProvider checksumProvider,
+      final CRC32CChecksumProvider checksumProvider,
       final ConcurrencyControl actor) {
     this.brokerId = brokerId;
     snapshotsDirectory = root.resolve(SNAPSHOTS_DIRECTORY);

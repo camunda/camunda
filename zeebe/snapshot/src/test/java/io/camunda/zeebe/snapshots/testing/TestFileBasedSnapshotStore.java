@@ -11,7 +11,7 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.snapshots.ChecksumProvider;
+import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
@@ -132,7 +132,7 @@ public class TestFileBasedSnapshotStore implements ReceivableSnapshotStore {
     return true;
   }
 
-  private static final class TestChecksumProvider implements ChecksumProvider {
+  private static final class TestChecksumProvider implements CRC32CChecksumProvider {
 
     @Override
     public Map<String, Long> getSnapshotChecksums(final Path snapshotPath) {

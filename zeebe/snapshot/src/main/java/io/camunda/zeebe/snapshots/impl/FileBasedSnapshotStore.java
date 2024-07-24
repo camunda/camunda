@@ -10,7 +10,7 @@ package io.camunda.zeebe.snapshots.impl;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.snapshots.ChecksumProvider;
+import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
@@ -36,7 +36,7 @@ public final class FileBasedSnapshotStore extends Actor
       final int brokerId,
       final int partitionId,
       final Path root,
-      final ChecksumProvider checksumProvider) {
+      final CRC32CChecksumProvider checksumProvider) {
     actorName = buildActorName("SnapshotStore", partitionId);
     this.partitionId = partitionId;
     snapshotStore =

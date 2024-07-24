@@ -10,7 +10,7 @@ package io.camunda.zeebe.snapshots.impl;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.snapshots.ChecksumProvider;
+import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
@@ -41,7 +41,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private boolean isValid = false;
   private PersistedSnapshot snapshot;
   private MutableChecksumsSFV checksum;
-  private final ChecksumProvider checksumProvider;
+  private final CRC32CChecksumProvider checksumProvider;
   private long lastFollowupEventPosition = Long.MAX_VALUE;
 
   FileBasedTransientSnapshot(
@@ -49,7 +49,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
       final Path directory,
       final FileBasedSnapshotStoreImpl snapshotStore,
       final ConcurrencyControl actor,
-      final ChecksumProvider checksumProvider) {
+      final CRC32CChecksumProvider checksumProvider) {
     this.snapshotId = snapshotId;
     this.snapshotStore = snapshotStore;
     this.directory = directory;

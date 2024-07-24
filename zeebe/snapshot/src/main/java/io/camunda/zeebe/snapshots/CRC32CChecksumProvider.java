@@ -10,7 +10,7 @@ package io.camunda.zeebe.snapshots;
 import java.nio.file.Path;
 import java.util.Map;
 
-public interface ChecksumProvider {
+public interface CRC32CChecksumProvider {
 
   /**
    * @param snapshotPath path of snapshot to get live file checksums
