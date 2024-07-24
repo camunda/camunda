@@ -1,3 +1,4 @@
+
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
@@ -25,6 +26,7 @@ import {
   useSearchParams,
 } from 'react-router-dom';
 import {useEffect, useRef, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
 import EmptyMessageImage from './empty-message-image.svg';
 import {observer} from 'mobx-react-lite';
@@ -53,7 +55,7 @@ type UseProcessesFilterParams = Omit<
 
 type FilterOption = {
   id: string;
-  text: string;
+  textKey: string;
   searchParamValue: 'yes' | 'no' | undefined;
   params: UseProcessesFilterParams;
 };
@@ -61,7 +63,7 @@ type FilterOption = {
 const START_FORM_FILTER_OPTIONS: FilterOption[] = [
   {
     id: 'ignore',
-    text: 'All Processes',
+    textKey: 'allProcesses',
     searchParamValue: undefined,
     params: {
       isStartedByForm: undefined,
@@ -69,7 +71,7 @@ const START_FORM_FILTER_OPTIONS: FilterOption[] = [
   },
   {
     id: 'yes',
-    text: 'Requires form input to start',
+    textKey: 'requiresFormInputToStart',
     searchParamValue: 'yes',
     params: {
       isStartedByForm: true,
@@ -77,7 +79,7 @@ const START_FORM_FILTER_OPTIONS: FilterOption[] = [
   },
   {
     id: 'no',
-    text: 'Does not require form input to start',
+    textKey: 'notRequiresFormInputToStart',
     searchParamValue: 'no',
     params: {
       isStartedByForm: false,
@@ -90,6 +92,9 @@ const FilterDropdown: React.FC<{
   selected?: FilterOption;
   onChange?: (option: FilterOption) => void;
 }> = ({items, selected, onChange}) => {
+
+  const {t} = useTranslation();
+
   return (
     <Dropdown
       id="process-filters"
@@ -97,10 +102,10 @@ const FilterDropdown: React.FC<{
       className={styles.dropdown}
       hideLabel
       selectedItem={selected}
-      titleText="Filter processes"
-      label="Filter processes"
+      titleText={t('filterProcesses')}
+      label={t('filterProcessesLabel')}
       items={items}
-      itemToString={(item) => (item ? item.text : '')}
+      itemToString={(item) => (item ? t(item.textKey) : '')}
       onChange={(data) => {
         if (data.selectedItem && onChange) {
           onChange(data.selectedItem);
@@ -111,6 +116,7 @@ const FilterDropdown: React.FC<{
 };
 
 const Processes: React.FC = observer(() => {
+  const {t} = useTranslation(); 
   const {instance} = newProcessInstance;
   const {hasPermission} = usePermissions(['write']);
   const {data: currentUser} = useCurrentUser();
@@ -176,7 +182,7 @@ const Processes: React.FC = observer(() => {
       notificationsStore.displayNotification({
         isDismissable: false,
         kind: 'error',
-        title: 'Processes could not be fetched',
+        title: t('processesFetchFailed'),
       });
       logger.error(error);
     }
@@ -199,8 +205,8 @@ const Processes: React.FC = observer(() => {
         kind: 'error',
         title:
           bpmnProcessId === null
-            ? 'Process does not exist or has no start form'
-            : `Process ${bpmnProcessId} does not exist or has no start form`,
+            ? t('processDoesNotExistNoStartForm')
+            : t('processDoesNotExistWithForm', { bpmnProcessId }),
       });
       navigate({
         ...location,
@@ -229,9 +235,9 @@ const Processes: React.FC = observer(() => {
 
   const processSearchProps: React.ComponentProps<typeof Search> = {
     size: 'md',
-    placeholder: 'Search processes',
-    labelText: 'Search processes',
-    closeButtonLabelText: 'Clear search processes',
+    placeholder: t('searchProcesses'),
+    labelText: t('searchProcessesLabel'),
+    closeButtonLabelText: t('clearSearchProcesses'),
     value: searchValue,
     onChange: (event) => {
       setSearchValue(event.target.value);
@@ -262,9 +268,9 @@ const Processes: React.FC = observer(() => {
               <Grid narrow>
                 <Column sm={4} md={8} lg={16}>
                   <Stack gap={4}>
-                    <h1>Processes</h1>
+                    <h1>{t('processes')}</h1>
                     <p>
-                      Browse and run processes published by your organization.
+                      {t('browseAndRunProcesses')}
                     </p>
                   </Stack>
                 </Column>
@@ -347,13 +353,12 @@ const Processes: React.FC = observer(() => {
                     }
                     heading={
                       isFiltered
-                        ? 'We could not find any process with that name'
-                        : 'No published processes yet'
+                        ? t('noProcessFoundWithThatName')
+                        : t('noPublishedProcessesYet')
                     }
                     description={
                       <span data-testid="empty-message">
-                        Contact your process administrator to publish processes
-                        or learn how to publish processes{' '}
+                        {t('contactYourProcessAdministrator')} 
                         <Link
                           href="https://docs.camunda.io/docs/components/modeler/web-modeler/run-or-publish-your-process/#publishing-a-process"
                           target="_blank"
@@ -365,7 +370,7 @@ const Processes: React.FC = observer(() => {
                             });
                           }}
                         >
-                          here
+                          {t('learnHowToPublishProcesses')}
                         </Link>
                       </span>
                     }

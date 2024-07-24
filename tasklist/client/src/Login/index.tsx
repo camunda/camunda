@@ -7,6 +7,7 @@
  */
 
 import {useLocation, useNavigate, Location} from 'react-router-dom';
+import {useTranslation} from 'react-i18next';
 import {Form, Field} from 'react-final-form';
 import {FORM_ERROR} from 'final-form';
 import {authenticationStore} from 'modules/stores/authentication';
@@ -48,6 +49,7 @@ type FormValues = {
 const Login: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const {t} = useTranslation();
   const {handleLogin} = authenticationStore;
 
   return (
@@ -70,16 +72,16 @@ const Login: React.FC = () => {
 
             if (error.response?.status === 401) {
               return {
-                [FORM_ERROR]: 'Username and password do not match',
+                [FORM_ERROR]: t('usernamePasswordMismatch'),
               };
             }
 
             return {
-              [FORM_ERROR]: 'Credentials could not be verified',
+              [FORM_ERROR]: t('credentialsNotVerified'),
             };
           } catch {
             return {
-              [FORM_ERROR]: 'Credentials could not be verified',
+              [FORM_ERROR]: t('credentialsNotVerified'),
             };
           }
         }}
@@ -87,11 +89,11 @@ const Login: React.FC = () => {
           const errors: {username?: string; password?: string} = {};
 
           if (!username) {
-            errors.username = 'Username is required';
+            errors.username = t('usernameRequired');
           }
 
           if (!password) {
-            errors.password = 'Password is required';
+            errors.password = t('passwordRequired');
           }
 
           return errors;
@@ -118,7 +120,7 @@ const Login: React.FC = () => {
             >
               <Stack>
                 <div className={styles.logo}>
-                  <CamundaLogo aria-label="Camunda logo" />
+                  <CamundaLogo aria-label={t('camundaLogo')} />
                 </div>
                 <h1 className={styles.title}>Tasklist</h1>
               </Stack>
@@ -141,10 +143,10 @@ const Login: React.FC = () => {
                         name={input.name}
                         id={input.name}
                         onChange={input.onChange}
-                        labelText="Username"
+                        labelText={t('usernameLabel')}
                         invalid={meta.error && meta.touched}
                         invalidText={meta.error}
-                        placeholder="Username"
+                        placeholder={t('usernamePlaceholder')}
                       />
                     )}
                   </Field>
@@ -160,12 +162,12 @@ const Login: React.FC = () => {
                         name={input.name}
                         id={input.name}
                         onChange={input.onChange}
-                        hidePasswordLabel="Hide password"
-                        showPasswordLabel="Show password"
-                        labelText="Password"
+                        hidePasswordLabel={t('hidePasswordLabel')}
+                        showPasswordLabel={t('showPasswordLabel')}
+                        labelText={t('passwordLabel')}
                         invalid={meta.error && meta.touched}
                         invalidText={meta.error}
-                        placeholder="Password"
+                        placeholder={t('passwordPlaceholder')}
                       />
                     )}
                   </Field>
@@ -176,7 +178,7 @@ const Login: React.FC = () => {
                   renderIcon={submitting ? LoadingSpinner : undefined}
                   className={styles.button}
                 >
-                  {submitting ? 'Logging in' : 'Login'}
+                  {submitting ? t('loggingIn') : t('login')}  
                 </Button>
                 <Disclaimer />
               </Stack>

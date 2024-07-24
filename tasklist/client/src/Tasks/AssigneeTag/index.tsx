@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useTranslation} from 'react-i18next';
 import {CurrentUser} from 'modules/types';
 import {CircleDash, UserAvatar, UserAvatarFilled} from '@carbon/react/icons';
 import {Tag as BaseTag} from '@carbon/react';
@@ -51,6 +52,7 @@ const AssigneeTag: React.FC<Props> = ({
   assignee,
   isShortFormat = true,
 }) => {
+  const {t} = useTranslation();
   const {userId} = currentUser;
   const isAssigned = assignee !== null;
   const isAssignedToCurrentUser = assignee === userId;
@@ -58,12 +60,12 @@ const AssigneeTag: React.FC<Props> = ({
   if (!isAssigned) {
     return (
       <Tag
-        title="Task unassigned"
+        title={t('taskUnassignedAria')}  
         size={isShortFormat ? 'sm' : 'md'}
         unselectable="off"
       >
         <CircleDash size={16} />
-        Unassigned
+        {t('taskUnassigned')}
       </Tag>
     );
   }
@@ -72,24 +74,24 @@ const AssigneeTag: React.FC<Props> = ({
       <Tag
         $isHighlighted
         $isAssigned
-        title="Task assigned to me"
+        title={t('taskAssignedToMeAria')}
         size={isShortFormat ? 'sm' : 'md'}
         unselectable="off"
       >
         <UserAvatarFilled size={16} />
-        {isShortFormat ? 'Me' : 'Assigned to me'}
+        {isShortFormat ? t('me') : t('assignedToMe')}
       </Tag>
     );
   }
   return (
     <Tag
       $isAssigned
-      title={`Task assigned to ${assignee}`}
+      title={t('taskAssignedToAria', { assignee })}
       size={isShortFormat ? 'sm' : 'md'}
       unselectable="off"
     >
       <UserAvatar size={16} />
-      {isShortFormat ? assignee : `Assigned to ${assignee}`}
+      {isShortFormat ? assignee : t('assignedTo', { assignee })}
     </Tag>
   );
 };

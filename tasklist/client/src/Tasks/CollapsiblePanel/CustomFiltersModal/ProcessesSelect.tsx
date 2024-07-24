@@ -9,6 +9,7 @@
 import {Select, SelectItem} from '@carbon/react';
 import {DEFAULT_TENANT_ID} from 'modules/constants/multiTenancy';
 import {useProcesses} from 'modules/queries/useProcesses';
+import {useTranslation} from 'react-i18next';
 
 type Props = {
   tenantId?: string;
@@ -19,6 +20,7 @@ const ProcessesSelect: React.FC<Props> = ({
   disabled,
   ...props
 }) => {
+  const {t} = useTranslation();
   const {data} = useProcesses(
     {
       tenantId,
@@ -32,7 +34,7 @@ const ProcessesSelect: React.FC<Props> = ({
 
   return (
     <Select {...props} disabled={disabled || processes.length === 0}>
-      <SelectItem value="all" text="All processes" />
+      <SelectItem value="all" text={t('allProcesses')} />
       {processes.map((process) => (
         <SelectItem
           key={process.id}

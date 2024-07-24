@@ -11,6 +11,7 @@ import {useForm} from 'modules/queries/useForm';
 import {Process, Variable} from 'modules/types';
 import {getProcessDisplayName} from 'modules/utils/getProcessDisplayName';
 import {useRef, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {
   TextInputSkeleton,
   Loading,
@@ -56,6 +57,7 @@ const FormModal: React.FC<Props> = ({
       refetchOnWindowFocus: false,
     },
   );
+  const {t} = useTranslation();
   const [isFormSchemaValid, setIsFormSchemaValid] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmissionFailed, setHasSubmissionFailed] = useState(false);
@@ -76,24 +78,24 @@ const FormModal: React.FC<Props> = ({
         aria-label={`Start process ${processDisplayName}`}
         modalHeading={
           <>
-            Start process {processDisplayName}
+            {t('startProcessTitle', { processDisplayName })}
             <Copy
-              feedback="Copied"
+              feedback={t('copiedFeedback')}
               onClick={() => {
                 navigator.clipboard.writeText(window.location.href);
               }}
               align="bottom"
               className="cds--copy-btn"
-              aria-label="Share process URL"
+              aria-label={t('shareProcessUrl')}
             >
               <Share />
             </Copy>
           </>
         }
-        secondaryButtonText="Cancel"
+        secondaryButtonText={t('cancelButtonText')}
         primaryButtonText={
           <>
-            Start process
+            {t('startProcessButtonText')}
             {isSubmitting ? (
               <Loading
                 withOverlay={false}
@@ -184,8 +186,8 @@ const FormModal: React.FC<Props> = ({
                             role="alert"
                             hideCloseButton
                             lowContrast
-                            title="Something went wrong"
-                            subtitle="You must first select a tenant to start a process."
+                            title={t('somethingWentWrongTitle')}
+                            subtitle={t('selectTenantSubtitle')}
                           />
                         ),
                       )
@@ -201,8 +203,8 @@ const FormModal: React.FC<Props> = ({
                             role="alert"
                             hideCloseButton
                             lowContrast
-                            title="Something went wrong"
-                            subtitle="Form could not be submitted. Please try again later."
+                            title={t('somethingWentWrongTitle')}
+                            subtitle={t('formSubmitFailedSubtitle')}
                           />
                         ),
                       )
@@ -223,8 +225,8 @@ const FormModal: React.FC<Props> = ({
                 role="alert"
                 hideCloseButton
                 lowContrast
-                title="Something went wrong"
-                subtitle="We were not able to render the form. Please contact your process administrator to fix the form schema."
+                title={t('somethingWentWrongTitle')}
+                subtitle={t('formRenderingFailedSubtitle')}
               />
             ))
             .with({status: 'error'}, () => (
@@ -233,8 +235,8 @@ const FormModal: React.FC<Props> = ({
                 role="alert"
                 hideCloseButton
                 lowContrast
-                title="Something went wrong"
-                subtitle="We were not able to load the form. Please try again or contact your Tasklist administrator."
+                title={t('somethingWentWrongTitle')}
+                subtitle={t('formLoadFailedSubtitle')}
               />
             ))
             .exhaustive()}

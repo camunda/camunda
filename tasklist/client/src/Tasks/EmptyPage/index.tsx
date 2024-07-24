@@ -13,6 +13,7 @@ import {Restricted} from 'modules/components/Restricted';
 import {useTasks} from 'modules/queries/useTasks';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {useEffect} from 'react';
+import {useTranslation} from 'react-i18next';
 import {decodeTaskEmptyPageRef} from 'modules/utils/reftags';
 import {useSearchParams} from 'react-router-dom';
 import {tracking} from 'modules/tracking';
@@ -25,6 +26,8 @@ const EmptyPage: React.FC = () => {
   const hasNoTasks = tasks.length === 0;
   const isOldUser = getStateLocally('hasCompletedTask') === true;
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const {t} = useTranslation();
 
   useEffect(() => {
     const ref = searchParams.get('ref');
@@ -77,29 +80,29 @@ const EmptyPage: React.FC = () => {
       >
         {isOldUser ? (
           <Restricted
-            fallback={<h3>Pick a task to view details</h3>}
+            fallback={<h3>{t('pickATaskToViewDetails')}</h3>}
             scopes={['write']}
           >
-            <h3>Pick a task to work on</h3>
+            <h3>{t('pickATaskToWorkOn')}</h3>
           </Restricted>
         ) : (
           <>
-            <h3>Welcome to Tasklist</h3>
+            <h3>{t('welcomeToTasklist')}</h3>
             <p data-testid="first-paragraph">
-              Here you can perform user tasks you specify
+              {t('userTasksDescription')}
               <br />
-              through your BPMN diagram and forms.
+              {t('bpmnDiagramAndForms')}
             </p>
-            {!hasNoTasks && <p>Select a task to view its details.</p>}
+            {!hasNoTasks && <p>{t('selectTaskToViewDetails')}</p>}
             <p data-testid="tutorial-paragraph">
-              Follow our tutorial to{' '}
+              {t('followTutorialTo')}{' '}
               <Link
                 href="https://modeler.cloud.camunda.io/tutorial/quick-start-human-tasks"
                 target="_blank"
                 rel="noreferrer"
                 inline
               >
-                learn how to create tasks.
+                {t('learnHowToCreateTasks')}
               </Link>
             </p>
           </>

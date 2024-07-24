@@ -6,20 +6,25 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useTranslation} from 'react-i18next'; 
+
 function getCompleteTaskErrorMessage(code: string) {
+
+  const {t} = useTranslation();
+  
   if (code === 'Task is not assigned') {
-    return 'Task is not assigned';
+    return t('taskNotAssignedError');
   }
 
   if (code.includes('Task is not assigned to')) {
-    return 'Task assigned to another user';
+    return t('taskAssignedToAnotherUser');
   }
 
   if (code === 'Task is not active') {
     return undefined;
   }
 
-  return 'Service is not reachable';
+  return t('serviceIsNotReachable');
 }
 
 export {getCompleteTaskErrorMessage};

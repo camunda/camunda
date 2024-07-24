@@ -10,17 +10,21 @@ import {Link, SkeletonPlaceholder} from '@carbon/react';
 import {CamundaLogo} from 'modules/components/CamundaLogo';
 import styles from './PoweredBy.module.scss';
 import cn from 'classnames';
+import {useTranslation} from 'react-i18next';
 
 type PoweredByProps = {
   className?: string;
 };
 
 const PoweredBy: React.FC<PoweredByProps> = ({className}) => {
+
+  const {t} = useTranslation();
+
   return (
     <p className={cn(className, styles.body)}>
-      Powered by{' '}
+      {t('poweredBy')} {' '}
       <Link href="https://camunda.com/" target="_blank">
-        <CamundaLogo className={styles.logo} aria-label="Camunda" />
+        <CamundaLogo className={styles.logo} aria-label={t('camundaLogoAriaLabel')} />
       </Link>
     </p>
   );

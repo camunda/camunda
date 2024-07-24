@@ -7,6 +7,7 @@
  */
 
 import {useEffect, useRef, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {observer} from 'mobx-react-lite';
 import {editor} from 'monaco-editor';
 import {isValidJSON} from 'modules/utils/isValidJSON';
@@ -52,6 +53,7 @@ const JSONEditorModal: React.FC<Props> = observer(
   ({onClose, onSave, value = '', title, isOpen}) => {
     const [isValid, setIsValid] = useState(true);
     const [editedValue, setEditedValue] = useState('');
+    const {t} = useTranslation();
     const editorRef = useRef<null | editor.IStandaloneCodeEditor>(null);
 
     useEffect(() => {
@@ -81,8 +83,8 @@ const JSONEditorModal: React.FC<Props> = observer(
         }}
         primaryButtonDisabled={!isValid}
         preventCloseOnClickOutside
-        primaryButtonText="Apply"
-        secondaryButtonText="Cancel"
+        primaryButtonText={t('applyButtonText')}
+        secondaryButtonText={t('cancelButtonText')}
         size="lg"
       >
         {isOpen ? (
