@@ -30,8 +30,6 @@ import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.ControllableRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
-import io.atomix.raft.snapshot.InMemorySnapshot;
-import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
@@ -39,6 +37,8 @@ import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.snapshots.testing.TestFileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.io.File;
@@ -62,7 +62,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.jmock.lib.concurrent.DeterministicScheduler;
@@ -88,7 +87,7 @@ public final class ControllableRaftContexts {
 
   private final int nodeCount;
   private final Map<MemberId, RaftContext> raftServers = new HashMap<>();
-  private final Map<MemberId, TestSnapshotStore> snapshotStores = new HashMap<>();
+  private final Map<MemberId, TestFileBasedSnapshotStore> snapshotStores = new HashMap<>();
   private Duration electionTimeout;
   private Duration heartbeatTimeout;
   private int nextEntry = 0;
@@ -171,7 +170,11 @@ public final class ControllableRaftContexts {
 
   private RaftContext createRaftContextForMember(final Random random, final int nodeId) {
     final var memberId = MemberId.from(String.valueOf(nodeId));
-    final var snapshotStore = new TestSnapshotStore(new AtomicReference<>());
+    final var snapshotStore =
+        new TestFileBasedSnapshotStore(
+            nodeId,
+            getMemberDirectory(directory, memberId.toString()).toPath().resolve("snapshots"),
+            new TestConcurrencyControl());
     snapshotStores.put(memberId, snapshotStore);
     final RaftContext raftContext =
         createRaftContext(
@@ -339,7 +342,7 @@ public final class ControllableRaftContexts {
   public void snapshotAndCompact(final MemberId memberId) {
     final RaftContext raftContext = raftServers.get(memberId);
     // Take snapshot at an index between lastSnapshotIndex and current commitIndex
-    final TestSnapshotStore testSnapshotStore = snapshotStores.get(memberId);
+    final TestFileBasedSnapshotStore testSnapshotStore = snapshotStores.get(memberId);
     final var startIndex =
         Math.max(
             raftContext.getLog().getFirstIndex(), testSnapshotStore.getCurrentSnapshotIndex() + 1);
@@ -352,12 +355,7 @@ public final class ControllableRaftContexts {
       reader.seek(snapshotIndex);
       final long term = reader.next().term();
 
-      InMemorySnapshot.newPersistedSnapshot(
-          Integer.parseInt(memberId.id()),
-          snapshotIndex,
-          term,
-          random.nextInt(1, 10),
-          testSnapshotStore);
+      testSnapshotStore.newSnapshot(snapshotIndex, term, random.nextInt(1, 10), random);
 
       LOG.info(
           "Snapshot taken at index {}. Current commit index is {}",
@@ -371,14 +369,9 @@ public final class ControllableRaftContexts {
   public void restart(final MemberId memberId) {
     raftServers.get(memberId).close();
     deterministicExecutors.remove(memberId).close();
-    final var newContext =
-        createRaftContext(
-            memberId,
-            random,
-            createStorage(memberId, cfg -> cfg.withSnapshotStore(snapshotStores.get(memberId))));
+    snapshotStores.get(memberId).close();
+    final var newContext = createRaftContextForMember(random, Integer.parseInt(memberId.id()));
     newContext.getCluster().bootstrap(raftServers.keySet());
-
-    raftServers.put(memberId, newContext);
   }
 
   // This is a different from other operations, as it restarts the node and force operations on
