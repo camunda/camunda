@@ -143,6 +143,8 @@ public interface Intent {
         return ProcessInstanceMigrationIntent.from(intent);
       case COMPENSATION_SUBSCRIPTION:
         return CompensationSubscriptionIntent.from(intent);
+      case MESSAGE_CORRELATION:
+        return MessageCorrelationIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
