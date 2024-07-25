@@ -62,8 +62,8 @@ const CompleteTaskButton: React.FC<Props> = ({
         disabled: submissionState === 'active' || isDisabled,
         onClick,
         title: isDisabled
-          ? undefined
-          : t('taskNotAssignedError'),
+          ? t('taskNotAssignedError')
+          : undefined,
       }}
       status={submissionState}
       isHidden={isHidden}
