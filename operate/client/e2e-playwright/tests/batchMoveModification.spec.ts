@@ -156,7 +156,7 @@ test.describe('Process Instance Batch Modification', () => {
               data: {
                 active: true,
                 running: true,
-                processIds: ['2251799813685249'],
+                processIds: [initialData.processDefinitionKey],
                 activityId: 'shipArticles',
                 ids: processInstanceKeys,
               },
