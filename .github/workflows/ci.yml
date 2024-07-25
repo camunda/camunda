@@ -44,6 +44,23 @@ jobs:
         uses: ./.github/actions/paths-filter
         id: filter
 
+  dummy:
+    needs: [detect-changes]
+    runs-on: gcp-core-2-default
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: sleep 300
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   actionlint:
     if: needs.detect-changes.outputs.actionlint == 'true'
     needs: [detect-changes]
