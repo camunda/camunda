@@ -1482,6 +1482,9 @@ components:
           type: string
         order:
           type: string
+          default: asc
+      required:
+        - field
     SearchQueryResponse:
       type: object
       properties:
@@ -1636,13 +1639,6 @@ components:
         userId:
           type: "integer"
           format: "int64"
-    Permission:
-      type: "string"
-      enum:
-        - "CREATE_ALL"
-        - "READ_ALL"
-        - "UPDATE_ALL"
-        - "DELETE_ALL"
     RoleRequest:
       type: object
       properties:
@@ -1653,7 +1649,7 @@ components:
         permissions:
           type: array
           items:
-            $ref: "#/components/schemas/Permission"
+            type: "string"
     RoleResponse:
       type: object
       allOf:

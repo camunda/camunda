@@ -39,7 +39,6 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1143,7 +1142,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
       final String taskId = tester.createZeebeUserTask(BPMN_PROCESS_ID, ELEMENT_ID, 1).getTaskId();
 
-      zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(user).send().join();
+      camundaClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(user).send().join();
 
       tester.waitUntil().taskIsAssigned(taskId);
 
@@ -1165,8 +1164,6 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     }
 
     @Test
-    @Disabled(
-        "This test fails with the legacy ZeebeClient, to be re-enabled after the use of the new CamundaClient")
     public void shouldUpdateUserTask() {
       final String taskId = tester.createZeebeUserTask(BPMN_PROCESS_ID, ELEMENT_ID, 1).getTaskId();
       final List<String> candidateGroups = new ArrayList<>();
@@ -1180,7 +1177,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
       final String dueDate = "2024-03-08T18:41:31+00:00";
       final String followUpDate = "2024-03-08T18:41:31+00:00";
 
-      zeebeClient
+      camundaClient
           .newUserTaskUpdateCommand(Long.valueOf(taskId))
           .candidateUsers(candidateUsers)
           .action("action")
@@ -1220,7 +1217,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
       variables.put("varB", 123);
       variables.put("varC", 123L);
 
-      zeebeClient
+      camundaClient
           .newUserTaskCompleteCommand(Long.parseLong(taskId))
           .variables(variables)
           .send()

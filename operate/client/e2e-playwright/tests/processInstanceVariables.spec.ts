@@ -92,7 +92,7 @@ test.describe('Process Instance Variables', () => {
     const processInstanceKey = initialData.instance.processInstanceKey;
     processInstancePage.navigateToProcessInstance({id: processInstanceKey});
 
-    expect(processInstancePage.addVariableButton).toBeEnabled();
+    await expect(processInstancePage.addVariableButton).toBeEnabled();
 
     // add a new variable
     await processInstancePage.addVariableButton.click();

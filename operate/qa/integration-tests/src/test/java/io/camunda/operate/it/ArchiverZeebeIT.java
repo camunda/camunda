@@ -88,7 +88,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
 
   private ProcessInstancesArchiverJob archiverJob;
 
-  private Random random = new Random();
+  private final Random random = new Random();
 
   private DateTimeFormatter dateTimeFormatter;
 
@@ -102,7 +102,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     archiverJob =
         beanFactory.getBean(
             ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
-    cancelProcessInstanceHandler.setZeebeClient(super.getClient());
+    cancelProcessInstanceHandler.setCamundaClient(super.getClient());
     clearMetrics();
   }
 
@@ -180,7 +180,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
             containsString("operate_archiver_delete_query")));
   }
 
-  protected void createOperations(List<Long> ids1) {
+  protected void createOperations(final List<Long> ids1) {
     final ListViewQueryDto query = createGetAllProcessInstancesQuery();
     query.setIds(CollectionUtil.toSafeListOfStrings(ids1));
     final CreateBatchOperationRequestDto batchOperationRequest =
@@ -189,7 +189,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 
-  private void assertAllInstancesInAlias(int count) {
+  private void assertAllInstancesInAlias(final int count) {
     final ListViewRequestDto request = createGetAllProcessInstancesRequest();
     request.setPageSize(count + 100);
     final ListViewResponseDto responseDto = listViewReader.queryProcessInstances(request);
@@ -267,7 +267,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     assertInstancesInCorrectIndex(1, Arrays.asList(processInstanceKey), endDate, true);
   }
 
-  private BatchOperationEntity createBatchOperationEntity(OffsetDateTime endDate) {
+  private BatchOperationEntity createBatchOperationEntity(final OffsetDateTime endDate) {
     final BatchOperationEntity batchOperationEntity1 = new BatchOperationEntity();
     batchOperationEntity1.generateId();
     batchOperationEntity1.setStartDate(endDate.minus(5, ChronoUnit.MINUTES));
@@ -350,7 +350,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
                 .collect(Collectors.joining(","))
             + "]}";
     final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, payload);
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, payload);
     // wait till it's finished
     searchTestRule.processAllRecordsAndWait(
         400, processInstanceIsCompletedCheck, processInstanceKey);
@@ -365,7 +365,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     assertInstancesInCorrectIndex(1, Arrays.asList(processInstanceKey), endDate, true);
   }
 
-  private void deployProcessWithOneActivity(String processId, String activityId) {
+  private void deployProcessWithOneActivity(final String processId, final String activityId) {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
@@ -377,7 +377,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private void assertBatchOperationsInCorrectIndex(
-      int instancesCount, List<String> ids, Instant endDate) throws IOException {
+      final int instancesCount, final List<String> ids, final Instant endDate) throws IOException {
     final String destinationIndexName;
     if (endDate != null) {
       destinationIndexName =
@@ -395,16 +395,19 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     assertThat(bos).extracting(BatchOperationTemplate.ID).containsExactlyInAnyOrderElementsOf(ids);
   }
 
-  private void assertInstancesInCorrectIndex(int instancesCount, List<Long> ids, Instant endDate)
-      throws IOException {
+  private void assertInstancesInCorrectIndex(
+      final int instancesCount, final List<Long> ids, final Instant endDate) throws IOException {
     assertInstancesInCorrectIndex(instancesCount, ids, endDate, false);
   }
 
   private void assertInstancesInCorrectIndex(
-      int instancesCount, List<Long> ids, Instant endDate, boolean ignoreAbsentIndex)
+      final int instancesCount,
+      final List<Long> ids,
+      final Instant endDate,
+      final boolean ignoreAbsentIndex)
       throws IOException {
     assertProcessInstanceIndex(instancesCount, ids, endDate);
-    for (ProcessInstanceDependant template : processInstanceDependantTemplates) {
+    for (final ProcessInstanceDependant template : processInstanceDependantTemplates) {
       if (!(template instanceof IncidentTemplate || template instanceof SequenceFlowTemplate)) {
         assertDependentIndex(
             template.getFullQualifiedName(),
@@ -416,8 +419,8 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     }
   }
 
-  private void assertProcessInstanceIndex(int instancesCount, List<Long> ids, Instant endDate)
-      throws IOException {
+  private void assertProcessInstanceIndex(
+      final int instancesCount, final List<Long> ids, final Instant endDate) throws IOException {
     final String destinationIndexName;
     if (endDate != null) {
       destinationIndexName =
@@ -442,11 +445,11 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private void assertDependentIndex(
-      String mainIndexName,
-      String idFieldName,
-      List<Long> ids,
-      Instant endDate,
-      boolean ignoreAbsentIndex)
+      final String mainIndexName,
+      final String idFieldName,
+      final List<Long> ids,
+      final Instant endDate,
+      final boolean ignoreAbsentIndex)
       throws IOException {
     final String destinationIndexName;
     if (endDate != null) {
@@ -463,17 +466,18 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
         idsFromDstIndex -> assertThat(idsFromDstIndex).as(mainIndexName).isSubsetOf(ids));
   }
 
-  private void finishInstances(int count, Instant currentTime, String taskId) {
+  private void finishInstances(final int count, final Instant currentTime, final String taskId) {
     pinZeebeTime(currentTime);
     ZeebeTestUtil.completeTask(getClient(), taskId, getWorkerName(), null, count);
   }
 
-  private List<Long> startInstances(String processId, int count, Instant currentTime) {
+  private List<Long> startInstances(
+      final String processId, final int count, final Instant currentTime) {
     assertThat(count).isGreaterThan(0);
     pinZeebeTime(currentTime);
     final List<Long> ids = new ArrayList<>();
     for (int i = 0; i < count; i++) {
-      ids.add(ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"var\": 123}"));
+      ids.add(ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"var\": 123}"));
     }
     searchTestRule.processAllRecordsAndWait(processInstancesAreStartedCheck, ids);
     return ids;

@@ -90,6 +90,15 @@ else
     exit 1
 fi
 
+BASE_IMAGE_REGEX='ARG BASE_IMAGE="([^"]+)"'
+if [[ $DOCKERFILE =~ $BASE_IMAGE_REGEX ]]; then
+    BASE_IMAGE="${BASH_REMATCH[1]}"
+    echo "Base image found: $BASE_IMAGE"
+else
+    echo >&2 "Base image cannot be found in the Dockerfile (with name $DOCKERFILENAME)"
+    exit 1
+fi
+
 # Extract the actual labels from the info - make sure to sort keys so we always have the same
 # ordering for maps to compare things properly
 actualLabels=$(echo "${imageInfo}" | jq --sort-keys '.[0].Config.Labels')
@@ -109,6 +118,7 @@ expectedLabels=$(
     --arg REVISION "${REVISION}" \
     --arg DATE "${DATE}" \
     --arg DIGEST "${DIGEST}" \
+    --arg BASE_IMAGE "docker.io/library/${BASE_IMAGE}" \
     "$(cat "${labelsGoldenFile}")"
 )
 

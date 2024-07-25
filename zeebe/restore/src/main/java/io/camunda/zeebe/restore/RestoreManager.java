@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -94,7 +95,10 @@ public class RestoreManager {
       validator = BackupValidator.none();
     }
     return new PartitionRestoreService(
-            backupStore, partition, configuration.getCluster().getNodeId())
+            backupStore,
+            partition,
+            configuration.getCluster().getNodeId(),
+            new ChecksumProviderRocksDBImpl())
         .restore(backupId, validator)
         .thenAccept(backup -> logSuccessfulRestore(backup, partition.id().id(), backupId));
   }

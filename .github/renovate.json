@@ -62,6 +62,7 @@
     {
       "description": "Digest updates cover all use cases since they are used as base, so we disable other types.",
       "matchManagers": ["dockerfile"],
+      "matchFileNames": ["Dockerfile", "camunda.Dockerfile"],
       "matchUpdateTypes": ["major", "minor", "patch"],
       "enabled": false
     },

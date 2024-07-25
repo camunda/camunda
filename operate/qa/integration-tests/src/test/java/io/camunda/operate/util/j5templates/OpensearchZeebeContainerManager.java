@@ -33,11 +33,13 @@ public class OpensearchZeebeContainerManager extends ZeebeContainerManager {
     this.zeebeRichOpenSearchClient = zeebeRichOpenSearchClient;
   }
 
+  @Override
   protected void updatePrefix() {
     LOGGER.info("Starting Zeebe with OS prefix: " + prefix);
     operateProperties.getZeebeOpensearch().setPrefix(prefix);
   }
 
+  @Override
   protected void removeIndices() {
     TestUtil.removeAllIndices(
         zeebeRichOpenSearchClient.index(), zeebeRichOpenSearchClient.template(), prefix);

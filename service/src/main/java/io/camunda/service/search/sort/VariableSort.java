@@ -7,7 +7,6 @@
  */
 package io.camunda.service.search.sort;
 
-import io.camunda.search.clients.sort.SortOrder;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
@@ -29,14 +28,6 @@ public final record VariableSort(List<FieldSorting> orderings) implements SortOp
     public Builder value() {
       currentOrdering = new FieldSorting("value", null);
       return this;
-    }
-
-    public Builder asc() {
-      return addOrdering(SortOrder.ASC);
-    }
-
-    public Builder desc() {
-      return addOrdering(SortOrder.DESC);
     }
 
     @Override

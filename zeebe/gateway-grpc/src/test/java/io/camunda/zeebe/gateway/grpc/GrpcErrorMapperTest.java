@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.fail;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
+import io.atomix.cluster.messaging.MessagingException.ConnectionClosed;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
@@ -165,5 +166,18 @@ final class GrpcErrorMapperTest {
       final LogEvent event = recorder.getAppendedEvents().get(0);
       assertThat(event.getLevel()).isEqualTo(Level.DEBUG);
     }
+  }
+
+  @Test
+  void shouldReturnAbortedOnConnectionClosed() {
+    // given
+    final var error = new ConnectionClosed("Closed");
+
+    // when
+    log.setLevel(Level.DEBUG);
+    final StatusRuntimeException statusException = errorMapper.mapError(error, logger);
+
+    // then
+    assertThat(statusException.getStatus().getCode()).isEqualTo(Code.ABORTED);
   }
 }

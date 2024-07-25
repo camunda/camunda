@@ -15,11 +15,11 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.STATE;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ThreadUtil;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -40,19 +40,19 @@ public class BigProcessDataGenerator {
 
   public static final String PROCESS_BPMN_PROCESS_ID = "sequential-noop";
   private static final Logger LOGGER = LoggerFactory.getLogger(BigProcessDataGenerator.class);
-  private ZeebeClient zeebeClient;
+  private CamundaClient camundaClient;
 
   @Autowired private RestHighLevelClient esClient;
 
-  private void init(TestContext testContext) {
-    zeebeClient =
-        ZeebeClient.newClientBuilder()
+  private void init(final TestContext testContext) {
+    camundaClient =
+        CamundaClient.newClientBuilder()
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
             .usePlaintext()
             .build();
   }
 
-  public void createData(TestContext testContext) throws Exception {
+  public void createData(final TestContext testContext) throws Exception {
     init(testContext);
     try {
       final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
@@ -98,13 +98,13 @@ public class BigProcessDataGenerator {
 
   private void finishEndTask() {
     // wait for task "endTask" of long-running process and complete it
-    ZeebeTestUtil.completeTask(zeebeClient, "endTask", "data-generator", null, 1);
+    ZeebeTestUtil.completeTask(camundaClient, "endTask", "data-generator", null, 1);
     LOGGER.info("Task endTask completed.");
   }
 
   private void deployProcess() {
     final String processDefinitionKey =
-        ZeebeTestUtil.deployProcess(zeebeClient, "sequential-noop.bpmn");
+        ZeebeTestUtil.deployProcess(camundaClient, "sequential-noop.bpmn");
     LOGGER.info("Deployed process {} with key {}", PROCESS_BPMN_PROCESS_ID, processDefinitionKey);
   }
 
@@ -116,18 +116,18 @@ public class BigProcessDataGenerator {
                 .map(Object::toString)
                 .collect(Collectors.joining(","))
             + "]}";
-    ZeebeTestUtil.startProcessInstance(zeebeClient, PROCESS_BPMN_PROCESS_ID, payload);
+    ZeebeTestUtil.startProcessInstance(camundaClient, PROCESS_BPMN_PROCESS_ID, payload);
     LOGGER.info("Started process instance with id {} ", PROCESS_BPMN_PROCESS_ID);
   }
 
-  private String getAliasFor(String index) {
+  private String getAliasFor(final String index) {
     return String.format("operate-%s-*_alias", index);
   }
 
   private void closeClients() {
-    if (zeebeClient != null) {
-      zeebeClient.close();
-      zeebeClient = null;
+    if (camundaClient != null) {
+      camundaClient.close();
+      camundaClient = null;
     }
   }
 }
