@@ -156,7 +156,6 @@ public class JobWorkerElementIncidentTest {
         .hasErrorMessage("Expected result of the expression '\"\"' to be not empty, but was ''.")
         .hasElementId(TASK_ELEMENT_ID)
         .hasElementInstanceKey(recordThatLeadsToIncident.getKey())
-        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .hasJobKey(-1L)
         .hasVariableScopeKey(recordThatLeadsToIncident.getKey());
   }

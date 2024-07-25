@@ -28,6 +28,7 @@ import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.time.ZonedDateTime;
@@ -101,13 +102,9 @@ public final class BpmnJobBehavior {
     jobMetrics.jobCreated(jobProperties.getType());
   }
 
-<<<<<<< HEAD
   private Either<Failure, String> evalTypeExp(
       final JobWorkerProperties jobWorkerProperties, final long scopeKey) {
     final Expression type = jobWorkerProperties.getType();
-    return expressionBehavior.evaluateStringExpression(type, scopeKey);
-=======
-  private Either<Failure, String> evalTypeExp(final Expression type, final long scopeKey) {
     return expressionBehavior
         .evaluateStringExpression(type, scopeKey)
         .flatMap(
@@ -121,7 +118,6 @@ public final class BpmnJobBehavior {
                             ErrorType.EXTRACT_VALUE_ERROR,
                             scopeKey))
                     : Either.right(result));
->>>>>>> 9a6b43c (fix: backporting the changes)
   }
 
   private Either<Failure, Long> evalRetriesExp(
