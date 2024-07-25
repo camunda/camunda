@@ -308,7 +308,8 @@ public class UserTaskFilterTest {
   @Test
   public void shouldQueryByBpmnProcessId() {
     // given
-    final var bpmnProcessIdFilter = FilterBuilders.userTask((f) -> f.processNames("bpmnProcess1"));
+    final var bpmnProcessIdFilter =
+        FilterBuilders.userTask((f) -> f.bpmProcessDefinitionIds("bpmnProcess1"));
     final var searchQuery =
         SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(bpmnProcessIdFilter));
 

@@ -18,8 +18,8 @@ import java.util.function.Function;
 
 public final record UserTaskFilter(
     List<Long> userTaskKeys,
-    List<String> userTaskDefinitionIds,
-    List<String> processNames,
+    List<String> elementIds,
+    List<String> bpmProcessDefinitionIds,
     List<String> assignees,
     List<String> states,
     List<Long> processInstanceKeys,
@@ -36,8 +36,8 @@ public final record UserTaskFilter(
 
   public static final class Builder implements ObjectBuilder<UserTaskFilter> {
     private List<Long> userTaskKeys;
-    private List<String> userTaskDefinitionIds;
-    private List<String> processNames;
+    private List<String> elementIds;
+    private List<String> bpmProcessDefinitionIds;
     private List<String> assignees;
     private List<String> states;
     private List<Long> processInstanceKeys;
@@ -60,21 +60,21 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder userTaskDefinitionIds(final String... values) {
-      return userTaskDefinitionIds(collectValuesAsList(values));
+    public Builder userTaskElementIds(final String... values) {
+      return userTaskElementIds(collectValuesAsList(values));
     }
 
-    public Builder userTaskDefinitionIds(final List<String> values) {
-      userTaskDefinitionIds = addValuesToList(userTaskDefinitionIds, values);
+    public Builder userTaskElementIds(final List<String> values) {
+      elementIds = addValuesToList(elementIds, values);
       return this;
     }
 
-    public Builder processNames(final String... values) {
-      return processNames(collectValuesAsList(values));
+    public Builder bpmProcessDefinitionIds(final String... values) {
+      return bpmProcessDefinitionIds(collectValuesAsList(values));
     }
 
-    public Builder processNames(final List<String> values) {
-      processNames = addValuesToList(processNames, values);
+    public Builder bpmProcessDefinitionIds(final List<String> values) {
+      bpmProcessDefinitionIds = addValuesToList(bpmProcessDefinitionIds, values);
       return this;
     }
 
@@ -199,8 +199,8 @@ public final record UserTaskFilter(
     public UserTaskFilter build() {
       return new UserTaskFilter(
           Objects.requireNonNullElse(userTaskKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(userTaskDefinitionIds, Collections.emptyList()),
-          Objects.requireNonNullElse(processNames, Collections.emptyList()),
+          Objects.requireNonNullElse(elementIds, Collections.emptyList()),
+          Objects.requireNonNullElse(bpmProcessDefinitionIds, Collections.emptyList()),
           Objects.requireNonNullElse(assignees, Collections.emptyList()),
           Objects.requireNonNullElse(states, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
