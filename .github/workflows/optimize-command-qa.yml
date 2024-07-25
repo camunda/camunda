@@ -107,11 +107,11 @@ jobs:
               exit 1
             fi
 
-            # Check if the issue has the 'type:epic', 'type:task' or 'type:bug' label
-            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" != true ] &&
-               [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:task') }}" != true ] &&
-               [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" != true ]; then
-              echo "Issue has no 'type:epic', 'type:task' or 'type:bug' label"
+            # Check if the issue has the 'kind/epic', 'kind/task' or 'kind/bug' label
+            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'kind/epic') }}" != true ] &&
+               [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'kind/task') }}" != true ] &&
+               [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'kind/epic') }}" != true ]; then
+              echo "Issue has no 'kind/epic', 'kind/task' or 'kind/bug' label"
               exit 1
             fi
           fi
@@ -125,8 +125,8 @@ jobs:
               exit 1
             fi
 
-            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:bug') }}" == "false" ]; then
-              echo "Command 'verified' can be used only for 'type:bug' issues"
+            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'kind/bug') }}" == "false" ]; then
+              echo "Command 'verified' can be used only for 'kind/bug' issues"
               exit 1
             fi
 
@@ -147,8 +147,8 @@ jobs:
               exit 1
             fi
 
-            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:bug') }}" == "false" ]; then
-              echo "Command 'not verified' can be used only for 'type:bug' issues"
+            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'kind/bug') }}" == "false" ]; then
+              echo "Command 'not verified' can be used only for 'kind/bug' issues"
               exit 1
             fi
 
@@ -168,7 +168,7 @@ jobs:
           remove_assignee=true
 
           if [ "${{ steps.parse-args.outputs.arg1}}" == "approve" ]; then
-            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" == "true" ]
+            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'kind/epic') }}" == "true" ]
               new_assignee="${{ steps.vars.outputs.pm }}"
             else
               new_assignee="${{ steps.get-engineering-dri.outputs.engineering_dri }}"
@@ -177,7 +177,7 @@ jobs:
             new_assignee="${{ steps.get-engineering-dri.outputs.engineering_dri }}"
           elif [ "${{ steps.parse-args.outputs.arg1 }}" == 'skip' ]; then
             if [ "${{ steps.issue-project.outputs.project_status }}" == 'QA Review' ]; then
-              if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" == "true" ]; then
+              if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'kind/epic') }}" == "true" ]; then
                 new_assignee="${{ steps.vars.outputs.pm }}"
               else
                 new_assignee="${{ steps.get-engineering-dri.outputs.engineering_dri }}"
@@ -206,7 +206,7 @@ jobs:
         run: |
           new_status=""
           if [ "${{ steps.parse-args.outputs.arg1 }}" == 'approve' ]; then
-            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" == "true" ]; then
+            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'kind/epic') }}" == "true" ]; then
               new_status="PM Review"
             else
               new_status="Ready to Complete"
@@ -217,7 +217,7 @@ jobs:
             new_status="Inbox"
           elif [ "${{ steps.parse-args.outputs.arg1 }}" == 'skip' ]; then
             if [ "${{ steps.issue-project.outputs.project_status }}" == 'QA Review' ]; then
-              if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'type:epic') }}" == "true" ]; then
+              if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'kind/epic') }}" == "true" ]; then
                 new_status="PM Review"
               else
                 new_status="Ready to Complete"
