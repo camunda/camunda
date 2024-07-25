@@ -88,7 +88,7 @@ const DrdPanel: React.FC<Props> = ({children}) => {
 
   return (
     <Container>
-      <Panel data-testid="drd-panel" ref={containerRef}>
+      <Panel data-testid="drd-panel" aria-label="drd panel" ref={containerRef}>
         {children}
       </Panel>
       <Handle ref={handleRef} />

@@ -70,7 +70,7 @@ const InputsAndOutputs: React.FC = observer(() => {
         direction={SplitDirection.Horizontal}
         minWidths={[panelMinWidth, panelMinWidth]}
       >
-        <Panel>
+        <Panel aria-label="input variables">
           {status !== 'error' && <Title>Inputs</Title>}
           {status === 'initial' && (
             <Skeleton
@@ -108,7 +108,7 @@ const InputsAndOutputs: React.FC = observer(() => {
             )}
           {status === 'error' && <ErrorMessage />}
         </Panel>
-        <Panel>
+        <Panel aria-label="output variables">
           {status !== 'error' && <Title>Outputs</Title>}
           {status === 'initial' && (
             <Skeleton
@@ -118,15 +118,15 @@ const InputsAndOutputs: React.FC = observer(() => {
           )}
           {status === 'fetched' && decisionInstance?.state !== 'FAILED' && (
             <StructuredList
-              label="Inputs"
+              label="Outputs"
               headerSize="sm"
               isFlush={false}
               headerColumns={outputMappingsColumns}
               rows={
                 decisionInstance?.evaluatedOutputs.map(
-                  ({ruleIndex, name, value}) => {
+                  ({id, ruleId, ruleIndex, name, value}) => {
                     return {
-                      key: ruleIndex.toString(),
+                      key: `${id}--${ruleId}`,
                       columns: [
                         {
                           cellContent: ruleIndex,
