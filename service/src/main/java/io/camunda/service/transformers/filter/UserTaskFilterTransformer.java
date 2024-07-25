@@ -73,8 +73,10 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
   @Override
   public List<String> toIndices(final UserTaskFilter filter) {
-    if (Objects.equals(filter.states().getFirst(), "CREATED") && filter.states().size() == 1) {
-      return Arrays.asList("tasklist-task-8.5.0_"); // Not necessary visit alias on this case
+    if (filter != null && filter.states() != null && !filter.states().isEmpty()) {
+      if (Objects.equals(filter.states().getFirst(), "CREATED") && filter.states().size() == 1) {
+        return Arrays.asList("tasklist-task-8.5.0_"); // Not necessary to visit alias in this case
+      }
     }
     return Arrays.asList("tasklist-task-8.5.0_alias");
   }
