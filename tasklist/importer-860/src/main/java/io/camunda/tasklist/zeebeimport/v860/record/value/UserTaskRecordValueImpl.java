@@ -46,6 +46,7 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
   private String externalFormReference;
   private Map<String, String> customHeaders;
   private long creationTimestamp;
+  private long priority;
 
   @Override
   public long getUserTaskKey() {
@@ -168,6 +169,11 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
     return processDefinitionKey;
   }
 
+  @Override
+  public long getPriority() {
+    return priority;
+  }
+
   public void setProcessDefinitionKey(final long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
   }
@@ -245,7 +251,8 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
         variables,
         tenantId,
         processInstanceKey,
-        changedAttributes);
+        changedAttributes,
+        priority);
   }
 
   @Override
@@ -272,7 +279,8 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(variables, that.variables)
         && Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(changedAttributes, that.changedAttributes);
+        && Objects.equals(changedAttributes, that.changedAttributes)
+        && Objects.equals(priority, that.priority);
   }
 
   @Override
@@ -316,6 +324,8 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
         + '\''
         + ", processInstanceKey="
         + processInstanceKey
+        + ", priority="
+        + priority
         + ", changedAttributes="
         + changedAttributes
         + '}';

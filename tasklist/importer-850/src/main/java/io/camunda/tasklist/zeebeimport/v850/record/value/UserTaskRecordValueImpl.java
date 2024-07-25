@@ -46,13 +46,14 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
   private String externalFormReference;
   private Map<String, String> customHeaders;
   private long creationTimestamp;
+  private long priority;
 
   @Override
   public long getUserTaskKey() {
     return userTaskKey;
   }
 
-  public void setUserTaskKey(long userTaskKey) {
+  public void setUserTaskKey(final long userTaskKey) {
     this.userTaskKey = userTaskKey;
   }
 
@@ -61,24 +62,22 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
     return assignee;
   }
 
-  public void setAssignee(String assignee) {
+  public void setAssignee(final String assignee) {
     this.assignee = assignee;
   }
 
-  public String getCandidateGroups() {
-    return candidateGroups;
+  @Override
+  public List<String> getCandidateGroupsList() {
+    return candidateGroupsList;
   }
 
-  public void setCandidateGroups(String candidateGroups) {
-    this.candidateGroups = candidateGroups;
+  public void setCandidateGroupsList(final List<String> candidateGroupsList) {
+    this.candidateGroupsList = candidateGroupsList;
   }
 
-  public String getCandidateUsers() {
-    return candidateUsers;
-  }
-
-  public void setCandidateUsers(String candidateUsers) {
-    this.candidateUsers = candidateUsers;
+  @Override
+  public List<String> getCandidateUsersList() {
+    return candidateUsersList;
   }
 
   @Override
@@ -86,7 +85,7 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
     return dueDate;
   }
 
-  public void setDueDate(String dueDate) {
+  public void setDueDate(final String dueDate) {
     this.dueDate = dueDate;
   }
 
@@ -95,7 +94,7 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
     return followUpDate;
   }
 
-  public void setFollowUpDate(String followUpDate) {
+  public void setFollowUpDate(final String followUpDate) {
     this.followUpDate = followUpDate;
   }
 
@@ -129,20 +128,12 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
     return creationTimestamp;
   }
 
-  public void setChangedAttributes(List<String> changedAttributes) {
-    this.changedAttributes = changedAttributes;
-  }
-
-  public void setFormKey(long formKey) {
-    this.formKey = formKey;
-  }
-
   @Override
   public String getElementId() {
     return elementId;
   }
 
-  public void setElementId(String elementId) {
+  public void setElementId(final String elementId) {
     this.elementId = elementId;
   }
 
@@ -151,7 +142,7 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
     return elementInstanceKey;
   }
 
-  public void setElementInstanceKey(long elementInstanceKey) {
+  public void setElementInstanceKey(final long elementInstanceKey) {
     this.elementInstanceKey = elementInstanceKey;
   }
 
@@ -160,7 +151,7 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
     return bpmnProcessId;
   }
 
-  public void setBpmnProcessId(String bpmnProcessId) {
+  public void setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
   }
 
@@ -169,7 +160,7 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
     return processDefinitionVersion;
   }
 
-  public void setProcessDefinitionVersion(int processDefinitionVersion) {
+  public void setProcessDefinitionVersion(final int processDefinitionVersion) {
     this.processDefinitionVersion = processDefinitionVersion;
   }
 
@@ -178,8 +169,41 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
     return processDefinitionKey;
   }
 
-  public void setProcessDefinitionKey(long processDefinitionKey) {
+  @Override
+  public long getPriority() {
+    return priority;
+  }
+
+  public void setProcessDefinitionKey(final long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public void setChangedAttributes(final List<String> changedAttributes) {
+    this.changedAttributes = changedAttributes;
+  }
+
+  public void setFormKey(final long formKey) {
+    this.formKey = formKey;
+  }
+
+  public void setCandidateUsersList(final List<String> candidateUsersList) {
+    this.candidateUsersList = candidateUsersList;
+  }
+
+  public String getCandidateGroups() {
+    return candidateGroups;
+  }
+
+  public void setCandidateGroups(final String candidateGroups) {
+    this.candidateGroups = candidateGroups;
+  }
+
+  public String getCandidateUsers() {
+    return candidateUsers;
+  }
+
+  public void setCandidateUsers(final String candidateUsers) {
+    this.candidateUsers = candidateUsers;
   }
 
   @Override
@@ -187,7 +211,7 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
     return variables;
   }
 
-  public void setVariables(Map<String, Object> variables) {
+  public void setVariables(final Map<String, Object> variables) {
     this.variables = variables;
   }
 
@@ -196,7 +220,7 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
     return tenantId;
   }
 
-  public void setTenantId(String tenantId) {
+  public void setTenantId(final String tenantId) {
     this.tenantId = tenantId;
   }
 
@@ -205,30 +229,34 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
     return processInstanceKey;
   }
 
-  public void setProcessInstanceKey(long processInstanceKey) {
+  public void setProcessInstanceKey(final long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
   }
 
   @Override
-  public List<String> getCandidateGroupsList() {
-    return candidateGroupsList;
-  }
-
-  public void setCandidateGroupsList(List<String> candidateGroupsList) {
-    this.candidateGroupsList = candidateGroupsList;
+  public int hashCode() {
+    return Objects.hash(
+        userTaskKey,
+        assignee,
+        candidateGroups,
+        candidateUsers,
+        dueDate,
+        followUpDate,
+        formKey,
+        elementId,
+        elementInstanceKey,
+        bpmnProcessId,
+        processDefinitionVersion,
+        processDefinitionKey,
+        variables,
+        tenantId,
+        processInstanceKey,
+        changedAttributes,
+        priority);
   }
 
   @Override
-  public List<String> getCandidateUsersList() {
-    return candidateUsersList;
-  }
-
-  public void setCandidateUsersList(List<String> candidateUsersList) {
-    this.candidateUsersList = candidateUsersList;
-  }
-
-  @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -251,28 +279,8 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(variables, that.variables)
         && Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(changedAttributes, that.changedAttributes);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        userTaskKey,
-        assignee,
-        candidateGroups,
-        candidateUsers,
-        dueDate,
-        followUpDate,
-        formKey,
-        elementId,
-        elementInstanceKey,
-        bpmnProcessId,
-        processDefinitionVersion,
-        processDefinitionKey,
-        variables,
-        tenantId,
-        processInstanceKey,
-        changedAttributes);
+        && Objects.equals(changedAttributes, that.changedAttributes)
+        && Objects.equals(priority, that.priority);
   }
 
   @Override
@@ -316,6 +324,8 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
         + '\''
         + ", processInstanceKey="
         + processInstanceKey
+        + ", priority="
+        + priority
         + ", changedAttributes="
         + changedAttributes
         + '}';
