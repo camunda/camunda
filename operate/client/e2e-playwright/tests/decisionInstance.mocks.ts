@@ -15,94 +15,20 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {drdStore} from 'modules/stores/drd';
-import {useLayoutEffect, useRef} from 'react';
-import {Container, Handle, Panel} from './styled';
+import {deployDecision} from '../setup-utils';
 
-const minWidth = 540;
-const maxWidthRatio = 3 / 5;
+const setup = async () => {
+  const deployResourceResponse = await deployDecision(['decisions_v_2.dmn']);
 
-type Props = {
-  children: React.ReactNode;
-};
+  const deployments = deployResourceResponse[0]?.deployments;
 
-const DrdPanel: React.FC<Props> = ({children}) => {
-  const handleRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const startDimensions = useRef<{x?: number; width?: number}>({
-    x: undefined,
-    width: undefined,
-  });
+  const decision1Key = deployments?.[0]?.decision.decisionKey;
+  const decision2Key = deployments?.[1]?.decision.decisionKey;
 
-  const setPanelWidth = (width: number) => {
-    if (containerRef.current === null) {
-      return;
-    }
-    const maxWidth = Math.floor(document.body.clientWidth * maxWidthRatio);
-    const newWidth = Math.min(Math.max(width, minWidth), maxWidth);
-
-    containerRef.current.style.width = `${newWidth}px`;
+  return {
+    decision1Key,
+    decision2Key,
   };
-
-  useLayoutEffect(() => {
-    const {panelWidth} = drdStore.state;
-
-    if (panelWidth !== null) {
-      setPanelWidth(panelWidth);
-    }
-
-    const handleResize = (event: MouseEvent) => {
-      const {x: startX, width: startWidth} = startDimensions.current;
-
-      if (
-        containerRef.current === null ||
-        startX === undefined ||
-        startWidth === undefined
-      ) {
-        return;
-      }
-
-      const resizeWidth = startWidth - (event.clientX - startX);
-      setPanelWidth(resizeWidth);
-    };
-
-    const handleResizeStart = (event: MouseEvent) => {
-      if (containerRef.current === null) {
-        return;
-      }
-
-      event.preventDefault();
-      startDimensions.current.x = event.clientX;
-      startDimensions.current.width = containerRef.current.clientWidth;
-      document.body.style.cursor = 'ew-resize';
-      containerRef.current?.classList.add('resizing');
-      window.addEventListener('mouseup', handleResizeStop);
-      window.addEventListener('mousemove', handleResize);
-    };
-
-    const handleResizeStop = () => {
-      window.removeEventListener('mousemove', handleResize);
-      window.removeEventListener('mouseup', handleResizeStop);
-      containerRef.current?.classList.remove('resizing');
-      document.body.style.cursor = 'unset';
-      const width = containerRef.current?.clientWidth;
-
-      if (width !== undefined) {
-        drdStore.setPanelWidth(width);
-      }
-    };
-
-    handleRef.current?.addEventListener('mousedown', handleResizeStart);
-  }, []);
-
-  return (
-    <Container>
-      <Panel data-testid="drd-panel" aria-label="drd panel" ref={containerRef}>
-        {children}
-      </Panel>
-      <Handle ref={handleRef} />
-    </Container>
-  );
 };
 
-export {DrdPanel};
+export {setup};

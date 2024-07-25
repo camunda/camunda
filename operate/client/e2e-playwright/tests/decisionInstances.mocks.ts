@@ -22,18 +22,24 @@ const setup = async () => {
   const decisionV2 = await deployDecision(['decisions_v_2.dmn']);
 
   return {
-    decisionKeys: [
+    decisions: [
       ...(decisionV1[0]?.deployments ?? [])
         //@ts-expect-error Property 'Metadata' does not exist on type 'DecisionDeployment'.ts(2339)
         .filter(({Metadata}) => Metadata === 'decision')
         .map(({decision}) => {
-          return decision.decisionKey;
+          return {
+            key: decision.decisionKey,
+            version: decision.version.toString(),
+          };
         }),
       ...(decisionV2[0]?.deployments ?? [])
         //@ts-expect-error Property 'Metadata' does not exist on type 'DecisionDeployment'.ts(2339)
         .filter(({Metadata}) => Metadata === 'decision')
         .map(({decision}) => {
-          return decision.decisionKey;
+          return {
+            key: decision.decisionKey,
+            version: decision.version.toString(),
+          };
         }),
     ],
   };
