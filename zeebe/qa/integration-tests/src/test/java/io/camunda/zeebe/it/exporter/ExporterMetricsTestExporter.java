@@ -1,0 +1,39 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.it.exporter;
+
+import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.protocol.record.Record;
+import io.micrometer.core.instrument.Counter;
+
+//  do a http get curl for now to ensure that it is there, but change it to some code access
+public class ExporterMetricsTestExporter implements Exporter {
+
+  public ExporterMetricsTestExporter() {}
+
+  @Override
+  public void configure(final Context context) throws Exception {
+    Exporter.super.configure(context);
+    Counter.builder("zeebe_bar").register(context.getMeterRegistry());
+  }
+
+  @Override
+  public void open(final Controller controller) {
+    Exporter.super.open(controller);
+  }
+
+  @Override
+  public void close() {
+    Exporter.super.close();
+  }
+
+  @Override
+  public void export(final Record<?> record) {}
+}

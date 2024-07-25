@@ -460,6 +460,11 @@
       <artifactId>zeebe-backup-store-azure</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>prometheus-metrics-exporter-common</artifactId>
+      <scope>test</scope>
+    </dependency>
 
   </dependencies>
 
