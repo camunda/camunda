@@ -7,6 +7,10 @@
  */
 package io.camunda.qa.util.cluster;
 
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
@@ -68,7 +72,16 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
           .withEnv("xpack.security.enabled", "false")
           .withEnv("xpack.watcher.enabled", "false")
           .withEnv("xpack.ml.enabled", "false")
-          .withEnv("action.destructive_requires_name", "false");
+          .withEnv("action.destructive_requires_name", "false")
+          .withExposedPorts(9200, 9300) // Expose the ports used by Elasticsearch
+          .withCreateContainerCmdModifier(
+              cmd ->
+                  cmd.withHostConfig(
+                      new HostConfig()
+                          .withPortBindings(
+                              new PortBinding(Ports.Binding.bindPort(9200), new ExposedPort(9200)),
+                              new PortBinding(
+                                  Ports.Binding.bindPort(9300), new ExposedPort(9300)))));
   private final BrokerBasedProperties brokerProperties;
   private final OperateProperties operateProperties;
   private final TasklistProperties tasklistProperties;
@@ -87,6 +100,19 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
         TestTasklistElasticsearchSchemaManager.class,
         TestOperateSchemaStartup.class,
         TestTasklistSchemaStartup.class);
+
+    // Set environment variables
+    System.setProperty("CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED", "false");
+    System.setProperty("SPRING_ACTIVE_PROFILES", "gateway");
+    System.setProperty("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1");
+    System.setProperty("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", "http://localhost:9200");
+    System.setProperty(
+        "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
+        "io.camunda.zeebe.exporter.ElasticsearchExporter");
+    System.setProperty("ZEEBE_CLIENT_ID", "zeebe");
+    System.setProperty("ZEEBE_CLIENT_SECRET", "zeecret");
+    System.setProperty("ZEEBE_GATEWAY_ENABLED", "true");
+    System.setProperty("CAMUNDA_TASKLIST_CSRF_PREVENTION_ENABLED", "false");
 
     brokerProperties = new BrokerBasedProperties();
 
@@ -128,7 +154,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     operateProperties.getZeebeElasticsearch().setUrl(esURL);
     tasklistProperties.getElasticsearch().setUrl(esURL);
     tasklistProperties.getZeebeElasticsearch().setUrl(esURL);
-    return super.start();
+    return super.start().withRecordingExporter(true);
   }
 
   @Override

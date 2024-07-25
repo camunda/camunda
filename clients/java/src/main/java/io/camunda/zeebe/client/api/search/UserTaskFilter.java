@@ -124,4 +124,12 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   UserTaskFilter userTaskTenantId(final String tenantId);
+
+  /**
+   * Filters user tasks by the specified Process Definition Id.
+   *
+   * @param bpmnProcessId from the task
+   * @return the updated filter
+   */
+  UserTaskFilter userTaskBpmProcessId(final String bpmnProcessId);
 }
