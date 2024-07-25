@@ -9,6 +9,7 @@
   </parent>
 
   <artifactId>plugin</artifactId>
+  <name>Optimize Plugin</name>
 
   <dependencies>
     <dependency>

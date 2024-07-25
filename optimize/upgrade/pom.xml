@@ -9,6 +9,7 @@
   </parent>
 
   <artifactId>upgrade-optimize</artifactId>
+  <name>Optimize Upgrade</name>
 
   <properties>
     <skip.docker>${skipTests}</skip.docker>

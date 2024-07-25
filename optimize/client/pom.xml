@@ -10,6 +10,8 @@
 
   <artifactId>client</artifactId>
   <packaging>pom</packaging>
+  <name>Optimize Client</name>
+
   <build>
     <plugins>
       <plugin>

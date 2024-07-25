@@ -16,6 +16,7 @@
 
   <artifactId>optimize-main-test-plugin</artifactId>
   <packaging>jar</packaging>
+  <name>Optimize Main Test Plugin</name>
 
   <dependencies>
     <dependency>

@@ -10,6 +10,7 @@
 
     <artifactId>util</artifactId>
     <packaging>pom</packaging>
+    <name>Optimize Util</name>
 
     <modules>
         <module>dependency-doc-creation</module>

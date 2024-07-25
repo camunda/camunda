@@ -10,6 +10,7 @@
 
   <artifactId>optimize-plugin-parent</artifactId>
   <packaging>pom</packaging>
+  <name>Optimize Plugin Parent</name>
 
   <modules>
     <module>plugin</module>

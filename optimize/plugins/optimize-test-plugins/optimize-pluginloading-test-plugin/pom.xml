@@ -16,6 +16,7 @@
 
   <artifactId>optimize-pluginloading-test-plugin</artifactId>
   <packaging>jar</packaging>
+  <name>Optimize Plugin-Loading Test Plugin</name>
 
   <dependencies>
     <dependency>

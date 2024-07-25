@@ -7,9 +7,9 @@
 
 import path from 'path';
 
-import {createJsonFile, isRegExp, readJsonFIle} from './services';
-import {Config} from './types';
-import {GitHubService} from './GitHubService';
+import { createJsonFile, isRegExp, readJsonFIle } from './services';
+import { Config } from './types';
+import { GitHubService } from './GitHubService';
 
 const ARGOCD_PROJECTS = ['optimize-previews'];
 const ARGOCD_URL = 'https://argocd.int.camunda.com';
@@ -18,7 +18,7 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_ORG = 'camunda';
 const GITHUB_REPO = 'camunda-optimize';
 
-const RENOVATE_CONFIG_PATH = path.join(process.cwd(), '../../renovate.json5');
+const RENOVATE_CONFIG_PATH = path.join(process.cwd(), '../../renovate.json');
 
 const CONFIG_FILE_NAME = 'config.json';
 
@@ -100,7 +100,7 @@ async function createHealthStatusConfig() {
 }
 
 function getRenovateStringBranches() {
-  const renovateConfig = readJsonFIle<{baseBranches: string[]}>(RENOVATE_CONFIG_PATH);
+  const renovateConfig = readJsonFIle<{ baseBranches: string[] }>(RENOVATE_CONFIG_PATH);
   return renovateConfig.baseBranches.filter((branch) => !isRegExp(branch));
 }
 
