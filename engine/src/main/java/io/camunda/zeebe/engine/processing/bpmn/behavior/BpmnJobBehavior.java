@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import com.google.common.base.Strings;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
@@ -100,10 +101,27 @@ public final class BpmnJobBehavior {
     jobMetrics.jobCreated(jobProperties.getType());
   }
 
+<<<<<<< HEAD
   private Either<Failure, String> evalTypeExp(
       final JobWorkerProperties jobWorkerProperties, final long scopeKey) {
     final Expression type = jobWorkerProperties.getType();
     return expressionBehavior.evaluateStringExpression(type, scopeKey);
+=======
+  private Either<Failure, String> evalTypeExp(final Expression type, final long scopeKey) {
+    return expressionBehavior
+        .evaluateStringExpression(type, scopeKey)
+        .flatMap(
+            result ->
+                Strings.isNullOrEmpty(result)
+                    ? Either.left(
+                        new Failure(
+                            String.format(
+                                "Expected result of the expression '%s' to be not empty, but was '%s'.",
+                                type.getExpression(), result),
+                            ErrorType.EXTRACT_VALUE_ERROR,
+                            scopeKey))
+                    : Either.right(result));
+>>>>>>> 9a6b43c (fix: backporting the changes)
   }
 
   private Either<Failure, Long> evalRetriesExp(
