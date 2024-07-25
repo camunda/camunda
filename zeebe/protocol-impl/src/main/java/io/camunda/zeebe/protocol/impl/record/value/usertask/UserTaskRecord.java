@@ -40,6 +40,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   public static final String CANDIDATE_USERS = "candidateUsersList";
   public static final String DUE_DATE = "dueDate";
   public static final String FOLLOW_UP_DATE = "followUpDate";
+  public static final String PRIORITY = "priority";
 
   private static final String EMPTY_STRING = "";
   private static final StringValue CANDIDATE_GROUPS_VALUE = new StringValue(CANDIDATE_GROUPS);
@@ -78,9 +79,10 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
       new ArrayProperty<>("changedAttributes", StringValue::new);
   private final StringProperty actionProp = new StringProperty("action", EMPTY_STRING);
   private final LongProperty creationTimestampProp = new LongProperty("creationTimestamp", -1L);
+  private final LongProperty priorityProp = new LongProperty(PRIORITY, 50);
 
   public UserTaskRecord() {
-    super(20);
+    super(21);
     declareProperty(userTaskKeyProp)
         .declareProperty(assigneeProp)
         .declareProperty(candidateGroupsListProp)
@@ -100,7 +102,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(tenantIdProp)
         .declareProperty(changedAttributesProp)
         .declareProperty(actionProp)
-        .declareProperty(creationTimestampProp);
+        .declareProperty(creationTimestampProp)
+        .declareProperty(priorityProp);
   }
 
   public void wrapWithoutVariables(final UserTaskRecord record) {
@@ -124,6 +127,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     creationTimestampProp.setValue(record.getCreationTimestamp());
     setChangedAttributesProp(record.getChangedAttributesProp());
     actionProp.setValue(record.getActionBuffer());
+    priorityProp.setValue(record.getPriority());
   }
 
   public void wrapChangedAttributes(
@@ -250,6 +254,16 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
+    return this;
+  }
+
+  @Override
+  public long getPriority() {
+    return priorityProp.getValue();
+  }
+
+  public UserTaskRecord setPriority(final long priority) {
+    priorityProp.setValue(priority);
     return this;
   }
 
