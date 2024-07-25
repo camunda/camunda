@@ -70,6 +70,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     // we need to hook in at the last minute and set the property as it won't resolve from the
     // config bean
     withProperty("zeebe.broker.gateway.enable", config.getGateway().isEnable());
+    withProperty("management.endpoint.prometheus.enabled", true);
+    withProperty("management.prometheus.metrics.export.enabled", true);
     return super.createSpringBuilder();
   }
 
