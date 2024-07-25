@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
+import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.MessageData;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -121,19 +122,21 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
 
   private void correlateToSubscriptions(final long messageKey, final MessageRecord message) {
     correlateBehavior.correlateToMessageEvents(
-        message.getTenantId(),
-        message.getNameBuffer(),
-        message.getCorrelationKeyBuffer(),
-        message.getVariablesBuffer(),
-        messageKey);
+        new MessageData(
+            messageKey,
+            message.getNameBuffer(),
+            message.getCorrelationKeyBuffer(),
+            message.getVariablesBuffer(),
+            message.getTenantId()));
   }
 
   private void correlateToMessageStartEvents(final MessageRecord messageRecord) {
     correlateBehavior.correlateToMessageStartEvents(
-        messageRecord.getTenantId(),
-        messageRecord.getNameBuffer(),
-        messageRecord.getCorrelationKeyBuffer(),
-        messageRecord.getVariablesBuffer(),
-        messageKey);
+        new MessageData(
+            messageKey,
+            messageRecord.getNameBuffer(),
+            messageRecord.getCorrelationKeyBuffer(),
+            messageRecord.getVariablesBuffer(),
+            messageRecord.getTenantId()));
   }
 }

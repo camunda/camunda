@@ -14,6 +14,8 @@ import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionStat
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.DirectBuffer;
 
 public final class MessageCorrelateBehavior {
@@ -40,17 +42,12 @@ public final class MessageCorrelateBehavior {
     this.commandSender = commandSender;
   }
 
-  public Subscriptions correlateToMessageStartEvents(
-      final String tenantId,
-      final DirectBuffer messageName,
-      final DirectBuffer correlationKey,
-      final DirectBuffer variables,
-      final long messageKey) {
+  public Subscriptions correlateToMessageStartEvents(final MessageData messageData) {
     final var correlatingSubscriptions = new Subscriptions();
 
     startEventSubscriptionState.visitSubscriptionsByMessageName(
-        tenantId,
-        messageName,
+        messageData.tenantId(),
+        messageData.messageName(),
         subscription -> {
           final var subscriptionRecord = subscription.getRecord();
           final var bpmnProcessIdBuffer = subscriptionRecord.getBpmnProcessIdBuffer();
@@ -58,18 +55,18 @@ public final class MessageCorrelateBehavior {
           // create only one instance of a process per correlation key
           // - allow multiple instance if correlation key is empty
           if (!correlatingSubscriptions.contains(bpmnProcessIdBuffer)
-              && (correlationKey.capacity() == 0
+              && (messageData.correlationKey().capacity() == 0
                   || !messageState.existActiveProcessInstance(
-                      tenantId, bpmnProcessIdBuffer, correlationKey))) {
+                      messageData.tenantId(), bpmnProcessIdBuffer, messageData.correlationKey()))) {
 
             final var processInstanceKey =
                 eventHandle.triggerMessageStartEvent(
                     subscription.getKey(),
                     subscriptionRecord,
-                    messageKey,
-                    messageName,
-                    correlationKey,
-                    variables);
+                    messageData.messageKey(),
+                    messageData.messageName(),
+                    messageData.correlationKey(),
+                    messageData.variables());
 
             subscriptionRecord.setProcessInstanceKey(processInstanceKey);
             correlatingSubscriptions.add(subscriptionRecord);
@@ -79,18 +76,14 @@ public final class MessageCorrelateBehavior {
     return correlatingSubscriptions;
   }
 
-  public Subscriptions correlateToMessageEvents(
-      final String tenantId,
-      final DirectBuffer messageName,
-      final DirectBuffer correlationKey,
-      final DirectBuffer variables,
-      final long messageKey) {
+  public Subscriptions correlateToMessageEvents(final MessageData messageData) {
     final var correlatingSubscriptions = new Subscriptions();
+    final var hasResponded = new AtomicBoolean(false);
 
     messageSubscriptionState.visitSubscriptions(
-        tenantId,
-        messageName,
-        correlationKey,
+        messageData.tenantId(),
+        messageData.messageName(),
+        messageData.correlationKey(),
         subscription -> {
 
           // correlate the message only once per process
@@ -99,7 +92,20 @@ public final class MessageCorrelateBehavior {
                   subscription.getRecord().getBpmnProcessIdBuffer())) {
 
             final var correlatingSubscription =
-                subscription.getRecord().setMessageKey(messageKey).setVariables(variables);
+                subscription
+                    .getRecord()
+                    .setMessageKey(messageData.messageKey())
+                    .setVariables(messageData.variables());
+
+            // Respond only for one subscription if we have request data available.
+            final var hasRequestData =
+                messageData.requestId().isPresent() && messageData.requestStreamId().isPresent();
+            if (hasRequestData && !hasResponded.get()) {
+              correlatingSubscription
+                  .setRequestId(messageData.requestId().get())
+                  .setRequestStreamId(messageData.requestStreamId().get());
+              hasResponded.set(true);
+            }
 
             stateWriter.appendFollowUpEvent(
                 subscription.getKey(),
@@ -112,15 +118,59 @@ public final class MessageCorrelateBehavior {
                 correlatingSubscription.getProcessInstanceKey(),
                 correlatingSubscription.getElementInstanceKey(),
                 correlatingSubscription.getBpmnProcessIdBuffer(),
-                messageName,
-                messageKey,
-                variables,
-                correlationKey,
-                tenantId);
+                messageData.messageName(),
+                messageData.messageKey(),
+                messageData.variables(),
+                messageData.correlationKey(),
+                messageData.tenantId());
           }
 
           return true;
         });
     return correlatingSubscriptions;
+  }
+
+  public record MessageData(
+      long messageKey,
+      DirectBuffer messageName,
+      DirectBuffer correlationKey,
+      DirectBuffer variables,
+      String tenantId,
+      Optional<Long> requestId,
+      Optional<Integer> requestStreamId) {
+
+    MessageData(
+        final long messageKey,
+        final DirectBuffer messageName,
+        final DirectBuffer correlationKey,
+        final DirectBuffer variables,
+        final String tenantId) {
+      this(
+          messageKey,
+          messageName,
+          correlationKey,
+          variables,
+          tenantId,
+          Optional.empty(),
+          Optional.empty());
+    }
+
+    MessageData(
+        final long messageKey,
+        final DirectBuffer messageName,
+        final DirectBuffer correlationKey,
+        final DirectBuffer variables,
+        final String tenantId,
+        final long requestId,
+        final int requestStreamId) {
+      this(
+          messageKey,
+          messageName,
+          correlationKey,
+          variables,
+          tenantId,
+          Optional.of(requestId),
+          Optional.of(requestStreamId));
+    }
   }
 }

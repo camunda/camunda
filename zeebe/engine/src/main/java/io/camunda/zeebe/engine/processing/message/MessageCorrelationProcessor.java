@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
+import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.MessageData;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -80,7 +81,13 @@ public final class MessageCorrelationProcessor
 
     final var correlatingSubscriptions = new Subscriptions();
     correlateToMessageStartEventSubscriptions(command, messageKey, correlatingSubscriptions);
-    correlateToMessageEventSubscriptions(command.getValue(), messageKey, correlatingSubscriptions);
+    correlateToMessageEventSubscriptions(
+        command.getValue(),
+        messageKey,
+        correlatingSubscriptions,
+        command.getRequestId(),
+        command.getRequestStreamId(),
+        correlatingSubscriptions.isEmpty());
 
     if (correlatingSubscriptions.isEmpty()) {
       stateWriter.appendFollowUpEvent(
@@ -98,11 +105,12 @@ public final class MessageCorrelationProcessor
     final var messageCorrelationRecord = command.getValue();
     final var correlatedSubscriptions =
         correlateBehavior.correlateToMessageStartEvents(
-            messageCorrelationRecord.getTenantId(),
-            messageCorrelationRecord.getNameBuffer(),
-            messageCorrelationRecord.getCorrelationKeyBuffer(),
-            messageCorrelationRecord.getVariablesBuffer(),
-            messageKey);
+            new MessageData(
+                messageKey,
+                messageCorrelationRecord.getNameBuffer(),
+                messageCorrelationRecord.getCorrelationKeyBuffer(),
+                messageCorrelationRecord.getVariablesBuffer(),
+                messageCorrelationRecord.getTenantId()));
     correlatingSubscriptions.addAll(correlatedSubscriptions);
 
     if (!correlatedSubscriptions.isEmpty()) {
@@ -119,14 +127,30 @@ public final class MessageCorrelationProcessor
   private void correlateToMessageEventSubscriptions(
       final MessageCorrelationRecord messageCorrelationRecord,
       final long messageKey,
-      final Subscriptions correlatingSubscriptions) {
-    final var correlatedSubscriptions =
-        correlateBehavior.correlateToMessageEvents(
-            messageCorrelationRecord.getTenantId(),
-            messageCorrelationRecord.getNameBuffer(),
-            messageCorrelationRecord.getCorrelationKeyBuffer(),
-            messageCorrelationRecord.getVariablesBuffer(),
-            messageKey);
-    correlatingSubscriptions.addAll(correlatedSubscriptions);
+      final Subscriptions correlatingSubscriptions,
+      final long requestId,
+      final int requestStreamId,
+      final boolean shouldRespond) {
+    if (shouldRespond) {
+      correlatingSubscriptions.addAll(
+          correlateBehavior.correlateToMessageEvents(
+              new MessageData(
+                  messageKey,
+                  messageCorrelationRecord.getNameBuffer(),
+                  messageCorrelationRecord.getCorrelationKeyBuffer(),
+                  messageCorrelationRecord.getVariablesBuffer(),
+                  messageCorrelationRecord.getTenantId(),
+                  requestId,
+                  requestStreamId)));
+    } else {
+      correlatingSubscriptions.addAll(
+          correlateBehavior.correlateToMessageEvents(
+              new MessageData(
+                  messageKey,
+                  messageCorrelationRecord.getNameBuffer(),
+                  messageCorrelationRecord.getCorrelationKeyBuffer(),
+                  messageCorrelationRecord.getVariablesBuffer(),
+                  messageCorrelationRecord.getTenantId())));
+    }
   }
 }
