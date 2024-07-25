@@ -37,7 +37,7 @@ function createNotification(numTasks: number, navigate: NavigateFunction) {
   const notification = new Notification(
     numTasks === 1
       ? '1 task is assigned to you.'
-      : numTasks === 50
+      : numTasks >= 50
         ? '50+ tasks are assigned to you.'
         : `${numTasks} tasks are assigned to you.`,
     {
