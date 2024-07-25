@@ -14,6 +14,7 @@ import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -45,6 +46,11 @@ class UserTaskTransformerTest {
   private ExecutableJobWorkerTask transformUserTask(final BpmnModelInstance userTask) {
     final List<ExecutableProcess> processes = transformer.transformDefinitions(userTask);
     return processes.get(0).getElementById(TASK_ID, ExecutableJobWorkerTask.class);
+  }
+
+  private ExecutableUserTask transformZeebeUserTask(final BpmnModelInstance userTask) {
+    final List<ExecutableProcess> processes = transformer.transformDefinitions(userTask);
+    return processes.get(0).getElementById(TASK_ID, ExecutableUserTask.class);
   }
 
   @Nested
@@ -228,6 +234,35 @@ class UserTaskTransformerTest {
         assertThat(userTask.getJobWorkerProperties().getFormId()).isNull();
       } else {
         assertThat(userTask.getJobWorkerProperties().getFormId().getExpression())
+            .isEqualTo(parsedExpression);
+      }
+    }
+  }
+
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  class ZeebePriorityTests {
+
+    Stream<Arguments> priority() {
+      return Stream.of(
+          Arguments.of(null, "50"),
+          Arguments.of("", "50"),
+          // Fails, default value with space not set Arguments.of(" ", "50"),
+          Arguments.of("30", "30"),
+          Arguments.of("=10+task_priority", "10+task_priority"));
+    }
+
+    @DisplayName("Should transform user task with priority")
+    @ParameterizedTest
+    @MethodSource("priority")
+    void shouldTransform(final String priority, final String parsedExpression) {
+      final var userTask =
+          transformZeebeUserTask(
+              processWithUserTask(b -> b.zeebeTaskPriority(priority).zeebeUserTask()));
+      if (parsedExpression == null) {
+        assertThat(userTask.getUserTaskProperties().getPriority()).isNull();
+      } else {
+        assertThat(userTask.getUserTaskProperties().getPriority().getExpression())
             .isEqualTo(parsedExpression);
       }
     }
