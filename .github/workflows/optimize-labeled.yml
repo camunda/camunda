@@ -1,0 +1,40 @@
+name: Assign labeled issues to Optimize project
+on:
+  issues:
+    types:
+      - labeled
+jobs:
+  add-to-projects:
+    name: Add issue to Optimize project if relevant component label added
+    runs-on: ubuntu-latest
+    if: ${{ github.event.label.name == 'component/optimize' }}
+    steps:
+      - id: get_project_count
+        uses: octokit/graphql-action@v2.3.2
+        with:
+          # API https://docs.github.com/en/graphql/reference/objects#issue
+          query: |
+            query getProjectCount($owner:String!, $repo:String!, $issue: Int!) {
+              repository(name: $repo, owner: $owner) {
+                issue: issue(number: $issue) {
+                  projectsV2 {
+                    totalCount
+                  }
+                }
+              }
+            }
+          variables: |
+            owner: "camunda"
+            repo: "zeebe"
+            issue: ${{ github.event.issue.number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
+      - id: has-project
+        run: echo "result=${{ fromJSON(steps.get_project_count.outputs.data).repository.issue.projectsV2.totalCount > 0 }}" >> $GITHUB_OUTPUT
+      - id: add-to-optimize
+        name: Add to Optimize project
+        uses: actions/add-to-project@v1.0.2
+        if: ${{ steps.has-project.outputs.result == 'false' }}
+        with:
+          project-url: https://github.com/orgs/camunda/projects/101
+          github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
