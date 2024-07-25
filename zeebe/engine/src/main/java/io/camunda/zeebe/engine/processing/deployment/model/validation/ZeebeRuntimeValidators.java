@@ -21,10 +21,12 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
+import io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefinitionValidator;
 import java.util.Collection;
 import java.util.List;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
@@ -175,6 +177,20 @@ public final class ZeebeRuntimeValidators {
             .hasValidExpression(Signal::getName, ExpressionVerification::isOptional)
             .build(expressionLanguage),
         // Checks signal name expressions of start event signals
-        new ProcessSignalStartEventSignalNameValidator(expressionLanguage));
+        new ProcessSignalStartEventSignalNameValidator(expressionLanguage),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(ZeebePriorityDefinition.class)
+            .hasValidExpression(
+                ZeebePriorityDefinition::getPriority,
+                expression ->
+                    expression
+                        .isOptional()
+                        .satisfiesIfStatic(
+                            staticExpression ->
+                                ZeebeExpressionValidator.isValidLong(
+                                    staticExpression, expressionProcessor),
+                            "be a valid Number"))
+            .build(expressionLanguage),
+        new ZeebePriorityDefinitionValidator());
   }
 }

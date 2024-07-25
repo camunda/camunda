@@ -26,6 +26,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
@@ -454,7 +455,37 @@ public final class ZeebeRuntimeValidationTest {
                                 ExpressionTransformer.asFeelExpressionString(INVALID_EXPRESSION))))
             .done(),
         List.of(expect(MultiInstanceLoopCharacteristics.class, INVALID_EXPRESSION_MESSAGE))
-      }
+      },
+      {
+        /* invalid priority expression */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeTaskPriorityExpression(INVALID_EXPRESSION))
+            .done(),
+        List.of(expect(ZeebePriorityDefinition.class, INVALID_EXPRESSION_MESSAGE))
+      },
+      {
+        /*invalid priority static value */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeTaskPriority("abc"))
+            .done(),
+        List.of(
+            expect(
+                ZeebePriorityDefinition.class,
+                "Expected static value to be a valid Number, but found 'abc'"))
+      },
+      {
+        /*out of range priority static value */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeTaskPriority("120"))
+            .done(),
+        List.of(
+            expect(
+                ZeebePriorityDefinition.class,
+                "Priority must be a number between 0 and 100, but was '120'"))
+      },
     };
   }
 

@@ -114,6 +114,11 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
     return expressionProcessor.evaluateDateTimeExpression(staticExp, NO_VARIABLE_SCOPE).isRight();
   }
 
+  public static boolean isValidLong(
+      final Expression staticExp, final ExpressionProcessor expressionProcessor) {
+    return expressionProcessor.evaluateLongExpression(staticExp, NO_VARIABLE_SCOPE).isRight();
+  }
+
   public static class Builder<T extends ModelElementInstance> {
 
     private final Class<T> elementType;
