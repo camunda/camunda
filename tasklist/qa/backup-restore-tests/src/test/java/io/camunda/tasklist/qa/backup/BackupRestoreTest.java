@@ -10,15 +10,15 @@ package io.camunda.tasklist.qa.backup;
 import static io.camunda.tasklist.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.qa.backup.generator.BackupRestoreDataGenerator;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
-import io.camunda.tasklist.util.TasklistPropertiesUtil;
+import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupResponseDto;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.io.IOException;
 import java.util.List;
 import org.apache.http.HttpHost;
@@ -64,7 +64,7 @@ public class BackupRestoreTest {
 
   private GenericContainer tasklistContainer;
 
-  private ZeebeClient zeebeClient;
+  private CamundaClient camundaClient;
 
   private final TestContainerUtil testContainerUtil = new TestContainerUtil();
   private BackupRestoreTestContext testContext;
@@ -97,7 +97,7 @@ public class BackupRestoreTest {
   }
 
   private void startAllApps() throws IOException {
-    if (TasklistPropertiesUtil.isOpenSearchDatabase()) {
+    if (TestUtil.isOpenSearch()) {
       startOsApps();
     } else {
       startElsApps();
@@ -110,7 +110,7 @@ public class BackupRestoreTest {
             .withEnv("CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME", REPOSITORY_NAME)
             .withEnv(
                 "CAMUNDA_TASKLIST_DATABASE",
-                TasklistPropertiesUtil.isOpenSearchDatabase() ? "opensearch" : "elasticsearch")
+                TestUtil.isOpenSearch() ? "opensearch" : "elasticsearch")
             .withEnv("CAMUNDA_TASKLIST_CSRF_PREVENTION_ENABLED", "false");
 
     startTasklist();
@@ -127,7 +127,7 @@ public class BackupRestoreTest {
 
     testContainerUtil.startZeebe(
         ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME), testContext);
-    createZeebeClient(testContext.getExternalZeebeContactPoint());
+    createCamundaClient(testContext.getExternalZeebeContactPoint());
   }
 
   private OpenSearchClient createOsClient() {
@@ -152,7 +152,7 @@ public class BackupRestoreTest {
 
     testContainerUtil.startZeebe(
         ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME), testContext);
-    createZeebeClient(testContext.getExternalZeebeContactPoint());
+    createCamundaClient(testContext.getExternalZeebeContactPoint());
   }
 
   private void startTasklist() {
@@ -167,7 +167,7 @@ public class BackupRestoreTest {
   }
 
   private void restoreBackup() {
-    if (TasklistPropertiesUtil.isOpenSearchDatabase()) {
+    if (TestUtil.isOpenSearch()) {
       restoreOsBackup();
     } else {
       restoreElsBackup();
@@ -208,7 +208,7 @@ public class BackupRestoreTest {
   }
 
   private void deleteTasklistIndices() {
-    if (TasklistPropertiesUtil.isOpenSearchDatabase()) {
+    if (TestUtil.isOpenSearch()) {
       deleteOsIndices();
     } else {
       deleteElsIndices();
@@ -274,14 +274,14 @@ public class BackupRestoreTest {
                         .settings(s -> s.location(REPOSITORY_NAME))));
   }
 
-  private ZeebeClient createZeebeClient(final String zeebeGateway) {
-    final ZeebeClientBuilder builder =
-        ZeebeClient.newClientBuilder()
+  private CamundaClient createCamundaClient(final String zeebeGateway) {
+    final CamundaClientBuilder builder =
+        CamundaClient.newClientBuilder()
             .gatewayAddress(zeebeGateway)
             .defaultJobWorkerMaxJobsActive(5)
             .usePlaintext();
-    zeebeClient = builder.build();
-    return zeebeClient;
+    camundaClient = builder.build();
+    return camundaClient;
   }
 }
 

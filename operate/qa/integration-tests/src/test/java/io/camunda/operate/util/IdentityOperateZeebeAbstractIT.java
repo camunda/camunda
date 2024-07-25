@@ -48,7 +48,7 @@ public abstract class IdentityOperateZeebeAbstractIT extends OperateZeebeAbstrac
         beanFactory
             .getBean(
                 OperateTester.class,
-                zeebeClient,
+                camundaClient,
                 mockMvcTestRule,
                 searchTestRule,
                 IdentityTester.jwtDecoder)
@@ -94,7 +94,7 @@ public abstract class IdentityOperateZeebeAbstractIT extends OperateZeebeAbstrac
             getAuthTokenUrl(), new HttpEntity<>(formValues, httpHeaders), String.class);
     try {
       return objectMapper.readTree(tokenJson).get("access_token").asText();
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }
   }

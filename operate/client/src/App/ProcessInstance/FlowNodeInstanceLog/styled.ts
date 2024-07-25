@@ -15,6 +15,7 @@ const Container = styled.div`
   background-color: var(--cds-layer-01);
   display: flex;
   flex-direction: column;
+  min-height: 0;
 `;
 
 const PanelHeader = styled(BasePanelHeader)`

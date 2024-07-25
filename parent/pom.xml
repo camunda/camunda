@@ -41,12 +41,12 @@
     <version.bouncycastle>1.78.1</version.bouncycastle>
     <version.camunda>7.22.0-alpha3</version.camunda>
     <version.checkstyle>10.17.0</version.checkstyle>
-    <version.commons-lang>3.14.0</version.commons-lang>
+    <version.commons-lang>3.15.0</version.commons-lang>
     <version.commons-logging>1.3.3</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.17.1</version.commons-codec>
     <version.commons-compress>1.26.2</version.commons-compress>
-    <version.zstd-jni>1.5.6-3</version.zstd-jni>
+    <version.zstd-jni>1.5.6-4</version.zstd-jni>
     <version.commons-text>1.12.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.4.0</version.docker-java-api>
@@ -61,7 +61,7 @@
     <version.httpclient5>5.3.1</version.httpclient5>
     <version.httpcore5>5.2.5</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.5.3</version.identity>
+    <version.identity>8.5.4</version.identity>
     <version.surefire>3.3.1</version.surefire>
     <version.jackson>2.17.2</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
@@ -72,12 +72,12 @@
     <version.mockito>5.12.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.8</version.msgpack>
-    <version.netty>4.1.111.Final</version.netty>
+    <version.netty>4.1.112.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.8.0</version.opensearch>
-    <version.opensearch.testcontainers>2.0.1</version.opensearch.testcontainers>
+    <version.opensearch.testcontainers>2.1.0</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
-    <version.protobuf>3.25.3</version.protobuf>
+    <version.protobuf>3.25.4</version.protobuf>
     <version.protobuf-common>2.41.0</version.protobuf-common>
     <version.micrometer>1.13.2</version.micrometer>
     <version.rocksdbjni>8.11.4</version.rocksdbjni>
@@ -86,10 +86,10 @@
     <version.slf4j>2.0.13</version.slf4j>
     <version.snakeyaml>2.2</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
-    <version.wiremock>3.8.0</version.wiremock>
+    <version.wiremock>3.9.1</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
-    <version.testcontainers>1.19.8</version.testcontainers>
+    <version.testcontainers>1.20.0</version.testcontainers>
     <version.netflix.concurrency>0.5.1</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.5</version.zeebe-test-container>
     <version.feel-scala>1.18.0-alpha1</version.feel-scala>
@@ -97,7 +97,7 @@
     <version.rest-assured>5.5.0</version.rest-assured>
     <version.spring>6.1.11</version.spring>
     <version.spring-security>6.3.1</version.spring-security>
-    <version.spring-boot>3.3.1</version.spring-boot>
+    <version.spring-boot>3.3.2</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.0</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
@@ -123,7 +123,7 @@
     <version.feign>13.3</version.feign>
     <version.google-sdk>26.43.0</version.google-sdk>
     <version.azure-sdk>1.2.25</version.azure-sdk>
-    <version.awssdk>2.26.20</version.awssdk>
+    <version.awssdk>2.26.24</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -153,9 +153,9 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.761</version.aws-java-sdk>
-    <version.elasticsearch-test-container>1.19.8</version.elasticsearch-test-container>
-    <version.postgres-test-container>1.19.8</version.postgres-test-container>
+    <version.aws-java-sdk>1.12.764</version.aws-java-sdk>
+    <version.elasticsearch-test-container>1.20.0</version.elasticsearch-test-container>
+    <version.postgres-test-container>1.20.0</version.postgres-test-container>
     <version.elasticsearch7>7.17.22</version.elasticsearch7>
     <version.lucene>8.11.3</version.lucene>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
@@ -173,7 +173,7 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>9.40</version.nimbus-jose-jwt>
-    <version.keycloak>25.0.1</version.keycloak>
+    <version.keycloak>25.0.2</version.keycloak>
     <version.jna>5.14.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
 
@@ -674,6 +674,13 @@
         <scope>test</scope>
       </dependency>
 
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>operate-qa-migration-tests-test-fixture-850</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+
       <!-- Tasklist Modules -->
       <dependency>
         <groupId>io.camunda</groupId>
@@ -973,12 +980,6 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>identity-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>identity-backend</artifactId>
         <version>${project.version}</version>
       </dependency>
 

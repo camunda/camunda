@@ -86,7 +86,7 @@ public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
     final String bpmnProcessId = "startedByFormLinked";
     final String formId = "Form_0mik7px";
 
-    zeebeClient
+    camundaClient
         .newDeployResourceCommand()
         .addResourceFromClasspath("formDeployedV1.form")
         .send()
@@ -117,12 +117,12 @@ public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
     // given
     final String bpmnProcessId = "startedByFormLinked";
 
-    zeebeClient
+    camundaClient
         .newDeployResourceCommand()
         .addResourceFromClasspath("formDeployedV1.form")
         .send()
         .join();
-    zeebeClient
+    camundaClient
         .newDeployResourceCommand()
         .addResourceFromClasspath("formDeployedV2.form")
         .send()
@@ -206,7 +206,7 @@ public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
     final StartProcessRequest startProcessRequest =
         new StartProcessRequest().setVariables(variables);
 
-    final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, pathProcess);
+    final String processId1 = ZeebeTestUtil.deployProcess(camundaClient, pathProcess);
 
     databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId1);
 

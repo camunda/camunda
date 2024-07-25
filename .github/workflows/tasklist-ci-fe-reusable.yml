@@ -21,6 +21,15 @@ jobs:
         name: Install dependencies
       - run: yarn ts-check
         name: Type checks
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   fe-eslint:
     name: ESLint
@@ -39,6 +48,15 @@ jobs:
         name: Install dependencies
       - run: yarn eslint
         name: ESLint
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   fe-stylelint:
     name: Stylelint
@@ -57,6 +75,15 @@ jobs:
         name: Install dependencies
       - run: yarn stylelint
         name: Stylelint
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   fe-tests:
     name: Tests
@@ -75,12 +102,21 @@ jobs:
         name: Install dependencies
       - run: yarn test:ci
         name: Unit & Integration tests
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   fe-visual-regression-tests:
     name: Visual regression tests
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.45.2
+      image: mcr.microsoft.com/playwright:v1.45.3
       options: --user 1001:1000
     defaults:
       run:
@@ -108,12 +144,21 @@ jobs:
           name: visual-regression-report
           path: tasklist/client/playwright-report/
           retention-days: 30
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   fe-a11y-tests:
     name: a11y tests
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.45.2
+      image: mcr.microsoft.com/playwright:v1.45.3
       options: --user 1001:1000
     defaults:
       run:
@@ -141,3 +186,12 @@ jobs:
           name: a11y-report
           path: tasklist/client/playwright-report/
           retention-days: 30
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

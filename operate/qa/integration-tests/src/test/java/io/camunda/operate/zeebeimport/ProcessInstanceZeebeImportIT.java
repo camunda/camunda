@@ -69,7 +69,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
 
     // when
     final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
 
     // then
@@ -112,7 +112,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
 
     // when TC 1
     final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
     searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
     searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "a");
@@ -124,7 +124,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
 
     // when TC 2
     // update variable
-    ZeebeTestUtil.updateVariables(zeebeClient, processInstanceKey, "{\"a\": \"c\"}");
+    ZeebeTestUtil.updateVariables(camundaClient, processInstanceKey, "{\"a\": \"c\"}");
     // elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
     searchTestRule.processAllRecordsAndWait(
         variableEqualsCheck, processInstanceKey, processInstanceKey, "a", "\"c\"");
@@ -182,7 +182,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
 
     // when
     final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, null);
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, null);
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task1");
 
     completeTask(processInstanceKey, "task1", null);
@@ -220,7 +220,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
             .done();
     deployProcess(process, "demoProcess_v_1.bpmn");
     final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, null);
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, null);
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task1");
     // remember start date
     final OffsetDateTime startDate =
@@ -250,7 +250,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     final String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
     final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
 
     // create an incident
     failTaskWithNoRetriesLeft(activityId, processInstanceKey, "Some error");
@@ -260,7 +260,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
         incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(allIncidents).hasSize(1);
     ZeebeTestUtil.resolveIncident(
-        zeebeClient, allIncidents.get(0).getJobKey(), allIncidents.get(0).getKey());
+        camundaClient, allIncidents.get(0).getJobKey(), allIncidents.get(0).getKey());
     searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
 
     // then
@@ -289,7 +289,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     final String processId = "demoProcess";
     final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");
     final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
 
     // when
     // create an incident
@@ -350,7 +350,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     // when
     final Long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(
-            zeebeClient, processId, "{\"a\": \"b\"}"); // wrong payload provokes incident
+            camundaClient, processId, "{\"a\": \"b\"}"); // wrong payload provokes incident
     searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
 
     // then incident created, activity in INCIDENT state
@@ -380,7 +380,8 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
 
     // when payload updated
-    // TODO    ZeebeUtil.updateVariables(zeebeClient, gatewayActivity.getKey(), processInstanceKey,
+    // TODO    ZeebeUtil.updateVariables(camundaClient, gatewayActivity.getKey(),
+    // processInstanceKey,
     // "{\"foo\": 7}", processId, processId);
     //    elasticsearchTestRule.processAllEvents(5);
 
@@ -428,7 +429,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     // when
     final Long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(
-            zeebeClient, processId, "{\"a\": \"b\"}"); // wrong payload provokes incident
+            camundaClient, processId, "{\"a\": \"b\"}"); // wrong payload provokes incident
     searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
 
     // then incident created, activity in INCIDENT state
@@ -441,7 +442,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
 
     // when I cancel process instance
-    ZeebeTestUtil.cancelProcessInstance(zeebeClient, processInstanceKey);
+    ZeebeTestUtil.cancelProcessInstance(camundaClient, processInstanceKey);
     searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
     searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
 
@@ -493,7 +494,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
 
     // when
     final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"foo\": 6}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"foo\": 6}");
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task2");
 
     // assert flow node instances
@@ -530,7 +531,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     // when
     final long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(
-            zeebeClient, processId, "{\"key1\": \"value1\", \"key2\": \"value2\"}");
+            camundaClient, processId, "{\"key1\": \"value1\", \"key2\": \"value2\"}");
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "gateway");
 
     // assert flow node instances
@@ -551,7 +552,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     final String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
     final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
 
     // when
@@ -593,10 +594,11 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
 
     final String processId = "eventProcess";
     deployProcess("messageEventProcess_v_1.bpmn");
-    //    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId,
+    //    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(camundaClient,
+    // processId,
     // "{\"a\": \"b\"}");
     final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"clientId\": \"5\"}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"clientId\": \"5\"}");
     sleepFor(1000);
 
     // when
@@ -639,7 +641,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     final String processId = "eventProcess";
     deployProcess("messageEventProcess_v_1.bpmn");
     final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"clientId\": \"5\"}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"clientId\": \"5\"}");
     sleepFor(1000);
 
     // when
@@ -658,7 +660,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
   }
 
   private void sendMessages(final String messageName, final String payload, final int count) {
-    ZeebeTestUtil.sendMessages(zeebeClient, messageName, payload, count, String.valueOf(5));
+    ZeebeTestUtil.sendMessages(camundaClient, messageName, payload, count, String.valueOf(5));
   }
 
   @Test
@@ -666,7 +668,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     final String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
     final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
     searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
 
     final ProcessInstanceForListViewEntity processInstanceById =
@@ -682,7 +684,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     final String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
     final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
     searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
 
     // create an incident
@@ -712,9 +714,9 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
             .done(),
         processId2 + ".bpmn");
     final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
     final long processInstanceKey2 =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId2, null);
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId2, null);
     searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
     searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey2);
 
@@ -818,7 +820,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     final String processId = "eventSubProcess";
     deployProcess("eventSubProcess.bpmn");
     final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, null);
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, null);
     sleepFor(5_000);
 
     // when
@@ -840,7 +842,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     final String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
     final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
     searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
 
     /*final ProcessInstanceForListViewEntity processInstanceById =*/ processInstanceReader
@@ -856,7 +858,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
 
     // when
     final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
 
     // then
@@ -880,7 +882,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
 
     // when
     final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
 
     // then

@@ -22,8 +22,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(
-    prefix = "zeebe.broker.gateway",
-    name = "enable",
+    name = {"zeebe.broker.gateway.enable", "camunda.rest.enabled"},
     havingValue = "true",
     matchIfMissing = true)
 public class CamundaServicesConfiguration {

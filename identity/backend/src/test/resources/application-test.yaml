@@ -1,5 +1,0 @@
-spring:
-  jpa:
-    generate-ddl: false
-    hibernate:
-      ddl-auto: validate

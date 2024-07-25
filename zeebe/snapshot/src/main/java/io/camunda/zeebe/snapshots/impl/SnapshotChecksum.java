@@ -18,7 +18,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Collections;
 import java.util.Map;
 
 final class SnapshotChecksum {
@@ -44,7 +43,7 @@ final class SnapshotChecksum {
   }
 
   public static MutableChecksumsSFV calculate(final Path snapshotDirectory) throws IOException {
-    return createChecksumForSnapshot(snapshotDirectory, null);
+    return createChecksumForSnapshot(snapshotDirectory, snapshotPath -> Map.of());
   }
 
   public static MutableChecksumsSFV calculateWithProvidedChecksums(
@@ -58,10 +57,7 @@ final class SnapshotChecksum {
     try (final var fileStream =
         Files.list(snapshotDirectory).filter(SnapshotChecksum::isNotMetadataFile).sorted()) {
       final SfvChecksumImpl sfvChecksum = new SfvChecksumImpl();
-      final Map<String, Long> fullFileChecksums =
-          provider == null
-              ? Collections.emptyMap()
-              : provider.getSnapshotChecksums(snapshotDirectory);
+      final Map<String, Long> fullFileChecksums = provider.getSnapshotChecksums(snapshotDirectory);
       fileStream.forEachOrdered(path -> updateChecksum(sfvChecksum, fullFileChecksums, path));
 
       // While persisting transient snapshot, the checksum of metadata file is added at the end.

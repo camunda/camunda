@@ -97,7 +97,7 @@ public class ImportMidnightZeebeImportIT extends OperateZeebeAbstractIT {
 
     // start process instance
     final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
     completeTask(processInstanceKey, "task1", null, false);
     // let Zeebe export data
     sleepFor(5000);
@@ -195,13 +195,13 @@ public class ImportMidnightZeebeImportIT extends OperateZeebeAbstractIT {
   public void fillIndicesWithData(final String processId, final Instant firstDate) {
     // two instances for two partitions
     long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
     cancelProcessInstance(processInstanceKey, false);
     sleepFor(2000);
     zeebeRule.refreshIndices(firstDate);
     searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
     processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
     cancelProcessInstance(processInstanceKey, false);
     sleepFor(2000);
     zeebeRule.refreshIndices(firstDate);

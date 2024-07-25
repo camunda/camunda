@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.util;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.zeebe.containers.ZeebeContainer;
 import java.time.Instant;
 import org.junit.runner.Description;
@@ -31,7 +31,7 @@ public interface OperateZeebeRuleProvider {
 
   ZeebeContainer getZeebeContainer();
 
-  ZeebeClient getClient();
+  CamundaClient getClient();
 
   boolean isMultitTenancyEnabled();
 }

@@ -8,7 +8,7 @@
 package io.camunda.service.search.filter;
 
 import static io.camunda.util.CollectionUtil.addValuesToList;
-import static io.camunda.util.CollectionUtil.collectValues;
+import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
@@ -21,14 +21,11 @@ public final record UserTaskFilter(
     List<String> userTaskDefinitionIds,
     List<String> processNames,
     List<String> assignees,
-    List<String> userTaskState,
+    List<String> states,
     List<Long> processInstanceKeys,
-    List<String> processDefinitionKeys,
+    List<Long> processDefinitionKeys,
     List<String> candidateUsers,
     List<String> candidateGroups,
-    boolean created,
-    boolean completed,
-    boolean canceled,
     DateValueFilter creationDateFilter,
     DateValueFilter completionDateFilter,
     DateValueFilter dueDateFilter,
@@ -42,14 +39,11 @@ public final record UserTaskFilter(
     private List<String> userTaskDefinitionIds;
     private List<String> processNames;
     private List<String> assignees;
-    private List<String> userTaskState;
+    private List<String> states;
     private List<Long> processInstanceKeys;
-    private List<String> processDefinitionKeys;
+    private List<Long> processDefinitionKeys;
     private List<String> candidateUsers;
     private List<String> candidateGroups;
-    private boolean created;
-    private boolean completed;
-    private boolean canceled;
     private DateValueFilter creationDateFilter;
     private DateValueFilter completionDateFilter;
     private DateValueFilter dueDateFilter;
@@ -57,8 +51,8 @@ public final record UserTaskFilter(
     private List<VariableValueFilter> variableFilters;
     private List<String> tenantIds;
 
-    public Builder userTaskKeys(final Long value, final Long... values) {
-      return userTaskKeys(collectValues(value, values));
+    public Builder userTaskKeys(final Long... values) {
+      return userTaskKeys(collectValuesAsList(values));
     }
 
     public Builder userTaskKeys(final List<Long> values) {
@@ -66,8 +60,8 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder userTaskDefinitionIds(final String value, final String... values) {
-      return userTaskDefinitionIds(collectValues(value, values));
+    public Builder userTaskDefinitionIds(final String... values) {
+      return userTaskDefinitionIds(collectValuesAsList(values));
     }
 
     public Builder userTaskDefinitionIds(final List<String> values) {
@@ -75,8 +69,8 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder processNames(final String value, final String... values) {
-      return processNames(collectValues(value, values));
+    public Builder processNames(final String... values) {
+      return processNames(collectValuesAsList(values));
     }
 
     public Builder processNames(final List<String> values) {
@@ -84,8 +78,8 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder assignees(final String value, final String... values) {
-      return assignees(collectValues(value, values));
+    public Builder assignees(final String... values) {
+      return assignees((collectValuesAsList(values)));
     }
 
     public Builder assignees(final List<String> values) {
@@ -93,12 +87,12 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder userTaskState(final String value, final String... values) {
-      return userTaskState(collectValues(value, values));
+    public Builder states(final String... values) {
+      return states(collectValuesAsList(values));
     }
 
-    public Builder userTaskState(final List<String> values) {
-      userTaskState = addValuesToList(userTaskState, values);
+    public Builder states(final List<String> values) {
+      states = addValuesToList(states, values);
       return this;
     }
 
@@ -147,8 +141,8 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder variable(final VariableValueFilter value, final VariableValueFilter... values) {
-      return variable(collectValues(value, values));
+    public Builder variable(final VariableValueFilter... values) {
+      return variable(collectValuesAsList(values));
     }
 
     public Builder variable(
@@ -156,8 +150,8 @@ public final record UserTaskFilter(
       return variable(FilterBuilders.variableValue(fn));
     }
 
-    public Builder processInstanceKeys(final Long value, final Long... values) {
-      return processInstanceKeys(collectValues(value, values));
+    public Builder processInstanceKeys(final Long... values) {
+      return processInstanceKeys(collectValuesAsList(values));
     }
 
     public Builder processInstanceKeys(final List<Long> values) {
@@ -165,17 +159,17 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder processDefinitionKeys(final String value, final String... values) {
-      return processDefinitionKeys(collectValues(value, values));
+    public Builder processDefinitionKeys(final Long... values) {
+      return processDefinitionKeys(collectValuesAsList(values));
     }
 
-    public Builder processDefinitionKeys(final List<String> values) {
+    public Builder processDefinitionKeys(final List<Long> values) {
       processDefinitionKeys = addValuesToList(processDefinitionKeys, values);
       return this;
     }
 
-    public Builder candidateUsers(final String value, final String... values) {
-      return candidateUsers(collectValues(value, values));
+    public Builder candidateUsers(final String... values) {
+      return candidateUsers(collectValuesAsList(values));
     }
 
     public Builder candidateUsers(final List<String> values) {
@@ -183,8 +177,8 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder candidateGroups(final String value, final String... values) {
-      return candidateGroups(collectValues(value, values));
+    public Builder candidateGroups(final String... values) {
+      return candidateGroups(collectValuesAsList(values));
     }
 
     public Builder candidateGroups(final List<String> values) {
@@ -192,27 +186,12 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder tenantIds(final String value, final String... values) {
-      return tenantIds(collectValues(value, values));
+    public Builder tenantIds(final String... values) {
+      return tenantIds(collectValuesAsList(values));
     }
 
     public Builder tenantIds(final List<String> values) {
       tenantIds = addValuesToList(tenantIds, values);
-      return this;
-    }
-
-    public Builder created() {
-      created = true;
-      return this;
-    }
-
-    public Builder completed() {
-      completed = true;
-      return this;
-    }
-
-    public Builder canceled() {
-      canceled = true;
       return this;
     }
 
@@ -223,14 +202,11 @@ public final record UserTaskFilter(
           Objects.requireNonNullElse(userTaskDefinitionIds, Collections.emptyList()),
           Objects.requireNonNullElse(processNames, Collections.emptyList()),
           Objects.requireNonNullElse(assignees, Collections.emptyList()),
-          Objects.requireNonNullElse(userTaskState, Collections.emptyList()),
+          Objects.requireNonNullElse(states, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(candidateUsers, Collections.emptyList()),
           Objects.requireNonNullElse(candidateGroups, Collections.emptyList()),
-          created,
-          completed,
-          canceled,
           creationDateFilter,
           completionDateFilter,
           dueDateFilter,

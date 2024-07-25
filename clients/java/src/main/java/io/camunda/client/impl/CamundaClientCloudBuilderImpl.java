@@ -15,7 +15,13 @@
  */
 package io.camunda.client.impl;
 
+import static io.camunda.client.ClientProperties.CLOUD_CLIENT_ID;
+import static io.camunda.client.ClientProperties.CLOUD_CLIENT_SECRET;
+import static io.camunda.client.ClientProperties.CLOUD_CLUSTER_ID;
+import static io.camunda.client.ClientProperties.CLOUD_REGION;
+import static io.camunda.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.client.impl.BuilderUtils.appendProperty;
+import static io.camunda.client.impl.BuilderUtils.applyIfNotNull;
 import static io.camunda.client.impl.command.ArgumentUtil.ensureNotNull;
 
 import io.camunda.client.CamundaClient;
@@ -24,11 +30,11 @@ import io.camunda.client.CamundaClientCloudBuilderStep1;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4;
-import io.camunda.client.ClientProperties;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.zeebe.client.ClientProperties;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -83,22 +89,23 @@ public class CamundaClientCloudBuilderImpl
 
   @Override
   public CamundaClientBuilder withProperties(final Properties properties) {
-    if (properties.containsKey(ClientProperties.CLOUD_CLUSTER_ID)) {
-      withClusterId(properties.getProperty(ClientProperties.CLOUD_CLUSTER_ID));
-    }
-    if (properties.containsKey(ClientProperties.CLOUD_CLIENT_ID)) {
-      withClientId(properties.getProperty(ClientProperties.CLOUD_CLIENT_ID));
-    }
-    if (properties.containsKey(ClientProperties.CLOUD_CLIENT_SECRET)) {
-      withClientSecret(properties.getProperty(ClientProperties.CLOUD_CLIENT_SECRET));
-    }
-    if (properties.containsKey(ClientProperties.CLOUD_REGION)) {
-      withRegion(properties.getProperty(ClientProperties.CLOUD_REGION));
-    }
-    if (properties.containsKey(ClientProperties.STREAM_ENABLED)) {
-      defaultJobWorkerStreamEnabled(
-          Boolean.parseBoolean(properties.getProperty(ClientProperties.STREAM_ENABLED)));
-    }
+    applyIfNotNull(
+        properties, CLOUD_CLUSTER_ID, ClientProperties.CLOUD_CLUSTER_ID, this::withClusterId);
+
+    applyIfNotNull(
+        properties, CLOUD_CLIENT_ID, ClientProperties.CLOUD_CLIENT_ID, this::withClientId);
+
+    applyIfNotNull(
+        properties, CLOUD_CLIENT_SECRET, ClientProperties.CLOUD_CLIENT_SECRET, this::withClientId);
+
+    applyIfNotNull(properties, CLOUD_REGION, ClientProperties.CLOUD_REGION, this::withRegion);
+
+    applyIfNotNull(
+        properties,
+        STREAM_ENABLED,
+        ClientProperties.STREAM_ENABLED,
+        value -> defaultJobWorkerStreamEnabled(Boolean.parseBoolean(value)));
+
     innerBuilder.withProperties(properties);
 
     // todo(#14106): allow default tenant id setting for cloud client

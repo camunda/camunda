@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/camunda/camunda/clients/go/v8/internal/mock_pb"
+	"github.com/camunda/camunda/clients/go/v8/pkg/commands"
 	"github.com/camunda/camunda/clients/go/v8/pkg/entities"
 	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 	"github.com/golang/mock/gomock"
@@ -95,6 +96,19 @@ func TestJobWorkerBuilder_FetchVariables(t *testing.T) {
 	builder := JobWorkerBuilder{request: &pb.ActivateJobsRequest{}}
 	builder.FetchVariables(fetchVariables...)
 	assert.Equal(t, fetchVariables, builder.request.FetchVariable)
+}
+
+func TestJobWorkerBuilder_TenantIds(t *testing.T) {
+	tenantIds := []string{"foo", "bar", "baz"}
+
+	builder := NewJobWorkerBuilder(nil, nil, nil).(*JobWorkerBuilder)
+	builder.TenantIds(tenantIds...)
+	assert.Equal(t, tenantIds, builder.request.TenantIds)
+}
+
+func TestJobWorkerBuilder_DefaultTenantIds(t *testing.T) {
+	builder := NewJobWorkerBuilder(nil, nil, nil).(*JobWorkerBuilder)
+	assert.Equal(t, []string{commands.DefaultJobTenantID}, builder.request.TenantIds)
 }
 
 func TestJobWorkerBuilder_Metrics(t *testing.T) {
