@@ -130,9 +130,20 @@ public class RequestMapper {
     return validationErrorResponse
         .<Either<ProblemDetail, FailJobRequest>>map(Either::left)
         .orElseGet(
-            () -> Either.right(
-        new FailJobRequest(
-            jobKey, getIntOrDefault(failRequest, JobFailRequest::getRetries, JobServices.DEFAULT_RETRIES_VALUE), getStringOrEmpty(failRequest, JobFailRequest::getErrorMessage), getLongOrDefault(failRequest, JobFailRequest::getRetryBackOff, JobServices.DEFAULT_RETRYBACKOFF_VALUE), getMapOrEmpty(failRequest, JobFailRequest::getVariables))));
+            () ->
+                Either.right(
+                    new FailJobRequest(
+                        jobKey,
+                        getIntOrDefault(
+                            failRequest,
+                            JobFailRequest::getRetries,
+                            JobServices.DEFAULT_RETRIES_VALUE),
+                        getStringOrEmpty(failRequest, JobFailRequest::getErrorMessage),
+                        getLongOrDefault(
+                            failRequest,
+                            JobFailRequest::getRetryBackOff,
+                            JobServices.DEFAULT_RETRYBACKOFF_VALUE),
+                        getMapOrEmpty(failRequest, JobFailRequest::getVariables))));
   }
 
   private static Optional<ProblemDetail> validateAssignmentRequest(
@@ -196,18 +207,20 @@ public class RequestMapper {
             HttpStatus.BAD_REQUEST, String.join(". ", violations), INVALID_ARGUMENT.name()));
   }
 
-  private static Optional<ProblemDetail> validateJobFailRequest(
-      final JobFailRequest failRequest
-  ) {
+  private static Optional<ProblemDetail> validateJobFailRequest(final JobFailRequest failRequest) {
     final List<String> violations = new ArrayList<>();
     if (failRequest != null) {
       // retries can't be less than 0
       if (failRequest.getRetries() < 0) {
-        violations.add(ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted("retries", failRequest.getRetries(), "greater or equals to 0"));
+        violations.add(
+            ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+                "retries", failRequest.getRetries(), "greater or equals to 0"));
       }
       // retries can't be less than -1
       if (failRequest.getRetryBackOff() < -1) {
-        violations.add(ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted("retryBackOff", failRequest.getRetries(), "greater or equals to -1"));
+        violations.add(
+            ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+                "retryBackOff", failRequest.getRetries(), "greater or equals to -1"));
       }
     }
 
@@ -306,8 +319,7 @@ public class RequestMapper {
   }
 
   private static <R> Map<String, Object> getMapOrEmpty(
-      final R request,
-      final Function<R, Map<String, Object>> variablesExtractor) {
+      final R request, final Function<R, Map<String, Object>> variablesExtractor) {
     return request == null ? Map.of() : variablesExtractor.apply(request);
   }
 
@@ -321,7 +333,8 @@ public class RequestMapper {
     return getLongOrDefault(request, valueExtractor, 0L);
   }
 
-  private static <R> long getLongOrDefault(final R request, final Function<R, Long> valueExtractor, final long defaultValue) {
+  private static <R> long getLongOrDefault(
+      final R request, final Function<R, Long> valueExtractor, final long defaultValue) {
     final Long value = request == null ? null : valueExtractor.apply(request);
     return value == null ? defaultValue : value;
   }
@@ -332,7 +345,8 @@ public class RequestMapper {
     return value == null ? List.of() : value;
   }
 
-  private static <R> int getIntOrDefault(final R request, final Function<R, Integer> valueExtractor, final int defaultValue) {
+  private static <R> int getIntOrDefault(
+      final R request, final Function<R, Integer> valueExtractor, final int defaultValue) {
     final Integer value = request == null ? null : valueExtractor.apply(request);
     return value == null ? defaultValue : value;
   }
@@ -346,6 +360,9 @@ public class RequestMapper {
       long userTaskKey, String assignee, String action, boolean allowOverride) {}
 
   public record FailJobRequest(
-      long jobKey, int retries, String errorMessage, Long retryBackoff, Map<String, Object> variables
-  ) {}
+      long jobKey,
+      int retries,
+      String errorMessage,
+      Long retryBackoff,
+      Map<String, Object> variables) {}
 }

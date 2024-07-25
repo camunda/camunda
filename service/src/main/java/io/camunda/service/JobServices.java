@@ -67,8 +67,11 @@ public final class JobServices<T> extends ApiServices<JobServices<T>> {
   }
 
   public CompletableFuture<JobRecord> failJob(
-      final long jobKey, final int retries, final String errorMessage, final Long retryBackOff, final Map<String, Object> variables
-  ) {
+      final long jobKey,
+      final int retries,
+      final String errorMessage,
+      final Long retryBackOff,
+      final Map<String, Object> variables) {
     final var request = new BrokerFailJobRequest(jobKey, retries, retryBackOff);
     request.setVariables(getDocumentOrEmpty(variables));
     if (errorMessage != null) {

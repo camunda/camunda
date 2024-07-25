@@ -71,12 +71,16 @@ public class JobController {
         });
   }
 
-  private CompletableFuture<ResponseEntity<Object>> failJob(
-      final FailJobRequest failJobRequest) {
+  private CompletableFuture<ResponseEntity<Object>> failJob(final FailJobRequest failJobRequest) {
     return RequestMapper.executeServiceMethodWithNoContenResult(
         () ->
             jobServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .failJob(failJobRequest.jobKey(), failJobRequest.retries(), failJobRequest.errorMessage(), failJobRequest.retryBackoff(), failJobRequest.variables()));
+                .failJob(
+                    failJobRequest.jobKey(),
+                    failJobRequest.retries(),
+                    failJobRequest.errorMessage(),
+                    failJobRequest.retryBackoff(),
+                    failJobRequest.variables()));
   }
 }

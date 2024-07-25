@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -32,8 +31,7 @@ public class JobControllerTest extends RestControllerTest {
 
   static final String JOBS_BASE_URL = "/v2/jobs";
 
-  @MockBean
-  JobServices<JobActivationResponse> jobServices;
+  @MockBean JobServices<JobActivationResponse> jobServices;
   @MockBean ResponseObserverProvider responseObserverProvider;
 
   @BeforeEach
