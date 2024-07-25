@@ -19,6 +19,7 @@ import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.jar.ExternalJarLoadException;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.nio.file.Path;
@@ -35,6 +36,7 @@ public final class ExporterContainerRuntime implements CloseableSilently {
   private final RuntimeActor actor;
   private final ExportersState state;
   private final ExporterMetrics metrics;
+  private final MeterRegistry meterRegistry;
 
   public ExporterContainerRuntime(final Path storagePath) {
     scheduler = ActorScheduler.newActorScheduler().build();
@@ -48,6 +50,7 @@ public final class ExporterContainerRuntime implements CloseableSilently {
 
     state = new ExportersState(zeebeDb, zeebeDb.createContext());
     metrics = new ExporterMetrics(1);
+    meterRegistry = new SimpleMeterRegistry();
   }
 
   @Override
