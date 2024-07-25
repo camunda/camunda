@@ -8,7 +8,6 @@
 package io.camunda.service.search.filter;
 
 import static io.camunda.util.CollectionUtil.addValuesToList;
-import static io.camunda.util.CollectionUtil.collectValues;
 import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
 import io.camunda.util.ObjectBuilder;
