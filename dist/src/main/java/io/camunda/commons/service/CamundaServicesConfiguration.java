@@ -9,6 +9,7 @@ package io.camunda.commons.service;
 
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.CamundaServices;
+import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.UserTaskServices;
@@ -57,5 +58,11 @@ public class CamundaServicesConfiguration {
       final CamundaServices camundaServices,
       final ActivateJobsHandler<JobActivationResponse> activateJobsHandler) {
     return camundaServices.jobServices(activateJobsHandler);
+  }
+
+  @Bean
+  public DecisionDefinitionServices decisionDefinitionServices(
+      final CamundaServices camundaServices) {
+    return camundaServices.decisionDefinitionServices();
   }
 }

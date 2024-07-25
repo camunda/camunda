@@ -240,6 +240,33 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /decision-definitions/search:
+    post:
+      tags:
+        - Decision Definition
+      summary: Decision Definition Search Query
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionDefinitionSearchQueryRequest'
+      responses:
+        '200':
+          description: >
+            The Decision Definition Search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionDefinitionSearchQueryResponse"
+        '400':
+          description: >
+            The Decision Definition Search Query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /users:
     post:
       tags:
@@ -1578,6 +1605,77 @@ components:
         endDate:
           type: string
           format: date-time
+    DecisionDefinitionSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          allOf:
+            - $ref: "#/components/schemas/DecisionDefinitionFilterRequest"
+    DecisionDefinitionFilterRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: integer
+          format: int64
+        decisionId:
+          type: string
+        name:
+          type: string
+        version:
+          type: integer
+          format: int32
+        decisionRequirementsId:
+          type: string
+        decisionRequirementsKey:
+          type: integer
+          format: int64
+        decisionRequirementsName:
+          type: string
+        decisionRequirementsVersion:
+          type: integer
+          format: int32
+        tenantId:
+          type: string
+    DecisionDefinitionSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionDefinitionItem"
+    DecisionDefinitionItem:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: integer
+          format: int64
+        decisionId:
+          type: string
+        name:
+          type: string
+        version:
+          type: integer
+          format: int32
+        decisionRequirementsId:
+          type: string
+        decisionRequirementsKey:
+          type: integer
+          format: int64
+        decisionRequirementsName:
+          type: string
+        decisionRequirementsVersion:
+          type: integer
+          format: int32
+        tenantId:
+          type: string
     CamundaUserResponse:
       type: "object"
       properties:
