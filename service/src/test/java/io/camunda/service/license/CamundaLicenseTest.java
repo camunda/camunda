@@ -7,27 +7,44 @@
  */
 package io.camunda.service.license;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import org.camunda.bpm.licensecheck.InvalidLicenseException;
+import org.camunda.bpm.licensecheck.LicenseKey;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 public class CamundaLicenseTest {
-  public static final String VALID_LICENSE = "valid license";
-
   @Test
-  public void shouldReturnTrueWhenLicenseIsValid() {
-    // given
-    final CamundaLicense camundaLicense =
-        new CamundaLicense(new MockEnvironmentVariableReaderWithValidLicense());
+  public void shouldReturnFalseWhenLicenseIsInvalid() throws InvalidLicenseException {
+    final CamundaLicense testLicense = mock(CamundaLicense.class);
+    final LicenseKey mockKey = mock(LicenseKey.class);
 
-    assertTrue(camundaLicense.isValid());
+    when(testLicense.isValid()).thenCallRealMethod();
+    Mockito.doCallRealMethod().when(testLicense).initializeStoredLicense();
+    when(testLicense.getEnvironmentVariableValue(anyString())).thenReturn("some license str");
+    Mockito.doCallRealMethod().when(testLicense).determineLicenseValidity(anyString());
+    when(testLicense.getLicenseKey(anyString())).thenReturn(mockKey);
+
+    Mockito.doThrow(new InvalidLicenseException("test exception!")).when(mockKey).validate();
+
+    assertFalse(testLicense.isValid());
   }
 
-  private static final class MockEnvironmentVariableReaderWithValidLicense
-      extends EnvironmentVariableReader {
-    @Override
-    public String getEnvironmentVariableValue(final String envVarName) {
-      return VALID_LICENSE;
-    }
+  @Test
+  public void shouldReturnTryeWhenLicenseIsValid() throws InvalidLicenseException {
+    final CamundaLicense testLicense = mock(CamundaLicense.class);
+
+    when(testLicense.isValid()).thenCallRealMethod();
+    Mockito.doCallRealMethod().when(testLicense).initializeStoredLicense();
+    when(testLicense.getEnvironmentVariableValue(anyString())).thenReturn("some license str");
+    Mockito.doCallRealMethod().when(testLicense).determineLicenseValidity(anyString());
+    when(testLicense.getLicenseKey(anyString())).thenReturn(mock(LicenseKey.class));
+
+    assertTrue(testLicense.isValid());
   }
 }

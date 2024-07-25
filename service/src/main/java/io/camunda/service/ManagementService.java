@@ -15,6 +15,7 @@ public final class ManagementService {
 
   public ManagementService() {
     camundaLicense = new CamundaLicense();
+    camundaLicense.initializeStoredLicense();
   }
 
   public boolean isCamundaLicenseValid() {
