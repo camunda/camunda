@@ -6,18 +6,26 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
+import {ReactNode} from 'react';
+import {Tag} from '@carbon/react';
 
 import {t} from 'translation';
-import {Tooltip} from 'components';
-import {Tag} from '@carbon/react';
+
+interface VariablePreviewProps {
+  variableName: string;
+  filter: {
+    operator?: string;
+    values: (string | number | boolean | null)[];
+  };
+  type?: string;
+}
 
 export default function VariablePreview({
   variableName,
   filter: {operator, values},
   type = 'variable',
-}) {
-  const createOperator = (val) => <span> {val} </span>;
+}: VariablePreviewProps) {
+  const createOperator = (val: ReactNode) => <span> {val} </span>;
 
   const operatorText = (
     <span>
@@ -26,18 +34,14 @@ export default function VariablePreview({
         : createOperator(t('common.filter.list.operators.or'))}
     </span>
   );
-  const parameterName = (
-    <Tag type="blue" className="parameterName">
-      {' '}
-      {t('report.table.rawData.' + type)}: <b>{variableName}</b>
-    </Tag>
-  );
 
   return (
     <>
-      <Tooltip content={parameterName} overflowOnly>
-        {parameterName}
-      </Tooltip>
+      <span title={`${t('report.table.rawData.' + type)}: ${variableName}`}>
+        <Tag type="blue" className="parameterName">
+          {t('report.table.rawData.' + type)}: <b>{variableName}</b>
+        </Tag>
+      </span>
       <span className="filterText">
         {(!operator || operator === 'in' || operator === '=') &&
           createOperator(t('common.filter.list.operators.is'))}
