@@ -80,7 +80,7 @@ public class UserTaskFilterTest {
   @Test
   public void shouldApplySortConditionByCreationDate() {
     // given
-    final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.userTaskState("CREATED"));
+    final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.states("CREATED"));
     final var searchQuery =
         SearchQueryBuilders.userTaskSearchQuery(
             (q) -> q.filter(userTaskStateFilter).sort((s) -> s.creationDate().asc()));
@@ -110,7 +110,7 @@ public class UserTaskFilterTest {
   @Test
   public void shouldApplySortConditionByCompletionDate() {
     // given
-    final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.userTaskState("CREATED"));
+    final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.states("CREATED"));
     final var searchQuery =
         SearchQueryBuilders.userTaskSearchQuery(
             (q) -> q.filter(userTaskStateFilter).sort((s) -> s.completionDate().desc()));
@@ -168,7 +168,7 @@ public class UserTaskFilterTest {
   @Test
   public void shouldQueryByTaskState() {
     // given
-    final var taskStateFilter = FilterBuilders.userTask((f) -> f.userTaskState("CREATED"));
+    final var taskStateFilter = FilterBuilders.userTask((f) -> f.states("CREATED"));
     final var searchQuery =
         SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(taskStateFilter));
 
@@ -280,7 +280,7 @@ public class UserTaskFilterTest {
   public void shouldQueryByProcessDefinitionKey() {
     // given
     final var processDefinitionKeyFilter =
-        FilterBuilders.userTask((f) -> f.processDefinitionKeys("processDef1"));
+        FilterBuilders.userTask((f) -> f.processDefinitionKeys(123L));
     final var searchQuery =
         SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(processDefinitionKeyFilter));
 
@@ -300,7 +300,7 @@ public class UserTaskFilterTest {
                       SearchTermQuery.class,
                       (term) -> {
                         assertThat(term.field()).isEqualTo("processDefinitionId");
-                        assertThat(term.value().stringValue()).isEqualTo("processDef1");
+                        assertThat(term.value().longValue()).isEqualTo(123L);
                       });
             });
   }
