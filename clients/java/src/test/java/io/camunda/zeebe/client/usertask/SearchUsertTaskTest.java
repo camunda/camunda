@@ -71,7 +71,7 @@ public final class SearchUsertTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByTaskDefinitionId() {
     // when
-    client.newUserTaskQuery().filter(f -> f.userTaskTaskDefinitionId("task-def-id")).send().join();
+    client.newUserTaskQuery().filter(f -> f.userTaskElementId("task-def-id")).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =

@@ -51,7 +51,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param taskDefinitionId the task definition ID of the user task
    * @return the updated filter
    */
-  UserTaskFilter userTaskTaskDefinitionId(final String taskDefinitionId);
+  UserTaskFilter userTaskElementId(final String taskDefinitionId);
 
   /**
    * Filters user tasks by the specified candidate group.

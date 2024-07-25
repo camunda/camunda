@@ -66,8 +66,8 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
   }
 
   @Override
-  public UserTaskFilter userTaskTaskDefinitionId(final String taskDefinitionId) {
-    filter.setElementId(taskDefinitionId);
+  public UserTaskFilter userTaskElementId(final String elementId) {
+    filter.setElementId(elementId);
     return this;
   }
 
