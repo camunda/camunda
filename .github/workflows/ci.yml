@@ -130,7 +130,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [detect-changes]
     runs-on: [ self-hosted, linux, amd64, "16" ]
-    timeout-minutes: 60
+    timeout-minutes: 30
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
@@ -186,7 +186,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[IT] ${{ matrix.name }}"
     needs: [ detect-changes ]
-    timeout-minutes: 40
+    timeout-minutes: 20
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     runs-on: [ self-hosted, linux, amd64, "16" ]
@@ -280,7 +280,7 @@ jobs:
     name: Camunda docker tests
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 20
     services:
       # local registry is used as this job needs to push as it builds multi-platform images
       registry:
@@ -342,12 +342,8 @@ jobs:
       # We need to free up some space to let the step after this block succeed.
       # With this cleanup, at the time of measuring, we go from a 100% disk usage (73/74 GB) to a
       # 94% (68/73 GB), on the runner ubuntu-latest. This allows the workflow to go through.
-      - name: Check disk availability (pre-cleanup)
-        run: df -h
       - name: Cleanup docker images
         run: docker system prune -af
-      - name: Check disk availability (post-cleanup)
-        run: df -h
 
       - name: Verify Docker image
         uses: ./.github/actions/verify-platform-docker

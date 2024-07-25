@@ -9,6 +9,7 @@
   </parent>
 
   <artifactId>optimize-backend</artifactId>
+  <name>Optimize Backend</name>
 
   <properties>
     <jetty.version>12.0.9</jetty.version>

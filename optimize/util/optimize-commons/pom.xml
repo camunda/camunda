@@ -9,6 +9,7 @@
   </parent>
 
   <artifactId>optimize-commons</artifactId>
+  <name>Optimize Commons</name>
 
   <dependencies>
 

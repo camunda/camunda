@@ -10,6 +10,7 @@
 
   <artifactId>dependency-doc-creation</artifactId>
   <version>8.6.0-SNAPSHOT</version>
+  <name>Optimize Dependency Doc Creation</name>
 
   <dependencies>
     <dependency>

@@ -11,6 +11,7 @@
 
   <artifactId>camunda-optimize</artifactId>
   <packaging>pom</packaging>
+  <name>Optimize</name>
 
   <properties>
     <exclude.from.config>OptimizeLicense.txt</exclude.from.config>
