@@ -25,6 +25,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTask;
@@ -182,6 +183,19 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
         getCreateSingleExtensionElement(ZeebeFormDefinition.class);
     formDefinition.setBindingType(bindingType);
     return myself;
+  }
+
+  @Override
+  public B zeebeTaskPriority(final String priority) {
+    final ZeebePriorityDefinition priorityDefinition =
+        myself.getCreateSingleExtensionElement(ZeebePriorityDefinition.class);
+    priorityDefinition.setPriority(priority);
+    return myself;
+  }
+
+  @Override
+  public B zeebeTaskPriorityExpression(final String expression) {
+    return zeebeTaskPriority(asZeebeExpression(expression));
   }
 
   public B zeebeTaskHeader(final String key, final String value) {

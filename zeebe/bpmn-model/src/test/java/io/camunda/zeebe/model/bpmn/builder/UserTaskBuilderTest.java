@@ -24,6 +24,7 @@ import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
@@ -283,5 +284,24 @@ class UserTaskBuilderTest {
         .hasSize(1)
         .extracting(ZeebeFormDefinition::getBindingType)
         .containsExactly(bindingType);
+  }
+
+  @Test
+  void shouldSetPriorityOnUserTask() {
+    final String priority = "20";
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("userTask1", task -> task.zeebeTaskPriority(priority))
+            .endEvent()
+            .done();
+
+    final ModelElementInstance userTask = instance.getModelElementById("userTask1");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) userTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebePriorityDefinition.class))
+        .hasSize(1)
+        .extracting(ZeebePriorityDefinition::getPriority)
+        .containsExactly(priority);
   }
 }
