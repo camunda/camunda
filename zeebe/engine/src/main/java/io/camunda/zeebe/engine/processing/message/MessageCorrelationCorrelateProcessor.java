@@ -27,7 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public final class MessageCorrelationProcessor
+public final class MessageCorrelationCorrelateProcessor
     implements TypedRecordProcessor<MessageCorrelationRecord> {
 
   private final MessageCorrelateBehavior correlateBehavior;
@@ -35,7 +35,7 @@ public final class MessageCorrelationProcessor
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
 
-  public MessageCorrelationProcessor(
+  public MessageCorrelationCorrelateProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final EventScopeInstanceState eventScopeInstanceState,

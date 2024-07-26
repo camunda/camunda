@@ -108,7 +108,7 @@ public final class MessageEventProcessors {
         .onCommand(
             ValueType.MESSAGE_CORRELATION,
             MessageCorrelationIntent.CORRELATE,
-            new MessageCorrelationProcessor(
+            new MessageCorrelationCorrelateProcessor(
                 writers,
                 keyGenerator,
                 eventScopeInstanceState,
