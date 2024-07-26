@@ -285,6 +285,10 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
     Environment.system().remove("ZEEBE_CLIENT_SECRET");
     Environment.system().remove("ZEEBE_TOKEN_AUDIENCE");
     Environment.system().remove("ZEEBE_AUTHORIZATION_SERVER_URL");
+    io.camunda.zeebe.client.impl.util.Environment.system().remove("ZEEBE_CLIENT_ID");
+    io.camunda.zeebe.client.impl.util.Environment.system().remove("ZEEBE_CLIENT_SECRET");
+    io.camunda.zeebe.client.impl.util.Environment.system().remove("ZEEBE_TOKEN_AUDIENCE");
+    io.camunda.zeebe.client.impl.util.Environment.system().remove("ZEEBE_AUTHORIZATION_SERVER_URL");
     testContainerUtil.stopIdentity(testContext);
   }
 }
