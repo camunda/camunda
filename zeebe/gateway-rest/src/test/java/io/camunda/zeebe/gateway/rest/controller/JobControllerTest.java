@@ -116,9 +116,6 @@ public class JobControllerTest extends RestControllerTest {
   @Test
   void shouldRejectFailJobRequest() {
     // given
-    when(jobServices.failJob(anyLong(), anyInt(), anyString(), anyLong(), any()))
-        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
-
     final var request =
         """
         {
