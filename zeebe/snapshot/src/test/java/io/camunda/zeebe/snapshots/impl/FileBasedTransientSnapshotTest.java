@@ -358,7 +358,7 @@ public class FileBasedTransientSnapshotTest {
   }
 
   private FileBasedSnapshotStore createStore(final Path root) throws IOException {
-    final var store = new FileBasedSnapshotStore(1, root);
+    final var store = new FileBasedSnapshotStore(1, root, snapshotPath -> Map.of());
     scheduler.submitActor(store);
     return store;
   }
