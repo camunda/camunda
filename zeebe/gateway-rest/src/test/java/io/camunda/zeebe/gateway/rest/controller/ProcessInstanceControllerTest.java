@@ -18,8 +18,8 @@ import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.SearchQueryResult.Builder;
 import io.camunda.service.search.sort.ProcessInstanceSort;
+import io.camunda.service.security.auth.Authentication;
 import java.util.List;
-import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -66,7 +66,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupServices() {
-    when(processInstanceServices.withAuthentication(any(Function.class)))
+    when(processInstanceServices.withAuthentication(any(Authentication.class)))
         .thenReturn(processInstanceServices);
   }
 

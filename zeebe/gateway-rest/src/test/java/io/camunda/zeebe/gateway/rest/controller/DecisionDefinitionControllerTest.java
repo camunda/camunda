@@ -19,8 +19,8 @@ import io.camunda.service.search.query.DecisionDefinitionQuery;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.SearchQueryResult.Builder;
 import io.camunda.service.search.sort.DecisionDefinitionSort;
+import io.camunda.service.security.auth.Authentication;
 import java.util.List;
-import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -72,7 +72,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupServices() {
-    when(decisionDefinitionServices.withAuthentication(any(Function.class)))
+    when(decisionDefinitionServices.withAuthentication(any(Authentication.class)))
         .thenReturn(decisionDefinitionServices);
   }
 

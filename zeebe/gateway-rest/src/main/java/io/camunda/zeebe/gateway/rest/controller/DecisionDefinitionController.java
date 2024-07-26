@@ -11,10 +11,10 @@ import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.search.query.DecisionDefinitionQuery;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import io.camunda.zeebe.gateway.rest.TenantAttributeHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -40,9 +40,10 @@ public class DecisionDefinitionController {
   private ResponseEntity<DecisionDefinitionSearchQueryResponse> search(
       final DecisionDefinitionQuery query) {
     try {
-      final var tenantIds = TenantAttributeHolder.tenantIds();
       final var result =
-          decisionDefinitionServices.withAuthentication((a) -> a.tenants(tenantIds)).search(query);
+          decisionDefinitionServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionDefinitionSearchQueryResponse(result));
     } catch (final Throwable e) {

@@ -11,10 +11,10 @@ import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import io.camunda.zeebe.gateway.rest.TenantAttributeHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -40,9 +40,10 @@ public class ProcessInstanceController {
   private ResponseEntity<ProcessInstanceSearchQueryResponse> search(
       final ProcessInstanceQuery query) {
     try {
-      final var tenantIds = TenantAttributeHolder.tenantIds();
       final var result =
-          processInstanceServices.withAuthentication((a) -> a.tenants(tenantIds)).search(query);
+          processInstanceServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result));
     } catch (final Throwable e) {
