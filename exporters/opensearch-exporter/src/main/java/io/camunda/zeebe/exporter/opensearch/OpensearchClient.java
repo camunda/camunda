@@ -20,6 +20,7 @@ import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyReq
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.IsmTemplate;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Action;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.DeleteAction;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition.Conditions;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyResponse;
@@ -300,7 +301,7 @@ public class OpensearchClient implements AutoCloseable {
                     ISM_DELETE_STATE, new Conditions(configuration.retention.getMinimumAge()))));
     final var deleteState =
         new State(
-            ISM_DELETE_STATE, List.of(new Action(new ObjectMapper())), Collections.emptyList());
+            ISM_DELETE_STATE, List.of(new Action(new DeleteAction())), Collections.emptyList());
     final var policy =
         new Policy(
             configuration.retention.getPolicyDescription(),
