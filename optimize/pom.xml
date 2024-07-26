@@ -86,7 +86,6 @@
     <!-- client should be built before distro -->
     <module>client</module>
     <module>util</module>
-    <module>plugins</module>
     <module>backend</module>
     <module>../optimize-distro</module>
     <module>upgrade</module>
