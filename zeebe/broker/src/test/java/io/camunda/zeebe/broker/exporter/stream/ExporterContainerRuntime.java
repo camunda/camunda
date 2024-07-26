@@ -71,16 +71,28 @@ public final class ExporterContainerRuntime implements CloseableSilently {
 
   public ExporterContainer newContainer(
       final ExporterDescriptor descriptor, final int partitionId) {
-    return newContainer(descriptor, partitionId, new ExporterInitializationInfo(0, null));
+    return newContainer(
+        descriptor,
+        partitionId,
+        new ExporterInitializationInfo(0, null),
+        new SimpleMeterRegistry());
   }
 
   public ExporterContainer newContainer(
       final ExporterDescriptor descriptor,
       final int partitionId,
       final ExporterInitializationInfo initializationInfo) {
+    return newContainer(descriptor, partitionId, initializationInfo, new SimpleMeterRegistry());
+  }
+
+  public ExporterContainer newContainer(
+      final ExporterDescriptor descriptor,
+      final int partitionId,
+      final ExporterInitializationInfo initializationInfo,
+      final MeterRegistry meterRegistry) {
+
     final var container =
-        new ExporterContainer(
-            descriptor, partitionId, initializationInfo, new SimpleMeterRegistry());
+        new ExporterContainer(descriptor, partitionId, initializationInfo, meterRegistry);
     container.initContainer(actor.getActorControl(), metrics, state, ExporterPhase.EXPORTING);
 
     return container;
