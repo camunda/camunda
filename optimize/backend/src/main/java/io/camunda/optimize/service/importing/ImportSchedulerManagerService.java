@@ -21,15 +21,12 @@ import io.camunda.optimize.service.importing.zeebe.mediator.factory.AbstractZeeb
 import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ZeebeConfiguration;
-import io.camunda.optimize.websocket.StatusNotifier;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -133,22 +130,6 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
       throw new IllegalStateException("There should only be a single Zeebe Import Scheduler");
     }
     return zeebeSchedulers.stream().findFirst();
-  }
-
-  public void subscribeImportObserver(final StatusNotifier job) {
-    // TODO keeping this empty as no equivalent zeebe reporting exists yet, but feature may be added
-    // for C8
-  }
-
-  public void unsubscribeImportObserver(final StatusNotifier job) {
-    // TODO keeping this empty as no equivalent zeebe reporting exists yet, but feature may be added
-    // for C8
-  }
-
-  public Map<String, Boolean> getImportStatusMap() {
-    // TODO keeping this empty as no equivalent zeebe reporting exists yet, but feature may be added
-    // for C8
-    return Collections.emptyMap();
   }
 
   private synchronized void initSchedulers() {

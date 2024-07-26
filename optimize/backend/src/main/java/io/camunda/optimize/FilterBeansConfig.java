@@ -50,7 +50,7 @@ public class FilterBeansConfig {
   @Bean
   public LicenseFilter licenseFilter(
       LicenseManager licenseManager, ApplicationContext applicationContext) {
-    return new LicenseFilter(licenseManager, applicationContext);
+    return new LicenseFilter();
   }
 
   @Bean
