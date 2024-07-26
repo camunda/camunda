@@ -87,7 +87,6 @@ public final class BpmnJobBehavior {
   public Either<Failure, JobProperties> evaluateJobExpressions(
       final JobWorkerProperties jobWorkerProps, final BpmnElementContext context) {
     final var scopeKey = context.getElementInstanceKey();
-    final var tenantId = context.getTenantId();
     return Either.<Failure, JobProperties>right(new JobProperties())
         .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey).map(p::type))
         .flatMap(p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey).map(p::retries))
@@ -123,7 +122,10 @@ public final class BpmnJobBehavior {
             p ->
                 userTaskBehavior
                     .evaluateFormIdExpressionToFormKey(
-                        jobWorkerProps.getFormId(), scopeKey, tenantId)
+                        jobWorkerProps.getFormId(),
+                        scopeKey,
+                        jobWorkerProps.getBindingType(),
+                        context)
                     .map(key -> Objects.toString(key, null))
                     .map(p::formKey));
   }

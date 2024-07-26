@@ -58,6 +58,7 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     transformTaskSchedule(element, userTaskProperties);
     transformTaskFormId(element, userTaskProperties);
     transformModelTaskHeaders(element, userTaskProperties);
+    transformBindingType(element, userTaskProperties);
 
     if (isZeebeUserTask) {
       transformExternalReference(element, userTaskProperties);
@@ -241,6 +242,16 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
           userTaskProperties.setExternalFormReference(externalReferenceExpression);
         }
       }
+    }
+  }
+
+  private void transformBindingType(
+      final UserTask element, final UserTaskProperties userTaskProperties) {
+    final ZeebeFormDefinition formDefinition =
+        element.getSingleExtensionElement(ZeebeFormDefinition.class);
+
+    if (formDefinition != null) {
+      userTaskProperties.setBindingType(formDefinition.getBindingType());
     }
   }
 }
