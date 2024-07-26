@@ -11,7 +11,6 @@ import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.identity.automation.usermanagement.CamundaGroup;
 import io.camunda.identity.automation.usermanagement.CamundaUserWithPassword;
-import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
@@ -126,24 +125,13 @@ public class RequestMapper {
   public static Either<ProblemDetail, FailJobRequest> toJobFailRequest(
       final JobFailRequest failRequest, final long jobKey) {
 
-    final var validationErrorResponse = validateJobFailRequest(failRequest);
-    return validationErrorResponse
-        .<Either<ProblemDetail, FailJobRequest>>map(Either::left)
-        .orElseGet(
-            () ->
-                Either.right(
-                    new FailJobRequest(
-                        jobKey,
-                        getIntOrDefault(
-                            failRequest,
-                            JobFailRequest::getRetries,
-                            JobServices.DEFAULT_RETRIES_VALUE),
-                        getStringOrEmpty(failRequest, JobFailRequest::getErrorMessage),
-                        getLongOrDefault(
-                            failRequest,
-                            JobFailRequest::getRetryBackOff,
-                            JobServices.DEFAULT_RETRYBACKOFF_VALUE),
-                        getMapOrEmpty(failRequest, JobFailRequest::getVariables))));
+    return Either.right(
+        new FailJobRequest(
+            jobKey,
+            getIntOrZero(failRequest, JobFailRequest::getRetries),
+            getStringOrEmpty(failRequest, JobFailRequest::getErrorMessage),
+            getLongOrZero(failRequest, JobFailRequest::getRetryBackOff),
+            getMapOrEmpty(failRequest, JobFailRequest::getVariables)));
   }
 
   private static Optional<ProblemDetail> validateAssignmentRequest(
@@ -205,30 +193,6 @@ public class RequestMapper {
     return Optional.of(
         RestErrorMapper.createProblemDetail(
             HttpStatus.BAD_REQUEST, String.join(". ", violations), INVALID_ARGUMENT.name()));
-  }
-
-  private static Optional<ProblemDetail> validateJobFailRequest(final JobFailRequest failRequest) {
-    final List<String> violations = new ArrayList<>();
-    if (failRequest != null) {
-      // retries can't be less than 0
-      if (failRequest.getRetries() < 0) {
-        violations.add(
-            ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-                "retries", failRequest.getRetries(), "greater or equals to 0"));
-      }
-      // retries can't be less than -1
-      if (failRequest.getRetryBackOff() < -1) {
-        violations.add(
-            ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-                "retryBackOff", failRequest.getRetries(), "greater or equals to -1"));
-      }
-    }
-
-    return violations.isEmpty()
-        ? Optional.empty()
-        : Optional.of(
-            RestErrorMapper.createProblemDetail(
-                HttpStatus.BAD_REQUEST, String.join(". ", violations), INVALID_ARGUMENT.name()));
   }
 
   private static void validateDate(
@@ -330,13 +294,8 @@ public class RequestMapper {
   }
 
   private static <R> long getLongOrZero(final R request, final Function<R, Long> valueExtractor) {
-    return getLongOrDefault(request, valueExtractor, 0L);
-  }
-
-  private static <R> long getLongOrDefault(
-      final R request, final Function<R, Long> valueExtractor, final long defaultValue) {
     final Long value = request == null ? null : valueExtractor.apply(request);
-    return value == null ? defaultValue : value;
+    return value == null ? 0L : value;
   }
 
   private static <R> List<String> getStringListOrEmpty(
@@ -345,10 +304,9 @@ public class RequestMapper {
     return value == null ? List.of() : value;
   }
 
-  private static <R> int getIntOrDefault(
-      final R request, final Function<R, Integer> valueExtractor, final int defaultValue) {
+  private static <R> int getIntOrZero(final R request, final Function<R, Integer> valueExtractor) {
     final Integer value = request == null ? null : valueExtractor.apply(request);
-    return value == null ? defaultValue : value;
+    return value == null ? 0 : value;
   }
 
   public record CompleteUserTaskRequest(
