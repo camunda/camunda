@@ -67,8 +67,7 @@ public class JobController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> errorJob(
-      @PathVariable final long jobKey,
-      @RequestBody final JobErrorRequest errorRequest) {
+      @PathVariable final long jobKey, @RequestBody final JobErrorRequest errorRequest) {
     return RequestMapper.toJobErrorRequest(errorRequest, jobKey)
         .fold(this::errorJob, RestErrorMapper::mapProblemToCompletedResponse);
   }
@@ -99,7 +98,8 @@ public class JobController {
                     failJobRequest.variables()));
   }
 
-  private CompletableFuture<ResponseEntity<Object>> errorJob(final ErrorJobRequest errorJobRequest) {
+  private CompletableFuture<ResponseEntity<Object>> errorJob(
+      final ErrorJobRequest errorJobRequest) {
     return RequestMapper.executeServiceMethodWithNoContenResult(
         () ->
             jobServices

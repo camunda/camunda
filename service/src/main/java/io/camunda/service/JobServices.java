@@ -81,11 +81,11 @@ public final class JobServices<T> extends ApiServices<JobServices<T>> {
       final long jobKey,
       final String errorCode,
       final String errorMessage,
-      final Map<String, Object> variables
-  ) {
-    final var request = new BrokerThrowErrorRequest(jobKey, errorCode)
-        .setErrorMessage(errorMessage)
-        .setVariables(getDocumentOrEmpty(variables));
+      final Map<String, Object> variables) {
+    final var request =
+        new BrokerThrowErrorRequest(jobKey, errorCode)
+            .setErrorMessage(errorMessage)
+            .setVariables(getDocumentOrEmpty(variables));
     return sendBrokerRequest(request);
   }
 

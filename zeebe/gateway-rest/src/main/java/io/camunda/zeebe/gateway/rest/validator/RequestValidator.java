@@ -58,8 +58,8 @@ public final class RequestValidator {
   private static boolean isEmpty(final Changeset changeset) {
     return changeset == null
         || (changeset.getFollowUpDate() == null
-        && changeset.getDueDate() == null
-        && changeset.getCandidateGroups() == null
-        && changeset.getCandidateUsers() == null);
+            && changeset.getDueDate() == null
+            && changeset.getCandidateGroups() == null
+            && changeset.getCandidateUsers() == null);
   }
 }

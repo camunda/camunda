@@ -65,7 +65,8 @@ public final class JobRequestValidator {
     return createProblemDetail(violations);
   }
 
-  public static Optional<ProblemDetail> validateJobErrorRequest(final JobErrorRequest errorRequest) {
+  public static Optional<ProblemDetail> validateJobErrorRequest(
+      final JobErrorRequest errorRequest) {
     final List<String> violations = new ArrayList<>();
     // errorCode can't be null or empty
     if (errorRequest.getErrorCode() == null || errorRequest.getErrorCode().isBlank()) {

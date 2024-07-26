@@ -252,5 +252,6 @@ public class RequestMapper {
       Long retryBackoff,
       Map<String, Object> variables) {}
 
-  public record ErrorJobRequest(long jobKey, String errorCode, String errorMessage, Map<String, Object> variables) {}
+  public record ErrorJobRequest(
+      long jobKey, String errorCode, String errorMessage, Map<String, Object> variables) {}
 }
