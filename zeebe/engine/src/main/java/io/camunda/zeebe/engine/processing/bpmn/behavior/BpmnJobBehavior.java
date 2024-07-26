@@ -162,8 +162,8 @@ public final class BpmnJobBehavior {
                     ? Either.left(
                         new Failure(
                             String.format(
-                                "Expected result of the expression '%s' to be not empty, but was '%s'.",
-                                type.getExpression(), result),
+                                "Expected result of the expression '%s' to be a not-empty string, but was an empty string.",
+                                type.getExpression()),
                             ErrorType.EXTRACT_VALUE_ERROR,
                             scopeKey))
                     : Either.right(result));
