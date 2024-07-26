@@ -24,7 +24,6 @@ import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository;
 import jakarta.servlet.Filter;
 import java.time.Duration;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
@@ -90,8 +89,7 @@ public final class BrokerBasedConfiguration {
   @Bean
   public CompositeFilter restApiCompositeFilter() {
     final List<FilterCfg> filterCfgs = properties.getGateway().getFilters();
-    final List<Filter> filters =
-        new FilterRepository().load(filterCfgs).instantiate().collect(Collectors.toList());
+    final List<Filter> filters = new FilterRepository().load(filterCfgs).instantiate().toList();
 
     return new RestApiCompositeFilter(filters);
   }

@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.rest.impl.filters.FilterLoadException;
 import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository;
-import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository.FilterElement;
 import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.camunda.zeebe.util.jar.ExternalJarRepository;
 import jakarta.servlet.Filter;
@@ -23,7 +22,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import net.bytebuddy.ByteBuddy;
 import org.junit.jupiter.api.Test;
@@ -79,7 +78,7 @@ class FilterRepositoryTest {
     assertThat(config.isExternal()).isFalse();
     assertThat(loadedClass).isEqualTo(MinimalFilter.class);
     assertThat(loadedClass.getClassLoader()).isEqualTo(getClass().getClassLoader());
-    assertThat(repository.getFilters()).contains(new FilterElement(id, loadedClass));
+    assertThat(repository.getFilters()).containsEntry(id, loadedClass);
   }
 
   @Test
@@ -104,7 +103,7 @@ class FilterRepositoryTest {
         .as("the loaded class implements Filter")
         .isTrue();
     assertThat(loadedClass.getClassLoader()).isNotEqualTo(getClass().getClassLoader());
-    assertThat(repository.getFilters()).contains(new FilterElement(id, loadedClass));
+    assertThat(repository.getFilters()).containsEntry(id, loadedClass);
   }
 
   @Test
@@ -150,7 +149,7 @@ class FilterRepositoryTest {
   void shouldLoadExternalFilterRelativeToBasedir(final @TempDir File tempDir) throws IOException {
     // given
     final var baseRepository =
-        new FilterRepository(new ArrayList<>(), new ExternalJarRepository(), tempDir.toPath());
+        new FilterRepository(new LinkedHashMap<>(), new ExternalJarRepository(), tempDir.toPath());
     final var id = "myFilter";
     final var filterClass = ExternalFilter.createUnloadedFilterClass();
     final var jarFile = filterClass.toJar(new File(tempDir, "filter.jar"));
@@ -190,12 +189,7 @@ class FilterRepositoryTest {
     final var filters = repository.load(List.of(internalConfig, externalConfig)).instantiate();
 
     // then
-    final var loadedClass =
-        repository.getFilters().stream()
-            .filter(filterElement -> filterElement.id().equals("external"))
-            .findFirst()
-            .get()
-            .clazz();
+    final var loadedClass = repository.getFilters().get("external");
     assertThat(filters)
         .hasSize(2)
         .map(Filter::getClass)

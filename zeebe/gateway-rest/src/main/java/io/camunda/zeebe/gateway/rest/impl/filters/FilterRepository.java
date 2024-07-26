@@ -15,30 +15,36 @@ import io.camunda.zeebe.util.jar.ExternalJarRepository;
 import jakarta.servlet.Filter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.agrona.LangUtil;
 import org.slf4j.Logger;
 
-/** Loads and holds references to the configured filters. */
+/**
+ * Loads and holds references to the configured filters.
+ *
+ * <p>Please port any changes to this code to the {@code zeebe-gateway-grpc} module's {@code
+ * io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository} as well.
+ */
 public final class FilterRepository {
   private static final Logger LOGGER = Loggers.GATEWAY_LOGGER;
 
   private final ExternalJarRepository jarRepository;
-  private final List<FilterElement> filters;
+  private final Map<String, Class<? extends Filter>> filters;
   private final Path basePath;
 
   public FilterRepository() {
     this(
-        new ArrayList<>(),
+        new LinkedHashMap<>(),
         new ExternalJarRepository(),
         Paths.get(Optional.ofNullable(System.getProperty("basedir")).orElse(".")));
   }
 
   public FilterRepository(
-      final List<FilterElement> filters,
+      final Map<String, Class<? extends Filter>> filters,
       final ExternalJarRepository jarRepository,
       final Path basePath) {
     this.filters = filters;
@@ -46,12 +52,12 @@ public final class FilterRepository {
     this.basePath = basePath;
   }
 
-  public List<FilterElement> getFilters() {
+  public Map<String, Class<? extends Filter>> getFilters() {
     return filters;
   }
 
   public Stream<Filter> instantiate() {
-    return filters.stream().map(entry -> instantiate(entry.id, entry.clazz));
+    return filters.entrySet().stream().map(entry -> instantiate(entry.getKey(), entry.getValue()));
   }
 
   public FilterRepository load(final List<? extends FilterCfg> configs) {
@@ -73,10 +79,8 @@ public final class FilterRepository {
     final Class<? extends Filter> filterClass;
     final String id = config.getId();
 
-    final var existingFilter =
-        filters.stream().filter(filterElement -> filterElement.id.equals(id)).findFirst();
-    if (existingFilter.isPresent()) {
-      return existingFilter.get().clazz;
+    if (filters.containsKey(id)) {
+      return filters.get(id);
     }
 
     if (!config.isExternal()) {
@@ -95,8 +99,7 @@ public final class FilterRepository {
       throw new FilterLoadException(id, "specified class does not implement Filter", e);
     }
 
-    final FilterElement filterElement = new FilterElement(id, filterClass);
-    filters.add(filterElement);
+    filters.put(id, filterClass);
 
     return filterClass;
   }
@@ -108,6 +111,4 @@ public final class FilterRepository {
       throw new FilterLoadException(id, "cannot instantiate via the default constructor", e);
     }
   }
-
-  public record FilterElement(String id, Class<? extends Filter> clazz) {}
 }

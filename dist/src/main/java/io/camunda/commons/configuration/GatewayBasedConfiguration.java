@@ -77,8 +77,7 @@ public final class GatewayBasedConfiguration {
   @Bean
   public CompositeFilter restApiCompositeFilter() {
     final List<FilterCfg> filterCfgs = properties.getFilters();
-    final List<Filter> filters =
-        new FilterRepository().load(filterCfgs).instantiate().collect(Collectors.toList());
+    final List<Filter> filters = new FilterRepository().load(filterCfgs).instantiate().toList();
 
     return new RestApiCompositeFilter(filters);
   }
