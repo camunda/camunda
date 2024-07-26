@@ -106,6 +106,59 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /jobs/{jobKey}/error:
+    post:
+      tags:
+        - Job
+      summary: Fail job
+      description: |
+        Reports a business error (i.e. non-technical) that occurs while processing a job.
+      parameters:
+        - name: jobKey
+          in: path
+          required: true
+          description: The key of the job.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobErrorRequest"
+      responses:
+        '204':
+          description: An error is thrown for the job.
+        '400':
+          description: >
+            The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '404':
+          description: >
+            The job with the given jobKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '409':
+          description: >
+            The job with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 
   /user-tasks/{userTaskKey}/completion:
     post:
@@ -1499,6 +1552,24 @@ components:
           description: >
             JSON object that will instantiate the variables at the local scope of the job's
             associated task.
+          type: object
+          nullable: true
+    JobErrorRequest:
+      type: object
+      properties:
+        errorCode:
+          description: >
+            The error code that will be matched with an error catch event.
+          type: string
+        errorMessage:
+          description: >
+            An error message that provides additional context.
+          type: string
+          nullable: true
+        variables:
+          additionalProperties: true
+          description: >
+            JSON object that will instantiate the variables at the local scope of the error catch event that catches the thrown error.
           type: object
           nullable: true
 
