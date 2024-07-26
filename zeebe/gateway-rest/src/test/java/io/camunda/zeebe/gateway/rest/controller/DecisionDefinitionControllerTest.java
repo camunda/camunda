@@ -77,6 +77,26 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldSearchDecisionDefinitionsWithEmptyBody() {
+    // given
+    when(decisionDefinitionServices.search(any(DecisionDefinitionQuery.class)))
+        .thenReturn(SEARCH_QUERY_RESULT);
+    // when / then
+    webClient
+        .post()
+        .uri(DECISION_DEFINITIONS_SEARCH_URL)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(decisionDefinitionServices).search(new DecisionDefinitionQuery.Builder().build());
+  }
+
+  @Test
   void shouldSearchDecisionDefinitionsWithEmptyQuery() {
     // given
     when(decisionDefinitionServices.search(any(DecisionDefinitionQuery.class)))

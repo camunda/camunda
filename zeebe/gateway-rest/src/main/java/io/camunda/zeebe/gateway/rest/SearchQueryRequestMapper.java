@@ -44,6 +44,9 @@ public final class SearchQueryRequestMapper {
 
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQuery(
       final ProcessInstanceSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.processInstanceSearchQuery().build());
+    }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
@@ -56,6 +59,9 @@ public final class SearchQueryRequestMapper {
 
   public static Either<ProblemDetail, DecisionDefinitionQuery> toDecisionDefinitionQuery(
       final DecisionDefinitionSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.decisionDefinitionSearchQuery().build());
+    }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(

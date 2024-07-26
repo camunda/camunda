@@ -17,45 +17,34 @@ import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryRespo
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
-import io.camunda.zeebe.util.Either;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import org.springframework.http.ProblemDetail;
 
 public final class SearchQueryResponseMapper {
 
   private SearchQueryResponseMapper() {}
 
-  public static Either<ProblemDetail, ProcessInstanceSearchQueryResponse>
-      toProcessInstanceSearchQueryResponse(final SearchQueryResult<ProcessInstanceEntity> result) {
+  public static ProcessInstanceSearchQueryResponse toProcessInstanceSearchQueryResponse(
+      final SearchQueryResult<ProcessInstanceEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    final var response =
-        new ProcessInstanceSearchQueryResponse()
-            .page(page)
-            .items(
-                ofNullable(result.items())
-                    .map(SearchQueryResponseMapper::toProcessInstances)
-                    .map(Either::get)
-                    .orElseGet(ArrayList::new));
-
-    return Either.right(response);
+    return new ProcessInstanceSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toProcessInstances)
+                .orElseGet(Collections::emptyList));
   }
 
-  public static Either<ProblemDetail, DecisionDefinitionSearchQueryResponse>
-      toDecisionDefinitionSearchQueryResponse(
-          final SearchQueryResult<DecisionDefinitionEntity> result) {
+  public static DecisionDefinitionSearchQueryResponse toDecisionDefinitionSearchQueryResponse(
+      final SearchQueryResult<DecisionDefinitionEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    final var response =
-        new DecisionDefinitionSearchQueryResponse()
-            .page(page)
-            .items(
-                ofNullable(result.items())
-                    .map(SearchQueryResponseMapper::toDecisionDefinitions)
-                    .map(Either::get)
-                    .orElseGet(ArrayList::new));
-
-    return Either.right(response);
+    return new DecisionDefinitionSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toDecisionDefinitions)
+                .orElseGet(Collections::emptyList));
   }
 
   private static SearchQueryPageResponse toSearchQueryPageResponse(
@@ -63,54 +52,42 @@ public final class SearchQueryResponseMapper {
     return new SearchQueryPageResponse()
         .totalItems(result.total())
         .lastSortValues(
-            ofNullable(result.sortValues()).map(Arrays::asList).orElseGet(ArrayList::new));
+            ofNullable(result.sortValues()).map(Arrays::asList).orElseGet(Collections::emptyList));
   }
 
-  private static Either<ProblemDetail, List<ProcessInstanceItem>> toProcessInstances(
+  private static List<ProcessInstanceItem> toProcessInstances(
       final List<ProcessInstanceEntity> instances) {
-    return Either.right(
-        instances.stream()
-            .map(SearchQueryResponseMapper::toProcessInstance)
-            .map(Either::get)
-            .toList());
+    return instances.stream().map(SearchQueryResponseMapper::toProcessInstance).toList();
   }
 
-  private static Either<ProblemDetail, ProcessInstanceItem> toProcessInstance(
-      final ProcessInstanceEntity p) {
-    return Either.right(
-        new ProcessInstanceItem()
-            .tenantId(p.tenantId())
-            .key(p.key())
-            .processVersion(p.processVersion())
-            .bpmnProcessId(p.bpmnProcessId())
-            .parentKey(p.parentKey())
-            .parentFlowNodeInstanceKey(p.parentFlowNodeInstanceKey())
-            .startDate(p.startDate())
-            .endDate(p.endDate()));
+  private static ProcessInstanceItem toProcessInstance(final ProcessInstanceEntity p) {
+    return new ProcessInstanceItem()
+        .tenantId(p.tenantId())
+        .key(p.key())
+        .processVersion(p.processVersion())
+        .bpmnProcessId(p.bpmnProcessId())
+        .parentKey(p.parentKey())
+        .parentFlowNodeInstanceKey(p.parentFlowNodeInstanceKey())
+        .startDate(p.startDate())
+        .endDate(p.endDate());
   }
 
-  private static Either<ProblemDetail, List<DecisionDefinitionItem>> toDecisionDefinitions(
+  private static List<DecisionDefinitionItem> toDecisionDefinitions(
       final List<DecisionDefinitionEntity> instances) {
-    return Either.right(
-        instances.stream()
-            .map(SearchQueryResponseMapper::toDecisionDefinition)
-            .map(Either::get)
-            .toList());
+    return instances.stream().map(SearchQueryResponseMapper::toDecisionDefinition).toList();
   }
 
-  private static Either<ProblemDetail, DecisionDefinitionItem> toDecisionDefinition(
-      final DecisionDefinitionEntity d) {
-    return Either.right(
-        new DecisionDefinitionItem()
-            .tenantId(d.tenantId())
-            .key(d.key())
-            .id(d.id())
-            .name(d.name())
-            .version(d.version())
-            .decisionId(d.decisionId())
-            .decisionRequirementsKey(d.decisionRequirementsKey())
-            .decisionRequirementsId(d.decisionRequirementsId())
-            .decisionRequirementsName(d.decisionRequirementsName())
-            .decisionRequirementsVersion(d.decisionRequirementsVersion()));
+  private static DecisionDefinitionItem toDecisionDefinition(final DecisionDefinitionEntity d) {
+    return new DecisionDefinitionItem()
+        .tenantId(d.tenantId())
+        .key(d.key())
+        .id(d.id())
+        .name(d.name())
+        .version(d.version())
+        .decisionId(d.decisionId())
+        .decisionRequirementsKey(d.decisionRequirementsKey())
+        .decisionRequirementsId(d.decisionRequirementsId())
+        .decisionRequirementsName(d.decisionRequirementsName())
+        .decisionRequirementsVersion(d.decisionRequirementsVersion());
   }
 }

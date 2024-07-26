@@ -32,7 +32,7 @@ public class ProcessInstanceController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<ProcessInstanceSearchQueryResponse> searchProcessInstances(
-      @RequestBody final ProcessInstanceSearchQueryRequest query) {
+      @RequestBody(required = false) final ProcessInstanceSearchQueryRequest query) {
     return SearchQueryRequestMapper.toProcessInstanceQuery(query)
         .fold(this::search, RestErrorMapper::mapProblemToResponse);
   }
@@ -44,7 +44,7 @@ public class ProcessInstanceController {
       final var result =
           processInstanceServices.withAuthentication((a) -> a.tenants(tenantIds)).search(query);
       return ResponseEntity.ok(
-          SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result).get());
+          SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result));
     } catch (final Throwable e) {
       final var problemDetail =
           RestErrorMapper.createProblemDetail(

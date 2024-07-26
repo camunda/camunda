@@ -71,6 +71,26 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldSearchProcessInstancesWithEmptyBody() {
+    // given
+    when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
+        .thenReturn(SEARCH_QUERY_RESULT);
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(processInstanceServices).search(new ProcessInstanceQuery.Builder().build());
+  }
+
+  @Test
   void shouldSearchProcessInstancesWithEmptyQuery() {
     // given
     when(processInstanceServices.search(any(ProcessInstanceQuery.class)))

@@ -32,7 +32,7 @@ public class DecisionDefinitionController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<DecisionDefinitionSearchQueryResponse> searchDecisionDefinitions(
-      @RequestBody final DecisionDefinitionSearchQueryRequest query) {
+      @RequestBody(required = false) final DecisionDefinitionSearchQueryRequest query) {
     return SearchQueryRequestMapper.toDecisionDefinitionQuery(query)
         .fold(this::search, RestErrorMapper::mapProblemToResponse);
   }
@@ -44,7 +44,7 @@ public class DecisionDefinitionController {
       final var result =
           decisionDefinitionServices.withAuthentication((a) -> a.tenants(tenantIds)).search(query);
       return ResponseEntity.ok(
-          SearchQueryResponseMapper.toDecisionDefinitionSearchQueryResponse(result).get());
+          SearchQueryResponseMapper.toDecisionDefinitionSearchQueryResponse(result));
     } catch (final Throwable e) {
       final var problemDetail =
           RestErrorMapper.createProblemDetail(
