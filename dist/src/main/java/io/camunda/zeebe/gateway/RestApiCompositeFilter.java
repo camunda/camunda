@@ -36,30 +36,23 @@ public class RestApiCompositeFilter extends CompositeFilter {
       super.doFilter(request, response, chain);
     } catch (final Exception e) {
 
-      if (!(request instanceof HttpServletRequest) || !(response instanceof HttpServletResponse)) {
-        response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
-        final var internalErrorMsg = "REST API filter error couldn't be handled properly.";
-        response
-            .getWriter()
-            .write(
-                "{ \"type\": \"about:blank\", \"status\": 500, \"title\": \"Filter issue\", \"detail\": \""
-                    + internalErrorMsg
-                    + "\" }");
-        LOG.error(internalErrorMsg, e);
-      }
-
-      final HttpServletRequest servletRequest = (HttpServletRequest) request;
-      final HttpServletResponse servletResponse = (HttpServletResponse) response;
+      final var instance =
+          request instanceof HttpServletRequest
+              ? ((HttpServletRequest) request).getRequestURI()
+              : "";
       final var msg =
           "{ \"type\": \"about:blank\", \"status\": 500, \"title\": \"Filter issue\", \"detail\": \""
               + e.getMessage()
               + "\", \"instance\": \" "
-              + servletRequest.getRequestURI()
+              + instance
               + "\" }";
 
-      servletResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-      servletResponse.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
-      servletResponse.getWriter().write(msg);
+      if (response instanceof HttpServletResponse) {
+        ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+      }
+
+      response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+      response.getWriter().write(msg);
     }
   }
 }
