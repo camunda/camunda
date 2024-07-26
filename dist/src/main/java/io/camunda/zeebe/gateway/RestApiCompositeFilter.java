@@ -16,10 +16,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import org.slf4j.Logger;
 import org.springframework.http.MediaType;
 import org.springframework.web.filter.CompositeFilter;
 
 public class RestApiCompositeFilter extends CompositeFilter {
+
+  private static final Logger LOG = Loggers.GATEWAY_LOGGER;
 
   public RestApiCompositeFilter(final List<Filter> filters) {
     setFilters(filters);
@@ -32,6 +35,19 @@ public class RestApiCompositeFilter extends CompositeFilter {
     try {
       super.doFilter(request, response, chain);
     } catch (final Exception e) {
+
+      if (!(request instanceof HttpServletRequest) || !(response instanceof HttpServletResponse)) {
+        response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+        final var internalErrorMsg = "REST API filter error couldn't be handled properly.";
+        response
+            .getWriter()
+            .write(
+                "{ \"type\": \"about:blank\", \"status\": 500, \"title\": \"Filter issue\", \"detail\": \""
+                    + internalErrorMsg
+                    + "\" }");
+        LOG.error(internalErrorMsg, e);
+      }
+
       final HttpServletRequest servletRequest = (HttpServletRequest) request;
       final HttpServletResponse servletResponse = (HttpServletResponse) response;
       final var msg =
