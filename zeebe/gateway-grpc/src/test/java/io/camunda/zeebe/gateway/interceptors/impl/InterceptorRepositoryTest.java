@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
-import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository.InterceptorElement;
 import io.camunda.zeebe.gateway.interceptors.util.ExternalInterceptor;
 import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.camunda.zeebe.util.jar.ExternalJarRepository;
@@ -22,7 +21,7 @@ import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import net.bytebuddy.ByteBuddy;
 import org.junit.jupiter.api.Test;
@@ -79,7 +78,7 @@ class InterceptorRepositoryTest {
     assertThat(config.isExternal()).isFalse();
     assertThat(loadedClass).isEqualTo(MinimalInterceptor.class);
     assertThat(loadedClass.getClassLoader()).isEqualTo(getClass().getClassLoader());
-    assertThat(repository.getInterceptors()).contains(new InterceptorElement(id, loadedClass));
+    assertThat(repository.getInterceptors()).containsEntry(id, loadedClass);
   }
 
   @Test
@@ -104,7 +103,7 @@ class InterceptorRepositoryTest {
         .as("the loaded class implements ServerInterceptor")
         .isTrue();
     assertThat(loadedClass.getClassLoader()).isNotEqualTo(getClass().getClassLoader());
-    assertThat(repository.getInterceptors()).contains(new InterceptorElement(id, loadedClass));
+    assertThat(repository.getInterceptors()).containsEntry(id, loadedClass);
   }
 
   @Test
@@ -151,7 +150,8 @@ class InterceptorRepositoryTest {
       throws IOException {
     // given
     final var baseRepository =
-        new InterceptorRepository(new ArrayList<>(), new ExternalJarRepository(), tempDir.toPath());
+        new InterceptorRepository(
+            new LinkedHashMap<>(), new ExternalJarRepository(), tempDir.toPath());
     final var id = "myInterceptor";
     final var interceptorClass = ExternalInterceptor.createUnloadedInterceptorClass();
     final var jarFile = interceptorClass.toJar(new File(tempDir, "interceptor.jar"));
@@ -191,12 +191,7 @@ class InterceptorRepositoryTest {
     final var interceptors = repository.load(List.of(internalConfig, externalConfig)).instantiate();
 
     // then
-    final var loadedClass =
-        repository.getInterceptors().stream()
-            .filter(interceptorElement -> interceptorElement.id().equals("external"))
-            .findFirst()
-            .get()
-            .clazz();
+    final var loadedClass = repository.getInterceptors().get("external");
     assertThat(interceptors)
         .hasSize(2)
         .map(ServerInterceptor::getClass)

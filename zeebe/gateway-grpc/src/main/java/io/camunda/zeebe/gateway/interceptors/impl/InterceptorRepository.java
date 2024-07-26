@@ -15,30 +15,37 @@ import io.camunda.zeebe.util.jar.ExternalJarRepository;
 import io.grpc.ServerInterceptor;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.agrona.LangUtil;
 import org.slf4j.Logger;
 
-/** Loads and holds references to the configured interceptors. */
+/**
+ * Loads and holds references to the configured interceptors.
+ *
+ * <p>Please port any changes to this code to the {@code zeebe-gateway-rest} module's {@code
+ * io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository} as well.
+ */
 public final class InterceptorRepository {
   private static final Logger LOGGER = Loggers.GATEWAY_LOGGER;
 
   private final ExternalJarRepository jarRepository;
-  private final List<InterceptorElement> interceptors;
+  private final Map<String, Class<? extends ServerInterceptor>> interceptors;
   private final Path basePath;
 
   public InterceptorRepository() {
     this(
-        new ArrayList<>(),
+        new LinkedHashMap<>(),
         new ExternalJarRepository(),
         Paths.get(Optional.ofNullable(System.getProperty("basedir")).orElse(".")));
   }
 
   InterceptorRepository(
-      final List<InterceptorElement> interceptors,
+      final Map<String, Class<? extends ServerInterceptor>> interceptors,
       final ExternalJarRepository jarRepository,
       final Path basePath) {
     this.interceptors = interceptors;
@@ -46,12 +53,13 @@ public final class InterceptorRepository {
     this.basePath = basePath;
   }
 
-  public List<InterceptorElement> getInterceptors() {
-    return interceptors;
+  public Map<String, Class<? extends ServerInterceptor>> getInterceptors() {
+    return Collections.unmodifiableMap(interceptors);
   }
 
   public Stream<ServerInterceptor> instantiate() {
-    return interceptors.stream().map(entry -> instantiate(entry.id, entry.clazz));
+    return interceptors.entrySet().stream()
+        .map(entry -> instantiate(entry.getKey(), entry.getValue()));
   }
 
   public InterceptorRepository load(final List<? extends InterceptorCfg> configs) {
@@ -74,12 +82,8 @@ public final class InterceptorRepository {
     final Class<? extends ServerInterceptor> interceptorClass;
     final String id = config.getId();
 
-    final var existingInterceptor =
-        interceptors.stream()
-            .filter(interceptorElement -> interceptorElement.id.equals(id))
-            .findFirst();
-    if (existingInterceptor.isPresent()) {
-      return existingInterceptor.get().clazz;
+    if (interceptors.containsKey(id)) {
+      return interceptors.get(id);
     }
 
     if (!config.isExternal()) {
@@ -99,8 +103,7 @@ public final class InterceptorRepository {
           id, "specified class does not implement ServerInterceptor", e);
     }
 
-    final InterceptorElement interceptorElement = new InterceptorElement(id, interceptorClass);
-    interceptors.add(interceptorElement);
+    interceptors.put(id, interceptorClass);
 
     return interceptorClass;
   }
@@ -113,6 +116,4 @@ public final class InterceptorRepository {
       throw new InterceptorLoadException(id, "cannot instantiate via the default constructor", e);
     }
   }
-
-  public record InterceptorElement(String id, Class<? extends ServerInterceptor> clazz) {}
 }
