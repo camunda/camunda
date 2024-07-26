@@ -1,15 +1,15 @@
 ---
-
-name: Optimize PDP Epic
-about: Summary of tasks/features to implement PDP epic.
+name: Optimize Epic
+about: This issue is used to track the progress of an Optimize Epic
 title: 🎯
-labels: ["kind/epic", "Root task", "component/optimize"]
+labels: ["kind/epic", "component/optimize"]
 assignees: ""
--------------
+---
 
 ### Summary
 
 <!-- Add links to related issues or other resources  -->
+
 - Product Hub issue:
 - PDP Steps tracking doc:
 
@@ -35,6 +35,7 @@ commands by writing `/help` as a comment on this issue.
 #### Review Resources
 
 <!-- When in review, the resources to be used for review should be listed here) -->
+
 - Feature PR: {Link to PR targeting the main branch}
 - Preview environments: {Link(s) to preview environments}
 
@@ -61,4 +62,3 @@ commands by writing `/help` as a comment on this issue.
 - All Review stages are successfully completed
 - [ ] All associated PRs are merged to the main branch(es) and maintenance branches
 - [ ] The correct version labels are applied to the issue
-
