@@ -101,19 +101,6 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
         TestOperateSchemaStartup.class,
         TestTasklistSchemaStartup.class);
 
-    // Set environment variables
-    System.setProperty("CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED", "false");
-    System.setProperty("SPRING_ACTIVE_PROFILES", "gateway");
-    System.setProperty("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1");
-    System.setProperty("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", "http://localhost:9200");
-    System.setProperty(
-        "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
-        "io.camunda.zeebe.exporter.ElasticsearchExporter");
-    System.setProperty("ZEEBE_CLIENT_ID", "zeebe");
-    System.setProperty("ZEEBE_CLIENT_SECRET", "zeecret");
-    System.setProperty("ZEEBE_GATEWAY_ENABLED", "true");
-    System.setProperty("CAMUNDA_TASKLIST_CSRF_PREVENTION_ENABLED", "false");
-
     brokerProperties = new BrokerBasedProperties();
 
     brokerProperties.getNetwork().getCommandApi().setPort(SocketUtil.getNextAddress().getPort());
