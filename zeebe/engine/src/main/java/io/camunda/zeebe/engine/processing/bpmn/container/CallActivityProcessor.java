@@ -211,30 +211,22 @@ public final class CallActivityProcessor
 
   private Either<Failure, DeployedProcess> getProcessVersionInSameDeployment(
       final DirectBuffer processId, final BpmnElementContext context) {
-    final var deploymentKey =
-        stateBehavior
-            .getProcess(context.getProcessDefinitionKey(), context.getTenantId())
-            .map(DeployedProcess::getDeploymentKey)
-            .orElse(null);
-    if (deploymentKey == null) {
-      // should actually never happen if deployed process was persisted correctly, but just in case
-      return Either.left(
-          new Failure(
-              String.format(
-                  "Expected to find deployment key for process definition key %s, but not found.",
-                  context.getProcessDefinitionKey())));
-    }
     return stateBehavior
-        .getProcessByProcessIdAndDeploymentKey(processId, deploymentKey, context.getTenantId())
-        .<Either<Failure, DeployedProcess>>map(Either::right)
-        .orElseGet(
-            () ->
-                Either.left(
-                    new Failure(
-                        String.format(
-                            "Expected process with BPMN process id '%s' to be deployed with deployment %s, but not found.",
-                            BufferUtil.bufferAsString(processId), deploymentKey),
-                        ErrorType.CALLED_ELEMENT_ERROR)));
+        .getDeploymentKey(context.getProcessDefinitionKey(), context.getTenantId())
+        .flatMap(
+            deploymentKey ->
+                stateBehavior
+                    .getProcessByProcessIdAndDeploymentKey(
+                        processId, deploymentKey, context.getTenantId())
+                    .<Either<Failure, DeployedProcess>>map(Either::right)
+                    .orElseGet(
+                        () ->
+                            Either.left(
+                                new Failure(
+                                    String.format(
+                                        "Expected process with BPMN process id '%s' to be deployed with deployment %s, but not found.",
+                                        BufferUtil.bufferAsString(processId), deploymentKey),
+                                    ErrorType.CALLED_ELEMENT_ERROR))));
   }
 
   private Either<Failure, DeployedProcess> getLatestProcessVersion(
