@@ -22,11 +22,14 @@ import io.camunda.zeebe.management.backups.BackupInfo;
 import io.camunda.zeebe.management.backups.StateCode;
 import io.camunda.zeebe.management.backups.TakeBackupResponse;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
+import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.testcontainers.GcsContainer;
 import io.camunda.zeebe.restore.BackupNotFoundException;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.CompletionException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
@@ -86,6 +89,17 @@ final class GcsRestoreAcceptanceIT {
       try (final var client = zeebe.newClientBuilder().build()) {
         client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
       }
+
+      final PartitionsActuator partitions = PartitionsActuator.of(zeebe);
+      partitions.takeSnapshot();
+
+      Awaitility.await("Snapshot is taken")
+          .atMost(Duration.ofSeconds(60))
+          .until(
+              () ->
+                  Optional.ofNullable(partitions.query().get(1).snapshotId())
+                      .flatMap(FileBasedSnapshotId::ofFileName),
+              Optional::isPresent);
 
       assertThat(actuator.take(backupId)).isInstanceOf(TakeBackupResponse.class);
       Awaitility.await("until a backup exists with the given ID")
