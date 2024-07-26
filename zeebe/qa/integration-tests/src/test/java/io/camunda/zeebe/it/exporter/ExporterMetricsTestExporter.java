@@ -16,12 +16,14 @@ import io.micrometer.core.instrument.Counter;
 //  do a http get curl for now to ensure that it is there, but change it to some code access
 public class ExporterMetricsTestExporter implements Exporter {
 
+  public static String REGISTERED_COUNTER = "zeebe_exporter_counter";
+
   public ExporterMetricsTestExporter() {}
 
   @Override
   public void configure(final Context context) throws Exception {
     Exporter.super.configure(context);
-    Counter.builder("zeebe_bar").register(context.getMeterRegistry());
+    Counter.builder(REGISTERED_COUNTER).register(context.getMeterRegistry());
   }
 
   @Override

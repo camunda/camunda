@@ -460,9 +460,23 @@
       <artifactId>zeebe-backup-store-azure</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>prometheus-scraper</artifactId>
+      <scope>test</scope>
+      <version>0.23.0.Final</version>
+    </dependency>
+
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>io.prometheus</groupId>
-      <artifactId>prometheus-metrics-exporter-common</artifactId>
+      <artifactId>simpleclient</artifactId>
       <scope>test</scope>
     </dependency>
 

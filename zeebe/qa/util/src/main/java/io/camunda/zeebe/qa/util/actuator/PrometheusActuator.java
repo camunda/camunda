@@ -16,7 +16,6 @@ import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.prometheus.metrics.exporter.common.PrometheusHttpResponse;
 
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public interface PrometheusActuator {
@@ -37,5 +36,5 @@ public interface PrometheusActuator {
 
   @RequestLine("GET")
   @Headers("Accept: text/plain")
-  PrometheusHttpResponse metrics();
+  Response metrics();
 }
