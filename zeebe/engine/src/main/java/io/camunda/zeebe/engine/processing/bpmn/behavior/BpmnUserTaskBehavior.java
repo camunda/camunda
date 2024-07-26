@@ -361,7 +361,7 @@ public final class BpmnUserTaskBehavior {
     }
 
     public Long getPriority() {
-      return priority == null ? 50 : priority;
+      return priority == null ? ZeebePriorityDefinition.DEFAULT_NUMBER_PRIORITY : priority;
     }
 
     public UserTaskProperties priority(final Long priority) {
