@@ -35,12 +35,12 @@ import io.camunda.zeebe.client.api.search.UserTaskSort;
 public class UserTaskSortImpl extends SearchQuerySortBase<UserTaskSort> implements UserTaskSort {
 
   @Override
-  public UserTaskSort startDate() {
+  public UserTaskSort creationDate() {
     return field("creationTime");
   }
 
   @Override
-  public UserTaskSort endDate() {
+  public UserTaskSort completionDate() {
     return field("completionTime");
   }
 

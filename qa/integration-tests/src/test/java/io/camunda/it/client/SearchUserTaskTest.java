@@ -8,6 +8,8 @@
 package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.DateFilter;
@@ -18,9 +20,12 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.concurrent.CompletionException;
+import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -109,7 +114,6 @@ class SearchUserTaskTest {
     result.items().forEach(item -> assertThat(item.getCandidateUser()).isEqualTo(expectedUser));
   }
 
-  // retrieve by completitionDate
   @Test
   public void shouldRetrieveTaskByCompletionDate() {
     final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -161,12 +165,256 @@ class SearchUserTaskTest {
     assertThat(resultOutOfRange.items().size()).isEqualTo(0);
   }
 
+  @Test
+  public void shouldRetrieveTaskByCreationDate() {
+    final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+    final Date now = new Date();
+
+    final Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    calendar.setTime(now);
+    calendar.add(Calendar.DAY_OF_YEAR, -1);
+    String dayBefore = dateFormat.format(calendar.getTime());
+
+    calendar.setTime(now);
+
+    calendar.add(Calendar.DAY_OF_YEAR, 1);
+    String dayAfter = dateFormat.format(calendar.getTime());
+
+    // Create a DateFilter with the formatted date strings for the range
+    final DateFilter dateFilter = new DateFilter().from(dayBefore).to(dayAfter);
+
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.userTaskCreationDate(dateFilter))
+            .send()
+            .join();
+
+    assertThat(result.items().size()).isEqualTo(3);
+
+    // Check if the completion date is without the range
+    calendar.add(Calendar.DAY_OF_YEAR, -1);
+    dayBefore = dateFormat.format(calendar.getTime());
+
+    // Reset to current time
+    calendar.setTime(now);
+
+    // Calculate the date one day after
+    calendar.add(Calendar.DAY_OF_YEAR, 1);
+    dayAfter = dateFormat.format(calendar.getTime());
+
+    final DateFilter dateFilterOutOfRange = new DateFilter().from(dayBefore).to(dayAfter);
+    final var resultOutOfRange =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.userTaskCreationDate(dateFilterOutOfRange))
+            .send()
+            .join();
+    assertThat(resultOutOfRange.items().size()).isEqualTo(0);
+  }
+
+  @Test
+  public void shouldRetrieveTaskByDueDate() {
+    final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+    final Date now = new Date();
+
+    final Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    calendar.setTime(now);
+    calendar.add(Calendar.DAY_OF_YEAR, -4);
+    String dayBefore = dateFormat.format(calendar.getTime());
+
+    calendar.setTime(now);
+
+    calendar.add(Calendar.DAY_OF_YEAR, 3);
+    String dayAfter = dateFormat.format(calendar.getTime());
+
+    // Create a DateFilter with the formatted date strings for the range
+    final DateFilter dateFilter = new DateFilter().from(dayBefore).to(dayAfter);
+
+    final var result =
+        camundaClient.newUserTaskQuery().filter(f -> f.userTaskDueDate(dateFilter)).send().join();
+
+    assertThat(result.items().size()).isEqualTo(3);
+
+    // Check if the completion date is without the range
+    calendar.add(Calendar.DAY_OF_YEAR, -3);
+    dayBefore = dateFormat.format(calendar.getTime());
+
+    // Reset to current time
+    calendar.setTime(now);
+
+    // Calculate the date one day after
+    calendar.add(Calendar.DAY_OF_YEAR, 1);
+    dayAfter = dateFormat.format(calendar.getTime());
+
+    final DateFilter dateFilterOutOfRange = new DateFilter().from(dayBefore).to(dayAfter);
+    final var resultOutOfRange =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.userTaskDueDate(dateFilterOutOfRange))
+            .send()
+            .join();
+    assertThat(resultOutOfRange.items().size()).isEqualTo(0);
+  }
+
+  @Test
+  public void shouldRetrieveTaskByFollowUpDate() {
+    final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+    final Date now = new Date();
+
+    final Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    calendar.setTime(now);
+    calendar.add(Calendar.DAY_OF_YEAR, -4);
+    String dayBefore = dateFormat.format(calendar.getTime());
+
+    calendar.setTime(now);
+
+    calendar.add(Calendar.DAY_OF_YEAR, 3);
+    String dayAfter = dateFormat.format(calendar.getTime());
+
+    // Create a DateFilter with the formatted date strings for the range
+    final DateFilter dateFilter = new DateFilter().from(dayBefore).to(dayAfter);
+
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.userTaskFollowUpDate(dateFilter))
+            .send()
+            .join();
+
+    assertThat(result.items().size()).isEqualTo(3);
+
+    // Check if the completion date is without the range
+    calendar.add(Calendar.DAY_OF_YEAR, -3);
+    dayBefore = dateFormat.format(calendar.getTime());
+
+    // Reset to current time
+    calendar.setTime(now);
+
+    // Calculate the date one day after
+    calendar.add(Calendar.DAY_OF_YEAR, 1);
+    dayAfter = dateFormat.format(calendar.getTime());
+
+    final DateFilter dateFilterOutOfRange = new DateFilter().from(dayBefore).to(dayAfter);
+    final var resultOutOfRange =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.userTaskFollowUpDate(dateFilterOutOfRange))
+            .send()
+            .join();
+    assertThat(resultOutOfRange.items().size()).isEqualTo(0);
+  }
+
+  @Test
+  public void shouldThrowAnExceptionWhenSearchBeforeAndAfterAreApplied() {
+    final List<String> searchData = List.of("1");
+
+    final CompletionException exception =
+        assertThrows(
+            CompletionException.class,
+            () -> {
+              camundaClient
+                  .newUserTaskQuery()
+                  .page(
+                      p ->
+                          p.searchAfter(Collections.singletonList(searchData))
+                              .searchBefore(Collections.singletonList(searchData)))
+                  .send()
+                  .join();
+            });
+
+    assertTrue(
+        exception
+            .getCause()
+            .getMessage()
+            .contains("Both searchAfter and searchBefore cannot be set at the same time"));
+  }
+
+  @Test
+  public void shouldValidatePagination() {
+    final var result = camundaClient.newUserTaskQuery().page(p -> p.limit(1)).send().join();
+    assertThat(result.items().size()).isEqualTo(1);
+    final var key = result.items().getFirst().getUserTaskKey();
+    // apply searchAfter
+    final var resultAfter =
+        camundaClient
+            .newUserTaskQuery()
+            .page(p -> p.searchAfter(Collections.singletonList(key)))
+            .send()
+            .join();
+
+    assertThat(resultAfter.items().size()).isEqualTo(2);
+    final var keyAfter = resultAfter.items().getFirst().getUserTaskKey();
+    // apply searchBefore
+    final var resultBefore =
+        camundaClient
+            .newUserTaskQuery()
+            .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
+            .send()
+            .join();
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(resultBefore.items().getFirst().getUserTaskKey()).isEqualTo(key);
+  }
+
+  @Test
+  public void shouldSortTasksByStartDateASC() {
+    final var result =
+        camundaClient.newUserTaskQuery().sort(s -> s.creationDate().asc()).send().join();
+
+    assertThat(result.items().size()).isEqualTo(3);
+
+    // Retrieve IDs from the result
+    final List<String> creationDate =
+        result.items().stream().map(item -> item.getCreationDate()).collect(Collectors.toList());
+
+    // Create a sorted copy of the IDs in descending order
+    final List<String> sortedCreationDate =
+        creationDate.stream().sorted().collect(Collectors.toList());
+
+    // Assert that the IDs are sorted in descending order
+    assertThat(creationDate).isEqualTo(sortedCreationDate);
+  }
+
+  @Test
+  public void shouldSortTasksByStartDateDESC() {
+    final var result =
+        camundaClient.newUserTaskQuery().sort(s -> s.creationDate().desc()).send().join();
+
+    assertThat(result.items().size()).isEqualTo(3);
+
+    // Retrieve IDs from the result
+    final List<String> creationDate =
+        result.items().stream().map(item -> item.getCreationDate()).collect(Collectors.toList());
+
+    // Create a sorted copy of the IDs in descending order
+    final List<String> sortedCreationDate =
+        creationDate.stream().sorted(Collections.reverseOrder()).collect(Collectors.toList());
+
+    // Assert that the IDs are sorted in descending order
+    assertThat(creationDate).isEqualTo(sortedCreationDate);
+  }
+
   private static void deployProcess(
       final String processId,
       final String resourceName,
       final String userTaskName,
       final String candidateGroup,
       final String candidateUser) {
+    final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+    final Date now = new Date();
+
+    final Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    calendar.setTime(now);
+    calendar.add(Calendar.DAY_OF_YEAR, -1);
+
     camundaClient
         .newDeployResourceCommand()
         .addProcessModel(
@@ -174,6 +422,8 @@ class SearchUserTaskTest {
                 .startEvent()
                 .userTask(userTaskName)
                 .zeebeUserTask()
+                .zeebeDueDate(dateFormat.format(calendar.getTime()))
+                .zeebeFollowUpDate(dateFormat.format(calendar.getTime()))
                 .zeebeCandidateGroups(candidateGroup)
                 .zeebeCandidateUsers(candidateUser)
                 .endEvent()

@@ -34,7 +34,7 @@ import io.camunda.zeebe.client.api.search.TypedSearchQueryRequest.SearchRequestS
 
 public interface UserTaskSort extends SearchRequestSort<UserTaskSort> {
 
-  UserTaskSort startDate();
+  UserTaskSort creationDate();
 
-  UserTaskSort endDate();
+  UserTaskSort completionDate();
 }
