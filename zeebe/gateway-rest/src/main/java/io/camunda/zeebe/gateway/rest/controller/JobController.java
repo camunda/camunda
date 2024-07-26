@@ -11,8 +11,10 @@ import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.zeebe.gateway.rest.RequestMapper.ErrorJobRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.FailJobRequest;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
@@ -60,6 +62,17 @@ public class JobController {
         .fold(this::failJob, RestErrorMapper::mapProblemToCompletedResponse);
   }
 
+  @PostMapping(
+      path = "/jobs/{jobKey}/error",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public CompletableFuture<ResponseEntity<Object>> errorJob(
+      @PathVariable final long jobKey,
+      @RequestBody final JobErrorRequest errorRequest) {
+    return RequestMapper.toJobErrorRequest(errorRequest, jobKey)
+        .fold(this::errorJob, RestErrorMapper::mapProblemToCompletedResponse);
+  }
+
   private CompletableFuture<ResponseEntity<Object>> activateJobs(
       final ActivateJobsRequest activationRequest) {
     final var result = new CompletableFuture<ResponseEntity<Object>>();
@@ -84,5 +97,17 @@ public class JobController {
                     failJobRequest.errorMessage(),
                     failJobRequest.retryBackoff(),
                     failJobRequest.variables()));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> errorJob(final ErrorJobRequest errorJobRequest) {
+    return RequestMapper.executeServiceMethodWithNoContenResult(
+        () ->
+            jobServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .errorJob(
+                    errorJobRequest.jobKey(),
+                    errorJobRequest.errorCode(),
+                    errorJobRequest.errorMessage(),
+                    errorJobRequest.variables()));
   }
 }
