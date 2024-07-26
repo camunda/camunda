@@ -5,17 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.interceptors.impl;
+package io.camunda.zeebe.gateway.rest.impl.filters;
 
 import io.camunda.zeebe.gateway.Loggers;
-import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
+import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.util.ReflectUtil;
 import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.camunda.zeebe.util.jar.ExternalJarRepository;
-import io.grpc.ServerInterceptor;
+import jakarta.servlet.Filter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,50 +24,49 @@ import org.agrona.LangUtil;
 import org.slf4j.Logger;
 
 /**
- * Loads and holds references to the configured interceptors.
+ * Loads and holds references to the configured filters.
  *
- * <p>Please port any changes to this code to the {@code zeebe-gateway-rest} module's {@code
- * io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository} as well.
+ * <p>Please port any changes to this code to the {@code zeebe-gateway-grpc} module's {@code
+ * io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository} as well.
  */
-public final class InterceptorRepository {
+public final class FilterRepository {
   private static final Logger LOGGER = Loggers.GATEWAY_LOGGER;
 
   private final ExternalJarRepository jarRepository;
-  private final Map<String, Class<? extends ServerInterceptor>> interceptors;
+  private final Map<String, Class<? extends Filter>> filters;
   private final Path basePath;
 
-  public InterceptorRepository() {
+  public FilterRepository() {
     this(
         new LinkedHashMap<>(),
         new ExternalJarRepository(),
         Paths.get(Optional.ofNullable(System.getProperty("basedir")).orElse(".")));
   }
 
-  InterceptorRepository(
-      final Map<String, Class<? extends ServerInterceptor>> interceptors,
+  public FilterRepository(
+      final Map<String, Class<? extends Filter>> filters,
       final ExternalJarRepository jarRepository,
       final Path basePath) {
-    this.interceptors = interceptors;
+    this.filters = filters;
     this.jarRepository = jarRepository;
     this.basePath = basePath;
   }
 
-  public Map<String, Class<? extends ServerInterceptor>> getInterceptors() {
-    return Collections.unmodifiableMap(interceptors);
+  public Map<String, Class<? extends Filter>> getFilters() {
+    return filters;
   }
 
-  public Stream<ServerInterceptor> instantiate() {
-    return interceptors.entrySet().stream()
-        .map(entry -> instantiate(entry.getKey(), entry.getValue()));
+  public Stream<Filter> instantiate() {
+    return filters.entrySet().stream().map(entry -> instantiate(entry.getKey(), entry.getValue()));
   }
 
-  public InterceptorRepository load(final List<? extends InterceptorCfg> configs) {
+  public FilterRepository load(final List<? extends FilterCfg> configs) {
     configs.forEach(
         config -> {
           try {
             load(config);
           } catch (final Exception e) {
-            LOGGER.debug("Failed to load interceptor {} with config {}", config.getId(), config);
+            LOGGER.debug("Failed to load filter {} with config {}", config.getId(), config);
             LangUtil.rethrowUnchecked(e);
           }
         });
@@ -76,14 +74,13 @@ public final class InterceptorRepository {
     return this;
   }
 
-  Class<? extends ServerInterceptor> load(final InterceptorCfg config)
-      throws ExternalJarLoadException {
+  public Class<? extends Filter> load(final FilterCfg config) throws ExternalJarLoadException {
     final ClassLoader classLoader;
-    final Class<? extends ServerInterceptor> interceptorClass;
+    final Class<? extends Filter> filterClass;
     final String id = config.getId();
 
-    if (interceptors.containsKey(id)) {
-      return interceptors.get(id);
+    if (filters.containsKey(id)) {
+      return filters.get(id);
     }
 
     if (!config.isExternal()) {
@@ -95,25 +92,23 @@ public final class InterceptorRepository {
 
     try {
       final Class<?> specifiedClass = classLoader.loadClass(config.getClassName());
-      interceptorClass = specifiedClass.asSubclass(ServerInterceptor.class);
+      filterClass = specifiedClass.asSubclass(Filter.class);
     } catch (final ClassNotFoundException e) {
-      throw new InterceptorLoadException(id, "cannot load specified class", e);
+      throw new FilterLoadException(id, "cannot load specified class", e);
     } catch (final ClassCastException e) {
-      throw new InterceptorLoadException(
-          id, "specified class does not implement ServerInterceptor", e);
+      throw new FilterLoadException(id, "specified class does not implement Filter", e);
     }
 
-    interceptors.put(id, interceptorClass);
+    filters.put(id, filterClass);
 
-    return interceptorClass;
+    return filterClass;
   }
 
-  private ServerInterceptor instantiate(
-      final String id, final Class<? extends ServerInterceptor> interceptorClass) {
+  private Filter instantiate(final String id, final Class<? extends Filter> filterClass) {
     try {
-      return ReflectUtil.newInstance(interceptorClass);
+      return ReflectUtil.newInstance(filterClass);
     } catch (final Exception e) {
-      throw new InterceptorLoadException(id, "cannot instantiate via the default constructor", e);
+      throw new FilterLoadException(id, "cannot instantiate via the default constructor", e);
     }
   }
 }
