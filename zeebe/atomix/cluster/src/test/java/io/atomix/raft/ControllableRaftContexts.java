@@ -128,6 +128,8 @@ public final class ControllableRaftContexts {
   }
 
   public void shutdown() throws IOException {
+    snapshotStores.forEach((m, store) -> store.close());
+    snapshotStores.clear();
     raftServers.forEach((m, c) -> c.close());
     raftServers.clear();
     serverProtocols.clear();
