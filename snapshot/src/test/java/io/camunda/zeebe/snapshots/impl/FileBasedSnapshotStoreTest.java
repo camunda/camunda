@@ -23,6 +23,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,6 +34,8 @@ public class FileBasedSnapshotStoreTest {
   private static final String PENDING_DIRECTORY = "pending";
 
   private static final String SNAPSHOT_CONTENT_FILE_NAME = "file1.txt";
+  private static final String SNAPSHOT_CONTENT = "this is the content";
+  private static final Integer PARTITION_ID = 1;
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   @Rule public ActorSchedulerRule scheduler = new ActorSchedulerRule();
@@ -364,12 +367,54 @@ public class FileBasedSnapshotStoreTest {
     assertThat(newSnapshot.getPath()).exists();
   }
 
+  @Test
+  public void shouldRestartWithAReceivedSnapshot() {
+    // given
+    final var store =
+        new FileBasedSnapshotStore(
+            1,
+            new SnapshotMetrics(1 + "-" + 1),
+            snapshotsDir,
+            pendingSnapshotsDir,
+            snapshotPath -> Map.of());
+    scheduler.submitActor(store).join();
+
+    // when
+    final var persistedSnapshot = takeTransientSnapshot(1L, store).persist().join();
+    final var receivedSnapshot = store.newReceivedSnapshot(persistedSnapshot.getId());
+    try (final var reader = persistedSnapshot.newChunkReader()) {
+      while (reader.hasNext()) {
+        receivedSnapshot.apply(reader.next()).join();
+      }
+    }
+
+    receivedSnapshot.persist().join();
+
+    // restart store will attempt to update the latest snapshot to the most recent one and check for
+    // corruption.
+    store.close();
+
+    final var restartedStore =
+        new FileBasedSnapshotStore(
+            1,
+            new SnapshotMetrics(1 + "-" + 1),
+            snapshotsDir,
+            pendingSnapshotsDir,
+            snapshotPath -> Map.of());
+    scheduler.submitActor(restartedStore).join();
+
+    assertThat(restartedStore.getLatestSnapshot())
+        .describedAs(
+            "The latest snapshot is not detected as corrupted and should be loaded after restart")
+        .hasValueSatisfying(s -> assertThat(s.getId()).isEqualTo(persistedSnapshot.getId()));
+  }
+
   private boolean createSnapshotDir(final Path path) {
     try {
       FileUtil.ensureDirectoryExists(path);
       Files.write(
           path.resolve(SNAPSHOT_CONTENT_FILE_NAME),
-          "This is the content".getBytes(),
+          SNAPSHOT_CONTENT.getBytes(),
           CREATE_NEW,
           StandardOpenOption.WRITE);
     } catch (final IOException e) {
