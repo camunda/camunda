@@ -47,7 +47,6 @@ import cancel from './cancel.svg';
 import arrowRight from './arrow-right.svg';
 import calender from './calender.svg';
 import user from './user.svg';
-import userGroup from './user-group.svg';
 import collapse from './collapse.svg';
 import expand from './expand.svg';
 import alert from './alert.svg';
@@ -104,7 +103,6 @@ const icons: Icons = {
   error,
   warning,
   'check-large': checkLarge,
-  'check-circle': checkCircle,
   'close-large': closeLarge,
   'close-small': closeSmall,
   collection,
