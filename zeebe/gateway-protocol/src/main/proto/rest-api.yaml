@@ -726,6 +726,51 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /messages/correlation:
+    post:
+      tags:
+        - Message
+      summary: Correlate a Message
+      description: |
+        Publishes a Message and correlates it to a subscription. If correlation is successful it
+        will return the first process instance key the message correlated with.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageCorrelationRequest"
+      responses:
+        '200':
+          description: The message is correlated to one or more process instances
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageCorrelationResponse"
+        '400':
+          description: The provided data is not valid
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '403':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 
 components:
   schemas:
@@ -1480,8 +1525,46 @@ components:
           type: string
         tenantId:
           type: string
+    MessageCorrelationRequest:
+      type: object
+      properties:
+        name:
+          description: >
+            The message name as defined in the BPMN process
+          type: string
+        correlationKey:
+          description: The correlation key of the message
+          type: string
+          nullable: true
+        variables:
+          description: The message variables as JSON document
+          additionalProperties: true
+          type: object
+          nullable: true
+        tenantId:
+          description: the tenant for which the message is published
+          type: string
+          nullable: true
+    MessageCorrelationResponse:
+      description: |
+        The message key of the correlated message, as well as the first process instance key it
+        correlated with.
+      type: object
+      properties:
+        key:
+          description: The key of the correlated message
+          type: integer
+          format: int64
+        tenantId:
+          description: The tenant ID of the correlated message
+          type: string
+        processInstanceKey:
+            description: The key of the first process instance the message correlated with
+            type: integer
+            format: int64
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
