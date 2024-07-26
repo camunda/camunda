@@ -7,11 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.service.JobServices.DEFAULT_RETRIES_VALUE;
-import static io.camunda.service.JobServices.DEFAULT_RETRYBACKOFF_VALUE;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
-import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobFailRequest;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateUpdateRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 

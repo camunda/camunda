@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.validator;
 
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessage.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;

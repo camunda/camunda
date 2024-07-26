@@ -7,13 +7,12 @@
  */
 package io.camunda.zeebe.gateway.rest.validator;
 
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessage.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessage.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,25 +41,6 @@ public final class JobRequestValidator {
       violations.add(
           ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
               "maxJobsToActivate", activationRequest.getTimeout(), "greater than 0"));
-    }
-    return createProblemDetail(violations);
-  }
-
-  public static Optional<ProblemDetail> validateJobFailRequest(final JobFailRequest failRequest) {
-    final List<String> violations = new ArrayList<>();
-    if (failRequest != null) {
-      // retries can't be less than 0
-      if (failRequest.getRetries() < 0) {
-        violations.add(
-            ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-                "retries", failRequest.getRetries(), "greater or equals to 0"));
-      }
-      // retries can't be less than -1
-      if (failRequest.getRetryBackOff() < -1) {
-        violations.add(
-            ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-                "retryBackOff", failRequest.getRetries(), "greater or equals to -1"));
-      }
     }
     return createProblemDetail(violations);
   }

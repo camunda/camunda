@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.validator;
 
-public final class ErrorMessage {
+public final class ErrorMessages {
 
   public static final String ERROR_MESSAGE_DATE_PARSING =
       "The provided %s '%s' cannot be parsed as a date according to RFC 3339, section 5.6.";
