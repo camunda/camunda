@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -258,7 +259,7 @@ public final class BpmnUserTaskBehavior {
   public Either<Failure, Long> evaluatePriorityExpression(
       final Expression priorityExpression, final long scopeKey) {
     if (priorityExpression == null) {
-      return Either.right(50L);
+      return Either.right(ZeebePriorityDefinition.DEFAULT_NUMBER_PRIORITY);
     }
     return expressionBehavior.evaluateLongExpression(priorityExpression, scopeKey);
   }

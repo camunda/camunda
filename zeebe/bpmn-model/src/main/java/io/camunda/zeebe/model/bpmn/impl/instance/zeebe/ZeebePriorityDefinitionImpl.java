@@ -53,7 +53,7 @@ public class ZeebePriorityDefinitionImpl extends BpmnModelElementInstanceImpl
     priorityAttribute =
         typeBuilder
             .stringAttribute(ZeebeConstants.ATTRIBUTE_PRIORITY)
-            .defaultValue(ZeebePriorityDefinition.DEFAULT_PRIORITY)
+            .defaultValue(ZeebePriorityDefinition.DEFAULT_LITERAL_PRIORITY)
             .namespace(BpmnModelConstants.ZEEBE_NS)
             .build();
 

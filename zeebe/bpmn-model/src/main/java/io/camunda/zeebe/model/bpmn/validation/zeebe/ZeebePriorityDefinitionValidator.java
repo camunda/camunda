@@ -22,6 +22,9 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 public class ZeebePriorityDefinitionValidator
     implements ModelElementValidator<ZeebePriorityDefinition> {
 
+  private static final Long PRIORITY_LOWER_BOUND = 0L;
+  private static final Long PRIORITY_UPPER_BOUND = 100L;
+
   @Override
   public Class<ZeebePriorityDefinition> getElementType() {
     return ZeebePriorityDefinition.class;
@@ -35,7 +38,7 @@ public class ZeebePriorityDefinitionValidator
 
     try {
       final int priorityValue = Integer.parseInt(priority);
-      if (priorityValue < 0 || priorityValue > 100) {
+      if (priorityValue < PRIORITY_LOWER_BOUND || priorityValue > PRIORITY_UPPER_BOUND) {
         validationResultCollector.addError(
             0,
             String.format("Priority must be a number between 0 and 100, but was '%s'", priority));

@@ -36,6 +36,11 @@ public class ZeebePriorityDefinitionTest extends BpmnModelElementInstanceTest {
   @Override
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return Arrays.asList(
-        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "priority", false, false, "50"));
+        new AttributeAssumption(
+            BpmnModelConstants.ZEEBE_NS,
+            "priority",
+            false,
+            false,
+            ZeebePriorityDefinition.DEFAULT_LITERAL_PRIORITY));
   }
 }

@@ -19,7 +19,8 @@ import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 
 public interface ZeebePriorityDefinition extends BpmnModelElementInstance {
 
-  String DEFAULT_PRIORITY = "50";
+  String DEFAULT_LITERAL_PRIORITY = "50";
+  Long DEFAULT_NUMBER_PRIORITY = Long.parseLong(DEFAULT_LITERAL_PRIORITY);
 
   String getPriority();
 

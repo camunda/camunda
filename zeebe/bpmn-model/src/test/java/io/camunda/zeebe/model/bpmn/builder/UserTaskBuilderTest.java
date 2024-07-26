@@ -287,12 +287,12 @@ class UserTaskBuilderTest {
   }
 
   @Test
-  void shouldSetPriorityOnUserTask() {
+  void shouldSetPriorityOnZeebeUserTask() {
     final String priority = "20";
     final BpmnModelInstance instance =
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .userTask("userTask1", task -> task.zeebeTaskPriority(priority))
+            .userTask("userTask1", task -> task.zeebeUserTask().zeebeTaskPriority(priority))
             .endEvent()
             .done();
 
@@ -303,5 +303,23 @@ class UserTaskBuilderTest {
         .hasSize(1)
         .extracting(ZeebePriorityDefinition::getPriority)
         .containsExactly(priority);
+  }
+
+  @Test
+  void shouldSetDefaultPriorityOnZeebeUserTask() {
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("userTask1", task -> task.zeebeTaskPriority(""))
+            .endEvent()
+            .done();
+
+    final ModelElementInstance userTask = instance.getModelElementById("userTask1");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) userTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebePriorityDefinition.class))
+        .hasSize(1)
+        .extracting(ZeebePriorityDefinition::getPriority)
+        .containsExactly(ZeebePriorityDefinition.DEFAULT_LITERAL_PRIORITY);
   }
 }
