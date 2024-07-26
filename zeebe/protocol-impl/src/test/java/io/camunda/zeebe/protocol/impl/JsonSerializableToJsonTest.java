@@ -1078,9 +1078,7 @@ final class JsonSerializableToJsonTest {
                   .setMessageName(wrapString(messageName))
                   .setProcessInstanceKey(processInstanceKey)
                   .setCorrelationKey(wrapString(correlationKey))
-                  .setVariables(VARIABLES_MSGPACK)
-                  .setRequestId(requestId)
-                  .setRequestStreamId(requestStreamId);
+                  .setVariables(VARIABLES_MSGPACK);
             },
         """
         {
@@ -1094,9 +1092,7 @@ final class JsonSerializableToJsonTest {
             "foo": "bar"
           },
           "interrupting": true,
-          "tenantId": "<default>",
-          "requestId": 4,
-          "requestStreamId": 5
+          "tenantId": "<default>"
         }
         """
       },
@@ -1125,9 +1121,7 @@ final class JsonSerializableToJsonTest {
           "messageKey": -1,
           "variables": {},
           "interrupting": true,
-          "tenantId": "<default>",
-          "requestId": -1,
-          "requestStreamId": -1
+          "tenantId": "<default>"
         }
         """
       },
