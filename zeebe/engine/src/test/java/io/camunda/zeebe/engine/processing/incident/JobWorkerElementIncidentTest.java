@@ -160,7 +160,8 @@ public class JobWorkerElementIncidentTest {
 
     Assertions.assertThat(incidentCreated.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
-        .hasErrorMessage("Expected result of the expression '\"\"' to be not empty, but was ''.")
+        .hasErrorMessage(
+            "Expected result of the expression '\"\"' to be a not-empty string, but was an empty string.")
         .hasElementId(TASK_ELEMENT_ID)
         .hasElementInstanceKey(recordThatLeadsToIncident.getKey())
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
