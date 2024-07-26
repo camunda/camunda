@@ -32,11 +32,11 @@ public final class CallActivityTransformer implements ModelElementTransformer<Ca
     final ExecutableCallActivity callActivity =
         process.getElementById(element.getId(), ExecutableCallActivity.class);
 
-    transformProcessId(element, callActivity, context.getExpressionLanguage());
+    transformCalledElement(element, callActivity, context.getExpressionLanguage());
     transformLexicographicIndex(element, context.getProcesses(), callActivity);
   }
 
-  private void transformProcessId(
+  private void transformCalledElement(
       final CallActivity element,
       final ExecutableCallActivity callActivity,
       final ExpressionLanguage expressionLanguage) {
@@ -56,6 +56,9 @@ public final class CallActivityTransformer implements ModelElementTransformer<Ca
     final var propagateAllParentVariablesEnabled =
         calledElement.isPropagateAllParentVariablesEnabled();
     callActivity.setPropagateAllParentVariablesEnabled(propagateAllParentVariablesEnabled);
+
+    final var bindingType = calledElement.getBindingType();
+    callActivity.setBindingType(bindingType);
   }
 
   private static void transformLexicographicIndex(

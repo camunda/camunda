@@ -140,6 +140,13 @@ public final class BpmnStateBehavior {
     return Optional.ofNullable(process);
   }
 
+  public Optional<DeployedProcess> getProcessByProcessIdAndDeploymentKey(
+      final DirectBuffer processId, final long deploymentKey, final String tenantId) {
+    final var process =
+        processState.getProcessByProcessIdAndDeploymentKey(processId, deploymentKey, tenantId);
+    return Optional.ofNullable(process);
+  }
+
   public Optional<ElementInstance> getCalledChildInstance(final BpmnElementContext context) {
     final var elementInstance = getElementInstance(context);
     final var calledChildInstanceKey = elementInstance.getCalledChildInstanceKey();
