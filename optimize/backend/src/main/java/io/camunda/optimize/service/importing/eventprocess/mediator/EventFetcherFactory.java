@@ -8,14 +8,10 @@
 package io.camunda.optimize.service.importing.eventprocess.mediator;
 
 import io.camunda.optimize.dto.optimize.query.event.process.EventImportSourceDto;
-import io.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
 import io.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
 import io.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceConfigDto;
 import io.camunda.optimize.service.db.events.EventFetcherService;
-import io.camunda.optimize.service.db.reader.CamundaActivityEventReader;
 import io.camunda.optimize.service.db.reader.ExternalEventReader;
-import io.camunda.optimize.service.db.reader.importindex.TimestampBasedImportIndexReader;
-import io.camunda.optimize.service.events.CamundaActivityEventFetcherService;
 import io.camunda.optimize.service.events.ExternalEventByGroupsFetcherService;
 import io.camunda.optimize.service.events.ExternalEventService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -29,12 +25,10 @@ import org.springframework.stereotype.Component;
 public class EventFetcherFactory {
 
   private final ExternalEventService externalEventService;
-  private final CamundaActivityEventReader camundaActivityEventReader;
   private final ExternalEventReader externalEventReader;
-  private final TimestampBasedImportIndexReader timestampBasedImportIndexReader;
 
   public EventFetcherService<?> createEventFetcherForEventImportSource(
-      EventImportSourceDto eventImportSourceDto) {
+      final EventImportSourceDto eventImportSourceDto) {
     if (EventSourceType.EXTERNAL.equals(eventImportSourceDto.getEventImportSourceType())) {
       final boolean includeAllGroups =
           eventImportSourceDto.getEventSourceConfigurations().stream()
@@ -50,11 +44,6 @@ public class EventFetcherFactory {
                 .collect(Collectors.toList());
         return new ExternalEventByGroupsFetcherService(groups, externalEventReader);
       }
-    } else if (EventSourceType.CAMUNDA.equals(eventImportSourceDto.getEventImportSourceType())) {
-      final CamundaEventSourceConfigDto camundaEventSourceConfig =
-          (CamundaEventSourceConfigDto) eventImportSourceDto.getEventSourceConfigurations().get(0);
-      return new CamundaActivityEventFetcherService(
-          camundaEventSourceConfig, camundaActivityEventReader, timestampBasedImportIndexReader);
     } else {
       throw new OptimizeRuntimeException(
           "Cannot find event fetching service for event import source type: "

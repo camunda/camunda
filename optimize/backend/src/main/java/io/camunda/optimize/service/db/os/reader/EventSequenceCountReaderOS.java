@@ -19,7 +19,6 @@ import static io.camunda.optimize.service.db.schema.index.events.EventSequenceCo
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
-import io.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import io.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import io.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import io.camunda.optimize.service.db.os.OpenSearchCompositeAggregationScroller;
@@ -29,7 +28,6 @@ import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
 import io.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
 import io.camunda.optimize.service.db.reader.EventSequenceCountReader;
-import io.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.io.IOException;
@@ -77,13 +75,13 @@ public class EventSequenceCountReaderOS implements EventSequenceCountReader {
       return Collections.emptyList();
     }
 
-    SearchRequest.Builder searchRequest =
+    final SearchRequest.Builder searchRequest =
         new SearchRequest.Builder()
             .index(getIndexName(indexKey))
             .query(buildSequencedEventsQuery(incomingEvents, outgoingEvents))
             .size(LIST_FETCH_LIMIT);
 
-    SearchResponse<EventSequenceCountDto> searchResponse =
+    final SearchResponse<EventSequenceCountDto> searchResponse =
         osClient.search(
             searchRequest,
             EventSequenceCountDto.class,
@@ -92,42 +90,36 @@ public class EventSequenceCountReaderOS implements EventSequenceCountReader {
   }
 
   @Override
-  public List<EventCountResponseDto> getEventCountsForCamundaSources(
-      final List<CamundaEventSourceEntryDto> camundaSources) {
-    log.debug("Fetching camunda event counts for event sources: {}", camundaSources);
-
-    final List<String> indicesToSearch =
-        camundaSources.stream()
-            .map(
-                source ->
-                    EventSequenceCountIndex.constructIndexName(
-                        source.getConfiguration().getProcessDefinitionKey()))
-            .collect(Collectors.toList());
-
-    List<EventCountResponseDto> eventCountDtos = new ArrayList<>();
-    if (!indicesToSearch.isEmpty()) {
-      OpenSearchCompositeAggregationScroller.create()
-          .setClient(osClient)
-          .query(QueryDSL.matchAll())
-          .aggregations(
-              Collections.singletonMap(
-                  COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION, createAggregationBuilder()))
-          .size(0)
-          .index(indicesToSearch)
-          .setPathToAggregation(COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION)
-          .setCompositeBucketConsumer(bucket -> eventCountDtos.add(extractEventCounts(bucket)))
-          .consumeAllPages();
+  public List<EventCountResponseDto> getEventCountsForSearchTerm(
+      final List<String> groups, final String searchTerm) {
+    log.debug(
+        "Fetching external event counts with searchTerm {} for groups: {}", searchTerm, groups);
+    final BoolQuery.Builder query = buildCountRequestQuery(searchTerm);
+    if (!CollectionUtils.isEmpty(groups)) {
+      addGroupFilteringForQuery(groups, query);
     }
 
+    final List<EventCountResponseDto> eventCountDtos = new ArrayList<>();
+    OpenSearchCompositeAggregationScroller.create()
+        .setClient(osClient)
+        .query(query.build().toQuery())
+        .index(List.of(getIndexName(indexKey)))
+        .aggregations(
+            Collections.singletonMap(
+                COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION, createAggregationBuilder()))
+        .size(0)
+        .setPathToAggregation(COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION)
+        .setCompositeBucketConsumer(bucket -> eventCountDtos.add(extractEventCounts(bucket)))
+        .consumeAllPages();
     return eventCountDtos;
   }
 
   @Override
   public Set<String> getIndexSuffixesForCurrentSequenceCountIndices() {
-    Map<String, Set<String>> aliases;
+    final Map<String, Set<String>> aliases;
     try {
       aliases = osClient.getAliasesForIndexPattern(EVENT_SEQUENCE_COUNT_INDEX_PREFIX + "*");
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String errorMessage = "Could not retrieve the index keys for sequence count indices!";
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
@@ -160,13 +152,13 @@ public class EventSequenceCountReaderOS implements EventSequenceCountReader {
                 QueryDSL.and(buildEventTypeBoolQueryForProperty(firstEventTypeDto, TARGET_EVENT)),
                 buildEventTypeBoolQueryForProperty(secondEventTypeDto, SOURCE_EVENT));
 
-    SearchRequest.Builder searchRequest =
+    final SearchRequest.Builder searchRequest =
         new SearchRequest.Builder()
             .index(getIndexName(indexKey))
             .query(query.build().toQuery())
             .size(LIST_FETCH_LIMIT);
 
-    SearchResponse<EventSequenceCountDto> searchResponse =
+    final SearchResponse<EventSequenceCountDto> searchResponse =
         osClient.search(
             searchRequest,
             EventSequenceCountDto.class,
@@ -201,32 +193,7 @@ public class EventSequenceCountReaderOS implements EventSequenceCountReader {
     return OpensearchReaderUtil.extractAggregatedResponseValues(scrollResp).stream().toList();
   }
 
-  @Override
-  public List<EventCountResponseDto> getEventCountsForSearchTerm(
-      List<String> groups, String searchTerm) {
-    log.debug(
-        "Fetching external event counts with searchTerm {} for groups: {}", searchTerm, groups);
-    BoolQuery.Builder query = buildCountRequestQuery(searchTerm);
-    if (!CollectionUtils.isEmpty(groups)) {
-      addGroupFilteringForQuery(groups, query);
-    }
-
-    List<EventCountResponseDto> eventCountDtos = new ArrayList<>();
-    OpenSearchCompositeAggregationScroller.create()
-        .setClient(osClient)
-        .query(query.build().toQuery())
-        .index(List.of(getIndexName(indexKey)))
-        .aggregations(
-            Collections.singletonMap(
-                COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION, createAggregationBuilder()))
-        .size(0)
-        .setPathToAggregation(COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION)
-        .setCompositeBucketConsumer(bucket -> eventCountDtos.add(extractEventCounts(bucket)))
-        .consumeAllPages();
-    return eventCountDtos;
-  }
-
-  private EventCountResponseDto extractEventCounts(CompositeBucket bucket) {
+  private EventCountResponseDto extractEventCounts(final CompositeBucket bucket) {
     final String eventName = (bucket.key().get(EVENT_NAME_AGG)).to(String.class);
     final String source = (bucket.key().get(SOURCE_AGG)).to(String.class);
     final String group = (bucket.key().get(GROUP_AGG)).to(String.class);
@@ -242,8 +209,9 @@ public class EventSequenceCountReaderOS implements EventSequenceCountReader {
   }
 
   private Aggregation createAggregationBuilder() {
-    SumAggregation eventCountAggregation = new SumAggregation.Builder().field(COUNT).build();
-    List<Map<String, CompositeAggregationSource>> eventAndSourceAndGroupTerms = new ArrayList<>();
+    final SumAggregation eventCountAggregation = new SumAggregation.Builder().field(COUNT).build();
+    final List<Map<String, CompositeAggregationSource>> eventAndSourceAndGroupTerms =
+        new ArrayList<>();
     eventAndSourceAndGroupTerms.add(
         Map.of(
             EVENT_NAME_AGG,
@@ -268,9 +236,9 @@ public class EventSequenceCountReaderOS implements EventSequenceCountReader {
                     .field(SOURCE_EVENT + "." + GROUP)
                     .missingBucket(true)
                     .build())));
-    int size = configurationService.getOpenSearchConfiguration().getAggregationBucketLimit();
+    final int size = configurationService.getOpenSearchConfiguration().getAggregationBucketLimit();
 
-    CompositeAggregation eventAndSourceAndGroupAgg =
+    final CompositeAggregation eventAndSourceAndGroupAgg =
         new CompositeAggregation.Builder().size(size).sources(eventAndSourceAndGroupTerms).build();
     return new Aggregation.Builder()
         .composite(eventAndSourceAndGroupAgg)
@@ -278,10 +246,10 @@ public class EventSequenceCountReaderOS implements EventSequenceCountReader {
         .build();
   }
 
-  private void addGroupFilteringForQuery(List<String> groups, BoolQuery.Builder query) {
+  private void addGroupFilteringForQuery(final List<String> groups, final BoolQuery.Builder query) {
     final List<String> nonNullGroups = groups.stream().filter(Objects::nonNull).toList();
     final boolean includeNull = groups.size() > nonNullGroups.size();
-    BoolQuery.Builder boolQuery = new BoolQuery.Builder();
+    final BoolQuery.Builder boolQuery = new BoolQuery.Builder();
     boolQuery.minimumShouldMatch("1");
     boolean notEmpty = false;
     if (!nonNullGroups.isEmpty()) {
@@ -297,8 +265,8 @@ public class EventSequenceCountReaderOS implements EventSequenceCountReader {
     }
   }
 
-  private BoolQuery.Builder buildCountRequestQuery(String searchTerm) {
-    BoolQuery.Builder boolQuery = new BoolQuery.Builder();
+  private BoolQuery.Builder buildCountRequestQuery(final String searchTerm) {
+    final BoolQuery.Builder boolQuery = new BoolQuery.Builder();
     if (searchTerm == null) {
       return new BoolQuery.Builder();
     }
@@ -333,8 +301,9 @@ public class EventSequenceCountReaderOS implements EventSequenceCountReader {
     return query.build().toQuery();
   }
 
-  private Query buildEventTypeBoolQueryForProperty(EventTypeDto eventTypeDto, String propertyName) {
-    BoolQuery.Builder boolQuery = new Builder();
+  private Query buildEventTypeBoolQueryForProperty(
+      final EventTypeDto eventTypeDto, final String propertyName) {
+    final BoolQuery.Builder boolQuery = new Builder();
     getNullableFieldQuery(boolQuery, getNestedField(propertyName, GROUP), eventTypeDto.getGroup());
     getNullableFieldQuery(
         boolQuery, getNestedField(propertyName, SOURCE), eventTypeDto.getSource());
@@ -344,7 +313,7 @@ public class EventSequenceCountReaderOS implements EventSequenceCountReader {
   }
 
   private void getNullableFieldQuery(
-      BoolQuery.Builder builder, final String field, final String value) {
+      final BoolQuery.Builder builder, final String field, final String value) {
     if (value != null) {
       builder.must(QueryDSL.term(field, value));
       return;

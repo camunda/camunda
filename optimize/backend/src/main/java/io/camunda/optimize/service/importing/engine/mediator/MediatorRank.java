@@ -9,9 +9,7 @@ package io.camunda.optimize.service.importing.engine.mediator;
 
 public enum MediatorRank {
   // the order of the entries determines the default mediator execution order
-  TENANT,
   DEFINITION,
-  DEFINITION_XML,
   INSTANCE,
   INSTANCE_SUB_ENTITIES,
   IMPORT_META_DATA,

@@ -13,9 +13,9 @@ import static io.camunda.optimize.dto.optimize.query.variable.VariableType.DOUBL
 import static io.camunda.optimize.dto.optimize.query.variable.VariableType.OBJECT;
 import static io.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
-import static io.camunda.optimize.service.util.importing.EngineConstants.VARIABLE_SERIALIZATION_DATA_FORMAT;
-import static io.camunda.optimize.service.util.importing.EngineConstants.VARIABLE_TYPE_JSON;
-import static io.camunda.optimize.service.util.importing.EngineConstants.VARIABLE_TYPE_OBJECT;
+import static io.camunda.optimize.service.util.importing.ZeebeConstants.VARIABLE_SERIALIZATION_DATA_FORMAT;
+import static io.camunda.optimize.service.util.importing.ZeebeConstants.VARIABLE_TYPE_JSON;
+import static io.camunda.optimize.service.util.importing.ZeebeConstants.VARIABLE_TYPE_OBJECT;
 import static io.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static java.util.stream.Collectors.toList;
@@ -53,7 +53,7 @@ public class ObjectVariableService {
   private final ObjectMapper objectMapper;
 
   public ObjectVariableService() {
-    this.objectMapper = new ObjectMapper();
+    objectMapper = new ObjectMapper();
     objectMapper.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
     objectMapper.configure(DeserializationFeature.USE_LONG_FOR_INTS, true);
     objectMapper.enable(SerializationFeature.INDENT_OUTPUT);

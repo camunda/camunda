@@ -8,34 +8,38 @@
 package io.camunda.optimize.service.importing.job;
 
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
-import io.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.writer.usertask.RunningUserTaskInstanceWriter;
+import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.importing.DatabaseImportJob;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
 
-public class RunningUserTaskDatabaseImportJob extends DatabaseImportJob<FlowNodeInstanceDto> {
+public class ProcessInstanceDatabaseImportJob extends DatabaseImportJob<ProcessInstanceDto> {
 
-  private final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter;
+  private final ProcessInstanceWriter zeebeProcessInstanceWriter;
   private final ConfigurationService configurationService;
+  private final String sourceExportIndex;
 
-  public RunningUserTaskDatabaseImportJob(
-      final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter,
+  public ProcessInstanceDatabaseImportJob(
+      final ProcessInstanceWriter zeebeProcessInstanceWriter,
       final ConfigurationService configurationService,
-      final Runnable callback,
+      final Runnable importCompleteCallback,
+      final String sourceExportIndex,
       final DatabaseClient databaseClient) {
-    super(callback, databaseClient);
-    this.runningUserTaskInstanceWriter = runningUserTaskInstanceWriter;
+    super(importCompleteCallback, databaseClient);
+    this.zeebeProcessInstanceWriter = zeebeProcessInstanceWriter;
     this.configurationService = configurationService;
+    this.sourceExportIndex = sourceExportIndex;
   }
 
   @Override
-  protected void persistEntities(List<FlowNodeInstanceDto> newOptimizeEntities) {
+  protected void persistEntities(List<ProcessInstanceDto> processInstances) {
     final List<ImportRequestDto> importRequests =
-        runningUserTaskInstanceWriter.generateUserTaskImports(newOptimizeEntities);
+        zeebeProcessInstanceWriter.generateProcessInstanceImports(
+            processInstances, sourceExportIndex);
     databaseClient.executeImportRequestsAsBulk(
-        "Running user tasks",
+        "Zeebe process instances",
         importRequests,
         configurationService.getSkipDataAfterNestedDocLimitReached());
   }

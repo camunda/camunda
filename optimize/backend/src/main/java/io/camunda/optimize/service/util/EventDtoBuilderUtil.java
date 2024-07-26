@@ -7,8 +7,6 @@
  */
 package io.camunda.optimize.service.util;
 
-import static io.camunda.optimize.service.events.CamundaEventService.EVENT_SOURCE_CAMUNDA;
-
 import io.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import io.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import io.camunda.optimize.dto.optimize.query.event.sequence.TracedEventDto;
@@ -20,38 +18,10 @@ import lombok.extern.slf4j.Slf4j;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class EventDtoBuilderUtil {
 
-  private static final String START_MAPPED_SUFFIX = "start";
-  private static final String END_MAPPED_SUFFIX = "end";
   public static final String PROCESS_START_TYPE = "processInstanceStart";
   public static final String PROCESS_END_TYPE = "processInstanceEnd";
-
-  public static EventTypeDto createCamundaEventTypeDto(
-      final String processId, final String eventName, final String eventLabel) {
-    return EventTypeDto.builder()
-        .source(EVENT_SOURCE_CAMUNDA)
-        .group(processId)
-        .eventName(eventName)
-        .eventLabel(eventLabel)
-        .build();
-  }
-
-  public static EventTypeDto createCamundaProcessStartEventTypeDto(final String definitionKey) {
-    return EventTypeDto.builder()
-        .source(EVENT_SOURCE_CAMUNDA)
-        .group(definitionKey)
-        .eventName(applyCamundaProcessInstanceStartEventSuffix(definitionKey))
-        .eventLabel(PROCESS_START_TYPE)
-        .build();
-  }
-
-  public static EventTypeDto createCamundaProcessEndEventTypeDto(final String definitionKey) {
-    return EventTypeDto.builder()
-        .source(EVENT_SOURCE_CAMUNDA)
-        .group(definitionKey)
-        .eventName(applyCamundaProcessInstanceEndEventSuffix(definitionKey))
-        .eventLabel(PROCESS_END_TYPE)
-        .build();
-  }
+  private static final String START_MAPPED_SUFFIX = "start";
+  private static final String END_MAPPED_SUFFIX = "end";
 
   public static EventTypeDto fromTracedEventDto(final TracedEventDto tracedEventDto) {
     return EventTypeDto.builder()

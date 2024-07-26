@@ -73,7 +73,7 @@
 //
 //   @AfterEach
 //   public void after() {
-//     embeddedOptimizeExtension.resetImportStartIndexes();
+//     embeddedOptimizeExtension.resetPositionBasedImportStartIndexes();
 //     embeddedOptimizeExtension.resetInstanceDataWriters();
 //     databaseIntegrationTestExtension.deleteAllOptimizeData();
 //   }
