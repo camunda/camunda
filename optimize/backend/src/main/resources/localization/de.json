@@ -40,13 +40,8 @@
     "timeout": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an, um die Aktion abzuschließen."
   },
   "footer": {
-    "importing": "wird importiert ...",
-    "connected": "ist verbunden",
-    "notConnected": "ist nicht verbunden",
     "rightsReserved": "Alle Rechte vorbehalten",
-    "connectionError": "Verbindungsstatus unbekannt (Websocket-Verbindung kann nicht hergestellt werden)",
-    "timezone": "Datum und Uhrzeit werden in der lokalen Zeitzone angezeigt:",
-    "database": "Database"
+    "timezone": "Datum und Uhrzeit werden in der lokalen Zeitzone angezeigt:"
   },
   "license": {
     "nonProduction": "Lizenz: Kein Produktivbetrieb",

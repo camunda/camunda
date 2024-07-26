@@ -40,13 +40,8 @@
     "timeout": "Your session timed out. Please log in again to complete the action."
   },
   "footer": {
-    "importing": "is importing...",
-    "connected": "is connected",
-    "notConnected": "is not connected",
     "rightsReserved": "All Rights Reserved",
-    "connectionError": "Connection Status Unknown (Cannot establish Websocket connection)",
-    "timezone": "Date and time displayed in local timezone:",
-    "database": "Database"
+    "timezone": "Date and time displayed in local timezone:"
   },
   "license": {
     "nonProduction": "Non-Production License",
