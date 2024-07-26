@@ -21,6 +21,8 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +36,7 @@ final class ExporterContainerTest {
 
   private static final String EXPORTER_ID = "fakeExporter";
   private static final int PARTITION_ID = 123;
+  private static final String REGISTERED_COUNTER_NAME = "zeebe_exporter_counter";
 
   private ExporterContainerRuntime runtime;
   private FakeExporter exporter;
@@ -460,13 +463,32 @@ final class ExporterContainerTest {
     assertThat(readMetadata).isPresent().hasValue(metadata);
   }
 
+  @Test
+  void shouldAddMeterToMeterRegistryGivenInContext() throws Exception {
+    // given
+    final var descriptor =
+        runtime
+            .getRepository()
+            .load("fakeExporterWithMetrics", FakeExporterWithMetrics.class, Map.of("key", "value"));
+
+    final var meterRegistry = new SimpleMeterRegistry();
+    exporterContainer = runtime.newContainer(descriptor, PARTITION_ID, meterRegistry);
+
+    exporterContainer.configureExporter();
+
+    // when
+    // then
+    assertThat(meterRegistry.getMeters().get(0).getId().getName())
+        .isEqualTo(REGISTERED_COUNTER_NAME);
+  }
+
   private void awaitPreviousCall() {
     // call is enqueued in queue and will be run after the previous call
     // when we await the call we can be sure that the previous call is also done
     runtime.getActor().getActorControl().call(() -> null).join();
   }
 
-  public static final class FakeExporter implements Exporter {
+  public static class FakeExporter implements Exporter {
 
     private Context context;
     private Controller controller;
@@ -507,6 +529,15 @@ final class ExporterContainerTest {
     @Override
     public void export(final Record<?> record) {
       this.record = record;
+    }
+  }
+
+  public static final class FakeExporterWithMetrics extends FakeExporter implements Exporter {
+    @Override
+    public void configure(final Context context) throws Exception {
+      super.context = context;
+
+      Counter.builder(REGISTERED_COUNTER_NAME).register(context.getMeterRegistry());
     }
   }
 
