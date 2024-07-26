@@ -16,7 +16,7 @@ import io.micrometer.core.instrument.Counter;
 //  do a http get curl for now to ensure that it is there, but change it to some code access
 public class ExporterMetricsTestExporter implements Exporter {
 
-  public static String REGISTERED_COUNTER = "zeebe_exporter_counter";
+  public static final String REGISTERED_COUNTER = "zeebe_exporter_counter";
 
   public ExporterMetricsTestExporter() {}
 

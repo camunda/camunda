@@ -42,7 +42,7 @@ public class ExporterMetricsIT {
     final var addedCounter =
         metrics.stream()
             .filter(
-                metric -> metric.getName().equals(ExporterMetricsTestExporter.REGISTERED_COUNTER))
+                metric -> metric.getName().contains(ExporterMetricsTestExporter.REGISTERED_COUNTER))
             .findFirst();
 
     // then

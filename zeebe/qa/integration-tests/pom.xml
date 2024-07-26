@@ -464,10 +464,9 @@
     <dependency>
       <groupId>org.hawkular.agent</groupId>
       <artifactId>prometheus-scraper</artifactId>
-      <scope>test</scope>
       <version>0.23.0.Final</version>
+      <scope>test</scope>
     </dependency>
-
 
     <dependency>
       <groupId>io.micrometer</groupId>
