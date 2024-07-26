@@ -5,8 +5,8 @@ runScript=$BASEDIR/internal/run.sh
 
 
 function checkCamundaStartup {
-  RETRIES=12
-    SLEEP_TIME=10
+  RETRIES=24
+    SLEEP_TIME=14
     URL=$1
     NAME=$2
     COMMAND="curl -XGET $URL"
