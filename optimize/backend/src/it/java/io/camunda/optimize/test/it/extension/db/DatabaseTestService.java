@@ -14,7 +14,6 @@ import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_INS
 import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
 import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
-import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
@@ -279,7 +278,6 @@ public abstract class DatabaseTestService {
       deleteAllOptimizeData();
       deleteAllEventProcessInstanceIndices();
       deleteCamundaEventIndicesAndEventCountsAndTraces();
-      deleteAllProcessInstanceArchiveIndices();
     } catch (final Exception e) {
       // nothing to do
       log.error("can't clean optimize indexes", e);
@@ -341,10 +339,6 @@ public abstract class DatabaseTestService {
     deleteIndicesStartingWithPrefix(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX);
     deleteIndicesStartingWithPrefix(EVENT_SEQUENCE_COUNT_INDEX_PREFIX);
     deleteIndicesStartingWithPrefix(EVENT_TRACE_STATE_INDEX_PREFIX);
-  }
-
-  protected void deleteAllProcessInstanceArchiveIndices() {
-    deleteIndicesStartingWithPrefix(PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX);
   }
 
   protected void deleteAllEventProcessInstanceIndices() {
