@@ -155,7 +155,7 @@ if [ "$1" = "start" ] ; then
 
 
   function checkStartup {
-    RETRIES=6
+    RETRIES=12
       SLEEP_TIME=10
       URL=$1
       NAME=$2
