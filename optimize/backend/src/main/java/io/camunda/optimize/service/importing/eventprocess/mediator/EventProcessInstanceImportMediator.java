@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.service.importing.eventprocess.mediator;
 
-import io.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventProcessEventDto;
 import io.camunda.optimize.service.db.events.EventFetcherService;
@@ -59,8 +58,6 @@ public class EventProcessInstanceImportMediator<T extends EventProcessEventDto>
       return OffsetDateTime.ofInstant(
           Instant.ofEpochMilli(((EventDto) eventProcessEventDto).getIngestionTimestamp()),
           ZoneId.systemDefault());
-    } else if (eventProcessEventDto instanceof CamundaActivityEventDto) {
-      return ((CamundaActivityEventDto) eventProcessEventDto).getTimestamp();
     } else {
       throw new OptimizeRuntimeException("Cannot read import timestamp for unsupported entity");
     }

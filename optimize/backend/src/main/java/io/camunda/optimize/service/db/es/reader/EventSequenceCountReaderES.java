@@ -28,13 +28,11 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.sum;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
-import io.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import io.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import io.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import io.camunda.optimize.service.db.es.ElasticsearchCompositeAggregationScroller;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.reader.EventSequenceCountReader;
-import io.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.io.IOException;
@@ -81,17 +79,17 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
       return Collections.emptyList();
     }
 
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(buildSequencedEventsQuery(incomingEvents, outgoingEvents))
             .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(getIndexName(indexKey)).source(searchSourceBuilder);
 
-    SearchResponse searchResponse;
+    final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Was not able to retrieve event sequence counts!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve event sequence counts!", e);
     }
@@ -100,26 +98,22 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
   }
 
   @Override
-  public List<EventCountResponseDto> getEventCountsForCamundaSources(
-      final List<CamundaEventSourceEntryDto> camundaSources) {
-    log.debug("Fetching camunda event counts for event sources: {}", camundaSources);
-
+  public List<EventCountResponseDto> getEventCountsForSearchTerm(
+      final List<String> groups, final String searchTerm) {
+    log.debug(
+        "Fetching external event counts with searchTerm {} for groups: {}", searchTerm, groups);
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-    searchSourceBuilder.query(matchAllQuery());
+    final BoolQueryBuilder query = buildCountRequestQuery(searchTerm);
+    if (!CollectionUtils.isEmpty(groups)) {
+      addGroupFilteringForQuery(groups, query);
+    }
+    searchSourceBuilder.query(query);
     searchSourceBuilder.aggregation(createAggregationBuilder());
     searchSourceBuilder.size(0);
 
-    final String[] indicesToSearch =
-        camundaSources.stream()
-            .map(
-                source ->
-                    EventSequenceCountIndex.constructIndexName(
-                        source.getConfiguration().getProcessDefinitionKey()))
-            .toList()
-            .toArray(new String[camundaSources.size()]);
     final SearchRequest searchRequest =
-        new SearchRequest(indicesToSearch).source(searchSourceBuilder);
-    List<EventCountResponseDto> eventCountDtos = new ArrayList<>();
+        new SearchRequest(getIndexName(indexKey)).source(searchSourceBuilder);
+    final List<EventCountResponseDto> eventCountDtos = new ArrayList<>();
     ElasticsearchCompositeAggregationScroller.create()
         .setEsClient(esClient)
         .setSearchRequest(searchRequest)
@@ -134,7 +128,7 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
     final GetAliasesResponse aliases;
     try {
       aliases = esClient.getAlias(new GetAliasesRequest(EVENT_SEQUENCE_COUNT_INDEX_PREFIX + "*"));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String errorMessage = "Could not retrieve the index keys for sequence count indices!";
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
@@ -168,15 +162,15 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
                     .must(buildEventTypeBoolQueryForProperty(firstEventTypeDto, TARGET_EVENT))
                     .must(buildEventTypeBoolQueryForProperty(secondEventTypeDto, SOURCE_EVENT)));
 
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder().query(query).size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(getIndexName(indexKey)).source(searchSourceBuilder);
 
-    SearchResponse searchResponse;
+    final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String errorMessage =
           "Was not able to retrieve event sequence counts for given event types!";
       log.error(errorMessage, e);
@@ -189,9 +183,9 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
   @Override
   public List<EventSequenceCountDto> getAllSequenceCounts() {
     log.debug("Fetching all event sequences for index key: {}", indexKey);
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder().query(matchAllQuery()).size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(getIndexName(indexKey))
             .source(searchSourceBuilder)
             .scroll(
@@ -200,10 +194,10 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
                         .getElasticSearchConfiguration()
                         .getScrollTimeoutInSeconds()));
 
-    SearchResponse scrollResponse;
+    final SearchResponse scrollResponse;
     try {
       scrollResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String errorMessage =
           String.format(
               "Was not able to retrieve event sequence counts for index key %s!", indexKey);
@@ -218,32 +212,6 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
         configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds());
   }
 
-  @Override
-  public List<EventCountResponseDto> getEventCountsForSearchTerm(
-      final List<String> groups, final String searchTerm) {
-    log.debug(
-        "Fetching external event counts with searchTerm {} for groups: {}", searchTerm, groups);
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-    final BoolQueryBuilder query = buildCountRequestQuery(searchTerm);
-    if (!CollectionUtils.isEmpty(groups)) {
-      addGroupFilteringForQuery(groups, query);
-    }
-    searchSourceBuilder.query(query);
-    searchSourceBuilder.aggregation(createAggregationBuilder());
-    searchSourceBuilder.size(0);
-
-    final SearchRequest searchRequest =
-        new SearchRequest(getIndexName(indexKey)).source(searchSourceBuilder);
-    List<EventCountResponseDto> eventCountDtos = new ArrayList<>();
-    ElasticsearchCompositeAggregationScroller.create()
-        .setEsClient(esClient)
-        .setSearchRequest(searchRequest)
-        .setPathToAggregation(COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION)
-        .setCompositeBucketConsumer(bucket -> eventCountDtos.add(extractEventCounts(bucket)))
-        .consumeAllPages();
-    return eventCountDtos;
-  }
-
   private QueryBuilder buildSequencedEventsQuery(
       final List<EventTypeDto> incomingEvents, final List<EventTypeDto> outgoingEvents) {
     final BoolQueryBuilder query = boolQuery();
@@ -255,8 +223,8 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
   }
 
   private BoolQueryBuilder buildEventTypeBoolQueryForProperty(
-      EventTypeDto eventTypeDto, String propertyName) {
-    BoolQueryBuilder boolQuery = boolQuery();
+      final EventTypeDto eventTypeDto, final String propertyName) {
+    final BoolQueryBuilder boolQuery = boolQuery();
     getNullableFieldQuery(boolQuery, getNestedField(propertyName, GROUP), eventTypeDto.getGroup());
     getNullableFieldQuery(
         boolQuery, getNestedField(propertyName, SOURCE), eventTypeDto.getSource());
@@ -266,7 +234,7 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
   }
 
   private void getNullableFieldQuery(
-      BoolQueryBuilder builder, final String field, final String value) {
+      final BoolQueryBuilder builder, final String field, final String value) {
     if (value != null) {
       builder.must(termQuery(field, value));
       return;
@@ -300,7 +268,7 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
   private CompositeAggregationBuilder createAggregationBuilder() {
     final SumAggregationBuilder eventCountAggregation = sum(COUNT_AGG).field(COUNT);
 
-    List<CompositeValuesSourceBuilder<?>> eventAndSourceAndGroupTerms = new ArrayList<>();
+    final List<CompositeValuesSourceBuilder<?>> eventAndSourceAndGroupTerms = new ArrayList<>();
     eventAndSourceAndGroupTerms.add(
         new TermsValuesSourceBuilder(EVENT_NAME_AGG).field(SOURCE_EVENT + "." + EVENT_NAME));
     eventAndSourceAndGroupTerms.add(

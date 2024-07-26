@@ -130,6 +130,16 @@ public class ImportRepositoryES implements ImportRepository {
         configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 
+  @Override
+  public void importIndices(
+      String importItemName, List<EngineImportIndexDto> engineImportIndexDtos) {
+    esClient.doImportBulkRequestWithList(
+        importItemName,
+        engineImportIndexDtos,
+        this::addImportIndexRequest,
+        configurationService.getSkipDataAfterNestedDocLimitReached());
+  }
+
   private void addPositionBasedImportIndexRequest(
       BulkRequest bulkRequest, PositionBasedImportIndexDto optimizeDto) {
     log.debug(
@@ -149,46 +159,6 @@ public class ImportRepositoryES implements ImportRepository {
           optimizeDto.getEsTypeIndexRefersTo(),
           e);
     }
-  }
-
-  @Override
-  public Optional<AllEntitiesBasedImportIndexDto> getImportIndex(String id) {
-    GetRequest getRequest = new GetRequest(IMPORT_INDEX_INDEX_NAME).id(id);
-
-    GetResponse getResponse = null;
-    try {
-      getResponse = esClient.get(getRequest);
-    } catch (Exception ignored) {
-      // do nothing
-    }
-
-    if (getResponse != null && getResponse.isExists()) {
-      try {
-        AllEntitiesBasedImportIndexDto storedIndex =
-            objectMapper.readValue(
-                getResponse.getSourceAsString(), AllEntitiesBasedImportIndexDto.class);
-        return Optional.of(storedIndex);
-      } catch (IOException e) {
-        log.error("Was not able to retrieve import index of [{}]. Reason: {}", id, e);
-        return Optional.empty();
-      }
-    } else {
-      log.debug(
-          "Was not able to retrieve import index for type '{}' from Elasticsearch. "
-              + "Desired index does not exist.",
-          id);
-      return Optional.empty();
-    }
-  }
-
-  @Override
-  public void importIndices(
-      String importItemName, List<EngineImportIndexDto> engineImportIndexDtos) {
-    esClient.doImportBulkRequestWithList(
-        importItemName,
-        engineImportIndexDtos,
-        this::addImportIndexRequest,
-        configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 
   private void addImportIndexRequest(BulkRequest bulkRequest, OptimizeDto optimizeDto) {

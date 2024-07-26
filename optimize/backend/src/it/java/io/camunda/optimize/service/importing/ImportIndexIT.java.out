@@ -51,7 +51,7 @@
 //     List<Long> firstRoundIndexes = embeddedOptimizeExtension.getImportIndexes();
 //
 //     // then
-//     embeddedOptimizeExtension.resetImportStartIndexes();
+//     embeddedOptimizeExtension.resetPositionBasedImportStartIndexes();
 //     importAllEngineEntitiesFromScratch();
 //     List<Long> secondsRoundIndexes = embeddedOptimizeExtension.getImportIndexes();
 //
@@ -129,7 +129,7 @@
 //     importAllEngineEntitiesFromScratch();
 //
 //     // when
-//     embeddedOptimizeExtension.resetImportStartIndexes();
+//     embeddedOptimizeExtension.resetPositionBasedImportStartIndexes();
 //     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
 //     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 //
