@@ -794,6 +794,7 @@ public class CompactRecordLogger {
     addIfNotEmpty(result, value.getCandidateGroupsList(), " candidateGroupsList");
     addIfNotEmpty(result, value.getDueDate(), " dueDate");
     addIfNotEmpty(result, value.getFollowUpDate(), " followUpDate");
+    result.append(" priority ").append(value.getPriority());
 
     if (value.getFormKey() != -1) {
       result.append(" with <form ").append(shortenKey(value.getFormKey())).append(">");
