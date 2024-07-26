@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import com.google.common.base.Strings;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.time.ZonedDateTime;
@@ -103,7 +105,19 @@ public final class BpmnJobBehavior {
   private Either<Failure, String> evalTypeExp(
       final JobWorkerProperties jobWorkerProperties, final long scopeKey) {
     final Expression type = jobWorkerProperties.getType();
-    return expressionBehavior.evaluateStringExpression(type, scopeKey);
+    return expressionBehavior
+        .evaluateStringExpression(type, scopeKey)
+        .flatMap(
+            result ->
+                Strings.isNullOrEmpty(result)
+                    ? Either.left(
+                        new Failure(
+                            String.format(
+                                "Expected result of the expression '%s' to be not empty, but was '%s'.",
+                                type.getExpression(), result),
+                            ErrorType.EXTRACT_VALUE_ERROR,
+                            scopeKey))
+                    : Either.right(result));
   }
 
   private Either<Failure, Long> evalRetriesExp(

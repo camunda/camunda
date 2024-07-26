@@ -132,6 +132,35 @@ public class JobWorkerElementIncidentTest {
   }
 
   @Test
+  public void shouldCreateIncidentIfJobTypeExpressionIsEmptyString() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeJobTypeExpression("\"\""))).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var recordThatLeadsToIncident =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(elementBuilder.getElementType())
+            .getFirst();
+
+    // then
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incidentCreated.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage("Expected result of the expression '\"\"' to be not empty, but was ''.")
+        .hasElementId(TASK_ELEMENT_ID)
+        .hasElementInstanceKey(recordThatLeadsToIncident.getKey())
+        .hasJobKey(-1L)
+        .hasVariableScopeKey(recordThatLeadsToIncident.getKey());
+  }
+
+  @Test
   public void shouldResolveIncidentAfterJobTypeExpressionEvaluationFailed() {
     // given
     ENGINE.deployment().withXmlResource(process(t -> t.zeebeJobTypeExpression("x"))).deploy();
