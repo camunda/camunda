@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
 import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 
 public class ExecutableCallActivity extends ExecutableActivity {
 
@@ -15,6 +16,8 @@ public class ExecutableCallActivity extends ExecutableActivity {
 
   private boolean propagateAllChildVariablesEnabled;
   private boolean propagateAllParentVariablesEnabled;
+
+  private ZeebeBindingType bindingType;
 
   public ExecutableCallActivity(final String id) {
     super(id);
@@ -41,7 +44,16 @@ public class ExecutableCallActivity extends ExecutableActivity {
     return propagateAllParentVariablesEnabled;
   }
 
-  public void setPropagateAllParentVariablesEnabled(boolean propagateAllParentVariablesEnabled) {
+  public void setPropagateAllParentVariablesEnabled(
+      final boolean propagateAllParentVariablesEnabled) {
     this.propagateAllParentVariablesEnabled = propagateAllParentVariablesEnabled;
+  }
+
+  public ZeebeBindingType getBindingType() {
+    return bindingType;
+  }
+
+  public void setBindingType(final ZeebeBindingType bindingType) {
+    this.bindingType = bindingType;
   }
 }

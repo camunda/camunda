@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.CallActivityBuilder;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -117,14 +118,21 @@ public final class CallActivityTest {
   }
 
   @Test
-  public void shouldCreateInstanceOfLatestVersionOfCalledElement() {
+  public void shouldCreateInstanceOfLatestVersionOfCalledElementIfBindingTypeNotSet() {
     // given
-    final var processChildV2 =
+    final var parentProcess = parentProcess(CallActivityBuilder::done);
+    final var childProcessV1 =
+        Bpmn.createExecutableProcess(PROCESS_ID_CHILD).startEvent("v1").endEvent().done();
+    final var childProcessV2 =
         Bpmn.createExecutableProcess(PROCESS_ID_CHILD).startEvent("v2").endEvent().done();
-
-    final var secondDeployment =
-        ENGINE.deployment().withXmlResource("wf-child.bpmn", processChildV2).deploy();
-    final var secondVersion = secondDeployment.getValue().getProcessesMetadata().get(0);
+    ENGINE
+        .deployment()
+        .withXmlResource("wf-parent.bpmn", parentProcess)
+        .withXmlResource("wf-child.bpmn", childProcessV1)
+        .deploy();
+    final var deployment =
+        ENGINE.deployment().withXmlResource("wf-child.bpmn", childProcessV2).deploy();
+    final var latestDeployedVersion = deployment.getValue().getProcessesMetadata().getFirst();
 
     // when
     final var processInstanceKey =
@@ -132,8 +140,68 @@ public final class CallActivityTest {
 
     // then
     Assertions.assertThat(getChildInstanceOf(processInstanceKey))
-        .hasVersion(secondVersion.getVersion())
-        .hasProcessDefinitionKey(secondVersion.getProcessDefinitionKey());
+        .hasVersion(latestDeployedVersion.getVersion())
+        .hasProcessDefinitionKey(latestDeployedVersion.getProcessDefinitionKey());
+  }
+
+  @Test
+  public void shouldCreateInstanceOfLatestVersionOfCalledElementForBindingTypeLatest() {
+    // given
+    final var parentProcess =
+        parentProcess(builder -> builder.zeebeBindingType(ZeebeBindingType.latest));
+    final var childProcessV1 =
+        Bpmn.createExecutableProcess(PROCESS_ID_CHILD).startEvent("v1").endEvent().done();
+    final var childProcessV2 =
+        Bpmn.createExecutableProcess(PROCESS_ID_CHILD).startEvent("v2").endEvent().done();
+    ENGINE
+        .deployment()
+        .withXmlResource("wf-parent.bpmn", parentProcess)
+        .withXmlResource("wf-child.bpmn", childProcessV1)
+        .deploy();
+    final var deployment =
+        ENGINE.deployment().withXmlResource("wf-child.bpmn", childProcessV2).deploy();
+    final var latestDeployedVersion = deployment.getValue().getProcessesMetadata().getFirst();
+
+    // when
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+
+    // then
+    Assertions.assertThat(getChildInstanceOf(processInstanceKey))
+        .hasVersion(latestDeployedVersion.getVersion())
+        .hasProcessDefinitionKey(latestDeployedVersion.getProcessDefinitionKey());
+  }
+
+  @Test
+  public void shouldCreateInstanceOfVersionInSameDeploymentForBindingTypeDeployment() {
+    // given
+    final var parentProcess =
+        parentProcess(builder -> builder.zeebeBindingType(ZeebeBindingType.deployment));
+    final var childProcessV1 =
+        Bpmn.createExecutableProcess(PROCESS_ID_CHILD).startEvent("v1").endEvent().done();
+    final var childProcessV2 =
+        Bpmn.createExecutableProcess(PROCESS_ID_CHILD).startEvent("v2").endEvent().done();
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource("wf-parent.bpmn", parentProcess)
+            .withXmlResource("wf-child.bpmn", childProcessV1)
+            .deploy();
+    final var versionInSameDeployment =
+        deployment.getValue().getProcessesMetadata().stream()
+            .filter(metadata -> PROCESS_ID_CHILD.equals(metadata.getBpmnProcessId()))
+            .findFirst()
+            .orElseThrow();
+    ENGINE.deployment().withXmlResource("wf-child.bpmn", childProcessV2).deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+
+    // then
+    Assertions.assertThat(getChildInstanceOf(processInstanceKey))
+        .hasVersion(versionInSameDeployment.getVersion())
+        .hasProcessDefinitionKey(versionInSameDeployment.getProcessDefinitionKey());
   }
 
   @Test
@@ -461,6 +529,46 @@ public final class CallActivityTest {
     // then
     Assertions.assertThat(getChildInstanceOf(processInstanceKey))
         .hasBpmnProcessId(PROCESS_ID_CHILD);
+  }
+
+  @Test
+  public void shouldCreateInstanceOfCalledElementWithExpressionAndBindingTypeDeployment() {
+    // given
+    final var childProcessV1 =
+        Bpmn.createExecutableProcess(PROCESS_ID_CHILD).startEvent("v1").endEvent().done();
+    final var childProcessV2 =
+        Bpmn.createExecutableProcess(PROCESS_ID_CHILD).startEvent("v2").endEvent().done();
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                "wf-parent.bpmn",
+                parentProcess(
+                    callActivity ->
+                        callActivity
+                            .zeebeProcessIdExpression("processId")
+                            .zeebeBindingType(ZeebeBindingType.deployment)))
+            .withXmlResource("wf-child.bpmn", childProcessV1)
+            .deploy();
+    final var versionInSameDeployment =
+        deployment.getValue().getProcessesMetadata().stream()
+            .filter(metadata -> PROCESS_ID_CHILD.equals(metadata.getBpmnProcessId()))
+            .findFirst()
+            .orElseThrow();
+    ENGINE.deployment().withXmlResource("wf-child.bpmn", childProcessV2).deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID_PARENT)
+            .withVariable("processId", PROCESS_ID_CHILD)
+            .create();
+
+    // then
+    Assertions.assertThat(getChildInstanceOf(processInstanceKey))
+        .hasBpmnProcessId(PROCESS_ID_CHILD)
+        .hasProcessDefinitionKey(versionInSameDeployment.getProcessDefinitionKey());
   }
 
   @Test
