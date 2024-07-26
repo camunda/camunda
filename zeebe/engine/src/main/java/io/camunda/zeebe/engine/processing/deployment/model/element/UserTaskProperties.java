@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
 import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import java.util.Map;
 
 /** The properties of a user task element. */
@@ -21,6 +22,7 @@ public class UserTaskProperties {
   private Expression followUpDate;
   private Expression formId;
   private Map<String, String> taskHeaders = Map.of();
+  private ZeebeBindingType bindingType;
 
   public Expression getAssignee() {
     return assignee;
@@ -86,6 +88,14 @@ public class UserTaskProperties {
     this.taskHeaders = taskHeaders;
   }
 
+  public ZeebeBindingType getBindingType() {
+    return bindingType;
+  }
+
+  public void setBindingType(final ZeebeBindingType bindingType) {
+    this.bindingType = bindingType;
+  }
+
   public void wrap(final UserTaskProperties userTaskProperties) {
     setAssignee(userTaskProperties.getAssignee());
     setCandidateGroups(userTaskProperties.getCandidateGroups());
@@ -95,5 +105,6 @@ public class UserTaskProperties {
     setFollowUpDate(userTaskProperties.getFollowUpDate());
     setFormId(userTaskProperties.getFormId());
     setTaskHeaders(userTaskProperties.getTaskHeaders());
+    setBindingType(userTaskProperties.getBindingType());
   }
 }
