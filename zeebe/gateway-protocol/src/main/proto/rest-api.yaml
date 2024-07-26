@@ -1493,7 +1493,7 @@ components:
             The backoff timeout (in ms) for the next retry.
           type: integer
           format: int64
-          default: -1
+          default: 0
         variables:
           additionalProperties: true
           description: >

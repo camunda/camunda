@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 public final class JobServices<T> extends ApiServices<JobServices<T>> {
 
   public static final Integer DEFAULT_RETRIES_VALUE = 0;
-  public static final Long DEFAULT_RETRYBACKOFF_VALUE = -1L;
+  public static final Long DEFAULT_RETRYBACKOFF_VALUE = 0L;
 
   private final ActivateJobsHandler<T> activateJobsHandler;
 

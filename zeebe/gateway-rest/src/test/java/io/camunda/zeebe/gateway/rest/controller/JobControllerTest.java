@@ -85,7 +85,7 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(jobServices).failJob(1L, 0, "", -1L, Map.of());
+    Mockito.verify(jobServices).failJob(1L, 0, "", 0L, Map.of());
   }
 
   @Test
@@ -110,7 +110,7 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(jobServices).failJob(1L, 0, "", -1L, null);
+    Mockito.verify(jobServices).failJob(1L, 0, "", 0L, null);
   }
 
   @Test
