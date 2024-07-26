@@ -1572,6 +1572,8 @@ components:
             JSON object that will instantiate the variables at the local scope of the error catch event that catches the thrown error.
           type: object
           nullable: true
+      required:
+        - errorCode
 
     ProblemDetail:
       description: >
