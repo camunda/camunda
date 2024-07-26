@@ -50,12 +50,24 @@ public class DecisionBehavior {
     this.metrics = metrics;
   }
 
-  public Either<Failure, PersistedDecision> findDecisionByIdAndTenant(
+  public Either<Failure, PersistedDecision> findLatestDecisionByIdAndTenant(
       final String decisionId, final String tenantId) {
     return Either.ofOptional(
             decisionState.findLatestDecisionByIdAndTenant(
                 BufferUtil.wrapString(decisionId), tenantId))
         .orElse(new Failure("no decision found for id '%s'".formatted(decisionId)))
+        .mapLeft(failure -> formatDecisionLookupFailure(failure, decisionId));
+  }
+
+  public Either<Failure, PersistedDecision> findDecisionByIdAndDeploymentKeyAndTenant(
+      final String decisionId, final long deploymentKey, final String tenantId) {
+    return Either.ofOptional(
+            decisionState.findDecisionByIdAndDeploymentKey(
+                tenantId, BufferUtil.wrapString(decisionId), deploymentKey))
+        .orElse(
+            new Failure(
+                "no decision found for id '%s' in deployment %s"
+                    .formatted(decisionId, deploymentKey)))
         .mapLeft(failure -> formatDecisionLookupFailure(failure, decisionId));
   }
 

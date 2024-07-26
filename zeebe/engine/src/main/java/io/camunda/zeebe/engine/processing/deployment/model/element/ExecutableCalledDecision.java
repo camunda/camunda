@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
 import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 
 /** A representation of an element that calls a decision. For example, a business rule task. */
 public interface ExecutableCalledDecision {
@@ -19,4 +20,8 @@ public interface ExecutableCalledDecision {
   String getResultVariable();
 
   void setResultVariable(String resultVariable);
+
+  ZeebeBindingType getBindingType();
+
+  void setBindingType(ZeebeBindingType bindingType);
 }
