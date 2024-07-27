@@ -137,7 +137,7 @@ var tests = []testCase{
 	{
 		name:       "evaluate decision with decision key",
 		setupCmds:  [][]string{strings.Fields("--insecure deploy resource testdata/drg-force-user.dmn")},
-		cmd:        strings.Fields("--insecure evaluate decision 2251799813685271 --variables {\"lightsaberColor\":\"blue\"}"),
+		cmd:        strings.Fields("--insecure evaluate decision 2251799813685272 --variables {\"lightsaberColor\":\"blue\"}"),
 		goldenFile: "testdata/evaluate_decision.golden",
 		jsonOutput: true,
 	},
@@ -217,7 +217,7 @@ var tests = []testCase{
 		setupCmds: [][]string{
 			strings.Fields("--insecure deploy resource testdata/model.bpmn"),
 		},
-		cmd:        strings.Fields("--insecure delete resource 2251799813685257"),
+		cmd:        strings.Fields("--insecure delete resource 2251799813685258"),
 		goldenFile: "testdata/delete_resource.golden",
 	},
 	{
@@ -236,7 +236,7 @@ var tests = []testCase{
 			strings.Fields("--insecure create instance jobProcess"),
 			strings.Fields("--insecure activate jobs jobType --maxJobsToActivate 1"),
 		},
-		cmd:        strings.Fields("--insecure update timeout 2251799813685371 --timeout 10000"),
+		cmd:        strings.Fields("--insecure update timeout 2251799813685372 --timeout 10000"),
 		goldenFile: "testdata/update_job_timeout.golden",
 	},
 }
