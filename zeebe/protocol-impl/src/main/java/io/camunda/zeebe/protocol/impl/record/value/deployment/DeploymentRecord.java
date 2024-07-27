@@ -178,4 +178,11 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
         .map(io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource::getResourceName)
         .anyMatch(x -> x.endsWith(".form"));
   }
+
+  public boolean hasDuplicatesOnly() {
+    return processesMetadata().stream().allMatch(ProcessMetadata::isDuplicate)
+        && decisionRequirementsMetadata().stream()
+            .allMatch(DecisionRequirementsMetadataValue::isDuplicate)
+        && formMetadata().stream().allMatch(FormMetadataValue::isDuplicate);
+  }
 }
