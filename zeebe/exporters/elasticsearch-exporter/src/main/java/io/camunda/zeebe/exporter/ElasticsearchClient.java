@@ -106,15 +106,17 @@ class ElasticsearchClient implements AutoCloseable {
     metrics.recordBulkSize(bulkIndexRequest.size());
     metrics.recordBulkMemorySize(bulkIndexRequest.memoryUsageBytes());
 
-    try (final Histogram.Timer ignored = metrics.measureFlushDuration()) {
-      exportBulk();
+    metrics.measureFlushDuration(
+        () -> {
+          try {
+            exportBulk();
 
-      // all records where flushed, create new bulk request, otherwise retry next time
-      bulkIndexRequest.clear();
-    } catch (final ElasticsearchExporterException e) {
-      metrics.recordFailedFlush();
-      throw e;
-    }
+            bulkIndexRequest.clear();
+          } catch (final ElasticsearchExporterException e) {
+            metrics.recordFailedFlush();
+            throw e;
+          }
+        });
   }
 
   /**
