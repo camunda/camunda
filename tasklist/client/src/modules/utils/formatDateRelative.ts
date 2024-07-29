@@ -16,22 +16,23 @@ import {
   parseISO,
   subDays,
 } from 'date-fns';
-import {enUS} from 'date-fns/locale';
 import {logger} from './logger';
+import {t} from 'i18next';
+import {getCurrentDateLocale} from 'modules/internationalization';
 
-type TextMap = {
-  NOW: string;
-  IN_ONE_MINUTE: string;
-  IN_X_MINUTES: string;
-  ONE_MINUTE_AGO: string;
-  X_MINUTES_AGO: string;
-  TODAY: string;
-  YESTERDAY: string;
-  TOMORROW: string;
-  WEEK_FMT: string;
-  MONTH_FMT: string;
-  YEARS_FMT: string;
-};
+type TextMapKeys =
+  | 'now'
+  | 'inOneMinute'
+  | 'inXMinutes'
+  | 'oneMinuteAgo'
+  | 'xMinutesAgo'
+  | 'today'
+  | 'yesterday'
+  | 'tomorrow'
+  | 'weekFmt'
+  | 'monthFmt'
+  | 'yearsFmt'
+  | 'unknown';
 
 type Resolution =
   | {
@@ -45,45 +46,42 @@ type Resolution =
       type: 'week' | 'months' | 'years';
     };
 
-const TEXT_DATE_LANG_EN: TextMap = {
-  NOW: "'Now'",
-  IN_ONE_MINUTE: "'In 1 minute'",
-  IN_X_MINUTES: "'In {amount} minutes'",
-  ONE_MINUTE_AGO: "'1 minute ago'",
-  X_MINUTES_AGO: "'{amount} minutes ago'",
-  TODAY: "'Today'",
-  YESTERDAY: "'Yesterday'",
-  TOMORROW: "'Tomorrow'",
-  WEEK_FMT: 'EEEE',
-  MONTH_FMT: 'd MMM',
-  YEARS_FMT: 'd MMM yyyy',
+
+const getConfiguredDateKey = (key: TextMapKeys, isSpeech: boolean, includeTime: boolean) => {
+  let keySuffix = '';
+
+  if (isSpeech) {
+    keySuffix += '_speech';
+  }
+  if (includeTime) {
+    keySuffix += '_withTime';
+  }
+
+  return `relativeDateFormat_${key}${keySuffix}`;
+}
+
+const getConfiguredTranslatedFormat = (key: TextMapKeys, isSpeech: boolean, includeTime: boolean, options = {}) => {
+  let value = '';
+
+  // Allows inheritance of the format if the time or speech equivalent is not defined
+  if (isSpeech && includeTime) {
+    value = t(getConfiguredDateKey(key, isSpeech, includeTime), {...options, defaultValue:''});
+  }
+  if (includeTime) {
+    value = value || t(getConfiguredDateKey(key, false, includeTime), {...options, defaultValue:''});
+  }
+  if (isSpeech) {
+    value = value || t(getConfiguredDateKey(key, isSpeech, false), {...options, defaultValue:''});
+  }
+  value = value || t(getConfiguredDateKey(key, false, false), {...options, defaultValue:''});
+
+  if (typeof value !== 'string') {
+    console.warn(`Unexpected translation type for 'relativeDateFormat_${key}'`);
+  }
+
+  return value;
 };
 
-const SPEECH_DATE_LANG_EN: TextMap = {
-  ...TEXT_DATE_LANG_EN,
-  MONTH_FMT: "do 'of' MMMM",
-  YEARS_FMT: "do 'of' MMMM, yyyy",
-};
-
-const TEXT_DATETIME_LANG_EN: TextMap = {
-  ...TEXT_DATE_LANG_EN,
-  TODAY: TEXT_DATE_LANG_EN['TODAY'] + ', HH:mm',
-  YESTERDAY: TEXT_DATE_LANG_EN['YESTERDAY'] + ', HH:mm',
-  TOMORROW: TEXT_DATE_LANG_EN['TOMORROW'] + ', HH:mm',
-  WEEK_FMT: 'EEEE, HH:mm',
-  MONTH_FMT: 'd MMM, HH:mm',
-  YEARS_FMT: 'd MMM yyyy, HH:mm',
-};
-
-const SPEECH_DATETIME_LANG_EN: TextMap = {
-  ...TEXT_DATE_LANG_EN,
-  TODAY: TEXT_DATE_LANG_EN['TODAY'] + " 'at' HH:mm",
-  YESTERDAY: TEXT_DATE_LANG_EN['YESTERDAY'] + " 'at' HH:mm",
-  TOMORROW: TEXT_DATE_LANG_EN['TOMORROW'] + " 'at' HH:mm",
-  WEEK_FMT: "EEEE 'at' HH:mm",
-  MONTH_FMT: "do 'of' MMMM 'at' HH:mm",
-  YEARS_FMT: "do 'of' MMMM, yyyy 'at' HH:mm",
-};
 
 function getResolution(time: Date, now: Date): Resolution {
   const diffInMinutes = differenceInMinutes(time, now);
@@ -114,43 +112,43 @@ function getResolution(time: Date, now: Date): Resolution {
   return {type: 'years'};
 }
 
-function getFormat(resolution: Resolution, lang: TextMap) {
+function getFormat(resolution: Resolution, isSpeech: boolean = false, includeTime: boolean = false) {
+  const getTranslatedFormat = (key: TextMapKeys, options = {}) => getConfiguredTranslatedFormat(key, isSpeech, includeTime, options);
+
   switch (resolution.type) {
     case 'now':
-      return lang['NOW'];
+      return getTranslatedFormat('now');
     case 'minutes':
       if (resolution.amount === 1) {
-        return lang['IN_ONE_MINUTE'];
+        return getTranslatedFormat('inOneMinute');
       }
       if (resolution.amount > 1) {
-        const amount = resolution.amount.toString();
-        return lang['IN_X_MINUTES'].replace('{amount}', amount);
+        return getTranslatedFormat('inXMinutes', {amount: resolution.amount});
       }
       if (resolution.amount === -1) {
-        return lang['ONE_MINUTE_AGO'];
+        return getTranslatedFormat('oneMinuteAgo');
       }
       if (resolution.amount < -1) {
-        const amount = (-resolution.amount).toString();
-        return lang['X_MINUTES_AGO'].replace('{amount}', amount);
+        return getTranslatedFormat('xMinutesAgo', {amount: -resolution.amount});
       }
-      return "'Unknown'";
+      return getTranslatedFormat('unknown');
     case 'days':
       if (resolution.amount === 0) {
-        return lang['TODAY'];
+        return getTranslatedFormat('today');
       }
       if (resolution.amount === 1) {
-        return lang['TOMORROW'];
+        return getTranslatedFormat('tomorrow');
       }
       if (resolution.amount === -1) {
-        return lang['YESTERDAY'];
+        return getTranslatedFormat('yesterday');
       }
       return '';
     case 'week':
-      return lang['WEEK_FMT'];
+      return getTranslatedFormat('weekFmt');
     case 'months':
-      return lang['MONTH_FMT'];
+      return getTranslatedFormat('monthFmt');
     case 'years':
-      return lang['YEARS_FMT'];
+      return getTranslatedFormat('yearsFmt');
     default:
       return '';
   }
@@ -158,19 +156,15 @@ function getFormat(resolution: Resolution, lang: TextMap) {
 
 function formatDate(time: Date, now?: Date) {
   const resolution = getResolution(time, now ?? new Date());
-  const text = format(time, getFormat(resolution, TEXT_DATE_LANG_EN), {
-    locale: enUS,
+  const text = format(time, getFormat(resolution), {
+    locale: getCurrentDateLocale(),
   });
-  const speech = format(time, getFormat(resolution, SPEECH_DATE_LANG_EN), {
-    locale: enUS,
+  const speech = format(time, getFormat(resolution, true), {
+    locale: getCurrentDateLocale(),
   });
-  const absoluteText = format(
-    time,
-    getFormat({type: 'years'}, TEXT_DATE_LANG_EN),
-    {
-      locale: enUS,
-    },
-  );
+  const absoluteText = format(time, getFormat({type: 'years'}), {
+      locale: getCurrentDateLocale(),
+  });
   return {
     date: time,
     relative: {
@@ -198,19 +192,15 @@ function formatISODate(dateString: string | null) {
 
 function formatDateTime(time: Date, now?: Date) {
   const resolution = getResolution(time, now ?? new Date());
-  const text = format(time, getFormat(resolution, TEXT_DATETIME_LANG_EN), {
-    locale: enUS,
+  const text = format(time, getFormat(resolution, false, true), {
+    locale: getCurrentDateLocale(),
   });
-  const speech = format(time, getFormat(resolution, SPEECH_DATETIME_LANG_EN), {
-    locale: enUS,
+  const speech = format(time, getFormat(resolution, true, true), {
+    locale: getCurrentDateLocale(),
   });
-  const absoluteText = format(
-    time,
-    getFormat({type: 'years'}, TEXT_DATETIME_LANG_EN),
-    {
-      locale: enUS,
-    },
-  );
+  const absoluteText = format(time, getFormat({type: 'years'}, false, true), {
+      locale: getCurrentDateLocale(),
+  });
   return {
     date: time,
     relative: {
