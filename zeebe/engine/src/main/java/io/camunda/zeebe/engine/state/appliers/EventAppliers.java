@@ -7,6 +7,12 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
+import io.camunda.zeebe.engine.processing.relocation.ScaleRelocateCorrelationKeyCompletedApplier;
+import io.camunda.zeebe.engine.processing.relocation.ScaleRelocateCorrelationKeyStartedApplier;
+import io.camunda.zeebe.engine.processing.relocation.ScaleRelocateMessageCompletedApplier;
+import io.camunda.zeebe.engine.processing.relocation.ScaleRelocateMessageSubscriptionCompletedApplier;
+import io.camunda.zeebe.engine.processing.relocation.ScaleRelocationOnPartitionCompletedApplier;
+import io.camunda.zeebe.engine.processing.relocation.ScaleRelocationStartedApplier;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForIntent;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForVersion;
@@ -41,6 +47,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.ScaleIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -102,7 +109,31 @@ public final class EventAppliers implements EventApplier {
     registerCommandDistributionAppliers(state);
     registerEscalationAppliers();
     registerResourceDeletionAppliers();
+
+    registerScaleAppliers(state);
     return this;
+  }
+
+  private void registerScaleAppliers(final MutableProcessingState state) {
+    register(
+        ScaleIntent.RELOCATION_STARTED,
+        new ScaleRelocationStartedApplier(state.getRelocationState()));
+    register(
+        ScaleIntent.RELOCATE_CORRELATION_KEY_STARTED,
+        new ScaleRelocateCorrelationKeyStartedApplier(state.getRelocationState()));
+    register(
+        ScaleIntent.RELOCATION_ON_PARTITION_COMPLETED,
+        new ScaleRelocationOnPartitionCompletedApplier(state.getRelocationState()));
+    register(
+        ScaleIntent.RELOCATE_MESSAGE_SUBSCRIPTION_COMPLETED,
+        new ScaleRelocateMessageSubscriptionCompletedApplier(state.getMessageSubscriptionState()));
+    register(
+        ScaleIntent.RELOCATE_MESSAGE_COMPLETED,
+        new ScaleRelocateMessageCompletedApplier(state.getMessageState()));
+    register(
+        ScaleIntent.RELOCATE_CORRELATION_KEY_COMPLETED,
+        new ScaleRelocateCorrelationKeyCompletedApplier(state.getRelocationState()));
+    register(ScaleIntent.RELOCATION_COMPLETED, NOOP_EVENT_APPLIER);
   }
 
   private void registerProcessAppliers(final MutableProcessingState state) {

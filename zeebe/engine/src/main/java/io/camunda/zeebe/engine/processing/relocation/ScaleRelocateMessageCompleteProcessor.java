@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.relocation;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.protocol.impl.record.value.scale.ScaleRecord;
 import io.camunda.zeebe.protocol.record.intent.ScaleIntent;
@@ -18,9 +19,16 @@ import org.agrona.collections.MutableBoolean;
 
 public class ScaleRelocateMessageCompleteProcessor implements TypedRecordProcessor<ScaleRecord> {
 
-  private TypedEventWriter stateWriter;
-  private MessageState messageState;
-  private TypedCommandWriter commandWriter;
+  private final TypedEventWriter stateWriter;
+  private final MessageState messageState;
+  private final TypedCommandWriter commandWriter;
+
+  public ScaleRelocateMessageCompleteProcessor(
+      final Writers writers, final MessageState messageState) {
+    stateWriter = writers.state();
+    this.messageState = messageState;
+    commandWriter = writers.command();
+  }
 
   @Override
   public void processRecord(final TypedRecord<ScaleRecord> record) {

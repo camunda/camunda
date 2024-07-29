@@ -32,6 +32,15 @@ import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.relocation.ScaleRelocateMessageApplyProcessor;
+import io.camunda.zeebe.engine.processing.relocation.ScaleRelocateMessageCompleteProcessor;
+import io.camunda.zeebe.engine.processing.relocation.ScaleRelocateMessageStartProcessor;
+import io.camunda.zeebe.engine.processing.relocation.ScaleRelocateMessageSubscriptionApplyProcessor;
+import io.camunda.zeebe.engine.processing.relocation.ScaleRelocateMessageSubscriptionCompleteProcessor;
+import io.camunda.zeebe.engine.processing.relocation.ScaleRelocateMessageSubscriptionStartProcessor;
+import io.camunda.zeebe.engine.processing.relocation.ScaleRelocateNextCorrelationKeyProcessor;
+import io.camunda.zeebe.engine.processing.relocation.ScaleRelocationOnPartitionCompleteProcessor;
+import io.camunda.zeebe.engine.processing.relocation.ScaleRelocationStartProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -52,6 +61,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.ScaleIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -190,7 +200,90 @@ public final class EngineProcessors {
     UserTaskEventProcessors.addUserTaskProcessors(
         typedRecordProcessors, processingState, bpmnBehaviors, writers);
 
+    addScaleProcessors(
+        typedRecordProcessors,
+        writers,
+        processingState,
+        commandDistributionBehavior,
+        subscriptionCommandSender);
+
     return typedRecordProcessors;
+  }
+
+  private static void addScaleProcessors(
+      final TypedRecordProcessors typedRecordProcessors,
+      final Writers writers,
+      final MutableProcessingState processingState,
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final SubscriptionCommandSender subscriptionCommandSender) {
+    typedRecordProcessors.onCommand(
+        ValueType.SCALE,
+        ScaleIntent.RELOCATION_START,
+        new ScaleRelocationStartProcessor(
+            processingState.getKeyGenerator(), writers, commandDistributionBehavior));
+
+    typedRecordProcessors.onCommand(
+        ValueType.SCALE,
+        ScaleIntent.RELOCATE_NEXT_CORRELATION_KEY,
+        new ScaleRelocateNextCorrelationKeyProcessor(
+            processingState.getKeyGenerator(),
+            writers,
+            processingState.getMessageState(),
+            processingState.getMessageSubscriptionState(),
+            processingState.getRelocationState(),
+            commandDistributionBehavior));
+
+    typedRecordProcessors.onCommand(
+        ValueType.SCALE,
+        ScaleIntent.RELOCATE_MESSAGE_SUBSCRIPTION_START,
+        new ScaleRelocateMessageSubscriptionStartProcessor(
+            writers,
+            processingState.getKeyGenerator(),
+            processingState.getRelocationState(),
+            processingState.getMessageSubscriptionState(),
+            commandDistributionBehavior));
+
+    typedRecordProcessors.onCommand(
+        ValueType.SCALE,
+        ScaleIntent.RELOCATE_MESSAGE_SUBSCRIPTION_APPLY,
+        new ScaleRelocateMessageSubscriptionApplyProcessor(
+            processingState.getMessageSubscriptionState(), commandDistributionBehavior, writers));
+
+    typedRecordProcessors.onCommand(
+        ValueType.SCALE,
+        ScaleIntent.RELOCATE_MESSAGE_SUBSCRIPTION_COMPLETE,
+        new ScaleRelocateMessageSubscriptionCompleteProcessor(
+            writers, processingState.getMessageSubscriptionState()));
+
+    typedRecordProcessors.onCommand(
+        ValueType.SCALE,
+        ScaleIntent.RELOCATE_MESSAGE_START,
+        new ScaleRelocateMessageStartProcessor(
+            writers,
+            processingState.getMessageState(),
+            processingState.getRelocationState(),
+            commandDistributionBehavior));
+
+    typedRecordProcessors.onCommand(
+        ValueType.SCALE,
+        ScaleIntent.RELOCATE_MESSAGE_APPLY,
+        new ScaleRelocateMessageApplyProcessor(
+            writers,
+            processingState.getMessageState(),
+            processingState.getMessageSubscriptionState(),
+            subscriptionCommandSender,
+            commandDistributionBehavior));
+
+    typedRecordProcessors.onCommand(
+        ValueType.SCALE,
+        ScaleIntent.RELOCATE_MESSAGE_COMPLETE,
+        new ScaleRelocateMessageCompleteProcessor(writers, processingState.getMessageState()));
+
+    typedRecordProcessors.onCommand(
+        ValueType.SCALE,
+        ScaleIntent.RELOCATION_ON_PARTITION_COMPLETE,
+        new ScaleRelocationOnPartitionCompleteProcessor(
+            processingState.getPartitionId(), writers, processingState.getRelocationState()));
   }
 
   private static BpmnBehaviorsImpl createBehaviors(
