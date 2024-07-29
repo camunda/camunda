@@ -76,7 +76,7 @@ const translationResources: Resource = Object.keys(
 }, {});
 
 const getCurrentDateLocale = () =>
-  localeDefinitions[i18n.language]?.dateLocale || dateLocaleEnUS;
+  localeDefinitions[i18n.language]?.dateLocale ?? dateLocaleEnUS;
 
 export {
   localeDefinitions,
