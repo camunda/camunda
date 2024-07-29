@@ -10,7 +10,13 @@ import {useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {observer} from 'mobx-react-lite';
 import {Link as RouterLink, matchPath, useLocation} from 'react-router-dom';
-import {Link, Dropdown, SwitcherDivider, OnChangeData} from '@carbon/react';
+import {
+  Link,
+  Dropdown,
+  SwitcherDivider,
+  OnChangeData,
+  Layer,
+} from '@carbon/react';
 import {ArrowRight} from '@carbon/react/icons';
 import {C3Navigation} from '@camunda/camunda-composite-components';
 import {pages} from 'modules/routing';
@@ -326,7 +332,7 @@ const LanguageSelector: React.FC = observer(() => {
   };
 
   return (
-    <>
+    <Layer>
       <SwitcherDivider />
       <div style={{padding: '.5rem 1rem'}}>
         <Dropdown
@@ -341,7 +347,7 @@ const LanguageSelector: React.FC = observer(() => {
           )}
         />
       </div>
-    </>
+    </Layer>
   );
 });
 
