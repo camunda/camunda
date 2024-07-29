@@ -41,9 +41,9 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   public static final String PROCESS_BPMN_PROCESS_ID_2 = "basicProcess2";
   public static final int PROCESS_INSTANCE_COUNT = 49;
   private static final int ALL_DRAFT_TASK_VARIABLES_COUNT = PROCESS_INSTANCE_COUNT * 2;
+  private static final int COMPLETED_TASKS_COUNT = 11;
   private static final int DRAFT_TASK_VARIABLES_COUNT_AFTER_TASKS_COMPLETION =
       ALL_DRAFT_TASK_VARIABLES_COUNT - COMPLETED_TASKS_COUNT * 2;
-  private static final int COMPLETED_TASKS_COUNT = 11;
   private static final Logger LOGGER =
       LoggerFactory.getLogger(AbstractBackupRestoreDataGenerator.class);
 
