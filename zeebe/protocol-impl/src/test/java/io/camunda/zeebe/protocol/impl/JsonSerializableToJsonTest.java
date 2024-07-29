@@ -519,7 +519,7 @@ final class JsonSerializableToJsonTest {
               final long jobKey = 123;
               final var elementInstancePath = List.of(List.of(101L, 102L), List.of(103L, 104L));
               final var processDefinitionPath = List.of(101L, 102L);
-              final var callingElementPath = List.of("callX", "callY");
+              final var callingElementPath = List.of(12345, 67890);
               return new IncidentRecord()
                   .setElementInstanceKey(elementInstanceKey)
                   .setProcessDefinitionKey(processDefinitionKey)
@@ -548,7 +548,7 @@ final class JsonSerializableToJsonTest {
           "tenantId": "<default>",
           "elementInstancePath":[[101, 102], [103, 104]],
           "processDefinitionPath": [101, 102],
-          "callingElementPath": ["callX", "callY"]
+          "callingElementPath": [12345, 67890]
         }
         """
       },

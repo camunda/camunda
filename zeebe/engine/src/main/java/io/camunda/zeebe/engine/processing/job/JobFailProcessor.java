@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -57,6 +58,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
   private final SideEffectWriter sideEffectWriter;
   private final JobCommandPreconditionChecker preconditionChecker;
   private final ElementInstanceState elementInstanceState;
+  private final ProcessState processState;
 
   public JobFailProcessor(
       final ProcessingState state,
@@ -67,6 +69,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       final BpmnBehaviors bpmnBehaviors) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
+    processState = state.getProcessState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
@@ -170,6 +173,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     final var treePathProperties =
         new ElementTreePathBuilder()
             .withElementInstanceState(elementInstanceState)
+            .withProcessState(processState)
             .withElementInstanceKey(value.getElementInstanceKey())
             .build();
 

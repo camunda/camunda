@@ -10,8 +10,6 @@ package io.camunda.zeebe.engine.processing.bpmn.activity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hashing;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -30,7 +28,6 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -766,11 +763,9 @@ public final class CallActivityTest {
     final String rootProcessId = "root";
     final String callActivity1Id = "callParent";
     final String callActivity2Id = "callChild";
-    final HashFunction hashFunction = Hashing.murmur3_128();
-    final var ca1Hash =
-        hashFunction.hashString(callActivity1Id, Charset.defaultCharset()).toString();
-    final var ca2Hash =
-        hashFunction.hashString(callActivity2Id, Charset.defaultCharset()).toString();
+    // every deployment resource will have indexes starting from zero
+    final var ca1Index = 0;
+    final var ca2Index = 0;
     ENGINE
         .deployment()
         .withXmlResource(
@@ -815,7 +810,7 @@ public final class CallActivityTest {
             rootInstance.getProcessDefinitionKey(),
             parentInstance.getProcessDefinitionKey(),
             childInstance.getProcessDefinitionKey())
-        .hasOnlyCallingElementPath(ca1Hash, ca2Hash);
+        .hasOnlyCallingElementPath(ca1Index, ca2Index);
   }
 
   private static ProcessInstanceRecordValue getProcessInstanceRecordValue(

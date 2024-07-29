@@ -7,29 +7,28 @@
  */
 package io.camunda.zeebe.engine.processing.common;
 
-import com.google.common.hash.HashCode;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hashing;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import java.nio.charset.Charset;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
 public class ElementTreePathBuilder {
   private ElementInstanceState elementInstanceState;
+  private ProcessState processState;
   private Long elementInstanceKey;
   private ElementTreePathProperties properties;
-  private final HashFunction hashFunction;
-
-  public ElementTreePathBuilder() {
-    hashFunction = Hashing.murmur3_128();
-  }
 
   public ElementTreePathBuilder withElementInstanceState(
       final ElementInstanceState elementInstanceState) {
     this.elementInstanceState = elementInstanceState;
+    return this;
+  }
+
+  public ElementTreePathBuilder withProcessState(final ProcessState processState) {
+    this.processState = processState;
     return this;
   }
 
@@ -40,6 +39,7 @@ public class ElementTreePathBuilder {
 
   public ElementTreePathProperties build() {
     Objects.requireNonNull(elementInstanceState, "elementInstanceState cannot be null");
+    Objects.requireNonNull(processState, "processState cannot be null");
     Objects.requireNonNull(elementInstanceKey, "elementInstanceKey cannot be null");
     properties =
         new ElementTreePathProperties(new LinkedList<>(), new LinkedList<>(), new LinkedList<>());
@@ -63,24 +63,28 @@ public class ElementTreePathBuilder {
 
     final long callingElementInstanceKey = processInstanceRecord.getParentElementInstanceKey();
     if (callingElementInstanceKey != -1) {
-      properties.callingElementPath.addFirst(getCallActivityIdHash(callingElementInstanceKey));
+      properties.callingElementPath.addFirst(getCallActivityIndex(callingElementInstanceKey));
       buildElementTreePathProperties(callingElementInstanceKey);
     }
   }
 
-  private String getCallActivityIdHash(final long callingElementInstanceKey) {
+  private Integer getCallActivityIndex(final long callingElementInstanceKey) {
     final ElementInstance callActivityElementInstance =
         elementInstanceState.getInstance(callingElementInstanceKey);
     final var callActivityInstanceRecord = callActivityElementInstance.getValue();
 
-    final HashCode hashCode =
-        hashFunction.hashString(
-            callActivityInstanceRecord.getElementId(), Charset.defaultCharset());
-    return hashCode.toString();
+    final ExecutableCallActivity callActivity =
+        processState.getFlowElement(
+            callActivityInstanceRecord.getProcessDefinitionKey(),
+            callActivityInstanceRecord.getTenantId(),
+            callActivityInstanceRecord.getElementIdBuffer(),
+            ExecutableCallActivity.class);
+
+    return callActivity.getLexicographicIndex();
   }
 
   public record ElementTreePathProperties(
       List<List<Long>> elementInstancePath,
       List<Long> processDefinitionPath,
-      List<String> callingElementPath) {}
+      List<Integer> callingElementPath) {}
 }

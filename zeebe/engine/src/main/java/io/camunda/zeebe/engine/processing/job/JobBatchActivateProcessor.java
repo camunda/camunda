@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -41,6 +42,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final KeyGenerator keyGenerator;
   private final JobMetrics jobMetrics;
   private final ElementInstanceState elementInstanceState;
+  private final ProcessState processState;
 
   public JobBatchActivateProcessor(
       final Writers writers,
@@ -58,6 +60,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
     elementInstanceState = state.getElementInstanceState();
+    processState = state.getProcessState();
   }
 
   @Override
@@ -144,6 +147,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     final var treePathProperties =
         new ElementTreePathBuilder()
             .withElementInstanceState(elementInstanceState)
+            .withProcessState(processState)
             .withElementInstanceKey(job.getElementInstanceKey())
             .build();
 
