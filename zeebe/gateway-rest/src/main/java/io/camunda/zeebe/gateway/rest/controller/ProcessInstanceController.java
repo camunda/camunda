@@ -52,9 +52,7 @@ public class ProcessInstanceController {
               HttpStatus.BAD_REQUEST,
               e.getMessage(),
               "Failed to execute Process Instance Search Query");
-      return ResponseEntity.of(problemDetail)
-          .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_PROBLEM_JSON))
-          .build();
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
     }
   }
 }

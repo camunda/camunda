@@ -52,9 +52,7 @@ public class DecisionDefinitionController {
               HttpStatus.BAD_REQUEST,
               e.getMessage(),
               "Failed to execute Decision Definition Search Query");
-      return ResponseEntity.of(problemDetail)
-          .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_PROBLEM_JSON))
-          .build();
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
     }
   }
 }
