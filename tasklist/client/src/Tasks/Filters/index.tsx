@@ -17,24 +17,10 @@ import sharedStyles from 'modules/styles/panelHeader.module.scss';
 import {useSearchParams} from 'react-router-dom';
 import {getStateLocally} from 'modules/utils/localStorage';
 
-// const FILTER_LABELS: Record<string, string> = {
-//   'all-open': t('allOpenTasks'),
-//   'assigned-to-me': t('assignedToMe'),
-//   unassigned: t('unassigned'),
-//   completed: t('completed'),
-//   custom: t('customFilter'),
-// };
-
 type Props = {
   disabled: boolean;
 };
 
-// const SORTING_OPTIONS: Record<TaskFilters['sortBy'], string> = {
-//   creation: t('creationDate'),
-//   'follow-up': t('followUpDate'),
-//   due: t('dueDate'),
-//   completion: t('completionDate'),
-// };
 const SORTING_OPTIONS_ORDER: TaskFilters['sortBy'][] = [
   'creation',
   'due',
