@@ -123,6 +123,37 @@ public class ProcessStateMultiTenantTest {
   }
 
   @Test
+  public void shouldStoreProcessDefinitionKeyByProcessIdAndDeploymentKeyForMultipleTenants() {
+    // given
+    final var processKey = keyGenerator.nextKey();
+    final var deploymentKey = keyGenerator.nextKey();
+    final var processId = Strings.newRandomValidBpmnId();
+    final var version = 1;
+    final var tenant1Process =
+        createProcessRecord(TENANT_1, processKey, processId, version)
+            .setDeploymentKey(deploymentKey);
+    final var tenant2Process =
+        createProcessRecord(TENANT_2, processKey, processId, version)
+            .setDeploymentKey(deploymentKey);
+    processState.putProcess(processKey, tenant1Process);
+    processState.putProcess(processKey, tenant2Process);
+
+    // when
+    processState.storeProcessDefinitionKeyByProcessIdAndDeploymentKey(tenant1Process);
+    processState.storeProcessDefinitionKeyByProcessIdAndDeploymentKey(tenant2Process);
+
+    // then
+    final var tenant1DeployedProcess =
+        processState.getProcessByProcessIdAndDeploymentKey(
+            wrapString(processId), deploymentKey, TENANT_1);
+    assertDeployedProcess(tenant1DeployedProcess, TENANT_1, processKey, processId, version);
+    final var tenant2DeployedProcess =
+        processState.getProcessByProcessIdAndDeploymentKey(
+            wrapString(processId), deploymentKey, TENANT_2);
+    assertDeployedProcess(tenant2DeployedProcess, TENANT_2, processKey, processId, version);
+  }
+
+  @Test
   public void shouldUpdateProcessStateForTenant() {
     // given
     final long processKey = keyGenerator.nextKey();

@@ -20,6 +20,8 @@ public interface MutableProcessState extends ProcessState {
 
   void putProcess(long key, ProcessRecord value);
 
+  void storeProcessDefinitionKeyByProcessIdAndDeploymentKey(final ProcessRecord processRecord);
+
   /**
    * Updates the state of a process. This method updates both the ColumnFamily and the in memory
    * cache.
@@ -30,7 +32,7 @@ public interface MutableProcessState extends ProcessState {
   void updateProcessState(final ProcessRecord processRecord, final PersistedProcessState state);
 
   /**
-   * Deletes a process fromm the state and cache
+   * Deletes a process from the state and cache
    *
    * @param processRecord the record of the process that is deleted
    */
