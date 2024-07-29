@@ -14,15 +14,6 @@ public sealed interface MessageRoutingConfiguration {
     return new FixedPartitionCount(partitionCount);
   }
 
-  record Migrating(int oldPartitionCount, int newPartitionCount)
-      implements MessageRoutingConfiguration {
-
-    @Override
-    public String name() {
-      return "migrating";
-    }
-  }
-
   record FixedPartitionCount(int partitionCount) implements MessageRoutingConfiguration {
 
     @Override

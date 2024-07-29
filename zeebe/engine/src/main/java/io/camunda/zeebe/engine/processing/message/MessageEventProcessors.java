@@ -19,7 +19,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptio
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.protocol.impl.SubscriptionUtil.Routing;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -39,8 +38,7 @@ public final class MessageEventProcessors {
       final Writers writers,
       final EngineConfiguration config,
       final FeatureFlags featureFlags,
-      final CommandDistributionBehavior commandDistributionBehavior,
-      final Routing routing) {
+      final CommandDistributionBehavior commandDistributionBehavior) {
 
     final MutableMessageState messageState = processingState.getMessageState();
     final MutableMessageSubscriptionState subscriptionState =
@@ -66,8 +64,7 @@ public final class MessageEventProcessors {
                 writers,
                 processState,
                 bpmnBehaviors.eventTriggerBehavior(),
-                bpmnBehaviors.stateBehavior(),
-                routing))
+                bpmnBehaviors.stateBehavior()))
         .onCommand(
             ValueType.MESSAGE_BATCH,
             MessageBatchIntent.EXPIRE,

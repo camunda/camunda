@@ -26,7 +26,6 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
-import io.camunda.zeebe.protocol.impl.SubscriptionUtil.Routing;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -85,8 +84,7 @@ public final class MessageStreamProcessorTest {
               processingContext.getWriters(),
               DEFAULT_ENGINE_CONFIGURATION,
               FeatureFlags.createDefault(),
-              spyCommandDistributionBehavior,
-              Routing.ofFixedPartitionCount(1));
+              spyCommandDistributionBehavior);
           return typedRecordProcessors;
         });
   }

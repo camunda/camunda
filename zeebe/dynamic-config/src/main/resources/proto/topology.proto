@@ -24,19 +24,7 @@ message RoutingInfo {
 }
 
 message MessageRoutingConfiguration {
-  oneof routing {
-    MessageRoutingFixed fixed = 1;
-    MessageRoutingMigrating migrating = 2;
-  }
-}
-
-message MessageRoutingFixed {
   int32 partitionCount = 1;
-}
-
-message MessageRoutingMigrating {
-  int32 oldPartitionCount = 1;
-  int32 newPartitionCount = 2;
 }
 
 message MemberState {

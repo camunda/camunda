@@ -136,8 +136,7 @@ public final class EngineProcessors {
         writers,
         config,
         featureFlags,
-        commandDistributionBehavior,
-        routing);
+        commandDistributionBehavior);
 
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
         addProcessProcessors(
@@ -319,8 +318,7 @@ public final class EngineProcessors {
       final Writers writers,
       final EngineConfiguration config,
       final FeatureFlags featureFlags,
-      final CommandDistributionBehavior commandDistributionBehavior,
-      final Routing routing) {
+      final CommandDistributionBehavior commandDistributionBehavior) {
     MessageEventProcessors.addMessageProcessors(
         bpmnBehaviors,
         typedRecordProcessors,
@@ -330,8 +328,7 @@ public final class EngineProcessors {
         writers,
         config,
         featureFlags,
-        commandDistributionBehavior,
-        routing);
+        commandDistributionBehavior);
   }
 
   private static void addDecisionProcessors(
