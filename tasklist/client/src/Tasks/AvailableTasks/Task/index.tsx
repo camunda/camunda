@@ -127,7 +127,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
     const {t} = useTranslation();
     const creationDate = useMemo(
       () => formatISODateTime(creationDateString),
-      [creationDateString],
+      [creationDateString, t], // t needed to retrigger rendering when language changes
     );
 
     const completionDate = formatISODate(completionDateString);
