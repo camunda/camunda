@@ -13,6 +13,19 @@ import {configure} from 'modules/testing-library';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 import {reactQueryClient} from 'modules/react-query/reactQueryClient';
 import en from 'modules/internationalization/locales/en.json';
+import i18n, {t} from 'i18next';
+
+function initTestI18next() {
+  i18n.init({
+    lng: 'en',
+    resources: {
+      en,
+    },
+    interpolation: {
+      escapeValue: false,
+    },
+  });
+}
 
 function mockMatchMedia() {
   Object.defineProperty(window, 'matchMedia', {
@@ -31,6 +44,7 @@ function mockMatchMedia() {
 }
 
 mockMatchMedia();
+initTestI18next();
 
 beforeEach(() => {
   mockMatchMedia();
@@ -49,7 +63,7 @@ beforeAll(() => {
     Trans: ({children}: {children: React.ReactNode}) => children,
     useTranslation: () => {
       return {
-        t: (str: string) => (en.translation as Record<string, string>)[str],
+        t,
         i18n: {
           changeLanguage: () => new Promise<void>(() => {}),
         },
