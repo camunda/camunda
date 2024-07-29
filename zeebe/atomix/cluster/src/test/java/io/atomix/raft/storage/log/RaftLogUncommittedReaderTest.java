@@ -46,7 +46,7 @@ class RaftLogUncommittedReaderTest {
             .withMetaStore(new InMemory())
             .build();
     uncommittedReader = raftlog.openUncommittedReader();
-    data.order(ByteOrder.LITTLE_ENDIAN).putInt(123456);
+    data.order(ByteOrder.BIG_ENDIAN).putInt(123456);
   }
 
   @AfterEach

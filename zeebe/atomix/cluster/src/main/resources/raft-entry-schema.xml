@@ -2,7 +2,7 @@
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude"
   package="io.atomix.raft.storage.serializer" id="8" version="3"
-  semanticVersion="0.1.0" description="Raft Entry" byteOrder="littleEndian"
+  semanticVersion="0.1.0" description="Raft Entry" byteOrder="bigEndian"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://fixprotocol.io/2016/sbe http://fixprotocol.io/2016/sbe/sbe.xsd">
 

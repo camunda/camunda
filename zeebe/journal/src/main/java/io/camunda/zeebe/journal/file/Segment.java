@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  */
 final class Segment implements AutoCloseable, FlushableSegment {
 
-  private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
+  private static final ByteOrder ENDIANNESS = ByteOrder.BIG_ENDIAN;
   private static final Logger LOG = LoggerFactory.getLogger(Segment.class);
 
   private final SegmentFile file;

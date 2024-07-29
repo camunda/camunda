@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 /** Create a segment file. Load a segment from the segment file. */
 final class SegmentLoader {
   private static final Logger LOGGER = LoggerFactory.getLogger(SegmentLoader.class);
-  private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
+  private static final ByteOrder ENDIANNESS = ByteOrder.BIG_ENDIAN;
 
   private final SegmentAllocator allocator;
   private final long minFreeDiskSpace;

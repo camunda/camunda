@@ -34,7 +34,7 @@ class RaftLogCommittedReaderTest {
   private RaftLogReader committedReader;
 
   private final ByteBuffer data =
-      ByteBuffer.allocate(Integer.BYTES).order(ByteOrder.LITTLE_ENDIAN).putInt(123456);
+      ByteBuffer.allocate(Integer.BYTES).order(ByteOrder.BIG_ENDIAN).putInt(123456);
 
   @BeforeEach
   void setup(@TempDir final File directory) {

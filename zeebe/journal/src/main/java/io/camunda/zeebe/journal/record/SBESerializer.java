@@ -69,7 +69,7 @@ public final class SBESerializer implements JournalRecordSerializer {
     final int headerLength = RecordDataEncoder.dataHeaderLength();
     final int limit = recordEncoder.limit();
     recordEncoder.limit(limit + headerLength + entryLength);
-    writeBuffer.putInt(limit, entryLength, java.nio.ByteOrder.LITTLE_ENDIAN);
+    writeBuffer.putInt(limit, entryLength, java.nio.ByteOrder.BIG_ENDIAN);
     recordDataWriter.write(writeBuffer, limit + headerLength);
 
     final var writtenBytes = headerEncoder.encodedLength() + recordEncoder.encodedLength();

@@ -59,7 +59,7 @@ class RaftLogTest {
           Set.of(
               new DefaultRaftMember(MemberId.from("0"), Type.ACTIVE, Instant.ofEpochSecond(1234))));
   private final ByteBuffer data =
-      ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putInt(0, 123456);
+      ByteBuffer.allocate(8).order(ByteOrder.BIG_ENDIAN).putInt(0, 123456);
   private final ApplicationEntry firstApplicationEntry = createApplicationEntry(1);
   private RaftLog raftlog;
   private JournalMetaStore metaStore;
