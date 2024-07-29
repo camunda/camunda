@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
@@ -19,17 +19,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class ModifyProcessZeebeWrapper {
 
-  private CamundaClient camundaClient;
+  private ZeebeClient camundaClient;
 
-  public ModifyProcessZeebeWrapper(final CamundaClient camundaClient) {
+  public ModifyProcessZeebeWrapper(final ZeebeClient camundaClient) {
     this.camundaClient = camundaClient;
   }
 
-  public CamundaClient getCamundaClient() {
+  public ZeebeClient getCamundaClient() {
     return camundaClient;
   }
 
-  public void setCamundaClient(final CamundaClient camundaClient) {
+  public void setCamundaClient(final ZeebeClient camundaClient) {
     this.camundaClient = camundaClient;
   }
 

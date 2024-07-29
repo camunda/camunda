@@ -12,7 +12,6 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTA
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
@@ -23,6 +22,7 @@ import io.camunda.operate.util.rest.StatefulRestTemplate;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.webapp.rest.dto.SequenceFlowDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import jakarta.annotation.PreDestroy;
@@ -222,8 +222,7 @@ public class DataGenerator {
     final List<Long> processInstanceKeys = new ArrayList<>();
     for (int i = 0; i < numberOfProcessInstances; i++) {
       final long processInstanceKey =
-          ZeebeTestUtil.startProcessInstance(
-              zeebeClient, bpmnProcessId, "{\"var1\": \"value1\"}");
+          ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, "{\"var1\": \"value1\"}");
       LOGGER.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
       processInstanceKeys.add(processInstanceKey);
     }

@@ -7,10 +7,10 @@
  */
 package io.camunda.tasklist.zeebe;
 
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.webapps.zeebe.PartitionSupplier;
 import io.camunda.webapps.zeebe.PartitionSupplierConfigurer;
 import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.gateway.Gateway;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;

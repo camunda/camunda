@@ -16,8 +16,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import com.graphql.spring.boot.test.GraphQLTestTemplate;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.MigrationPlanBuilderImpl;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -26,6 +24,8 @@ import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.oauth.IdentityJwt2AuthenticationTokenConverter;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
@@ -60,7 +60,7 @@ public class TasklistTester {
       "mutation {claimTask(taskId: \"%s\")" + TASK_RESULT_PATTERN + "}";
   private static final String VARIABLE_INPUT_PATTERN = "{name: \"%s\", value: \"%s\"}";
 
-  private final CamundaClient camundaClient;
+  private final ZeebeClient camundaClient;
   private final DatabaseTestExtension databaseTestExtension;
   private JwtDecoder jwtDecoder;
   //
@@ -135,13 +135,13 @@ public class TasklistTester {
   //  private Long jobKey;
   //
   public TasklistTester(
-      final CamundaClient camundaClient, final DatabaseTestExtension elasticsearchTestRule) {
+      final ZeebeClient camundaClient, final DatabaseTestExtension elasticsearchTestRule) {
     this.camundaClient = camundaClient;
     databaseTestExtension = elasticsearchTestRule;
   }
 
   public TasklistTester(
-      final CamundaClient camundaClient,
+      final ZeebeClient camundaClient,
       final DatabaseTestExtension elasticsearchTestRule,
       final JwtDecoder jwtDecoder) {
     this(camundaClient, elasticsearchTestRule);

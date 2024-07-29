@@ -9,7 +9,6 @@ package io.camunda.tasklist.data;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.CamundaClient;
 import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.FormIndex;
@@ -17,6 +16,7 @@ import io.camunda.tasklist.schema.indices.UserIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.PayloadUtil;
 import io.camunda.tasklist.util.ZeebeTestUtil;
+import io.camunda.zeebe.client.ZeebeClient;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.text.SimpleDateFormat;
@@ -43,7 +43,7 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
   @Autowired protected UserIndex userIndex;
   protected PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-  @Autowired private CamundaClient camundaClient;
+  @Autowired private ZeebeClient camundaClient;
 
   @Autowired private FormIndex formIndex;
 

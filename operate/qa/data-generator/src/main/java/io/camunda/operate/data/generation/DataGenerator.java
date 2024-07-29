@@ -11,10 +11,10 @@ import static io.camunda.operate.qa.util.VariablesUtil.createALotOfVarsPayload;
 import static io.camunda.operate.qa.util.VariablesUtil.createBigVarsWithSuffix;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.operate.data.generation.DataGeneratorConfig.DataGeneratorThread;
 import io.camunda.operate.property.ImportProperties;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import jakarta.annotation.PreDestroy;
@@ -172,8 +172,7 @@ public class DataGenerator {
   private void deployProcesses() {
     for (int i = 0; i < dataGeneratorProperties.getProcessCount(); i++) {
       final String bpmnProcessId = getBpmnProcessId(i);
-      ZeebeTestUtil.deployProcess(
-          zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
+      ZeebeTestUtil.deployProcess(zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
       bpmnProcessIds.add(bpmnProcessId);
     }
 
@@ -307,8 +306,7 @@ public class DataGenerator {
             vars = "{\"var1\": \"value1\"}";
           }
           futures.put(
-              ZeebeTestUtil.startProcessInstanceAsync(
-                  zeebeClient, getRandomBpmnProcessId(), vars));
+              ZeebeTestUtil.startProcessInstanceAsync(zeebeClient, getRandomBpmnProcessId(), vars));
         } catch (final InterruptedException e) {
           Thread.currentThread().interrupt();
         }

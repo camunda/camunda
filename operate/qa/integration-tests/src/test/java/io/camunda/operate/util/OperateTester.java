@@ -22,7 +22,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.operate.archiver.ArchiveBatch;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.entities.*;
@@ -49,6 +48,7 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.security.oauth2.IdentityJwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;

@@ -9,13 +9,13 @@ package io.camunda.operate.util.j5templates;
 
 import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.util.TestUtil;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.response.Topology;
 import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
 

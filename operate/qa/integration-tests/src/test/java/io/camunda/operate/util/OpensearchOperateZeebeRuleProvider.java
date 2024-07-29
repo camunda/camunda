@@ -11,14 +11,14 @@ import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERS
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.componentTemplateRequestBuilder;
 import static org.junit.Assert.assertTrue;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.response.Topology;
 import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
 import java.time.Instant;

@@ -17,7 +17,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationType;
@@ -34,6 +33,7 @@ import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.webapps.zeebe.StandalonePartitionSupplier;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -209,8 +209,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     zeebeClient = getClient();
     workerName = TestUtil.createRandomString(10);
 
-    tester =
-        beanFactory.getBean(OperateTester.class, zeebeClient, mockMvcTestRule, searchTestRule);
+    tester = beanFactory.getBean(OperateTester.class, zeebeClient, mockMvcTestRule, searchTestRule);
 
     processCache.clearCache();
     importPositionHolder.cancelScheduledImportPositionUpdateTask().join();

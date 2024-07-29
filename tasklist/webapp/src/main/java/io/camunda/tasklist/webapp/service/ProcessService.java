@@ -8,11 +8,6 @@
 package io.camunda.tasklist.webapp.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.command.ClientStatusException;
-import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.IdentityProperties;
@@ -25,6 +20,11 @@ import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.ClientStatusException;
+import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.grpc.Status;
 import java.io.IOException;
 import java.util.List;
@@ -43,7 +43,7 @@ public class ProcessService {
 
   @Autowired
   @Qualifier("tasklistCamundaClient")
-  private CamundaClient camundaClient;
+  private ZeebeClient camundaClient;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")

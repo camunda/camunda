@@ -15,10 +15,10 @@
  */
 package io.camunda.process.test.impl.configuration;
 
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
+import io.camunda.zeebe.client.ZeebeClient;
 import java.lang.reflect.Proxy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;

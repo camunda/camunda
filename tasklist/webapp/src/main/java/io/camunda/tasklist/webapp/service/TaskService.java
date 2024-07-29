@@ -13,10 +13,6 @@ import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNullElse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.command.CompleteJobCommandStep1;
-import io.camunda.client.api.response.AssignUserTaskResponse;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskImplementation;
@@ -31,6 +27,10 @@ import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.UserReader;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
+import io.camunda.zeebe.client.api.response.AssignUserTaskResponse;
 import java.io.IOException;
 import java.util.*;
 import org.apache.commons.collections4.CollectionUtils;
@@ -51,7 +51,7 @@ public class TaskService {
 
   @Autowired
   @Qualifier("tasklistCamundaClient")
-  private CamundaClient camundaClient;
+  private ZeebeClient camundaClient;
 
   @Autowired private TaskStore taskStore;
   @Autowired private VariableService variableService;

@@ -9,14 +9,14 @@ package io.camunda.operate.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.MigrationPlan;
-import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
-import io.camunda.zeebe.client.api.command.MigrationPlanImpl;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.MigrationPlan;
+import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
+import io.camunda.zeebe.client.api.command.MigrationPlanImpl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

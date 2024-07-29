@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.application.Profile;
+import io.camunda.identity.sdk.Identity;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
@@ -33,7 +34,6 @@ import io.camunda.zeebe.client.api.response.UnassignUserTaskResponse;
 import io.camunda.zeebe.client.api.response.UpdateTimeoutJobResponse;
 import io.camunda.zeebe.client.api.response.UpdateUserTaskResponse;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.identity.sdk.Identity;
 import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;

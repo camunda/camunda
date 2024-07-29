@@ -10,7 +10,6 @@ package io.camunda.operate.util;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.client.api.command.*;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;

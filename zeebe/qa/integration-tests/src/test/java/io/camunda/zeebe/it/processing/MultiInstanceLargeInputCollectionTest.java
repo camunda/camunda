@@ -9,9 +9,9 @@ package io.camunda.zeebe.it.processing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;

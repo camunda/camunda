@@ -20,12 +20,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.containers.ZeebeContainer;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;

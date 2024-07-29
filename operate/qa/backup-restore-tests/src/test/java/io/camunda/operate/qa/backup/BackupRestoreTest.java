@@ -12,12 +12,12 @@ import static io.camunda.operate.webapp.management.dto.BackupStateDto.COMPLETED;
 import static io.camunda.operate.webapp.management.dto.BackupStateDto.IN_PROGRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.util.RetryOperation;
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
 import io.camunda.operate.webapp.management.dto.TakeBackupResponseDto;
+import io.camunda.zeebe.client.ZeebeClient;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;

@@ -112,7 +112,7 @@ final class RollingUpdateTest {
     updateBroker(broker, to);
 
     // then
-    try (final var client = camundaClientFromZeebeClient()) {
+    try (final var client = cluster.newClientBuilder().build();) {
       Awaitility.await()
           .atMost(Duration.ofSeconds(120))
           .pollInterval(Duration.ofMillis(100))
@@ -135,7 +135,7 @@ final class RollingUpdateTest {
     cluster.start();
 
     // when
-    try (final var client = camundaClientFromZeebeClient()) {
+    try (final var client = cluster.newClientBuilder().build();) {
       deployProcess(client);
 
       // potentially retry in case we're faster than the deployment distribution
@@ -151,7 +151,7 @@ final class RollingUpdateTest {
     final ZeebeBrokerNode<?> broker = cluster.getBrokers().get(brokerId);
     broker.stop();
 
-    try (final var client = camundaClientFromZeebeClient()) {
+    try (final var client = cluster.newClientBuilder().build();) {
       Awaitility.await("broker is removed from topology")
           .atMost(Duration.ofSeconds(120))
           .pollInterval(Duration.ofMillis(100))
@@ -339,16 +339,7 @@ final class RollingUpdateTest {
             });
   }
 
-  private ZeebeClient camundaClientFromZeebeClient() {
-    final var zeebeClient = cluster.newClientBuilder().build();
-    return ZeebeClient.newClientBuilder()
-        .gatewayAddress(zeebeClient.getConfiguration().getGatewayAddress())
-        .usePlaintext()
-        .build();
-  }
-
-  private void assertTopologyDoesNotContainerBroker(
-      final ZeebeClient client, final int brokerId) {
+  private void assertTopologyDoesNotContainerBroker(final ZeebeClient client, final int brokerId) {
     final var topology = client.newTopologyRequest().send().join();
     TopologyAssert.assertThat(topology)
         .as("the topology does not contain broker %d", brokerId)

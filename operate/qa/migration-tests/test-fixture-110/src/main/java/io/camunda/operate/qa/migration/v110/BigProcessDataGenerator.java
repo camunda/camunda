@@ -15,11 +15,11 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.STATE;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ThreadUtil;
+import io.camunda.zeebe.client.ZeebeClient;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;

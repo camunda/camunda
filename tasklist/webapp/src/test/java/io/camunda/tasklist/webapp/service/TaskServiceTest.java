@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.service;
 
-import static io.camunda.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -21,14 +21,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.AssignUserTaskCommandStep1;
-import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.command.CompleteJobCommandStep1;
-import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
-import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
-import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskImplementation;
@@ -50,6 +42,14 @@ import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.UserReader;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
+import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
+import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -69,7 +69,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TaskServiceTest {
 
   @Mock private UserReader userReader;
-  @Mock private CamundaClient camundaClient;
+  @Mock private ZeebeClient camundaClient;
   @Mock private TaskStore taskStore;
   @Mock private VariableService variableService;
   @Spy private ObjectMapper objectMapper = CommonUtils.getObjectMapper();
@@ -420,7 +420,7 @@ class TaskServiceTest {
     when(camundaClient.newCompleteCommand(123)).thenReturn(mockedJobCommandStep1);
     final var mockedJobCommandStep2 = mock(CompleteJobCommandStep1.class);
     when(mockedJobCommandStep1.variables(variablesMap)).thenReturn(mockedJobCommandStep2);
-    final var mockedZeebeFuture = mock(CamundaFuture.class);
+    final var mockedZeebeFuture = mock(ZeebeFuture.class);
     when(mockedJobCommandStep2.send()).thenReturn(mockedZeebeFuture);
     when(taskBefore.getImplementation()).thenReturn(TaskImplementation.JOB_WORKER);
     // When
@@ -457,7 +457,7 @@ class TaskServiceTest {
     when(camundaClient.newUserTaskCompleteCommand(123)).thenReturn(mockedJobCommandStep1);
     final var mockedJobCommandStep2 = mock(CompleteUserTaskCommandStep1.class);
     when(mockedJobCommandStep1.variables(variablesMap)).thenReturn(mockedJobCommandStep2);
-    final var mockedZeebeFuture = mock(CamundaFuture.class);
+    final var mockedZeebeFuture = mock(ZeebeFuture.class);
     when(mockedJobCommandStep2.send()).thenReturn(mockedZeebeFuture);
     when(taskBefore.getImplementation()).thenReturn(TaskImplementation.ZEEBE_USER_TASK);
     // When
@@ -484,7 +484,7 @@ class TaskServiceTest {
     when(camundaClient.newUserTaskUnassignCommand(Long.valueOf(taskId)))
         .thenReturn(mock(UnassignUserTaskCommandStep1.class));
     when(camundaClient.newUserTaskUnassignCommand(Long.valueOf(taskId)).send())
-        .thenReturn(mock(CamundaFuture.class));
+        .thenReturn(mock(ZeebeFuture.class));
     final var result = instance.unassignTask(String.valueOf(taskId));
 
     // Then
@@ -566,7 +566,7 @@ class TaskServiceTest {
     when(camundaClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()))
         .thenReturn(mock(AssignUserTaskCommandStep1.class));
     when(camundaClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()).send())
-        .thenReturn(mock(CamundaFuture.class));
+        .thenReturn(mock(ZeebeFuture.class));
     final var result =
         instance.assignTask(taskId, providedAssignee, providedAllowOverrideAssignment);
 

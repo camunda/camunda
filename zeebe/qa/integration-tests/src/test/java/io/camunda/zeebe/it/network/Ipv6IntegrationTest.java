@@ -87,19 +87,11 @@ final class Ipv6IntegrationTest {
     cluster.start();
 
     // when
-    try (final var client = camundaClientFromZeebeClient()) {
+    try (final var client = cluster.newClientBuilder().build();) {
       final Topology topology = client.newTopologyRequest().send().join(5, TimeUnit.SECONDS);
       // then - can find each other
       TopologyAssert.assertThat(topology).isComplete(1, 1, 1);
     }
-  }
-
-  private ZeebeClient camundaClientFromZeebeClient() {
-    final var zeebeClient = cluster.newClientBuilder().build();
-    return ZeebeClient.newClientBuilder()
-        .gatewayAddress(zeebeClient.getConfiguration().getGatewayAddress())
-        .usePlaintext()
-        .build();
   }
 
   private void configureBroker(final ZeebeBrokerNode<?> broker) {

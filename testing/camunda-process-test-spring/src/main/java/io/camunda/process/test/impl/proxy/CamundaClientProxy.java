@@ -20,8 +20,8 @@ import java.lang.reflect.Method;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
- * Dynamic proxy to delegate to a {@link ZeebeClient} which allows to swap the ZeebeClient
- * object under the hood.
+ * Dynamic proxy to delegate to a {@link ZeebeClient} which allows to swap the ZeebeClient object
+ * under the hood.
  */
 public class CamundaClientProxy extends AbstractInvocationHandler {
 

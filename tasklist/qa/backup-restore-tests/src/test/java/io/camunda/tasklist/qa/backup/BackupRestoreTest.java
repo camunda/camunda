@@ -10,8 +10,6 @@ package io.camunda.tasklist.qa.backup;
 import static io.camunda.tasklist.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.CamundaClientBuilder;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.qa.backup.generator.BackupRestoreDataGenerator;
@@ -19,6 +17,8 @@ import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupResponseDto;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.io.IOException;
 import java.util.List;
 import org.apache.http.HttpHost;
@@ -64,7 +64,7 @@ public class BackupRestoreTest {
 
   private GenericContainer tasklistContainer;
 
-  private CamundaClient camundaClient;
+  private ZeebeClient camundaClient;
 
   private final TestContainerUtil testContainerUtil = new TestContainerUtil();
   private BackupRestoreTestContext testContext;
@@ -274,9 +274,9 @@ public class BackupRestoreTest {
                         .settings(s -> s.location(REPOSITORY_NAME))));
   }
 
-  private CamundaClient createCamundaClient(final String zeebeGateway) {
-    final CamundaClientBuilder builder =
-        CamundaClient.newClientBuilder()
+  private ZeebeClient createCamundaClient(final String zeebeGateway) {
+    final ZeebeClientBuilder builder =
+        ZeebeClient.newClientBuilder()
             .gatewayAddress(zeebeGateway)
             .defaultJobWorkerMaxJobsActive(5)
             .usePlaintext();

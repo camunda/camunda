@@ -29,8 +29,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @AutoCloseResources
 class ActivateJobsTest {
 
-  @AutoCloseResource
-  ZeebeClient client;
+  @AutoCloseResource ZeebeClient client;
 
   @TestZeebe
   final TestStandaloneBroker zeebe =

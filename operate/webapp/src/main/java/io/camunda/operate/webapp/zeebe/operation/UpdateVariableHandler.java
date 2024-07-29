@@ -10,9 +10,9 @@ package io.camunda.operate.webapp.zeebe.operation;
 import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
 import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
 
-import io.camunda.client.api.response.SetVariablesResponse;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
+import io.camunda.zeebe.client.api.response.SetVariablesResponse;
 import java.util.Set;
 import org.springframework.stereotype.Component;
 

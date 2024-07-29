@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.it.util;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.broker.TestLoggers;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.it.clustering.ClusteringRule;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;

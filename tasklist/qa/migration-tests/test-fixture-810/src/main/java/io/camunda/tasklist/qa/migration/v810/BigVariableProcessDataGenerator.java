@@ -11,11 +11,11 @@ import static io.camunda.tasklist.property.ImportProperties.DEFAULT_VARIABLE_SIZ
 import static io.camunda.tasklist.qa.util.VariablesUtil.createBigVariableWithSuffix;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-import io.camunda.client.CamundaClient;
 import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.qa.util.ZeebeTestUtil;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.ThreadUtil;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
@@ -49,7 +49,7 @@ public class BigVariableProcessDataGenerator {
    * CamundaClient must not be reused between different test fixtures, as this may be different
    * versions of client in the future.
    */
-  private CamundaClient camundaClient;
+  private ZeebeClient camundaClient;
 
   @Autowired
   @Qualifier("tasklistEsClient")
@@ -59,7 +59,7 @@ public class BigVariableProcessDataGenerator {
 
   private void init(final TestContext testContext) {
     camundaClient =
-        CamundaClient.newClientBuilder()
+        ZeebeClient.newClientBuilder()
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
             .usePlaintext()
             .build();

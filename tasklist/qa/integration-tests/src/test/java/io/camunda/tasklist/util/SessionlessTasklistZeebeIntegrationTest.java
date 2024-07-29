@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.CamundaClient;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
@@ -21,6 +20,7 @@ import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.zeebe.PartitionHolder;
 import io.camunda.tasklist.zeebeimport.ImportPositionHolder;
 import io.camunda.webapps.zeebe.StandalonePartitionSupplier;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.zeebe.containers.ZeebeContainer;
@@ -57,10 +57,10 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
 
   public ZeebeContainer zeebeContainer;
 
-  @MockBean protected CamundaClient mockedCamundaClient;
+  @MockBean protected ZeebeClient mockedCamundaClient;
   // we don't want to create CamundaClient, we will rather use the one from
   // test rule
-  protected CamundaClient camundaClient;
+  protected ZeebeClient camundaClient;
   @Autowired protected PartitionHolder partitionHolder;
   @Autowired protected ImportPositionHolder importPositionHolder;
   @Autowired protected TasklistProperties tasklistProperties;
@@ -105,7 +105,7 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
     importPositionHolder.clearCache();
   }
 
-  public CamundaClient getClient() {
+  public ZeebeClient getClient() {
     return zeebeExtension.getClient();
   }
 

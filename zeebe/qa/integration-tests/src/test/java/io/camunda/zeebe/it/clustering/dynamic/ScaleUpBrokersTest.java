@@ -41,8 +41,7 @@ final class ScaleUpBrokersTest {
 
   private static final int PARTITIONS_COUNT = 3;
   private static final String JOB_TYPE = "job";
-  @AutoCloseResource
-  ZeebeClient zeebeClient;
+  @AutoCloseResource ZeebeClient zeebeClient;
 
   private final List<TestStandaloneBroker> newBrokers = new ArrayList<>();
 

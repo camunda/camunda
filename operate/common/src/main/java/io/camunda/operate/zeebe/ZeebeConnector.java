@@ -7,10 +7,10 @@
  */
 package io.camunda.operate.zeebe;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.ZeebeProperties;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

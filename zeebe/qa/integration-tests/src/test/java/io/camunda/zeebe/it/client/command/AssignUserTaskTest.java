@@ -27,8 +27,7 @@ import org.junit.jupiter.api.Test;
 @AutoCloseResources
 class AssignUserTaskTest {
 
-  @AutoCloseResource
-  ZeebeClient client;
+  @AutoCloseResource ZeebeClient client;
 
   @TestZeebe
   private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);

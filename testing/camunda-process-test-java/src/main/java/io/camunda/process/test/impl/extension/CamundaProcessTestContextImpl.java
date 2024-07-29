@@ -15,10 +15,10 @@
  */
 package io.camunda.process.test.impl.extension;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.impl.containers.ZeebeContainer;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
 import java.util.function.Consumer;
 

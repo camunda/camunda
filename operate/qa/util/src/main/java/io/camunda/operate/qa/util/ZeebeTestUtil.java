@@ -30,8 +30,7 @@ public abstract class ZeebeTestUtil {
 
   private static final Random RANDOM = new Random();
 
-  public static String deployProcess(
-      final ZeebeClient client, final String... classpathResources) {
+  public static String deployProcess(final ZeebeClient client, final String... classpathResources) {
     if (classpathResources.length == 0) {
       return null;
     }
@@ -52,8 +51,7 @@ public abstract class ZeebeTestUtil {
             .getProcessDefinitionKey());
   }
 
-  public static void deployDecision(
-      final ZeebeClient client, final String... classpathResources) {
+  public static void deployDecision(final ZeebeClient client, final String... classpathResources) {
     if (classpathResources.length == 0) {
       return;
     }

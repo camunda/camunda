@@ -7,10 +7,10 @@
  */
 package io.camunda.webapps.zeebe;
 
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.util.Either;
 

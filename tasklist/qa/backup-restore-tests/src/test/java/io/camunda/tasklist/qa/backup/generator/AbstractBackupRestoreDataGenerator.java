@@ -12,7 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.graphql.spring.boot.test.GraphQLResponse;
-import io.camunda.client.CamundaClient;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.qa.backup.BackupRestoreTestContext;
 import io.camunda.tasklist.qa.backup.TasklistAPICaller;
@@ -23,6 +22,7 @@ import io.camunda.tasklist.util.ThreadUtil;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.SaveVariablesRequest;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
@@ -41,9 +41,9 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   public static final String PROCESS_BPMN_PROCESS_ID_2 = "basicProcess2";
   public static final int PROCESS_INSTANCE_COUNT = 49;
   private static final int ALL_DRAFT_TASK_VARIABLES_COUNT = PROCESS_INSTANCE_COUNT * 2;
-  private static final int COMPLETED_TASKS_COUNT = 11;
   private static final int DRAFT_TASK_VARIABLES_COUNT_AFTER_TASKS_COMPLETION =
       ALL_DRAFT_TASK_VARIABLES_COUNT - COMPLETED_TASKS_COUNT * 2;
+  private static final int COMPLETED_TASKS_COUNT = 11;
   private static final Logger LOGGER =
       LoggerFactory.getLogger(AbstractBackupRestoreDataGenerator.class);
 
@@ -51,7 +51,7 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
    * CamundaClient must not be reused between different test fixtures, as this may be different
    * versions of client in the future.
    */
-  private CamundaClient camundaClient;
+  private ZeebeClient camundaClient;
 
   @Autowired private TasklistAPICaller tasklistAPICaller;
 
@@ -59,7 +59,7 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
 
   private void init(final BackupRestoreTestContext testContext) {
     camundaClient =
-        CamundaClient.newClientBuilder()
+        ZeebeClient.newClientBuilder()
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
             .usePlaintext()
             .build();

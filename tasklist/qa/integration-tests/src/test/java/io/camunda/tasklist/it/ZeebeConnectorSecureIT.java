@@ -9,13 +9,13 @@ package io.camunda.tasklist.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.property.ZeebeProperties;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.util.CertificateUtil;
 import io.camunda.tasklist.zeebe.ZeebeConnector;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.zeebe.containers.ZeebeContainer;
 import java.io.File;
 import java.time.Duration;
@@ -50,7 +50,7 @@ public class ZeebeConnectorSecureIT {
                   ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME));
   @Autowired ZeebeConnector zeebeConnector;
   private ZeebeContainer zeebeContainer;
-  private CamundaClient camundaClient;
+  private ZeebeClient camundaClient;
 
   @Test
   public void shouldConnectWithTLS(@TempDir final File tempDir) throws Exception {

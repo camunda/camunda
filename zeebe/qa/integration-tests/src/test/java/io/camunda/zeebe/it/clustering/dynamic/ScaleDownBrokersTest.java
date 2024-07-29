@@ -33,8 +33,7 @@ final class ScaleDownBrokersTest {
   private static final int PARTITIONS_COUNT = 3;
   private static final String JOB_TYPE = "job";
   private static final int CLUSTER_SIZE = 3;
-  @AutoCloseResource
-  ZeebeClient zeebeClient;
+  @AutoCloseResource ZeebeClient zeebeClient;
 
   @TestZeebe
   private final TestCluster cluster =
