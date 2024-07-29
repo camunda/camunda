@@ -11,7 +11,7 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
@@ -46,10 +46,10 @@ public class DMNDataGenerator {
   private static final Logger LOGGER = LoggerFactory.getLogger(DMNDataGenerator.class);
 
   /**
-   * CamundaClient must not be reused between different test fixtures, as this may be different
+   * ZeebeClient must not be reused between different test fixtures, as this may be different
    * versions of client in the future.
    */
-  private CamundaClient camundaClient;
+  private ZeebeClient zeebeClient;
 
   @Autowired private RestHighLevelClient esClient;
 
@@ -60,8 +60,8 @@ public class DMNDataGenerator {
   private StatefulRestTemplate operateRestClient;
 
   private void init(final TestContext testContext) {
-    camundaClient =
-        CamundaClient.newClientBuilder()
+    zeebeClient =
+        ZeebeClient.newClientBuilder()
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
             .usePlaintext()
             .build();
@@ -100,9 +100,9 @@ public class DMNDataGenerator {
   }
 
   private void closeClients() {
-    if (camundaClient != null) {
-      camundaClient.close();
-      camundaClient = null;
+    if (zeebeClient != null) {
+      zeebeClient.close();
+      zeebeClient = null;
     }
   }
 
@@ -141,7 +141,7 @@ public class DMNDataGenerator {
       final String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
       final long processInstanceKey =
           ZeebeTestUtil.startProcessInstance(
-              camundaClient, bpmnProcessId, "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}");
+              zeebeClient, bpmnProcessId, "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}");
       LOGGER.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
       processInstanceKeys.add(processInstanceKey);
     }
@@ -164,9 +164,9 @@ public class DMNDataGenerator {
                         .zeebeResultVariable("approverGroups"))
             .done();
     final String processDefinitionKey =
-        ZeebeTestUtil.deployProcess(camundaClient, instance, bpmnProcessId + ".bpmn");
+        ZeebeTestUtil.deployProcess(zeebeClient, instance, bpmnProcessId + ".bpmn");
     LOGGER.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
-    ZeebeTestUtil.deployDecision(camundaClient, "invoiceBusinessDecisions_v_1.dmn");
+    ZeebeTestUtil.deployDecision(zeebeClient, "invoiceBusinessDecisions_v_1.dmn");
     LOGGER.info("Deployed decision {}", demoDecisionId2);
   }
 

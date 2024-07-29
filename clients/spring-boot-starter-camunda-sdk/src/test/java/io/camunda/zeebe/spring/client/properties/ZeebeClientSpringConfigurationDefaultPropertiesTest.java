@@ -27,8 +27,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(
-    classes = CamundaClientSpringConfigurationDefaultPropertiesTest.TestConfig.class)
-public class CamundaClientSpringConfigurationDefaultPropertiesTest {
+    classes = ZeebeClientSpringConfigurationDefaultPropertiesTest.TestConfig.class)
+public class ZeebeClientSpringConfigurationDefaultPropertiesTest {
 
   @Autowired private ZeebeClientConfigurationProperties properties;
 

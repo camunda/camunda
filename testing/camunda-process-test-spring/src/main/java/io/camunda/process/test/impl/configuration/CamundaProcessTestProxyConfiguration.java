@@ -15,7 +15,7 @@
  */
 package io.camunda.process.test.impl.configuration;
 
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
@@ -32,10 +32,10 @@ public class CamundaProcessTestProxyConfiguration {
 
   @Bean
   @Primary
-  public CamundaClient proxiedCamundaClient(final CamundaClientProxy camundaClientProxy) {
-    return (CamundaClient)
+  public ZeebeClient proxiedCamundaClient(final CamundaClientProxy camundaClientProxy) {
+    return (ZeebeClient)
         Proxy.newProxyInstance(
-            getClass().getClassLoader(), new Class[] {CamundaClient.class}, camundaClientProxy);
+            getClass().getClassLoader(), new Class[] {ZeebeClient.class}, camundaClientProxy);
   }
 
   @Bean

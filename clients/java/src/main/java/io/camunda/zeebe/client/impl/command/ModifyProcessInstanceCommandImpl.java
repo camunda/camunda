@@ -16,8 +16,8 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
-import io.camunda.zeebe.client.api.CamundaFuture;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3;
@@ -212,7 +212,7 @@ public final class ModifyProcessInstanceCommandImpl
   }
 
   @Override
-  public CamundaFuture<ModifyProcessInstanceResponse> send() {
+  public ZeebeFuture<ModifyProcessInstanceResponse> send() {
     final ModifyProcessInstanceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<

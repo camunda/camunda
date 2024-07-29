@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.application.Profile;
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
@@ -1582,7 +1582,7 @@ public class MultiTenancyOverIdentityIT {
    * @param clientId The client ID to use for the new Zeebe Client
    * @return A new Zeebe Client to use in these tests
    */
-  private static CamundaClient createZeebeClient(final String clientId) {
+  private static ZeebeClient createZeebeClient(final String clientId) {
     return ZEEBE
         .newClientBuilder()
         .credentialsProvider(

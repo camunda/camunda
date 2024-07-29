@@ -21,9 +21,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.protocol.rest.UserTaskAssignmentRequest;
+import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayPaths;
 import org.junit.jupiter.api.Test;
-import io.camunda.zeebe.client.util.ClientRestTest;
 
 public final class AssignUserTaskTest extends ClientRestTest {
 

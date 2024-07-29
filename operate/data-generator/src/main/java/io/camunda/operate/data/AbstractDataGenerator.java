@@ -10,7 +10,7 @@ package io.camunda.operate.data;
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
 import io.camunda.operate.property.OperateProperties;
@@ -35,7 +35,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   @Autowired
   @Qualifier("camundaClient")
-  protected CamundaClient client;
+  protected ZeebeClient client;
 
   @Autowired protected OperateProperties operateProperties;
   protected boolean manuallyCalled = false;

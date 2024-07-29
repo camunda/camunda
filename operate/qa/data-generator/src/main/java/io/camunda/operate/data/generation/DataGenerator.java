@@ -11,7 +11,7 @@ import static io.camunda.operate.qa.util.VariablesUtil.createALotOfVarsPayload;
 import static io.camunda.operate.qa.util.VariablesUtil.createBigVarsWithSuffix;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.operate.data.generation.DataGeneratorConfig.DataGeneratorThread;
 import io.camunda.operate.property.ImportProperties;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
@@ -50,7 +50,7 @@ public class DataGenerator {
   private static final Logger LOGGER = LoggerFactory.getLogger(DataGenerator.class);
   @Autowired private DataGeneratorProperties dataGeneratorProperties;
 
-  @Autowired private CamundaClient camundaClient;
+  @Autowired private ZeebeClient zeebeClient;
 
   @Autowired
   @Qualifier("dataGeneratorThreadPoolExecutor")
@@ -70,7 +70,7 @@ public class DataGenerator {
     createIncidents("task2");
 
     // wait for task "endTask" of long-running process and complete it
-    ZeebeTestUtil.completeTask(camundaClient, "endTask", "data-generator", null, 1);
+    ZeebeTestUtil.completeTask(zeebeClient, "endTask", "data-generator", null, 1);
     LOGGER.info("Task endTask completed.");
 
     LOGGER.info(
@@ -81,7 +81,7 @@ public class DataGenerator {
 
   private void createIncidents(final String jobType) {
     final int incidentCount = dataGeneratorProperties.getIncidentCount();
-    ZeebeTestUtil.failTask(camundaClient, jobType, "worker", incidentCount);
+    ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", incidentCount);
     LOGGER.info("{} incidents created", dataGeneratorProperties.getIncidentCount());
   }
 
@@ -98,7 +98,7 @@ public class DataGenerator {
 
   private void completeTasks(final String jobType, final int count) {
     ZeebeTestUtil.completeTask(
-        camundaClient, jobType, "data-generator", "{\"varOut\": \"value2\"}", count);
+        zeebeClient, jobType, "data-generator", "{\"varOut\": \"value2\"}", count);
   }
 
   private void startProcessInstances() {
@@ -156,12 +156,12 @@ public class DataGenerator {
                 .map(Object::toString)
                 .collect(Collectors.joining(","))
             + "]}";
-    ZeebeTestUtil.startProcessInstance(camundaClient, "sequential-noop", payload);
+    ZeebeTestUtil.startProcessInstance(zeebeClient, "sequential-noop", payload);
   }
 
   @PreDestroy
   public void shutdown() {
-    camundaClient.close();
+    zeebeClient.close();
     dataGeneratorTaskExecutor.shutdown();
   }
 
@@ -173,18 +173,18 @@ public class DataGenerator {
     for (int i = 0; i < dataGeneratorProperties.getProcessCount(); i++) {
       final String bpmnProcessId = getBpmnProcessId(i);
       ZeebeTestUtil.deployProcess(
-          camundaClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
+          zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
       bpmnProcessIds.add(bpmnProcessId);
     }
 
     // deploy call activity processes
     ZeebeTestUtil.deployProcess(
-        camundaClient, createCallActivity1Model(), PARENT_PROCESS_ID + ".bpmn");
+        zeebeClient, createCallActivity1Model(), PARENT_PROCESS_ID + ".bpmn");
     ZeebeTestUtil.deployProcess(
-        camundaClient, createCallActivity2Model(), CHILD_PROCESS_ID + ".bpmn");
+        zeebeClient, createCallActivity2Model(), CHILD_PROCESS_ID + ".bpmn");
 
     // deploy process with multi-instance subprocess
-    ZeebeTestUtil.deployProcess(camundaClient, "sequential-noop.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "sequential-noop.bpmn");
     LOGGER.info("{} processes deployed", dataGeneratorProperties.getProcessCount() + 3);
   }
 
@@ -291,7 +291,7 @@ public class DataGenerator {
 
     @Override
     public void run() {
-      camundaClient = resolveCamundaClient();
+      zeebeClient = resolveCamundaClient();
       int localCount = 0;
       while (countSimpleProcess.getAndIncrement()
               < dataGeneratorProperties.getProcessInstanceCount()
@@ -308,7 +308,7 @@ public class DataGenerator {
           }
           futures.put(
               ZeebeTestUtil.startProcessInstanceAsync(
-                  camundaClient, getRandomBpmnProcessId(), vars));
+                  zeebeClient, getRandomBpmnProcessId(), vars));
         } catch (final InterruptedException e) {
           Thread.currentThread().interrupt();
         }
@@ -324,7 +324,7 @@ public class DataGenerator {
         try {
           final String vars = "{\"var1\": \"value1\"}";
           futures.put(
-              ZeebeTestUtil.startProcessInstanceAsync(camundaClient, PARENT_PROCESS_ID, vars));
+              ZeebeTestUtil.startProcessInstanceAsync(zeebeClient, PARENT_PROCESS_ID, vars));
         } catch (final InterruptedException e) {
           Thread.currentThread().interrupt();
         }
@@ -335,7 +335,7 @@ public class DataGenerator {
       }
     }
 
-    private CamundaClient resolveCamundaClient() {
+    private ZeebeClient resolveCamundaClient() {
       return ((DataGeneratorThread) Thread.currentThread()).getCamundaClient();
     }
 

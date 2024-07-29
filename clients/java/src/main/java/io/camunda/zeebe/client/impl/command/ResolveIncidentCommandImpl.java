@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
-import io.camunda.zeebe.client.api.CamundaFuture;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.response.ResolveIncidentResponse;
@@ -56,7 +56,7 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
   }
 
   @Override
-  public CamundaFuture<ResolveIncidentResponse> send() {
+  public ZeebeFuture<ResolveIncidentResponse> send() {
     final ResolveIncidentRequest request = builder.build();
 
     final RetriableClientFutureImpl<

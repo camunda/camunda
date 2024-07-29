@@ -62,7 +62,7 @@ final class ZeebeClientFutureImplTest {
   void shouldCancelStreamServerSide() {
     // given
     final ActivateJobsRequest request = ActivateJobsRequest.newBuilder().setType("type").build();
-    final CamundaClientFutureImpl<?, ActivateJobsResponse> future = new CamundaClientFutureImpl<>();
+    final ZeebeClientFutureImpl<?, ActivateJobsResponse> future = new ZeebeClientFutureImpl<>();
     try (final Client client = createClient()) {
       // when
       client.stub.activateJobs(request, future);
@@ -77,7 +77,7 @@ final class ZeebeClientFutureImplTest {
   void shouldCancelCallIfFutureAlreadyCanceled() {
     // given
     final ActivateJobsRequest request = ActivateJobsRequest.newBuilder().setType("type").build();
-    final CamundaClientFutureImpl<?, ActivateJobsResponse> future = new CamundaClientFutureImpl<>();
+    final ZeebeClientFutureImpl<?, ActivateJobsResponse> future = new ZeebeClientFutureImpl<>();
     future.cancel(false);
 
     try (final Client client = createClient()) {
@@ -144,8 +144,8 @@ final class ZeebeClientFutureImplTest {
     void shouldRethrowExceptionOnCollectorError() {
       // given
       final RuntimeException error = new RuntimeException("failed");
-      final CamundaStreamingClientFutureImpl<?, ActivateJobsResponse> future =
-          new CamundaStreamingClientFutureImpl<>(
+      final ZeebeStreamingClientFutureImpl<?, ActivateJobsResponse> future =
+          new ZeebeStreamingClientFutureImpl<>(
               null,
               ignored -> {
                 throw error;
@@ -160,8 +160,8 @@ final class ZeebeClientFutureImplTest {
       // given
       final ActivateJobsRequest request = ActivateJobsRequest.newBuilder().setType("type").build();
       final RuntimeException error = new RuntimeException("failed");
-      final CamundaStreamingClientFutureImpl<?, ActivateJobsResponse> future =
-          new CamundaStreamingClientFutureImpl<>(
+      final ZeebeStreamingClientFutureImpl<?, ActivateJobsResponse> future =
+          new ZeebeStreamingClientFutureImpl<>(
               null,
               ignored -> {
                 throw error;

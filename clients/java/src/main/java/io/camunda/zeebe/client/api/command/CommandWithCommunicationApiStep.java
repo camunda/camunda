@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.api.command;
 
-import io.camunda.zeebe.client.CamundaClientBuilder;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.api.ExperimentalApi;
 
 public interface CommandWithCommunicationApiStep<T> {
@@ -32,7 +32,7 @@ public interface CommandWithCommunicationApiStep<T> {
    * <p>Sets REST as the communication API for this command. If this command doesn't support
    * communication over REST, it simply returns the command builder instance unchanged. The default
    * communication API can be configured using {@link
-   * CamundaClientBuilder#preferRestOverGrpc(boolean)}.
+   * ZeebeClientBuilder#preferRestOverGrpc(boolean)}.
    *
    * @deprecated since 8.5, to be removed with 8.8
    * @return the configured command
@@ -53,7 +53,7 @@ public interface CommandWithCommunicationApiStep<T> {
    * <p>Sets gRPC as the communication API for this command. If this command doesn't support
    * communication over gRPC, it simply returns the command builder instance unchanged. The default
    * communication API can be configured using {@link
-   * CamundaClientBuilder#preferRestOverGrpc(boolean)}.
+   * ZeebeClientBuilder#preferRestOverGrpc(boolean)}.
    *
    * @deprecated since 8.5, to be removed with 8.8
    * @return the configured command

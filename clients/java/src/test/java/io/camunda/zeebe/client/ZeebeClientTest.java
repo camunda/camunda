@@ -26,20 +26,20 @@ import static io.camunda.zeebe.client.ClientProperties.REST_ADDRESS;
 import static io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.zeebe.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
-import static io.camunda.zeebe.client.impl.CamundaClientBuilderImpl.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
-import static io.camunda.zeebe.client.impl.CamundaClientBuilderImpl.CA_CERTIFICATE_VAR;
-import static io.camunda.zeebe.client.impl.CamundaClientBuilderImpl.DEFAULT_GATEWAY_ADDRESS;
-import static io.camunda.zeebe.client.impl.CamundaClientBuilderImpl.DEFAULT_GRPC_ADDRESS;
-import static io.camunda.zeebe.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
-import static io.camunda.zeebe.client.impl.CamundaClientBuilderImpl.DEFAULT_REST_ADDRESS;
-import static io.camunda.zeebe.client.impl.CamundaClientBuilderImpl.DEFAULT_TENANT_ID_VAR;
-import static io.camunda.zeebe.client.impl.CamundaClientBuilderImpl.GRPC_ADDRESS_VAR;
-import static io.camunda.zeebe.client.impl.CamundaClientBuilderImpl.KEEP_ALIVE_VAR;
-import static io.camunda.zeebe.client.impl.CamundaClientBuilderImpl.OVERRIDE_AUTHORITY_VAR;
-import static io.camunda.zeebe.client.impl.CamundaClientBuilderImpl.PLAINTEXT_CONNECTION_VAR;
-import static io.camunda.zeebe.client.impl.CamundaClientBuilderImpl.PREFER_REST_VAR;
-import static io.camunda.zeebe.client.impl.CamundaClientBuilderImpl.REST_ADDRESS_VAR;
-import static io.camunda.zeebe.client.impl.CamundaClientBuilderImpl.USE_DEFAULT_RETRY_POLICY_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_GATEWAY_ADDRESS;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_GRPC_ADDRESS;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_REST_ADDRESS;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_TENANT_ID_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.GRPC_ADDRESS_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.KEEP_ALIVE_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.OVERRIDE_AUTHORITY_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PREFER_REST_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.REST_ADDRESS_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.USE_DEFAULT_RETRY_POLICY_VAR;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,12 +51,13 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.worker.JobWorker;
-import io.camunda.zeebe.client.impl.CamundaClientBuilderImpl;
-import io.camunda.zeebe.client.impl.CamundaClientCloudBuilderImpl;
 import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
+import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
+import io.camunda.zeebe.client.impl.ZeebeClientCloudBuilderImpl;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.client.impl.util.Environment;
 import io.camunda.zeebe.client.impl.util.EnvironmentRule;
+import io.camunda.zeebe.client.util.ClientTest;
 import java.io.FileNotFoundException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -71,7 +72,6 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import io.camunda.zeebe.client.util.ClientTest;
 
 public final class ZeebeClientTest extends ClientTest {
   @Rule public final EnvironmentRule environmentRule = new EnvironmentRule();
@@ -86,9 +86,9 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldHaveDefaultValues() {
     // given
-    try (final CamundaClient client = CamundaClient.newClient()) {
+    try (final ZeebeClient client = ZeebeClient.newClient()) {
       // when
-      final CamundaClientConfiguration configuration = client.getConfiguration();
+      final ZeebeClientConfiguration configuration = client.getConfiguration();
 
       // then
       assertThat(configuration.getGatewayAddress()).isEqualTo(DEFAULT_GATEWAY_ADDRESS);
@@ -116,26 +116,26 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldFailIfCertificateDoesNotExist() {
     assertThatThrownBy(
-            () -> CamundaClient.newClientBuilder().caCertificatePath("/wrong/path").build())
+            () -> ZeebeClient.newClientBuilder().caCertificatePath("/wrong/path").build())
         .hasCauseInstanceOf(FileNotFoundException.class);
   }
 
   @Test
   public void shouldFailWithEmptyCertificatePath() {
-    assertThatThrownBy(() -> CamundaClient.newClientBuilder().caCertificatePath("").build())
+    assertThatThrownBy(() -> ZeebeClient.newClientBuilder().caCertificatePath("").build())
         .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   public void shouldHaveTlsEnabledByDefault() {
-    assertThat(new CamundaClientBuilderImpl().isPlaintextConnectionEnabled()).isFalse();
+    assertThat(new ZeebeClientBuilderImpl().isPlaintextConnectionEnabled()).isFalse();
   }
 
   @Test
   public void shouldUseInsecureWithEnvVar() {
     // given
     Environment.system().put(PLAINTEXT_CONNECTION_VAR, "true");
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
 
     // when
     builder.build();
@@ -150,7 +150,7 @@ public final class ZeebeClientTest extends ClientTest {
     Environment.system().put(PLAINTEXT_CONNECTION_VAR, "false");
     final Properties properties = new Properties();
     properties.putIfAbsent(USE_PLAINTEXT_CONNECTION, "true");
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.withProperties(properties);
 
     // when
@@ -166,7 +166,7 @@ public final class ZeebeClientTest extends ClientTest {
     Environment.system().put(PLAINTEXT_CONNECTION_VAR, "false");
     final Properties properties = new Properties();
     properties.putIfAbsent(USE_PLAINTEXT_CONNECTION, "true");
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.applyEnvironmentVariableOverrides(false);
     builder.withProperties(properties);
 
@@ -182,7 +182,7 @@ public final class ZeebeClientTest extends ClientTest {
     // given
     final Properties properties = new Properties();
     properties.putIfAbsent(STREAM_ENABLED, "true");
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.withProperties(properties);
 
     // when
@@ -197,8 +197,8 @@ public final class ZeebeClientTest extends ClientTest {
     // given
     Environment.system().put(CAMUNDA_CLIENT_WORKER_STREAM_ENABLED, "true");
 
-    final CamundaClientBuilderImpl builder1 = new CamundaClientBuilderImpl();
-    final CamundaClientBuilderImpl builder2 = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder1 = new ZeebeClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder2 = new ZeebeClientBuilderImpl();
     builder1.applyEnvironmentVariableOverrides(false);
     builder2.applyEnvironmentVariableOverrides(true);
 
@@ -216,7 +216,7 @@ public final class ZeebeClientTest extends ClientTest {
     final Properties properties = new Properties();
     properties.putIfAbsent(STREAM_ENABLED, "false");
 
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.withProperties(properties).applyEnvironmentVariableOverrides(true);
 
     // when
@@ -229,7 +229,7 @@ public final class ZeebeClientTest extends ClientTest {
     // given
     final String certPath = getClass().getClassLoader().getResource("ca.cert.pem").getPath();
     Environment.system().put(CA_CERTIFICATE_VAR, certPath);
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
 
     // when
     builder.build();
@@ -241,7 +241,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetKeepAlive() {
     // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.keepAlive(Duration.ofMinutes(2));
 
     // when
@@ -254,7 +254,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldOverrideKeepAliveWithEnvVar() {
     // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.keepAlive(Duration.ofMinutes(2));
     Environment.system().put(KEEP_ALIVE_VAR, "15000");
 
@@ -268,7 +268,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetAuthority() {
     // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.overrideAuthority("virtualhost");
 
     // when
@@ -281,7 +281,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldOverrideAuthorityWithEnvVar() {
     // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.overrideAuthority("localhost");
     Environment.system().put(OVERRIDE_AUTHORITY_VAR, "virtualhost");
 
@@ -295,7 +295,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetMaxMessageSize() {
     // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.maxMessageSize(10 * 1024 * 1024);
 
     // when
@@ -308,7 +308,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetMaxMetadataSize() {
     // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.maxMetadataSize(10 * 1024);
 
     // when
@@ -321,7 +321,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetMaxMessageSizeWithProperty() {
     // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
 
     final Properties properties = new Properties();
     properties.setProperty(MAX_MESSAGE_SIZE, "10MB");
@@ -336,7 +336,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetMaxMetadataSizeWithProperty() {
     // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
 
     final Properties properties = new Properties();
     properties.setProperty(MAX_METADATA_SIZE, "10KB");
@@ -352,15 +352,14 @@ public final class ZeebeClientTest extends ClientTest {
   public void shouldRejectUnsupportedTimeUnitWithEnvVar() {
     // when/then
     Environment.system().put(KEEP_ALIVE_VAR, "30d");
-    assertThatThrownBy(() -> new CamundaClientBuilderImpl().build())
+    assertThatThrownBy(() -> new ZeebeClientBuilderImpl().build())
         .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   public void shouldRejectNegativeTime() {
     // when/then
-    assertThatThrownBy(
-            () -> new CamundaClientBuilderImpl().keepAlive(Duration.ofSeconds(-2)).build())
+    assertThatThrownBy(() -> new ZeebeClientBuilderImpl().keepAlive(Duration.ofSeconds(-2)).build())
         .isInstanceOf(IllegalArgumentException.class);
   }
 
@@ -368,7 +367,7 @@ public final class ZeebeClientTest extends ClientTest {
   public void shouldRejectNegativeTimeAsEnvVar() {
     // when/then
     Environment.system().put(KEEP_ALIVE_VAR, "-2s");
-    assertThatThrownBy(() -> new CamundaClientBuilderImpl().build())
+    assertThatThrownBy(() -> new ZeebeClientBuilderImpl().build())
         .isInstanceOf(IllegalArgumentException.class);
   }
 
@@ -378,15 +377,15 @@ public final class ZeebeClientTest extends ClientTest {
     final String clusterId = "clusterId";
     final String region = "asdf-123";
 
-    try (final CamundaClient client =
-        CamundaClient.newCloudClientBuilder()
+    try (final ZeebeClient client =
+        ZeebeClient.newCloudClientBuilder()
             .withClusterId(clusterId)
             .withClientId("clientId")
             .withClientSecret("clientSecret")
             .withRegion(region)
             .build()) {
       // when
-      final CamundaClientConfiguration clientConfiguration = client.getConfiguration();
+      final ZeebeClientConfiguration clientConfiguration = client.getConfiguration();
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
@@ -401,14 +400,14 @@ public final class ZeebeClientTest extends ClientTest {
   public void shouldCloudBuilderBuildProperClientWithDefaultRegion() {
     // given
     final String clusterId = "clusterId";
-    try (final CamundaClient client =
-        CamundaClient.newCloudClientBuilder()
+    try (final ZeebeClient client =
+        ZeebeClient.newCloudClientBuilder()
             .withClusterId(clusterId)
             .withClientId("clientId")
             .withClientSecret("clientSecret")
             .build()) {
       // when
-      final CamundaClientConfiguration clientConfiguration = client.getConfiguration();
+      final ZeebeClientConfiguration clientConfiguration = client.getConfiguration();
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
@@ -424,15 +423,15 @@ public final class ZeebeClientTest extends ClientTest {
     // given
     final String gatewayAddress = "localhost:10000";
     final NoopCredentialsProvider credentialsProvider = new NoopCredentialsProvider();
-    try (final CamundaClient client =
-        CamundaClient.newCloudClientBuilder()
+    try (final ZeebeClient client =
+        ZeebeClient.newCloudClientBuilder()
             .withClusterId("clusterId")
             .withClientId("clientId")
             .withClientSecret("clientSecret")
             .gatewayAddress(gatewayAddress)
             .credentialsProvider(credentialsProvider)
             .build()) {
-      final CamundaClientConfiguration configuration = client.getConfiguration();
+      final ZeebeClientConfiguration configuration = client.getConfiguration();
       assertThat(configuration.getGatewayAddress()).isEqualTo(gatewayAddress);
       assertThat(configuration.getCredentialsProvider()).isEqualTo(credentialsProvider);
     }
@@ -444,15 +443,15 @@ public final class ZeebeClientTest extends ClientTest {
     final String region = "asdf-123";
     final Properties properties = new Properties();
     properties.putIfAbsent(CLOUD_REGION, region);
-    try (final CamundaClient client =
-        CamundaClient.newCloudClientBuilder()
+    try (final ZeebeClient client =
+        ZeebeClient.newCloudClientBuilder()
             .withClusterId("clusterId")
             .withClientId("clientId")
             .withClientSecret("clientSecret")
             .withProperties(properties)
             .build()) {
       // when
-      final CamundaClientConfiguration clientConfiguration = client.getConfiguration();
+      final ZeebeClientConfiguration clientConfiguration = client.getConfiguration();
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
@@ -467,14 +466,14 @@ public final class ZeebeClientTest extends ClientTest {
   public void shouldCloudBuilderBuildProperClientWithRegionPropertyNotProvided() {
     // given
     final String defaultRegion = "bru-2";
-    try (final CamundaClient client =
-        CamundaClient.newCloudClientBuilder()
+    try (final ZeebeClient client =
+        ZeebeClient.newCloudClientBuilder()
             .withClusterId("clusterId")
             .withClientId("clientId")
             .withClientSecret("clientSecret")
             .build()) {
       // when
-      final CamundaClientConfiguration clientConfiguration = client.getConfiguration();
+      final ZeebeClientConfiguration clientConfiguration = client.getConfiguration();
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
@@ -489,8 +488,8 @@ public final class ZeebeClientTest extends ClientTest {
   public void shouldCloseOwnedExecutorOnClose() {
     // given
     final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-    try (final CamundaClient client =
-        CamundaClient.newClientBuilder().jobWorkerExecutor(executor, true).build()) {
+    try (final ZeebeClient client =
+        ZeebeClient.newClientBuilder().jobWorkerExecutor(executor, true).build()) {
       // when
       client.close();
 
@@ -503,8 +502,8 @@ public final class ZeebeClientTest extends ClientTest {
   public void shouldNotCloseNotOwnedExecutor() {
     // given
     final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-    try (final CamundaClient client =
-        CamundaClient.newClientBuilder().jobWorkerExecutor(executor, false).build()) {
+    try (final ZeebeClient client =
+        ZeebeClient.newClientBuilder().jobWorkerExecutor(executor, false).build()) {
       // when
       client.close();
 
@@ -520,8 +519,8 @@ public final class ZeebeClientTest extends ClientTest {
     // given
     final ScheduledThreadPoolExecutor executor = spy(new ScheduledThreadPoolExecutor(1));
     final Duration pollInterval = Duration.ZERO;
-    try (final CamundaClient client =
-            CamundaClient.newClientBuilder().jobWorkerExecutor(executor).build();
+    try (final ZeebeClient client =
+            ZeebeClient.newClientBuilder().jobWorkerExecutor(executor).build();
         final JobWorker ignored =
             client
                 .newWorker()
@@ -539,7 +538,7 @@ public final class ZeebeClientTest extends ClientTest {
   public void shouldSetRestAddressFromSetterWithClientBuilder() throws URISyntaxException {
     // given
     final URI restAddress = new URI("localhost:9090");
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.restAddress(restAddress);
 
     // when
@@ -555,7 +554,7 @@ public final class ZeebeClientTest extends ClientTest {
     final URI restAddress = new URI("localhost:9090");
     final Properties properties = new Properties();
     properties.setProperty(REST_ADDRESS, restAddress.toString());
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.withProperties(properties);
 
     // when
@@ -572,7 +571,7 @@ public final class ZeebeClientTest extends ClientTest {
     Environment.system().put(REST_ADDRESS_VAR, restAddress.toString());
 
     // when
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.build();
 
     // then
@@ -583,7 +582,7 @@ public final class ZeebeClientTest extends ClientTest {
   public void shouldSetGrpcAddressFromSetterWithClientBuilder() throws URISyntaxException {
     // given
     final URI grpcAddress = new URI("https://localhost:9090");
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.grpcAddress(grpcAddress);
 
     // when
@@ -599,7 +598,7 @@ public final class ZeebeClientTest extends ClientTest {
     final URI grpcAddress = new URI("https://localhost:9090");
     final Properties properties = new Properties();
     properties.setProperty(GRPC_ADDRESS, grpcAddress.toString());
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.withProperties(properties);
 
     // when
@@ -616,7 +615,7 @@ public final class ZeebeClientTest extends ClientTest {
     Environment.system().put(GRPC_ADDRESS_VAR, grpcAddress.toString());
 
     // when
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.build();
 
     // then
@@ -626,13 +625,13 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetPreferRestFromSetterWithClientBuilder() {
     // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
 
     // when
     builder.preferRestOverGrpc(false);
 
     // then
-    try (final CamundaClient client = builder.build()) {
+    try (final ZeebeClient client = builder.build()) {
       assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
     }
   }
@@ -640,7 +639,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetPreferRestFromPropertyWithClientBuilder() {
     // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     final Properties properties = new Properties();
     properties.setProperty(PREFER_REST_OVER_GRPC, "false");
 
@@ -648,7 +647,7 @@ public final class ZeebeClientTest extends ClientTest {
     builder.withProperties(properties);
 
     // then
-    try (final CamundaClient client = builder.build()) {
+    try (final ZeebeClient client = builder.build()) {
       assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
     }
   }
@@ -656,14 +655,14 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldSetPreferRestFromEnvVarWithClientBuilder() {
     // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     Environment.system().put(PREFER_REST_VAR, "false");
 
     // when
     builder.preferRestOverGrpc(true);
 
     // then
-    try (final CamundaClient client = builder.build()) {
+    try (final ZeebeClient client = builder.build()) {
       assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
     }
   }
@@ -674,7 +673,7 @@ public final class ZeebeClientTest extends ClientTest {
     final String gatewayAddress = "localhost:26500";
     final Properties properties = new Properties();
     properties.setProperty(ClientProperties.GATEWAY_ADDRESS, gatewayAddress);
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.withProperties(properties);
 
     // when
@@ -687,7 +686,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldUseDefaultTenantId() {
     // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
 
     // when
     builder.build();
@@ -701,7 +700,7 @@ public final class ZeebeClientTest extends ClientTest {
   public void shouldSetDefaultTenantIdFromSetterWithClientBuilder() {
     // given
     final String overrideTenant = "override-tenant";
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.defaultTenantId(overrideTenant);
 
     // when
@@ -717,7 +716,7 @@ public final class ZeebeClientTest extends ClientTest {
     final String tenantId = "test-tenant";
     final Properties properties = new Properties();
     properties.setProperty(DEFAULT_TENANT_ID, tenantId);
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.withProperties(properties);
 
     // when
@@ -734,7 +733,7 @@ public final class ZeebeClientTest extends ClientTest {
     Environment.system().put(DEFAULT_TENANT_ID_VAR, overrideTenant);
 
     // when
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.build();
 
     // then
@@ -750,7 +749,7 @@ public final class ZeebeClientTest extends ClientTest {
     final String envVarTenantId = "override-tenant";
     Environment.system().put(DEFAULT_TENANT_ID_VAR, envVarTenantId);
     final String setterTenantId = "setter-tenant";
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.defaultTenantId(setterTenantId);
 
     // when
@@ -764,13 +763,13 @@ public final class ZeebeClientTest extends ClientTest {
   public void shouldNotSetDefaultTenantIdFromPropertyWithCloudClientBuilder() {
     // given
     final String tenantId = "test-tenant";
-    final CamundaClientCloudBuilderImpl builder = new CamundaClientCloudBuilderImpl();
+    final ZeebeClientCloudBuilderImpl builder = new ZeebeClientCloudBuilderImpl();
     final Properties properties = new Properties();
     properties.setProperty(DEFAULT_TENANT_ID, tenantId);
     builder.withProperties(properties);
 
     // when
-    final CamundaClient client =
+    final ZeebeClient client =
         builder
             .withClusterId("clusterId")
             .withClientId("clientId")
@@ -786,11 +785,11 @@ public final class ZeebeClientTest extends ClientTest {
   public void shouldNotSetDefaultTenantIdFromSetterWithCloudClientBuilder() {
     // given
     final String tenantId = "test-tenant";
-    final CamundaClientCloudBuilderImpl builder = new CamundaClientCloudBuilderImpl();
+    final ZeebeClientCloudBuilderImpl builder = new ZeebeClientCloudBuilderImpl();
 
     // when
-    final CamundaClientCloudBuilderImpl builderWithTenantId =
-        (CamundaClientCloudBuilderImpl) builder.defaultTenantId(tenantId);
+    final ZeebeClientCloudBuilderImpl builderWithTenantId =
+        (ZeebeClientCloudBuilderImpl) builder.defaultTenantId(tenantId);
 
     // then
     // todo(#14106): verify that tenant id is set in the builder
@@ -803,7 +802,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldUseDefaultJobWorkerTenantIds() {
     // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
 
     // when
     builder.build();
@@ -817,7 +816,7 @@ public final class ZeebeClientTest extends ClientTest {
   public void shouldSetDefaultJobWorkerTenantIdsFromSetterWithClientBuilder() {
     // given
     final String overrideTenant = "override-tenant";
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.defaultJobWorkerTenantIds(Arrays.asList(overrideTenant));
 
     // when
@@ -833,7 +832,7 @@ public final class ZeebeClientTest extends ClientTest {
     final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
     final Properties properties = new Properties();
     properties.setProperty(DEFAULT_JOB_WORKER_TENANT_IDS, String.join(",", tenantIdList));
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.withProperties(properties);
 
     // when
@@ -850,7 +849,7 @@ public final class ZeebeClientTest extends ClientTest {
     Environment.system().put(DEFAULT_JOB_WORKER_TENANT_IDS_VAR, String.join(",", tenantIdList));
 
     // when
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.build();
 
     // then
@@ -866,7 +865,7 @@ public final class ZeebeClientTest extends ClientTest {
     final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
     Environment.system().put(DEFAULT_JOB_WORKER_TENANT_IDS_VAR, String.join(",", tenantIdList));
     final String setterTenantId = "setter-tenant";
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.defaultJobWorkerTenantIds(Arrays.asList(setterTenantId));
 
     // when
@@ -879,14 +878,14 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldNotSetDefaultJobWorkerTenantIdsFromPropertyWithCloudClientBuilder() {
     // given
-    final CamundaClientCloudBuilderImpl builder = new CamundaClientCloudBuilderImpl();
+    final ZeebeClientCloudBuilderImpl builder = new ZeebeClientCloudBuilderImpl();
     final Properties properties = new Properties();
     final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
     properties.setProperty(DEFAULT_JOB_WORKER_TENANT_IDS, String.join(",", tenantIdList));
     builder.withProperties(properties);
 
     // when
-    final CamundaClient client =
+    final ZeebeClient client =
         builder
             .withClusterId("clusterId")
             .withClientId("clientId")
@@ -901,12 +900,12 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldNotSetDefaultJobWorkerTenantIdsFromSetterWithCloudClientBuilder() {
     // given
-    final CamundaClientCloudBuilderImpl builder = new CamundaClientCloudBuilderImpl();
+    final ZeebeClientCloudBuilderImpl builder = new ZeebeClientCloudBuilderImpl();
     final List<String> tenantIdList = Arrays.asList("test-tenant-1", "test-tenant-2");
 
     // when
-    final CamundaClientCloudBuilderImpl builderWithTenantId =
-        (CamundaClientCloudBuilderImpl) builder.defaultJobWorkerTenantIds(tenantIdList);
+    final ZeebeClientCloudBuilderImpl builderWithTenantId =
+        (ZeebeClientCloudBuilderImpl) builder.defaultJobWorkerTenantIds(tenantIdList);
 
     // then
     // todo(#14106): verify that tenant id is set in the builder
@@ -919,7 +918,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldUseDefaultRetryPolicy() {
     // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.useDefaultRetryPolicy(true);
 
     // when
@@ -932,7 +931,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldOverrideDefaultRetryPolicyWithEnvVar() {
     // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.useDefaultRetryPolicy(true);
     Environment.system().put(USE_DEFAULT_RETRY_POLICY_VAR, "false");
 
@@ -947,7 +946,7 @@ public final class ZeebeClientTest extends ClientTest {
   public void shouldOverrideDefaultRetryPolicyWithProperty() {
     // given
     final Properties properties = new Properties();
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.useDefaultRetryPolicy(true);
     properties.setProperty(USE_DEFAULT_RETRY_POLICY, "false");
     builder.withProperties(properties);

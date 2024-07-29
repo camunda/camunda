@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.processing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -33,7 +33,7 @@ final class FormLinkingIT {
 
   @TestZeebe private final TestStandaloneBroker zeebe = new TestStandaloneBroker();
   private final PartitionsActuator partitions = PartitionsActuator.of(zeebe);
-  @AutoCloseResource private CamundaClient client;
+  @AutoCloseResource private ZeebeClient client;
 
   @BeforeEach
   void beforeEach() {

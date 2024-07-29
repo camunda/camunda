@@ -17,15 +17,15 @@ package io.camunda.zeebe.client.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.Test;
 import io.camunda.zeebe.client.util.ClientTest;
+import org.junit.Test;
 
 public class ZeebeObjectMapperTest extends ClientTest {
 
   @Test
   public void shouldReturnEmptyObject() {
     // Given
-    final CamundaObjectMapper zeebeObjectMapper = new CamundaObjectMapper();
+    final ZeebeObjectMapper zeebeObjectMapper = new ZeebeObjectMapper();
     final TestObject testObject = new TestObject();
     testObject.setObject(new Object());
     // When

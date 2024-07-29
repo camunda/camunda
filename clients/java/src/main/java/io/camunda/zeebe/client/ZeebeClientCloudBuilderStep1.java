@@ -15,16 +15,16 @@
  */
 package io.camunda.zeebe.client;
 
-public interface CamundaClientCloudBuilderStep1 {
+public interface ZeebeClientCloudBuilderStep1 {
 
   /**
    * Sets the cluster id of the Camunda Cloud cluster. This parameter is mandatory.
    *
    * @param clusterId cluster id of the Camunda Cloud cluster.
    */
-  CamundaClientCloudBuilderStep2 withClusterId(String clusterId);
+  ZeebeClientCloudBuilderStep2 withClusterId(String clusterId);
 
-  interface CamundaClientCloudBuilderStep2 {
+  interface ZeebeClientCloudBuilderStep2 {
 
     /**
      * Sets the client id that will be used to authenticate against the Camunda Cloud cluster. This
@@ -32,9 +32,9 @@ public interface CamundaClientCloudBuilderStep1 {
      *
      * @param clientId client id that will be used in the authentication.
      */
-    CamundaClientCloudBuilderStep3 withClientId(String clientId);
+    ZeebeClientCloudBuilderStep3 withClientId(String clientId);
 
-    interface CamundaClientCloudBuilderStep3 {
+    interface ZeebeClientCloudBuilderStep3 {
 
       /**
        * Sets the client secret that will be used to authenticate against the Camunda Cloud cluster.
@@ -42,16 +42,16 @@ public interface CamundaClientCloudBuilderStep1 {
        *
        * @param clientSecret client secret that will be used in the authentication.
        */
-      CamundaClientCloudBuilderStep4 withClientSecret(String clientSecret);
+      ZeebeClientCloudBuilderStep4 withClientSecret(String clientSecret);
 
-      interface CamundaClientCloudBuilderStep4 extends CamundaClientBuilder {
+      interface ZeebeClientCloudBuilderStep4 extends ZeebeClientBuilder {
 
         /**
          * Sets the region of the Camunda Cloud cluster. Default is 'bru-2'.
          *
          * @param region region of the Camunda Cloud cluster
          */
-        CamundaClientCloudBuilderStep4 withRegion(String region);
+        ZeebeClientCloudBuilderStep4 withRegion(String region);
       }
     }
   }

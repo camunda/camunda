@@ -15,13 +15,13 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.zeebe.client.api.CamundaFuture;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.response.UpdateUserTaskResponse;
-import io.camunda.zeebe.client.impl.http.HttpCamundaFuture;
 import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.protocol.rest.Changeset;
 import io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest;
 import java.time.Duration;
@@ -55,8 +55,8 @@ public final class UpdateUserTaskCommandImpl implements UpdateUserTaskCommandSte
   }
 
   @Override
-  public CamundaFuture<UpdateUserTaskResponse> send() {
-    final HttpCamundaFuture<UpdateUserTaskResponse> result = new HttpCamundaFuture<>();
+  public ZeebeFuture<UpdateUserTaskResponse> send() {
+    final HttpZeebeFuture<UpdateUserTaskResponse> result = new HttpZeebeFuture<>();
     httpClient.patch(
         "/user-tasks/" + userTaskKey,
         jsonMapper.toJson(request),

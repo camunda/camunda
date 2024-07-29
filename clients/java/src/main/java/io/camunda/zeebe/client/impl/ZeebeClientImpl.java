@@ -18,9 +18,9 @@ package io.camunda.zeebe.client.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.client.CamundaClient;
-import io.camunda.zeebe.client.CamundaClientConfiguration;
 import io.camunda.zeebe.client.CredentialsProvider;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
@@ -99,8 +99,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public final class CamundaClientImpl implements CamundaClient {
-  private final CamundaClientConfiguration config;
+public final class ZeebeClientImpl implements ZeebeClient {
+  private final ZeebeClientConfiguration config;
   private final JsonMapper jsonMapper;
   private final GatewayStub asyncStub;
   private final ManagedChannel channel;
@@ -110,17 +110,17 @@ public final class CamundaClientImpl implements CamundaClient {
   private final CredentialsProvider credentialsProvider;
   private final HttpClient httpClient;
 
-  public CamundaClientImpl(final CamundaClientConfiguration configuration) {
+  public ZeebeClientImpl(final ZeebeClientConfiguration configuration) {
     this(configuration, buildChannel(configuration));
   }
 
-  public CamundaClientImpl(
-      final CamundaClientConfiguration configuration, final ManagedChannel channel) {
+  public ZeebeClientImpl(
+      final ZeebeClientConfiguration configuration, final ManagedChannel channel) {
     this(configuration, channel, buildGatewayStub(channel, configuration));
   }
 
-  public CamundaClientImpl(
-      final CamundaClientConfiguration configuration,
+  public ZeebeClientImpl(
+      final ZeebeClientConfiguration configuration,
       final ManagedChannel channel,
       final HttpClient httpClient) {
     this(
@@ -131,23 +131,23 @@ public final class CamundaClientImpl implements CamundaClient {
         httpClient);
   }
 
-  public CamundaClientImpl(
-      final CamundaClientConfiguration configuration,
+  public ZeebeClientImpl(
+      final ZeebeClientConfiguration configuration,
       final ManagedChannel channel,
       final GatewayStub gatewayStub) {
     this(configuration, channel, gatewayStub, buildExecutorService(configuration));
   }
 
-  public CamundaClientImpl(
-      final CamundaClientConfiguration config,
+  public ZeebeClientImpl(
+      final ZeebeClientConfiguration config,
       final ManagedChannel channel,
       final GatewayStub gatewayStub,
       final ExecutorResource executorResource) {
     this(config, channel, gatewayStub, executorResource, buildHttpClient(config));
   }
 
-  public CamundaClientImpl(
-      final CamundaClientConfiguration config,
+  public ZeebeClientImpl(
+      final ZeebeClientConfiguration config,
       final ManagedChannel channel,
       final GatewayStub gatewayStub,
       final ExecutorResource executorResource,
@@ -168,11 +168,11 @@ public final class CamundaClientImpl implements CamundaClient {
     this.httpClient.start();
   }
 
-  private static HttpClient buildHttpClient(final CamundaClientConfiguration config) {
+  private static HttpClient buildHttpClient(final ZeebeClientConfiguration config) {
     return new HttpClientFactory(config).createClient();
   }
 
-  public static ManagedChannel buildChannel(final CamundaClientConfiguration config) {
+  public static ManagedChannel buildChannel(final ZeebeClientConfiguration config) {
     final URI address;
     address = config.getGrpcAddress();
 
@@ -196,18 +196,18 @@ public final class CamundaClientImpl implements CamundaClient {
     return channelBuilder.build();
   }
 
-  private static CallCredentials buildCallCredentials(final CamundaClientConfiguration config) {
+  private static CallCredentials buildCallCredentials(final ZeebeClientConfiguration config) {
     final CredentialsProvider customCredentialsProvider = config.getCredentialsProvider();
 
     if (customCredentialsProvider == null) {
       return null;
     }
 
-    return new CamundaCallCredentials(customCredentialsProvider);
+    return new ZeebeCallCredentials(customCredentialsProvider);
   }
 
   private static void configureConnectionSecurity(
-      final CamundaClientConfiguration config, final NettyChannelBuilder channelBuilder) {
+      final ZeebeClientConfiguration config, final NettyChannelBuilder channelBuilder) {
     if (!config.isPlaintextConnectionEnabled()) {
       final String certificatePath = config.getCaCertificatePath();
       SslContext sslContext = null;
@@ -235,7 +235,7 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   public static GatewayStub buildGatewayStub(
-      final ManagedChannel channel, final CamundaClientConfiguration config) {
+      final ManagedChannel channel, final ZeebeClientConfiguration config) {
     final CallCredentials credentials = buildCallCredentials(config);
     final GatewayStub gatewayStub = GatewayGrpc.newStub(channel).withCallCredentials(credentials);
     if (!config.getInterceptors().isEmpty()) {
@@ -267,7 +267,7 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   private static ExecutorResource buildExecutorService(
-      final CamundaClientConfiguration configuration) {
+      final ZeebeClientConfiguration configuration) {
     if (configuration.jobWorkerExecutor() != null) {
       return new ExecutorResource(
           configuration.jobWorkerExecutor(), configuration.ownsJobWorkerExecutor());
@@ -289,7 +289,7 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public CamundaClientConfiguration getConfiguration() {
+  public ZeebeClientConfiguration getConfiguration() {
     return config;
   }
 

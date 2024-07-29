@@ -18,9 +18,9 @@ package io.camunda.zeebe.client.impl.command;
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 
 import com.google.protobuf.ByteString;
-import io.camunda.zeebe.client.CamundaClientConfiguration;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
-import io.camunda.zeebe.client.api.CamundaFuture;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
@@ -57,7 +57,7 @@ public final class DeployResourceCommandImpl
 
   public DeployResourceCommandImpl(
       final GatewayStub asyncStub,
-      final CamundaClientConfiguration config,
+      final ZeebeClientConfiguration config,
       final Predicate<StatusCode> retryPredicate) {
     this.asyncStub = asyncStub;
     requestTimeout = config.getDefaultRequestTimeout();
@@ -74,7 +74,7 @@ public final class DeployResourceCommandImpl
    *
    * @deprecated since 8.3.0, use {@link
    *     DeployResourceCommandImpl#DeployResourceCommandImpl(GatewayStub asyncStub,
-   *     CamundaClientConfiguration config, Predicate retryPredicate)}
+   *     ZeebeClientConfiguration config, Predicate retryPredicate)}
    */
   @Deprecated
   public DeployResourceCommandImpl(
@@ -177,7 +177,7 @@ public final class DeployResourceCommandImpl
   }
 
   @Override
-  public CamundaFuture<DeploymentEvent> send() {
+  public ZeebeFuture<DeploymentEvent> send() {
     final DeployResourceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<DeploymentEvent, DeployResourceResponse> future =

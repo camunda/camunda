@@ -13,7 +13,7 @@ import static io.camunda.operate.qa.util.TestContainerUtil.PROPERTIES_PREFIX;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.fail;
 
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.ElasticsearchUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
@@ -46,7 +46,7 @@ public class ImportSeveralVersionsInitializer
 
   private final Random random = new Random();
 
-  private CamundaClient client;
+  private ZeebeClient client;
 
   private int wiCount;
   private int finishedCount;
@@ -108,7 +108,7 @@ public class ImportSeveralVersionsInitializer
       testContainerUtil.stopZeebe(tmpFolder);
       zeebeContainer = testContainerUtil.startZeebe(tmpFolder.getPath(), version, ZEEBE_PREFIX, 1);
       client =
-          CamundaClient.newClientBuilder()
+          ZeebeClient.newClientBuilder()
               .grpcAddress(URI.create(zeebeContainer.getExternalGatewayAddress()))
               .usePlaintext()
               .build();

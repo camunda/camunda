@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.properties;
 
-import io.camunda.zeebe.client.CamundaClientConfiguration;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.ClientProperties;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.util.Environment;
@@ -247,7 +247,7 @@ public class ZeebeClientConfigurationProperties {
   /**
    * @deprecated since 8.5 for removal with 8.8, replaced by {@link
    *     ZeebeClientConfigurationProperties#getGrpcAddress()}
-   * @see CamundaClientConfiguration#getGatewayAddress()
+   * @see ZeebeClientConfiguration#getGatewayAddress()
    */
   @Deprecated
   @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.base-url")
@@ -509,7 +509,7 @@ public class ZeebeClientConfigurationProperties {
   public static class Broker {
     /**
      * @deprecated since 8.5 for removal with 8.8, replaced by {@link Broker#getGrpcAddress()}
-     * @see CamundaClientConfiguration#getGatewayAddress()
+     * @see ZeebeClientConfiguration#getGatewayAddress()
      */
     @Deprecated private String gatewayAddress;
 
@@ -519,7 +519,7 @@ public class ZeebeClientConfigurationProperties {
 
     /**
      * @deprecated since 8.5 for removal with 8.8, replaced by {@link Broker#getGrpcAddress()}
-     * @see CamundaClientConfiguration#getGatewayAddress()
+     * @see ZeebeClientConfiguration#getGatewayAddress()
      */
     @Deprecated
     @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.gateway-url")
@@ -529,7 +529,7 @@ public class ZeebeClientConfigurationProperties {
 
     /**
      * @deprecated since 8.5 for removal with 8.8, replaced by {@link Broker#getGrpcAddress()}
-     * @see CamundaClientConfiguration#getGatewayAddress()
+     * @see ZeebeClientConfiguration#getGatewayAddress()
      */
     @Deprecated
     public void setGatewayAddress(final String gatewayAddress) {
@@ -728,7 +728,7 @@ public class ZeebeClientConfigurationProperties {
 
     /**
      * @deprecated since 8.5 for removal with 8.8, replaced by {@link Cloud#getGrpcAddress()}
-     * @see CamundaClientConfiguration#getGatewayAddress()
+     * @see ZeebeClientConfiguration#getGatewayAddress()
      */
     @Deprecated
     @DeprecatedConfigurationProperty(

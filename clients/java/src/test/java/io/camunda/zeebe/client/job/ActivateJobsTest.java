@@ -15,23 +15,23 @@
  */
 package io.camunda.zeebe.client.job;
 
+import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
-import io.camunda.zeebe.client.impl.CamundaClientBuilderImpl;
-import io.camunda.zeebe.client.impl.CamundaObjectMapper;
+import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
+import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
+import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
-import io.camunda.zeebe.client.util.ClientTest;
 
 public final class ActivateJobsTest extends ClientTest {
 
@@ -240,7 +240,7 @@ public final class ActivateJobsTest extends ClientTest {
     // given
     final ActivatedJobImpl activatedJob =
         new ActivatedJobImpl(
-            new CamundaObjectMapper(),
+            new ZeebeObjectMapper(),
             ActivatedJob.newBuilder()
                 .setCustomHeaders("{}")
                 .setVariables("{\"a\": 1, \"b\": 2}")
@@ -408,7 +408,7 @@ public final class ActivateJobsTest extends ClientTest {
 
     // then
     final ActivateJobsRequest request = gatewayService.getLastRequest();
-    assertThat(request.getWorker()).isEqualTo(CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_NAME_VAR);
+    assertThat(request.getWorker()).isEqualTo(ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_NAME_VAR);
   }
 
   @Test

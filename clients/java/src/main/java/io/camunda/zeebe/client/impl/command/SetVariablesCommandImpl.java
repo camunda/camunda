@@ -16,8 +16,8 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
-import io.camunda.zeebe.client.api.CamundaFuture;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1.SetVariablesCommandStep2;
@@ -65,7 +65,7 @@ public final class SetVariablesCommandImpl
   }
 
   @Override
-  public CamundaFuture<SetVariablesResponse> send() {
+  public ZeebeFuture<SetVariablesResponse> send() {
     final SetVariablesRequest request = builder.build();
 
     final RetriableClientFutureImpl<SetVariablesResponse, GatewayOuterClass.SetVariablesResponse>

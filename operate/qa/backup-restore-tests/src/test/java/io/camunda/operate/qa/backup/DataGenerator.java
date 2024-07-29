@@ -12,7 +12,7 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTA
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
@@ -63,10 +63,10 @@ public class DataGenerator {
       DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
 
   /**
-   * CamundaClient must not be reused between different test fixtures, as this may be different
+   * ZeebeClient must not be reused between different test fixtures, as this may be different
    * versions of client in the future.
    */
-  private CamundaClient camundaClient;
+  private ZeebeClient zeebeClient;
 
   private final Random random = new Random();
 
@@ -79,8 +79,8 @@ public class DataGenerator {
   @Autowired private OperateAPICaller operateAPICaller;
 
   private void init(final BackupRestoreTestContext testContext) {
-    camundaClient =
-        CamundaClient.newClientBuilder()
+    zeebeClient =
+        ZeebeClient.newClientBuilder()
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
             .usePlaintext()
             .build();
@@ -131,9 +131,9 @@ public class DataGenerator {
 
   @PreDestroy
   public void closeClients() {
-    if (camundaClient != null) {
-      camundaClient.close();
-      camundaClient = null;
+    if (zeebeClient != null) {
+      zeebeClient.close();
+      zeebeClient = null;
     }
     if (esClient != null) {
       try {
@@ -208,12 +208,12 @@ public class DataGenerator {
   }
 
   private void createIncidents(final String jobType, final int numberOfIncidents) {
-    ZeebeTestUtil.failTask(camundaClient, jobType, "worker", numberOfIncidents);
+    ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", numberOfIncidents);
     LOGGER.info("{} incidents in {} created", numberOfIncidents, jobType);
   }
 
   private void completeTasks(final String jobType, final int count) {
-    ZeebeTestUtil.completeTask(camundaClient, jobType, "worker", "{\"varOut\": \"value2\"}", count);
+    ZeebeTestUtil.completeTask(zeebeClient, jobType, "worker", "{\"varOut\": \"value2\"}", count);
     LOGGER.info("{} tasks {} completed", count, jobType);
   }
 
@@ -223,7 +223,7 @@ public class DataGenerator {
     for (int i = 0; i < numberOfProcessInstances; i++) {
       final long processInstanceKey =
           ZeebeTestUtil.startProcessInstance(
-              camundaClient, bpmnProcessId, "{\"var1\": \"value1\"}");
+              zeebeClient, bpmnProcessId, "{\"var1\": \"value1\"}");
       LOGGER.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
       processInstanceKeys.add(processInstanceKey);
     }
@@ -234,7 +234,7 @@ public class DataGenerator {
   private void deployProcess(final String bpmnProcessId) {
     final String processDefinitionKey =
         ZeebeTestUtil.deployProcess(
-            camundaClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
+            zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
     LOGGER.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
   }
 

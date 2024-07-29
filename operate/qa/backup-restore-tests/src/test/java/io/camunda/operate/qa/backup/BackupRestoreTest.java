@@ -12,7 +12,7 @@ import static io.camunda.operate.webapp.management.dto.BackupStateDto.COMPLETED;
 import static io.camunda.operate.webapp.management.dto.BackupStateDto.IN_PROGRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.util.RetryOperation;
@@ -145,7 +145,7 @@ public class BackupRestoreTest {
                 new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))));
     createSnapshotRepository(testContext);
 
-    String zeebeVersion = CamundaClient.class.getPackage().getImplementationVersion();
+    String zeebeVersion = ZeebeClient.class.getPackage().getImplementationVersion();
     if (zeebeVersion.toLowerCase().contains("snapshot")) {
       zeebeVersion = "SNAPSHOT";
     }

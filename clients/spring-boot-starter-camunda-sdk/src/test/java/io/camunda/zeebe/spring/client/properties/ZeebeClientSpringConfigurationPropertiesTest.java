@@ -18,7 +18,7 @@ package io.camunda.zeebe.spring.client.properties;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.api.JsonMapper;
-import io.camunda.zeebe.client.impl.CamundaObjectMapper;
+import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,8 +48,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       "zeebe.client.security.certpath=aPath",
       "zeebe.client.security.plaintext=true"
     })
-@ContextConfiguration(classes = CamundaClientSpringConfigurationPropertiesTest.TestConfig.class)
-public class CamundaClientSpringConfigurationPropertiesTest {
+@ContextConfiguration(classes = ZeebeClientSpringConfigurationPropertiesTest.TestConfig.class)
+public class ZeebeClientSpringConfigurationPropertiesTest {
 
   @Autowired private ZeebeClientConfigurationProperties properties;
 
@@ -128,7 +128,7 @@ public class CamundaClientSpringConfigurationPropertiesTest {
     @Bean("jsonMapper")
     @ConditionalOnMissingBean(JsonMapper.class)
     public JsonMapper jsonMapper() {
-      return new CamundaObjectMapper();
+      return new ZeebeObjectMapper();
     }
   }
 }

@@ -36,8 +36,7 @@ public class BlockingExecutorTest {
   public void shouldExecuteRunnable() {
     // given
     final AtomicBoolean atomicBoolean = new AtomicBoolean(false);
-    final BlockingExecutor executor =
-        new BlockingExecutor(Runnable::run, 1, Duration.ofMillis(10));
+    final BlockingExecutor executor = new BlockingExecutor(Runnable::run, 1, Duration.ofMillis(10));
 
     // when
     executor.execute(() -> atomicBoolean.set(true));
@@ -50,8 +49,7 @@ public class BlockingExecutorTest {
   public void shouldThrowRejectOnFull() {
     // given
     final Executor noop = command -> {};
-    final BlockingExecutor executor =
-        new BlockingExecutor(noop, 1, Duration.ofMillis(10));
+    final BlockingExecutor executor = new BlockingExecutor(noop, 1, Duration.ofMillis(10));
 
     // when - then throw
     executor.execute(() -> {});

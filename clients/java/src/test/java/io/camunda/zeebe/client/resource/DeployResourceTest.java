@@ -15,13 +15,13 @@
  */
 package io.camunda.zeebe.client.resource;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static io.camunda.zeebe.client.util.RecordingGatewayService.deployedDecision;
 import static io.camunda.zeebe.client.util.RecordingGatewayService.deployedDecisionRequirements;
 import static io.camunda.zeebe.client.util.RecordingGatewayService.deployedForm;
 import static io.camunda.zeebe.client.util.RecordingGatewayService.deployedProcess;
 import static io.camunda.zeebe.client.util.RecordingGatewayService.deployment;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
@@ -30,6 +30,7 @@ import io.camunda.zeebe.client.impl.response.DecisionImpl;
 import io.camunda.zeebe.client.impl.response.DecisionRequirementsImpl;
 import io.camunda.zeebe.client.impl.response.FormImpl;
 import io.camunda.zeebe.client.impl.response.ProcessImpl;
+import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Resource;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -40,7 +41,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import org.junit.Test;
-import io.camunda.zeebe.client.util.ClientTest;
 
 public final class DeployResourceTest extends ClientTest {
 

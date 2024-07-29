@@ -19,10 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.response.DeleteResourceResponse;
+import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceRequest;
 import java.time.Duration;
 import org.junit.Test;
-import io.camunda.zeebe.client.util.ClientTest;
 
 public final class DeleteResourceTest extends ClientTest {
 

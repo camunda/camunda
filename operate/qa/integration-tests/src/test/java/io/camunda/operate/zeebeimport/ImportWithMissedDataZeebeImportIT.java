@@ -53,7 +53,7 @@ public class ImportWithMissedDataZeebeImportIT extends OperateZeebeAbstractIT {
     final List<Long> processInstanceKeys = new ArrayList<>();
     for (int i = 0; i < 20; i++) {
       processInstanceKeys.add(
-          ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}"));
+          ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}"));
     }
     // remove "middle part" of Zeebe data
     // split by partitions

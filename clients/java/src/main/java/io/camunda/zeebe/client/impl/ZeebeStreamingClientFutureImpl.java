@@ -18,13 +18,13 @@ package io.camunda.zeebe.client.impl;
 
 import java.util.function.Consumer;
 
-public class CamundaStreamingClientFutureImpl<ClientResponse, BrokerResponse>
-    extends CamundaClientFutureImpl<ClientResponse, BrokerResponse> {
+public class ZeebeStreamingClientFutureImpl<ClientResponse, BrokerResponse>
+    extends ZeebeClientFutureImpl<ClientResponse, BrokerResponse> {
 
   private final ClientResponse response;
   private final Consumer<BrokerResponse> collector;
 
-  public CamundaStreamingClientFutureImpl(
+  public ZeebeStreamingClientFutureImpl(
       final ClientResponse response, final Consumer<BrokerResponse> collector) {
     this.response = response;
     this.collector = collector;

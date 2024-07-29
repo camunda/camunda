@@ -11,7 +11,7 @@ import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Network.Ipam;
 import com.github.dockerjava.api.model.Network.Ipam.Config;
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
@@ -94,9 +94,9 @@ final class Ipv6IntegrationTest {
     }
   }
 
-  private CamundaClient camundaClientFromZeebeClient() {
+  private ZeebeClient camundaClientFromZeebeClient() {
     final var zeebeClient = cluster.newClientBuilder().build();
-    return CamundaClient.newClientBuilder()
+    return ZeebeClient.newClientBuilder()
         .gatewayAddress(zeebeClient.getConfiguration().getGatewayAddress())
         .usePlaintext()
         .build();

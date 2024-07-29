@@ -16,13 +16,13 @@
 package io.camunda.zeebe.client.api;
 
 import io.camunda.zeebe.client.api.command.InternalClientException;
-import io.camunda.zeebe.client.impl.CamundaObjectMapper;
+import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import java.io.InputStream;
 import java.util.Map;
 
 /**
  * This interface is using to customize the way how objects will be serialized and deserialized in
- * JSON format. The default implementation is {@link CamundaObjectMapper}. This interface could be
+ * JSON format. The default implementation is {@link ZeebeObjectMapper}. This interface could be
  * implemented to customize the way how variables in the commands serialized/deserialized. For
  * example: there is such map with variables:
  *
@@ -45,12 +45,12 @@ import java.util.Map;
  *     ...
  *   }
  *   ...
- *   CamundaClient.newClientBuilder().withJsonMapper(new MyJsonMapper());
+ *   ZeebeClient.newClientBuilder().withJsonMapper(new MyJsonMapper());
  * </pre>
  *
  * Null values won't pass in the JSON with variables: {@code { "a": "b" } }
  *
- * @see CamundaObjectMapper
+ * @see ZeebeObjectMapper
  */
 public interface JsonMapper {
 

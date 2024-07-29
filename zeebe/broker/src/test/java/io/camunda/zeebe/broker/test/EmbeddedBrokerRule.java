@@ -15,7 +15,7 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setGateway
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInternalApiPort;
 
 import io.atomix.cluster.AtomixCluster;
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -256,7 +256,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
 
     if (brokerCfg.getGateway().isEnable()) {
       try (final var client =
-          CamundaClient.newClientBuilder()
+          ZeebeClient.newClientBuilder()
               .gatewayAddress(NetUtil.toSocketAddressString(getGatewayAddress()))
               .usePlaintext()
               .build()) {

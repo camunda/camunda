@@ -44,9 +44,9 @@ public class ErrorMessagesZeebeImportIT extends OperateZeebeAbstractIT {
   }
 
   private void injectCamundaClientIntoOperationHandler() {
-    cancelProcessInstanceHandler.setCamundaClient(camundaClient);
-    updateRetriesHandler.setCamundaClient(camundaClient);
-    updateVariableHandler.setCamundaClient(camundaClient);
+    cancelProcessInstanceHandler.setCamundaClient(zeebeClient);
+    updateRetriesHandler.setCamundaClient(zeebeClient);
+    updateVariableHandler.setCamundaClient(zeebeClient);
   }
 
   // OPE-453

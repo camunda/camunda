@@ -26,7 +26,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public final class CamundaClientCredentials {
+public final class ZeebeClientCredentials {
 
   @JsonAlias({"accesstoken", "access_token"})
   private String accessToken;
@@ -36,9 +36,9 @@ public final class CamundaClientCredentials {
   @JsonAlias({"tokentype", "token_type"})
   private String tokenType;
 
-  public CamundaClientCredentials() {}
+  public ZeebeClientCredentials() {}
 
-  public CamundaClientCredentials(
+  public ZeebeClientCredentials(
       final String accessToken, final ZonedDateTime expiry, final String tokenType) {
     this.accessToken = accessToken;
     this.expiry = expiry;
@@ -84,7 +84,7 @@ public final class CamundaClientCredentials {
       return false;
     }
 
-    final CamundaClientCredentials other = (CamundaClientCredentials) o;
+    final ZeebeClientCredentials other = (ZeebeClientCredentials) o;
 
     return accessToken.equals(other.accessToken) && tokenType.equals(other.tokenType);
   }

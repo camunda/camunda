@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
 
 import feign.FeignException;
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.ExporterStateCode;
 import io.camunda.zeebe.management.cluster.ExporterStatus;
@@ -48,7 +48,7 @@ final class ExportersEndpointIT {
           .withEmbeddedGateway(true)
           .build();
 
-  @AutoCloseResource private CamundaClient client;
+  @AutoCloseResource private ZeebeClient client;
 
   @BeforeEach
   void setup() {

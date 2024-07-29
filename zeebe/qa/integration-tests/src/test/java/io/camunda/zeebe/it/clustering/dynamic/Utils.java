@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.clustering.dynamic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
@@ -59,7 +59,7 @@ final class Utils {
   }
 
   static void assertThatAllJobsCanBeCompleted(
-      final List<Long> processInstanceKeys, final CamundaClient zeebeClient, final String jobType) {
+      final List<Long> processInstanceKeys, final ZeebeClient zeebeClient, final String jobType) {
     final Set<ActivatedJob> activatedJobs = new HashSet<>();
     Awaitility.await("Jobs from all partitions are activated")
         .timeout(Duration.ofSeconds(20))
@@ -92,7 +92,7 @@ final class Utils {
   }
 
   static List<Long> createInstanceWithAJobOnAllPartitions(
-      final CamundaClient zeebeClient, final String jobType, final int partitionsCount) {
+      final ZeebeClient zeebeClient, final String jobType, final int partitionsCount) {
     final var process =
         Bpmn.createExecutableProcess("processId")
             .startEvent()

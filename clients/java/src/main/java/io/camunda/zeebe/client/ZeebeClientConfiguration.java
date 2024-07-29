@@ -23,135 +23,135 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
-public interface CamundaClientConfiguration {
+public interface ZeebeClientConfiguration {
 
   /**
    * @deprecated since 8.5 for removal with 8.8, replaced by {@link
-   *     CamundaClientConfiguration#getGrpcAddress()}
-   * @see CamundaClientBuilder#grpcAddress(URI)
+   *     ZeebeClientConfiguration#getGrpcAddress()}
+   * @see ZeebeClientBuilder#grpcAddress(URI)
    */
   @Deprecated
   String getGatewayAddress();
 
   /**
-   * @see CamundaClientBuilder#restAddress(URI)
+   * @see ZeebeClientBuilder#restAddress(URI)
    */
   URI getRestAddress();
 
   /**
-   * @see CamundaClientBuilder#grpcAddress(URI)
+   * @see ZeebeClientBuilder#grpcAddress(URI)
    */
   URI getGrpcAddress();
 
   /**
-   * @see CamundaClientBuilder#defaultTenantId(String)
+   * @see ZeebeClientBuilder#defaultTenantId(String)
    */
   String getDefaultTenantId();
 
   /**
-   * @see CamundaClientBuilder#defaultJobWorkerTenantIds(List)
+   * @see ZeebeClientBuilder#defaultJobWorkerTenantIds(List)
    */
   List<String> getDefaultJobWorkerTenantIds();
 
   /**
-   * @see CamundaClientBuilder#numJobWorkerExecutionThreads(int)
+   * @see ZeebeClientBuilder#numJobWorkerExecutionThreads(int)
    */
   int getNumJobWorkerExecutionThreads();
 
   /**
-   * @see CamundaClientBuilder#defaultJobWorkerMaxJobsActive(int)
+   * @see ZeebeClientBuilder#defaultJobWorkerMaxJobsActive(int)
    */
   int getDefaultJobWorkerMaxJobsActive();
 
   /**
-   * @see CamundaClientBuilder#defaultJobWorkerName(String)
+   * @see ZeebeClientBuilder#defaultJobWorkerName(String)
    */
   String getDefaultJobWorkerName();
 
   /**
-   * @see CamundaClientBuilder#defaultJobTimeout(Duration)
+   * @see ZeebeClientBuilder#defaultJobTimeout(Duration)
    */
   Duration getDefaultJobTimeout();
 
   /**
-   * @see CamundaClientBuilder#defaultJobPollInterval(Duration)
+   * @see ZeebeClientBuilder#defaultJobPollInterval(Duration)
    */
   Duration getDefaultJobPollInterval();
 
   /**
-   * @see CamundaClientBuilder#defaultMessageTimeToLive(Duration)
+   * @see ZeebeClientBuilder#defaultMessageTimeToLive(Duration)
    */
   Duration getDefaultMessageTimeToLive();
 
   /**
-   * @see CamundaClientBuilder#defaultRequestTimeout(Duration)
+   * @see ZeebeClientBuilder#defaultRequestTimeout(Duration)
    */
   Duration getDefaultRequestTimeout();
 
   /**
-   * @see CamundaClientBuilder#usePlaintext()
+   * @see ZeebeClientBuilder#usePlaintext()
    */
   boolean isPlaintextConnectionEnabled();
 
   /**
-   * @see CamundaClientBuilder#caCertificatePath(String)
+   * @see ZeebeClientBuilder#caCertificatePath(String)
    */
   String getCaCertificatePath();
 
   /**
-   * @see CamundaClientBuilder#credentialsProvider(CredentialsProvider)
+   * @see ZeebeClientBuilder#credentialsProvider(CredentialsProvider)
    */
   CredentialsProvider getCredentialsProvider();
 
   /**
-   * @see CamundaClientBuilder#keepAlive(Duration)
+   * @see ZeebeClientBuilder#keepAlive(Duration)
    */
   Duration getKeepAlive();
 
   List<ClientInterceptor> getInterceptors();
 
   /**
-   * @see CamundaClientBuilder#withJsonMapper(JsonMapper)
+   * @see ZeebeClientBuilder#withJsonMapper(JsonMapper)
    */
   JsonMapper getJsonMapper();
 
   /**
-   * @see CamundaClientBuilder#overrideAuthority(String)
+   * @see ZeebeClientBuilder#overrideAuthority(String)
    */
   String getOverrideAuthority();
 
   /**
-   * @see CamundaClientBuilder#maxMessageSize(int)
+   * @see ZeebeClientBuilder#maxMessageSize(int)
    */
   int getMaxMessageSize();
 
   /**
-   * @see CamundaClientBuilder#maxMetadataSize(int)
+   * @see ZeebeClientBuilder#maxMetadataSize(int)
    */
   int getMaxMetadataSize();
 
   /**
-   * @see CamundaClientBuilder#jobWorkerExecutor(ScheduledExecutorService)
+   * @see ZeebeClientBuilder#jobWorkerExecutor(ScheduledExecutorService)
    */
   ScheduledExecutorService jobWorkerExecutor();
 
   /**
-   * @see CamundaClientBuilder#jobWorkerExecutor(ScheduledExecutorService, boolean)
+   * @see ZeebeClientBuilder#jobWorkerExecutor(ScheduledExecutorService, boolean)
    */
   boolean ownsJobWorkerExecutor();
 
   /**
-   * @see CamundaClientBuilder#defaultJobWorkerStreamEnabled(boolean)
+   * @see ZeebeClientBuilder#defaultJobWorkerStreamEnabled(boolean)
    */
   boolean getDefaultJobWorkerStreamEnabled();
 
   /**
-   * @see CamundaClientBuilder#useDefaultRetryPolicy(boolean)
+   * @see ZeebeClientBuilder#useDefaultRetryPolicy(boolean)
    */
   boolean useDefaultRetryPolicy();
 
   /**
-   * @see CamundaClientBuilder#preferRestOverGrpc(boolean)
+   * @see ZeebeClientBuilder#preferRestOverGrpc(boolean)
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   boolean preferRestOverGrpc();

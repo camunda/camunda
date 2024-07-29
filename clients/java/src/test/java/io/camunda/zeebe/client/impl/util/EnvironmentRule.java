@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.impl.util;
 
-import io.camunda.zeebe.client.impl.util.Environment;
 import java.util.Map;
 import org.junit.rules.ExternalResource;
 

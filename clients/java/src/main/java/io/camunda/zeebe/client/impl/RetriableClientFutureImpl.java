@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public final class RetriableClientFutureImpl<R, T> extends CamundaClientFutureImpl<R, T> {
+public final class RetriableClientFutureImpl<R, T> extends ZeebeClientFutureImpl<R, T> {
 
   private final AtomicInteger retries = new AtomicInteger(2);
   private final Predicate<StatusCode> retryPredicate;

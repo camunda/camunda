@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.client.command;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.client.api.CamundaFuture;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
@@ -160,7 +160,7 @@ public final class MessageCorrelationTest {
         .join();
 
     // when
-    final CamundaFuture<PublishMessageResponse> future =
+    final ZeebeFuture<PublishMessageResponse> future =
         CLIENT_RULE
             .getClient()
             .newPublishMessageCommand()

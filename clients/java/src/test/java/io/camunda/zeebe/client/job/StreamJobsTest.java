@@ -15,13 +15,14 @@
  */
 package io.camunda.zeebe.client.job;
 
+import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
 import io.camunda.zeebe.client.api.response.StreamJobsResponse;
+import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
 import java.time.Duration;
@@ -31,7 +32,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import org.mockito.Mockito;
-import io.camunda.zeebe.client.util.ClientTest;
 
 public final class StreamJobsTest extends ClientTest {
   @Test

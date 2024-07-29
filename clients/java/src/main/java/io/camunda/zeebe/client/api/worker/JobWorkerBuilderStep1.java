@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.api.worker;
 
-import io.camunda.zeebe.client.CamundaClientConfiguration;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.command.CommandWithOneOrMoreTenantsStep;
 import java.time.Duration;
@@ -113,8 +113,7 @@ public interface JobWorkerBuilderStep1 {
      * workers the chance to work on the jobs. The worker will try to activate new jobs again when
      * jobs are completed (or marked as failed).
      *
-     * <p>If no maximum is set then the default, from the {@link CamundaClientConfiguration}, is
-     * used.
+     * <p>If no maximum is set then the default, from the {@link ZeebeClientConfiguration}, is used.
      *
      * <p>Considerations:
      *
@@ -138,7 +137,7 @@ public interface JobWorkerBuilderStep1 {
      * no jobs can be activated after completing the worker will periodically poll for new jobs.
      *
      * <p>If no poll interval is set then the default is used from the {@link
-     * CamundaClientConfiguration}
+     * ZeebeClientConfiguration}
      *
      * @param pollInterval the maximal interval to check for new jobs
      * @return the builder for this worker
@@ -149,7 +148,7 @@ public interface JobWorkerBuilderStep1 {
      * Set the request timeout for activate job request used to poll for new job.
      *
      * <p>If no request timeout is set then the default is used from the {@link
-     * CamundaClientConfiguration}
+     * ZeebeClientConfiguration}
      *
      * <p>NOTE: the request time out defined here is only applied to the activate jobs command, i.e.
      * to polling for jobs, and is not applied to the job stream; use {@link

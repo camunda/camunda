@@ -15,21 +15,21 @@
  */
 package io.camunda.zeebe.client.job;
 
+import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.FailJobResponse;
+import io.camunda.zeebe.client.util.ClientTest;
+import io.camunda.zeebe.client.util.JsonUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import java.time.Duration;
 import java.util.Collections;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.mockito.Mockito;
-import io.camunda.zeebe.client.util.ClientTest;
-import io.camunda.zeebe.client.util.JsonUtil;
 
 public final class FailJobTest extends ClientTest {
 

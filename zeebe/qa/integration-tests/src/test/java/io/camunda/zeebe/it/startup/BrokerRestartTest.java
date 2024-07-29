@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.startup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.api.CamundaFuture;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
@@ -60,7 +60,7 @@ public class BrokerRestartTest {
     publishMessage(2).join();
   }
 
-  private CamundaFuture<PublishMessageResponse> publishMessage(final int key) {
+  private ZeebeFuture<PublishMessageResponse> publishMessage(final int key) {
     return clientRule
         .getClient()
         .newPublishMessageCommand()

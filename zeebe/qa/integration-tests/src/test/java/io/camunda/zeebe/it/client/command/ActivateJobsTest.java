@@ -9,8 +9,8 @@ package io.camunda.zeebe.it.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.CamundaClient;
-import io.camunda.zeebe.client.api.CamundaFuture;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
@@ -29,7 +29,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 @AutoCloseResources
 class ActivateJobsTest {
 
-  @AutoCloseResource CamundaClient client;
+  @AutoCloseResource
+  ZeebeClient client;
 
   @TestZeebe
   final TestStandaloneBroker zeebe =
@@ -54,7 +55,7 @@ class ActivateJobsTest {
     resourcesHelper.createJobs(jobType, 2);
 
     // when
-    final CamundaFuture<ActivateJobsResponse> responseFuture =
+    final ZeebeFuture<ActivateJobsResponse> responseFuture =
         getCommand(client, useRest).jobType(jobType).maxJobsToActivate(2).send();
 
     // then
@@ -66,7 +67,7 @@ class ActivateJobsTest {
   @ValueSource(booleans = {true, false})
   public void shouldRespondNoActivatedJobsWhenNoJobsAvailable(final boolean useRest) {
     // when
-    final CamundaFuture<ActivateJobsResponse> responseFuture =
+    final ZeebeFuture<ActivateJobsResponse> responseFuture =
         getCommand(client, useRest).jobType("notExisting").maxJobsToActivate(1).send();
 
     // then
@@ -74,7 +75,7 @@ class ActivateJobsTest {
     assertThat(response.getJobs()).isEmpty();
   }
 
-  private ActivateJobsCommandStep1 getCommand(final CamundaClient client, final boolean useRest) {
+  private ActivateJobsCommandStep1 getCommand(final ZeebeClient client, final boolean useRest) {
     final ActivateJobsCommandStep1 activateJobsCommandStep1 = client.newActivateJobsCommand();
     return useRest ? activateJobsCommandStep1.useRest() : activateJobsCommandStep1.useGrpc();
   }

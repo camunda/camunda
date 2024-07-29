@@ -7,7 +7,7 @@
  */
 package io.camunda.webapps.zeebe;
 
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -19,13 +19,13 @@ public class PartitionSupplierConfigurer {
   private final Broker broker;
 
   private final Gateway gateway;
-  private final CamundaClient camundaClient;
+  private final ZeebeClient zeebeClient;
 
   public PartitionSupplierConfigurer(
-      final Broker broker, final Gateway gateway, final CamundaClient camundaClient) {
+      final Broker broker, final Gateway gateway, final ZeebeClient zeebeClient) {
     this.broker = broker;
     this.gateway = gateway;
-    this.camundaClient = camundaClient;
+    this.zeebeClient = zeebeClient;
   }
 
   public PartitionSupplier createPartitionSupplier() {
@@ -37,7 +37,7 @@ public class PartitionSupplierConfigurer {
       return new BrokerClientPartitionSupplier(brokerClient);
     } else {
       // default use Standalone Partition Holder by using the Zeebe Client
-      return new StandalonePartitionSupplier(camundaClient);
+      return new StandalonePartitionSupplier(zeebeClient);
     }
   }
 

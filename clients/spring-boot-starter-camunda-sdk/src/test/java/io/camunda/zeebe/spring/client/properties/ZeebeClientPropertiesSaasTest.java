@@ -29,7 +29,7 @@ import org.springframework.boot.test.context.SpringBootTest;
       "camunda.client.region=bru-2",
       "camunda.client.mode=saas"
     })
-public class CamundaClientPropertiesSaasTest {
+public class ZeebeClientPropertiesSaasTest {
   @Autowired CamundaClientProperties properties;
 
   @Test

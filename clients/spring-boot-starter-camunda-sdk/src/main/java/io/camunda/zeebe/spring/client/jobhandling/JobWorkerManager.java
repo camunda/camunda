@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.jobhandling;
 
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
@@ -54,7 +54,7 @@ public class JobWorkerManager {
     this.resultProcessorStrategy = resultProcessorStrategy;
   }
 
-  public JobWorker openWorker(final CamundaClient client, final ZeebeWorkerValue zeebeWorkerValue) {
+  public JobWorker openWorker(final ZeebeClient client, final ZeebeWorkerValue zeebeWorkerValue) {
     return openWorker(
         client,
         zeebeWorkerValue,
@@ -67,7 +67,7 @@ public class JobWorkerManager {
   }
 
   public JobWorker openWorker(
-      final CamundaClient client,
+      final ZeebeClient client,
       final ZeebeWorkerValue zeebeWorkerValue,
       final JobHandler handler) {
 

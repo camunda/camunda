@@ -21,7 +21,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-public interface CamundaFuture<T> extends Future<T>, CompletionStage<T> {
+public interface ZeebeFuture<T> extends Future<T>, CompletionStage<T> {
 
   /**
    * Like {@link #get()} but throws runtime exceptions.

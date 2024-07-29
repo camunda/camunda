@@ -15,10 +15,10 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.zeebe.client.CamundaClientConfiguration;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
-import io.camunda.zeebe.client.api.CamundaFuture;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1.BroadcastSignalCommandStep2;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
@@ -44,7 +44,7 @@ public final class BroadcastSignalCommandImpl
 
   public BroadcastSignalCommandImpl(
       final GatewayStub asyncStub,
-      final CamundaClientConfiguration configuration,
+      final ZeebeClientConfiguration configuration,
       final JsonMapper jsonMapper,
       final Predicate<StatusCode> retryPredicate) {
     super(jsonMapper);
@@ -80,7 +80,7 @@ public final class BroadcastSignalCommandImpl
   }
 
   @Override
-  public CamundaFuture<BroadcastSignalResponse> send() {
+  public ZeebeFuture<BroadcastSignalResponse> send() {
     final BroadcastSignalRequest request = builder.build();
     final RetriableClientFutureImpl<
             BroadcastSignalResponse, GatewayOuterClass.BroadcastSignalResponse>

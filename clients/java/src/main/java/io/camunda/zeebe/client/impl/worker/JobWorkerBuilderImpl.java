@@ -20,7 +20,7 @@ import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNullNorEmpty;
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensurePositive;
 
-import io.camunda.zeebe.client.CamundaClientConfiguration;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.worker.BackoffSupplier;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobHandler;
@@ -62,7 +62,7 @@ public final class JobWorkerBuilderImpl
   private JobWorkerMetrics metrics = JobWorkerMetrics.noop();
 
   public JobWorkerBuilderImpl(
-      final CamundaClientConfiguration configuration,
+      final ZeebeClientConfiguration configuration,
       final JobClient jobClient,
       final ScheduledExecutorService executorService,
       final List<Closeable> closeables) {

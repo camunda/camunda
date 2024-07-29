@@ -24,12 +24,13 @@ import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.impl.CamundaClientBuilderImpl;
-import io.camunda.zeebe.client.impl.CamundaObjectMapper;
+import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
+import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
 import io.camunda.zeebe.client.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.client.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
+import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayPaths;
 import java.time.Duration;
 import java.util.Arrays;
@@ -37,7 +38,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import io.camunda.zeebe.client.util.ClientRestTest;
 
 public final class ActivateJobsRestTest extends ClientRestTest {
 
@@ -251,7 +251,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     variables.put("b", 2);
     final ActivatedJobImpl activatedJob =
         new ActivatedJobImpl(
-            new CamundaObjectMapper(),
+            new ZeebeObjectMapper(),
             new ActivatedJob().customHeaders(new HashMap<>()).variables(variables));
 
     // when
@@ -419,7 +419,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
 
     // then
     final JobActivationRequest request = gatewayService.getLastRequest(JobActivationRequest.class);
-    assertThat(request.getWorker()).isEqualTo(CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_NAME_VAR);
+    assertThat(request.getWorker()).isEqualTo(ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_NAME_VAR);
   }
 
   private static final class VariablesPojo {

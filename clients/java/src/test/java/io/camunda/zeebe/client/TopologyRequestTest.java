@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.client;
 
+import static io.camunda.zeebe.client.util.RecordingGatewayService.broker;
+import static io.camunda.zeebe.client.util.RecordingGatewayService.partition;
 import static io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth.DEAD;
 import static io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth.HEALTHY;
 import static io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth.UNHEALTHY;
@@ -24,8 +26,6 @@ import static io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.Part
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
-import static io.camunda.zeebe.client.util.RecordingGatewayService.broker;
-import static io.camunda.zeebe.client.util.RecordingGatewayService.partition;
 
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.BrokerInfo;
@@ -33,11 +33,11 @@ import io.camunda.zeebe.client.api.response.PartitionBrokerHealth;
 import io.camunda.zeebe.client.api.response.PartitionBrokerRole;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import java.time.Duration;
 import java.util.List;
 import org.junit.Test;
-import io.camunda.zeebe.client.util.ClientTest;
 
 public final class TopologyRequestTest extends ClientTest {
 

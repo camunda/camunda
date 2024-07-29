@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.zeebe;
 
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.webapps.zeebe.PartitionSupplier;
 import io.camunda.webapps.zeebe.PartitionSupplierConfigurer;
 import io.camunda.zeebe.broker.Broker;
@@ -23,7 +23,7 @@ public class TasklistPartitionSupplierConfiguration {
   public PartitionSupplier tasklistPartitionSupplier(
       @Autowired(required = false) final Broker broker,
       @Autowired(required = false) final Gateway gateway,
-      @Autowired @Qualifier("tasklistCamundaClient") final CamundaClient zeebeClient) {
+      @Autowired @Qualifier("tasklistCamundaClient") final ZeebeClient zeebeClient) {
     return new PartitionSupplierConfigurer(broker, gateway, zeebeClient).createPartitionSupplier();
   }
 }

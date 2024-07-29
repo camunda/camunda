@@ -15,10 +15,10 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.zeebe.client.CamundaClientConfiguration;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
-import io.camunda.zeebe.client.api.CamundaFuture;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep2;
@@ -53,7 +53,7 @@ public final class CreateProcessInstanceCommandImpl
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
-      final CamundaClientConfiguration config,
+      final ZeebeClientConfiguration config,
       final Predicate<StatusCode> retryPredicate) {
     super(jsonMapper);
     this.asyncStub = asyncStub;
@@ -73,7 +73,7 @@ public final class CreateProcessInstanceCommandImpl
    *
    * @deprecated since 8.3.0, use {@link
    *     CreateProcessInstanceCommandImpl#CreateProcessInstanceCommandImpl(GatewayStub asyncStub,
-   *     JsonMapper jsonMapper, CamundaClientConfiguration config, Predicate retryPredicate)}
+   *     JsonMapper jsonMapper, ZeebeClientConfiguration config, Predicate retryPredicate)}
    */
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
@@ -139,7 +139,7 @@ public final class CreateProcessInstanceCommandImpl
   }
 
   @Override
-  public CamundaFuture<ProcessInstanceEvent> send() {
+  public ZeebeFuture<ProcessInstanceEvent> send() {
     final CreateProcessInstanceRequest request = builder.build();
 
     final RetriableClientFutureImpl<ProcessInstanceEvent, CreateProcessInstanceResponse> future =

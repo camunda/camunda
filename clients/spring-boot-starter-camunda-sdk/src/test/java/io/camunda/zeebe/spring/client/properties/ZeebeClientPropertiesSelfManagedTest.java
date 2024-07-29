@@ -25,7 +25,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest(
     classes = CamundaClientPropertiesTestConfig.class,
     properties = "camunda.client.mode=self-managed")
-public class CamundaClientPropertiesSelfManagedTest {
+public class ZeebeClientPropertiesSelfManagedTest {
   @Autowired CamundaClientProperties properties;
 
   @Test

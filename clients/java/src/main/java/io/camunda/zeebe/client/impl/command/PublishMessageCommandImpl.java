@@ -15,10 +15,10 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.zeebe.client.CamundaClientConfiguration;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
-import io.camunda.zeebe.client.api.CamundaFuture;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep2;
@@ -44,7 +44,7 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
 
   public PublishMessageCommandImpl(
       final GatewayStub asyncStub,
-      final CamundaClientConfiguration configuration,
+      final ZeebeClientConfiguration configuration,
       final JsonMapper jsonMapper,
       final Predicate<StatusCode> retryPredicate) {
     super(jsonMapper);
@@ -104,7 +104,7 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
   }
 
   @Override
-  public CamundaFuture<PublishMessageResponse> send() {
+  public ZeebeFuture<PublishMessageResponse> send() {
     final PublishMessageRequest request = builder.build();
     final RetriableClientFutureImpl<
             PublishMessageResponse, GatewayOuterClass.PublishMessageResponse>

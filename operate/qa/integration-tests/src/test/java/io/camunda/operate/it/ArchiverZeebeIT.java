@@ -350,7 +350,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
                 .collect(Collectors.joining(","))
             + "]}";
     final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(camundaClient, processId, payload);
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, payload);
     // wait till it's finished
     searchTestRule.processAllRecordsAndWait(
         400, processInstanceIsCompletedCheck, processInstanceKey);
@@ -477,7 +477,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     pinZeebeTime(currentTime);
     final List<Long> ids = new ArrayList<>();
     for (int i = 0; i < count; i++) {
-      ids.add(ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"var\": 123}"));
+      ids.add(ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"var\": 123}"));
     }
     searchTestRule.processAllRecordsAndWait(processInstancesAreStartedCheck, ids);
     return ids;

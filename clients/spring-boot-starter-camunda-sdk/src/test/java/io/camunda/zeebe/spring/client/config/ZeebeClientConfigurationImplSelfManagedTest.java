@@ -18,7 +18,7 @@ package io.camunda.zeebe.spring.client.config;
 import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.CamundaClientConfiguration;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientAllAutoConfiguration;
@@ -38,145 +38,146 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
       "camunda.client.auth.client-secret=my-client-secret"
     })
 @ExtendWith(OutputCaptureExtension.class)
-public class CamundaClientConfigurationImplSelfManagedTest {
-  @Autowired CamundaClientConfiguration camundaClientConfiguration;
+public class ZeebeClientConfigurationImplSelfManagedTest {
+  @Autowired
+  ZeebeClientConfiguration zeebeClientConfiguration;
   @Autowired JsonMapper jsonMapper;
   @Autowired ZeebeClientExecutorService zeebeClientExecutorService;
 
   @Test
   void shouldContainsZeebeClientConfiguration() {
-    assertThat(camundaClientConfiguration).isNotNull();
+    assertThat(zeebeClientConfiguration).isNotNull();
   }
 
   @Test
   void shouldNotHaveCredentialsProvider() {
-    assertThat(camundaClientConfiguration.getCredentialsProvider())
+    assertThat(zeebeClientConfiguration.getCredentialsProvider())
         .isInstanceOf(OAuthCredentialsProvider.class);
   }
 
   @Test
   void shouldHaveGatewayAddress() {
-    assertThat(camundaClientConfiguration.getGatewayAddress()).isEqualTo("localhost:26500");
+    assertThat(zeebeClientConfiguration.getGatewayAddress()).isEqualTo("localhost:26500");
   }
 
   @Test
   void shouldHaveDefaultTenantId() {
-    assertThat(camundaClientConfiguration.getDefaultTenantId())
+    assertThat(zeebeClientConfiguration.getDefaultTenantId())
         .isEqualTo(DEFAULT.getDefaultTenantId());
   }
 
   @Test
   void shouldHaveDefaultJobWorkerTenantIds() {
-    assertThat(camundaClientConfiguration.getDefaultJobWorkerTenantIds())
+    assertThat(zeebeClientConfiguration.getDefaultJobWorkerTenantIds())
         .isEqualTo(DEFAULT.getDefaultJobWorkerTenantIds());
   }
 
   @Test
   void shouldHaveNumJobWorkerExecutionThreads() {
-    assertThat(camundaClientConfiguration.getNumJobWorkerExecutionThreads())
+    assertThat(zeebeClientConfiguration.getNumJobWorkerExecutionThreads())
         .isEqualTo(DEFAULT.getNumJobWorkerExecutionThreads());
   }
 
   @Test
   void shouldHaveDefaultJobWorkerMaxJobsActive() {
-    assertThat(camundaClientConfiguration.getDefaultJobWorkerMaxJobsActive())
+    assertThat(zeebeClientConfiguration.getDefaultJobWorkerMaxJobsActive())
         .isEqualTo(DEFAULT.getDefaultJobWorkerMaxJobsActive());
   }
 
   @Test
   void shouldHaveDefaultJobWorkerName() {
-    assertThat(camundaClientConfiguration.getDefaultJobWorkerName())
+    assertThat(zeebeClientConfiguration.getDefaultJobWorkerName())
         .isEqualTo(DEFAULT.getDefaultJobWorkerName());
   }
 
   @Test
   void shouldHaveDefaultJobTimeout() {
-    assertThat(camundaClientConfiguration.getDefaultJobTimeout())
+    assertThat(zeebeClientConfiguration.getDefaultJobTimeout())
         .isEqualTo(DEFAULT.getDefaultJobTimeout());
   }
 
   @Test
   void shouldHaveDefaultJobPollInterval() {
-    assertThat(camundaClientConfiguration.getDefaultJobPollInterval())
+    assertThat(zeebeClientConfiguration.getDefaultJobPollInterval())
         .isEqualTo(DEFAULT.getDefaultJobPollInterval());
   }
 
   @Test
   void shouldHaveDefaultMessageTimeToLive() {
-    assertThat(camundaClientConfiguration.getDefaultMessageTimeToLive())
+    assertThat(zeebeClientConfiguration.getDefaultMessageTimeToLive())
         .isEqualTo(DEFAULT.getDefaultMessageTimeToLive());
   }
 
   @Test
   void shouldHaveDefaultRequestTimeout() {
-    assertThat(camundaClientConfiguration.getDefaultRequestTimeout())
+    assertThat(zeebeClientConfiguration.getDefaultRequestTimeout())
         .isEqualTo(DEFAULT.getDefaultRequestTimeout());
   }
 
   @Test
   void shouldHavePlaintextConnectionEnabled() {
-    assertThat(camundaClientConfiguration.isPlaintextConnectionEnabled()).isEqualTo(true);
+    assertThat(zeebeClientConfiguration.isPlaintextConnectionEnabled()).isEqualTo(true);
   }
 
   @Test
   void shouldHaveCaCertificatePath() {
-    assertThat(camundaClientConfiguration.getCaCertificatePath())
+    assertThat(zeebeClientConfiguration.getCaCertificatePath())
         .isEqualTo(DEFAULT.getCaCertificatePath());
   }
 
   @Test
   void shouldHaveKeepAlive() {
-    assertThat(camundaClientConfiguration.getKeepAlive()).isEqualTo(DEFAULT.getKeepAlive());
+    assertThat(zeebeClientConfiguration.getKeepAlive()).isEqualTo(DEFAULT.getKeepAlive());
   }
 
   @Test
   void shouldNotHaveClientInterceptors() {
-    assertThat(camundaClientConfiguration.getInterceptors()).isEmpty();
+    assertThat(zeebeClientConfiguration.getInterceptors()).isEmpty();
   }
 
   @Test
   void shouldHaveJsonMapper() {
-    assertThat(camundaClientConfiguration.getJsonMapper()).isEqualTo(jsonMapper);
+    assertThat(zeebeClientConfiguration.getJsonMapper()).isEqualTo(jsonMapper);
   }
 
   @Test
   void shouldHaveOverrideAuthority() {
-    assertThat(camundaClientConfiguration.getOverrideAuthority())
+    assertThat(zeebeClientConfiguration.getOverrideAuthority())
         .isEqualTo(DEFAULT.getOverrideAuthority());
   }
 
   @Test
   void shouldHaveMaxMessageSize() {
-    assertThat(camundaClientConfiguration.getMaxMessageSize())
+    assertThat(zeebeClientConfiguration.getMaxMessageSize())
         .isEqualTo(DEFAULT.getMaxMessageSize());
   }
 
   @Test
   void shouldHaveMaxMetadataSize() {
-    assertThat(camundaClientConfiguration.getMaxMetadataSize())
+    assertThat(zeebeClientConfiguration.getMaxMetadataSize())
         .isEqualTo(DEFAULT.getMaxMetadataSize());
   }
 
   @Test
   void shouldHaveJobWorkerExecutor() {
-    assertThat(camundaClientConfiguration.jobWorkerExecutor())
+    assertThat(zeebeClientConfiguration.jobWorkerExecutor())
         .isEqualTo(zeebeClientExecutorService.get());
   }
 
   @Test
   void shouldHaveOwnsJobWorkerExecutor() {
-    assertThat(camundaClientConfiguration.ownsJobWorkerExecutor()).isEqualTo(true);
+    assertThat(zeebeClientConfiguration.ownsJobWorkerExecutor()).isEqualTo(true);
   }
 
   @Test
   void shouldHaveDefaultJobWorkerStreamEnabled() {
-    assertThat(camundaClientConfiguration.getDefaultJobWorkerStreamEnabled())
+    assertThat(zeebeClientConfiguration.getDefaultJobWorkerStreamEnabled())
         .isEqualTo(DEFAULT.getDefaultJobWorkerStreamEnabled());
   }
 
   @Test
   void shouldHaveDefaultRetryPolicy() {
-    assertThat(camundaClientConfiguration.useDefaultRetryPolicy())
+    assertThat(zeebeClientConfiguration.useDefaultRetryPolicy())
         .isEqualTo(DEFAULT.useDefaultRetryPolicy());
   }
 }

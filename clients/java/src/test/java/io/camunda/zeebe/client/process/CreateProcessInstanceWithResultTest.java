@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.client.process;
 
+import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.ProcessInstanceResult;

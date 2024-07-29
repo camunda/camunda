@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.clustering.topology;
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.client.api.response.PartitionBrokerRole;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
@@ -122,7 +122,7 @@ public final class TopologyClusterTest {
             PartitionBrokerRole.LEADER, PartitionBrokerRole.FOLLOWER, PartitionBrokerRole.FOLLOWER);
   }
 
-  private static CamundaClient createZeebeClient() {
+  private static ZeebeClient createZeebeClient() {
     final var gateway = CLUSTER.anyGateway();
     return CLUSTER
         .newClientBuilder()
@@ -131,7 +131,7 @@ public final class TopologyClusterTest {
         .build();
   }
 
-  private Topology sendRequest(final CamundaClient client, final boolean useRest) {
+  private Topology sendRequest(final ZeebeClient client, final boolean useRest) {
     var request = client.newTopologyRequest();
     if (useRest) {
       request = request.useRest();

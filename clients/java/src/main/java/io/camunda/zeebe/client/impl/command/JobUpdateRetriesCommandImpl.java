@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
-import io.camunda.zeebe.client.api.CamundaFuture;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1.UpdateRetriesJobCommandStep2;
@@ -66,7 +66,7 @@ public final class JobUpdateRetriesCommandImpl
   }
 
   @Override
-  public CamundaFuture<UpdateRetriesJobResponse> send() {
+  public ZeebeFuture<UpdateRetriesJobResponse> send() {
     final UpdateJobRetriesRequest request = builder.build();
 
     final RetriableClientFutureImpl<UpdateRetriesJobResponse, UpdateJobRetriesResponse> future =

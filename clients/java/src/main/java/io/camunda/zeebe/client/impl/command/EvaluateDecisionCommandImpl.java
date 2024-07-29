@@ -15,10 +15,10 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.zeebe.client.CamundaClientConfiguration;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
-import io.camunda.zeebe.client.api.CamundaFuture;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1.EvaluateDecisionCommandStep2;
@@ -47,7 +47,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   public EvaluateDecisionCommandImpl(
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
-      final CamundaClientConfiguration config,
+      final ZeebeClientConfiguration config,
       final Predicate<StatusCode> retryPredicate) {
     super(jsonMapper);
     this.asyncStub = asyncStub;
@@ -67,7 +67,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
    *
    * @deprecated since 8.3.0, use {@link
    *     EvaluateDecisionCommandImpl#EvaluateDecisionCommandImpl(GatewayStub asyncStub, JsonMapper
-   *     jsonMapper, CamundaClientConfiguration config, Predicate retryPredicate)}
+   *     jsonMapper, ZeebeClientConfiguration config, Predicate retryPredicate)}
    */
   public EvaluateDecisionCommandImpl(
       final GatewayStub asyncStub,
@@ -108,7 +108,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   }
 
   @Override
-  public CamundaFuture<EvaluateDecisionResponse> send() {
+  public ZeebeFuture<EvaluateDecisionResponse> send() {
     final EvaluateDecisionRequest request = builder.build();
 
     final RetriableClientFutureImpl<

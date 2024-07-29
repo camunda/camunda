@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.processing;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
-import io.camunda.zeebe.client.impl.CamundaObjectMapper;
+import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -33,7 +33,7 @@ public final class MultiInstanceLargeInputCollectionTest {
   private static final int INPUT_COLLECTION_SIZE = 100;
   private static final String INPUT_ELEMENT = "inputElement";
   private static final int MAX_MESSAGE_SIZE_KB = 16;
-  private static final CamundaObjectMapper OBJECT_MAPPER = new CamundaObjectMapper();
+  private static final ZeebeObjectMapper OBJECT_MAPPER = new ZeebeObjectMapper();
   private static final EmbeddedBrokerRule BROKER_RULE =
       new EmbeddedBrokerRule(
           cfg -> {

@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.queryapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.CancelProcessInstanceResponse;
 import io.camunda.zeebe.client.api.response.CompleteJobResponse;
@@ -198,7 +198,7 @@ final class QueryApiIT {
     return jobs.get(0);
   }
 
-  private static CamundaClient createZeebeClient(final String tenant) {
+  private static ZeebeClient createZeebeClient(final String tenant) {
     return BROKER
         .newClientBuilder()
         .withInterceptors(new TestAuthorizationClientInterceptor(tenant))

@@ -16,13 +16,13 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
-import io.camunda.zeebe.client.api.CamundaFuture;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
-import io.camunda.zeebe.client.impl.http.HttpCamundaFuture;
 import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.TopologyImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
@@ -75,7 +75,7 @@ public final class TopologyRequestImpl implements TopologyRequestStep1 {
   }
 
   @Override
-  public CamundaFuture<Topology> send() {
+  public ZeebeFuture<Topology> send() {
     if (useRest) {
       return sendRestRequest();
     } else {
@@ -83,8 +83,8 @@ public final class TopologyRequestImpl implements TopologyRequestStep1 {
     }
   }
 
-  private HttpCamundaFuture<Topology> sendRestRequest() {
-    final HttpCamundaFuture<Topology> result = new HttpCamundaFuture<>();
+  private HttpZeebeFuture<Topology> sendRestRequest() {
+    final HttpZeebeFuture<Topology> result = new HttpZeebeFuture<>();
     sendHttpRequest(result);
     return result;
   }
@@ -110,7 +110,7 @@ public final class TopologyRequestImpl implements TopologyRequestStep1 {
         .topology(request, streamObserver);
   }
 
-  private void sendHttpRequest(final HttpCamundaFuture<Topology> result) {
+  private void sendHttpRequest(final HttpZeebeFuture<Topology> result) {
     httpClient.get(
         "/topology",
         httpRequestConfig

@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.http;
 
-import io.camunda.zeebe.client.api.CamundaFuture;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -24,13 +24,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * Implements a {@link CamundaFuture} representing a HTTP call. Supports propagating cancellation of
+ * Implements a {@link ZeebeFuture} representing a HTTP call. Supports propagating cancellation of
  * the top level future to the underlying transport future.
  *
  * @param <RespT> the expected response type
  */
-public class HttpCamundaFuture<RespT> extends CompletableFuture<RespT>
-    implements CamundaFuture<RespT> {
+public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements ZeebeFuture<RespT> {
 
   private volatile Future<?> transportFuture;
 

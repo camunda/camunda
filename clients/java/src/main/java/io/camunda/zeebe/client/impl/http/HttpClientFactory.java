@@ -16,8 +16,8 @@
 package io.camunda.zeebe.client.impl.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.client.CamundaClientConfiguration;
 import io.camunda.zeebe.client.CredentialsProvider;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
 import java.io.File;
@@ -67,9 +67,9 @@ public class HttpClientFactory {
 
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
-  private final CamundaClientConfiguration config;
+  private final ZeebeClientConfiguration config;
 
-  public HttpClientFactory(final CamundaClientConfiguration config) {
+  public HttpClientFactory(final ZeebeClientConfiguration config) {
     this.config = config;
   }
 

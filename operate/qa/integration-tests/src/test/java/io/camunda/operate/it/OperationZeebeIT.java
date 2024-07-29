@@ -857,7 +857,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     // resolve the incident before the operation is executed
     final IncidentEntity incident =
         incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey).get(0);
-    ZeebeTestUtil.resolveIncident(camundaClient, incident.getJobKey(), incident.getKey());
+    ZeebeTestUtil.resolveIncident(zeebeClient, incident.getJobKey(), incident.getKey());
 
     // when
     // and execute the operation

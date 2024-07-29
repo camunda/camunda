@@ -15,7 +15,7 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.STATE;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
 import io.camunda.operate.schema.templates.ListViewTemplate;
@@ -40,13 +40,13 @@ public class BigProcessDataGenerator {
 
   public static final String PROCESS_BPMN_PROCESS_ID = "sequential-noop";
   private static final Logger LOGGER = LoggerFactory.getLogger(BigProcessDataGenerator.class);
-  private CamundaClient camundaClient;
+  private ZeebeClient zeebeClient;
 
   @Autowired private RestHighLevelClient esClient;
 
   private void init(final TestContext testContext) {
-    camundaClient =
-        CamundaClient.newClientBuilder()
+    zeebeClient =
+        ZeebeClient.newClientBuilder()
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
             .usePlaintext()
             .build();
@@ -98,13 +98,13 @@ public class BigProcessDataGenerator {
 
   private void finishEndTask() {
     // wait for task "endTask" of long-running process and complete it
-    ZeebeTestUtil.completeTask(camundaClient, "endTask", "data-generator", null, 1);
+    ZeebeTestUtil.completeTask(zeebeClient, "endTask", "data-generator", null, 1);
     LOGGER.info("Task endTask completed.");
   }
 
   private void deployProcess() {
     final String processDefinitionKey =
-        ZeebeTestUtil.deployProcess(camundaClient, "sequential-noop.bpmn");
+        ZeebeTestUtil.deployProcess(zeebeClient, "sequential-noop.bpmn");
     LOGGER.info("Deployed process {} with key {}", PROCESS_BPMN_PROCESS_ID, processDefinitionKey);
   }
 
@@ -116,7 +116,7 @@ public class BigProcessDataGenerator {
                 .map(Object::toString)
                 .collect(Collectors.joining(","))
             + "]}";
-    ZeebeTestUtil.startProcessInstance(camundaClient, PROCESS_BPMN_PROCESS_ID, payload);
+    ZeebeTestUtil.startProcessInstance(zeebeClient, PROCESS_BPMN_PROCESS_ID, payload);
     LOGGER.info("Started process instance with id {} ", PROCESS_BPMN_PROCESS_ID);
   }
 
@@ -125,9 +125,9 @@ public class BigProcessDataGenerator {
   }
 
   private void closeClients() {
-    if (camundaClient != null) {
-      camundaClient.close();
-      camundaClient = null;
+    if (zeebeClient != null) {
+      zeebeClient.close();
+      zeebeClient = null;
     }
   }
 }

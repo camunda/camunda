@@ -10,7 +10,7 @@ package io.camunda.operate.data.develop;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
 import io.camunda.operate.entities.OperationType;
@@ -683,7 +683,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     ZeebeTestUtil.startProcessInstance(true, client, getTenant(TENANT_A), "bigProcess", jsonString);
   }
 
-  public void setClient(final CamundaClient client) {
+  public void setClient(final ZeebeClient client) {
     this.client = client;
   }
 }

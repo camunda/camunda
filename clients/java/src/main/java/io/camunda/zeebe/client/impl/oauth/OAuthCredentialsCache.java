@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import io.camunda.zeebe.client.impl.CamundaClientCredentials;
+import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
 import io.camunda.zeebe.client.impl.util.FunctionWithIO;
 import io.camunda.zeebe.client.impl.util.SupplierWithIO;
 import java.io.File;
@@ -97,16 +97,16 @@ public final class OAuthCredentialsCache {
     }
   }
 
-  public Optional<CamundaClientCredentials> get(final String endpoint) {
+  public Optional<ZeebeClientCredentials> get(final String endpoint) {
     final Map<String, OAuthCachedCredentials> cache = audiences.get();
     return Optional.ofNullable(cache.get(endpoint)).map(OAuthCachedCredentials::getCredentials);
   }
 
-  public synchronized CamundaClientCredentials computeIfMissingOrInvalid(
+  public synchronized ZeebeClientCredentials computeIfMissingOrInvalid(
       final String endpoint,
-      final SupplierWithIO<CamundaClientCredentials> zeebeClientCredentialsConsumer)
+      final SupplierWithIO<ZeebeClientCredentials> zeebeClientCredentialsConsumer)
       throws IOException {
-    final Optional<CamundaClientCredentials> optionalCredentials =
+    final Optional<ZeebeClientCredentials> optionalCredentials =
         readCache()
             .get(endpoint)
             .flatMap(
@@ -120,16 +120,16 @@ public final class OAuthCredentialsCache {
     if (optionalCredentials.isPresent()) {
       return optionalCredentials.get();
     } else {
-      final CamundaClientCredentials credentials = zeebeClientCredentialsConsumer.get();
+      final ZeebeClientCredentials credentials = zeebeClientCredentialsConsumer.get();
       put(endpoint, credentials).writeCache();
       return credentials;
     }
   }
 
   public <T> Optional<T> withCache(
-      final String endpoint, final FunctionWithIO<CamundaClientCredentials, T> function)
+      final String endpoint, final FunctionWithIO<ZeebeClientCredentials, T> function)
       throws IOException {
-    final Optional<CamundaClientCredentials> optionalCredentials = readCache().get(endpoint);
+    final Optional<ZeebeClientCredentials> optionalCredentials = readCache().get(endpoint);
     if (optionalCredentials.isPresent()) {
       return Optional.ofNullable(function.apply(optionalCredentials.get()));
     } else {
@@ -138,7 +138,7 @@ public final class OAuthCredentialsCache {
   }
 
   public OAuthCredentialsCache put(
-      final String endpoint, final CamundaClientCredentials credentials) {
+      final String endpoint, final ZeebeClientCredentials credentials) {
     audiences.getAndUpdate(
         current -> {
           final HashMap<String, OAuthCachedCredentials> cache = new HashMap<>(current);
@@ -205,20 +205,20 @@ public final class OAuthCredentialsCache {
   @JsonIgnoreProperties(ignoreUnknown = true)
   private static final class OAuthCachedCredentials {
 
-    private final CamundaClientCredentials credentials;
+    private final ZeebeClientCredentials credentials;
 
     @JsonCreator
     private OAuthCachedCredentials(
-        @JsonProperty(KEY_AUTH) final Map<String, CamundaClientCredentials> auth) {
+        @JsonProperty(KEY_AUTH) final Map<String, ZeebeClientCredentials> auth) {
       this(auth.get(KEY_CREDENTIALS));
     }
 
-    private OAuthCachedCredentials(final CamundaClientCredentials credentials) {
+    private OAuthCachedCredentials(final ZeebeClientCredentials credentials) {
       this.credentials = credentials;
     }
 
     @JsonGetter(KEY_CREDENTIALS)
-    private CamundaClientCredentials getCredentials() {
+    private ZeebeClientCredentials getCredentials() {
       return credentials;
     }
   }

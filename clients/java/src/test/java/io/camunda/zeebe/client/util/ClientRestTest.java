@@ -17,7 +17,7 @@ package io.camunda.zeebe.client.util;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import java.net.URI;
 import java.net.URISyntaxException;
 import org.junit.jupiter.api.AfterEach;
@@ -26,7 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 @WireMockTest
 public abstract class ClientRestTest {
 
-  public CamundaClient client;
+  public ZeebeClient client;
   public RestGatewayService gatewayService;
 
   @BeforeEach
@@ -42,8 +42,8 @@ public abstract class ClientRestTest {
     }
   }
 
-  private CamundaClient createClient(final WireMockRuntimeInfo mockInfo) throws URISyntaxException {
-    return CamundaClient.newClientBuilder()
+  private ZeebeClient createClient(final WireMockRuntimeInfo mockInfo) throws URISyntaxException {
+    return ZeebeClient.newClientBuilder()
         .usePlaintext()
         .preferRestOverGrpc(true)
         .restAddress(new URI(mockInfo.getHttpBaseUrl()))

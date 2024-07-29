@@ -15,18 +15,18 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.zeebe.client.CamundaClientConfiguration;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
-import io.camunda.zeebe.client.api.CamundaFuture;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep2;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.impl.RetriableStreamingFutureImpl;
-import io.camunda.zeebe.client.impl.http.HttpCamundaFuture;
 import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.ActivateJobsResponseImpl;
 import io.camunda.zeebe.client.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.client.protocol.rest.JobActivationResponse;
@@ -65,7 +65,7 @@ public final class ActivateJobsCommandImpl
   public ActivateJobsCommandImpl(
       final GatewayStub asyncStub,
       final HttpClient httpClient,
-      final CamundaClientConfiguration config,
+      final ZeebeClientConfiguration config,
       final JsonMapper jsonMapper,
       final Predicate<StatusCode> retryPredicate) {
     this.asyncStub = asyncStub;
@@ -147,7 +147,7 @@ public final class ActivateJobsCommandImpl
   }
 
   @Override
-  public CamundaFuture<ActivateJobsResponse> send() {
+  public ZeebeFuture<ActivateJobsResponse> send() {
     grpcRequestObjectBuilder.clearTenantIds();
     httpRequestObject.setTenantIds(new ArrayList<>());
     if (customTenantIds.isEmpty()) {
@@ -165,8 +165,8 @@ public final class ActivateJobsCommandImpl
     }
   }
 
-  private CamundaFuture<ActivateJobsResponse> sendRestRequest() {
-    final HttpCamundaFuture<ActivateJobsResponse> result = new HttpCamundaFuture<>();
+  private ZeebeFuture<ActivateJobsResponse> sendRestRequest() {
+    final HttpZeebeFuture<ActivateJobsResponse> result = new HttpZeebeFuture<>();
     final ActivateJobsResponseImpl response = new ActivateJobsResponseImpl(jsonMapper);
     httpClient.post(
         "/jobs/activation",
@@ -178,7 +178,7 @@ public final class ActivateJobsCommandImpl
     return result;
   }
 
-  private CamundaFuture<ActivateJobsResponse> sendGrpcRequest() {
+  private ZeebeFuture<ActivateJobsResponse> sendGrpcRequest() {
     final ActivateJobsRequest request = grpcRequestObjectBuilder.build();
 
     final ActivateJobsResponseImpl response = new ActivateJobsResponseImpl(jsonMapper);

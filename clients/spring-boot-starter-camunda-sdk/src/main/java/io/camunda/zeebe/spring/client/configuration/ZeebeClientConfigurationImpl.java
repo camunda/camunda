@@ -19,7 +19,7 @@ import static io.camunda.zeebe.spring.client.configuration.PropertyUtil.*;
 import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties.*;
 import static org.springframework.util.StringUtils.hasText;
 
-import io.camunda.zeebe.client.CamundaClientConfiguration;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
@@ -43,7 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ZeebeClientConfigurationImpl implements CamundaClientConfiguration {
+public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeClientConfigurationImpl.class);
   private final Map<String, Object> configCache = new HashMap<>();
@@ -392,7 +392,7 @@ public class ZeebeClientConfigurationImpl implements CamundaClientConfiguration 
           .build();
     } else if (Environment.system().get("ZEEBE_CLIENT_ID") != null
         && Environment.system().get("ZEEBE_CLIENT_SECRET") != null) {
-      // Copied from CamundaClientBuilderImpl
+      // Copied from ZeebeClientBuilderImpl
       final OAuthCredentialsProviderBuilder builder =
           CredentialsProvider.newCredentialsProviderBuilder();
       final int separatorIndex = properties.getBroker().getGatewayAddress().lastIndexOf(58); // ":"

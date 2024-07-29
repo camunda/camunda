@@ -15,19 +15,19 @@
  */
 package io.camunda.process.test.impl.proxy;
 
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import java.lang.reflect.Method;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
- * Dynamic proxy to delegate to a {@link CamundaClient} which allows to swap the CamundaClient
+ * Dynamic proxy to delegate to a {@link ZeebeClient} which allows to swap the ZeebeClient
  * object under the hood.
  */
 public class CamundaClientProxy extends AbstractInvocationHandler {
 
-  private CamundaClient delegate;
+  private ZeebeClient delegate;
 
-  public void setCamundaClient(final CamundaClient zeebeClient) {
+  public void setCamundaClient(final ZeebeClient zeebeClient) {
     delegate = zeebeClient;
   }
 
@@ -42,7 +42,7 @@ public class CamundaClientProxy extends AbstractInvocationHandler {
       throw new RuntimeException(
           "Cannot invoke "
               + method
-              + " on CamundaClient, as CamundaClient is currently not initialized. Maybe you run outside of a testcase?");
+              + " on ZeebeClient, as ZeebeClient is currently not initialized. Maybe you run outside of a testcase?");
     }
     return method.invoke(delegate, args);
   }

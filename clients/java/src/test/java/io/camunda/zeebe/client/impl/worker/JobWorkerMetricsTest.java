@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
-import io.camunda.zeebe.client.impl.CamundaObjectMapper;
+import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
 import java.time.Duration;
 import java.util.Optional;
@@ -89,7 +89,7 @@ final class JobWorkerMetricsTest {
 
   private static final class TestJobPoller implements JobPoller {
     private final AtomicReference<Consumer<ActivatedJob>> consumerRef = new AtomicReference<>();
-    private final JsonMapper mapper = new CamundaObjectMapper();
+    private final JsonMapper mapper = new ZeebeObjectMapper();
 
     @Override
     public void poll(
@@ -129,7 +129,7 @@ final class JobWorkerMetricsTest {
 
   private static final class TestJobStreamer implements JobStreamer {
     private final AtomicReference<Consumer<ActivatedJob>> consumerRef = new AtomicReference<>();
-    private final JsonMapper mapper = new CamundaObjectMapper();
+    private final JsonMapper mapper = new ZeebeObjectMapper();
 
     @Override
     public void close() {

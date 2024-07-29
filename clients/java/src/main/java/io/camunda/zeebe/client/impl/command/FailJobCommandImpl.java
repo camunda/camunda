@@ -16,8 +16,8 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
-import io.camunda.zeebe.client.api.CamundaFuture;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
@@ -86,7 +86,7 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
   }
 
   @Override
-  public CamundaFuture<FailJobResponse> send() {
+  public ZeebeFuture<FailJobResponse> send() {
     final FailJobRequest request = builder.build();
 
     final RetriableClientFutureImpl<FailJobResponse, GatewayOuterClass.FailJobResponse> future =

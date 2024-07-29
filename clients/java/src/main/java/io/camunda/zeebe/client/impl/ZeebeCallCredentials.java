@@ -25,12 +25,12 @@ import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class CamundaCallCredentials extends io.grpc.CallCredentials {
-  private static final Logger LOG = LoggerFactory.getLogger(CamundaCallCredentials.class);
+public final class ZeebeCallCredentials extends io.grpc.CallCredentials {
+  private static final Logger LOG = LoggerFactory.getLogger(ZeebeCallCredentials.class);
 
   private final CredentialsProvider credentialsProvider;
 
-  CamundaCallCredentials(final CredentialsProvider credentialsProvider) {
+  ZeebeCallCredentials(final CredentialsProvider credentialsProvider) {
     this.credentialsProvider = credentialsProvider;
   }
 

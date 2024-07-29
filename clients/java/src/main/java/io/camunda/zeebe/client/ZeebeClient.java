@@ -39,42 +39,42 @@ import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.search.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
-import io.camunda.zeebe.client.impl.CamundaClientBuilderImpl;
-import io.camunda.zeebe.client.impl.CamundaClientCloudBuilderImpl;
-import io.camunda.zeebe.client.impl.CamundaClientImpl;
+import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
+import io.camunda.zeebe.client.impl.ZeebeClientCloudBuilderImpl;
+import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 
 /** The client to communicate with a Zeebe broker/cluster. */
-public interface CamundaClient extends AutoCloseable, JobClient {
+public interface ZeebeClient extends AutoCloseable, JobClient {
 
   /**
    * @return a new Zeebe client with default configuration values. In order to customize
    *     configuration, use the methods {@link #newClientBuilder()} or {@link
-   *     #newClient(CamundaClientConfiguration)}. See {@link CamundaClientBuilder} for the
-   *     configuration options and default values.
+   *     #newClient(ZeebeClientConfiguration)}. See {@link ZeebeClientBuilder} for the configuration
+   *     options and default values.
    */
-  static CamundaClient newClient() {
+  static ZeebeClient newClient() {
     return newClientBuilder().build();
   }
 
   /**
-   * @return a new {@link CamundaClient} using the provided configuration.
+   * @return a new {@link ZeebeClient} using the provided configuration.
    */
-  static CamundaClient newClient(final CamundaClientConfiguration configuration) {
-    return new CamundaClientImpl(configuration);
+  static ZeebeClient newClient(final ZeebeClientConfiguration configuration) {
+    return new ZeebeClientImpl(configuration);
   }
 
   /**
-   * @return a builder to configure and create a new {@link CamundaClient}.
+   * @return a builder to configure and create a new {@link ZeebeClient}.
    */
-  static CamundaClientBuilder newClientBuilder() {
-    return new CamundaClientBuilderImpl();
+  static ZeebeClientBuilder newClientBuilder() {
+    return new ZeebeClientBuilderImpl();
   }
 
   /**
    * @return a builder with convenient methods to connect to the Camunda Cloud cluster.
    */
-  static CamundaClientCloudBuilderStep1 newCloudClientBuilder() {
-    return new CamundaClientCloudBuilderImpl();
+  static ZeebeClientCloudBuilderStep1 newCloudClientBuilder() {
+    return new ZeebeClientCloudBuilderImpl();
   }
 
   /**
@@ -100,7 +100,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   /**
    * @return the client's configuration
    */
-  CamundaClientConfiguration getConfiguration();
+  ZeebeClientConfiguration getConfiguration();
 
   @Override
   void close();
@@ -118,7 +118,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    * @deprecated since 8 for removal with 8.1, replaced by {@link
-   *     CamundaClient#newDeployResourceCommand()}
+   *     ZeebeClient#newDeployResourceCommand()}
    */
   DeployProcessCommandStep1 newDeployCommand();
 

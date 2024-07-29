@@ -9,7 +9,7 @@ package io.camunda.operate.util.j5templates;
 
 import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
 
-import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.operate.property.OperateProperties;
@@ -26,7 +26,7 @@ public abstract class ZeebeContainerManager {
   protected final TestContainerUtil testContainerUtil;
   protected String prefix;
   protected ZeebeContainer zeebeContainer;
-  protected CamundaClient client;
+  protected ZeebeClient client;
 
   public ZeebeContainerManager(
       final OperateProperties operateProperties, final TestContainerUtil testContainerUtil) {
@@ -34,7 +34,7 @@ public abstract class ZeebeContainerManager {
     this.testContainerUtil = testContainerUtil;
   }
 
-  public CamundaClient getClient() {
+  public ZeebeClient getClient() {
     return client;
   }
 
@@ -50,7 +50,7 @@ public abstract class ZeebeContainerManager {
             zeebeVersion, prefix, 2, operateProperties.getMultiTenancy().isEnabled());
 
     client =
-        CamundaClient.newClientBuilder()
+        ZeebeClient.newClientBuilder()
             .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
             .usePlaintext()
             .defaultRequestTimeout(REQUEST_TIMEOUT)

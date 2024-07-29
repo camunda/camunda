@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 
-public interface CamundaClientBuilder {
+public interface ZeebeClientBuilder {
 
   /**
    * Sets all the properties from a {@link Properties} object. Can be used to configure the client
@@ -35,7 +35,7 @@ public interface CamundaClientBuilder {
    *
    * <p>See {@link ClientProperties} for valid property names.
    */
-  CamundaClientBuilder withProperties(Properties properties);
+  ZeebeClientBuilder withProperties(Properties properties);
 
   /**
    * Allows to disable the mechanism to override some properties by ENVIRONMENT VARIABLES. This is
@@ -44,56 +44,56 @@ public interface CamundaClientBuilder {
    *
    * <p>The default value is <code>true</code>.
    */
-  CamundaClientBuilder applyEnvironmentVariableOverrides(
+  ZeebeClientBuilder applyEnvironmentVariableOverrides(
       final boolean applyEnvironmentVariableOverrides);
 
   /**
    * @deprecated since 8.5 for removal with 8.8, replaced by {@link
-   *     CamundaClientBuilder#grpcAddress(URI)}
+   *     ZeebeClientBuilder#grpcAddress(URI)}
    * @param gatewayAddress the IP socket address of a gateway that the client can initially connect
    *     to. Must be in format <code>host:port</code>. The default value is <code>0.0.0.0:26500
    *     </code> .
    */
   @Deprecated
-  CamundaClientBuilder gatewayAddress(String gatewayAddress);
+  ZeebeClientBuilder gatewayAddress(String gatewayAddress);
 
   /**
    * @param restAddress the REST API address of a gateway that the client can connect to. The
    *     default value is {@code 0.0.0.0:8080}.
    */
-  CamundaClientBuilder restAddress(URI restAddress);
+  ZeebeClientBuilder restAddress(URI restAddress);
 
   /**
    * @param grpcAddress the gRPC address of a gateway that the client can connect to. The default
    *     value is {@code 0.0.0.0:26500}.
    */
-  CamundaClientBuilder grpcAddress(URI grpcAddress);
+  ZeebeClientBuilder grpcAddress(URI grpcAddress);
 
   /**
    * @param tenantId the tenant identifier which is used for tenant-aware commands when no tenant
    *     identifier is set. The default value is {@link
    *     CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.
    */
-  CamundaClientBuilder defaultTenantId(String tenantId);
+  ZeebeClientBuilder defaultTenantId(String tenantId);
 
   /**
    * @param tenantIds the tenant identifiers which are used for job-activation commands when no
    *     tenant identifiers are set. The default value contains only {@link
    *     CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.
    */
-  CamundaClientBuilder defaultJobWorkerTenantIds(List<String> tenantIds);
+  ZeebeClientBuilder defaultJobWorkerTenantIds(List<String> tenantIds);
 
   /**
    * @param maxJobsActive Default value for {@link JobWorkerBuilderStep3#maxJobsActive(int)}.
    *     Default value is 32.
    */
-  CamundaClientBuilder defaultJobWorkerMaxJobsActive(int maxJobsActive);
+  ZeebeClientBuilder defaultJobWorkerMaxJobsActive(int maxJobsActive);
 
   /**
    * @param numThreads The number of threads for invocation of job workers. Setting this value to 0
    *     effectively disables subscriptions and workers. Default value is 1.
    */
-  CamundaClientBuilder numJobWorkerExecutionThreads(int numThreads);
+  ZeebeClientBuilder numJobWorkerExecutionThreads(int numThreads);
 
   /**
    * Identical behavior as {@link #jobWorkerExecutor(ScheduledExecutorService,boolean)}, but taking
@@ -103,7 +103,7 @@ public interface CamundaClientBuilder {
    * @param executor an executor service to use when invoking job workers
    * @see #jobWorkerExecutor(ScheduledExecutorService, boolean)
    */
-  default CamundaClientBuilder jobWorkerExecutor(final ScheduledExecutorService executor) {
+  default ZeebeClientBuilder jobWorkerExecutor(final ScheduledExecutorService executor) {
     return jobWorkerExecutor(executor, true);
   }
 
@@ -119,50 +119,50 @@ public interface CamundaClientBuilder {
    * @param takeOwnership if true, the executor will be closed when the client is closed. otherwise,
    *     it's up to the caller to manage its lifecycle
    */
-  CamundaClientBuilder jobWorkerExecutor(
+  ZeebeClientBuilder jobWorkerExecutor(
       final ScheduledExecutorService executor, final boolean takeOwnership);
 
   /**
    * The name of the worker which is used when none is set for a job worker. Default is 'default'.
    */
-  CamundaClientBuilder defaultJobWorkerName(String workerName);
+  ZeebeClientBuilder defaultJobWorkerName(String workerName);
 
   /** The timeout which is used when none is provided for a job worker. Default is 5 minutes. */
-  CamundaClientBuilder defaultJobTimeout(Duration timeout);
+  ZeebeClientBuilder defaultJobTimeout(Duration timeout);
 
   /**
    * The interval which a job worker is periodically polling for new jobs. Default is 100
    * milliseconds.
    */
-  CamundaClientBuilder defaultJobPollInterval(Duration pollInterval);
+  ZeebeClientBuilder defaultJobPollInterval(Duration pollInterval);
 
   /** The time-to-live which is used when none is provided for a message. Default is 1 hour. */
-  CamundaClientBuilder defaultMessageTimeToLive(Duration timeToLive);
+  ZeebeClientBuilder defaultMessageTimeToLive(Duration timeToLive);
 
   /** The request timeout used if not overridden by the command. Default is 10 seconds. */
-  CamundaClientBuilder defaultRequestTimeout(Duration requestTimeout);
+  ZeebeClientBuilder defaultRequestTimeout(Duration requestTimeout);
 
   /** Use a plaintext connection between the client and the gateway. */
-  CamundaClientBuilder usePlaintext();
+  ZeebeClientBuilder usePlaintext();
 
   /**
    * Path to a root CA certificate to be used instead of the certificate in the default default
    * store.
    */
-  CamundaClientBuilder caCertificatePath(String certificatePath);
+  ZeebeClientBuilder caCertificatePath(String certificatePath);
 
   /**
    * A custom {@link CredentialsProvider} which will be used to apply authentication credentials to
    * requests.
    */
-  CamundaClientBuilder credentialsProvider(CredentialsProvider credentialsProvider);
+  ZeebeClientBuilder credentialsProvider(CredentialsProvider credentialsProvider);
 
   /** Time interval between keep alive messages sent to the gateway. The default is 45 seconds. */
-  CamundaClientBuilder keepAlive(Duration keepAlive);
+  ZeebeClientBuilder keepAlive(Duration keepAlive);
 
-  CamundaClientBuilder withInterceptors(ClientInterceptor... interceptor);
+  ZeebeClientBuilder withInterceptors(ClientInterceptor... interceptor);
 
-  CamundaClientBuilder withJsonMapper(JsonMapper jsonMapper);
+  ZeebeClientBuilder withJsonMapper(JsonMapper jsonMapper);
 
   /**
    * Overrides the authority used with TLS virtual hosting. Specifically, to override hostname
@@ -178,27 +178,27 @@ public interface CamundaClientBuilder {
    * @apiNote For the full definition of authority see [RFC 2396: Uniform Resource Identifiers
    *     (URI): Generic Syntax](http://www.ietf.org/rfc/rfc2396.txt)
    */
-  CamundaClientBuilder overrideAuthority(String authority);
+  ZeebeClientBuilder overrideAuthority(String authority);
 
   /**
    * A custom maxMessageSize allows the client to receive larger or smaller responses from Zeebe.
    * Technically, it specifies the maxInboundMessageSize of the gRPC channel. The default is 4194304
    * = 4MB.
    */
-  CamundaClientBuilder maxMessageSize(int maxSize);
+  ZeebeClientBuilder maxMessageSize(int maxSize);
 
   /**
    * A custom maxMetadataSize allows the client to receive larger or smaller response headers from
    * Zeebe. Technically, it specifies the maxInboundMetadataSize of the gRPC channel. The default is
    * 16384 = 16KB .
    */
-  CamundaClientBuilder maxMetadataSize(int maxSize);
+  ZeebeClientBuilder maxMetadataSize(int maxSize);
 
   /**
    * A custom streamEnabled allows the client to use job stream instead of job poll. The default
    * value is set as enabled.
    */
-  CamundaClientBuilder defaultJobWorkerStreamEnabled(boolean streamEnabled);
+  ZeebeClientBuilder defaultJobWorkerStreamEnabled(boolean streamEnabled);
 
   /**
    * If enabled, the client will make use of the default retry policy defined. False by default.
@@ -206,7 +206,7 @@ public interface CamundaClientBuilder {
    * <p>NOTE: the default retry policy is taken from the {@code gateway-service-config.json} in the
    * {@code io.camunda:zeebe-gateway-protocol-impl} JAR.
    */
-  CamundaClientBuilder useDefaultRetryPolicy(final boolean useDefaultRetryPolicy);
+  ZeebeClientBuilder useDefaultRetryPolicy(final boolean useDefaultRetryPolicy);
 
   /**
    * If true, will prefer to use REST over gRPC for calls which can be done over both REST and gRPC.
@@ -221,10 +221,10 @@ public interface CamundaClientBuilder {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   @Deprecated
-  CamundaClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
+  ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
 
   /**
-   * @return a new {@link CamundaClient} with the provided configuration options.
+   * @return a new {@link ZeebeClient} with the provided configuration options.
    */
-  CamundaClient build();
+  ZeebeClient build();
 }

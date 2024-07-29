@@ -14,7 +14,7 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration.Bro
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.sources.DefaultObjectMapperConfiguration;
-import io.camunda.zeebe.client.CamundaClientBuilder;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.commons.CommonsModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.property.OperateProperties;
@@ -217,7 +217,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   }
 
   @Override
-  public CamundaClientBuilder newClientBuilder() {
+  public ZeebeClientBuilder newClientBuilder() {
     if (!isGateway()) {
       throw new IllegalStateException(
           "Cannot create a new client for this broker, as it does not have an embedded gateway");
