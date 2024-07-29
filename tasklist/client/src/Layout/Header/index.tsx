@@ -334,7 +334,7 @@ const LanguageSelector: React.FC = observer(() => {
   return (
     <Layer>
       <SwitcherDivider />
-      <div style={{padding: '.5rem 1rem'}}>
+      <div className={styles.languageDropdownPadding}>
         <Dropdown
           id="language-dropdown"
           label={t('chooseLanguage')}
