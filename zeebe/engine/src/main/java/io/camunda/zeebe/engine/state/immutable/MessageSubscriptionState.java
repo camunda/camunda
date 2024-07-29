@@ -23,6 +23,8 @@ public interface MessageSubscriptionState {
       DirectBuffer correlationKey,
       MessageSubscriptionVisitor visitor);
 
+  void visitSubscriptions(MessageSubscriptionVisitor visitor);
+
   boolean existSubscriptionForElementInstance(long elementInstanceKey, DirectBuffer messageName);
 
   @FunctionalInterface

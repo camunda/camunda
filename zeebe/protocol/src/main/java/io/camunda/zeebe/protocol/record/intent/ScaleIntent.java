@@ -17,7 +17,8 @@ package io.camunda.zeebe.protocol.record.intent;
 
 public enum ScaleIntent implements Intent {
   RELOCATION_START(0),
-  RELOCATION_STARTED(1);
+  RELOCATION_STARTED(1),
+  RELOCATE_NEXT_CORRELATION_KEY(2);
 
   private final short value;
 
@@ -46,6 +47,8 @@ public enum ScaleIntent implements Intent {
         return RELOCATION_START;
       case 1:
         return RELOCATION_STARTED;
+      case 2:
+        return RELOCATE_NEXT_CORRELATION_KEY;
       default:
         return Intent.UNKNOWN;
     }

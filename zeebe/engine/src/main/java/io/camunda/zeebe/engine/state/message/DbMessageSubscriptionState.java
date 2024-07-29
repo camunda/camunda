@@ -127,6 +127,11 @@ public final class DbMessageSubscriptionState
   }
 
   @Override
+  public void visitSubscriptions(final MessageSubscriptionVisitor visitor) {
+    subscriptionColumnFamily.whileTrue((ignored, subscription) -> visitor.visit(subscription));
+  }
+
+  @Override
   public boolean existSubscriptionForElementInstance(
       final long elementInstanceKey, final DirectBuffer messageName) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
