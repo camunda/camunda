@@ -247,7 +247,7 @@ class UserTaskTransformerTest {
       return Stream.of(
           Arguments.of(null, "50"),
           Arguments.of("", "50"),
-          // Fails, default value with space not set Arguments.of(" ", "50"),
+          Arguments.of(" ", "50"),
           Arguments.of("30", "30"),
           Arguments.of("=10+task_priority", "10+task_priority"));
     }
