@@ -20,35 +20,35 @@ public class ElasticsearchMetrics {
 
   private final String partitionIdLabel;
   private final MeterRegistry meterRegistry;
-  private final AtomicInteger BULK_MEMORY_SIZE = new AtomicInteger(0);
-  private final Timer FLUSH_DURATION;
-  private final DistributionSummary BULK_SIZE;
-  private final Counter FAILED_FLUSH;
+  private final AtomicInteger bulkMemorySize = new AtomicInteger(0);
+  private final Timer flushDuration;
+  private final DistributionSummary bulkSize;
+  private final Counter failedFlush;
 
   public ElasticsearchMetrics(final int partitionId, final MeterRegistry registry) {
     partitionIdLabel = String.valueOf(partitionId);
     meterRegistry = registry;
 
-    Gauge.builder(meterName("bulk.memory.size"), BULK_MEMORY_SIZE, AtomicInteger::get)
+    Gauge.builder(meterName("bulk.memory.size"), bulkMemorySize, AtomicInteger::get)
         .tags(PARTITION_LABEL, partitionIdLabel)
         .description("Exporter bulk memory size")
         .register(meterRegistry);
 
-    FLUSH_DURATION =
+    flushDuration =
         Timer.builder(meterName("flush.duration.seconds"))
             .description("Flush duration of bulk exporters in seconds")
             .tags(PARTITION_LABEL, partitionIdLabel)
             .publishPercentileHistogram()
             .register(meterRegistry);
 
-    BULK_SIZE =
+    bulkSize =
         DistributionSummary.builder(meterName("bulk.size"))
             .description("Exporter bulk size")
             .tags(PARTITION_LABEL, partitionIdLabel)
             .serviceLevelObjectives(10, 100, 1_000, 10_000, 100_000)
             .register(meterRegistry);
 
-    FAILED_FLUSH =
+    failedFlush =
         Counter.builder(meterName("failed.flush"))
             .description("Number of failed flush operations")
             .tags(PARTITION_LABEL, partitionIdLabel)
@@ -56,19 +56,19 @@ public class ElasticsearchMetrics {
   }
 
   public void measureFlushDuration(final Runnable flushFunction) {
-    FLUSH_DURATION.record(flushFunction);
+    flushDuration.record(flushFunction);
   }
 
   public void recordBulkSize(final int bulkSize) {
-    BULK_SIZE.record(bulkSize);
+    this.bulkSize.record(bulkSize);
   }
 
   public void recordBulkMemorySize(final int bulkMemorySize) {
-    BULK_MEMORY_SIZE.set(bulkMemorySize);
+    this.bulkMemorySize.set(bulkMemorySize);
   }
 
   public void recordFailedFlush() {
-    FAILED_FLUSH.increment();
+    failedFlush.increment();
   }
 
   private String meterName(final String name) {
