@@ -10,6 +10,7 @@ package io.camunda.zeebe.shared.security;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.TenantAttributeHolder;
 import io.camunda.zeebe.shared.management.ConditionalOnManagementContext;
+import io.camunda.zeebe.shared.security.SecurityConfiguration.GatewaySecurityAuthenticationEnabledCondition;
 import org.springframework.boot.actuate.autoconfigure.web.ManagementContextConfiguration;
 import org.springframework.boot.actuate.autoconfigure.web.ManagementContextType;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -39,11 +40,11 @@ import reactor.core.publisher.Mono;
 @EnableWebFluxSecurity
 @EnableReactiveMethodSecurity
 @Configuration(proxyBeanMethods = false)
+@Conditional(GatewaySecurityAuthenticationEnabledCondition.class)
 public final class SecurityConfiguration {
 
   @Bean
   @ConditionalOnRestGatewayEnabled
-  @Conditional(GatewaySecurityAuthenticationEnabledCondition.class)
   public SecurityWebFilterChain restGatewaySecurity(
       final ServerHttpSecurity http,
       final IdentityAuthenticationManager authManager,
