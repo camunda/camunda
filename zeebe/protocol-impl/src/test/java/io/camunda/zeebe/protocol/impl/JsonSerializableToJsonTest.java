@@ -217,7 +217,8 @@ final class JsonSerializableToJsonTest {
                 "checksum": "Y2hlY2tzdW0=",
                 "processDefinitionKey": 123,
                 "duplicate": false,
-                "tenantId": "<default>"
+                "tenantId": "<default>",
+                "deploymentKey": -1
               }
             ],
             "resources": [
@@ -313,7 +314,8 @@ final class JsonSerializableToJsonTest {
                   .setResourceName(wrapString(resourceName))
                   .setVersion(processVersion)
                   .setChecksum(checksum)
-                  .setDuplicate(true);
+                  .setDuplicate(true)
+                  .setDeploymentKey(deploymentKey);
               record
                   .decisionRequirementsMetadata()
                   .add()
@@ -362,7 +364,8 @@ final class JsonSerializableToJsonTest {
               "processDefinitionKey": 123,
               "resourceName": "resource",
               "duplicate": true,
-              "tenantId": "<default>"
+              "tenantId": "<default>",
+              "deploymentKey": 1234
             }
           ],
           "decisionsMetadata": [
@@ -2064,7 +2067,8 @@ final class JsonSerializableToJsonTest {
               "resourceName": "my_first_bpmn.bpmn",
               "checksum": "c2hhMQ==",
               "duplicate": false,
-              "tenantId": "<default>"
+              "tenantId": "<default>",
+              "deploymentKey": -1
             }],
             "decisionsMetadata": [],
             "decisionRequirementsMetadata": [],

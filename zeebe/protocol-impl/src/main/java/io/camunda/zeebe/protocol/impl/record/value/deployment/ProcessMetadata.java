@@ -94,7 +94,6 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
   }
 
   @Override
-  @JsonIgnore
   public long getDeploymentKey() {
     return deploymentKeyProp.getValue();
   }

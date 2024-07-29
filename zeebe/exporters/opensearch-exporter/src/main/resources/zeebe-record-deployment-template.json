@@ -43,6 +43,9 @@
                 },
                 "tenantId": {
                   "type": "keyword"
+                },
+                "deploymentKey": {
+                  "type": "long"
                 }
               }
             },
