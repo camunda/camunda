@@ -249,4 +249,21 @@ public final class CommandDistributionBehavior {
           return true;
         });
   }
+
+  public <T extends UnifiedRecordValue> void distributeCommand(
+      final long distributionKey,
+      final ValueType valueType,
+      final Intent intent,
+      final T value,
+      final List<Integer> partitions) {
+    distributeCommand(
+        distributionKey,
+        valueType,
+        intent,
+        value,
+        partitions,
+        ValueType.NULL_VAL,
+        Intent.UNKNOWN,
+        null);
+  }
 }
