@@ -15,19 +15,19 @@
  */
 package zeebe.client.impl.worker;
 
-import static io.camunda.client.impl.CamundaClientBuilderImpl.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
+import static io.camunda.zeebe.client.impl.CamundaClientBuilderImpl.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.util.concurrent.Uninterruptibles;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.worker.JobHandler;
-import io.camunda.client.api.worker.JobWorker;
-import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
-import io.camunda.client.impl.CamundaClientBuilderImpl;
-import io.camunda.client.impl.CamundaClientImpl;
-import io.camunda.client.impl.util.Environment;
+import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.api.worker.JobHandler;
+import io.camunda.zeebe.client.api.worker.JobWorker;
+import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
+import io.camunda.zeebe.client.impl.CamundaClientBuilderImpl;
+import io.camunda.zeebe.client.impl.CamundaClientImpl;
+import io.camunda.zeebe.client.impl.util.Environment;
 import zeebe.client.impl.util.EnvironmentRule;
-import io.camunda.client.impl.util.ExecutorResource;
+import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
@@ -205,7 +205,7 @@ public final class JobWorkerImplTest {
   public void shouldHandleOnlyCapacity() {
     // given
     final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
-    final ArrayList<io.camunda.client.api.response.ActivatedJob> jobs = new ArrayList<>();
+    final ArrayList<io.camunda.zeebe.client.api.response.ActivatedJob> jobs = new ArrayList<>();
     final CountDownLatch latch = new CountDownLatch(1);
 
     try (final CamundaClient client =

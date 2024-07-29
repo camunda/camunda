@@ -17,7 +17,7 @@ package zeebe.client;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.time.Duration;

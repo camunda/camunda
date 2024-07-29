@@ -20,9 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.client.api.JsonMapper;
+import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.CamundaClientConfiguration;
+import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
 import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.containers.ZeebeContainer;

@@ -17,15 +17,15 @@ package zeebe.client.impl.worker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.worker.JobWorkerMetrics;
-import io.camunda.client.impl.CamundaObjectMapper;
-import io.camunda.client.impl.response.ActivatedJobImpl;
-import io.camunda.client.impl.worker.JobPoller;
-import io.camunda.client.impl.worker.JobRunnableFactory;
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
+import io.camunda.zeebe.client.impl.CamundaObjectMapper;
+import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
+import io.camunda.zeebe.client.impl.worker.JobPoller;
+import io.camunda.zeebe.client.impl.worker.JobRunnableFactory;
 import io.camunda.client.impl.worker.JobStreamer;
-import io.camunda.client.impl.worker.JobWorkerImpl;
+import io.camunda.zeebe.client.impl.worker.JobWorkerImpl;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -55,12 +55,12 @@ final class JobWorkerMetricsTest {
     return createWorker(autoCompleteCount, poller, JobStreamer.noop(), metrics);
   }
 
-  private io.camunda.client.impl.worker.JobWorkerImpl createWorker(
+  private JobWorkerImpl createWorker(
       final int autoCompleteCount,
       final JobPoller poller,
       final JobStreamer streamer,
       final JobWorkerMetrics metrics) {
-    return new io.camunda.client.impl.worker.JobWorkerImpl(
+    return new JobWorkerImpl(
         32,
         executor,
         Duration.ofSeconds(30),

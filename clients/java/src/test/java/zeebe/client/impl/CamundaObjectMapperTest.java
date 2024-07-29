@@ -17,7 +17,7 @@ package zeebe.client.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.impl.CamundaObjectMapper;
+import io.camunda.zeebe.client.impl.CamundaObjectMapper;
 import zeebe.client.util.ClientTest;
 import org.junit.Test;
 

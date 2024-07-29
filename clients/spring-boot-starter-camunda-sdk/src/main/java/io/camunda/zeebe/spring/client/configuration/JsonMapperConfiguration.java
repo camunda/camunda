@@ -16,8 +16,8 @@
 package io.camunda.zeebe.spring.client.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.api.JsonMapper;
-import io.camunda.client.impl.CamundaObjectMapper;
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.impl.CamundaObjectMapper;
 import io.camunda.zeebe.spring.common.json.SdkObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

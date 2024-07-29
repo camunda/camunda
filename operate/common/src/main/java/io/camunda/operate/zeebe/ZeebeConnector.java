@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.zeebe;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.CamundaClientBuilder;
+import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.CamundaClientBuilder;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.ZeebeProperties;
 import org.slf4j.Logger;

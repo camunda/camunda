@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.spring.client.annotation.processor;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.DeployResourceCommandStep1;
-import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
+import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.spring.client.annotation.Deployment;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeDeploymentValue;
 import io.camunda.zeebe.spring.client.bean.ClassInfo;

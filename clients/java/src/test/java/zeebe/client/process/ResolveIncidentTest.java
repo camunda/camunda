@@ -17,8 +17,8 @@ package zeebe.client.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.api.command.ResolveIncidentCommandStep1;
-import io.camunda.client.api.response.ResolveIncidentResponse;
+import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
+import io.camunda.zeebe.client.api.response.ResolveIncidentResponse;
 import zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import java.time.Duration;

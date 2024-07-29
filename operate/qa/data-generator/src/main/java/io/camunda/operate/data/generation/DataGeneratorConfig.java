@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.data.generation;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.CamundaClientBuilder;
+import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.CamundaClientBuilder;
 import java.util.concurrent.ThreadFactory;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;

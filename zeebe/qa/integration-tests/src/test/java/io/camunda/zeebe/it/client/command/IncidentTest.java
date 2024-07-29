@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.client.command;
 
 import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.CREATED;
 
-import io.camunda.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;

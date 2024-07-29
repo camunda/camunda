@@ -15,12 +15,12 @@
  */
 package io.camunda.zeebe.spring.client.config;
 
-import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
-import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
+import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_KB;
+import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.impl.NoopCredentialsProvider;
+import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
 import io.camunda.zeebe.spring.client.config.legacy.CamundaClientStarterAutoConfigurationTest;
 import io.camunda.zeebe.spring.client.configuration.CamundaAutoConfiguration;
 import java.net.URI;

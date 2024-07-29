@@ -11,7 +11,7 @@ import static io.camunda.operate.qa.util.VariablesUtil.createALotOfVarsPayload;
 import static io.camunda.operate.qa.util.VariablesUtil.createBigVarsWithSuffix;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
-import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.client.CamundaClient;
 import io.camunda.operate.data.generation.DataGeneratorConfig.DataGeneratorThread;
 import io.camunda.operate.property.ImportProperties;
 import io.camunda.operate.qa.util.ZeebeTestUtil;

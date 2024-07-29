@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.health;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.engine.processing.message.MessageObserver;

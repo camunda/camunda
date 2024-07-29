@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.exporter;
 
 import static org.hamcrest.Matchers.greaterThan;
 
-import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.client.CamundaClient;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;

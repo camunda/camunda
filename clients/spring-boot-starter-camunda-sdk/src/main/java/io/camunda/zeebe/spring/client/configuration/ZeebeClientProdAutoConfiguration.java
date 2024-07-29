@@ -15,10 +15,10 @@
  */
 package io.camunda.zeebe.spring.client.configuration;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.JsonMapper;
-import io.camunda.client.impl.CamundaClientImpl;
-import io.camunda.client.impl.util.ExecutorResource;
+import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.impl.CamundaClientImpl;
+import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;

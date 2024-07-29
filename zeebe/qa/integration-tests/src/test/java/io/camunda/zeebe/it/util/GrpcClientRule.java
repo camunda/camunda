@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.it.util;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.CamundaClientBuilder;
+import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.CamundaClientBuilder;
 import io.camunda.zeebe.broker.TestLoggers;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.clustering.ClusteringRule;

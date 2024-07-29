@@ -15,7 +15,7 @@
  */
 package zeebe.client.util;
 
-import static io.camunda.client.impl.http.HttpClientFactory.REST_API_PATH;
+import static io.camunda.zeebe.client.impl.http.HttpClientFactory.REST_API_PATH;
 
 public class RestGatewayPaths {
 

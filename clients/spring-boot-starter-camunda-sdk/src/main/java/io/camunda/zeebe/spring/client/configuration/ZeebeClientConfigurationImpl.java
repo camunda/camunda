@@ -19,12 +19,12 @@ import static io.camunda.zeebe.spring.client.configuration.PropertyUtil.*;
 import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties.*;
 import static org.springframework.util.StringUtils.hasText;
 
-import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.client.CredentialsProvider;
-import io.camunda.client.api.JsonMapper;
-import io.camunda.client.impl.NoopCredentialsProvider;
-import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.client.impl.util.Environment;
+import io.camunda.zeebe.client.CamundaClientConfiguration;
+import io.camunda.zeebe.client.CredentialsProvider;
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
+import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.zeebe.client.impl.util.Environment;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties.ClientMode;

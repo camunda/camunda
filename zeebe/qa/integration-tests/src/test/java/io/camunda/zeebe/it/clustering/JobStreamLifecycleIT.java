@@ -8,8 +8,8 @@
 package io.camunda.zeebe.it.clustering;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.worker.JobWorker;
+import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;

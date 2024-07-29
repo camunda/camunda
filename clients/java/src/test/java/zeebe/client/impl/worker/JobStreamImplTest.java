@@ -17,12 +17,12 @@ package zeebe.client.impl.worker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.worker.JobClient;
-import io.camunda.client.impl.CamundaClientBuilderImpl;
-import io.camunda.client.impl.CamundaObjectMapper;
-import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.worker.JobClientImpl;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.worker.JobClient;
+import io.camunda.zeebe.client.impl.CamundaClientBuilderImpl;
+import io.camunda.zeebe.client.impl.CamundaObjectMapper;
+import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.worker.JobClientImpl;
 import io.camunda.client.impl.worker.JobStreamerImpl;
 import zeebe.client.util.JsonUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;

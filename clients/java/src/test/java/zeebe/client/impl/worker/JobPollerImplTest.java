@@ -21,9 +21,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.impl.worker.JobPoller;
-import io.camunda.client.impl.worker.JobPollerImpl;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.impl.worker.JobPoller;
+import io.camunda.zeebe.client.impl.worker.JobPollerImpl;
 import zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.grpc.Status;
@@ -54,7 +54,7 @@ public final class JobPollerImplTest extends ClientTest {
   public void shouldSetRequestTimeout() {
     // given
     final Duration requestTimeout = Duration.ofHours(123);
-    final io.camunda.client.impl.worker.JobPoller jobPoller = getJobPoller(requestTimeout);
+    final JobPoller jobPoller = getJobPoller(requestTimeout);
     final Duration deadlineOffset = Duration.ofSeconds(10);
 
     // when
@@ -102,7 +102,7 @@ public final class JobPollerImplTest extends ClientTest {
             });
   }
 
-  private io.camunda.client.impl.worker.JobPoller getJobPoller() {
+  private JobPoller getJobPoller() {
     return getJobPoller(Duration.ofSeconds(10));
   }
 

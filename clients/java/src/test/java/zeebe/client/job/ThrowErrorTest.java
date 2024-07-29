@@ -19,7 +19,7 @@ import static zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
 import zeebe.client.util.ClientTest;
 import zeebe.client.util.JsonUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;

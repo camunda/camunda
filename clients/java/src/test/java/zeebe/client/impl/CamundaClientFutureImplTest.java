@@ -18,8 +18,8 @@ package zeebe.client.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import io.camunda.client.impl.CamundaClientFutureImpl;
-import io.camunda.client.impl.CamundaStreamingClientFutureImpl;
+import io.camunda.zeebe.client.impl.CamundaClientFutureImpl;
+import io.camunda.zeebe.client.impl.CamundaStreamingClientFutureImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;

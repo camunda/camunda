@@ -18,9 +18,9 @@ package io.camunda.zeebe.spring.client.config;
 import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.client.api.JsonMapper;
-import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
+import io.camunda.zeebe.client.CamundaClientConfiguration;
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientAllAutoConfiguration;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientProdAutoConfiguration;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;

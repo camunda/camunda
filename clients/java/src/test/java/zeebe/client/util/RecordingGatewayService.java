@@ -16,7 +16,7 @@
 package zeebe.client.util;
 
 import com.google.protobuf.GeneratedMessageV3;
-import io.camunda.client.api.command.CommandWithTenantStep;
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;

@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.system;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-import io.camunda.client.api.command.ClientStatusException;
+import io.camunda.zeebe.client.api.command.ClientStatusException;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;

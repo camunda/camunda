@@ -10,7 +10,7 @@ package io.camunda.operate.qa.util;
 import static io.camunda.operate.qa.util.TestContainerUtil.*;
 import static io.camunda.operate.webapp.security.OperateURIs.COOKIE_JSESSIONID;
 
-import io.camunda.client.impl.util.Environment;
+import io.camunda.zeebe.client.impl.util.Environment;
 import io.camunda.operate.property.OperateProperties;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;

@@ -15,14 +15,14 @@
  */
 package zeebe.client.process;
 
-import static io.camunda.client.api.command.CreateProcessInstanceCommandStep1.LATEST_VERSION;
+import static io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1.LATEST_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.command.CommandWithTenantStep;
-import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationStartInstruction;

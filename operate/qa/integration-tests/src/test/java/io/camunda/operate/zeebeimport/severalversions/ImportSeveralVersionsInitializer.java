@@ -13,7 +13,7 @@ import static io.camunda.operate.qa.util.TestContainerUtil.PROPERTIES_PREFIX;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.fail;
 
-import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.client.CamundaClient;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.ElasticsearchUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;

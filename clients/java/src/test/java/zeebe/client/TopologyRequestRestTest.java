@@ -25,11 +25,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.api.response.PartitionBrokerHealth;
-import io.camunda.client.api.response.PartitionBrokerRole;
-import io.camunda.client.api.response.PartitionInfo;
-import io.camunda.client.api.response.Topology;
+import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.zeebe.client.api.response.BrokerInfo;
+import io.camunda.zeebe.client.api.response.PartitionBrokerHealth;
+import io.camunda.zeebe.client.api.response.PartitionBrokerRole;
+import io.camunda.zeebe.client.api.response.PartitionInfo;
+import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.client.protocol.rest.BrokerInfo;
 import io.camunda.zeebe.client.protocol.rest.Partition;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
@@ -96,10 +97,10 @@ public final class TopologyRequestRestTest extends ClientRestTest {
     assertThat(topology.getReplicationFactor()).isEqualTo(3);
     assertThat(topology.getGatewayVersion()).isEqualTo("1.22.3-SNAPSHOT");
 
-    final List<io.camunda.client.api.response.BrokerInfo> brokers = topology.getBrokers();
+    final List<BrokerInfo> brokers = topology.getBrokers();
     assertThat(brokers).hasSize(3);
 
-    io.camunda.client.api.response.BrokerInfo broker = brokers.get(0);
+    BrokerInfo broker = brokers.get(0);
     assertThat(broker.getNodeId()).isEqualTo(0);
     assertThat(broker.getHost()).isEqualTo("host1");
     assertThat(broker.getPort()).isEqualTo(123);

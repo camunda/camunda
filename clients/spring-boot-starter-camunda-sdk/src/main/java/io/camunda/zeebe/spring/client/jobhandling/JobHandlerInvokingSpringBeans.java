@@ -15,13 +15,13 @@
  */
 package io.camunda.zeebe.spring.client.jobhandling;
 
-import io.camunda.client.api.command.CompleteJobCommandStep1;
-import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
-import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.worker.JobClient;
-import io.camunda.client.api.worker.JobHandler;
-import io.camunda.client.impl.Loggers;
+import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
+import io.camunda.zeebe.client.api.command.FinalCommandStep;
+import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.worker.JobClient;
+import io.camunda.zeebe.client.api.worker.JobHandler;
+import io.camunda.zeebe.client.impl.Loggers;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 import io.camunda.zeebe.spring.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.zeebe.spring.client.jobhandling.parameter.ParameterResolverStrategy;

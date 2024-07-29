@@ -19,8 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertTrue;
 
-import io.camunda.client.impl.CamundaClientCredentials;
-import io.camunda.client.impl.oauth.OAuthCredentialsCache;
+import io.camunda.zeebe.client.impl.CamundaClientCredentials;
+import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsCache;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -217,8 +217,8 @@ public final class OAuthCredentialsCacheTest {
   @Test
   public void shouldWriteGoldenFile() throws IOException {
     // given
-    final io.camunda.client.impl.oauth.OAuthCredentialsCache cache =
-        new io.camunda.client.impl.oauth.OAuthCredentialsCache(cacheFile);
+    final OAuthCredentialsCache cache =
+        new OAuthCredentialsCache(cacheFile);
 
     // when
     cache.put(WOMBAT_ENDPOINT, WOMBAT).put(AARDVARK_ENDPOINT, AARDVARK).writeCache();

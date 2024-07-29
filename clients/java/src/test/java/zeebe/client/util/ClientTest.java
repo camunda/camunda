@@ -15,7 +15,7 @@
  */
 package zeebe.client.util;
 
-import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.client.CamundaClient;
 import org.junit.Before;
 import org.junit.Rule;
 

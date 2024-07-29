@@ -19,10 +19,10 @@ import static zeebe.client.util.RecordingGatewayService.deployedProcess;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.response.DeploymentEvent;
-import io.camunda.client.impl.command.StreamUtil;
-import io.camunda.client.impl.response.ProcessImpl;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.impl.command.StreamUtil;
+import io.camunda.zeebe.client.impl.response.ProcessImpl;
 import zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessRequestObject;

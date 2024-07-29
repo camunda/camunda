@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.annotation.processor;
 
-import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.client.CamundaClient;
 import io.camunda.zeebe.spring.client.bean.ClassInfo;
 import org.springframework.beans.factory.BeanNameAware;
 

@@ -17,8 +17,8 @@ package zeebe.client.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.api.worker.BackoffSupplier;
-import io.camunda.client.impl.worker.ExponentialBackoffBuilderImpl;
+import io.camunda.zeebe.client.api.worker.BackoffSupplier;
+import io.camunda.zeebe.client.impl.worker.ExponentialBackoffBuilderImpl;
 import java.util.ArrayList;
 import java.util.stream.LongStream;
 import org.junit.Test;

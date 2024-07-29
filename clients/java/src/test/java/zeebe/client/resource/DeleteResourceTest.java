@@ -17,8 +17,8 @@ package zeebe.client.resource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.api.command.DeleteResourceCommandStep1;
-import io.camunda.client.api.response.DeleteResourceResponse;
+import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
+import io.camunda.zeebe.client.api.response.DeleteResourceResponse;
 import zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceRequest;
 import java.time.Duration;

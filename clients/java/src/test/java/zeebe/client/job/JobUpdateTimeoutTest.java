@@ -17,9 +17,9 @@ package zeebe.client.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
-import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.response.UpdateTimeoutJobResponse;
+import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.response.UpdateTimeoutJobResponse;
 import zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import java.time.Duration;

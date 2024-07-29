@@ -9,10 +9,10 @@ package io.camunda.operate.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.MigrationPlan;
-import io.camunda.client.api.command.MigrationPlanBuilderImpl;
-import io.camunda.client.api.command.MigrationPlanImpl;
+import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.api.command.MigrationPlan;
+import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
+import io.camunda.zeebe.client.api.command.MigrationPlanImpl;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.schema.templates.IncidentTemplate;

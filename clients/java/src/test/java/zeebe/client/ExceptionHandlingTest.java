@@ -18,7 +18,7 @@ package zeebe.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
-import io.camunda.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.ClientException;
 import zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.grpc.StatusRuntimeException;

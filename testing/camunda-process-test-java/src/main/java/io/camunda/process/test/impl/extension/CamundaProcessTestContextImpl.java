@@ -15,8 +15,8 @@
  */
 package io.camunda.process.test.impl.extension;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.CamundaClientBuilder;
+import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.CamundaClientBuilder;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.impl.containers.ZeebeContainer;
 import java.net.URI;

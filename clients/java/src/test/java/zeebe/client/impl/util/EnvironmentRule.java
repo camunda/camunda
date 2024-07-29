@@ -15,7 +15,7 @@
  */
 package zeebe.client.impl.util;
 
-import io.camunda.client.impl.util.Environment;
+import io.camunda.zeebe.client.impl.util.Environment;
 import java.util.Map;
 import org.junit.rules.ExternalResource;
 
@@ -25,7 +25,7 @@ public final class EnvironmentRule extends ExternalResource {
 
   @Override
   protected void before() throws Throwable {
-    previousEnvironment = io.camunda.client.impl.util.Environment.system().copy();
+    previousEnvironment = Environment.system().copy();
   }
 
   @Override

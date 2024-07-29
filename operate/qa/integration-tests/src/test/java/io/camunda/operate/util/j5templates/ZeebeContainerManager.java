@@ -9,9 +9,9 @@ package io.camunda.operate.util.j5templates;
 
 import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.response.Topology;
+import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;

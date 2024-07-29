@@ -18,7 +18,7 @@ package zeebe.client.usertask;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.api.command.ProblemException;
+import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.protocol.rest.UserTaskAssignmentRequest;
 import zeebe.client.util.ClientRestTest;

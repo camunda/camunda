@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.clustering.dynamic;
 import static io.camunda.zeebe.test.util.asserts.TopologyAssert.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.client.CamundaClient;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;

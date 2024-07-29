@@ -17,7 +17,7 @@ package zeebe.client.util;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.client.CamundaClient;
 import java.net.URI;
 import java.net.URISyntaxException;
 import org.junit.jupiter.api.AfterEach;

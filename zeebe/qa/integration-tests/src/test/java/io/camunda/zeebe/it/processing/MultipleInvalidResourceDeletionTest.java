@@ -9,8 +9,8 @@ package io.camunda.zeebe.it.processing;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ClientStatusException;
+import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.api.command.ClientStatusException;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;

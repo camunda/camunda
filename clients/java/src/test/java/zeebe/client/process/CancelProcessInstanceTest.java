@@ -18,9 +18,9 @@ package zeebe.client.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
-import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.response.CancelProcessInstanceResponse;
+import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.response.CancelProcessInstanceResponse;
 import zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
 import java.time.Duration;

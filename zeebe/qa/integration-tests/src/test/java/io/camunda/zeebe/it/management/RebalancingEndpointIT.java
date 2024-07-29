@@ -8,8 +8,8 @@
 package io.camunda.zeebe.it.management;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.PartitionInfo;
+import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.qa.util.actuator.RebalanceActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;

@@ -19,9 +19,9 @@ import static zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
-import io.camunda.client.api.response.StreamJobsResponse;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
+import io.camunda.zeebe.client.api.response.StreamJobsResponse;
 import zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
@@ -37,7 +37,7 @@ public final class StreamJobsTest extends ClientTest {
   @Test
   public void shouldStreamJobs() {
     // given
-    final List<io.camunda.client.api.response.ActivatedJob> receivedJobs = new ArrayList<>();
+    final List<io.camunda.zeebe.client.api.response.ActivatedJob> receivedJobs = new ArrayList<>();
     final ActivatedJob activatedJob1 =
         ActivatedJob.newBuilder()
             .setKey(12)
@@ -96,7 +96,7 @@ public final class StreamJobsTest extends ClientTest {
     assertThat(response).isNotNull();
     assertThat(receivedJobs).hasSize(2);
 
-    io.camunda.client.api.response.ActivatedJob job = receivedJobs.get(0);
+    io.camunda.zeebe.client.api.response.ActivatedJob job = receivedJobs.get(0);
     assertThat(job.getKey()).isEqualTo(activatedJob1.getKey());
     assertThat(job.getType()).isEqualTo(activatedJob1.getType());
     assertThat(job.getBpmnProcessId()).isEqualTo(activatedJob1.getBpmnProcessId());

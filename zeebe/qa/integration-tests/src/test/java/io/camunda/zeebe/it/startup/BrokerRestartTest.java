@@ -9,8 +9,8 @@ package io.camunda.zeebe.it.startup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.response.PublishMessageResponse;
+import io.camunda.zeebe.client.api.CamundaFuture;
+import io.camunda.zeebe.client.api.response.PublishMessageResponse;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.engine.state.QueryService;

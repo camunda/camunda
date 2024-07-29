@@ -10,8 +10,8 @@ package io.camunda.zeebe.it.network;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
-import io.camunda.client.CamundaClientBuilder;
-import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.client.CamundaClientBuilder;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.it.clustering.ClusteringRule;

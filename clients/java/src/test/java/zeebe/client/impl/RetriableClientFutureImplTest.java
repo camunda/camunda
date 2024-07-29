@@ -15,9 +15,9 @@
  */
 package zeebe.client.impl;
 
-import io.camunda.client.CredentialsProvider.StatusCode;
-import io.camunda.client.api.command.ClientException;
-import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;

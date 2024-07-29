@@ -15,8 +15,8 @@
  */
 package io.camunda.process.test.api;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.JsonMapper;
+import io.camunda.zeebe.client.CamundaClient;
+import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
 import io.camunda.process.test.impl.containers.OperateContainer;

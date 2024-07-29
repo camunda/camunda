@@ -17,7 +17,7 @@ package io.camunda.zeebe.spring.client.annotation.processor;
 
 import static org.springframework.util.ReflectionUtils.doWithMethods;
 
-import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.client.CamundaClient;
 import io.camunda.zeebe.spring.client.annotation.JobWorker;
 import io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCustomizer;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;

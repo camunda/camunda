@@ -15,8 +15,8 @@
  */
 package zeebe.client.impl.worker.metrics;
 
-import io.camunda.client.api.worker.JobWorkerMetrics;
-import io.camunda.client.api.worker.metrics.MicrometerJobWorkerMetricsBuilder.Names;
+import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
+import io.camunda.zeebe.client.api.worker.metrics.MicrometerJobWorkerMetricsBuilder.Names;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;

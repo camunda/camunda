@@ -19,8 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.response.SetVariablesResponse;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.response.SetVariablesResponse;
 import zeebe.client.util.ClientTest;
 import zeebe.client.util.StringUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;

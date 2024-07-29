@@ -8,7 +8,7 @@
 package io.camunda.zeebe.it.network;
 
 import io.atomix.utils.net.Address;
-import io.camunda.client.api.response.Topology;
+import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;

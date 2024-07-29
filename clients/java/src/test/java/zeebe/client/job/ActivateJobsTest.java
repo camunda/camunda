@@ -19,12 +19,12 @@ import static zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
-import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.response.ActivateJobsResponse;
-import io.camunda.client.impl.CamundaClientBuilderImpl;
-import io.camunda.client.impl.CamundaObjectMapper;
-import io.camunda.client.impl.response.ActivatedJobImpl;
+import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
+import io.camunda.zeebe.client.impl.CamundaClientBuilderImpl;
+import io.camunda.zeebe.client.impl.CamundaObjectMapper;
+import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
 import zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
@@ -91,7 +91,7 @@ public final class ActivateJobsTest extends ClientTest {
     // then
     assertThat(response.getJobs()).hasSize(2);
 
-    io.camunda.client.api.response.ActivatedJob job = response.getJobs().get(0);
+    io.camunda.zeebe.client.api.response.ActivatedJob job = response.getJobs().get(0);
     assertThat(job.getKey()).isEqualTo(activatedJob1.getKey());
     assertThat(job.getType()).isEqualTo(activatedJob1.getType());
     assertThat(job.getBpmnProcessId()).isEqualTo(activatedJob1.getBpmnProcessId());
@@ -350,12 +350,12 @@ public final class ActivateJobsTest extends ClientTest {
 
     assertThat(response.getJobs()).hasSize(2);
 
-    final io.camunda.client.api.response.ActivatedJob job1 = response.getJobs().get(0);
+    final io.camunda.zeebe.client.api.response.ActivatedJob job1 = response.getJobs().get(0);
     assertThat(job1.getVariable("key")).isEqualTo("val");
     assertThat(job1.getVariable("foo")).isEqualTo("bar");
     assertThat(job1.getVariable("joe")).isEqualTo("doe");
 
-    final io.camunda.client.api.response.ActivatedJob job2 = response.getJobs().get(1);
+    final io.camunda.zeebe.client.api.response.ActivatedJob job2 = response.getJobs().get(1);
     assertThat(job2.getVariable("key")).isEqualTo("val2");
     assertThat(job2.getVariable("foo")).isEqualTo("bar2");
     assertThat(job2.getVariable("joe")).isEqualTo("doe2");
@@ -375,7 +375,7 @@ public final class ActivateJobsTest extends ClientTest {
 
     assertThat(response.getJobs()).hasSize(1);
 
-    final io.camunda.client.api.response.ActivatedJob job1 = response.getJobs().get(0);
+    final io.camunda.zeebe.client.api.response.ActivatedJob job1 = response.getJobs().get(0);
     assertThatThrownBy(() -> job1.getVariable("notPresentName"))
         .isInstanceOf(ClientException.class);
   }
@@ -394,7 +394,7 @@ public final class ActivateJobsTest extends ClientTest {
 
     assertThat(response.getJobs()).hasSize(1);
 
-    final io.camunda.client.api.response.ActivatedJob job1 = response.getJobs().get(0);
+    final io.camunda.zeebe.client.api.response.ActivatedJob job1 = response.getJobs().get(0);
     assertThat(job1.getVariable("key")).isNull();
   }
 
