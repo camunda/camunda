@@ -8,8 +8,10 @@
 package io.camunda.zeebe.protocol.impl.record.value.scale;
 
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.value.ScaleRecordValue;
 import org.agrona.DirectBuffer;
 
@@ -22,13 +24,21 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
       new IntegerProperty("currentPartitionCount", -1);
   private final IntegerProperty newPartitionCountProp =
       new IntegerProperty("newPartitionCount", -1);
+
+  // ScaleRelocateMessageSubscriptionStart
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
+  // TODO: field for new partition id, to avoid re-calculating it.
+
+  // ScaleRelocateMessageSubscriptionApply
+  private final ObjectProperty<MessageSubscriptionRecord> messageSubscriptionRecord =
+      new ObjectProperty<>("messageSubscriptionRecord", new MessageSubscriptionRecord());
 
   public ScaleRecord() {
-    super(3);
+    super(4);
     declareProperty(currentPartitionCountProp)
         .declareProperty(newPartitionCountProp)
-        .declareProperty(correlationKeyProp);
+        .declareProperty(correlationKeyProp)
+        .declareProperty(messageSubscriptionRecord);
   }
 
   @Override
@@ -48,6 +58,14 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
 
   public void setCorrelationKey(final DirectBuffer correlationKey) {
     correlationKeyProp.setValue(correlationKey);
+  }
+
+  public MessageSubscriptionRecord getMessageSubscriptionRecord() {
+    return messageSubscriptionRecord.getValue();
+  }
+
+  public void setMessageSubscriptionRecord(final MessageSubscriptionRecord record) {
+    messageSubscriptionRecord.getValue().wrap(record);
   }
 
   record RoutingInfoRecord(int currentPartitionCount, int newPartitionCount)
