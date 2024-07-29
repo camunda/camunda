@@ -38,12 +38,17 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
   private final ObjectProperty<MessageRecord> messageRecord =
       new ObjectProperty<>("messageRecord", new MessageRecord());
 
+  // ScaleRelocateOnPartitionCompleted
+  private final IntegerProperty completedPartitionProp =
+      new IntegerProperty("completedPartition", -1);
+
   public ScaleRecord() {
-    super(4);
+    super(5);
     declareProperty(currentPartitionCountProp)
         .declareProperty(newPartitionCountProp)
         .declareProperty(correlationKeyProp)
-        .declareProperty(messageSubscriptionRecord);
+        .declareProperty(messageSubscriptionRecord)
+        .declareProperty(completedPartitionProp);
   }
 
   @Override
@@ -79,6 +84,14 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
 
   public void setMessageRecord(final MessageRecord messageRecord) {
     this.messageRecord.getValue().wrap(messageRecord);
+  }
+
+  public int getCompletedPartition() {
+    return completedPartitionProp.getValue();
+  }
+
+  public void setCompletedPartition(int partitionId) {
+    completedPartitionProp.setValue(partitionId);
   }
 
   record RoutingInfoRecord(int currentPartitionCount, int newPartitionCount)

@@ -12,21 +12,28 @@ import io.camunda.zeebe.engine.state.immutable.RelocationState.RoutingInfo;
 import io.camunda.zeebe.engine.state.mutable.MutableRelocationState;
 import io.camunda.zeebe.protocol.impl.record.value.scale.ScaleRecord;
 import io.camunda.zeebe.protocol.record.intent.ScaleIntent;
-import java.util.Set;
+import java.util.HashSet;
 
-public class ScaleRelocationStartedApplier implements TypedEventApplier<ScaleIntent, ScaleRecord> {
+public class ScaleRelocationOnPartitionCompletedApplier
+    implements TypedEventApplier<ScaleIntent, ScaleRecord> {
   private final MutableRelocationState relocationState;
 
-  public ScaleRelocationStartedApplier(final MutableRelocationState relocationState) {
+  public ScaleRelocationOnPartitionCompletedApplier(final MutableRelocationState relocationState) {
     this.relocationState = relocationState;
   }
 
   @Override
   public void applyState(final long key, final ScaleRecord value) {
-    relocationState.setRoutingInfo(
+    final var current = relocationState.getRoutingInfo();
+
+    // TODO: What if current routing info is outdated?
+
+    final var completedPartitions = new HashSet<>(current.completedPartitions());
+    completedPartitions.add(value.getCompletedPartition());
+
+    final var newRoutingInfo =
         new RoutingInfo(
-            value.getRoutingInfo().currentPartitionCount(),
-            value.getRoutingInfo().newPartitionCount(),
-            Set.of()));
+            current.currentPartitionCount(), current.newPartitionCount(), completedPartitions);
+    relocationState.setRoutingInfo(newRoutingInfo);
   }
 }

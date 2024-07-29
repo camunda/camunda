@@ -8,12 +8,14 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public interface RelocationState {
   RoutingInfo getRoutingInfo();
 
-  record RoutingInfo(int currentPartitionCount, int newPartitionCount) {
+  record RoutingInfo(
+      int currentPartitionCount, int newPartitionCount, Set<Integer> completedPartitions) {
 
     public int oldPartitionForCorrelationKey(final DirectBuffer correlationKey) {
       return SubscriptionUtil.getSubscriptionPartitionId(correlationKey, currentPartitionCount);
