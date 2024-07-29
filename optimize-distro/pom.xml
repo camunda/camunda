@@ -16,6 +16,7 @@
   <properties>
     <exclude.from.config>OptimizeLicense.txt</exclude.from.config>
     <elasticsearch.demo.version>8.9.0</elasticsearch.demo.version>
+    <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
 
   <dependencies>
@@ -36,6 +37,12 @@
       <id>add-license-key</id>
       <properties>
         <exclude.from.config />
+      </properties>
+    </profile>
+    <profile>
+      <id>runAssembly</id>
+      <properties>
+        <assembly.skipAssembly>false</assembly.skipAssembly>
       </properties>
     </profile>
   </profiles>
@@ -145,7 +152,7 @@
               <url>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${elasticsearch.demo.version}-windows-x86_64.zip</url>
               <unpack>true</unpack>
               <outputDirectory>${project.build.directory}</outputDirectory>
-              <readTimeOut>1200000</readTimeOut>
+              <skip>true</skip>
             </configuration>
           </execution>
         </executions>
