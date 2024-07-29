@@ -50,14 +50,14 @@ public class ImporterMetricsZeebeImportIT extends OperateZeebeAbstractIT {
   @Before
   public void before() {
     super.before();
-    injectCamundaClientIntoOperationHandler();
+    injectZeebeClientIntoOperationHandler();
     clearMetrics();
   }
 
-  private void injectCamundaClientIntoOperationHandler() {
-    cancelProcessInstanceHandler.setCamundaClient(zeebeClient);
-    updateRetriesHandler.setCamundaClient(zeebeClient);
-    updateVariableHandler.setCamundaClient(zeebeClient);
+  private void injectZeebeClientIntoOperationHandler() {
+    cancelProcessInstanceHandler.setZeebeClient(zeebeClient);
+    updateRetriesHandler.setZeebeClient(zeebeClient);
+    updateVariableHandler.setZeebeClient(zeebeClient);
   }
 
   @Test // OPE-624

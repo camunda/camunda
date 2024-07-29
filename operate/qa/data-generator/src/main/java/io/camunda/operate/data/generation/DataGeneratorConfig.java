@@ -26,7 +26,7 @@ public class DataGeneratorConfig {
 
   @Autowired private DataGeneratorProperties dataGeneratorProperties;
 
-  public ZeebeClient createCamundaClient() {
+  public ZeebeClient createZeebeClient() {
     final String gatewayAddress = dataGeneratorProperties.getZeebeGatewayAddress();
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder()
@@ -37,8 +37,8 @@ public class DataGeneratorConfig {
   }
 
   @Bean
-  public ZeebeClient getCamundaClient() {
-    return createCamundaClient();
+  public ZeebeClient getZeebeClient() {
+    return createZeebeClient();
   }
 
   @Bean
@@ -70,7 +70,7 @@ public class DataGeneratorConfig {
       public Thread newThread(final Runnable runnable) {
         final Thread thread =
             new DataGeneratorThread(
-                getThreadGroup(), runnable, nextThreadName(), createCamundaClient());
+                getThreadGroup(), runnable, nextThreadName(), createZeebeClient());
         thread.setPriority(getThreadPriority());
         thread.setDaemon(isDaemon());
         return thread;
@@ -144,7 +144,7 @@ public class DataGeneratorConfig {
       this.zeebeClient = zeebeClient;
     }
 
-    public ZeebeClient getCamundaClient() {
+    public ZeebeClient getZeebeClient() {
       return zeebeClient;
     }
   }

@@ -48,17 +48,17 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
       LoggerFactory.getLogger(AbstractBackupRestoreDataGenerator.class);
 
   /**
-   * CamundaClient must not be reused between different test fixtures, as this may be different
+   * ZeebeClient must not be reused between different test fixtures, as this may be different
    * versions of client in the future.
    */
-  private ZeebeClient camundaClient;
+  private ZeebeClient zeebeClient;
 
   @Autowired private TasklistAPICaller tasklistAPICaller;
 
   private List<Long> processInstanceKeys = new ArrayList<>();
 
   private void init(final BackupRestoreTestContext testContext) {
-    camundaClient =
+    zeebeClient =
         ZeebeClient.newClientBuilder()
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
             .usePlaintext()
@@ -178,9 +178,9 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   protected abstract void claimAllTasks();
 
   private void closeClients() {
-    if (camundaClient != null) {
-      camundaClient.close();
-      camundaClient = null;
+    if (zeebeClient != null) {
+      zeebeClient.close();
+      zeebeClient = null;
     }
   }
 
@@ -207,8 +207,7 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
       final String bpmnProcessId, final int numberOfProcessInstances) {
     for (int i = 0; i < numberOfProcessInstances; i++) {
       final long processInstanceKey =
-          ZeebeTestUtil.startProcessInstance(
-              camundaClient, bpmnProcessId, "{\"var1\": \"value1\"}");
+          ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, "{\"var1\": \"value1\"}");
       LOGGER.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
       processInstanceKeys.add(processInstanceKey);
     }
@@ -219,7 +218,7 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   private void deployProcess(
       final BpmnModelInstance bpmnModelInstance, final String bpmnProcessId) {
     final String processDefinitionKey =
-        ZeebeTestUtil.deployProcess(camundaClient, bpmnModelInstance, bpmnProcessId + ".bpmn");
+        ZeebeTestUtil.deployProcess(zeebeClient, bpmnModelInstance, bpmnProcessId + ".bpmn");
     LOGGER.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
   }
 

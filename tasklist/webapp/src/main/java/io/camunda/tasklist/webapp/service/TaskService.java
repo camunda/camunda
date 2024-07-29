@@ -50,8 +50,8 @@ public class TaskService {
   @Autowired private UserReader userReader;
 
   @Autowired
-  @Qualifier("tasklistCamundaClient")
-  private ZeebeClient camundaClient;
+  @Qualifier("tasklistZeebeClient")
+  private ZeebeClient zeebeClient;
 
   @Autowired private TaskStore taskStore;
   @Autowired private VariableService variableService;
@@ -155,7 +155,7 @@ public class TaskService {
     if (taskBefore.getImplementation().equals(TaskImplementation.ZEEBE_USER_TASK)) {
       try {
         final AssignUserTaskResponse assigneeResponse =
-            camundaClient
+            zeebeClient
                 .newUserTaskAssignCommand(Long.parseLong(taskId))
                 .assignee(taskAssignee)
                 .send()
@@ -195,11 +195,11 @@ public class TaskService {
         if (task.getImplementation().equals(TaskImplementation.JOB_WORKER)) {
           // complete
           CompleteJobCommandStep1 completeJobCommand =
-              camundaClient.newCompleteCommand(Long.parseLong(taskId));
+              zeebeClient.newCompleteCommand(Long.parseLong(taskId));
           completeJobCommand = completeJobCommand.variables(variablesMap);
           completeJobCommand.send().join();
         } else {
-          camundaClient
+          zeebeClient
               .newUserTaskCompleteCommand(Long.parseLong(taskId))
               .variables(variablesMap)
               .send()
@@ -265,7 +265,7 @@ public class TaskService {
     final TaskEntity taskEntity = taskStore.persistTaskUnclaim(taskBefore);
     if (taskBefore.getImplementation().equals(TaskImplementation.ZEEBE_USER_TASK)) {
       try {
-        camundaClient.newUserTaskUnassignCommand(taskBefore.getKey()).send().join();
+        zeebeClient.newUserTaskUnassignCommand(taskBefore.getKey()).send().join();
       } catch (final ClientException exception) {
         taskStore.persistTaskClaim(taskBefore, taskBefore.getAssignee());
         throw new TasklistRuntimeException(exception.getMessage());

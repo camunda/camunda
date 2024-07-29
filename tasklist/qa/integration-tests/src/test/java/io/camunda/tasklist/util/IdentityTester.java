@@ -80,7 +80,7 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
             testContext.getExternalKeycloakBaseUrl()
                 + "/auth/realms/camunda-platform/protocol/openid-connect/token");
 
-    /* Workaround: Zeebe Test Container is not yet compatible with CamundaClient. The deprecated ZeebeClient
+    /* Workaround: Zeebe Test Container is not yet compatible with ZeebeClient. The deprecated ZeebeClient
     Environment properties must be set for the TestContainer poller.
     ref: https://camunda.slack.com/archives/CSQ2E3BT4/p1721717060291479?thread_ts=1721648856.848609&cid=CSQ2E3BT4 */
     io.camunda.zeebe.client.impl.util.Environment.system().put("ZEEBE_CLIENT_ID", "zeebe");
@@ -99,7 +99,7 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
     super.before();
     tester =
         beanFactory
-            .getBean(TasklistTester.class, camundaClient, databaseTestExtension, jwtDecoder)
+            .getBean(TasklistTester.class, zeebeClient, databaseTestExtension, jwtDecoder)
             .withAuthenticationToken(generateCamundaIdentityToken());
   }
 

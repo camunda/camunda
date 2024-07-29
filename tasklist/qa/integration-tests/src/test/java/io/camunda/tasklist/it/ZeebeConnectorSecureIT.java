@@ -50,7 +50,7 @@ public class ZeebeConnectorSecureIT {
                   ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME));
   @Autowired ZeebeConnector zeebeConnector;
   private ZeebeContainer zeebeContainer;
-  private ZeebeClient camundaClient;
+  private ZeebeClient zeebeClient;
 
   @Test
   public void shouldConnectWithTLS(@TempDir final File tempDir) throws Exception {
@@ -76,23 +76,23 @@ public class ZeebeConnectorSecureIT {
                     .withRegEx(".*Broker is ready!.*")
                     .withStartupTimeout(Duration.ofSeconds(101)));
     zeebeContainer.start();
-    camundaClient =
-        zeebeConnector.newCamundaClient(
+    zeebeClient =
+        zeebeConnector.newZeebeClient(
             new ZeebeProperties()
                 .setGatewayAddress(zeebeContainer.getExternalGatewayAddress())
                 .setSecure(true)
                 .setCertificatePath(tempDir.getCanonicalPath() + "/" + CERTIFICATE_FILE));
     // when
     final List<BrokerInfo> brokerInfos =
-        camundaClient.newTopologyRequest().send().join().getBrokers();
+        zeebeClient.newTopologyRequest().send().join().getBrokers();
     // then
     assertThat(brokerInfos).isNotEmpty();
   }
 
   @AfterEach
   public void cleanUp() {
-    if (camundaClient != null) {
-      camundaClient.close();
+    if (zeebeClient != null) {
+      zeebeClient.close();
     }
     if (zeebeContainer != null) {
       zeebeContainer.stop();

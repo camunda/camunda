@@ -23,15 +23,15 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * Dynamic proxy to delegate to a {@link ZeebeClient} which allows to swap the ZeebeClient object
  * under the hood.
  */
-public class CamundaClientProxy extends AbstractInvocationHandler {
+public class ZeebeClientProxy extends AbstractInvocationHandler {
 
   private ZeebeClient delegate;
 
-  public void setCamundaClient(final ZeebeClient zeebeClient) {
+  public void setZeebeClient(final ZeebeClient zeebeClient) {
     delegate = zeebeClient;
   }
 
-  public void removeCamundaClient() {
+  public void removeZeebeClient() {
     delegate = null;
   }
 

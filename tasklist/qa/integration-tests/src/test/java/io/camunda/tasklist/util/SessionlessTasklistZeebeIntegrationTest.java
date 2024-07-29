@@ -57,10 +57,10 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
 
   public ZeebeContainer zeebeContainer;
 
-  @MockBean protected ZeebeClient mockedCamundaClient;
-  // we don't want to create CamundaClient, we will rather use the one from
+  @MockBean protected ZeebeClient mockedZeebeClient;
+  // we don't want to create ZeebeClient, we will rather use the one from
   // test rule
-  protected ZeebeClient camundaClient;
+  protected ZeebeClient zeebeClient;
   @Autowired protected PartitionHolder partitionHolder;
   @Autowired protected ImportPositionHolder importPositionHolder;
   @Autowired protected TasklistProperties tasklistProperties;
@@ -84,18 +84,18 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
     zeebeContainer = zeebeExtension.getZeebeContainer();
     assertThat(zeebeContainer).as("zeebeContainer is not null").isNotNull();
 
-    camundaClient = getClient();
+    zeebeClient = getClient();
     workerName = TestUtil.createRandomString(10);
 
-    tester = beanFactory.getBean(TasklistTester.class, camundaClient, databaseTestExtension);
+    tester = beanFactory.getBean(TasklistTester.class, zeebeClient, databaseTestExtension);
 
     processCache.clearCache();
     importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
     importPositionHolder.clearCache();
     importPositionHolder.scheduleImportPositionUpdateTask();
-    ReflectionTestUtils.setField(partitionSupplier, "camundaClient", getClient());
-    ReflectionTestUtils.setField(taskService, "camundaClient", getClient());
-    ReflectionTestUtils.setField(processService, "camundaClient", getClient());
+    ReflectionTestUtils.setField(partitionSupplier, "zeebeClient", getClient());
+    ReflectionTestUtils.setField(taskService, "zeebeClient", getClient());
+    ReflectionTestUtils.setField(processService, "zeebeClient", getClient());
   }
 
   @AfterEach

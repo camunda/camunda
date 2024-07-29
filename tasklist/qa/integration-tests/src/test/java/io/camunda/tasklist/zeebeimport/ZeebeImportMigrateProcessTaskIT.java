@@ -74,7 +74,7 @@ public class ZeebeImportMigrateProcessTaskIT extends TasklistZeebeIntegrationTes
             .getProcessDefinitionKey();
 
     final MigrateProcessInstanceResponse zeebeMigrationCommandResponse =
-        camundaClient
+        zeebeClient
             .newMigrateProcessInstanceCommand(Long.valueOf(processInstanceId))
             .migrationPlan(
                 new MigrationPlanBuilderImpl()

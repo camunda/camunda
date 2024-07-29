@@ -43,7 +43,7 @@ public class FlowNodeInstanceZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Before
   public void setup() {
-    cancelProcessInstanceHandler.setCamundaClient(getClient());
+    cancelProcessInstanceHandler.setZeebeClient(getClient());
   }
 
   @Test

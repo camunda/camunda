@@ -34,7 +34,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractDataGenerator.class);
 
   @Autowired
-  @Qualifier("camundaClient")
+  @Qualifier("zeebeClient")
   protected ZeebeClient client;
 
   @Autowired protected OperateProperties operateProperties;

@@ -42,8 +42,8 @@ public class ProcessService {
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessService.class);
 
   @Autowired
-  @Qualifier("tasklistCamundaClient")
-  private ZeebeClient camundaClient;
+  @Qualifier("tasklistZeebeClient")
+  private ZeebeClient zeebeClient;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
@@ -97,7 +97,7 @@ public class ProcessService {
 
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
         createProcessInstanceCommandStep3 =
-            camundaClient
+            zeebeClient
                 .newCreateInstanceCommand()
                 .bpmnProcessId(processDefinitionKey)
                 .latestVersion();

@@ -65,7 +65,7 @@ public class FlowNodeMetadataZeebeImportIT extends OperateZeebeAbstractIT {
   @Before
   public void before() {
     super.before();
-    cancelProcessInstanceHandler.setCamundaClient(zeebeClient);
+    cancelProcessInstanceHandler.setZeebeClient(zeebeClient);
     archiverJob =
         beanFactory.getBean(
             ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());

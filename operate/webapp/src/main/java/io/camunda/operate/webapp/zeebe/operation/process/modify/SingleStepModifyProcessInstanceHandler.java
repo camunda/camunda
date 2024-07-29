@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 
 // Modify Process Instance Implementation to execute all given modifications in one Zeebe
 // 'transaction'
-// So for one operation we have only one 'camundaClient.send().join()'
+// So for one operation we have only one 'zeebeClient.send().join()'
 @Component
 public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHandler
     implements ModifyProcessInstanceHandler {
@@ -75,9 +75,9 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
 
   // Needed for tests
   @Override
-  public void setCamundaClient(final ZeebeClient camundaClient) {
-    this.camundaClient = camundaClient;
-    modifyProcessZeebeWrapper.setCamundaClient(camundaClient);
+  public void setZeebeClient(final ZeebeClient zeebeClient) {
+    this.zeebeClient = zeebeClient;
+    modifyProcessZeebeWrapper.setZeebeClient(zeebeClient);
   }
 
   private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2

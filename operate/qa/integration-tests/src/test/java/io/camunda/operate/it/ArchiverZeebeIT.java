@@ -102,7 +102,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     archiverJob =
         beanFactory.getBean(
             ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
-    cancelProcessInstanceHandler.setCamundaClient(super.getClient());
+    cancelProcessInstanceHandler.setZeebeClient(super.getClient());
     clearMetrics();
   }
 

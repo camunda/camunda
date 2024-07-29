@@ -112,7 +112,7 @@ final class RollingUpdateTest {
     updateBroker(broker, to);
 
     // then
-    try (final var client = cluster.newClientBuilder().build();) {
+    try (final var client = cluster.newClientBuilder().build(); ) {
       Awaitility.await()
           .atMost(Duration.ofSeconds(120))
           .pollInterval(Duration.ofMillis(100))
@@ -135,7 +135,7 @@ final class RollingUpdateTest {
     cluster.start();
 
     // when
-    try (final var client = cluster.newClientBuilder().build();) {
+    try (final var client = cluster.newClientBuilder().build(); ) {
       deployProcess(client);
 
       // potentially retry in case we're faster than the deployment distribution
@@ -151,7 +151,7 @@ final class RollingUpdateTest {
     final ZeebeBrokerNode<?> broker = cluster.getBrokers().get(brokerId);
     broker.stop();
 
-    try (final var client = cluster.newClientBuilder().build();) {
+    try (final var client = cluster.newClientBuilder().build(); ) {
       Awaitility.await("broker is removed from topology")
           .atMost(Duration.ofSeconds(120))
           .pollInterval(Duration.ofMillis(100))

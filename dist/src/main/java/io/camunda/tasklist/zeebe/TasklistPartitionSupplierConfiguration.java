@@ -23,7 +23,7 @@ public class TasklistPartitionSupplierConfiguration {
   public PartitionSupplier tasklistPartitionSupplier(
       @Autowired(required = false) final Broker broker,
       @Autowired(required = false) final Gateway gateway,
-      @Autowired @Qualifier("tasklistCamundaClient") final ZeebeClient zeebeClient) {
+      @Autowired @Qualifier("tasklistZeebeClient") final ZeebeClient zeebeClient) {
     return new PartitionSupplierConfigurer(broker, gateway, zeebeClient).createPartitionSupplier();
   }
 }

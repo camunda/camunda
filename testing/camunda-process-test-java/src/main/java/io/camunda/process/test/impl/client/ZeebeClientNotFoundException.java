@@ -15,13 +15,13 @@
  */
 package io.camunda.process.test.impl.client;
 
-public class CamundaClientNotFoundException extends RuntimeException {
+public class ZeebeClientNotFoundException extends RuntimeException {
 
-  public CamundaClientNotFoundException() {
+  public ZeebeClientNotFoundException() {
     super();
   }
 
-  public CamundaClientNotFoundException(final String message) {
+  public ZeebeClientNotFoundException(final String message) {
     super(message);
   }
 }

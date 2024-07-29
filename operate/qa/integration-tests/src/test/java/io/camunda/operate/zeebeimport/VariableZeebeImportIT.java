@@ -45,7 +45,7 @@ public class VariableZeebeImportIT extends OperateZeebeAbstractIT {
   @Before
   public void before() {
     super.before();
-    updateVariableHandler.setCamundaClient(super.getClient());
+    updateVariableHandler.setZeebeClient(super.getClient());
   }
 
   protected String getVariablesURL(final Long processInstanceKey) {

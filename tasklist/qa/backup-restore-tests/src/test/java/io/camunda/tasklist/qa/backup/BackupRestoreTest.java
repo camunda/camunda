@@ -64,7 +64,7 @@ public class BackupRestoreTest {
 
   private GenericContainer tasklistContainer;
 
-  private ZeebeClient camundaClient;
+  private ZeebeClient zeebeClient;
 
   private final TestContainerUtil testContainerUtil = new TestContainerUtil();
   private BackupRestoreTestContext testContext;
@@ -127,7 +127,7 @@ public class BackupRestoreTest {
 
     testContainerUtil.startZeebe(
         ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME), testContext);
-    createCamundaClient(testContext.getExternalZeebeContactPoint());
+    createZeebeClient(testContext.getExternalZeebeContactPoint());
   }
 
   private OpenSearchClient createOsClient() {
@@ -152,7 +152,7 @@ public class BackupRestoreTest {
 
     testContainerUtil.startZeebe(
         ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME), testContext);
-    createCamundaClient(testContext.getExternalZeebeContactPoint());
+    createZeebeClient(testContext.getExternalZeebeContactPoint());
   }
 
   private void startTasklist() {
@@ -274,14 +274,14 @@ public class BackupRestoreTest {
                         .settings(s -> s.location(REPOSITORY_NAME))));
   }
 
-  private ZeebeClient createCamundaClient(final String zeebeGateway) {
+  private ZeebeClient createZeebeClient(final String zeebeGateway) {
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder()
             .gatewayAddress(zeebeGateway)
             .defaultJobWorkerMaxJobsActive(5)
             .usePlaintext();
-    camundaClient = builder.build();
-    return camundaClient;
+    zeebeClient = builder.build();
+    return zeebeClient;
   }
 }
 

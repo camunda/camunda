@@ -40,13 +40,13 @@ public class ErrorMessagesZeebeImportIT extends OperateZeebeAbstractIT {
   @Before
   public void before() {
     super.before();
-    injectCamundaClientIntoOperationHandler();
+    injectZeebeClientIntoOperationHandler();
   }
 
-  private void injectCamundaClientIntoOperationHandler() {
-    cancelProcessInstanceHandler.setCamundaClient(zeebeClient);
-    updateRetriesHandler.setCamundaClient(zeebeClient);
-    updateVariableHandler.setCamundaClient(zeebeClient);
+  private void injectZeebeClientIntoOperationHandler() {
+    cancelProcessInstanceHandler.setZeebeClient(zeebeClient);
+    updateRetriesHandler.setZeebeClient(zeebeClient);
+    updateVariableHandler.setZeebeClient(zeebeClient);
   }
 
   // OPE-453

@@ -63,7 +63,7 @@ public class IncidentWithFailingOperationZeebeImportIT extends OperateZeebeAbstr
   @Before
   public void before() {
     super.before();
-    updateRetriesHandler.setCamundaClient(super.getClient());
+    updateRetriesHandler.setZeebeClient(super.getClient());
   }
 
   @Test

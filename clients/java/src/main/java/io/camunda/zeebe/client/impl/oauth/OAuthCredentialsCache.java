@@ -110,11 +110,11 @@ public final class OAuthCredentialsCache {
         readCache()
             .get(endpoint)
             .flatMap(
-                camundaClientCredentials -> {
-                  if (!camundaClientCredentials.isValid()) {
+                zeebeClientCredentials -> {
+                  if (!zeebeClientCredentials.isValid()) {
                     return Optional.empty();
                   } else {
-                    return Optional.of(camundaClientCredentials);
+                    return Optional.of(zeebeClientCredentials);
                   }
                 });
     if (optionalCredentials.isPresent()) {

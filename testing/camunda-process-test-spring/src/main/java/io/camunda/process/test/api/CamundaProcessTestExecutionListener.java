@@ -19,8 +19,8 @@ import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
 import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
-import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
+import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -83,7 +83,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     client = createClient(testContext, camundaProcessTestContext);
 
     // fill proxies
-    testContext.getApplicationContext().getBean(CamundaClientProxy.class).setCamundaClient(client);
+    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).setZeebeClient(client);
     testContext
         .getApplicationContext()
         .getBean(CamundaProcessTestContextProxy.class)
@@ -108,7 +108,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     createdClients.forEach(ZeebeClient::close);
 
     // clean up proxies
-    testContext.getApplicationContext().getBean(CamundaClientProxy.class).removeCamundaClient();
+    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).removeZeebeClient();
     testContext
         .getApplicationContext()
         .getBean(CamundaProcessTestContextProxy.class)

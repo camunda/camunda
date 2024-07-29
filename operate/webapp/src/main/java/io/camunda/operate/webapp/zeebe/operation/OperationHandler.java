@@ -21,5 +21,5 @@ public interface OperationHandler {
   Set<OperationType> getTypes();
 
   // Needed for tests
-  void setCamundaClient(final ZeebeClient camundaClient);
+  void setZeebeClient(final ZeebeClient zeebeClient);
 }

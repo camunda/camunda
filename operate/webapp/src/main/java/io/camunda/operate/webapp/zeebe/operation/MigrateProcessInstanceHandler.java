@@ -79,7 +79,7 @@ public class MigrateProcessInstanceHandler extends AbstractOperationHandler
                         new MigrationPlanBuilderImpl.MappingInstruction(
                             mapping.getSourceElementId(), mapping.getTargetElementId())));
 
-    camundaClient
+    zeebeClient
         .newMigrateProcessInstanceCommand(processInstanceKey)
         .migrationPlan(migrationPlan)
         .send()

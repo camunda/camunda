@@ -290,7 +290,7 @@ public class DataGenerator {
 
     @Override
     public void run() {
-      zeebeClient = resolveCamundaClient();
+      zeebeClient = resolveZeebeClient();
       int localCount = 0;
       while (countSimpleProcess.getAndIncrement()
               < dataGeneratorProperties.getProcessInstanceCount()
@@ -333,8 +333,8 @@ public class DataGenerator {
       }
     }
 
-    private ZeebeClient resolveCamundaClient() {
-      return ((DataGeneratorThread) Thread.currentThread()).getCamundaClient();
+    private ZeebeClient resolveZeebeClient() {
+      return ((DataGeneratorThread) Thread.currentThread()).getZeebeClient();
     }
 
     public void close() {

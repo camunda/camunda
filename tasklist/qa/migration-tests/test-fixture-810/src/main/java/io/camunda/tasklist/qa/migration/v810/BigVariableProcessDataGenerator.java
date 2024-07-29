@@ -46,10 +46,10 @@ public class BigVariableProcessDataGenerator {
       LoggerFactory.getLogger(BigVariableProcessDataGenerator.class);
 
   /**
-   * CamundaClient must not be reused between different test fixtures, as this may be different
+   * ZeebeClient must not be reused between different test fixtures, as this may be different
    * versions of client in the future.
    */
-  private ZeebeClient camundaClient;
+  private ZeebeClient zeebeClient;
 
   @Autowired
   @Qualifier("tasklistEsClient")
@@ -58,7 +58,7 @@ public class BigVariableProcessDataGenerator {
   private final Random random = new Random();
 
   private void init(final TestContext testContext) {
-    camundaClient =
+    zeebeClient =
         ZeebeClient.newClientBuilder()
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
             .usePlaintext()
@@ -91,9 +91,9 @@ public class BigVariableProcessDataGenerator {
   }
 
   private void closeClients() {
-    if (camundaClient != null) {
-      camundaClient.close();
-      camundaClient = null;
+    if (zeebeClient != null) {
+      zeebeClient.close();
+      zeebeClient = null;
     }
   }
 
@@ -132,7 +132,7 @@ public class BigVariableProcessDataGenerator {
             + "}";
 
     final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(camundaClient, bpmnProcessId, payload);
+        ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, payload);
     LOGGER.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
     return processInstanceKey;
   }
@@ -141,7 +141,7 @@ public class BigVariableProcessDataGenerator {
     final String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
     final String processDefinitionKey =
         ZeebeTestUtil.deployProcess(
-            camundaClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
+            zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
     LOGGER.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
   }
 

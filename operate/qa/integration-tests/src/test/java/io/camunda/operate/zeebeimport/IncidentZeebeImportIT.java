@@ -56,7 +56,7 @@ public class IncidentZeebeImportIT extends OperateZeebeAbstractIT {
   @Before
   public void before() {
     super.before();
-    updateVariableHandler.setCamundaClient(zeebeClient);
+    updateVariableHandler.setZeebeClient(zeebeClient);
   }
 
   @Test

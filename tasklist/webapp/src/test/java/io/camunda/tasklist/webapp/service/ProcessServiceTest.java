@@ -46,7 +46,7 @@ public class ProcessServiceTest {
 
   @Mock private TenantService tenantService;
 
-  @Mock private ZeebeClient camundaClient;
+  @Mock private ZeebeClient zeebeClient;
 
   @Spy
   private IdentityAuthorizationService identityAuthorizationService =
@@ -101,15 +101,12 @@ public class ProcessServiceTest {
     when(processInstanceEvent.getProcessInstanceKey()).thenReturn(123456L);
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 step3 =
         mock(CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3.class);
-    when(camundaClient.newCreateInstanceCommand())
+    when(zeebeClient.newCreateInstanceCommand())
         .thenReturn(mock(CreateProcessInstanceCommandImpl.class));
-    when(camundaClient.newCreateInstanceCommand().bpmnProcessId(processDefinitionKey))
+    when(zeebeClient.newCreateInstanceCommand().bpmnProcessId(processDefinitionKey))
         .thenReturn(
             mock(CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep2.class));
-    when(camundaClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processDefinitionKey)
-            .latestVersion())
+    when(zeebeClient.newCreateInstanceCommand().bpmnProcessId(processDefinitionKey).latestVersion())
         .thenReturn(step3);
     when(step3.send()).thenReturn(mock(ZeebeClientFutureImpl.class));
     when(step3.send().join()).thenReturn(processInstanceEvent);
@@ -122,15 +119,12 @@ public class ProcessServiceTest {
     when(processInstanceEvent.getProcessInstanceKey()).thenReturn(123456L);
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 step3 =
         mock(CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3.class);
-    when(camundaClient.newCreateInstanceCommand())
+    when(zeebeClient.newCreateInstanceCommand())
         .thenReturn(mock(CreateProcessInstanceCommandImpl.class));
-    when(camundaClient.newCreateInstanceCommand().bpmnProcessId(processDefinitionKey))
+    when(zeebeClient.newCreateInstanceCommand().bpmnProcessId(processDefinitionKey))
         .thenReturn(
             mock(CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep2.class));
-    when(camundaClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processDefinitionKey)
-            .latestVersion())
+    when(zeebeClient.newCreateInstanceCommand().bpmnProcessId(processDefinitionKey).latestVersion())
         .thenReturn(step3);
     when(step3.send()).thenThrow(new ClientStatusException(Status.NOT_FOUND, null));
     return processInstanceEvent;

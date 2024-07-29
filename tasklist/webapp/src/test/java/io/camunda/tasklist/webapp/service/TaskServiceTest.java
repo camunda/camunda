@@ -69,7 +69,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TaskServiceTest {
 
   @Mock private UserReader userReader;
-  @Mock private ZeebeClient camundaClient;
+  @Mock private ZeebeClient zeebeClient;
   @Mock private TaskStore taskStore;
   @Mock private VariableService variableService;
   @Spy private ObjectMapper objectMapper = CommonUtils.getObjectMapper();
@@ -417,7 +417,7 @@ class TaskServiceTest {
 
     // mock zeebe command
     final var mockedJobCommandStep1 = mock(CompleteJobCommandStep1.class);
-    when(camundaClient.newCompleteCommand(123)).thenReturn(mockedJobCommandStep1);
+    when(zeebeClient.newCompleteCommand(123)).thenReturn(mockedJobCommandStep1);
     final var mockedJobCommandStep2 = mock(CompleteJobCommandStep1.class);
     when(mockedJobCommandStep1.variables(variablesMap)).thenReturn(mockedJobCommandStep2);
     final var mockedZeebeFuture = mock(ZeebeFuture.class);
@@ -454,7 +454,7 @@ class TaskServiceTest {
 
     // mock zeebe command
     final var mockedJobCommandStep1 = mock(CompleteUserTaskCommandStep1.class);
-    when(camundaClient.newUserTaskCompleteCommand(123)).thenReturn(mockedJobCommandStep1);
+    when(zeebeClient.newUserTaskCompleteCommand(123)).thenReturn(mockedJobCommandStep1);
     final var mockedJobCommandStep2 = mock(CompleteUserTaskCommandStep1.class);
     when(mockedJobCommandStep1.variables(variablesMap)).thenReturn(mockedJobCommandStep2);
     final var mockedZeebeFuture = mock(ZeebeFuture.class);
@@ -481,9 +481,9 @@ class TaskServiceTest {
     when(taskStore.getTask(String.valueOf(taskId))).thenReturn(taskBefore);
     final var unassignedTask = new TaskEntity().setAssignee(null);
     when(taskStore.persistTaskUnclaim(taskBefore)).thenReturn(unassignedTask);
-    when(camundaClient.newUserTaskUnassignCommand(Long.valueOf(taskId)))
+    when(zeebeClient.newUserTaskUnassignCommand(Long.valueOf(taskId)))
         .thenReturn(mock(UnassignUserTaskCommandStep1.class));
-    when(camundaClient.newUserTaskUnassignCommand(Long.valueOf(taskId)).send())
+    when(zeebeClient.newUserTaskUnassignCommand(Long.valueOf(taskId)).send())
         .thenReturn(mock(ZeebeFuture.class));
     final var result = instance.unassignTask(String.valueOf(taskId));
 
@@ -503,9 +503,9 @@ class TaskServiceTest {
     when(taskStore.getTask(String.valueOf(taskId))).thenReturn(taskBefore);
     final var unassignedTask = new TaskEntity().setAssignee(null);
     when(taskStore.persistTaskUnclaim(taskBefore)).thenReturn(unassignedTask);
-    when(camundaClient.newUserTaskUnassignCommand(Long.valueOf(taskId)))
+    when(zeebeClient.newUserTaskUnassignCommand(Long.valueOf(taskId)))
         .thenReturn(mock(UnassignUserTaskCommandStep1.class));
-    when(camundaClient.newUserTaskUnassignCommand(Long.valueOf(taskId)).send())
+    when(zeebeClient.newUserTaskUnassignCommand(Long.valueOf(taskId)).send())
         .thenThrow(new ClientException("reason for error"));
 
     // Then
@@ -530,11 +530,11 @@ class TaskServiceTest {
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     when(userReader.getCurrentUser()).thenReturn(user);
     when(user.getUserId()).thenReturn(providedAssignee);
-    when(camundaClient.newUserTaskAssignCommand(Long.valueOf(taskId)))
+    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)))
         .thenReturn(mock(AssignUserTaskCommandStep1.class));
-    when(camundaClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()))
+    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()))
         .thenReturn(mock(AssignUserTaskCommandStep1.class));
-    when(camundaClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()).send())
+    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()).send())
         .thenThrow(new ClientException("reason for error"));
 
     // Then
@@ -561,11 +561,11 @@ class TaskServiceTest {
     when(userReader.getCurrentUser()).thenReturn(user);
     final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
     when(taskStore.persistTaskClaim(taskBefore, expectedAssignee)).thenReturn(assignedTask);
-    when(camundaClient.newUserTaskAssignCommand(Long.valueOf(taskId)))
+    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)))
         .thenReturn(mock(AssignUserTaskCommandStep1.class));
-    when(camundaClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()))
+    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()))
         .thenReturn(mock(AssignUserTaskCommandStep1.class));
-    when(camundaClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()).send())
+    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()).send())
         .thenReturn(mock(ZeebeFuture.class));
     final var result =
         instance.assignTask(taskId, providedAssignee, providedAllowOverrideAssignment);

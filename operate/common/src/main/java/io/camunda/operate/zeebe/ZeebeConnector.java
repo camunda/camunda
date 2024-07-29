@@ -27,12 +27,12 @@ public class ZeebeConnector {
   @Autowired private OperateProperties operateProperties;
 
   @Bean // will be closed automatically
-  public ZeebeClient camundaClient() {
+  public ZeebeClient zeebeClient() {
     final var properties = operateProperties.getZeebe();
-    return newCamundaClient(properties);
+    return newZeebeClient(properties);
   }
 
-  public ZeebeClient newCamundaClient(final ZeebeProperties zeebeProperties) {
+  public ZeebeClient newZeebeClient(final ZeebeProperties zeebeProperties) {
     final var gatewayAddress = getGatewayAddress(zeebeProperties);
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder()

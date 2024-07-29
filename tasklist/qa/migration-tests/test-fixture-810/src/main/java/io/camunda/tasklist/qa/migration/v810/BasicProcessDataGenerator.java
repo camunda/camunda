@@ -48,10 +48,10 @@ public class BasicProcessDataGenerator {
   //  private static final DateTimeFormatter ARCHIVER_DATE_TIME_FORMATTER =
   // DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
   /**
-   * CamundaClient must not be reused between different test fixtures, as this may be different
+   * ZeebeClient must not be reused between different test fixtures, as this may be different
    * versions of client in the future.
    */
-  private ZeebeClient camundaClient;
+  private ZeebeClient zeebeClient;
 
   @Autowired
   @Qualifier("tasklistEsClient")
@@ -62,7 +62,7 @@ public class BasicProcessDataGenerator {
   private List<Long> processInstanceKeys = new ArrayList<>();
 
   private void init(final TestContext testContext) {
-    camundaClient =
+    zeebeClient =
         ZeebeClient.newClientBuilder()
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
             .usePlaintext()
@@ -115,9 +115,9 @@ public class BasicProcessDataGenerator {
   }
 
   private void closeClients() {
-    if (camundaClient != null) {
-      camundaClient.close();
-      camundaClient = null;
+    if (zeebeClient != null) {
+      zeebeClient.close();
+      zeebeClient = null;
     }
   }
 
@@ -141,8 +141,7 @@ public class BasicProcessDataGenerator {
     for (int i = 0; i < numberOfProcessInstances; i++) {
       final String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
       final long processInstanceKey =
-          ZeebeTestUtil.startProcessInstance(
-              camundaClient, bpmnProcessId, "{\"var1\": \"value1\"}");
+          ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, "{\"var1\": \"value1\"}");
       LOGGER.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
       processInstanceKeys.add(processInstanceKey);
     }
@@ -154,7 +153,7 @@ public class BasicProcessDataGenerator {
     final String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
     final String processDefinitionKey =
         ZeebeTestUtil.deployProcess(
-            camundaClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
+            zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
     LOGGER.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
   }
 

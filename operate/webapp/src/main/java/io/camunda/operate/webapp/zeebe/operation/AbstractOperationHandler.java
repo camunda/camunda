@@ -33,7 +33,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
           Status.RESOURCE_EXHAUSTED.getCode(),
           Status.DEADLINE_EXCEEDED.getCode());
 
-  @Autowired protected ZeebeClient camundaClient;
+  @Autowired protected ZeebeClient zeebeClient;
   @Autowired protected BatchOperationWriter batchOperationWriter;
   @Autowired protected OperateProperties operateProperties;
   @Autowired protected Metrics metrics;
@@ -69,8 +69,8 @@ public abstract class AbstractOperationHandler implements OperationHandler {
 
   // Needed for tests
   @Override
-  public void setCamundaClient(final ZeebeClient camundaClient) {
-    this.camundaClient = camundaClient;
+  public void setZeebeClient(final ZeebeClient zeebeClient) {
+    this.zeebeClient = zeebeClient;
   }
 
   private boolean isExceptionRetriable(final Exception ex) {
