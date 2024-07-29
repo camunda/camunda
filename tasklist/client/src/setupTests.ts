@@ -46,6 +46,7 @@ beforeAll(() => {
   });
 
   vi.mock('react-i18next', () => ({
+    Trans: ({children}: {children: React.ReactNode}) => children,
     useTranslation: () => {
       return {
         t: (str: string) => (en.translation as Record<string, string>)[str],
