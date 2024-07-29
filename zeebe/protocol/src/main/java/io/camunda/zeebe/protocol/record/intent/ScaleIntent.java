@@ -16,8 +16,8 @@
 package io.camunda.zeebe.protocol.record.intent;
 
 public enum ScaleIntent implements Intent {
-  RELOCATE_MESSAGES_START(0),
-  RELOCATE_MESSAGES_STARTED(1);
+  RELOCATION_START(0),
+  RELOCATION_STARTED(1);
 
   private final short value;
 
@@ -33,7 +33,7 @@ public enum ScaleIntent implements Intent {
   @Override
   public boolean isEvent() {
     switch (this) {
-      case RELOCATE_MESSAGES_STARTED:
+      case RELOCATION_STARTED:
         return true;
       default:
         return false;
@@ -43,9 +43,9 @@ public enum ScaleIntent implements Intent {
   public static Intent from(final short value) {
     switch (value) {
       case 0:
-        return RELOCATE_MESSAGES_START;
+        return RELOCATION_START;
       case 1:
-        return RELOCATE_MESSAGES_STARTED;
+        return RELOCATION_STARTED;
       default:
         return Intent.UNKNOWN;
     }
