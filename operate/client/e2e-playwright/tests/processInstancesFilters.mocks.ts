@@ -6,28 +6,26 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  deployProcess,
-  createInstances,
-  createSingleInstance,
-} from '../setup-utils';
+import {zeebeGrpcApi} from '../api/zeebe-grpc';
+
+const {deployProcesses, createInstances, createSingleInstance} = zeebeGrpcApi;
 
 const setup = async () => {
-  await deployProcess(['Filters/processWithMultipleVersions_v_1.bpmn']);
-  await deployProcess(['Filters/processWithMultipleVersions_v_2.bpmn']);
-  await deployProcess(['Filters/processWithAnError.bpmn']);
+  await deployProcesses(['Filters/processWithMultipleVersions_v_1.bpmn']);
+  await deployProcesses(['Filters/processWithMultipleVersions_v_2.bpmn']);
+  await deployProcesses(['Filters/processWithAnError.bpmn']);
 
   await createInstances('processWithMultipleVersions', 1, 1);
   await createInstances('processWithMultipleVersions', 2, 1);
   await createInstances('processWithAnError', 1, 1);
 
-  await deployProcess(['orderProcess_v_1.bpmn']);
+  await deployProcesses(['orderProcess_v_1.bpmn']);
 
   const orderProcessInstance = await createSingleInstance('orderProcess', 1, {
     filtersTest: 123,
   });
 
-  await deployProcess(['callActivityProcess.bpmn', 'calledProcess.bpmn']);
+  await deployProcesses(['callActivityProcess.bpmn', 'calledProcess.bpmn']);
 
   const callActivityProcessInstance = await createSingleInstance(
     'CallActivityProcess',

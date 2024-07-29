@@ -10,10 +10,12 @@ import {setup} from './processes.mocks';
 import {test} from '../test-fixtures';
 import {expect} from '@playwright/test';
 import {convertToQueryString} from '../utils/convertToQueryString';
-import {deployProcess} from '../setup-utils';
+import {zeebeGrpcApi} from '../api/zeebe-grpc';
 import {config} from '../config';
 import {SETUP_WAITING_TIME} from './constants';
 import {Paths} from 'modules/Routes';
+
+const {deployProcesses} = zeebeGrpcApi;
 
 let initialData: Awaited<ReturnType<typeof setup>>;
 
@@ -235,7 +237,7 @@ test.describe('Processes', () => {
 
     await expect(filtersPanel.processNameFilter).toBeDisabled();
 
-    await deployProcess(['newProcess.bpmn']);
+    await deployProcesses(['newProcess.bpmn']);
 
     await expect(page.getByTestId('diagram')).toBeInViewport({timeout: 20000});
 

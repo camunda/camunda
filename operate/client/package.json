@@ -65,6 +65,7 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "7.21.11",
+    "@camunda8/sdk": "^8.6.8",
     "@playwright/test": "1.45.3",
     "@testing-library/jest-dom": "6.4.6",
     "@testing-library/react": "16.0.0",
@@ -97,8 +98,7 @@
     "react-test-renderer": "18.3.1",
     "source-map-explorer": "2.5.3",
     "ts-toolbelt": "9.6.0",
-    "typescript": "5.5.3",
-    "zeebe-node": "8.3.2"
+    "typescript": "5.5.3"
   },
   "lint-staged": {
     "*": [
