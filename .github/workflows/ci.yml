@@ -62,6 +62,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   dummy2:
+    if: always()
     needs: [dummy]
     runs-on: ubuntu-latest
     timeout-minutes: 10
