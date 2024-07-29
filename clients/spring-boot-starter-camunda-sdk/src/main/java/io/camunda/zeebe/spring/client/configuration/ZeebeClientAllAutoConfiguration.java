@@ -18,9 +18,9 @@ package io.camunda.zeebe.spring.client.configuration;
 import static io.camunda.zeebe.spring.client.configuration.PropertyUtil.getOrLegacyOrDefault;
 import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties.DEFAULT;
 
-import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.worker.BackoffSupplier;
-import io.camunda.client.impl.worker.ExponentialBackoffBuilderImpl;
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.worker.BackoffSupplier;
+import io.camunda.zeebe.client.impl.worker.ExponentialBackoffBuilderImpl;
 import io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCustomizer;
 import io.camunda.zeebe.spring.client.jobhandling.CommandExceptionHandlingStrategy;
 import io.camunda.zeebe.spring.client.jobhandling.DefaultCommandExceptionHandlingStrategy;

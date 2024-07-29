@@ -12,8 +12,6 @@ import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstance
 import static java.util.function.Predicate.not;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.PersistenceException;
@@ -21,6 +19,8 @@ import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.AbstractOperationHandler;
 import io.camunda.operate.webapp.zeebe.operation.ModifyProcessZeebeWrapper;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 
 // Modify Process Instance Implementation to execute all given modifications in one Zeebe
 // 'transaction'
-// So for one operation we have only one 'camundaClient.send().join()'
+// So for one operation we have only one 'zeebeClient.send().join()'
 @Component
 public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHandler
     implements ModifyProcessInstanceHandler {
@@ -75,9 +75,9 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
 
   // Needed for tests
   @Override
-  public void setCamundaClient(final CamundaClient camundaClient) {
-    this.camundaClient = camundaClient;
-    modifyProcessZeebeWrapper.setCamundaClient(camundaClient);
+  public void setZeebeClient(final ZeebeClient zeebeClient) {
+    this.zeebeClient = zeebeClient;
+    modifyProcessZeebeWrapper.setZeebeClient(zeebeClient);
   }
 
   private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2

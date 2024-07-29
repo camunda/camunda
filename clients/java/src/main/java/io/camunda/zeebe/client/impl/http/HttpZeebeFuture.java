@@ -39,7 +39,7 @@ public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements 
       return super.get(timeout, unit);
     } catch (final ExecutionException e) {
       throw new ClientException(e);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new ClientException("Failed: interrupted while awaiting response", e);
     } catch (final TimeoutException e) {
@@ -57,7 +57,7 @@ public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements 
   }
 
   public void transportFuture(final Future<?> httpFuture) {
-    this.transportFuture = httpFuture;
+    transportFuture = httpFuture;
 
     // possibly we were already cancelled between calls
     if (isCancelled()) {

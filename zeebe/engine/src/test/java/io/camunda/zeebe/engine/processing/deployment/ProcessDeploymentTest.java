@@ -425,7 +425,7 @@ public final class ProcessDeploymentTest {
   }
 
   @Test
-  public void shouldFilterWithOneDifferentAndOneEqual() {
+  public void shouldNotFilterWithOneDifferentAndOneEqual() {
     // given
     final Record<DeploymentRecordValue> original =
         ENGINE
@@ -447,7 +447,7 @@ public final class ProcessDeploymentTest {
     final var repeatedProcesses = repeated.getValue().getProcessesMetadata();
     assertThat(repeatedProcesses.size()).isEqualTo(originalProcesses.size()).isEqualTo(2);
 
-    assertSameResource(
+    assertDifferentResources(
         findProcess(originalProcesses, processId), findProcess(repeatedProcesses, processId));
     assertDifferentResources(
         findProcess(originalProcesses, processId2), findProcess(repeatedProcesses, processId2));

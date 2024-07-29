@@ -21,14 +21,14 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import io.camunda.process.test.impl.client.CamundaClientNotFoundException;
 import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
 import io.camunda.process.test.impl.client.FlowNodeInstanceState;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
 import io.camunda.process.test.impl.client.ProcessInstanceState;
+import io.camunda.process.test.impl.client.ZeebeClientNotFoundException;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -199,7 +199,7 @@ public class ProcessInstanceAssertTest {
     @Test
     void shouldFailIfNotFound() throws IOException {
       // given
-      doThrow(new CamundaClientNotFoundException())
+      doThrow(new ZeebeClientNotFoundException())
           .when(camundaDataSource)
           .getProcessInstance(PROCESS_INSTANCE_KEY);
 
@@ -290,7 +290,7 @@ public class ProcessInstanceAssertTest {
     @Test
     void shouldFailIfNotFound() throws IOException {
       // given
-      doThrow(new CamundaClientNotFoundException())
+      doThrow(new ZeebeClientNotFoundException())
           .when(camundaDataSource)
           .getProcessInstance(PROCESS_INSTANCE_KEY);
 
@@ -382,7 +382,7 @@ public class ProcessInstanceAssertTest {
     @Test
     void shouldFailIfNotFound() throws IOException {
       // given
-      doThrow(new CamundaClientNotFoundException())
+      doThrow(new ZeebeClientNotFoundException())
           .when(camundaDataSource)
           .getProcessInstance(PROCESS_INSTANCE_KEY);
 

@@ -67,7 +67,7 @@ Implement or extend the respective `Services` your controller invokes in the `se
 
 Extend the Camunda Client with the new command you added to the REST API.
 
-1. In the [CamundaClient](../clients/java/src/main/java/io/camunda/client/CamundaClient.java), add a new command method for your purpose.
+1. In the [ZeebeClient](../clients/java/src/main/java/io/camunda/client/ZeebeClient.java), add a new command method for your purpose.
 2. If you provide new search capabilities for a resource, implement the `TypedSearchQueryRequest` for your resource. This is similar to the interface you provided for the REST gateway part.
 3. If you provide new Zeebe broker commands, consider providing multiple steps guiding the user from required input to optional attributes step by step. The command chain ends in a `FinalCommandStep`.
 4. Implement the command chain or query interface accordingly, like the `ProcessInstanceQueryImpl` or `CompleteUserTaskCommandImpl` do.

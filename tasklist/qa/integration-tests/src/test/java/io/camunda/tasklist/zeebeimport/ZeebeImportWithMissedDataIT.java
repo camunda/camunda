@@ -56,9 +56,7 @@ public class ZeebeImportWithMissedDataIT extends TasklistZeebeIntegrationTest {
     final List<Long> processInstanceKeys =
         IntStream.range(0, 20)
             .mapToLong(
-                i ->
-                    Long.valueOf(
-                        ZeebeTestUtil.startProcessInstance(camundaClient, processId, null)))
+                i -> Long.valueOf(ZeebeTestUtil.startProcessInstance(zeebeClient, processId, null)))
             .boxed()
             .toList();
 

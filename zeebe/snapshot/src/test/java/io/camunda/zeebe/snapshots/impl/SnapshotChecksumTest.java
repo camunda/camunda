@@ -243,10 +243,10 @@ public final class SnapshotChecksumTest {
     final var checksumCalculatedInSteps = SnapshotChecksum.calculate(folder);
 
     // when
-    createChunk(folder, FileBasedSnapshotStore.METADATA_FILE_NAME);
+    createChunk(folder, FileBasedSnapshotStoreImpl.METADATA_FILE_NAME);
     // This is how checksum is calculated when persisting a transient snapshot
     checksumCalculatedInSteps.updateFromFile(
-        folder.resolve(FileBasedSnapshotStore.METADATA_FILE_NAME));
+        folder.resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME));
 
     // This is how checksum is calculated when verifying
     final ImmutableChecksumsSFV checksumCalculatedAtOnce = SnapshotChecksum.calculate(folder);

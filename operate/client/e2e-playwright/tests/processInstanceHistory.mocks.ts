@@ -6,20 +6,24 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ZBWorkerTaskHandler} from 'zeebe-node';
-import {
-  deployProcess,
-  createSingleInstance,
-  completeTask,
-} from '../setup-utils';
+import {ZBWorkerTaskHandler} from '@camunda8/sdk/dist/zeebe/types';
+import {zeebeGrpcApi} from '../api/zeebe-grpc';
+
+const {deployProcesses, createSingleInstance, completeTask} = zeebeGrpcApi;
 
 export async function setup() {
-  await deployProcess(['manyFlowNodeInstancesProcess.bpmn', 'bigProcess.bpmn']);
+  await deployProcesses([
+    'manyFlowNodeInstancesProcess.bpmn',
+    'bigProcess.bpmn',
+  ]);
 
   const manyFlowNodeInstancesProcessInstance = await createSingleInstance(
     'manyFlowNodeInstancesProcess',
     1,
-    {i: 0, loopCardinality: 130},
+    {
+      i: 0,
+      loopCardinality: 130,
+    },
   );
 
   const bigProcessInstance = await createSingleInstance('bigProcess', 1, {
@@ -29,7 +33,7 @@ export async function setup() {
   });
 
   const incrementTaskHandler: ZBWorkerTaskHandler = (job) => {
-    return job.complete({...job.variables, i: job.variables.i + 1});
+    return job.complete({...job.variables, i: job.variables.i ?? 0 + 1});
   };
   completeTask('increment', false, {}, incrementTaskHandler, 50);
 

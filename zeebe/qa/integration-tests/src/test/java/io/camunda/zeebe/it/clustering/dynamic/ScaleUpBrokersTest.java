@@ -12,7 +12,7 @@ import static io.camunda.zeebe.it.clustering.dynamic.Utils.createInstanceWithAJo
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.scaleAndWait;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -41,7 +41,7 @@ final class ScaleUpBrokersTest {
 
   private static final int PARTITIONS_COUNT = 3;
   private static final String JOB_TYPE = "job";
-  @AutoCloseResource CamundaClient zeebeClient;
+  @AutoCloseResource ZeebeClient zeebeClient;
 
   private final List<TestStandaloneBroker> newBrokers = new ArrayList<>();
 

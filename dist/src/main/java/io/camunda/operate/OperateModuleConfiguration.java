@@ -10,7 +10,6 @@ package io.camunda.operate;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.gateway.Gateway;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
@@ -39,7 +38,6 @@ import org.springframework.context.annotation.Profile;
     // use fully qualified names as bean name, as we have classes with same names for different
     // versions of importer
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@EnableAutoConfiguration
 @Profile("operate")
 public class OperateModuleConfiguration {
 

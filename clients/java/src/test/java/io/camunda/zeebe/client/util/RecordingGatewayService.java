@@ -18,7 +18,6 @@ package io.camunda.zeebe.client.util;
 import com.google.protobuf.GeneratedMessageV3;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
@@ -498,8 +497,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
                 .build());
   }
 
-  public void onEvaluateDecisionRequest(
-      final GatewayOuterClass.EvaluateDecisionResponse evaluateDecisionResponse) {
+  public void onEvaluateDecisionRequest(final EvaluateDecisionResponse evaluateDecisionResponse) {
     addRequestHandler(EvaluateDecisionRequest.class, request -> evaluateDecisionResponse);
   }
 
@@ -589,6 +587,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
         });
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends GeneratedMessageV3> T getLastRequest() {
     return (T) requests.getLast();
   }

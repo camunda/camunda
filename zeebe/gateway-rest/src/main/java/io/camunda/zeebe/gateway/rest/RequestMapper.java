@@ -20,6 +20,7 @@ import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
@@ -119,6 +120,18 @@ public class RequestMapper {
                             activationRequest, JobActivationRequest::getFetchVariable),
                         getLongOrZero(
                             activationRequest, JobActivationRequest::getRequestTimeout))));
+  }
+
+  public static Either<ProblemDetail, FailJobRequest> toJobFailRequest(
+      final JobFailRequest failRequest, final long jobKey) {
+
+    return Either.right(
+        new FailJobRequest(
+            jobKey,
+            getIntOrZero(failRequest, JobFailRequest::getRetries),
+            getStringOrEmpty(failRequest, JobFailRequest::getErrorMessage),
+            getLongOrZero(failRequest, JobFailRequest::getRetryBackOff),
+            getMapOrEmpty(failRequest, JobFailRequest::getVariables)));
   }
 
   private static Optional<ProblemDetail> validateAssignmentRequest(
@@ -269,9 +282,8 @@ public class RequestMapper {
     return new CamundaGroup(groupRequest.getId(), groupRequest.getName());
   }
 
-  private static Map<String, Object> getMapOrEmpty(
-      final UserTaskCompletionRequest request,
-      final Function<UserTaskCompletionRequest, Map<String, Object>> variablesExtractor) {
+  private static <R> Map<String, Object> getMapOrEmpty(
+      final R request, final Function<R, Map<String, Object>> variablesExtractor) {
     return request == null ? Map.of() : variablesExtractor.apply(request);
   }
 
@@ -292,6 +304,11 @@ public class RequestMapper {
     return value == null ? List.of() : value;
   }
 
+  private static <R> int getIntOrZero(final R request, final Function<R, Integer> valueExtractor) {
+    final Integer value = request == null ? null : valueExtractor.apply(request);
+    return value == null ? 0 : value;
+  }
+
   public record CompleteUserTaskRequest(
       long userTaskKey, Map<String, Object> variables, String action) {}
 
@@ -299,4 +316,11 @@ public class RequestMapper {
 
   public record AssignUserTaskRequest(
       long userTaskKey, String assignee, String action, boolean allowOverride) {}
+
+  public record FailJobRequest(
+      long jobKey,
+      int retries,
+      String errorMessage,
+      Long retryBackoff,
+      Map<String, Object> variables) {}
 }

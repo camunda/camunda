@@ -6,15 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  deployProcess,
-  createSingleInstance,
-  deployDecision,
-} from '../setup-utils';
+import {zeebeGrpcApi} from '../api/zeebe-grpc';
+
+const {deployDecisions, deployProcesses, createSingleInstance} = zeebeGrpcApi;
 
 const setup = async () => {
-  const decision = await deployDecision(['invoiceBusinessDecisions.dmn']);
-  await deployProcess(['invoice.bpmn']);
+  const {deployments} = await deployDecisions(['invoiceBusinessDecisions.dmn']);
+  await deployProcesses(['invoice.bpmn']);
 
   const processInstanceWithFailedDecision = await createSingleInstance(
     'invoice',
@@ -23,7 +21,7 @@ const setup = async () => {
 
   return {
     processInstanceWithFailedDecision,
-    decisionKeys: (decision[0]?.deployments ?? [])
+    decisionKeys: (deployments ?? [])
       //@ts-expect-error Property 'Metadata' does not exist on type 'DecisionDeployment'.ts(2339)
       .filter(({Metadata}) => Metadata === 'decision')
       .map(({decision}) => {

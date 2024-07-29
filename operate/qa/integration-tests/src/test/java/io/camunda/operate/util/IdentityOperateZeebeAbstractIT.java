@@ -48,7 +48,7 @@ public abstract class IdentityOperateZeebeAbstractIT extends OperateZeebeAbstrac
         beanFactory
             .getBean(
                 OperateTester.class,
-                camundaClient,
+                zeebeClient,
                 mockMvcTestRule,
                 searchTestRule,
                 IdentityTester.jwtDecoder)

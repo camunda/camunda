@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.annotation;
 
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import java.lang.annotation.*;
 
 @Target(ElementType.METHOD)
@@ -30,7 +31,7 @@ public @interface JobWorker {
   String type() default "";
 
   /**
-   * set to empty string which leads to default from CamundaClientBuilderImpl being used in
+   * set to empty string which leads to default from ZeebeClientBuilderImpl being used in
    * ZeebeWorkerAnnotationProcessor
    */
   String name() default "";
@@ -63,8 +64,8 @@ public @interface JobWorker {
 
   /**
    * Set the request timeout (in seconds) for activate job request used to poll for new job. If no
-   * request timeout is set then the default is used from the {@link
-   * io.camunda.client.CamundaClientConfiguration ZeebeClientConfigurationImpl}
+   * request timeout is set then the default is used from the {@link ZeebeClientConfiguration
+   * ZeebeClientConfigurationImpl}
    */
   long requestTimeout() default -1L;
 
@@ -72,7 +73,7 @@ public @interface JobWorker {
    * Set the maximal interval (in milliseconds) between polling for new jobs. A job worker will
    * automatically try to always activate new jobs after completing jobs. If no jobs can be
    * activated after completing the worker will periodically poll for new jobs. If no poll interval
-   * is set then the default is used from the {@link io.camunda.client.CamundaClientConfiguration}
+   * is set then the default is used from the {@link ZeebeClientConfiguration}
    */
   long pollInterval() default -1L;
 

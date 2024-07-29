@@ -17,6 +17,8 @@ package io.camunda.zeebe.client;
 
 import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
+import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
@@ -25,10 +27,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 
-/**
- * @deprecated since 8.6 for removal with 8.8
- */
-@Deprecated
 public interface ZeebeClientBuilder {
 
   /**
@@ -74,14 +72,14 @@ public interface ZeebeClientBuilder {
   /**
    * @param tenantId the tenant identifier which is used for tenant-aware commands when no tenant
    *     identifier is set. The default value is {@link
-   *     io.camunda.zeebe.client.api.command.CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.
+   *     CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.
    */
   ZeebeClientBuilder defaultTenantId(String tenantId);
 
   /**
    * @param tenantIds the tenant identifiers which are used for job-activation commands when no
    *     tenant identifiers are set. The default value contains only {@link
-   *     io.camunda.zeebe.client.api.command.CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.
+   *     CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.
    */
   ZeebeClientBuilder defaultJobWorkerTenantIds(List<String> tenantIds);
 
@@ -113,8 +111,7 @@ public interface ZeebeClientBuilder {
    * Allows passing a custom executor service that will be shared by all job workers created via
    * this client.
    *
-   * <p>Polling and handling jobs (e.g. via {@link io.camunda.zeebe.client.api.worker.JobHandler}
-   * will all be invoked on this executor.
+   * <p>Polling and handling jobs (e.g. via {@link JobHandler} will all be invoked on this executor.
    *
    * <p>When non-null, this setting override {@link #numJobWorkerExecutionThreads(int)}.
    *

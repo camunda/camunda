@@ -295,6 +295,7 @@ public class ActorControl implements ConcurrencyControl {
    * @param callback The throwable is <code>null</code> when all futures are completed successfully.
    *     Otherwise, it holds the exception of the last completed future.
    */
+  @Override
   public <T> void runOnCompletion(
       final Collection<ActorFuture<T>> futures, final Consumer<Throwable> callback) {
     if (!futures.isEmpty()) {

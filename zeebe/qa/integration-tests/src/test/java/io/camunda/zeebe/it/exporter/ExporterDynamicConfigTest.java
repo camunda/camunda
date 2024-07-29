@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.exporter;
 
 import static org.hamcrest.Matchers.greaterThan;
 
-import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 final class ExporterDynamicConfigTest {
 
   @TestZeebe private final TestStandaloneBroker zeebe = new TestStandaloneBroker();
-  @AutoCloseResource private CamundaClient client;
+  @AutoCloseResource private ZeebeClient client;
 
   @BeforeEach
   void beforeEach() {

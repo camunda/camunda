@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.api.response;
 
 import io.camunda.zeebe.client.api.ExperimentalApi;
+import io.camunda.zeebe.client.api.command.ClientException;
 import java.util.Map;
 
 public interface ActivatedJob {
@@ -99,8 +100,7 @@ public interface ActivatedJob {
 
   /**
    * @return de-serialized variable value or null if the provided variable name is present among the
-   *     available variables, otherwise throw a {@link
-   *     io.camunda.zeebe.client.api.command.ClientException}
+   *     available variables, otherwise throw a {@link ClientException}
    */
   Object getVariable(String name);
 

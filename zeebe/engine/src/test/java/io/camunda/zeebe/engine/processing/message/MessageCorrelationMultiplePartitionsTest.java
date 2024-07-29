@@ -238,6 +238,49 @@ public final class MessageCorrelationMultiplePartitionsTest {
                 TENANT_IDS.get(START_PARTITION_ID + 2)));
   }
 
+  @Test
+  public void shouldCorrelateUsingMessageCorrelationOnDifferentPartitions() {
+    // given
+    final ProcessInstanceCreationClient processInstanceCreationClient =
+        engine.processInstance().ofBpmnProcessId(PROCESS_ID);
+    final long processInstanceKey1 =
+        processInstanceCreationClient
+            .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID))
+            .withTenantId(TENANT_IDS.get(START_PARTITION_ID))
+            .create();
+    final long processInstanceKey2 =
+        processInstanceCreationClient
+            .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 1))
+            .withTenantId(TENANT_IDS.get(START_PARTITION_ID + 1))
+            .create();
+    final long processInstanceKey3 =
+        processInstanceCreationClient
+            .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 2))
+            .withTenantId(TENANT_IDS.get(START_PARTITION_ID + 2))
+            .create();
+
+    // when
+    engine.forEachPartition(
+        partitionId ->
+            engine
+                .messageCorrelation()
+                .onPartition(partitionId)
+                .withName("message")
+                .withCorrelationKey(CORRELATION_KEYS.get(partitionId))
+                .withVariables(asMsgPack("p", "p" + partitionId))
+                .withTenantId(TENANT_IDS.get(partitionId))
+                .correlate());
+
+    // then
+    final List<String> correlatedValues =
+        Arrays.asList(
+            ProcessInstances.getCurrentVariables(processInstanceKey1).get("p"),
+            ProcessInstances.getCurrentVariables(processInstanceKey2).get("p"),
+            ProcessInstances.getCurrentVariables(processInstanceKey3).get("p"));
+
+    assertThat(correlatedValues).contains("\"p1\"", "\"p2\"", "\"p3\"");
+  }
+
   private int getPartitionId(final String correlationKey) {
     final List<Integer> partitionIds = engine.getPartitionIds();
     return SubscriptionUtil.getSubscriptionPartitionId(

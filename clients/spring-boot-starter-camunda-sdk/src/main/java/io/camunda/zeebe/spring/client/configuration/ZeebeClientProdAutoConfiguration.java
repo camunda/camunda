@@ -15,10 +15,10 @@
  */
 package io.camunda.zeebe.spring.client.configuration;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.JsonMapper;
-import io.camunda.client.impl.CamundaClientImpl;
-import io.camunda.client.impl.util.ExecutorResource;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.impl.ZeebeClientImpl;
+import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
@@ -71,18 +71,18 @@ public class ZeebeClientProdAutoConfiguration {
   }
 
   @Bean(destroyMethod = "close")
-  public CamundaClient zeebeClient(final ZeebeClientConfigurationImpl configuration) {
-    LOG.info("Creating CamundaClient using ZeebeClientConfigurationImpl [" + configuration + "]");
+  public ZeebeClient zeebeClient(final ZeebeClientConfigurationImpl configuration) {
+    LOG.info("Creating ZeebeClient using ZeebeClientConfigurationImpl [" + configuration + "]");
     final ScheduledExecutorService jobWorkerExecutor = configuration.jobWorkerExecutor();
     if (jobWorkerExecutor != null) {
-      final ManagedChannel managedChannel = CamundaClientImpl.buildChannel(configuration);
+      final ManagedChannel managedChannel = ZeebeClientImpl.buildChannel(configuration);
       final GatewayGrpc.GatewayStub gatewayStub =
-          CamundaClientImpl.buildGatewayStub(managedChannel, configuration);
+          ZeebeClientImpl.buildGatewayStub(managedChannel, configuration);
       final ExecutorResource executorResource =
           new ExecutorResource(jobWorkerExecutor, configuration.ownsJobWorkerExecutor());
-      return new CamundaClientImpl(configuration, managedChannel, gatewayStub, executorResource);
+      return new ZeebeClientImpl(configuration, managedChannel, gatewayStub, executorResource);
     } else {
-      return new CamundaClientImpl(configuration);
+      return new ZeebeClientImpl(configuration);
     }
   }
 }

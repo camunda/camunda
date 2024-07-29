@@ -53,6 +53,59 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/JobActivationResponse"
+  /jobs/{jobKey}/failure:
+    post:
+      tags:
+        - Job
+      summary: Fail job
+      description: |
+        Mark the job as failed
+      parameters:
+        - name: jobKey
+          in: path
+          required: true
+          description: The key of the job to fail.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobFailRequest"
+      responses:
+        '204':
+          description: The job is failed.
+        '400':
+          description: >
+            The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '404':
+          description: >
+            The job with the given jobKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '409':
+          description: >
+            The job with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 
   /user-tasks/{userTaskKey}/completion:
     post:
@@ -1419,6 +1472,36 @@ components:
         tenantId:
           description: the id of the tenant that owns the job
           type: string
+    JobFailRequest:
+      type: object
+      properties:
+        retries:
+          description: >
+            The amount of retries the job should have left
+          type: integer
+          format: int32
+          default: 0
+        errorMessage:
+          description: >
+            An optional message describing why the job failed. This is particularly useful if a job
+            runs out of retries and an incident is raised, as this message can help explain why an
+            incident was raised.
+          type: string
+          nullable: true
+        retryBackOff:
+          description: >
+            The backoff timeout (in ms) for the next retry.
+          type: integer
+          format: int64
+          default: 0
+        variables:
+          additionalProperties: true
+          description: >
+            JSON object that will instantiate the variables at the local scope of the job's
+            associated task.
+          type: object
+          nullable: true
+
     ProblemDetail:
       description: >
         A Problem detail object as described in [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457).

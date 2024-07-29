@@ -79,7 +79,7 @@ public class OperateSearchAbstractIT {
     // Start elasticsearch/opensearch
     searchContainerManager.startContainer();
 
-    // operateTester = beanFactory.getBean(OperateJ5Tester.class, camundaClient);
+    // operateTester = beanFactory.getBean(OperateJ5Tester.class, zeebeClient);
 
     // Required to keep search from hanging between test suites
     processCache.clearCache();
