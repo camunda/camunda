@@ -59,6 +59,9 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
     intentFollowupProperty.setValue(commandDistributionRecord.getIntentForFollowup().value());
 
     final var commandValueFollowup = commandDistributionRecord.getCommandValueForFollowup();
+    if (commandValueFollowup == null) {
+      return this;
+    }
     final var valueBufferFollowup = new UnsafeBuffer(0, 0);
     final int encodedLengthFollowup = commandValueFollowup.getLength();
     valueBufferFollowup.wrap(new byte[encodedLengthFollowup]);
