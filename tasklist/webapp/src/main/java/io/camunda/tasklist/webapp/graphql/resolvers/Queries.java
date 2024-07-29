@@ -7,8 +7,8 @@
  */
 package io.camunda.tasklist.webapp.graphql.resolvers;
 
-import static io.camunda.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 import static io.camunda.tasklist.util.SpringContextHolder.getBean;
+import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLNonNull;

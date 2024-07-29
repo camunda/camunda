@@ -13,11 +13,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
+import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -102,21 +102,21 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
         final var bpmnProcessId = "Process_11hxie4";
         final var flowNodeBpmnId = "Activity_14emqkd";
 
-        camundaClient
+        zeebeClient
             .newDeployResourceCommand()
             .addResourceFromClasspath("formDeployedV1.form")
             .send()
             .join();
 
         v2DeployedData =
-            camundaClient
+            zeebeClient
                 .newDeployResourceCommand()
                 .addResourceFromClasspath("formDeployedV2.form")
                 .send()
                 .join();
 
         lastVersionDeployedData =
-            camundaClient
+            zeebeClient
                 .newDeployResourceCommand()
                 .addResourceFromClasspath("formDeployedV3.form")
                 .send()
@@ -124,7 +124,7 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
 
         final var formKey =
             lastVersionDeployedData.getForm().stream().findFirst().get().getFormKey();
-        camundaClient.newDeleteResourceCommand(formKey).send().join();
+        zeebeClient.newDeleteResourceCommand(formKey).send().join();
 
         tester
             .having()

@@ -12,7 +12,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.CamundaClient;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestApplication;
@@ -24,6 +23,7 @@ import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.webapps.zeebe.StandalonePartitionSupplier;
+import io.camunda.zeebe.client.ZeebeClient;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -62,7 +62,7 @@ public class OperateZeebeSearchAbstractIT {
 
   // Prevents the zeebe client from being constructed. Components that need to connect to zeebe
   // should use the one in the zeebe container manager
-  @MockBean protected CamundaClient mockCamundaClient;
+  @MockBean protected ZeebeClient mockZeebeClient;
 
   @Autowired protected ZeebeContainerManager zeebeContainerManager;
   @Autowired protected SearchContainerManager searchContainerManager;
@@ -94,8 +94,8 @@ public class OperateZeebeSearchAbstractIT {
     zeebeContainerManager.startContainer();
     searchContainerManager.startContainer();
 
-    final CamundaClient camundaClient = zeebeContainerManager.getClient();
-    operateTester = beanFactory.getBean(OperateJ5Tester.class, camundaClient);
+    final ZeebeClient zeebeClient = zeebeContainerManager.getClient();
+    operateTester = beanFactory.getBean(OperateJ5Tester.class, zeebeClient);
 
     // Required to keep search and zeebe from hanging between test suites
     processCache.clearCache();
@@ -103,7 +103,7 @@ public class OperateZeebeSearchAbstractIT {
     importPositionHolder.clearCache();
     importPositionHolder.scheduleImportPositionUpdateTask();
 
-    final var partitionSupplier = new StandalonePartitionSupplier(camundaClient);
+    final var partitionSupplier = new StandalonePartitionSupplier(zeebeClient);
     partitionHolder.setPartitionSupplier(partitionSupplier);
 
     // Allows time for everything to settle and indices to show up

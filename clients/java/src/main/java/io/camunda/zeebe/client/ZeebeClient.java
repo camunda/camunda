@@ -36,18 +36,14 @@ import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.search.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeClientCloudBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 
-/**
- * The client to communicate with a Zeebe broker/cluster.
- *
- * @deprecated since 8.6 for removal with 8.8
- */
-@Deprecated
+/** The client to communicate with a Zeebe broker/cluster. */
 public interface ZeebeClient extends AutoCloseable, JobClient {
 
   /**
@@ -571,4 +567,22 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   UnassignUserTaskCommandStep1 newUserTaskUnassignCommand(long userTaskKey);
+
+  /**
+   * Executes a search request to query process instances.
+   *
+   * <pre>
+   * long processInstanceKey = ...;
+   *
+   * zeebeClient
+   *  .newProcessInstanceQuery()
+   *  .filter((f) -> f.processInstanceKeys(processInstanceKey))
+   *  .sort((s) -> s.startDate().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the process instance query
+   */
+  ProcessInstanceQuery newProcessInstanceQuery();
 }

@@ -9,8 +9,8 @@ package io.camunda.zeebe.it.gateway.rest;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ProblemException;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.it.gateway.rest.util.DisableTopologyFilter;
 import io.camunda.zeebe.it.gateway.rest.util.DisableUserTasksTestFilter;
@@ -46,7 +46,7 @@ public class FilterIT {
               })
           .build();
 
-  @AutoCloseResource private CamundaClient client;
+  @AutoCloseResource private ZeebeClient client;
 
   @BeforeEach
   void initClient() {

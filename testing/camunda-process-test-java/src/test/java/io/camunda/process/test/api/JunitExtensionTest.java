@@ -20,12 +20,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.containers.ZeebeContainer;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -58,7 +58,7 @@ public class JunitExtensionTest {
   @Mock private Store store;
 
   // to be injected
-  private CamundaClient client;
+  private ZeebeClient client;
   private CamundaProcessTestContext camundaProcessTestContext;
 
   @BeforeEach
@@ -89,7 +89,7 @@ public class JunitExtensionTest {
     // then
     assertThat(client).isNotNull();
 
-    final CamundaClientConfiguration configuration = client.getConfiguration();
+    final ZeebeClientConfiguration configuration = client.getConfiguration();
     assertThat(configuration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
     assertThat(configuration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
   }
@@ -119,10 +119,10 @@ public class JunitExtensionTest {
     extension.beforeEach(extensionContext);
 
     // then
-    final CamundaClient newZeebeClient = camundaProcessTestContext.createClient();
+    final ZeebeClient newZeebeClient = camundaProcessTestContext.createClient();
     assertThat(newZeebeClient).isNotNull();
 
-    final CamundaClientConfiguration configuration = newZeebeClient.getConfiguration();
+    final ZeebeClientConfiguration configuration = newZeebeClient.getConfiguration();
     assertThat(configuration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
     assertThat(configuration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
   }
@@ -137,11 +137,11 @@ public class JunitExtensionTest {
     extension.beforeEach(extensionContext);
 
     // then
-    final CamundaClient newZeebeClient =
+    final ZeebeClient newZeebeClient =
         camundaProcessTestContext.createClient(builder -> builder.defaultJobWorkerName("test"));
     assertThat(newZeebeClient).isNotNull();
 
-    final CamundaClientConfiguration configuration = newZeebeClient.getConfiguration();
+    final ZeebeClientConfiguration configuration = newZeebeClient.getConfiguration();
     assertThat(configuration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
     assertThat(configuration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
     assertThat(configuration.getDefaultJobWorkerName()).isEqualTo("test");

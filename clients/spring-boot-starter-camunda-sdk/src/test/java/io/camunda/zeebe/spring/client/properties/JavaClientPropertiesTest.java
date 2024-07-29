@@ -17,8 +17,8 @@ package io.camunda.zeebe.spring.client.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.api.JsonMapper;
-import io.camunda.client.impl.CamundaObjectMapper;
+import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -85,7 +85,7 @@ public class JavaClientPropertiesTest {
     @Bean("jsonMapper")
     @ConditionalOnMissingBean(JsonMapper.class)
     public JsonMapper jsonMapper() {
-      return new CamundaObjectMapper();
+      return new ZeebeObjectMapper();
     }
   }
 }

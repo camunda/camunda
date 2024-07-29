@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.exporter;
 import static io.camunda.zeebe.test.StableValuePredicate.hasStableValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.ExportersActuator;
@@ -48,7 +48,7 @@ final class ExporterDisableTest {
           .withGatewaysCount(1)
           .build();
 
-  @AutoCloseResource private CamundaClient client;
+  @AutoCloseResource private ZeebeClient client;
   private ExportersActuator actuator;
 
   @BeforeEach

@@ -95,7 +95,7 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
   private void startZeebe() {
     zeebeExtension.beforeEach(null);
-    ReflectionTestUtils.setField(partitionSupplier, "camundaClient", zeebeExtension.getClient());
+    ReflectionTestUtils.setField(partitionSupplier, "zeebeClient", zeebeExtension.getClient());
   }
 
   @Test

@@ -18,11 +18,15 @@ package io.camunda.zeebe.client;
 import static io.camunda.zeebe.client.ClientProperties.CLOUD_REGION;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID;
+import static io.camunda.zeebe.client.ClientProperties.GRPC_ADDRESS;
 import static io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.zeebe.client.ClientProperties.MAX_METADATA_SIZE;
+import static io.camunda.zeebe.client.ClientProperties.PREFER_REST_OVER_GRPC;
+import static io.camunda.zeebe.client.ClientProperties.REST_ADDRESS;
 import static io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.zeebe.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_GATEWAY_ADDRESS;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_GRPC_ADDRESS;
@@ -36,7 +40,6 @@ import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONN
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PREFER_REST_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.REST_ADDRESS_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.USE_DEFAULT_RETRY_POLICY_VAR;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -192,7 +195,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldEnableStreamingWithEnvironmentVariableWhenApplied() {
     // given
-    Environment.system().put(ZEEBE_CLIENT_WORKER_STREAM_ENABLED, "true");
+    Environment.system().put(CAMUNDA_CLIENT_WORKER_STREAM_ENABLED, "true");
 
     final ZeebeClientBuilderImpl builder1 = new ZeebeClientBuilderImpl();
     final ZeebeClientBuilderImpl builder2 = new ZeebeClientBuilderImpl();
@@ -209,7 +212,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void environmentVariableShouldOverrideProperty() {
     // given
-    Environment.system().put(ZEEBE_CLIENT_WORKER_STREAM_ENABLED, "true");
+    Environment.system().put(CAMUNDA_CLIENT_WORKER_STREAM_ENABLED, "true");
     final Properties properties = new Properties();
     properties.putIfAbsent(STREAM_ENABLED, "false");
 
@@ -312,7 +315,7 @@ public final class ZeebeClientTest extends ClientTest {
     builder.build();
 
     // then
-    assertThat(builder.getMaxMetadataSize()).isEqualTo(10 * ONE_KB);
+    assertThat(builder.getMaxMetadataSize()).isEqualTo(10 * 1024);
   }
 
   @Test
@@ -343,36 +346,6 @@ public final class ZeebeClientTest extends ClientTest {
 
     // then
     assertThat(builder.getMaxMetadataSize()).isEqualTo(10 * ONE_KB);
-  }
-
-  @Test
-  public void shouldOverrideMaxMessageSizeWithEnvVar() {
-    // given
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-    builder.applyEnvironmentVariableOverrides(Boolean.TRUE);
-    builder.maxMessageSize(4 * ONE_MB);
-    Environment.system().put(MAX_MESSAGE_SIZE, "10MB");
-
-    // when
-    builder.build();
-
-    // then
-    assertThat(builder.getMaxMessageSize()).isEqualTo(10 * ONE_MB);
-  }
-
-  @Test
-  public void shouldOverrideMaxMetadataSizeWithEnvVar() {
-    // given
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-    builder.applyEnvironmentVariableOverrides(Boolean.TRUE);
-    builder.maxMetadataSize(16 * ONE_KB);
-    Environment.system().put(MAX_METADATA_SIZE, "8KB");
-
-    // when
-    builder.build();
-
-    // then
-    assertThat(builder.getMaxMetadataSize()).isEqualTo(8 * ONE_KB);
   }
 
   @Test
@@ -580,7 +553,7 @@ public final class ZeebeClientTest extends ClientTest {
     // given
     final URI restAddress = new URI("localhost:9090");
     final Properties properties = new Properties();
-    properties.setProperty(ClientProperties.REST_ADDRESS, restAddress.toString());
+    properties.setProperty(REST_ADDRESS, restAddress.toString());
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.withProperties(properties);
 
@@ -624,7 +597,7 @@ public final class ZeebeClientTest extends ClientTest {
     // given
     final URI grpcAddress = new URI("https://localhost:9090");
     final Properties properties = new Properties();
-    properties.setProperty(ClientProperties.GRPC_ADDRESS, grpcAddress.toString());
+    properties.setProperty(GRPC_ADDRESS, grpcAddress.toString());
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     builder.withProperties(properties);
 
@@ -668,7 +641,7 @@ public final class ZeebeClientTest extends ClientTest {
     // given
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     final Properties properties = new Properties();
-    properties.setProperty(ClientProperties.PREFER_REST_OVER_GRPC, "false");
+    properties.setProperty(PREFER_REST_OVER_GRPC, "false");
 
     // when
     builder.withProperties(properties);

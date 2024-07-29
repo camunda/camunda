@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.event;
 
-import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.SmartLifecycle;
 
@@ -25,10 +25,10 @@ public class ZeebeLifecycleEventProducer implements SmartLifecycle {
 
   private final ApplicationEventPublisher publisher;
 
-  private final CamundaClient client;
+  private final ZeebeClient client;
 
   public ZeebeLifecycleEventProducer(
-      final CamundaClient client, final ApplicationEventPublisher publisher) {
+      final ZeebeClient client, final ApplicationEventPublisher publisher) {
     this.client = client;
     this.publisher = publisher;
   }
