@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.commons.actor;
+package io.camunda.application.commons.actor;
 
-import io.camunda.commons.actor.ActorIdleStrategyConfiguration.IdleStrategyProperties;
+import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategyProperties;
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import java.time.Duration;
 import java.util.function.Supplier;

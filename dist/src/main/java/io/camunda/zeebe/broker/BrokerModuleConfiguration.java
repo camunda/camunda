@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
-import io.camunda.commons.configuration.BrokerBasedConfiguration;
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.SystemContext;
@@ -18,8 +18,6 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -36,13 +34,6 @@ import org.springframework.context.annotation.Profile;
       "io.camunda.zeebe.shared",
       "io.camunda.authentication"
     })
-@ConfigurationPropertiesScan(
-    basePackages = {
-      "io.camunda.zeebe.broker",
-      "io.camunda.zeebe.shared",
-      "io.camunda.authentication"
-    })
-@EnableAutoConfiguration
 @Profile("broker")
 public class BrokerModuleConfiguration implements CloseableSilently {
   private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;

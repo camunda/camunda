@@ -9,7 +9,6 @@ package io.camunda.webapps;
 
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.webapps.WebappsModuleConfiguration.WebappsProperties;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -19,7 +18,6 @@ import org.springframework.context.annotation.Configuration;
 /** Configuration for shared spring components used by webapps */
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(basePackages = "io.camunda.webapps")
-@EnableAutoConfiguration
 @EnableConfigurationProperties(WebappsProperties.class)
 @ConditionalOnProperty(WebappsConfigurationInitializer.CAMUNDA_WEBAPPS_ENABLED_PROPERTY)
 public class WebappsModuleConfiguration {
