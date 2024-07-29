@@ -145,7 +145,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     connection.setDoOutput(true);
     connection.setReadTimeout(toIntExact(readTimeout.toMillis()));
     connection.setConnectTimeout(toIntExact(connectionTimeout.toMillis()));
-    connection.setRequestProperty("User-Agent", "camunda-client-java/" + VersionUtil.getVersion());
+    connection.setRequestProperty("User-Agent", "zeebe-client-java/" + VersionUtil.getVersion());
 
     try (final OutputStream os = connection.getOutputStream()) {
       final byte[] input = payload.getBytes(StandardCharsets.UTF_8);

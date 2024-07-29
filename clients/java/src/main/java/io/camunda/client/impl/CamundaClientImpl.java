@@ -181,7 +181,7 @@ public final class CamundaClientImpl implements CamundaClient {
 
     configureConnectionSecurity(config, channelBuilder);
     channelBuilder.keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS);
-    channelBuilder.userAgent("camunda-client-java/" + VersionUtil.getVersion());
+    channelBuilder.userAgent("zeebe-client-java/" + VersionUtil.getVersion());
     channelBuilder.maxInboundMessageSize(config.getMaxMessageSize());
     channelBuilder.maxInboundMetadataSize(config.getMaxMetadataSize());
 
