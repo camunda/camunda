@@ -23,10 +23,10 @@ import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobs
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
-import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
+import io.camunda.zeebe.client.protocol.rest.ActivatedJob;
 import io.camunda.zeebe.client.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.client.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
@@ -96,7 +96,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     // then
     assertThat(response.getJobs()).hasSize(2);
 
-    ActivatedJob job = response.getJobs().get(0);
+    io.camunda.zeebe.client.api.response.ActivatedJob job = response.getJobs().get(0);
     assertThat(job.getKey()).isEqualTo(activatedJob1.getKey());
     assertThat(job.getType()).isEqualTo(activatedJob1.getType());
     assertThat(job.getBpmnProcessId()).isEqualTo(activatedJob1.getBpmnProcessId());
@@ -363,12 +363,12 @@ public final class ActivateJobsRestTest extends ClientRestTest {
 
     assertThat(response.getJobs()).hasSize(2);
 
-    final ActivatedJob job1 = response.getJobs().get(0);
+    final io.camunda.zeebe.client.api.response.ActivatedJob job1 = response.getJobs().get(0);
     assertThat(job1.getVariable("key")).isEqualTo("val");
     assertThat(job1.getVariable("foo")).isEqualTo("bar");
     assertThat(job1.getVariable("joe")).isEqualTo("doe");
 
-    final ActivatedJob job2 = response.getJobs().get(1);
+    final io.camunda.zeebe.client.api.response.ActivatedJob job2 = response.getJobs().get(1);
     assertThat(job2.getVariable("key")).isEqualTo("val2");
     assertThat(job2.getVariable("foo")).isEqualTo("bar2");
     assertThat(job2.getVariable("joe")).isEqualTo("doe2");
