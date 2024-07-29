@@ -11,6 +11,7 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.value.ScaleRecordValue;
 import org.agrona.DirectBuffer;
@@ -32,6 +33,10 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
   // ScaleRelocateMessageSubscriptionApply
   private final ObjectProperty<MessageSubscriptionRecord> messageSubscriptionRecord =
       new ObjectProperty<>("messageSubscriptionRecord", new MessageSubscriptionRecord());
+
+  // ScaleRelocateMessageApply
+  private final ObjectProperty<MessageRecord> messageRecord =
+      new ObjectProperty<>("messageRecord", new MessageRecord());
 
   public ScaleRecord() {
     super(4);
@@ -66,6 +71,14 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
 
   public void setMessageSubscriptionRecord(final MessageSubscriptionRecord record) {
     messageSubscriptionRecord.getValue().wrap(record);
+  }
+
+  public MessageRecord getMessageRecord() {
+    return messageRecord.getValue();
+  }
+
+  public void setMessageRecord(final MessageRecord messageRecord) {
+    this.messageRecord.getValue().wrap(messageRecord);
   }
 
   record RoutingInfoRecord(int currentPartitionCount, int newPartitionCount)

@@ -31,4 +31,9 @@ public class DbRelocationState implements MutableRelocationState {
   public void markAsRelocating(final DirectBuffer correlationKey) {
     relocatingCorrelationKeys.add(BufferUtil.bufferAsString(correlationKey));
   }
+
+  @Override
+  public void markAsDone(final DirectBuffer correlationKey) {
+    relocatingCorrelationKeys.remove(BufferUtil.bufferAsString(correlationKey));
+  }
 }

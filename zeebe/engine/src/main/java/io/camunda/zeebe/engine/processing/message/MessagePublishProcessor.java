@@ -113,7 +113,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     responseWriter.writeEventOnCommand(
         messageKey, MessageIntent.PUBLISHED, command.getValue(), command);
 
-    correlateToSubscriptions(messageKey, messageRecord);
+    correlateToSubscriptions(
+        messageKey, messageRecord, subscriptionState, correlatingSubscriptions, stateWriter);
     correlateToMessageStartEvents(messageRecord);
 
     sendCorrelateCommand();
@@ -124,7 +125,12 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     }
   }
 
-  private void correlateToSubscriptions(final long messageKey, final MessageRecord message) {
+  public static void correlateToSubscriptions(
+      final long messageKey,
+      final MessageRecord message,
+      final MessageSubscriptionState subscriptionState,
+      final Subscriptions correlatingSubscriptions,
+      final StateWriter stateWriter) {
     subscriptionState.visitSubscriptions(
         message.getTenantId(),
         message.getNameBuffer(),

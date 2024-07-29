@@ -14,4 +14,6 @@ public interface MutableRelocationState extends RelocationState {
   void setRoutingInfo(RoutingInfo routingInfo);
 
   void markAsRelocating(DirectBuffer correlationKey);
+
+  void markAsDone(DirectBuffer correlationKey);
 }

@@ -8,23 +8,21 @@
 package io.camunda.zeebe.engine.processing.relocation;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableRelocationState;
 import io.camunda.zeebe.protocol.impl.record.value.scale.ScaleRecord;
 import io.camunda.zeebe.protocol.record.intent.ScaleIntent;
 
-public class RelocateMessageSubscriptionCompletedApplier
+public class ScaleRelocateCorrelationKeyCompletedApplier
     implements TypedEventApplier<ScaleIntent, ScaleRecord> {
-  private final MutableMessageSubscriptionState subscriptionState;
 
-  public RelocateMessageSubscriptionCompletedApplier(
-      final MutableMessageSubscriptionState subscriptionState) {
-    this.subscriptionState = subscriptionState;
+  final MutableRelocationState relocationState;
+
+  public ScaleRelocateCorrelationKeyCompletedApplier(final MutableRelocationState relocationState) {
+    this.relocationState = relocationState;
   }
 
   @Override
   public void applyState(final long key, final ScaleRecord value) {
-    subscriptionState.remove(
-        value.getMessageSubscriptionRecord().getElementInstanceKey(),
-        value.getMessageSubscriptionRecord().getMessageNameBuffer());
+    relocationState.markAsDone(value.getCorrelationKey());
   }
 }
