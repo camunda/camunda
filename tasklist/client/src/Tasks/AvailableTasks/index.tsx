@@ -110,10 +110,10 @@ const AvailableTasks: React.FC<Props> = ({
               <Search size={24} alt="" className={styles.emptyListIcon} />
               <Stack gap={1} className={styles.emptyMessageText}>
                 <span className={styles.emptyMessageHeading}>
-                  {t('noTasksFound')} 
+                  {t('noTasksFound')}
                 </span>
                 <span className={styles.emptyMessageBody}>
-                  {t('noTasksMatchingCriteria')} 
+                  {t('noTasksMatchingCriteria')}
                 </span>
               </Stack>
             </Stack>

@@ -1,4 +1,3 @@
-
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
@@ -92,7 +91,6 @@ const FilterDropdown: React.FC<{
   selected?: FilterOption;
   onChange?: (option: FilterOption) => void;
 }> = ({items, selected, onChange}) => {
-
   const {t} = useTranslation();
 
   return (
@@ -116,7 +114,7 @@ const FilterDropdown: React.FC<{
 };
 
 const Processes: React.FC = observer(() => {
-  const {t} = useTranslation(); 
+  const {t} = useTranslation();
   const {instance} = newProcessInstance;
   const {hasPermission} = usePermissions(['write']);
   const {data: currentUser} = useCurrentUser();
@@ -206,7 +204,7 @@ const Processes: React.FC = observer(() => {
         title:
           bpmnProcessId === null
             ? t('processDoesNotExistNoStartForm')
-            : t('processDoesNotExistWithForm', { bpmnProcessId }),
+            : t('processDoesNotExistWithForm', {bpmnProcessId}),
       });
       navigate({
         ...location,
@@ -269,9 +267,7 @@ const Processes: React.FC = observer(() => {
                 <Column sm={4} md={8} lg={16}>
                   <Stack gap={4}>
                     <h1>{t('processes')}</h1>
-                    <p>
-                      {t('browseAndRunProcesses')}
-                    </p>
+                    <p>{t('browseAndRunProcesses')}</p>
                   </Stack>
                 </Column>
               </Grid>
@@ -358,7 +354,7 @@ const Processes: React.FC = observer(() => {
                     }
                     description={
                       <span data-testid="empty-message">
-                        {t('contactYourProcessAdministrator')} 
+                        {t('contactYourProcessAdministrator')}
                         <Link
                           href="https://docs.camunda.io/docs/components/modeler/web-modeler/run-or-publish-your-process/#publishing-a-process"
                           target="_blank"

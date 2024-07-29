@@ -60,7 +60,7 @@ const AssigneeTag: React.FC<Props> = ({
   if (!isAssigned) {
     return (
       <Tag
-        title={t('taskUnassignedAria')}  
+        title={t('taskUnassignedAria')}
         size={isShortFormat ? 'sm' : 'md'}
         unselectable="off"
       >
@@ -86,12 +86,12 @@ const AssigneeTag: React.FC<Props> = ({
   return (
     <Tag
       $isAssigned
-      title={t('taskAssignedToAria', { assignee })}
+      title={t('taskAssignedToAria', {assignee})}
       size={isShortFormat ? 'sm' : 'md'}
       unselectable="off"
     >
       <UserAvatar size={16} />
-      {isShortFormat ? assignee : t('assignedTo', { assignee })}
+      {isShortFormat ? assignee : t('assignedTo', {assignee})}
     </Tag>
   );
 };

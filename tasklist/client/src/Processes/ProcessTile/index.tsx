@@ -38,7 +38,6 @@ function convertStatus(status: LoadingStatus): InlineLoadingStatus {
 }
 
 function getAsyncButtonDescription(status: LoadingStatus) {
-
   const {t} = useTranslation();
 
   if (status === 'active') {
@@ -90,9 +89,8 @@ const ProcessTile: React.FC<Props> = ({
   className,
   ...props
 }) => {
-
   const {t} = useTranslation();
-  
+
   const {mutateAsync: startProcess} = useStartProcess({
     onSuccess(data) {
       tracking.track({

@@ -17,14 +17,16 @@ type PoweredByProps = {
 };
 
 const PoweredBy: React.FC<PoweredByProps> = ({className}) => {
-
   const {t} = useTranslation();
 
   return (
     <p className={cn(className, styles.body)}>
-      {t('poweredBy')} {' '}
+      {t('poweredBy')}{' '}
       <Link href="https://camunda.com/" target="_blank">
-        <CamundaLogo className={styles.logo} aria-label={t('camundaLogoAriaLabel')} />
+        <CamundaLogo
+          className={styles.logo}
+          aria-label={t('camundaLogoAriaLabel')}
+        />
       </Link>
     </p>
   );

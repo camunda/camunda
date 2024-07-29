@@ -7,7 +7,7 @@
  */
 
 import {useEffect, useRef} from 'react';
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 import {authenticationStore} from 'modules/stores/authentication';
 import {observer} from 'mobx-react-lite';
 import {useLocation} from 'react-router-dom';

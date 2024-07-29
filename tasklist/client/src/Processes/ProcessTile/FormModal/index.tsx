@@ -78,7 +78,7 @@ const FormModal: React.FC<Props> = ({
         aria-label={`Start process ${processDisplayName}`}
         modalHeading={
           <>
-            {t('startProcessTitle', { processDisplayName })}
+            {t('startProcessTitle', {processDisplayName})}
             <Copy
               feedback={t('copiedFeedback')}
               onClick={() => {

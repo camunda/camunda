@@ -29,7 +29,7 @@ const ProcessView: React.FC = () => {
     <Layer className={styles.container}>
       <div className={styles.header}>
         <span className={styles.processName}>{name}</span>
-        <Tag className={styles.version}>{t('processVersion', { version })}</Tag>
+        <Tag className={styles.version}>{t('processVersion', {version})}</Tag>
       </div>
       {bpmnXml !== null ? (
         <Layer className={styles.diagramFrame}>

@@ -35,21 +35,18 @@ function taskListWithRefUrl(params: Pick<TaskFilters, 'filter' | 'sortBy'>) {
 }
 
 function createNotification(numTasks: number, navigate: NavigateFunction) {
-  
-  const notificationMessage = numTasks === 1
-  ? t('oneTaskAssigned')
-  : numTasks >= 50
-    ? t('fiftyOrMoreTasksAssigned')
-    : t('multipleTasksAssigned', { count: numTasks });
-  
-  const notification = new Notification(
-    notificationMessage,
-    {
-      icon: '/favicon.ico',
-      body: 'Click here to see the details.',
-      tag: `${FILTER}-notification`,
-    },
-  );
+  const notificationMessage =
+    numTasks === 1
+      ? t('oneTaskAssigned')
+      : numTasks >= 50
+        ? t('fiftyOrMoreTasksAssigned')
+        : t('multipleTasksAssigned', {count: numTasks});
+
+  const notification = new Notification(notificationMessage, {
+    icon: '/favicon.ico',
+    body: 'Click here to see the details.',
+    tag: `${FILTER}-notification`,
+  });
   notification.onclick = () => {
     window.focus();
     navigate(taskListWithRefUrl({filter: FILTER, sortBy: SORT_BY}));

@@ -38,7 +38,7 @@ import {ProcessesSelect} from './ProcessesSelect';
 import styles from './fieldsModal.module.scss';
 import cn from 'classnames';
 import {Modal} from 'modules/components/Modal';
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 type FormValues = NamedCustomFilters & {
   areAdvancedFiltersEnabled: boolean;
   action: 'apply' | 'save' | 'edit';
@@ -143,7 +143,11 @@ const FieldsModal: React.FC<Props> = ({
         >
           {({handleSubmit, form, values}) => (
             <>
-              <ModalHeader title={t('applyFiltersTitle')} iconDescription={t('modalClose')} buttonOnClick={onClose} />
+              <ModalHeader
+                title={t('applyFiltersTitle')}
+                iconDescription={t('modalClose')}
+                buttonOnClick={onClose}
+              />
               <ModalBody hasForm>
                 <form
                   className={styles.twoColumnGrid}
@@ -206,7 +210,10 @@ const FieldsModal: React.FC<Props> = ({
                       >
                         <RadioButton labelText={t('statusAll')} value="all" />
                         <RadioButton labelText={t('statusOpen')} value="open" />
-                        <RadioButton labelText={t('statusCompleted')} value="completed" />
+                        <RadioButton
+                          labelText={t('statusCompleted')}
+                          value="completed"
+                        />
                       </RadioButtonGroup>
                     )}
                   </Field>
@@ -313,7 +320,9 @@ const FieldsModal: React.FC<Props> = ({
                               datePickerType="single"
                               dateFormat={t('flatpickr_dateFormat')}
                               //@ts-ignore
-                              locale={t('flatpickr_locale', {defaultValue: 'en'})}
+                              locale={t('flatpickr_locale', {
+                                defaultValue: 'en',
+                              })}
                             >
                               <DatePickerInput
                                 id="due-date-from"
@@ -335,7 +344,9 @@ const FieldsModal: React.FC<Props> = ({
                               datePickerType="single"
                               dateFormat={t('flatpickr_dateFormat')}
                               //@ts-ignore
-                              locale={t('flatpickr_locale', {defaultValue: 'en'})}
+                              locale={t('flatpickr_locale', {
+                                defaultValue: 'en',
+                              })}
                             >
                               <DatePickerInput
                                 id="due-date-to"
@@ -366,7 +377,9 @@ const FieldsModal: React.FC<Props> = ({
                               datePickerType="single"
                               dateFormat={t('flatpickr_dateFormat')}
                               //@ts-ignore
-                              locale={t('flatpickr_locale', {defaultValue: 'en'})}
+                              locale={t('flatpickr_locale', {
+                                defaultValue: 'en',
+                              })}
                             >
                               <DatePickerInput
                                 id="follow-up-date-from"
@@ -388,7 +401,9 @@ const FieldsModal: React.FC<Props> = ({
                               datePickerType="single"
                               dateFormat={t('flatpickr_dateFormat')}
                               //@ts-ignore
-                              locale={t('flatpickr_locale', {defaultValue: 'en'})}
+                              locale={t('flatpickr_locale', {
+                                defaultValue: 'en',
+                              })}
                             >
                               <DatePickerInput
                                 id="follow-up-date-to"
@@ -460,7 +475,9 @@ const FieldsModal: React.FC<Props> = ({
                                       type="button"
                                       className={styles.variableGridRemove}
                                       hasIconOnly
-                                      iconDescription={t('removeVariableIconDescription')}
+                                      iconDescription={t(
+                                        'removeVariableIconDescription',
+                                      )}
                                       renderIcon={Close}
                                       kind="ghost"
                                       size="md"
@@ -473,7 +490,9 @@ const FieldsModal: React.FC<Props> = ({
 
                               <Button
                                 type="button"
-                                iconDescription={t('addVariableIconDescription')}
+                                iconDescription={t(
+                                  'addVariableIconDescription',
+                                )}
                                 renderIcon={Add}
                                 kind="tertiary"
                                 size="md"

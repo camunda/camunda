@@ -15,7 +15,6 @@ const ValidationMessage: React.FC<{
   fieldIds: string[];
   fieldLabels: string[];
 }> = ({fieldIds, fieldLabels}) => {
-
   const {t} = useTranslation();
 
   const buildMessage = (opts?: {numberOfNamedFieldsToShow?: number}) => {
@@ -24,7 +23,7 @@ const ValidationMessage: React.FC<{
     if (fieldIds.length == 1) {
       parts.push(t('reviewOneField'));
     } else {
-      parts.push(t('reviewMultipleFields', { count: fieldIds.length }));
+      parts.push(t('reviewMultipleFields', {count: fieldIds.length}));
     }
     const namedFieldsSlice =
       numberOfNamedFieldsToShow !== undefined
