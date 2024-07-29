@@ -73,6 +73,8 @@ jobs:
             echo "Processing job: $job_id"
             gh api -X GET "/repos/camunda/camunda/check-runs/$job_id/annotations" --jq '.[] | select(.message | contains("lost communication with the server") or contains("runner has received a shutdown signal"))'
           done
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   actionlint:
     if: needs.detect-changes.outputs.actionlint == 'true'
