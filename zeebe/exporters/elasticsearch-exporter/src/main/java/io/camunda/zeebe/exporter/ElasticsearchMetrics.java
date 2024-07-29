@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.exporter;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
@@ -49,9 +51,11 @@ public class ElasticsearchMetrics {
           .register();
 
   private final String partitionIdLabel;
+  private final MeterRegistry meterRegistry;
 
-  public ElasticsearchMetrics(final int partitionId) {
+  public ElasticsearchMetrics(final int partitionId, final MeterRegistry registry) {
     partitionIdLabel = String.valueOf(partitionId);
+    meterRegistry = registry;
   }
 
   public Histogram.Timer measureFlushDuration() {
