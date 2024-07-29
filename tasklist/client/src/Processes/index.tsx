@@ -184,7 +184,7 @@ const Processes: React.FC = observer(() => {
       });
       logger.error(error);
     }
-  }, [error]);
+  }, [error, t]);
 
   useEffect(() => {
     if (match === null || isLoading) {
@@ -211,7 +211,7 @@ const Processes: React.FC = observer(() => {
         pathname: `/${pages.processes()}`,
       });
     }
-  }, [match, data, isLoading, navigate, location]);
+  }, [match, data, isLoading, navigate, location, t]);
 
   useEffect(() => {
     if (searchParams.get('tenantId') === null && initialTenantId !== null) {

@@ -16,8 +16,8 @@ const formatDate = (dateString: string, showTime = true) => {
       parseISO(dateString),
       showTime ? 'dd MMM yyyy - p' : 'dd MMM yyyy',
       {
-        locale: getCurrentDateLocale(),	
-      }
+        locale: getCurrentDateLocale(),
+      },
     );
   } catch (error) {
     logger.error(error);
