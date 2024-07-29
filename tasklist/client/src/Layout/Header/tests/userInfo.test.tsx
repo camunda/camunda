@@ -46,6 +46,37 @@ describe('User info', () => {
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
   });
 
+  it('should render language selection dropdown', async () => {
+    nodeMockServer.use(
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {
+          once: true,
+        },
+      ),
+    );
+
+    const {user} = render(<Header />, {
+      wrapper: getWrapper(),
+    });
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: /settings/i,
+      }),
+    );
+
+    const languageDropdown = await screen.findByRole('combobox', {
+      name: 'Language',
+    });
+
+    expect(languageDropdown).toBeInTheDocument();
+    expect(languageDropdown).toHaveTextContent('English');
+  });
+
   it('should handle a SSO user', async () => {
     window.clientConfig = {...window.clientConfig, canLogout: false};
 
