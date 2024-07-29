@@ -813,6 +813,47 @@ public final class CallActivityTest {
         .hasOnlyCallingElementPath(ca1Index, ca2Index);
   }
 
+  @Test
+  public void shouldPropagateCorrectIndexesInCallingElementPathWhenMultipleProcessesInSameFile() {
+    // given
+    final String rootProcessId = "root-process";
+    // call activities { "call-parent", "call-child" } when sorted wll be {"call-child",
+    // "call-parent"}
+    final var ca1Index = 1;
+    final var ca2Index = 0;
+
+    ENGINE.deployment().withXmlClasspathResource("/processes/callActivity.bpmn").deploy();
+    final var rootInstanceKey = ENGINE.processInstance().ofBpmnProcessId(rootProcessId).create();
+
+    final var rootInstance = getProcessInstanceRecordValue(rootInstanceKey);
+    final var parentInstance = getChildInstanceOf(rootInstanceKey);
+    final var parentInstanceKey = parentInstance.getProcessInstanceKey();
+    final var childInstance = getChildInstanceOf(parentInstanceKey);
+    final long childInstanceKey = childInstance.getProcessInstanceKey();
+    final var callActivity1Key = getCallActivityInstanceKey(rootInstanceKey);
+    final var callActivity2Key = getCallActivityInstanceKey(parentInstanceKey);
+
+    completeJobWith(Map.of());
+
+    // then
+    final IncidentRecordValue incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(childInstanceKey)
+            .getFirst()
+            .getValue();
+
+    Assertions.assertThat(incident)
+        .hasOnlyElementInstancePath(
+            List.of(rootInstanceKey, callActivity1Key),
+            List.of(parentInstanceKey, callActivity2Key),
+            List.of(childInstanceKey, incident.getElementInstanceKey()))
+        .hasOnlyProcessDefinitionPath(
+            rootInstance.getProcessDefinitionKey(),
+            parentInstance.getProcessDefinitionKey(),
+            childInstance.getProcessDefinitionKey())
+        .hasOnlyCallingElementPath(ca1Index, ca2Index);
+  }
+
   private static ProcessInstanceRecordValue getProcessInstanceRecordValue(
       final long processInstanceKey) {
     return RecordingExporter.processInstanceRecords()
