@@ -43,11 +43,12 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
       new IntegerProperty("completedPartition", -1);
 
   public ScaleRecord() {
-    super(5);
+    super(6);
     declareProperty(currentPartitionCountProp)
         .declareProperty(newPartitionCountProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(messageSubscriptionRecord)
+        .declareProperty(messageRecord)
         .declareProperty(completedPartitionProp);
   }
 
@@ -90,7 +91,7 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
     return completedPartitionProp.getValue();
   }
 
-  public void setCompletedPartition(int partitionId) {
+  public void setCompletedPartition(final int partitionId) {
     completedPartitionProp.setValue(partitionId);
   }
 
