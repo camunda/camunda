@@ -9,7 +9,6 @@ package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -153,7 +152,6 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   }
 
   @Override
-  @JsonIgnore
   public long getDeploymentKey() {
     return deploymentKeyProp.getValue();
   }

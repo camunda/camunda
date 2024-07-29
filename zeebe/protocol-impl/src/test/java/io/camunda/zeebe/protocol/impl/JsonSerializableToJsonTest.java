@@ -229,7 +229,8 @@ final class JsonSerializableToJsonTest {
             "decisionsMetadata": [],
             "decisionRequirementsMetadata": [],
             "formMetadata": [],
-            "tenantId": "<default>"
+            "tenantId": "<default>",
+            "deploymentKey": -1
           }
         }
         """
@@ -277,7 +278,8 @@ final class JsonSerializableToJsonTest {
               "processesMetadata": [],
               "decisionsMetadata": [],
               "formMetadata": [],
-              "tenantId": "<default>"
+              "tenantId": "<default>",
+              "deploymentKey": -1
           }
         }
         """
@@ -295,8 +297,10 @@ final class JsonSerializableToJsonTest {
               final long processDefinitionKey = 123;
               final int processVersion = 12;
               final DirectBuffer checksum = wrapString("checksum");
+              final long deploymentKey = 1234;
               final DeploymentRecord record = new DeploymentRecord();
               record
+                  .setDeploymentKey(deploymentKey)
                   .resources()
                   .add()
                   .setResourceName(wrapString(resourceName))
@@ -397,7 +401,8 @@ final class JsonSerializableToJsonTest {
               "tenantId": "<default>"
             }
           ],
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "deploymentKey": 1234
         }
         """
       },
@@ -431,7 +436,8 @@ final class JsonSerializableToJsonTest {
           "decisionsMetadata": [],
           "decisionRequirementsMetadata": [],
           "formMetadata": [],
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "deploymentKey": -1
         }
         """
       },
@@ -2063,7 +2069,8 @@ final class JsonSerializableToJsonTest {
             "decisionsMetadata": [],
             "decisionRequirementsMetadata": [],
             "formMetadata": [],
-            "tenantId": "<default>"
+            "tenantId": "<default>",
+            "deploymentKey": -1
           }
         }
         """
