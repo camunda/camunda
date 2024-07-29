@@ -22,10 +22,10 @@ import org.agrona.DirectBuffer;
 
 public final class MessageRecord extends UnifiedRecordValue implements MessageRecordValue {
 
-  private final StringProperty nameProp = new StringProperty("name");
-  private final StringProperty correlationKeyProp = new StringProperty("correlationKey");
+  private final StringProperty nameProp = new StringProperty("name", "");
+  private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
   // TTL in milliseconds
-  private final LongProperty timeToLiveProp = new LongProperty("timeToLive");
+  private final LongProperty timeToLiveProp = new LongProperty("timeToLive", -1);
   private final LongProperty deadlineProp = new LongProperty("deadline", -1);
 
   private final DocumentProperty variablesProp = new DocumentProperty("variables");

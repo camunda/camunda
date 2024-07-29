@@ -24,8 +24,8 @@ import org.agrona.DirectBuffer;
 public final class MessageSubscriptionRecord extends UnifiedRecordValue
     implements MessageSubscriptionRecordValue {
 
-  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey");
-  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
+  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1);
+  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1);
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
   private final LongProperty messageKeyProp = new LongProperty("messageKey", -1L);
   private final StringProperty messageNameProp = new StringProperty("messageName", "");
