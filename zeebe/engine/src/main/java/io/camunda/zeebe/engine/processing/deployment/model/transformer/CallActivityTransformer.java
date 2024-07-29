@@ -14,6 +14,9 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelE
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Collections;
+import java.util.List;
 
 public final class CallActivityTransformer implements ModelElementTransformer<CallActivity> {
 
@@ -30,6 +33,7 @@ public final class CallActivityTransformer implements ModelElementTransformer<Ca
         process.getElementById(element.getId(), ExecutableCallActivity.class);
 
     transformProcessId(element, callActivity, context.getExpressionLanguage());
+    transformLexicographicIndex(element, context.getProcesses(), callActivity);
   }
 
   private void transformProcessId(
@@ -52,5 +56,20 @@ public final class CallActivityTransformer implements ModelElementTransformer<Ca
     final var propagateAllParentVariablesEnabled =
         calledElement.isPropagateAllParentVariablesEnabled();
     callActivity.setPropagateAllParentVariablesEnabled(propagateAllParentVariablesEnabled);
+  }
+
+  private static void transformLexicographicIndex(
+      final CallActivity element,
+      final List<ExecutableProcess> processes,
+      final ExecutableCallActivity callActivity) {
+    final List<String> allCallActivityIds =
+        processes.stream()
+            .flatMap(p -> p.getFlowElements().stream())
+            .filter(ExecutableCallActivity.class::isInstance)
+            .map(ca -> BufferUtil.bufferAsString(ca.getId()))
+            .sorted()
+            .toList();
+    final int index = Collections.binarySearch(allCallActivityIds, element.getId());
+    callActivity.setLexicographicIndex(index);
   }
 }
