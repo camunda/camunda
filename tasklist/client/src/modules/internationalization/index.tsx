@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import i18n from 'i18next';
+import i18n, {type Resource} from 'i18next';
 import translation_en from './locales/en.json';
 import translation_fr from './locales/fr.json';
 import translation_de from './locales/de.json';
@@ -23,7 +23,7 @@ import {
 type LocaleConfig = {
   language: string;
   dateLocale: Locale;
-  translationFile: object;
+  translationFile: Resource;
 };
 
 export type SelectionOption = {
@@ -67,13 +67,13 @@ const languageItems: SelectionOption[] = Object.keys(localeDefinitions).map(
   },
 );
 
-const translationResources = Object.keys(localeDefinitions).reduce(
-  (acc, key) => {
-    acc[key] = localeDefinitions[key].translationFile;
-    return acc;
-  },
-  {} as Record<string, object>,
-);
+const translationResources: Resource = Object.keys(
+  localeDefinitions,
+).reduce<Resource>((acc, key: keyof typeof localeDefinitions) => {
+  acc[key] = localeDefinitions[key].translationFile;
+
+  return acc;
+}, {});
 
 const getCurrentDateLocale = () =>
   localeDefinitions[i18n.language]?.dateLocale || dateLocale_enUS;
