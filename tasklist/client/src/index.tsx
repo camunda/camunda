@@ -11,6 +11,7 @@
 import {createRoot} from 'react-dom/client';
 import {App} from './App';
 import {tracking} from 'modules/tracking';
+import {initI18next} from 'modules/internationalization/i18next';
 import './index.scss';
 import {StrictMode} from 'react';
 
@@ -33,6 +34,7 @@ function mock(): Promise<void> {
 }
 const container = document.querySelector('#root');
 const root = createRoot(container!);
+initI18next();
 
 Promise.all([tracking.loadAnalyticsToWillingUsers(), mock()]).finally(() => {
   root.render(
