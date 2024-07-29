@@ -20,11 +20,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.UpdateTimeoutJobResponse;
-import zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import java.time.Duration;
 import org.junit.Test;
 import org.mockito.Mockito;
+import zeebe.client.util.ClientTest;
 
 public class JobUpdateTimeoutTest extends ClientTest {
 

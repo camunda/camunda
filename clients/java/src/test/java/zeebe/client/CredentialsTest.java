@@ -26,7 +26,6 @@ import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.impl.CamundaClientBuilderImpl;
 import io.camunda.zeebe.client.impl.CamundaClientImpl;
-import zeebe.client.util.RecordingGatewayService;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
 import io.grpc.ServerInterceptors;
@@ -39,6 +38,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
+import zeebe.client.util.RecordingGatewayService;
 
 public final class CredentialsTest {
   private static final Key<String> AUTH_KEY =

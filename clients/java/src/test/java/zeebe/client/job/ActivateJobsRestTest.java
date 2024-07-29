@@ -27,18 +27,17 @@ import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.impl.CamundaClientBuilderImpl;
 import io.camunda.zeebe.client.impl.CamundaObjectMapper;
 import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
-import io.camunda.zeebe.client.protocol.rest.ActivatedJob;
 import io.camunda.zeebe.client.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.client.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
-import zeebe.client.util.ClientRestTest;
-import zeebe.client.util.RestGatewayPaths;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import zeebe.client.util.ClientRestTest;
+import zeebe.client.util.RestGatewayPaths;
 
 public final class ActivateJobsRestTest extends ClientRestTest {
 

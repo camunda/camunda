@@ -20,7 +20,6 @@ import static io.camunda.zeebe.client.ClientProperties.CLOUD_CLIENT_SECRET;
 import static io.camunda.zeebe.client.ClientProperties.CLOUD_CLUSTER_ID;
 import static io.camunda.zeebe.client.ClientProperties.CLOUD_REGION;
 import static io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED;
-import static io.camunda.zeebe.client.impl.BuilderUtils.applyIfNotNull;
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 
 import io.camunda.zeebe.client.CamundaClient;
@@ -33,7 +32,6 @@ import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.zeebe.client.ClientProperties;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -88,21 +86,17 @@ public class CamundaClientCloudBuilderImpl
 
   @Override
   public CamundaClientBuilder withProperties(final Properties properties) {
-    BuilderUtils.applyIfNotNull(
-        properties, CLOUD_CLUSTER_ID, ClientProperties.CLOUD_CLUSTER_ID, this::withClusterId);
+    BuilderUtils.applyIfNotNull(properties, CLOUD_CLUSTER_ID, this::withClusterId);
 
-    BuilderUtils.applyIfNotNull(
-        properties, CLOUD_CLIENT_ID, ClientProperties.CLOUD_CLIENT_ID, this::withClientId);
+    BuilderUtils.applyIfNotNull(properties, CLOUD_CLIENT_ID, this::withClientId);
 
-    BuilderUtils.applyIfNotNull(
-        properties, CLOUD_CLIENT_SECRET, ClientProperties.CLOUD_CLIENT_SECRET, this::withClientId);
+    BuilderUtils.applyIfNotNull(properties, CLOUD_CLIENT_SECRET, this::withClientId);
 
-    BuilderUtils.applyIfNotNull(properties, CLOUD_REGION, ClientProperties.CLOUD_REGION, this::withRegion);
+    BuilderUtils.applyIfNotNull(properties, CLOUD_REGION, this::withRegion);
 
     BuilderUtils.applyIfNotNull(
         properties,
         STREAM_ENABLED,
-        ClientProperties.STREAM_ENABLED,
         value -> defaultJobWorkerStreamEnabled(Boolean.parseBoolean(value)));
 
     innerBuilder.withProperties(properties);

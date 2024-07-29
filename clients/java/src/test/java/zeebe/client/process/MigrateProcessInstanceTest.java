@@ -19,11 +19,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1.MigrateProcessInstanceCommandFinalStep;
 import io.camunda.zeebe.client.api.command.MigrationPlan;
-import zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MigrateProcessInstanceRequest.MappingInstruction;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
+import zeebe.client.util.ClientTest;
 
 public class MigrateProcessInstanceTest extends ClientTest {
 

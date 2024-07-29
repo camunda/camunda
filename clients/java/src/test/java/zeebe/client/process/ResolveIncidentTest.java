@@ -19,10 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.response.ResolveIncidentResponse;
-import zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import java.time.Duration;
 import org.junit.Test;
+import zeebe.client.util.ClientTest;
 
 public final class ResolveIncidentTest extends ClientTest {
 

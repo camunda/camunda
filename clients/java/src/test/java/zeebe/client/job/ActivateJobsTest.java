@@ -15,9 +15,9 @@
  */
 package zeebe.client.job;
 
-import static zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static zeebe.client.util.JsonUtil.fromJsonAsMap;
 
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.zeebe.client.api.command.ClientException;
@@ -25,13 +25,13 @@ import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.impl.CamundaClientBuilderImpl;
 import io.camunda.zeebe.client.impl.CamundaObjectMapper;
 import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
-import zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
+import zeebe.client.util.ClientTest;
 
 public final class ActivateJobsTest extends ClientTest {
 

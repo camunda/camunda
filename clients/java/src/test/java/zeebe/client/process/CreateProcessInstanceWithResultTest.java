@@ -15,17 +15,17 @@
  */
 package zeebe.client.process;
 
-import static zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static zeebe.client.util.JsonUtil.fromJsonAsMap;
 
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
-import zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import java.time.Duration;
 import org.junit.Test;
+import zeebe.client.util.ClientTest;
 
 public final class CreateProcessInstanceWithResultTest extends ClientTest {
 

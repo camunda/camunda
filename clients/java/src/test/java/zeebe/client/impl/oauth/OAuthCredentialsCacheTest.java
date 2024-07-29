@@ -217,8 +217,7 @@ public final class OAuthCredentialsCacheTest {
   @Test
   public void shouldWriteGoldenFile() throws IOException {
     // given
-    final OAuthCredentialsCache cache =
-        new OAuthCredentialsCache(cacheFile);
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFile);
 
     // when
     cache.put(WOMBAT_ENDPOINT, WOMBAT).put(AARDVARK_ENDPOINT, AARDVARK).writeCache();

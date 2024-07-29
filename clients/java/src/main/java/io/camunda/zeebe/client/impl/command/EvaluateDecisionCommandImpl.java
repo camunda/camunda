@@ -112,7 +112,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
     final EvaluateDecisionRequest request = builder.build();
 
     final RetriableClientFutureImpl<
-                EvaluateDecisionResponse, GatewayOuterClass.EvaluateDecisionResponse>
+            EvaluateDecisionResponse, GatewayOuterClass.EvaluateDecisionResponse>
         future =
             new RetriableClientFutureImpl<>(
                 gatewayResponse -> new EvaluateDecisionResponseImpl(jsonMapper, gatewayResponse),

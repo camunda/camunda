@@ -35,14 +35,14 @@ import io.camunda.zeebe.client.protocol.rest.BrokerInfo;
 import io.camunda.zeebe.client.protocol.rest.Partition;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.protocol.rest.TopologyResponse;
-import zeebe.client.util.ClientRestTest;
-import zeebe.client.util.RestGatewayPaths;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
+import zeebe.client.util.ClientRestTest;
+import zeebe.client.util.RestGatewayPaths;
 
 public final class TopologyRequestRestTest extends ClientRestTest {
 

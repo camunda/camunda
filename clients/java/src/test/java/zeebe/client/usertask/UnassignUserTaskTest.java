@@ -22,10 +22,10 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
+import org.junit.jupiter.api.Test;
 import zeebe.client.util.ClientRestTest;
 import zeebe.client.util.RestGatewayPaths;
 import zeebe.client.util.RestGatewayService;
-import org.junit.jupiter.api.Test;
 
 public final class UnassignUserTaskTest extends ClientRestTest {
 

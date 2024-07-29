@@ -62,7 +62,7 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
     final CancelProcessInstanceRequest request = builder.build();
 
     final RetriableClientFutureImpl<
-                CancelProcessInstanceResponse, GatewayOuterClass.CancelProcessInstanceResponse>
+            CancelProcessInstanceResponse, GatewayOuterClass.CancelProcessInstanceResponse>
         future =
             new RetriableClientFutureImpl<>(
                 CancelProcessInstanceResponseImpl::new,

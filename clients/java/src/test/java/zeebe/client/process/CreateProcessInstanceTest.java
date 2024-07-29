@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.entry;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
-import zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationStartInstruction;
 import java.io.ByteArrayInputStream;
@@ -34,6 +33,7 @@ import java.util.Collections;
 import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
+import zeebe.client.util.ClientTest;
 import zeebe.client.util.JsonUtil;
 
 public final class CreateProcessInstanceTest extends ClientTest {
@@ -97,7 +97,8 @@ public final class CreateProcessInstanceTest extends ClientTest {
 
     // then
     final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
-    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables())).containsOnly(entry("foo", "bar"));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .containsOnly(entry("foo", "bar"));
   }
 
   @Test
@@ -117,7 +118,8 @@ public final class CreateProcessInstanceTest extends ClientTest {
 
     // then
     final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
-    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables())).containsOnly(entry("foo", "bar"));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .containsOnly(entry("foo", "bar"));
   }
 
   @Test
@@ -131,7 +133,8 @@ public final class CreateProcessInstanceTest extends ClientTest {
 
     // then
     final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
-    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables())).containsOnly(entry(key, value));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .containsOnly(entry(key, value));
   }
 
   @Test
@@ -146,7 +149,8 @@ public final class CreateProcessInstanceTest extends ClientTest {
 
     // then
     final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
-    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables())).containsOnly(entry("foo", "bar"));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .containsOnly(entry("foo", "bar"));
   }
 
   @Test
@@ -161,7 +165,8 @@ public final class CreateProcessInstanceTest extends ClientTest {
 
     // then
     final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
-    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables())).containsOnly(entry("foo", "bar"));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .containsOnly(entry("foo", "bar"));
   }
 
   @Test

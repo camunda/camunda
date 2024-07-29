@@ -17,6 +17,7 @@ package zeebe.client.impl.worker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.impl.worker.JobStreamer;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
@@ -24,7 +25,6 @@ import io.camunda.zeebe.client.impl.CamundaObjectMapper;
 import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
 import io.camunda.zeebe.client.impl.worker.JobPoller;
 import io.camunda.zeebe.client.impl.worker.JobRunnableFactory;
-import io.camunda.client.impl.worker.JobStreamer;
 import io.camunda.zeebe.client.impl.worker.JobWorkerImpl;
 import java.time.Duration;
 import java.util.Optional;

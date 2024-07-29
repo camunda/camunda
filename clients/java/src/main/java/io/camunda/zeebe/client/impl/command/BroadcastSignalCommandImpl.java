@@ -83,7 +83,7 @@ public final class BroadcastSignalCommandImpl
   public CamundaFuture<BroadcastSignalResponse> send() {
     final BroadcastSignalRequest request = builder.build();
     final RetriableClientFutureImpl<
-                BroadcastSignalResponse, GatewayOuterClass.BroadcastSignalResponse>
+            BroadcastSignalResponse, GatewayOuterClass.BroadcastSignalResponse>
         future =
             new RetriableClientFutureImpl<>(
                 BroadcastSignalResponseImpl::new,

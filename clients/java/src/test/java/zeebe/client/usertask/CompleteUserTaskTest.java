@@ -22,9 +22,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.protocol.rest.UserTaskCompletionRequest;
+import org.junit.jupiter.api.Test;
 import zeebe.client.util.ClientRestTest;
 import zeebe.client.util.RestGatewayPaths;
-import org.junit.jupiter.api.Test;
 
 public final class CompleteUserTaskTest extends ClientRestTest {
 

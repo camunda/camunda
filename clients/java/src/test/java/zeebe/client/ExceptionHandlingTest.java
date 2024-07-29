@@ -19,11 +19,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.camunda.zeebe.client.api.command.ClientException;
-import zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.grpc.StatusRuntimeException;
 import java.util.concurrent.ExecutionException;
 import org.junit.Test;
+import zeebe.client.util.ClientTest;
 
 public final class ExceptionHandlingTest extends ClientTest {
 

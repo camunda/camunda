@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.search;
 
 import io.camunda.zeebe.client.api.search.SearchRequestPage;
-import io.camunda.client.protocol.rest.SearchQueryPageRequest;
+import io.camunda.zeebe.client.protocol.rest.SearchQueryPageRequest;
 import java.util.List;
 
 public class SearchRequestPageImpl

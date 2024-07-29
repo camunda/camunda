@@ -20,9 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.CompleteJobResponse;
-import zeebe.client.util.ClientTest;
-import zeebe.client.util.JsonUtil;
-import zeebe.client.util.StringUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import java.io.ByteArrayInputStream;
 import java.time.Duration;
@@ -30,6 +27,9 @@ import java.util.Collections;
 import java.util.Map;
 import org.junit.Test;
 import org.mockito.Mockito;
+import zeebe.client.util.ClientTest;
+import zeebe.client.util.JsonUtil;
+import zeebe.client.util.StringUtil;
 
 public final class CompleteJobTest extends ClientTest {
 

@@ -15,10 +15,10 @@
  */
 package zeebe.client.decision;
 
-import static zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static zeebe.client.util.JsonUtil.fromJsonAsMap;
 
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
@@ -27,7 +27,6 @@ import io.camunda.zeebe.client.api.response.EvaluatedDecision;
 import io.camunda.zeebe.client.api.response.EvaluatedDecisionInput;
 import io.camunda.zeebe.client.api.response.EvaluatedDecisionOutput;
 import io.camunda.zeebe.client.api.response.MatchedDecisionRule;
-import zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
 import java.io.ByteArrayInputStream;
@@ -38,6 +37,7 @@ import java.util.Collections;
 import org.assertj.core.api.Assertions;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import zeebe.client.util.ClientTest;
 
 public class StandaloneDecisionEvaluationTest extends ClientTest {
 

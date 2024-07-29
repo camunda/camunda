@@ -60,7 +60,7 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
     final ResolveIncidentRequest request = builder.build();
 
     final RetriableClientFutureImpl<
-                ResolveIncidentResponse, GatewayOuterClass.ResolveIncidentResponse>
+            ResolveIncidentResponse, GatewayOuterClass.ResolveIncidentResponse>
         future =
             new RetriableClientFutureImpl<>(
                 ResolveIncidentResponseImpl::new,

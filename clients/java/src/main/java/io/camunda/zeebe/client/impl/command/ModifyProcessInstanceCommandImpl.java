@@ -216,7 +216,7 @@ public final class ModifyProcessInstanceCommandImpl
     final ModifyProcessInstanceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<
-                ModifyProcessInstanceResponse, GatewayOuterClass.ModifyProcessInstanceResponse>
+            ModifyProcessInstanceResponse, GatewayOuterClass.ModifyProcessInstanceResponse>
         future =
             new RetriableClientFutureImpl<>(
                 ModifyProcessInstanceResponseImpl::new,

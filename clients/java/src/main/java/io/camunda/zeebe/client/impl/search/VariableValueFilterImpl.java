@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.search;
 
 import io.camunda.zeebe.client.api.search.VariableValueFilter;
-import io.camunda.client.protocol.rest.VariableValueFilterRequest;
+import io.camunda.zeebe.client.protocol.rest.VariableValueFilterRequest;
 
 public class VariableValueFilterImpl
     extends TypedSearchRequestPropertyProvider<VariableValueFilterRequest>

@@ -59,7 +59,7 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
     final DeleteResourceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<
-                DeleteResourceResponse, GatewayOuterClass.DeleteResourceResponse>
+            DeleteResourceResponse, GatewayOuterClass.DeleteResourceResponse>
         future =
             new RetriableClientFutureImpl<>(
                 DeleteResourceResponseImpl::new,

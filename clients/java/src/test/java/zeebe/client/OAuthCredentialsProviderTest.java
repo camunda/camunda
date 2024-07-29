@@ -38,8 +38,6 @@ import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.protocol.rest.TopologyResponse;
-import zeebe.client.util.RecordingGatewayService;
-import zeebe.client.util.RestGatewayPaths;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
 import io.grpc.Server;
@@ -78,6 +76,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import zeebe.client.util.RecordingGatewayService;
+import zeebe.client.util.RestGatewayPaths;
 
 @WireMockTest
 public final class OAuthCredentialsProviderTest {

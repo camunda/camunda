@@ -18,8 +18,8 @@ package io.camunda.zeebe.client.impl.response;
 import io.camunda.zeebe.client.api.response.PartitionBrokerHealth;
 import io.camunda.zeebe.client.api.response.PartitionBrokerRole;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
-import io.camunda.client.protocol.rest.Partition.HealthEnum;
-import io.camunda.client.protocol.rest.Partition.RoleEnum;
+import io.camunda.zeebe.client.protocol.rest.Partition.HealthEnum;
+import io.camunda.zeebe.client.protocol.rest.Partition.RoleEnum;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import java.util.Arrays;
 import java.util.Objects;
@@ -60,7 +60,7 @@ public class PartitionInfoImpl implements PartitionInfo {
     }
   }
 
-  public PartitionInfoImpl(final io.camunda.client.protocol.rest.Partition httpPartition) {
+  public PartitionInfoImpl(final io.camunda.zeebe.client.protocol.rest.Partition httpPartition) {
 
     if (httpPartition.getPartitionId() == null) {
       throw new RuntimeException("Unexpected missing partition ID. A partition ID is required.");

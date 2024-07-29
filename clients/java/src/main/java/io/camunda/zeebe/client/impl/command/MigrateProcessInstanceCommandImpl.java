@@ -103,7 +103,7 @@ public final class MigrateProcessInstanceCommandImpl
     final MigrateProcessInstanceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<
-                MigrateProcessInstanceResponse, GatewayOuterClass.MigrateProcessInstanceResponse>
+            MigrateProcessInstanceResponse, GatewayOuterClass.MigrateProcessInstanceResponse>
         future =
             new RetriableClientFutureImpl<>(
                 MigrateProcessInstanceResponseImpl::new,

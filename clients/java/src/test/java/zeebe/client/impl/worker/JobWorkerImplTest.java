@@ -26,7 +26,6 @@ import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilder
 import io.camunda.zeebe.client.impl.CamundaClientBuilderImpl;
 import io.camunda.zeebe.client.impl.CamundaClientImpl;
 import io.camunda.zeebe.client.impl.util.Environment;
-import zeebe.client.impl.util.EnvironmentRule;
 import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
@@ -59,6 +58,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import zeebe.client.impl.util.EnvironmentRule;
 
 @SuppressWarnings("resource")
 @RunWith(JUnit4.class)

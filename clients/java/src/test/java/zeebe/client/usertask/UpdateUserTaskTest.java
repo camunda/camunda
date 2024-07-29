@@ -25,12 +25,12 @@ import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest;
-import zeebe.client.util.ClientRestTest;
-import zeebe.client.util.RestGatewayPaths;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
+import zeebe.client.util.ClientRestTest;
+import zeebe.client.util.RestGatewayPaths;
 
 public final class UpdateUserTaskTest extends ClientRestTest {
 

@@ -33,44 +33,30 @@ final class BuilderUtils {
   }
 
   static void applyIfNotNull(
-      final Properties properties,
-      final String propertyName,
-      final String legacyPropertyName,
-      final Consumer<String> action) {
-    final String value = getOrLegacy(properties, propertyName, legacyPropertyName);
+      final Properties properties, final String propertyName, final Consumer<String> action) {
+    final String value = getProperty(properties, propertyName);
     if (value != null) {
       action.accept(value);
     }
   }
 
-  static String getOrLegacy(
-      final Properties properties, final String propertyName, final String legacyPropertyName) {
+  static String getProperty(final Properties properties, final String propertyName) {
     if (properties.containsKey(propertyName)) {
       return properties.getProperty(propertyName);
-    }
-    if (properties.containsKey(legacyPropertyName)) {
-      LOG.warn("{} is deprecated. Use {} instead", legacyPropertyName, propertyName);
-      return properties.getProperty(legacyPropertyName);
     }
     return null;
   }
 
-  static void applyIfNotNull(
-      final String envName, final String legacyEnvName, final Consumer<String> action) {
-    final String value = getOrLegacy(Environment.system(), envName, legacyEnvName);
+  static void applyIfNotNull(final String envName, final Consumer<String> action) {
+    final String value = getProperty(Environment.system(), envName);
     if (value != null) {
       action.accept(value);
     }
   }
 
-  static String getOrLegacy(
-      final Environment environment, final String envName, final String legacyEnvName) {
+  static String getProperty(final Environment environment, final String envName) {
     if (environment.isDefined(envName)) {
       return environment.get(envName);
-    }
-    if (environment.isDefined(legacyEnvName)) {
-      LOG.warn("{} is deprecated. Use {} instead", legacyEnvName, envName);
-      return environment.get(legacyEnvName);
     }
     return null;
   }

@@ -24,7 +24,6 @@ import static org.mockito.Mockito.verify;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.impl.worker.JobPoller;
 import io.camunda.zeebe.client.impl.worker.JobPollerImpl;
-import zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -36,6 +35,7 @@ import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+import zeebe.client.util.ClientTest;
 
 public final class JobPollerImplTest extends ClientTest {
 

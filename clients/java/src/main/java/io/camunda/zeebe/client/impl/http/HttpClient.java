@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Thin abstraction layer on top of Apache's HTTP client to wire up the expected Zeebe API
- * conventions, e.g. errors are always {@link io.camunda.client.protocol.rest.ProblemDetail},
+ * conventions, e.g. errors are always {@link io.camunda.zeebe.client.protocol.rest.ProblemDetail},
  * content type is always JSON, etc.
  */
 public final class HttpClient implements AutoCloseable {

@@ -107,7 +107,7 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
   public CamundaFuture<PublishMessageResponse> send() {
     final PublishMessageRequest request = builder.build();
     final RetriableClientFutureImpl<
-                PublishMessageResponse, GatewayOuterClass.PublishMessageResponse>
+            PublishMessageResponse, GatewayOuterClass.PublishMessageResponse>
         future =
             new RetriableClientFutureImpl<>(
                 PublishMessageResponseImpl::new,
