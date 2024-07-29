@@ -8,10 +8,18 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_UPDATE_CHANGESET;
+import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.createProblemDetail;
+import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.isEmpty;
+import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateDate;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
+import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -29,5 +37,23 @@ public final class UserTaskRequestValidator {
       return Optional.of(problemDetail);
     }
     return Optional.empty();
+  }
+
+  public static Optional<ProblemDetail> validateUpdateRequest(
+      final UserTaskUpdateRequest updateRequest) {
+    final List<String> violations = new ArrayList<>();
+    if (updateRequest == null
+        || (updateRequest.getAction() == null && isEmpty(updateRequest.getChangeset()))) {
+      violations.add(ERROR_MESSAGE_EMPTY_UPDATE_CHANGESET);
+    }
+    if (updateRequest != null && !isEmpty(updateRequest.getChangeset())) {
+      final Changeset changeset = updateRequest.getChangeset();
+      validateDate(changeset.getDueDate(), "due date", violations);
+      validateDate(changeset.getFollowUpDate(), "follow-up date", violations);
+    }
+    if (violations.isEmpty()) {
+      return Optional.empty();
+    }
+    return createProblemDetail(violations);
   }
 }

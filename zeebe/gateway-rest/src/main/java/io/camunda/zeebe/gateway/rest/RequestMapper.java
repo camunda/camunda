@@ -9,8 +9,8 @@ package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
-import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateUpdateRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
+import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
 import io.camunda.identity.automation.usermanagement.CamundaGroup;
 import io.camunda.identity.automation.usermanagement.CamundaUserWithPassword;

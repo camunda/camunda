@@ -8,15 +8,12 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_DATE_PARSING;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_UPDATE_CHANGESET;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.http.HttpStatus;
@@ -24,27 +21,16 @@ import org.springframework.http.ProblemDetail;
 
 public final class RequestValidator {
 
-  public static Optional<ProblemDetail> validateUpdateRequest(
-      final UserTaskUpdateRequest updateRequest) {
-    final List<String> violations = new ArrayList<>();
-    if (updateRequest == null
-        || (updateRequest.getAction() == null && isEmpty(updateRequest.getChangeset()))) {
-      violations.add(ERROR_MESSAGE_EMPTY_UPDATE_CHANGESET);
-    }
-    if (updateRequest != null && !isEmpty(updateRequest.getChangeset())) {
-      final Changeset changeset = updateRequest.getChangeset();
-      validateDate(changeset.getDueDate(), "due date", violations);
-      validateDate(changeset.getFollowUpDate(), "follow-up date", violations);
-    }
-    if (violations.isEmpty()) {
-      return Optional.empty();
-    }
-    return Optional.of(
-        RestErrorMapper.createProblemDetail(
-            HttpStatus.BAD_REQUEST, String.join(" ", violations), INVALID_ARGUMENT.name()));
+  public static Optional<ProblemDetail> createProblemDetail(final List<String> violations) {
+    final String problems = String.join(". ", violations) + ".";
+    return violations.isEmpty()
+        ? Optional.empty()
+        : Optional.of(
+            RestErrorMapper.createProblemDetail(
+                HttpStatus.BAD_REQUEST, problems, INVALID_ARGUMENT.name()));
   }
 
-  private static void validateDate(
+  public static void validateDate(
       final String dateString, final String attributeName, final List<String> violations) {
     if (dateString != null && !dateString.isEmpty()) {
       try {
@@ -55,7 +41,7 @@ public final class RequestValidator {
     }
   }
 
-  private static boolean isEmpty(final Changeset changeset) {
+  public static boolean isEmpty(final Changeset changeset) {
     return changeset == null
         || (changeset.getFollowUpDate() == null
             && changeset.getDueDate() == null

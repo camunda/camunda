@@ -110,7 +110,7 @@ paths:
     post:
       tags:
         - Job
-      summary: Fail job
+      summary: Error job
       description: |
         Reports a business error (i.e. non-technical) that occurs while processing a job.
       parameters:
@@ -1431,6 +1431,7 @@ components:
         worker:
           description: the name of the worker activating the jobs, mostly used for logging purposes
           type: string
+          nullable: true
         timeout:
           description: >
             a job returned after this call will not be activated by another call until the
@@ -1446,6 +1447,7 @@ components:
             a list of variables to fetch as the job variables; if empty, all visible variables at
             the time of activation for the scope of the job will be returned
           type: array
+          nullable: true
           items:
             type: string
         requestTimeout:
@@ -1456,11 +1458,18 @@ components:
             immediately, even when no job is activated.
           type: integer
           format: int64
+          default: 0
+          nullable: true
         tenantIds:
           description: a list of IDs of tenants for which to activate jobs
           type: array
           items:
             type: string
+          nullable: true
+      required:
+        - type
+        - timeout
+        - maxJobsToActivate
     JobActivationResponse:
       description: The list of activated jobs
       type: object

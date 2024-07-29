@@ -189,7 +189,7 @@ public class JobControllerTest extends RestControllerTest {
           "type": "about:blank",
           "status": 400,
           "title": "INVALID_ARGUMENT",
-          "detail": "No errorCode provided",
+          "detail": "No errorCode provided.",
           "instance": "%s"
         }"""
             .formatted(JOBS_BASE_URL + "/1/error");
@@ -229,7 +229,7 @@ public class JobControllerTest extends RestControllerTest {
           "type": "about:blank",
           "status": 400,
           "title": "INVALID_ARGUMENT",
-          "detail": "No errorCode provided",
+          "detail": "No errorCode provided.",
           "instance": "%s"
         }"""
             .formatted(JOBS_BASE_URL + "/1/error");
@@ -269,7 +269,7 @@ public class JobControllerTest extends RestControllerTest {
           "type": "about:blank",
           "status": 400,
           "title": "INVALID_ARGUMENT",
-          "detail": "No errorCode provided",
+          "detail": "No errorCode provided.",
           "instance": "%s"
         }"""
             .formatted(JOBS_BASE_URL + "/1/error");

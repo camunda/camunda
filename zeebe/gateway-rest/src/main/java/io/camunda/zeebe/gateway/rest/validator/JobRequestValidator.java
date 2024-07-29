@@ -9,15 +9,13 @@ package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
-import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
+import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.createProblemDetail;
 
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
-import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
 public final class JobRequestValidator {
@@ -53,13 +51,5 @@ public final class JobRequestValidator {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("errorCode"));
     }
     return createProblemDetail(violations);
-  }
-
-  private static Optional<ProblemDetail> createProblemDetail(final List<String> violations) {
-    return violations.isEmpty()
-        ? Optional.empty()
-        : Optional.of(
-            RestErrorMapper.createProblemDetail(
-                HttpStatus.BAD_REQUEST, String.join(". ", violations), INVALID_ARGUMENT.name()));
   }
 }
