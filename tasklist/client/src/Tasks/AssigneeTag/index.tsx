@@ -60,12 +60,12 @@ const AssigneeTag: React.FC<Props> = ({
   if (!isAssigned) {
     return (
       <Tag
-        title={t('taskUnassignedAria')}
+        title={t('taskUnassigned')}
         size={isShortFormat ? 'sm' : 'md'}
         unselectable="off"
       >
         <CircleDash size={16} />
-        {t('taskUnassigned')}
+        {t('unassigned')}
       </Tag>
     );
   }

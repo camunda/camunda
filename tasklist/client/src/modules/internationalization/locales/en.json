@@ -125,7 +125,6 @@
     "invalidFormHeading": "Invalid form",
     "invalidFormDescription": "Something went wrong and the form could not be displayed. Please contact your provider.",
     "taskUnassigned": "Task unassigned",
-    "taskUnassignedAria": "Task unassigned",
     "taskAssignedToMeAria": "Task assigned to me",
     "me": "Me",
     "assignedToMe": "Assigned to me",
