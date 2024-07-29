@@ -232,9 +232,10 @@ const VariableEditor: React.FC<Props> = ({
                               invalid={meta.error !== undefined}
                               invalidText={meta.error}
                               type="text"
-
-                              /* @ts-ignore */
-                              labelText={t('variableName', { ordinal: ordinal })}
+                              labelText={t('variableName', {
+                                count: index + 1,
+                                ordinal: true,
+                              })}
                               hideLabel
                               placeholder={t('namePlaceholder')}
                               autoFocus
@@ -258,9 +259,10 @@ const VariableEditor: React.FC<Props> = ({
                               {...input}
                               id={input.name}
                               type="text"
-                                                            
-                              /* @ts-ignore */
-                              labelText={t('variableValue', {ordinal})}
+                              labelText={t('variableValue', {
+                                count: index + 1,
+                                ordinal: true,
+                              })}
                               hideLabel
                               invalid={meta.error !== undefined}
                               invalidText={meta.error}
@@ -286,9 +288,10 @@ const VariableEditor: React.FC<Props> = ({
                             <Popup />
                           </IconButton>
                           <IconButton
-                                                        
-                            /* @ts-ignore */
-                            label={`Remove ${ordinal} ${t('newVariable', {ordinal})}`}
+                            label={t('removeNewVariable', {
+                              count: index + 1,
+                              ordinal: true,
+                            })}
                             onClick={() => {
                               fields.remove(index);
                             }}
