@@ -27,8 +27,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@ZeebeRestController
-@RequestMapping(path = {"/v1", "/v2"})
+@CamundaRestController
+@RequestMapping(path = {"/v1/user-tasks", "/v2/user-tasks"})
 public class UserTaskController {
 
   private final UserTaskServices userTaskServices;
@@ -39,7 +39,7 @@ public class UserTaskController {
   }
 
   @PostMapping(
-      path = "/user-tasks/{userTaskKey}/completion",
+      path = "/{userTaskKey}/completion",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> completeUserTask(
@@ -51,7 +51,7 @@ public class UserTaskController {
   }
 
   @PostMapping(
-      path = "/user-tasks/{userTaskKey}/assignment",
+      path = "/{userTaskKey}/assignment",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> assignUserTask(
@@ -62,7 +62,7 @@ public class UserTaskController {
         .fold(this::assignUserTask, RestErrorMapper::mapProblemToCompletedResponse);
   }
 
-  @DeleteMapping(path = "/user-tasks/{userTaskKey}/assignee")
+  @DeleteMapping(path = "/{userTaskKey}/assignee")
   public CompletableFuture<ResponseEntity<Object>> unassignUserTask(
       @PathVariable final long userTaskKey) {
 
@@ -71,7 +71,7 @@ public class UserTaskController {
   }
 
   @PatchMapping(
-      path = "/user-tasks/{userTaskKey}",
+      path = "/{userTaskKey}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> updateUserTask(
