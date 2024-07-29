@@ -317,7 +317,7 @@ const LanguageSelector: React.FC = observer(() => {
   }
 
   const [selectedLanguage, setSelectedLanguage] = useState(
-    i18n.language || 'en',
+    i18n.language ?? 'en',
   );
 
   useEffect(() => {
@@ -328,7 +328,7 @@ const LanguageSelector: React.FC = observer(() => {
   }, [selectedLanguage, i18n]);
 
   const handleLanguageChange = (e: OnChangeData<SelectionOption>) => {
-    setSelectedLanguage(e.selectedItem?.id || 'en');
+    setSelectedLanguage(e.selectedItem?.id ?? 'en');
   };
 
   return (
