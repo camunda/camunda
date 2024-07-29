@@ -161,6 +161,7 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
   @Override
   public B zeebeUserTask() {
     getCreateSingleExtensionElement(ZeebeUserTask.class);
+    getCreateSingleExtensionElement(ZeebePriorityDefinition.class);
     return myself;
   }
 

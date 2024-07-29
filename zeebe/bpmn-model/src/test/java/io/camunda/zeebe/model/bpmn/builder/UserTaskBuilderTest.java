@@ -310,7 +310,7 @@ class UserTaskBuilderTest {
     final BpmnModelInstance instance =
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .userTask("userTask1", task -> task.zeebeTaskPriority(""))
+            .userTask("userTask1", AbstractUserTaskBuilder::zeebeUserTask)
             .endEvent()
             .done();
 
