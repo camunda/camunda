@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.spring.client.properties;
 
-import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.ClientProperties;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.util.Environment;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;

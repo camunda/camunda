@@ -67,9 +67,7 @@ public class JobWorkerManager {
   }
 
   public JobWorker openWorker(
-      final ZeebeClient client,
-      final ZeebeWorkerValue zeebeWorkerValue,
-      final JobHandler handler) {
+      final ZeebeClient client, final ZeebeWorkerValue zeebeWorkerValue, final JobHandler handler) {
 
     final JobWorkerBuilderStep1.JobWorkerBuilderStep3 builder =
         client

@@ -64,8 +64,8 @@ public @interface JobWorker {
 
   /**
    * Set the request timeout (in seconds) for activate job request used to poll for new job. If no
-   * request timeout is set then the default is used from the {@link
-   * ZeebeClientConfiguration ZeebeClientConfigurationImpl}
+   * request timeout is set then the default is used from the {@link ZeebeClientConfiguration
+   * ZeebeClientConfigurationImpl}
    */
   long requestTimeout() default -1L;
 

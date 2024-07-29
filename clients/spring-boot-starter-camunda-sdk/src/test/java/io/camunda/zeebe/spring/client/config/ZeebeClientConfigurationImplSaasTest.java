@@ -44,8 +44,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
     })
 @ExtendWith(OutputCaptureExtension.class)
 public class ZeebeClientConfigurationImplSaasTest {
-  @Autowired
-  ZeebeClientConfiguration zeebeClientConfiguration;
+  @Autowired ZeebeClientConfiguration zeebeClientConfiguration;
   @Autowired JsonMapper jsonMapper;
   @Autowired ZeebeClientExecutorService zeebeClientExecutorService;
 
@@ -154,8 +153,7 @@ public class ZeebeClientConfigurationImplSaasTest {
 
   @Test
   void shouldHaveMaxMessageSize() {
-    assertThat(zeebeClientConfiguration.getMaxMessageSize())
-        .isEqualTo(DEFAULT.getMaxMessageSize());
+    assertThat(zeebeClientConfiguration.getMaxMessageSize()).isEqualTo(DEFAULT.getMaxMessageSize());
   }
 
   @Test

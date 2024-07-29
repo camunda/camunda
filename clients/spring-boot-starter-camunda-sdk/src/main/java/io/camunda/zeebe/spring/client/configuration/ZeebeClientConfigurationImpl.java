@@ -19,8 +19,8 @@ import static io.camunda.zeebe.spring.client.configuration.PropertyUtil.*;
 import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties.*;
 import static org.springframework.util.StringUtils.hasText;
 
-import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.CredentialsProvider;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
