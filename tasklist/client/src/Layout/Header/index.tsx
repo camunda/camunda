@@ -312,7 +312,7 @@ const LanguageSelector: React.FC = observer(() => {
   const {i18n, t} = useTranslation();
 
   const [selectedLanguage, setSelectedLanguage] = useState(
-    i18n.language ?? 'en',
+    i18n.resolvedLanguage ?? 'en',
   );
 
   useEffect(() => {
