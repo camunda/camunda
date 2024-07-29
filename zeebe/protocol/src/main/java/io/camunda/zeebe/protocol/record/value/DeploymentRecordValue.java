@@ -62,5 +62,5 @@ public interface DeploymentRecordValue extends RecordValue, TenantOwned {
   /**
    * @return the unique key of the deployment
    */
-  long getKey();
+  long getDeploymentKey();
 }

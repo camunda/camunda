@@ -259,7 +259,8 @@ public final class ProcessDeploymentTest {
     assertThat(firstProcessRecord.getRecordVersion()).isEqualTo(2);
     assertThat(firstProcessRecord.getValue().getResourceName()).isEqualTo("process.bpmn");
     assertThat(firstProcessRecord.getValue().getVersion()).isEqualTo(1);
-    assertThat(firstProcessRecord.getValue().getDeploymentKey()).isEqualTo(deployment.getKey());
+    assertThat(firstProcessRecord.getValue().getDeploymentKey())
+        .isEqualTo(deployment.getDeploymentKey());
     assertThat(firstProcessRecord.getKey())
         .isEqualTo(firstProcessRecord.getValue().getProcessDefinitionKey());
 
@@ -269,7 +270,8 @@ public final class ProcessDeploymentTest {
     assertThat(secondProcessRecord.getRecordVersion()).isEqualTo(2);
     assertThat(secondProcessRecord.getValue().getResourceName()).isEqualTo("process2.bpmn");
     assertThat(secondProcessRecord.getValue().getVersion()).isEqualTo(1);
-    assertThat(secondProcessRecord.getValue().getDeploymentKey()).isEqualTo(deployment.getKey());
+    assertThat(secondProcessRecord.getValue().getDeploymentKey())
+        .isEqualTo(deployment.getDeploymentKey());
     assertThat(secondProcessRecord.getKey())
         .isEqualTo(secondProcessRecord.getValue().getProcessDefinitionKey());
   }

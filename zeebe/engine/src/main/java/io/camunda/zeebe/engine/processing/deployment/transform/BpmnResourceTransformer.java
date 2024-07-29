@@ -198,7 +198,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
           .setChecksum(resourceDigest)
           .setResourceName(deploymentResource.getResourceNameBuffer())
           .setTenantId(tenantId)
-          .setDeploymentKey(deploymentEvent.getKey());
+          .setDeploymentKey(deploymentEvent.getDeploymentKey());
 
       final var isDuplicate =
           isDuplicateOfLatest(deploymentResource, resourceDigest, lastProcess, lastDigest);

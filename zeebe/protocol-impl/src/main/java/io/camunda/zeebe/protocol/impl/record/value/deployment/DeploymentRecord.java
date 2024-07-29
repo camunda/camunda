@@ -48,7 +48,7 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
-  private final LongProperty keyProp = new LongProperty("key", -1);
+  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
 
   public DeploymentRecord() {
     super(7);
@@ -58,7 +58,7 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
         .declareProperty(decisionMetadataProp)
         .declareProperty(formMetadataProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(keyProp);
+        .declareProperty(deploymentKeyProp);
   }
 
   public ValueArray<ProcessMetadata> processesMetadata() {
@@ -154,12 +154,12 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
 
   @Override
   @JsonIgnore
-  public long getKey() {
-    return keyProp.getValue();
+  public long getDeploymentKey() {
+    return deploymentKeyProp.getValue();
   }
 
-  public DeploymentRecord setKey(final long key) {
-    keyProp.setValue(key);
+  public DeploymentRecord setDeploymentKey(final long deploymentKey) {
+    deploymentKeyProp.setValue(deploymentKey);
     return this;
   }
 

@@ -150,7 +150,7 @@ public final class DeploymentCreateProcessor
   private void transformAndDistributeDeployment(final TypedRecord<DeploymentRecord> command) {
     final DeploymentRecord deploymentEvent = command.getValue();
     final long key = keyGenerator.nextKey();
-    deploymentEvent.setKey(key);
+    deploymentEvent.setDeploymentKey(key);
 
     // Note: transforming a resource will also write the CREATE events for said resource
     final Either<Failure, Void> result = deploymentTransformer.transform(deploymentEvent);
