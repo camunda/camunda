@@ -26,6 +26,7 @@ import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled.RestGatewayDisabled;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestQueryEnabled.RestQueryEnabled;
 import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository;
 import jakarta.servlet.Filter;
 import java.time.Duration;
@@ -67,10 +68,17 @@ public final class GatewayBasedConfiguration {
     return lifecycleProperties.getTimeoutPerShutdownPhase();
   }
 
-  @ConditionalOnProperty(prefix = "camunda.rest", name = "enabled", havingValue = "false")
+  @ConditionalOnProperty(name = "camunda.rest.enabled", havingValue = "false")
   @Bean
   public RestGatewayDisabled disableRestGateway() {
     return new RestGatewayDisabled();
+  }
+
+  @ConditionalOnRestGatewayEnabled
+  @ConditionalOnProperty(name = "camunda.rest.query.enabled", havingValue = "true")
+  @Bean
+  public RestQueryEnabled enableRestQuery() {
+    return new RestQueryEnabled();
   }
 
   @ConditionalOnRestGatewayEnabled

@@ -20,11 +20,13 @@ import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled.RestGatewayDisabled;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestQueryEnabled.RestQueryEnabled;
 import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository;
 import jakarta.servlet.Filter;
 import java.time.Duration;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -79,10 +81,18 @@ public final class BrokerBasedConfiguration {
     return new SchedulerConfiguration(cpuThreads, ioThreads, metricsEnabled, "Broker", nodeId);
   }
 
-  @ConditionalOnProperty(prefix = "zeebe.broker.gateway", name = "enable", havingValue = "false")
+  @ConditionalOnExpression(
+      "'${zeebe.broker.gateway.enable:true}' == 'false' or '${camunda.rest.enabled:true}' == 'false'")
   @Bean
   public RestGatewayDisabled disableRestGateway() {
     return new RestGatewayDisabled();
+  }
+
+  @ConditionalOnRestGatewayEnabled
+  @ConditionalOnProperty(name = "camunda.rest.query.enabled", havingValue = "true")
+  @Bean
+  public RestQueryEnabled enableRestQuery() {
+    return new RestQueryEnabled();
   }
 
   @ConditionalOnRestGatewayEnabled
