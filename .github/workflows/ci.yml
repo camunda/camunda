@@ -61,6 +61,18 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  dummy2:
+    needs: [dummy]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          gh api -X GET "repos/camunda/camunda/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs?per_page=100" --jq '.jobs[] | select(.conclusion=="failure") .id' | while read job_id; do
+            echo "Processing job: $job_id"
+            gh api -X GET "/repos/camunda/camunda/check-runs/$job_id/annotations" --jq '.[] | select(.message | contains("lost communication with the server") or contains("runner has received a shutdown signal"))'
+          done
+
   actionlint:
     if: needs.detect-changes.outputs.actionlint == 'true'
     needs: [detect-changes]
