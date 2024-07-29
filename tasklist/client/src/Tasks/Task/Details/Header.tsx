@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo, useState} from 'react';
+import {useState} from 'react';
 import {Trans, useTranslation} from 'react-i18next';
 import {Stack} from '@carbon/react';
 import {CheckmarkFilled} from '@carbon/react/icons';
@@ -127,7 +127,7 @@ const AssignButton: React.FC<{
       if (isAssigned) {
         setAssignmentStatus('unassigning');
         await unassignTask(id);
-        setAssignmentStatus('assignmentSuccessful');
+        setAssignmentStatus('unassignmentSuccessful');
         tracking.track({eventName: 'task-unassigned'});
       } else {
         setAssignmentStatus('assigning');
@@ -168,10 +168,7 @@ const AssignButton: React.FC<{
     return 'inactive';
   }
 
-  const assignmentToggleLabels = useMemo(
-    () => getAssignmentToggleLabels(t),
-    [t],
-  );
+  const assignmentToggleLabels = getAssignmentToggleLabels(t);
 
   return (
     <AsyncActionButton

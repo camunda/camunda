@@ -7,11 +7,9 @@
  */
 
 import {InlineLoadingStatus} from '@carbon/react';
-import {useTranslation} from 'react-i18next';
+import {t} from 'i18next';
 
 function getCompletionButtonDescription(status: InlineLoadingStatus) {
-  const {t} = useTranslation();
-
   if (status === 'active') {
     return t('completingTask');
   }

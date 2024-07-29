@@ -8,7 +8,7 @@
 
 import {InlineLoadingStatus} from '@carbon/react';
 import {AsyncActionButton} from './AsyncActionButton';
-import {useTranslation} from 'react-i18next';
+import {t} from 'i18next';
 
 type Props = {
   submissionState: InlineLoadingStatus;
@@ -20,8 +20,6 @@ type Props = {
 };
 
 function getCompletionButtonDescription(status: InlineLoadingStatus) {
-  const {t} = useTranslation();
-
   if (status === 'active') {
     return t('completingTask');
   }
@@ -45,8 +43,6 @@ const CompleteTaskButton: React.FC<Props> = ({
   onSuccess,
   onError,
 }) => {
-  const {t} = useTranslation();
-
   return (
     <AsyncActionButton
       inlineLoadingProps={{
