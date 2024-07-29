@@ -49,11 +49,26 @@ runs:
         exportEnv: false # we rely on step outputs, no need for environment variables
         secrets: |
           secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
+
+    - name: Get build duration in milliseconds
+      id: get-build-duration-millis
+      shell: bash
+      run: |
+        duration=$(expr $(date +'%s') - $(date --reference "$GITHUB_ACTION_PATH" +"%s"))
+
+        # only submit plausible durations below 72 hours
+        if [ $duration -le 259200 ]; then
+          echo "result=$(expr $duration \* 1000)" >> $GITHUB_OUTPUT
+        else
+          echo "result=" >> $GITHUB_OUTPUT
+        fi
+
     - uses: camunda/infra-global-github-actions/submit-build-status@main
       if: ${{ always() && steps.secrets.outputs.gcloud_sa_key != '' }}
       with:
         job_name_override: "${{ inputs.job_name }}"
         build_status: "${{ inputs.build_status }}"
+        build_duration_millis: "${{ steps.get-build-duration-millis.outputs.result }}"
         user_reason: "${{ inputs.user_reason }}"
         user_description: "${{ inputs.user_description }}"
         gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
