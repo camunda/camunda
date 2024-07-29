@@ -25,8 +25,6 @@ import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled.RestGatewayDisabled;
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestQueryEnabled.RestQueryDisabled;
 import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository;
 import jakarta.servlet.Filter;
 import java.time.Duration;
@@ -35,7 +33,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -66,22 +63,6 @@ public final class GatewayBasedConfiguration {
 
   public Duration shutdownTimeout() {
     return lifecycleProperties.getTimeoutPerShutdownPhase();
-  }
-
-  @ConditionalOnProperty(name = "camunda.rest.enabled", havingValue = "false")
-  @Bean
-  public RestGatewayDisabled disableRestGateway() {
-    return new RestGatewayDisabled();
-  }
-
-  @ConditionalOnRestGatewayEnabled
-  @ConditionalOnProperty(
-      name = "camunda.rest.query.enabled",
-      havingValue = "false",
-      matchIfMissing = true)
-  @Bean
-  public RestQueryDisabled disableRestQuery() {
-    return new RestQueryDisabled();
   }
 
   @ConditionalOnRestGatewayEnabled

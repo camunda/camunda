@@ -12,7 +12,6 @@ import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled.RestGatewayDisabled;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,8 +24,8 @@ public class RestApiDisabledTest {
    * This ArchUnit test ensures that any REST API controllers, i.e. classes annotated with the
    * {@link RestController} or {@link Controller} annotation, are also annotated with {@link
    * ConditionalOnRestGatewayEnabled}. This is to ensure that the REST API is not enabled when the
-   * Zeebe Gateway is disabled, i.e. the {@link RestGatewayDisabled} bean is not present. This setup
-   * might happen when an embedded Zeebe Gateway is used in the standalone Zeebe Broker.
+   * Zeebe Gateway is disabled. This setup might happen when an embedded Zeebe Gateway is used in
+   * the standalone Zeebe Broker.
    */
   @ArchTest
   public static final ArchRule RULE_DISABLE_REST_API =
