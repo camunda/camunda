@@ -27,6 +27,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionAcknow
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
+import io.camunda.zeebe.engine.processing.identity.IdentityEventProcessors;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
@@ -208,6 +209,9 @@ public final class EngineProcessors {
         processingState.getKeyGenerator(),
         clock,
         commandDistributionBehavior);
+
+    IdentityEventProcessors.addAuthorizationProcessors(
+        typedRecordProcessors, processingState, writers);
 
     return typedRecordProcessors;
   }

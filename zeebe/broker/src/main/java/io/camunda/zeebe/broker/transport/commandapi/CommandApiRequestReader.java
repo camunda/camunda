@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubs
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.identity.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -70,6 +71,7 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
     RECORDS_BY_TYPE.put(ValueType.MESSAGE_CORRELATION, MessageCorrelationRecord::new);
     RECORDS_BY_TYPE.put(ValueType.USER, UserRecord::new);
     RECORDS_BY_TYPE.put(ValueType.CLOCK, ClockRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.AUTHORIZATION, AuthorizationRecord::new);
   }
 
   private UnifiedRecordValue value;
