@@ -179,7 +179,6 @@
     "dueDateLegend": "Fecha de vencimiento",
     "datePlaceholder": "dd/mm/aaaa",
     "flatpickr_dateFormat": "d/m/Y",
-    "flatpickr_locale": "es",
     "fromLabel": "Desde",
     "toLabel": "Hasta",
     "followUpDateLegend": "Fecha de seguimiento",

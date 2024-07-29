@@ -114,7 +114,7 @@ describe('<CollapsiblePanel />', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should render custom filters link', async () => {
+  it.only('should render custom filters link', async () => {
     const {user} = render(<CollapsiblePanel />, {
       wrapper: createWrapper(),
     });

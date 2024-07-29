@@ -179,7 +179,6 @@
     "dueDateLegend": "Due date",
     "datePlaceholder": "mm/dd/yyyy",
     "flatpickr_dateFormat": "m/d/Y",
-    "flatpickr_locale": "en",
     "fromLabel": "From",
     "toLabel": "To",
     "followUpDateLegend": "Follow up date",

@@ -179,7 +179,6 @@
     "dueDateLegend": "Fälligkeitsdatum",
     "datePlaceholder": "tt.mm.jjjj",
     "flatpickr_dateFormat": "d.m.Y",
-    "flatpickr_locale": "de",
     "fromLabel": "Von",
     "toLabel": "Bis",
     "followUpDateLegend": "Nachverfolgungsdatum",

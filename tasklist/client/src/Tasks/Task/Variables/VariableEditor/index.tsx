@@ -49,25 +49,6 @@ type Props = {
   onEdit: (id: string) => void;
 };
 
-function variableIndexToOrdinal(numberValue: number): string {
-  const realOrderIndex = (numberValue + 1).toString();
-
-  if (['11', '12', '13'].includes(realOrderIndex.slice(-2))) {
-    return `${realOrderIndex}th`;
-  }
-
-  switch (realOrderIndex.slice(-1)) {
-    case '1':
-      return `${realOrderIndex}st`;
-    case '2':
-      return `${realOrderIndex}nd`;
-    case '3':
-      return `${realOrderIndex}rd`;
-    default:
-      return `${realOrderIndex}th`;
-  }
-}
-
 const VariableEditor: React.FC<Props> = ({
   containerRef,
   variables,
@@ -206,7 +187,6 @@ const VariableEditor: React.FC<Props> = ({
                     variable,
                     'value',
                   );
-                  const ordinal = variableIndexToOrdinal(index);
 
                   return (
                     <StructuredListRow key={variable}>

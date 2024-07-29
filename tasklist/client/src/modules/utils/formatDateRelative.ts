@@ -46,8 +46,11 @@ type Resolution =
       type: 'week' | 'months' | 'years';
     };
 
-
-const getConfiguredDateKey = (key: TextMapKeys, isSpeech: boolean, includeTime: boolean) => {
+const getConfiguredDateKey = (
+  key: TextMapKeys,
+  isSpeech: boolean,
+  includeTime: boolean,
+) => {
   let keySuffix = '';
 
   if (isSpeech) {
@@ -58,22 +61,42 @@ const getConfiguredDateKey = (key: TextMapKeys, isSpeech: boolean, includeTime: 
   }
 
   return `relativeDateFormat_${key}${keySuffix}`;
-}
+};
 
-const getConfiguredTranslatedFormat = (key: TextMapKeys, isSpeech: boolean, includeTime: boolean, options = {}) => {
+const getConfiguredTranslatedFormat = (
+  key: TextMapKeys,
+  isSpeech: boolean,
+  includeTime: boolean,
+  options = {},
+) => {
   let value = '';
 
   // Allows inheritance of the format if the time or speech equivalent is not defined
   if (isSpeech && includeTime) {
-    value = t(getConfiguredDateKey(key, isSpeech, includeTime), {...options, defaultValue:''});
+    value = t(getConfiguredDateKey(key, isSpeech, includeTime), {
+      ...options,
+      defaultValue: '',
+    });
   }
   if (includeTime) {
-    value = value || t(getConfiguredDateKey(key, false, includeTime), {...options, defaultValue:''});
+    value =
+      value ||
+      t(getConfiguredDateKey(key, false, includeTime), {
+        ...options,
+        defaultValue: '',
+      });
   }
   if (isSpeech) {
-    value = value || t(getConfiguredDateKey(key, isSpeech, false), {...options, defaultValue:''});
+    value =
+      value ||
+      t(getConfiguredDateKey(key, isSpeech, false), {
+        ...options,
+        defaultValue: '',
+      });
   }
-  value = value || t(getConfiguredDateKey(key, false, false), {...options, defaultValue:''});
+  value =
+    value ||
+    t(getConfiguredDateKey(key, false, false), {...options, defaultValue: ''});
 
   if (typeof value !== 'string') {
     console.warn(`Unexpected translation type for 'relativeDateFormat_${key}'`);
@@ -81,7 +104,6 @@ const getConfiguredTranslatedFormat = (key: TextMapKeys, isSpeech: boolean, incl
 
   return value;
 };
-
 
 function getResolution(time: Date, now: Date): Resolution {
   const diffInMinutes = differenceInMinutes(time, now);
@@ -112,8 +134,13 @@ function getResolution(time: Date, now: Date): Resolution {
   return {type: 'years'};
 }
 
-function getFormat(resolution: Resolution, isSpeech: boolean = false, includeTime: boolean = false) {
-  const getTranslatedFormat = (key: TextMapKeys, options = {}) => getConfiguredTranslatedFormat(key, isSpeech, includeTime, options);
+function getFormat(
+  resolution: Resolution,
+  isSpeech: boolean = false,
+  includeTime: boolean = false,
+) {
+  const getTranslatedFormat = (key: TextMapKeys, options = {}) =>
+    getConfiguredTranslatedFormat(key, isSpeech, includeTime, options);
 
   switch (resolution.type) {
     case 'now':
@@ -163,7 +190,7 @@ function formatDate(time: Date, now?: Date) {
     locale: getCurrentDateLocale(),
   });
   const absoluteText = format(time, getFormat({type: 'years'}), {
-      locale: getCurrentDateLocale(),
+    locale: getCurrentDateLocale(),
   });
   return {
     date: time,
@@ -199,7 +226,7 @@ function formatDateTime(time: Date, now?: Date) {
     locale: getCurrentDateLocale(),
   });
   const absoluteText = format(time, getFormat({type: 'years'}, false, true), {
-      locale: getCurrentDateLocale(),
+    locale: getCurrentDateLocale(),
   });
   return {
     date: time,

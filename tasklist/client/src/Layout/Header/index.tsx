@@ -8,6 +8,7 @@
 
 import {useEffect, useState} from 'react';
 import {useTranslation, Trans} from 'react-i18next';
+import {t} from 'i18next';
 import {observer} from 'mobx-react-lite';
 import {Link as RouterLink, matchPath, useLocation} from 'react-router-dom';
 import {
@@ -29,8 +30,6 @@ import styles from './styles.module.scss';
 import {languageItems, SelectionOption} from 'modules/internationalization';
 
 function getInfoSidebarItems(isPaidPlan: boolean) {
-  const {t} = useTranslation();
-
   const BASE_INFO_SIDEBAR_ITEMS = [
     {
       key: 'docs',

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Fragment} from 'react';
+import React, {Fragment} from 'react';
 import {
   Button,
   DatePicker,
@@ -39,10 +39,13 @@ import styles from './fieldsModal.module.scss';
 import cn from 'classnames';
 import {Modal} from 'modules/components/Modal';
 import {useTranslation} from 'react-i18next';
+
 type FormValues = NamedCustomFilters & {
   areAdvancedFiltersEnabled: boolean;
   action: 'apply' | 'save' | 'edit';
 };
+
+type LocaleKey = NonNullable<React.ComponentProps<typeof DatePicker>['locale']>;
 
 const DEFAULT_FORM_VALUES: NamedCustomFilters = {
   assignee: 'all',
@@ -85,7 +88,7 @@ const FieldsModal: React.FC<Props> = ({
   onDelete,
   initialValues,
 }) => {
-  const {t} = useTranslation();
+  const {t, i18n} = useTranslation();
   const label = t('advancedFilters');
   const {isMultiTenancyVisible} = useMultiTenancyDropdown();
   const {data: currentUser} = useCurrentUser();
@@ -319,10 +322,7 @@ const FieldsModal: React.FC<Props> = ({
                               className={styles.datePicker}
                               datePickerType="single"
                               dateFormat={t('flatpickr_dateFormat')}
-                              //@ts-ignore
-                              locale={t('flatpickr_locale', {
-                                defaultValue: 'en',
-                              })}
+                              locale={i18n.resolvedLanguage as LocaleKey}
                             >
                               <DatePickerInput
                                 id="due-date-from"
@@ -343,10 +343,7 @@ const FieldsModal: React.FC<Props> = ({
                               className={styles.datePicker}
                               datePickerType="single"
                               dateFormat={t('flatpickr_dateFormat')}
-                              //@ts-ignore
-                              locale={t('flatpickr_locale', {
-                                defaultValue: 'en',
-                              })}
+                              locale={i18n.resolvedLanguage as LocaleKey}
                             >
                               <DatePickerInput
                                 id="due-date-to"
@@ -376,10 +373,7 @@ const FieldsModal: React.FC<Props> = ({
                               className={styles.datePicker}
                               datePickerType="single"
                               dateFormat={t('flatpickr_dateFormat')}
-                              //@ts-ignore
-                              locale={t('flatpickr_locale', {
-                                defaultValue: 'en',
-                              })}
+                              locale={i18n.resolvedLanguage as LocaleKey}
                             >
                               <DatePickerInput
                                 id="follow-up-date-from"
@@ -400,10 +394,7 @@ const FieldsModal: React.FC<Props> = ({
                               className={styles.datePicker}
                               datePickerType="single"
                               dateFormat={t('flatpickr_dateFormat')}
-                              //@ts-ignore
-                              locale={t('flatpickr_locale', {
-                                defaultValue: 'en',
-                              })}
+                              locale={i18n.resolvedLanguage as LocaleKey}
                             >
                               <DatePickerInput
                                 id="follow-up-date-to"
@@ -475,9 +466,10 @@ const FieldsModal: React.FC<Props> = ({
                                       type="button"
                                       className={styles.variableGridRemove}
                                       hasIconOnly
-                                      iconDescription={t(
-                                        'removeVariableIconDescription',
-                                      )}
+                                      iconDescription={t('removeNewVariable', {
+                                        count: index + 1,
+                                        ordinal: true,
+                                      })}
                                       renderIcon={Close}
                                       kind="ghost"
                                       size="md"

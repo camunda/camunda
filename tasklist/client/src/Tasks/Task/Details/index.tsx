@@ -60,7 +60,7 @@ const Details: React.FC = () => {
       });
       navigate(pages.initial);
     }
-  }, [navigate, task?.processInstanceKey, task?.processName, taskState]);
+  }, [navigate, task?.processInstanceKey, task?.processName, taskState, t]);
 
   const tabs = [
     {

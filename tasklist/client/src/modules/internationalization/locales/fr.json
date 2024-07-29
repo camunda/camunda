@@ -179,7 +179,6 @@
     "dueDateLegend": "Date d'échéance",
     "datePlaceholder": "jj/mm/aaaa",
     "flatpickr_dateFormat": "d/m/Y",
-    "flatpickr_locale": "fr",
     "fromLabel": "De",
     "toLabel": "À",
     "followUpDateLegend": "Date de suivi",

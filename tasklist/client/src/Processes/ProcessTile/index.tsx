@@ -14,6 +14,7 @@ import {newProcessInstance} from 'modules/stores/newProcessInstance';
 import {useState} from 'react';
 import {useNavigate, useMatch, useLocation} from 'react-router-dom';
 import {useTranslation} from 'react-i18next';
+import {t} from 'i18next';
 import {pages} from 'modules/routing';
 import {logger} from 'modules/utils/logger';
 import {tracking} from 'modules/tracking';
@@ -38,8 +39,6 @@ function convertStatus(status: LoadingStatus): InlineLoadingStatus {
 }
 
 function getAsyncButtonDescription(status: LoadingStatus) {
-  const {t} = useTranslation();
-
   if (status === 'active') {
     return t('startingProcess');
   }
