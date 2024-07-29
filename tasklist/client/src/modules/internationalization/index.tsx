@@ -7,16 +7,16 @@
  */
 
 import i18n, {type Resource} from 'i18next';
-import translation_en from './locales/en.json';
-import translation_fr from './locales/fr.json';
-import translation_de from './locales/de.json';
-import translation_es from './locales/es.json';
+import translationsEn from './locales/en.json';
+import translationsFr from './locales/fr.json';
+import translationsDe from './locales/de.json';
+import translationsEs from './locales/es.json';
 
 import {
-  enUS as dateLocale_enUS,
-  fr as dateLocale_fr,
-  de as dateLocale_de,
-  es as dateLocale_es,
+  enUS as dateLocaleEnUS,
+  fr as dateLocaleFr,
+  de as dateLocaleDe,
+  es as dateLocaleEs,
   Locale,
 } from 'date-fns/locale';
 
@@ -38,23 +38,23 @@ interface LocaleDefinitions {
 const localeDefinitions: LocaleDefinitions = {
   en: {
     language: 'English',
-    dateLocale: dateLocale_enUS,
-    translationFile: translation_en,
+    dateLocale: dateLocaleEnUS,
+    translationFile: translationsEn,
   },
   fr: {
     language: 'Français',
-    dateLocale: dateLocale_fr,
-    translationFile: translation_fr,
+    dateLocale: dateLocaleFr,
+    translationFile: translationsFr,
   },
   de: {
     language: 'Deutsch',
-    dateLocale: dateLocale_de,
-    translationFile: translation_de,
+    dateLocale: dateLocaleDe,
+    translationFile: translationsDe,
   },
   es: {
     language: 'Español',
-    dateLocale: dateLocale_es,
-    translationFile: translation_es,
+    dateLocale: dateLocaleEs,
+    translationFile: translationsEs,
   },
 };
 
@@ -76,7 +76,7 @@ const translationResources: Resource = Object.keys(
 }, {});
 
 const getCurrentDateLocale = () =>
-  localeDefinitions[i18n.language]?.dateLocale || dateLocale_enUS;
+  localeDefinitions[i18n.language]?.dateLocale || dateLocaleEnUS;
 
 export {
   localeDefinitions,
