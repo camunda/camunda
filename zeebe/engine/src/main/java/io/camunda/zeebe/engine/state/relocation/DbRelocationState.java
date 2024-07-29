@@ -8,9 +8,14 @@
 package io.camunda.zeebe.engine.state.relocation;
 
 import io.camunda.zeebe.engine.state.mutable.MutableRelocationState;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.HashSet;
+import java.util.Set;
+import org.agrona.DirectBuffer;
 
 public class DbRelocationState implements MutableRelocationState {
   private RoutingInfo routingInfo;
+  private final Set<String> relocatingCorrelationKeys = new HashSet<>();
 
   @Override
   public RoutingInfo getRoutingInfo() {
@@ -20,5 +25,10 @@ public class DbRelocationState implements MutableRelocationState {
   @Override
   public void setRoutingInfo(final RoutingInfo routingInfo) {
     this.routingInfo = routingInfo;
+  }
+
+  @Override
+  public void markAsRelocating(final DirectBuffer correlationKey) {
+    relocatingCorrelationKeys.add(BufferUtil.bufferAsString(correlationKey));
   }
 }

@@ -5,13 +5,6 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.state.mutable;
+package io.camunda.zeebe.engine.processing.relocation;
 
-import io.camunda.zeebe.engine.state.immutable.RelocationState;
-import org.agrona.DirectBuffer;
-
-public interface MutableRelocationState extends RelocationState {
-  void setRoutingInfo(RoutingInfo routingInfo);
-
-  void markAsRelocating(DirectBuffer correlationKey);
-}
+public class ScaleRelocateMessageSubscriptionStartProcessor {}

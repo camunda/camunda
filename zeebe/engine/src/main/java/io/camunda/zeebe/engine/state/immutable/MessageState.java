@@ -25,6 +25,8 @@ public interface MessageState {
       DirectBuffer correlationKey,
       MessageVisitor visitor);
 
+  void visitMessages(MessageVisitor visitor);
+
   StoredMessage getMessage(long messageKey);
 
   /**

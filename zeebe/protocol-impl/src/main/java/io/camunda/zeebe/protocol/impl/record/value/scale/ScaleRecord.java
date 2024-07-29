@@ -8,8 +8,10 @@
 package io.camunda.zeebe.protocol.impl.record.value.scale;
 
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ScaleRecordValue;
+import org.agrona.DirectBuffer;
 
 public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue {
 
@@ -20,10 +22,13 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
       new IntegerProperty("currentPartitionCount", -1);
   private final IntegerProperty newPartitionCountProp =
       new IntegerProperty("newPartitionCount", -1);
+  private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
 
   public ScaleRecord() {
-    super(2);
-    declareProperty(currentPartitionCountProp).declareProperty(newPartitionCountProp);
+    super(3);
+    declareProperty(currentPartitionCountProp)
+        .declareProperty(newPartitionCountProp)
+        .declareProperty(correlationKeyProp);
   }
 
   @Override
@@ -35,6 +40,14 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
   public void setRoutingInfo(final int currentPartitionCount, final int newPartitionCount) {
     currentPartitionCountProp.setValue(currentPartitionCount);
     newPartitionCountProp.setValue(newPartitionCount);
+  }
+
+  public DirectBuffer getCorrelationKey() {
+    return correlationKeyProp.getValue();
+  }
+
+  public void setCorrelationKey(final DirectBuffer correlationKey) {
+    correlationKeyProp.setValue(correlationKey);
   }
 
   record RoutingInfoRecord(int currentPartitionCount, int newPartitionCount)

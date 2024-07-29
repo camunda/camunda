@@ -400,6 +400,11 @@ public final class DbMessageState implements MutableMessageState {
   }
 
   @Override
+  public void visitMessages(final MessageVisitor visitor) {
+    messageColumnFamily.whileTrue((key, value) -> visitor.visit(value));
+  }
+
+  @Override
   public StoredMessage getMessage(final long messageKey) {
     this.messageKey.wrapLong(messageKey);
     return messageColumnFamily.get(this.messageKey);
