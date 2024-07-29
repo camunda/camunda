@@ -125,7 +125,6 @@
     "invalidFormHeading": "Ungültiges Formular",
     "invalidFormDescription": "Etwas ist schief gelaufen und das Formular konnte nicht angezeigt werden. Bitte kontaktieren Sie Ihren Anbieter.",
     "taskUnassigned": "Aufgabe nicht zugewiesen",
-    "taskUnassignedAria": "Aufgabe nicht zugewiesen",
     "taskAssignedToMeAria": "Aufgabe mir zugewiesen",
     "me": "Ich",
     "assignedToMe": "Mir zugewiesen",

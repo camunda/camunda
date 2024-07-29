@@ -125,7 +125,6 @@
     "invalidFormHeading": "Formulaire invalide",
     "invalidFormDescription": "Quelque chose a mal tourné et le formulaire n'a pas pu être affiché. Veuillez contacter votre fournisseur.",
     "taskUnassigned": "Tâche non assignée",
-    "taskUnassignedAria": "Tâche non assignée",
     "taskAssignedToMeAria": "Tâche assignée à moi",
     "me": "Moi",
     "assignedToMe": "Assignée à moi",
