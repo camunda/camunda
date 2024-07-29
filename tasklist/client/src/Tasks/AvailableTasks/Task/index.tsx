@@ -219,7 +219,9 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
                   date={secondaryDate.followUpDate}
                   relativeLabel={t('followupRelative')}
                   absoluteLabel={t('followupAbsolute')}
-                  icon={<Notification className={styles.inlineIcon} color="blue" />}
+                  icon={
+                    <Notification className={styles.inlineIcon} color="blue" />
+                  }
                   align="top-right"
                 />
               ) : null}
@@ -245,7 +247,12 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
                   date={secondaryDate.completionDate}
                   relativeLabel={t('completedRelative')}
                   absoluteLabel={t('completedAbsolute')}
-                  icon={<CheckmarkFilled className={styles.inlineIcon} color="green" />}
+                  icon={
+                    <CheckmarkFilled
+                      className={styles.inlineIcon}
+                      color="green"
+                    />
+                  }
                   align="top-right"
                 />
               ) : null}

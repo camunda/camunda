@@ -102,7 +102,7 @@ const CollapsiblePanel: React.FC = () => {
   const [isCustomFiltersModalOpen, setIsCustomFiltersModalOpen] =
     useState(false);
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const {t} = useTranslation();
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [customFilterToEdit, setCustomFilterToEdit] = useState<
     string | undefined
@@ -206,7 +206,7 @@ const CollapsiblePanel: React.FC = () => {
         aria-owns="filters-menu"
       >
         <span className={sharedStyles.panelHeader}>
-          <h1 id="filters-title">{t("filters")}</h1>
+          <h1 id="filters-title">{t('filters')}</h1>
           <Button
             hasIconOnly
             iconDescription={t('collapse')}

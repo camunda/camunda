@@ -7,7 +7,7 @@
  */
 
 import {useMemo, useState} from 'react';
-import { Trans, useTranslation } from 'react-i18next';
+import {Trans, useTranslation} from 'react-i18next';
 import {Stack} from '@carbon/react';
 import {CheckmarkFilled} from '@carbon/react/icons';
 import {AssigneeTag} from 'Tasks/AssigneeTag';
@@ -23,12 +23,13 @@ import {getTaskAssignmentChangeErrorMessage} from './getTaskAssignmentChangeErro
 import {shouldDisplayNotification} from './shouldDisplayNotification';
 import styles from './Header.module.scss';
 
-const getAssignmentToggleLabels = (t: (key: string) => string) => ({
-  assigning: t('assigning'),
-  unassigning: t('unassigning'),
-  assignmentSuccessful: t('assignmentSuccessful'),
-  unassignmentSuccessful: t('unassignmentSuccessful'),
-} as const);
+const getAssignmentToggleLabels = (t: (key: string) => string) =>
+  ({
+    assigning: t('assigning'),
+    unassigning: t('unassigning'),
+    assignmentSuccessful: t('assignmentSuccessful'),
+    unassignmentSuccessful: t('unassignmentSuccessful'),
+  }) as const;
 
 type AssignmentStatus =
   | 'off'
@@ -48,7 +49,7 @@ const Header: React.FC<Props> = ({task, user, onAssignmentError}) => {
   const {t} = useTranslation();
 
   return (
-    <header className={styles.header} title={t("taskDetailsHeader")}>
+    <header className={styles.header} title={t('taskDetailsHeader')}>
       <div className={styles.headerLeftContainer}>
         <span className={styles.taskName}>{name}</span>
         <span className={styles.processName}>{processName}</span>
@@ -65,19 +66,21 @@ const Header: React.FC<Props> = ({task, user, onAssignmentError}) => {
               orientation="horizontal"
               gap={2}
             >
-              <CheckmarkFilled size={16} color="green" />         
+              <CheckmarkFilled size={16} color="green" />
               {assignee ? (
                 <Trans i18nKey={'completedByUser'}>
-                Completed by 
-                <span className={styles.taskAssignee} data-testid="assignee">
-                  <AssigneeTag
-                    currentUser={user}
-                    assignee={assignee}
-                    isShortFormat={true}
-                  />
-                </span>
-              </Trans>
-              ) : t('completed')}
+                  Completed by
+                  <span className={styles.taskAssignee} data-testid="assignee">
+                    <AssigneeTag
+                      currentUser={user}
+                      assignee={assignee}
+                      isShortFormat={true}
+                    />
+                  </span>
+                </Trans>
+              ) : (
+                t('completed')
+              )}
             </Stack>
           </span>
         ) : (
@@ -165,7 +168,10 @@ const AssignButton: React.FC<{
     return 'inactive';
   }
 
-  const assignmentToggleLabels = useMemo(() => getAssignmentToggleLabels(t), [t]); 
+  const assignmentToggleLabels = useMemo(
+    () => getAssignmentToggleLabels(t),
+    [t],
+  );
 
   return (
     <AsyncActionButton

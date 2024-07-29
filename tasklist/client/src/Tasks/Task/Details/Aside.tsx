@@ -35,7 +35,7 @@ const Aside: React.FC<Props> = ({task, user}) => {
   const {t} = useTranslation();
 
   return (
-    <aside className={styles.aside} aria-label={t('taskDetailsRightPanel')}>  
+    <aside className={styles.aside} aria-label={t('taskDetailsRightPanel')}>
       <ContainedList label={t('detailsLabel')} kind="disclosed">
         <>
           {taskTenant === undefined ? null : (
@@ -65,7 +65,9 @@ const Aside: React.FC<Props> = ({task, user}) => {
         </ContainedListItem>
         {completionDate ? (
           <ContainedListItem>
-            <span className={styles.itemHeading}>{t('completionDateLabel')}</span>
+            <span className={styles.itemHeading}>
+              {t('completionDateLabel')}
+            </span>
             <br />
             <span className={styles.itemBody}>
               {formatDate(completionDate)}

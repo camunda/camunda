@@ -18,9 +18,8 @@ type Props = {
 };
 
 const FilterNameModal: React.FC<Props> = ({isOpen, onApply, onCancel}) => {
-  
   const {t} = useTranslation();
-  
+
   return (
     <Modal
       variant="composed-modal"
@@ -48,7 +47,10 @@ const FilterNameModal: React.FC<Props> = ({isOpen, onApply, onCancel}) => {
         >
           {({handleSubmit, form}) => (
             <>
-              <ModalHeader title={t('saveFilterTitle')} buttonOnClick={onCancel} />
+              <ModalHeader
+                title={t('saveFilterTitle')}
+                buttonOnClick={onCancel}
+              />
               <ModalBody hasForm>
                 <form onSubmit={handleSubmit}>
                   <Field name="filterName" required>

@@ -13,7 +13,6 @@ import cn from 'classnames';
 import {useTranslation} from 'react-i18next';
 
 const SomethingWentWrong: React.FC<{className?: string}> = ({className}) => {
-
   const {t} = useTranslation();
 
   return (
@@ -24,7 +23,9 @@ const SomethingWentWrong: React.FC<{className?: string}> = ({className}) => {
           <Stack gap={4}>
             <Heading>{t('somethingWentWrongTitle')}</Heading>
             <p>{t('pageCouldNotBeLoaded')}</p>
-            <Button kind="primary" onClick={() => window.location.reload()}>{t('tryAgain')}</Button>
+            <Button kind="primary" onClick={() => window.location.reload()}>
+              {t('tryAgain')}
+            </Button>
           </Stack>
         </Stack>
       </div>

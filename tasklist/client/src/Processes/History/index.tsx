@@ -29,8 +29,12 @@ const History: React.FC = () => {
           .with({status: 'error'}, () => (
             <Layer>
               <Stack gap={3} className={styles.message}>
-                <span className={styles.messageHeading}>{t('errorFetchingHistoryTitle')}</span>
-                <span className={styles.messageBody}>{t('errorFetchingHistoryBody')}</span>
+                <span className={styles.messageHeading}>
+                  {t('errorFetchingHistoryTitle')}
+                </span>
+                <span className={styles.messageBody}>
+                  {t('errorFetchingHistoryBody')}
+                </span>
               </Stack>
             </Layer>
           ))
@@ -43,8 +47,12 @@ const History: React.FC = () => {
               processInstances.length === 0 ? (
                 <Layer>
                   <Stack gap={3} className={styles.message}>
-                    <span className={styles.messageHeading}>{t('noHistoryEntriesFound')}</span>
-                    <span className={styles.messageBody}>{t('noHistoryToDisplay')}</span>
+                    <span className={styles.messageHeading}>
+                      {t('noHistoryEntriesFound')}
+                    </span>
+                    <span className={styles.messageBody}>
+                      {t('noHistoryToDisplay')}
+                    </span>
                   </Stack>
                 </Layer>
               ) : (

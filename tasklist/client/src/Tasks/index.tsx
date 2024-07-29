@@ -97,7 +97,13 @@ const Tasks: React.FC = observer(() => {
   return (
     <main className={styles.container}>
       <CollapsiblePanel />
-      <Stack as="section" className={styles.tasksPanel} aria-label={t('appPanel')}> {/* Title for screen readers */}
+      <Stack
+        as="section"
+        className={styles.tasksPanel}
+        aria-label={t('appPanel')}
+      >
+        {' '}
+        {/* Title for screen readers */}
         <Filters disabled={isPending} />
         <AvailableTasks
           loading={isLoading}
@@ -107,7 +113,12 @@ const Tasks: React.FC = observer(() => {
         />
         <Options onAutoSelectToggle={onAutoSelectToggle} />
       </Stack>
-      <section className={styles.detailsPanel} aria-label={t('availableTasksTitle')}> {/* Title for screen readers */}
+      <section
+        className={styles.detailsPanel}
+        aria-label={t('availableTasksTitle')}
+      >
+        {' '}
+        {/* Title for screen readers */}
         <Outlet />
       </section>
     </main>

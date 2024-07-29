@@ -110,13 +110,13 @@ const StartProcessFromForm: React.FC = () => {
                   path: CheckImage,
                 }}
                 heading={t('successHeading')}
-                description={(
+                description={
                   <>
                     {t('formSubmittedSuccessfullyDescription')}
                     <br />
                     {t('closeWindowInstruction')}
                   </>
-                )}
+                }
               />
             ))
             .with({pageView: 'form-not-found'}, () => (

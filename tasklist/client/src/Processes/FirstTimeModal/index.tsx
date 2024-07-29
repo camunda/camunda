@@ -71,13 +71,9 @@ const FirstTimeModal: React.FC = () => {
           />
           <div>
             <p>{t('startProcessesOnDemandText')}</p>
-            <p>
-              {t('executeProcessesText')}
-            </p>
+            <p>{t('executeProcessesText')}</p>
             <br />
-            <p>
-              {t('triggerTasksOnDemandText')}
-            </p>
+            <p>{t('triggerTasksOnDemandText')}</p>
           </div>
         </div>
       ) : null}

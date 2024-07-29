@@ -64,7 +64,9 @@ const Notification: React.FC<Props> = observer(
                 hideNotification();
                 return false;
               }}
-              actionButtonLabel={actionButtonLabel ? t('actionButtonLabel') : ''}
+              actionButtonLabel={
+                actionButtonLabel ? t('actionButtonLabel') : ''
+              }
               onActionButtonClick={onActionButtonClick}
             />
           ) : (

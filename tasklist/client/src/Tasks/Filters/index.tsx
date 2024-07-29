@@ -54,7 +54,7 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
   const sortOptionsOrder = ['completed', 'custom'].includes(filter)
     ? COMPLETED_SORTING_OPTIONS_ORDER
     : SORTING_OPTIONS_ORDER;
-  
+
   const {t} = useTranslation();
 
   const filterLabels: Record<string, string> = useMemo(() => {
@@ -77,7 +77,10 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
   }, [t]);
 
   return (
-    <section className={sharedStyles.panelHeader} aria-label={t('filtersAriaLabel')}>
+    <section
+      className={sharedStyles.panelHeader}
+      aria-label={t('filtersAriaLabel')}
+    >
       <h1 className={styles.header}>
         {filterLabels?.[filter] ?? customFilters?.[filter]?.name}
       </h1>

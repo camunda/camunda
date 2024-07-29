@@ -160,11 +160,7 @@ const Variables: React.FC<Props> = ({
                 }}
                 renderIcon={Add}
                 disabled={!canCompleteTask}
-                title={
-                  canCompleteTask
-                    ? undefined
-                    : t('addVariableTooltip')
-                }
+                title={canCompleteTask ? undefined : t('addVariableTooltip')}
               >
                 {t('addVariableButton')}
               </Button>

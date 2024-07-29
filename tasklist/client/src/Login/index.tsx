@@ -178,7 +178,7 @@ const Login: React.FC = () => {
                   renderIcon={submitting ? LoadingSpinner : undefined}
                   className={styles.button}
                 >
-                  {submitting ? t('loggingIn') : t('login')}  
+                  {submitting ? t('loggingIn') : t('login')}
                 </Button>
                 <Disclaimer />
               </Stack>

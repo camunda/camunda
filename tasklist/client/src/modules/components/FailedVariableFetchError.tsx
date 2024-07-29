@@ -10,7 +10,6 @@ import {InlineNotification} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
 
 const FailedVariableFetchError: React.FC = () => {
-
   const {t} = useTranslation();
 
   return (

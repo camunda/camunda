@@ -20,7 +20,6 @@ type Props = {
 };
 
 function getCompletionButtonDescription(status: InlineLoadingStatus) {
-
   const {t} = useTranslation();
 
   if (status === 'active') {
@@ -46,7 +45,6 @@ const CompleteTaskButton: React.FC<Props> = ({
   onSuccess,
   onError,
 }) => {
-
   const {t} = useTranslation();
 
   return (
@@ -61,9 +59,7 @@ const CompleteTaskButton: React.FC<Props> = ({
         type: 'submit',
         disabled: submissionState === 'active' || isDisabled,
         onClick,
-        title: isDisabled
-          ? t('taskNotAssignedError')
-          : undefined,
+        title: isDisabled ? t('taskNotAssignedError') : undefined,
       }}
       status={submissionState}
       isHidden={isHidden}
