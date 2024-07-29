@@ -14,7 +14,6 @@ const DiagramControls: React.FC<Props> = ({
   handleZoomIn,
   handleZoomOut,
 }) => {
-
   const {t} = useTranslation();
 
   return (

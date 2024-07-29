@@ -15,7 +15,6 @@ type Props = {
 };
 
 const ProcessTag: React.FC<Props> = ({variant}) => {
-  
   const {t} = useTranslation();
 
   if (variant === 'start-form') {

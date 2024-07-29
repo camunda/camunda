@@ -15,7 +15,7 @@ import {
 } from 'react-router-dom';
 import {observer} from 'mobx-react-lite';
 import {useCompleteTask} from 'modules/mutations/useCompleteTask';
-import { useTranslation } from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 import {pages, useTaskDetailsParams} from 'modules/routing';
 import {Task as TaskType, Variable} from 'modules/types';
 import {tracking} from 'modules/tracking';

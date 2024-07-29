@@ -16,11 +16,13 @@ type Props = {
   onAutoSelectToggle?: (state: boolean) => void;
 };
 const Options: React.FC<Props> = observer(({onAutoSelectToggle}) => {
-  
   const {t} = useTranslation();
-  
+
   return (
-    <section className={styles.container} aria-label={t('optionsSectionAriaLabel')}>
+    <section
+      className={styles.container}
+      aria-label={t('optionsSectionAriaLabel')}
+    >
       <Toggle
         id="toggle-auto-select-task"
         data-testid="toggle-auto-select-task"
