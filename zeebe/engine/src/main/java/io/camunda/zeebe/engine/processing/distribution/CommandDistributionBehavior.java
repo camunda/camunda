@@ -163,12 +163,18 @@ public final class CommandDistributionBehavior {
 
   public <T extends UnifiedRecordValue> void distributeCommand(
       final long distributionKey, final ValueType valueType, final Intent intent, final T value) {
+    final var otherPartitions =
+        partitionProvider
+            .partitionIds()
+            .filter(partition -> partition != currentPartitionId)
+            .toList();
+
     distributeCommand(
         distributionKey,
         valueType,
         intent,
         value,
-        partitionProvider.partitionIds().toList(),
+        otherPartitions,
         ValueType.NULL_VAL,
         Intent.UNKNOWN,
         null);
