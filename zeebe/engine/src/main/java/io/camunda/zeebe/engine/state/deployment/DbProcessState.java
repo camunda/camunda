@@ -83,6 +83,11 @@ public final class DbProcessState implements MutableProcessState {
   private final DbLong deploymentKey;
   private final DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>
       tenantAwareProcessIdAndDeploymentKey;
+
+  /**
+   * <b>Note</b>: Will only be filled with entries deployed from 8.6 onwards; previously deployed
+   * processes will not have an entry in this column family.
+   */
   private final ColumnFamily<
           DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>,
           DbForeignKey<DbTenantAwareKey<DbLong>>>
