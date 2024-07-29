@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import i18n, {Resource} from 'i18next';
+import i18n from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import {initReactI18next} from 'react-i18next';
 import {IS_INTERNATIONALIZATION_ENABLED} from 'modules/featureFlags';
@@ -28,7 +28,7 @@ function initI18next() {
       .init({
         detection,
         fallbackLng: 'en',
-        resources: translationResources as Resource,
+        resources: translationResources,
         interpolation: {
           escapeValue: false,
         },
@@ -36,7 +36,7 @@ function initI18next() {
   } else {
     i18n.use(initReactI18next).init({
       lng: 'en',
-      resources: translationResources as Resource,
+      resources: translationResources,
       interpolation: {
         escapeValue: false,
       },
