@@ -22,8 +22,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 
-@ZeebeRestController
+@CamundaRestController
+@RequestMapping("/v2/jobs")
 public class JobController {
 
   private final ResponseObserverProvider responseObserverProvider;
@@ -38,7 +40,7 @@ public class JobController {
   }
 
   @PostMapping(
-      path = "/jobs/activation",
+      path = "/activation",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> activateJobs(
@@ -48,7 +50,7 @@ public class JobController {
   }
 
   @PostMapping(
-      path = "/jobs/{jobKey}/failure",
+      path = "/{jobKey}/failure",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> failureJob(
