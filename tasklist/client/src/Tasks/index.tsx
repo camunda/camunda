@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {Outlet, useLocation} from 'react-router-dom';
 import {Stack} from '@carbon/react';
 import {observer} from 'mobx-react-lite';
@@ -80,17 +80,25 @@ const Tasks: React.FC = observer(() => {
   const filters = useTaskFilters();
   const {fetchPreviousTasks, fetchNextTasks, isLoading, isPending, data} =
     useTasks(filters);
-  const tasks = data?.pages.flat() ?? [];
+  const tasks = useMemo(() => data?.pages.flat() ?? [], [data]);
 
   useAutoSelectNextTaskSideEffects();
 
   const {goToTask: autoSelectGoToTask} = useAutoSelectNextTask();
 
-  const onAutoSelectToggle = (state: boolean) => {
-    if (state && tasks.length > 0 && location.pathname === pages.initial) {
-      autoSelectGoToTask(tasks[0].id);
-    }
-  };
+  const onAutoSelectToggle = useCallback(
+    (state: boolean) => {
+      if (state && location.pathname === pages.initial) {
+        const openTasks = tasks.filter(
+          ({taskState}) => taskState === 'CREATED',
+        );
+        if (openTasks.length > 0) {
+          autoSelectGoToTask(openTasks[0].id);
+        }
+      }
+    },
+    [autoSelectGoToTask, tasks],
+  );
 
   return (
     <main className={styles.container}>
