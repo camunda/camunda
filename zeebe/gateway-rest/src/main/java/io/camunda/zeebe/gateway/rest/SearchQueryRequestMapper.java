@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SORT_FIELD_MUST_NOT_BE_NULL;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_BY;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_ORDER;
+
 import io.camunda.service.search.filter.DecisionDefinitionFilter;
 import io.camunda.service.search.filter.FilterBase;
 import io.camunda.service.search.filter.FilterBuilders;
@@ -29,13 +33,13 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQuerySortRequest;
 import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterRequest;
+import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
 public final class SearchQueryRequestMapper {
@@ -78,36 +82,23 @@ public final class SearchQueryRequestMapper {
           F extends FilterBase,
           S extends SortOption>
       Either<ProblemDetail, T> buildSearchQuery(
-          final Either<List<String>, F> processInstanceFilter,
+          final F filter,
           final Either<List<String>, S> sorting,
-          final Either<List<String>, SearchQueryPage> page,
+          final SearchQueryPage page,
           final Supplier<B> queryBuilderSupplier) {
     final List<String> validationErrors =
-        Stream.of(page, sorting, processInstanceFilter)
-            .filter(Either::isLeft)
-            .flatMap(e -> e.getLeft().stream())
-            .toList();
-    if (validationErrors.isEmpty()) {
-      return Either.right(
-          queryBuilderSupplier
-              .get()
-              .page(page.get())
-              .filter(processInstanceFilter.get())
-              .sort(sorting.get())
-              .build());
-    } else {
-      return Either.left(
-          ProblemDetail.forStatusAndDetail(
-              HttpStatus.BAD_REQUEST, String.join(", ", validationErrors)));
-    }
+        sorting.isLeft() ? sorting.getLeft() : Collections.emptyList();
+    return RequestMapper.getResult(
+        RequestValidator.createProblemDetail(validationErrors),
+        () -> queryBuilderSupplier.get().page(page).filter(filter).sort(sorting.get()).build());
   }
 
-  private static Either<List<String>, ProcessInstanceFilter> toProcessInstanceFilter(
+  private static ProcessInstanceFilter toProcessInstanceFilter(
       final ProcessInstanceFilterRequest filter) {
     final var builder = FilterBuilders.processInstance();
 
     if (filter != null) {
-      final var variableFilters = toVariableValueFilter(filter.getVariables()).get();
+      final var variableFilters = toVariableValueFilter(filter.getVariables());
       if (variableFilters != null) {
         builder.variable(variableFilters);
       }
@@ -116,10 +107,10 @@ public final class SearchQueryRequestMapper {
       }
     }
 
-    return Either.right(builder.build());
+    return builder.build();
   }
 
-  private static Either<List<String>, DecisionDefinitionFilter> toDecisionDefinitionFilter(
+  private static DecisionDefinitionFilter toDecisionDefinitionFilter(
       final DecisionDefinitionFilterRequest filter) {
     final var builder = FilterBuilders.decisionDefinition();
 
@@ -156,53 +147,38 @@ public final class SearchQueryRequestMapper {
       }
     }
 
-    return Either.right(builder.build());
+    return builder.build();
   }
 
-  public static Either<ProblemDetail, List<VariableValueFilter>> toVariableValueFilter(
+  public static List<VariableValueFilter> toVariableValueFilter(
       final List<VariableValueFilterRequest> filters) {
-
-    final List<VariableValueFilter> result;
-
     if (filters != null && !filters.isEmpty()) {
-      result =
-          filters.stream()
-              .map(SearchQueryRequestMapper::toVariableValueFilter)
-              .map(Either::get)
-              .toList();
-    } else {
-      result = null;
+      return filters.stream().map(SearchQueryRequestMapper::toVariableValueFilter).toList();
     }
-
-    return Either.right(result);
+    return null;
   }
 
-  private static Either<ProblemDetail, VariableValueFilter> toVariableValueFilter(
-      final VariableValueFilterRequest f) {
-    return Either.right(
-        FilterBuilders.variableValue(
-            (v) ->
-                v.name(f.getName())
-                    .eq(f.getEq())
-                    .gt(f.getGt())
-                    .gte(f.getGte())
-                    .lt(f.getLt())
-                    .lte(f.getLte())));
+  private static VariableValueFilter toVariableValueFilter(final VariableValueFilterRequest f) {
+    return FilterBuilders.variableValue(
+        (v) ->
+            v.name(f.getName())
+                .eq(f.getEq())
+                .gt(f.getGt())
+                .gte(f.getGte())
+                .lt(f.getLt())
+                .lte(f.getLte()));
   }
 
-  public static Either<List<String>, SearchQueryPage> toSearchQueryPage(
-      final SearchQueryPageRequest requestedPage) {
+  public static SearchQueryPage toSearchQueryPage(final SearchQueryPageRequest requestedPage) {
     if (requestedPage != null) {
-      return Either.right(
-          SearchQueryPage.of(
-              (p) ->
-                  p.size(requestedPage.getLimit())
-                      .from(requestedPage.getFrom())
-                      .searchAfter(toArrayOrNull(requestedPage.getSearchAfter()))
-                      .searchBefore(toArrayOrNull(requestedPage.getSearchBefore()))));
+      return SearchQueryPage.of(
+          (p) ->
+              p.size(requestedPage.getLimit())
+                  .from(requestedPage.getFrom())
+                  .searchAfter(toArrayOrNull(requestedPage.getSearchAfter()))
+                  .searchBefore(toArrayOrNull(requestedPage.getSearchBefore())));
     }
-
-    return Either.right(null);
+    return null;
   }
 
   private static <T, B extends SortOption.AbstractBuilder<B> & ObjectBuilder<T>>
@@ -213,7 +189,7 @@ public final class SearchQueryRequestMapper {
     if (sorting != null && !sorting.isEmpty()) {
       final List<String> validationErrors = new ArrayList<>();
       final var builder = builderSupplier.get();
-      for (SearchQuerySortRequest sort : sorting) {
+      for (final SearchQuerySortRequest sort : sorting) {
         validationErrors.addAll(sortFieldMapper.apply(sort.getField(), builder));
         validationErrors.addAll(applySortOrder(sort.getOrder(), builder));
       }
@@ -230,13 +206,13 @@ public final class SearchQueryRequestMapper {
       final String field, final ProcessInstanceSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
-      validationErrors.add("Sort field must not be null");
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
         case "processInstanceKey" -> builder.processInstanceKey();
         case "startDate" -> builder.startDate();
         case "endDate" -> builder.endDate();
-        default -> validationErrors.add("Unknown sortBy: " + field);
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
     return validationErrors;
@@ -246,7 +222,7 @@ public final class SearchQueryRequestMapper {
       final String field, final DecisionDefinitionSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
-      validationErrors.add("Sort field must not be null");
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
         case "id" -> builder.id();
@@ -258,7 +234,7 @@ public final class SearchQueryRequestMapper {
         case "decisionRequirementsName" -> builder.decisionRequirementsName();
         case "decisionRequirementsVersion" -> builder.decisionRequirementsVersion();
         case "tenantId" -> builder.tenantId();
-        default -> validationErrors.add("Unknown sortBy: " + field);
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
     return validationErrors;
@@ -270,7 +246,7 @@ public final class SearchQueryRequestMapper {
     switch (order.toLowerCase()) {
       case "asc" -> builder.asc();
       case "desc" -> builder.desc();
-      default -> validationErrors.add("Unknown sortOrder: " + order);
+      default -> validationErrors.add(ERROR_UNKNOWN_SORT_ORDER.formatted(order));
     }
     return validationErrors;
   }

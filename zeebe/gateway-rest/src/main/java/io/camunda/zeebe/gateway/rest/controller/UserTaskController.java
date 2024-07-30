@@ -46,8 +46,8 @@ public class UserTaskController {
       @PathVariable final long userTaskKey,
       @RequestBody(required = false) final UserTaskCompletionRequest completionRequest) {
 
-    return RequestMapper.toUserTaskCompletionRequest(completionRequest, userTaskKey)
-        .fold(this::completeUserTask, RestErrorMapper::mapProblemToCompletedResponse);
+    return completeUserTask(
+        RequestMapper.toUserTaskCompletionRequest(completionRequest, userTaskKey));
   }
 
   @PostMapping(
@@ -66,8 +66,7 @@ public class UserTaskController {
   public CompletableFuture<ResponseEntity<Object>> unassignUserTask(
       @PathVariable final long userTaskKey) {
 
-    return RequestMapper.toUserTaskUnassignmentRequest(userTaskKey)
-        .fold(this::unassignUserTask, RestErrorMapper::mapProblemToCompletedResponse);
+    return unassignUserTask(RequestMapper.toUserTaskUnassignmentRequest(userTaskKey));
   }
 
   @PatchMapping(
@@ -84,7 +83,7 @@ public class UserTaskController {
 
   private CompletableFuture<ResponseEntity<Object>> assignUserTask(
       final AssignUserTaskRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContenResult(
+    return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices
                 .withAuthentication(RequestMapper.getAuthentication())
@@ -97,7 +96,7 @@ public class UserTaskController {
 
   private CompletableFuture<ResponseEntity<Object>> completeUserTask(
       final CompleteUserTaskRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContenResult(
+    return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices
                 .withAuthentication(RequestMapper.getAuthentication())
@@ -106,7 +105,7 @@ public class UserTaskController {
 
   private CompletableFuture<ResponseEntity<Object>> unassignUserTask(
       final AssignUserTaskRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContenResult(
+    return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices
                 .withAuthentication(RequestMapper.getAuthentication())
@@ -115,7 +114,7 @@ public class UserTaskController {
 
   private CompletableFuture<ResponseEntity<Object>> updateUserTask(
       final UpdateUserTaskRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContenResult(
+    return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices
                 .withAuthentication(RequestMapper.getAuthentication())

@@ -58,8 +58,7 @@ public class JobController {
   public CompletableFuture<ResponseEntity<Object>> failureJob(
       @PathVariable final long jobKey,
       @RequestBody(required = false) final JobFailRequest failureRequest) {
-    return RequestMapper.toJobFailRequest(failureRequest, jobKey)
-        .fold(this::failJob, RestErrorMapper::mapProblemToCompletedResponse);
+    return failJob(RequestMapper.toJobFailRequest(failureRequest, jobKey));
   }
 
   @PostMapping(
@@ -86,7 +85,7 @@ public class JobController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> failJob(final FailJobRequest failJobRequest) {
-    return RequestMapper.executeServiceMethodWithNoContenResult(
+    return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             jobServices
                 .withAuthentication(RequestMapper.getAuthentication())
@@ -100,7 +99,7 @@ public class JobController {
 
   private CompletableFuture<ResponseEntity<Object>> errorJob(
       final ErrorJobRequest errorJobRequest) {
-    return RequestMapper.executeServiceMethodWithNoContenResult(
+    return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             jobServices
                 .withAuthentication(RequestMapper.getAuthentication())
