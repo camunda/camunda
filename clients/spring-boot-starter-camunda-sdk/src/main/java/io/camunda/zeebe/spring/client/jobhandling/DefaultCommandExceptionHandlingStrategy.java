@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.jobhandling;
 
-import io.camunda.client.api.worker.BackoffSupplier;
+import io.camunda.zeebe.client.api.worker.BackoffSupplier;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.lang.invoke.MethodHandles;

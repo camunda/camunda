@@ -6,10 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {deployProcess, createSingleInstance} from '../setup-utils';
+import {zeebeGrpcApi} from '../api/zeebe-grpc';
+
+const {deployProcesses, createSingleInstance} = zeebeGrpcApi;
 
 export async function setup() {
-  await deployProcess(['callActivityProcess.bpmn', 'calledProcess.bpmn']);
+  await deployProcesses(['callActivityProcess.bpmn', 'calledProcess.bpmn']);
 
   return {
     callActivityProcessInstance: await createSingleInstance(

@@ -36,18 +36,14 @@ import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.search.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeClientCloudBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 
-/**
- * The client to communicate with a Zeebe broker/cluster.
- *
- * @deprecated since 8.6 for removal with 8.8
- */
-@Deprecated
+/** The client to communicate with a Zeebe broker/cluster. */
 public interface ZeebeClient extends AutoCloseable, JobClient {
 
   /**
@@ -484,15 +480,9 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <p>This command is only sent via REST over HTTP, not via gRPC <br>
    * <br>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. Until this warning is removed, anything described
-   * below may not yet have taken effect, and the interface and its description are subject to
-   * change.</strong>
-   *
    * @param userTaskKey the key of the user task
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   CompleteUserTaskCommandStep1 newUserTaskCompleteCommand(long userTaskKey);
 
   /**
@@ -510,15 +500,9 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <p>This command is only sent via REST over HTTP, not via gRPC <br>
    * <br>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. Until this warning is removed, anything described
-   * below may not yet have taken effect, and the interface and its description are subject to
-   * change.</strong>
-   *
    * @param userTaskKey the key of the user task
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   AssignUserTaskCommandStep1 newUserTaskAssignCommand(long userTaskKey);
 
   /**
@@ -536,15 +520,9 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <p>This command is only sent via REST over HTTP, not via gRPC <br>
    * <br>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. Until this warning is removed, anything described
-   * below may not yet have taken effect, and the interface and its description are subject to
-   * change.</strong>
-   *
    * @param userTaskKey the key of the user task
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   UpdateUserTaskCommandStep1 newUserTaskUpdateCommand(long userTaskKey);
 
   /**
@@ -561,14 +539,33 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <p>This command is only sent via REST over HTTP, not via gRPC <br>
    * <br>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. Until this warning is removed, anything described
-   * below may not yet have taken effect, and the interface and its description are subject to
-   * change.</strong>
-   *
    * @param userTaskKey the key of the user task
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   UnassignUserTaskCommandStep1 newUserTaskUnassignCommand(long userTaskKey);
+
+  /**
+   * Executes a search request to query process instances.
+   *
+   * <pre>
+   * long processInstanceKey = ...;
+   *
+   * zeebeClient
+   *  .newProcessInstanceQuery()
+   *  .filter((f) -> f.processInstanceKeys(processInstanceKey))
+   *  .sort((s) -> s.startDate().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @return a builder for the process instance query
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  ProcessInstanceQuery newProcessInstanceQuery();
 }

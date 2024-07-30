@@ -15,19 +15,18 @@
  */
 package io.camunda.zeebe.client.impl.worker;
 
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 final class TestData {
-  static GatewayOuterClass.ActivatedJob job() {
+  static ActivatedJob job() {
     return job(12);
   }
 
-  static GatewayOuterClass.ActivatedJob job(final long key) {
-    return GatewayOuterClass.ActivatedJob.newBuilder()
+  static ActivatedJob job(final long key) {
+    return ActivatedJob.newBuilder()
         .setKey(key)
         .setType("foo")
         .setProcessInstanceKey(123)

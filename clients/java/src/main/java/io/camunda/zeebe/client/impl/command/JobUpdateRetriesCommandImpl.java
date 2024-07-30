@@ -27,6 +27,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest.Builder;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -68,13 +69,11 @@ public final class JobUpdateRetriesCommandImpl
   public ZeebeFuture<UpdateRetriesJobResponse> send() {
     final UpdateJobRetriesRequest request = builder.build();
 
-    final RetriableClientFutureImpl<
-            UpdateRetriesJobResponse, GatewayOuterClass.UpdateJobRetriesResponse>
-        future =
-            new RetriableClientFutureImpl<>(
-                UpdateRetriesJobResponseImpl::new,
-                retryPredicate,
-                streamObserver -> send(request, streamObserver));
+    final RetriableClientFutureImpl<UpdateRetriesJobResponse, UpdateJobRetriesResponse> future =
+        new RetriableClientFutureImpl<>(
+            UpdateRetriesJobResponseImpl::new,
+            retryPredicate,
+            streamObserver -> send(request, streamObserver));
 
     send(request, future);
     return future;
@@ -86,5 +85,11 @@ public final class JobUpdateRetriesCommandImpl
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .updateJobRetries(request, streamObserver);
+  }
+
+  @Override
+  public UpdateRetriesJobCommandStep2 operationReference(final long operationReference) {
+    builder.setOperationReference(operationReference);
+    return this;
   }
 }

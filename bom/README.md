@@ -30,13 +30,13 @@ section of your pom.
 Once imported, you can easily add the dependencies you need to the `dependencies` section of your pom.
 
 For example, you can use it to import the
-[Camunda Java Client](https://docs.camunda.io/docs/apis-clients/java-client/).
+[Zeebe Java Client](https://docs.camunda.io/docs/apis-clients/java-client/).
 
 ```xml
 <dependencies>
   <dependency>
     <groupId>io.camunda</groupId>
-    <artifactId>camunda-client-java</artifactId>
+    <artifactId>zeebe-client-java</artifactId>
   </dependency>
 </dependencies>
 ```

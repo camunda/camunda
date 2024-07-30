@@ -105,11 +105,11 @@ below, which are made available under the [Apache License, Version
 Available under the [Apache License, Version 2.0](/licenses/APACHE-2.0.txt):
 - Java Client ([clients/java](/clients/java))
 - Go Client ([clients/go](/clients/go))
-- Spring SDK ([spring-boot-starter-camunda-sdk](/spring-boot-starter-camunda-sdk))
-- Exporter API ([exporter-api](/exporter-api))
-- Protocol ([protocol](/protocol))
-- Gateway Protocol Implementation ([gateway-protocol-impl](/gateway-protocol-impl))
-- BPMN Model API ([bpmn-model](/bpmn-model))
+- Spring SDK ([spring-boot-starter-camunda-sdk](/clients/spring-boot-starter-camunda-sdk))
+- Exporter API ([exporter-api](/zeebe/exporter-api))
+- Protocol ([protocol](/zeebe/protocol))
+- Gateway Protocol Implementation ([gateway-protocol-impl](/zeebe/gateway-protocol-impl))
+- BPMN Model API ([bpmn-model](/zeebe/bpmn-model))
 
 ### Clarification on gRPC Code Generation
 

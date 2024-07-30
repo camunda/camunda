@@ -30,9 +30,6 @@ import org.agrona.DirectBuffer;
 public final class FormResourceTransformer implements DeploymentResourceTransformer {
 
   private static final int INITIAL_VERSION = 1;
-
-  private static final Either<Failure, Object> NO_DUPLICATES = Either.right(null);
-
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
   private final KeyGenerator keyGenerator;
@@ -52,9 +49,8 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
   }
 
   @Override
-  public Either<Failure, Void> transformResource(
+  public Either<Failure, Void> createMetadata(
       final DeploymentResource resource, final DeploymentRecord deployment) {
-
     return parseFormId(resource)
         .flatMap(
             formId ->
@@ -64,10 +60,36 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
                           final FormMetadataRecord formRecord = deployment.formMetadata().add();
                           appendMetadataToFormRecord(
                               formRecord, formId, resource, deployment.getTenantId());
-                          writeFormRecord(formRecord, resource);
-
                           return null;
                         }));
+  }
+
+  @Override
+  public Either<Failure, Void> writeRecords(
+      final DeploymentResource resource, final DeploymentRecord deployment) {
+    if (deployment.hasDuplicatesOnly()) {
+      return Either.right(null);
+    }
+    final var checksum = checksumGenerator.apply(resource.getResource());
+    deployment.formMetadata().stream()
+        .filter(metadata -> checksum.equals(metadata.getChecksumBuffer()))
+        .findFirst()
+        .ifPresent(
+            metadata -> {
+              var key = metadata.getFormKey();
+              if (metadata.isDuplicate()) {
+                // create new version as the deployment contains at least one other non-duplicate
+                // resource and all resources in a deployment should be versioned together
+                key = keyGenerator.nextKey();
+                metadata
+                    .setFormKey(key)
+                    .setVersion(
+                        formState.getNextFormVersion(metadata.getFormId(), metadata.getTenantId()))
+                    .setDuplicate(false);
+              }
+              writeFormRecord(metadata, resource);
+            });
+    return Either.right(null);
   }
 
   private Either<Failure, String> parseFormId(final DeploymentResource resource) {
@@ -131,7 +153,7 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
                 formRecord
                     .setFormKey(latestForm.getFormKey())
                     .setVersion(latestVersion)
-                    .markAsDuplicate();
+                    .setDuplicate(true);
               } else {
                 formRecord
                     .setFormKey(newFormKey.getAsLong())
@@ -143,12 +165,10 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
 
   private void writeFormRecord(
       final FormMetadataRecord formRecord, final DeploymentResource resource) {
-    if (!formRecord.isDuplicate()) {
-      stateWriter.appendFollowUpEvent(
-          formRecord.getFormKey(),
-          FormIntent.CREATED,
-          new FormRecord().wrap(formRecord, resource.getResource()));
-    }
+    stateWriter.appendFollowUpEvent(
+        formRecord.getFormKey(),
+        FormIntent.CREATED,
+        new FormRecord().wrap(formRecord, resource.getResource()));
   }
 
   private Either<Failure, String> validateFormId(final String formId) {

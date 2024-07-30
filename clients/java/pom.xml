@@ -10,10 +10,10 @@
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>camunda-client-java</artifactId>
+  <artifactId>zeebe-client-java</artifactId>
   <packaging>jar</packaging>
 
-  <name>Camunda Client Java</name>
+  <name>Zeebe Client Java</name>
 
   <licenses>
     <license>
@@ -272,7 +272,7 @@
           <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
           <generatorName>java</generatorName>
           <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
-          <modelPackage>io.camunda.client.protocol.rest</modelPackage>
+          <modelPackage>io.camunda.zeebe.client.protocol.rest</modelPackage>
           <typeMappings>OffsetDateTime=String</typeMappings>
           <generateApis>false</generateApis>
           <generateApiTests>false</generateApiTests>
@@ -299,19 +299,6 @@
             <goals>
               <goal>generate</goal>
             </goals>
-          </execution>
-
-          <!-- For removal after 8.8 -->
-
-          <execution>
-            <id>old-rest</id>
-            <goals>
-              <goal>generate</goal>
-            </goals>
-            <configuration>
-              <inputSpec>${openapi.dir}/rest-api-v1.yaml</inputSpec>
-              <modelPackage>io.camunda.zeebe.client.protocol.rest</modelPackage>
-            </configuration>
           </execution>
         </executions>
       </plugin>

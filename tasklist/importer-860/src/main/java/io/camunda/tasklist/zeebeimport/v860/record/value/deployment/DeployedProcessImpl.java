@@ -21,6 +21,7 @@ public class DeployedProcessImpl implements Process {
   private byte[] resource;
   private boolean isDuplicate;
   private String tenantId;
+  private long deploymentKey;
 
   public DeployedProcessImpl() {}
 
@@ -52,6 +53,15 @@ public class DeployedProcessImpl implements Process {
   @Override
   public boolean isDuplicate() {
     return isDuplicate;
+  }
+
+  @Override
+  public long getDeploymentKey() {
+    return deploymentKey;
+  }
+
+  public void setDeploymentKey(final long deploymentKey) {
+    this.deploymentKey = deploymentKey;
   }
 
   public void setDuplicate(final boolean duplicate) {
@@ -107,7 +117,13 @@ public class DeployedProcessImpl implements Process {
   public int hashCode() {
     int result =
         Objects.hash(
-            bpmnProcessId, resourceName, processDefinitionKey, version, isDuplicate, tenantId);
+            bpmnProcessId,
+            resourceName,
+            processDefinitionKey,
+            version,
+            isDuplicate,
+            tenantId,
+            deploymentKey);
     result = 31 * result + Arrays.hashCode(checksum);
     result = 31 * result + Arrays.hashCode(resource);
     return result;
@@ -125,6 +141,7 @@ public class DeployedProcessImpl implements Process {
     return processDefinitionKey == that.processDefinitionKey
         && version == that.version
         && isDuplicate == that.isDuplicate
+        && deploymentKey == that.deploymentKey
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(resourceName, that.resourceName)
         && Objects.equals(tenantId, that.tenantId)
@@ -153,6 +170,8 @@ public class DeployedProcessImpl implements Process {
         + isDuplicate
         + ", tenantId="
         + tenantId
+        + ", deploymentKey="
+        + deploymentKey
         + '}';
   }
 }

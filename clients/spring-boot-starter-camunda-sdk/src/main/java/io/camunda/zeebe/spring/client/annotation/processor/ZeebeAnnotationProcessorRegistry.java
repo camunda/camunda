@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.annotation.processor;
 
-import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.spring.client.bean.ClassInfo;
 import io.camunda.zeebe.spring.client.configuration.AnnotationProcessorConfiguration;
 import java.util.List;
@@ -50,11 +50,11 @@ public class ZeebeAnnotationProcessorRegistry implements BeanPostProcessor, Orde
     return bean;
   }
 
-  public void startAll(final CamundaClient client) {
+  public void startAll(final ZeebeClient client) {
     processors.forEach(zeebePostProcessor -> zeebePostProcessor.start(client));
   }
 
-  public void stopAll(final CamundaClient client) {
+  public void stopAll(final ZeebeClient client) {
     processors.forEach(zeebePostProcessor -> zeebePostProcessor.stop(client));
   }
 

@@ -82,6 +82,11 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
     return isDuplicateProp.getValue();
   }
 
+  public DecisionRecord setDuplicate(final boolean duplicate) {
+    isDuplicateProp.setValue(duplicate);
+    return this;
+  }
+
   public DecisionRecord setDecisionRequirementsKey(final long decisionRequirementsKey) {
     decisionRequirementsKeyProp.setValue(decisionRequirementsKey);
     return this;
@@ -109,11 +114,6 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
 
   public DecisionRecord setDecisionId(final String decisionId) {
     decisionIdProp.setValue(decisionId);
-    return this;
-  }
-
-  public DecisionRecord markAsDuplicate() {
-    isDuplicateProp.setValue(true);
     return this;
   }
 

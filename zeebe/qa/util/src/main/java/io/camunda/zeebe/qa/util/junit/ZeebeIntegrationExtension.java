@@ -27,7 +27,6 @@ import java.util.function.Predicate;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
-import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
@@ -59,7 +58,7 @@ import org.slf4j.LoggerFactory;
  * <p>See {@link TestZeebe} for annotation parameters.
  */
 final class ZeebeIntegrationExtension
-    implements BeforeAllCallback, BeforeEachCallback, BeforeTestExecutionCallback, TestWatcher {
+    implements BeforeAllCallback, BeforeEachCallback, TestWatcher {
 
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeIntegrationExtension.class);
 
@@ -92,16 +91,13 @@ final class ZeebeIntegrationExtension
         lookupApplications(extensionContext, testInstance, ModifierSupport::isNotStatic);
     manageClusters(extensionContext, clusters);
     manageApplications(extensionContext, nodes);
+
+    RecordingExporter.reset();
   }
 
   @Override
   public void testFailed(final ExtensionContext context, final Throwable cause) {
     RecordLogger.logRecords();
-  }
-
-  @Override
-  public void beforeTestExecution(final ExtensionContext extensionContext) {
-    RecordingExporter.reset();
   }
 
   private Iterable<ClusterResource> lookupClusters(

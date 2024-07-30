@@ -19,6 +19,7 @@ public class GatewayCfg {
   private SecurityCfg security = new SecurityCfg();
   private LongPollingCfg longPolling = new LongPollingCfg();
   private List<InterceptorCfg> interceptors = new ArrayList<>();
+  private List<FilterCfg> filters = new ArrayList<>();
   private MultiTenancyCfg multiTenancy = new MultiTenancyCfg();
 
   public void init() {
@@ -80,6 +81,14 @@ public class GatewayCfg {
 
   public void setInterceptors(final List<InterceptorCfg> interceptors) {
     this.interceptors = interceptors;
+  }
+
+  public List<FilterCfg> getFilters() {
+    return filters;
+  }
+
+  public void setFilters(final List<FilterCfg> filters) {
+    this.filters = filters;
   }
 
   public MultiTenancyCfg getMultiTenancy() {

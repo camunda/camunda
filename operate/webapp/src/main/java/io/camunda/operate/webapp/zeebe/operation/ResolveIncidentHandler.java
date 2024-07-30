@@ -42,9 +42,9 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
     }
 
     if (incident.getErrorType().equals(JOB_NO_RETRIES)) {
-      camundaClient.newUpdateRetriesCommand(incident.getJobKey()).retries(1).send().join();
+      zeebeClient.newUpdateRetriesCommand(incident.getJobKey()).retries(1).send().join();
     }
-    camundaClient.newResolveIncidentCommand(incident.getKey()).send().join();
+    zeebeClient.newResolveIncidentCommand(incident.getKey()).send().join();
     // mark operation as sent
     markAsSent(operation);
   }

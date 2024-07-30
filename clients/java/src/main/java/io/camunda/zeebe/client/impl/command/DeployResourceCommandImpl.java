@@ -16,7 +16,6 @@
 package io.camunda.zeebe.client.impl.command;
 
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
-import static io.camunda.zeebe.client.impl.command.StreamUtil.readInputStream;
 
 import com.google.protobuf.ByteString;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
@@ -31,8 +30,8 @@ import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.impl.response.DeploymentEventImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Resource;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -119,7 +118,7 @@ public final class DeployResourceCommandImpl
     ensureNotNull("resource stream", resourceStream);
 
     try {
-      final byte[] bytes = readInputStream(resourceStream);
+      final byte[] bytes = StreamUtil.readInputStream(resourceStream);
 
       return addResourceBytes(bytes, resourceName);
     } catch (final IOException e) {
@@ -181,12 +180,11 @@ public final class DeployResourceCommandImpl
   public ZeebeFuture<DeploymentEvent> send() {
     final DeployResourceRequest request = requestBuilder.build();
 
-    final RetriableClientFutureImpl<DeploymentEvent, GatewayOuterClass.DeployResourceResponse>
-        future =
-            new RetriableClientFutureImpl<>(
-                DeploymentEventImpl::new,
-                retryPredicate,
-                streamObserver -> send(request, streamObserver));
+    final RetriableClientFutureImpl<DeploymentEvent, DeployResourceResponse> future =
+        new RetriableClientFutureImpl<>(
+            DeploymentEventImpl::new,
+            retryPredicate,
+            streamObserver -> send(request, streamObserver));
 
     send(request, future);
 

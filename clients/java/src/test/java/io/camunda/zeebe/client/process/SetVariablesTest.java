@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.process;
 
-import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
@@ -23,6 +22,7 @@ import static org.assertj.core.api.Assertions.entry;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.SetVariablesResponse;
 import io.camunda.zeebe.client.util.ClientTest;
+import io.camunda.zeebe.client.util.JsonUtil;
 import io.camunda.zeebe.client.util.StringUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import java.io.ByteArrayInputStream;
@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
 public final class SetVariablesTest extends ClientTest {
@@ -50,7 +51,8 @@ public final class SetVariablesTest extends ClientTest {
 
     final SetVariablesRequest request = gatewayService.getLastRequest();
     assertThat(request.getElementInstanceKey()).isEqualTo(123);
-    assertThat(fromJsonAsMap(request.getVariables())).containsOnly(entry("key", "val"));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .containsOnly(entry("key", "val"));
 
     rule.verifyDefaultRequestTimeout();
   }
@@ -66,7 +68,8 @@ public final class SetVariablesTest extends ClientTest {
 
     // then
     final SetVariablesRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getVariables())).containsOnly(entry("key", "val"));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .containsOnly(entry("key", "val"));
   }
 
   @Test
@@ -79,7 +82,8 @@ public final class SetVariablesTest extends ClientTest {
 
     // then
     final SetVariablesRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getVariables())).containsOnly(entry("key", "val"));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .containsOnly(entry("key", "val"));
   }
 
   @Test
@@ -92,7 +96,8 @@ public final class SetVariablesTest extends ClientTest {
 
     // then
     final SetVariablesRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getVariables())).containsOnly(entry("key", "val"));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .containsOnly(entry("key", "val"));
   }
 
   @Test

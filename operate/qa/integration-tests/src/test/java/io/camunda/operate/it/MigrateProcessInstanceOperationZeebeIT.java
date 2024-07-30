@@ -61,7 +61,7 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
   public void before() {
     super.before();
 
-    migrateProcessInstanceHandler.setCamundaClient(super.getClient());
+    migrateProcessInstanceHandler.setZeebeClient(super.getClient());
     mockMvc = mockMvcTestRule.getMockMvc();
     initialBatchOperationMaxSize = operateProperties.getBatchOperationMaxSize();
   }
