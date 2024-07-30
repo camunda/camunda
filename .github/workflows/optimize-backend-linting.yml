@@ -8,14 +8,12 @@ on:
     paths:
       - "optimize/**"
       - ".github/workflows/optimize-code-scanning-java.yml"
-    paths-ignore:
-      - "optimize/client/**"
+      - "!optimize/client/**"
   pull_request:
     paths:
       - "optimize/**"
       - ".github/workflows/optimize-code-scanning-java.yml"
-    paths-ignore:
-      - "optimize/client/**"
+      - "!optimize/client/**"
 jobs:
   linting:
     name: Linting
