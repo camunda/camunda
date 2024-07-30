@@ -212,6 +212,7 @@
     "filterTasksAriaLabel": "Aufgaben filtern",
     "allOpenTasks": "Alle offenen Aufgaben",
     "unassigned": "Nicht zugewiesen",
+    "custom": "Benutzerdefiniert",
     "customFilter": "Benutzerdefinierter Filter",
     "customFilterActionsAriaLabel": "Benutzerdefinierte Filteraktionen",
     "edit": "Bearbeiten",

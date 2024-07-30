@@ -294,7 +294,7 @@ const CollapsiblePanel: React.FC = () => {
                   className={styles.customFilterNav}
                 >
                   {filterId === 'custom' || name === undefined
-                    ? t('customFilter')
+                    ? t('custom')
                     : name}
                 </ControlledNavLink>
                 <OverflowMenu

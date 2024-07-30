@@ -212,6 +212,7 @@
     "filterTasksAriaLabel": "Filtrar tareas",
     "allOpenTasks": "Todas las tareas abiertas",
     "unassigned": "No asignado",
+    "custom": "Personalizado",
     "customFilter": "Filtro personalizado",
     "customFilterActionsAriaLabel": "Acciones del filtro personalizado",
     "edit": "Editar",

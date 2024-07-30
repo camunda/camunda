@@ -215,6 +215,7 @@
     "filterTasksAriaLabel": "Filter tasks",
     "allOpenTasks": "All open tasks",
     "unassigned": "Unassigned",
+    "custom": "Custom",
     "customFilter": "Custom filter",
     "customFilterActionsAriaLabel": "Custom filter actions",
     "edit": "Edit",
