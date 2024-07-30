@@ -46,7 +46,13 @@ public class DecisionDefinitionSortTest {
         new TestArguments(
             "decisionRequirementsKey", SortOrder.DESC, s -> s.decisionRequirementsKey().desc()),
         new TestArguments("tenantId", SortOrder.ASC, s -> s.tenantId().asc()),
-        new TestArguments("version", SortOrder.ASC, s -> s.version().asc()));
+        new TestArguments("version", SortOrder.ASC, s -> s.version().asc()),
+        new TestArguments(
+            "decisionRequirementsName", SortOrder.ASC, s -> s.decisionRequirementsName().asc()),
+        new TestArguments(
+            "decisionRequirementsVersion",
+            SortOrder.ASC,
+            s -> s.decisionRequirementsVersion().asc()));
   }
 
   @ParameterizedTest

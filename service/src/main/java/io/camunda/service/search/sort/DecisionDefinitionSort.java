@@ -56,6 +56,16 @@ public record DecisionDefinitionSort(List<FieldSorting> orderings) implements So
       return this;
     }
 
+    public Builder decisionRequirementsName() {
+      currentOrdering = new FieldSorting("decisionRequirementsName", null);
+      return this;
+    }
+
+    public Builder decisionRequirementsVersion() {
+      currentOrdering = new FieldSorting("decisionRequirementsVersion", null);
+      return this;
+    }
+
     public Builder tenantId() {
       currentOrdering = new FieldSorting("tenantId", null);
       return this;
