@@ -31,4 +31,5 @@ public final record UserTaskEntity(
     List<String> candidateUsers,
     String externalFormReference,
     Integer processDefinitionVersion,
-    Map<String, String> customHeaders) {}
+    Map<String, String> customHeaders,
+    Long priority) {}

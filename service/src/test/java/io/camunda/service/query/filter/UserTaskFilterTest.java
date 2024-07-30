@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
+import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.sort.SortOrder;
 import io.camunda.service.UserTaskServices;
@@ -389,5 +390,58 @@ public class UserTaskFilterTest {
                         assertThat(term.value().stringValue()).isEqualTo("candidateGroup1");
                       });
             });
+  }
+
+  @Test
+  public void shouldQueryWithinPriorityRange() {
+    // given
+    final var priorityFilter = FilterBuilders.userTask().priority((f) -> f.gt(10L).lt(100L));
+    final var searchQuery =
+        SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(priorityFilter.build()));
+    // when
+    services.search(searchQuery);
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+    final var queryVariant = searchRequest.query().queryOption();
+
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (t) ->
+                assertThat(t.must().get(1).queryOption())
+                    .isInstanceOfSatisfying(
+                        SearchRangeQuery.class,
+                        (term) -> {
+                          assertThat(term.field()).isEqualTo("priority");
+                          assertThat(term.gt()).isEqualTo(10L);
+                          assertThat(term.lt()).isEqualTo(100L);
+                        }));
+  }
+
+  @Test
+  public void shouldQueryWithPriority() {
+    // given
+    final var priorityFilter = FilterBuilders.userTask().priority((f) -> f.eq(10L));
+    final var searchQuery =
+        SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(priorityFilter.build()));
+    // when
+    services.search(searchQuery);
+    // then
+    final var searchRequest = client.getSingleSearchRequest();
+    final var queryVariant = searchRequest.query().queryOption();
+
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (t) ->
+                assertThat(t.must().get(1).queryOption())
+                    .isInstanceOfSatisfying(
+                        SearchTermQuery.class,
+                        (term) -> {
+                          assertThat(term.field()).isEqualTo("priority");
+                          assertThat(term.value().longValue()).isEqualTo(10L);
+                        }));
   }
 }

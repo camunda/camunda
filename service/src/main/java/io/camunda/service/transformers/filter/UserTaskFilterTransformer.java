@@ -13,8 +13,12 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.service.search.filter.ComparableValueFilter;
+import io.camunda.service.search.filter.DateValueFilter;
 import io.camunda.service.search.filter.UserTaskFilter;
 import io.camunda.service.transformers.ServiceTransformers;
+import io.camunda.service.transformers.filter.ComparableValueFilterTransformer.ComparableFieldFilter;
+import io.camunda.service.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -43,6 +47,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     final var assigneesQuery = getAssigneesQuery(filter.assignees());
     final var stateQuery = getStateQuery(filter.states());
     final var tenantQuery = getTenantQuery(filter.tenantIds());
+    final var priorityQuery = getComparableFilter(filter.priority(), "priority");
 
     // Temporary internal condition - in order to bring only Zeebe User Tasks from Tasklist Indices
     final var userTaksImplementationQuery = getUserTasksImplementationOnly();
@@ -58,7 +63,8 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
         processDefinitionKeyQuery,
         tenantQuery,
         userTaksImplementationQuery,
-        elementIdQuery);
+        elementIdQuery,
+        priorityQuery);
   }
 
   @Override
@@ -71,6 +77,13 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     return Arrays.asList("tasklist-task-8.5.0_alias");
   }
 
+  private SearchQuery getComparableFilter(final ComparableValueFilter filter, final String field) {
+    if (filter != null) {
+      final var transformer = getComparableFilterTransformer();
+      return transformer.apply(new ComparableFieldFilter(field, filter));
+    }
+    return null;
+  }
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
     return longTerms("processInstanceId", processInstanceKeys);
   }
@@ -113,5 +126,9 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
   private SearchQuery getElementIdQuery(final List<String> taskDefinitionId) {
     return stringTerms("flowNodeBpmnId", taskDefinitionId);
+  }
+
+  private FilterTransformer<ComparableFieldFilter> getComparableFilterTransformer() {
+    return transformers.getFilterTransformer(ComparableValueFilter.class);
   }
 }
