@@ -7,7 +7,10 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
+import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
+import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
+import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
+import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
 import io.camunda.identity.automation.usermanagement.CamundaGroup;
 import io.camunda.identity.automation.usermanagement.CamundaUserWithPassword;
@@ -20,36 +23,22 @@ import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.util.Either;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 
 public class RequestMapper {
-
-  private static final String ERROR_MESSAGE_EMPTY_ATTRIBUTE = "No %s provided";
-  private static final String ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE =
-      "The value for %s is '%s' but must be %s";
-  private static final String ERROR_MESSAGE_DATE_PARSING =
-      "The provided %s '%s' cannot be parsed as a date according to RFC 3339, section 5.6.";
-  private static final String ERROR_MESSAGE_EMPTY_UPDATE_CHANGESET =
-      """
-      No update data provided. Provide at least an "action" or a non-null value \
-      for a supported attribute in the "changeset".""";
 
   public static Either<ProblemDetail, CompleteUserTaskRequest> toUserTaskCompletionRequest(
       final UserTaskCompletionRequest completionRequest, final long userTaskKey) {
@@ -134,84 +123,20 @@ public class RequestMapper {
             getMapOrEmpty(failRequest, JobFailRequest::getVariables)));
   }
 
-  private static Optional<ProblemDetail> validateAssignmentRequest(
-      final UserTaskAssignmentRequest assignmentRequest) {
-    if (assignmentRequest.getAssignee() == null || assignmentRequest.getAssignee().isBlank()) {
-      final ProblemDetail problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST,
-              ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("assignee"),
-              INVALID_ARGUMENT.name());
-      return Optional.of(problemDetail);
-    }
-    return Optional.empty();
-  }
+  public static Either<ProblemDetail, ErrorJobRequest> toJobErrorRequest(
+      final JobErrorRequest errorRequest, final long jobKey) {
 
-  private static Optional<ProblemDetail> validateUpdateRequest(
-      final UserTaskUpdateRequest updateRequest) {
-    final List<String> violations = new ArrayList<>();
-    if (updateRequest == null
-        || (updateRequest.getAction() == null && isEmpty(updateRequest.getChangeset()))) {
-      violations.add(ERROR_MESSAGE_EMPTY_UPDATE_CHANGESET);
-    }
-    if (updateRequest != null && !isEmpty(updateRequest.getChangeset())) {
-      final Changeset changeset = updateRequest.getChangeset();
-      validateDate(changeset.getDueDate(), "due date", violations);
-      validateDate(changeset.getFollowUpDate(), "follow-up date", violations);
-    }
-    if (violations.isEmpty()) {
-      return Optional.empty();
-    }
-    return Optional.of(
-        RestErrorMapper.createProblemDetail(
-            HttpStatus.BAD_REQUEST, String.join(" ", violations), INVALID_ARGUMENT.name()));
-  }
-
-  private static Optional<ProblemDetail> validateJobActivationRequest(
-      final JobActivationRequest activationRequest) {
-    final List<String> violations = new ArrayList<>();
-    if (activationRequest.getType() == null || activationRequest.getType().isBlank()) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("type"));
-    }
-    if (activationRequest.getTimeout() == null) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("timeout"));
-    } else if (activationRequest.getTimeout() < 1) {
-      violations.add(
-          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-              "timeout", activationRequest.getTimeout(), "greater than 0"));
-    }
-    if (activationRequest.getMaxJobsToActivate() == null) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("maxJobsToActivate"));
-    } else if (activationRequest.getMaxJobsToActivate() < 1) {
-      violations.add(
-          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-              "maxJobsToActivate", activationRequest.getTimeout(), "greater than 0"));
-    }
-    if (violations.isEmpty()) {
-      return Optional.empty();
-    }
-    return Optional.of(
-        RestErrorMapper.createProblemDetail(
-            HttpStatus.BAD_REQUEST, String.join(". ", violations), INVALID_ARGUMENT.name()));
-  }
-
-  private static void validateDate(
-      final String dateString, final String attributeName, final List<String> violations) {
-    if (dateString != null && !dateString.isEmpty()) {
-      try {
-        ZonedDateTime.parse(dateString);
-      } catch (final DateTimeParseException ex) {
-        violations.add(ERROR_MESSAGE_DATE_PARSING.formatted(attributeName, dateString));
-      }
-    }
-  }
-
-  private static boolean isEmpty(final Changeset changeset) {
-    return changeset == null
-        || (changeset.getFollowUpDate() == null
-            && changeset.getDueDate() == null
-            && changeset.getCandidateGroups() == null
-            && changeset.getCandidateUsers() == null);
+    final var validationErrorResponse = validateJobErrorRequest(errorRequest);
+    return validationErrorResponse
+        .<Either<ProblemDetail, ErrorJobRequest>>map(Either::left)
+        .orElseGet(
+            () ->
+                Either.right(
+                    new ErrorJobRequest(
+                        jobKey,
+                        errorRequest.getErrorCode(),
+                        getStringOrEmpty(errorRequest, JobErrorRequest::getErrorMessage),
+                        getMapOrEmpty(errorRequest, JobErrorRequest::getVariables))));
   }
 
   public static CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
@@ -323,4 +248,7 @@ public class RequestMapper {
       String errorMessage,
       Long retryBackoff,
       Map<String, Object> variables) {}
+
+  public record ErrorJobRequest(
+      long jobKey, String errorCode, String errorMessage, Map<String, Object> variables) {}
 }
