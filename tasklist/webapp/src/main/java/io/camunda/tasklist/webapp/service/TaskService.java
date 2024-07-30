@@ -82,7 +82,7 @@ public class TaskService {
     }
 
     if (query.getPageSize() <= 0) {
-      throw new InvalidRequestException("Page size cannot should be a positive number");
+      throw new InvalidRequestException("Page size should be a positive number");
     }
 
     if (query.getImplementation() != null
