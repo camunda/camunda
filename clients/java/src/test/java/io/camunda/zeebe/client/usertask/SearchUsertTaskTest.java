@@ -38,7 +38,7 @@ public final class SearchUsertTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByAssignee() {
     // when
-    client.newUserTaskQuery().filter(f -> f.userTaskAssignee("demo")).send().join();
+    client.newUserTaskQuery().filter(f -> f.assignee("demo")).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =
@@ -49,7 +49,7 @@ public final class SearchUsertTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByState() {
     // when
-    client.newUserTaskQuery().filter(f -> f.userTaskState("completed")).send().join();
+    client.newUserTaskQuery().filter(f -> f.state("completed")).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =
@@ -60,7 +60,7 @@ public final class SearchUsertTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByKey() {
     // when
-    client.newUserTaskQuery().filter(f -> f.userTaskKey(12345L)).send().join();
+    client.newUserTaskQuery().filter(f -> f.key(12345L)).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =
@@ -71,7 +71,7 @@ public final class SearchUsertTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByTaskDefinitionId() {
     // when
-    client.newUserTaskQuery().filter(f -> f.userTaskElementId("task-def-id")).send().join();
+    client.newUserTaskQuery().filter(f -> f.elementId("task-def-id")).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =
@@ -82,7 +82,7 @@ public final class SearchUsertTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByCandidateGroup() {
     // when
-    client.newUserTaskQuery().filter(f -> f.userTaskCandidateGroup("group1")).send().join();
+    client.newUserTaskQuery().filter(f -> f.candidateGroup("group1")).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =
@@ -93,7 +93,7 @@ public final class SearchUsertTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByCandidateUser() {
     // when
-    client.newUserTaskQuery().filter(f -> f.userTaskCandidateUser("user1")).send().join();
+    client.newUserTaskQuery().filter(f -> f.candidateUser("user1")).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =
@@ -104,7 +104,7 @@ public final class SearchUsertTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByProcessDefinitionKey() {
     // when
-    client.newUserTaskQuery().filter(f -> f.userTaskProcessDefinitionKey(123L)).send().join();
+    client.newUserTaskQuery().filter(f -> f.processDefinitionKey(123L)).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =
@@ -115,7 +115,7 @@ public final class SearchUsertTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByProcessInstanceKey() {
     // when
-    client.newUserTaskQuery().filter(f -> f.userTaskProcessInstanceKey(456L)).send().join();
+    client.newUserTaskQuery().filter(f -> f.processInstanceKey(456L)).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =
@@ -130,7 +130,7 @@ public final class SearchUsertTaskTest extends ClientRestTest {
         .newUserTaskQuery()
         .filter(
             f ->
-                f.userTaskFollowUpDate(
+                f.followUpDate(
                     new DateFilter().from("2023-10-01T00:00:00Z").to("2023-10-01T00:00:00Z")))
         .send()
         .join();
@@ -149,8 +149,7 @@ public final class SearchUsertTaskTest extends ClientRestTest {
         .newUserTaskQuery()
         .filter(
             f ->
-                f.userTaskDueDate(
-                    new DateFilter().from("2023-10-01T00:00:00Z").to("2023-10-01T00:00:00Z")))
+                f.dueDate(new DateFilter().from("2023-10-01T00:00:00Z").to("2023-10-01T00:00:00Z")))
         .send()
         .join();
 
@@ -168,7 +167,7 @@ public final class SearchUsertTaskTest extends ClientRestTest {
         .newUserTaskQuery()
         .filter(
             f ->
-                f.userTaskCreationDate(
+                f.creationDate(
                     new DateFilter().from("2023-10-01T00:00:00Z").to("2023-10-01T00:00:00Z")))
         .send()
         .join();
@@ -187,7 +186,7 @@ public final class SearchUsertTaskTest extends ClientRestTest {
         .newUserTaskQuery()
         .filter(
             f ->
-                f.userTaskCompletionDate(
+                f.completionDate(
                     new DateFilter().from("2023-10-01T00:00:00Z").to("2023-10-01T00:00:00Z")))
         .send()
         .join();
@@ -202,7 +201,7 @@ public final class SearchUsertTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByTenantId() {
     // when
-    client.newUserTaskQuery().filter(f -> f.userTaskTenantId("tenant1")).send().join();
+    client.newUserTaskQuery().filter(f -> f.tentantId("tenant1")).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =

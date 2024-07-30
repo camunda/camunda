@@ -48,85 +48,85 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
   }
 
   @Override
-  public UserTaskFilter userTaskKey(final Long value) {
+  public UserTaskFilter key(final Long value) {
     filter.setUserTaskKey(value);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskState(final String state) {
+  public UserTaskFilter state(final String state) {
     filter.setTaskState(state);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskAssignee(final String assignee) {
+  public UserTaskFilter assignee(final String assignee) {
     filter.setAssignee(assignee);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskElementId(final String elementId) {
+  public UserTaskFilter elementId(final String elementId) {
     filter.setElementId(elementId);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskCandidateGroup(final String candidateGroup) {
+  public UserTaskFilter candidateGroup(final String candidateGroup) {
     filter.setCandidateGroup(candidateGroup);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskCandidateUser(final String candidateUser) {
+  public UserTaskFilter candidateUser(final String candidateUser) {
     filter.setCandidateUser(candidateUser);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskProcessDefinitionKey(final Long processDefinitionKey) {
+  public UserTaskFilter processDefinitionKey(final Long processDefinitionKey) {
     filter.setProcessDefinitionKey(processDefinitionKey);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskProcessInstanceKey(final Long processInstanceKey) {
+  public UserTaskFilter processInstanceKey(final Long processInstanceKey) {
     filter.setProcessInstanceKey(processInstanceKey);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskFollowUpDate(final DateFilter dateFilter) {
+  public UserTaskFilter followUpDate(final DateFilter dateFilter) {
     filter.setFollowUpDate(dateFilter);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskDueDate(final DateFilter dateFilter) {
+  public UserTaskFilter dueDate(final DateFilter dateFilter) {
     filter.setDueDate(dateFilter);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskCreationDate(final DateFilter dateFilter) {
+  public UserTaskFilter creationDate(final DateFilter dateFilter) {
     filter.setCreationDate(dateFilter);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskCompletionDate(final DateFilter dateFilter) {
+  public UserTaskFilter completionDate(final DateFilter dateFilter) {
     filter.setCompletionDate(dateFilter);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskTenantId(final String tenantId) {
+  public UserTaskFilter tentantId(final String tenantId) {
     filter.setTenantIds(tenantId);
     return this;
   }
 
   @Override
-  public UserTaskFilter userTaskBpmProcessId(final String bpmnProcessId) {
+  public UserTaskFilter bpmProcessId(final String bpmnProcessId) {
     filter.setBpmnProcessDefinitionId(bpmnProcessId);
     return this;
   }

@@ -41,12 +41,14 @@ import io.camunda.zeebe.client.api.search.UserTaskFilter;
 import io.camunda.zeebe.client.api.search.UserTaskQuery;
 import io.camunda.zeebe.client.api.search.UserTaskSort;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
+import io.camunda.zeebe.client.api.search.response.UserTask;
 import io.camunda.zeebe.client.impl.http.HttpCamundaFuture;
 import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.protocol.rest.UserTaskItem;
+import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryResponse;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
@@ -67,13 +69,14 @@ public class UserTaskQueryImpl
   }
 
   @Override
-  public FinalSearchQueryStep<UserTaskItem> requestTimeout(final Duration requestTimeout) {
-    return null;
+  public FinalSearchQueryStep<UserTask> requestTimeout(final Duration requestTimeout) {
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    return this;
   }
 
   @Override
-  public HttpCamundaFuture<SearchQueryResponse<UserTaskItem>> send() {
-    final HttpCamundaFuture<SearchQueryResponse<UserTaskItem>> result = new HttpCamundaFuture<>();
+  public HttpCamundaFuture<SearchQueryResponse<UserTask>> send() {
+    final HttpCamundaFuture<SearchQueryResponse<UserTask>> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/user-tasks/search",
         jsonMapper.toJson(request),
@@ -86,8 +89,8 @@ public class UserTaskQueryImpl
 
   @Override
   public UserTaskQuery filter(final UserTaskFilter value) {
-    final UserTaskFilterImpl filter = (UserTaskFilterImpl) value;
-    request.setFilter(filter.getSearchRequestProperty());
+    final UserTaskFilterRequest filter = provideSearchRequestProperty(value);
+    request.setFilter(filter);
     return this;
   }
 

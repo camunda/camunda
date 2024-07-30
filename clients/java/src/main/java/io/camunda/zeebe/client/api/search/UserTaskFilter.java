@@ -27,7 +27,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param value the key of the user task
    * @return the updated filter
    */
-  UserTaskFilter userTaskKey(final Long value);
+  UserTaskFilter key(final Long value);
 
   /**
    * Filters user tasks by the specified state.
@@ -35,7 +35,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param state the state of the user task
    * @return the updated filter
    */
-  UserTaskFilter userTaskState(final String state);
+  UserTaskFilter state(final String state);
 
   /**
    * Filters user tasks by the specified assignee.
@@ -43,7 +43,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param assignee the assignee of the user task
    * @return the updated filter
    */
-  UserTaskFilter userTaskAssignee(final String assignee);
+  UserTaskFilter assignee(final String assignee);
 
   /**
    * Filters user tasks by the specified task definition ID.
@@ -51,7 +51,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param taskDefinitionId the task definition ID of the user task
    * @return the updated filter
    */
-  UserTaskFilter userTaskElementId(final String taskDefinitionId);
+  UserTaskFilter elementId(final String taskDefinitionId);
 
   /**
    * Filters user tasks by the specified candidate group.
@@ -59,7 +59,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param candidateGroup the candidate group of the user task
    * @return the updated filter
    */
-  UserTaskFilter userTaskCandidateGroup(final String candidateGroup);
+  UserTaskFilter candidateGroup(final String candidateGroup);
 
   /**
    * Filters user tasks by the specified candidate user.
@@ -67,7 +67,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param candidateUser the candidate user of the user task
    * @return the updated filter
    */
-  UserTaskFilter userTaskCandidateUser(final String candidateUser);
+  UserTaskFilter candidateUser(final String candidateUser);
 
   /**
    * Filters user tasks by the specified process definition key.
@@ -75,7 +75,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param processDefinitionKey the process definition key of the user task
    * @return the updated filter
    */
-  UserTaskFilter userTaskProcessDefinitionKey(final Long processDefinitionKey);
+  UserTaskFilter processDefinitionKey(final Long processDefinitionKey);
 
   /**
    * Filters user tasks by the specified process instance key.
@@ -83,7 +83,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param processInstanceKey the process instance key of the user task
    * @return the updated filter
    */
-  UserTaskFilter userTaskProcessInstanceKey(final Long processInstanceKey);
+  UserTaskFilter processInstanceKey(final Long processInstanceKey);
 
   /**
    * Filters user tasks by the specified follow-up date.
@@ -91,7 +91,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param dateFilter the follow-up date filter
    * @return the updated filter
    */
-  UserTaskFilter userTaskFollowUpDate(final DateFilter dateFilter);
+  UserTaskFilter followUpDate(final DateFilter dateFilter);
 
   /**
    * Filters user tasks by the specified due date.
@@ -99,7 +99,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param dateFilter the due date filter
    * @return the updated filter
    */
-  UserTaskFilter userTaskDueDate(final DateFilter dateFilter);
+  UserTaskFilter dueDate(final DateFilter dateFilter);
 
   /**
    * Filters user tasks by the specified creation date.
@@ -107,7 +107,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param dateFilter the creation date filter
    * @return the updated filter
    */
-  UserTaskFilter userTaskCreationDate(final DateFilter dateFilter);
+  UserTaskFilter creationDate(final DateFilter dateFilter);
 
   /**
    * Filters user tasks by the specified completion date.
@@ -115,7 +115,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param dateFilter the completion date filter
    * @return the updated filter
    */
-  UserTaskFilter userTaskCompletionDate(final DateFilter dateFilter);
+  UserTaskFilter completionDate(final DateFilter dateFilter);
 
   /**
    * Filters user tasks by the specified tenant ID.
@@ -123,7 +123,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param tenantId the tenant ID of the user task
    * @return the updated filter
    */
-  UserTaskFilter userTaskTenantId(final String tenantId);
+  UserTaskFilter tentantId(final String tenantId);
 
   /**
    * Filters user tasks by the specified Process Definition Id.
@@ -131,5 +131,5 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param bpmnProcessId from the task
    * @return the updated filter
    */
-  UserTaskFilter userTaskBpmProcessId(final String bpmnProcessId);
+  UserTaskFilter bpmProcessId(final String bpmnProcessId);
 }

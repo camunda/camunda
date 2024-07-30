@@ -30,8 +30,8 @@
  */
 package io.camunda.zeebe.client.api.search;
 
-import io.camunda.zeebe.client.protocol.rest.UserTaskItem;
+import io.camunda.zeebe.client.api.search.response.UserTask;
 
 public interface UserTaskQuery
     extends TypedSearchQueryRequest<UserTaskFilter, UserTaskSort, UserTaskQuery>,
-        FinalSearchQueryStep<UserTaskItem> {}
+        FinalSearchQueryStep<UserTask> {}
