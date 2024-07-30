@@ -134,7 +134,7 @@ const Task: React.FC = observer(() => {
 
   function handleSubmissionFailure(error: Error) {
     const errorMessage = isRequestError(error)
-      ? error?.networkError?.message ?? error.message
+      ? (error?.networkError?.message ?? error.message)
       : error.message;
 
     notificationsStore.displayNotification({
