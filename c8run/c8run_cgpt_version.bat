@@ -7,6 +7,7 @@ set ELASTICSEARCH_VERSION=8.13.4
 set EXPECTED_JAVA_VERSION=21
 
 set BASEDIR=%~dp0
+echo BASEDIR=%BASEDIR%
 set PARENTDIR=%BASEDIR%\..
 set DEPLOYMENT_DIR=%PARENTDIR%\configuration\resources
 set WEBAPPS_PATH=%BASEDIR%\webapps\
@@ -16,13 +17,14 @@ set EXAMPLE_PATH=%BASEDIR%\example
 set PID_PATH=%BASEDIR%\run.pid
 set ELASTIC_PID_PATH=%BASEDIR%\elasticsearch.pid
 set CONNECTORS_PID_PATH=%BASEDIR%\connectors.pid
-set OPTIONS_HELP=Options:
-REM   --webapps    - Enables the Camunda Platform Webapps
-REM   --rest       - Enables the REST API
-REM   --swaggerui  - Enables the Swagger UI
-REM   --example    - Enables the example application
-REM   --config     - Applies the specified configuration file
-REM   --detached   - Starts Camunda Run as a detached process
+rem Define the OPTIONS_HELP variable
+set OPTIONS_HELP=Options:^&echo.
+set OPTIONS_HELP=%OPTIONS_HELP%   --webapps    - Enables the Camunda Platform Webapps^&echo.
+set OPTIONS_HELP=%OPTIONS_HELP%   --rest       - Enables the REST API^&echo.
+set OPTIONS_HELP=%OPTIONS_HELP%   --swaggerui  - Enables the Swagger UI^&echo.
+set OPTIONS_HELP=%OPTIONS_HELP%   --example    - Enables the example application^&echo.
+set OPTIONS_HELP=%OPTIONS_HELP%   --config     - Applies the specified configuration file^&echo.
+set OPTIONS_HELP=%OPTIONS_HELP%   --detached   - Starts Camunda Run as a detached process^&echo.
 
 REM Configuration file defaults overridden because upstream config doesn't export to elasticsearch
 set ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME=io.camunda.zeebe.exporter.ElasticsearchExporter
@@ -119,7 +121,7 @@ if "%1"=="start" (
     REM Retrieve elasticsearch
     mkdir "%PARENTDIR%\log"
     if not exist "elasticsearch-%ELASTICSEARCH_VERSION%" (
-        powershell -Command "Invoke-WebRequest -Uri 'https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-%ELASTICSEARCH_VERSION%-%PLATFORM%-%architecture%.zip' -OutFile 'elasticsearch.zip'"
+        powershell -Command "Invoke-WebRequest -Uri 'https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-%ELASTICSEARCH_VERSION%-windows-x86_64.zip' -OutFile 'elasticsearch.zip'"
         powershell -Command "Expand-Archive -Path 'elasticsearch.zip' -DestinationPath '%PARENTDIR%'"
     )
 
@@ -164,13 +166,13 @@ if "%1"=="start" (
 
     if "%detachProcess%"=="true" (
         cd /d %PARENTDIR%\camunda-zeebe-%CAMUNDA_VERSION%
-        echo %JAVA% -cp "%PARENTDIR%\*,%PARENTDIR%\custom_connectors\*,.\camunda-zeebe-%CAMUNDA_VERSION%\lib\*" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> %PARENTDIR%\log\connectors.log 2>>&1 &
-        start /b %JAVA% -cp "%PARENTDIR%\*,%PARENTDIR%\custom_connectors\*,.\camunda-zeebe-%CAMUNDA_VERSION%\lib\*" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> %PARENTDIR%\log\connectors.log 2>>&1 &
+        echo %JAVA% -cp "%PARENTDIR%\*,%PARENTDIR%\custom_connectors\*,.\camunda-zeebe-%CAMUNDA_VERSION%\lib\*" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> %PARENTDIR%\log\connectors.log 2>>&1
+        start /b %JAVA% -cp "%PARENTDIR%\*,%PARENTDIR%\custom_connectors\*,.\camunda-zeebe-%CAMUNDA_VERSION%\lib\*" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> %PARENTDIR%\log\connectors.log 2>>&1
         echo %! > "%CONNECTORS_PID_PATH%"
         start /b cmd /c "%PARENTDIR%\camunda-zeebe-%CAMUNDA_VERSION%\bin\camunda %extraArgs% >> %PARENTDIR%\log\camunda.log 2>>&1"
         echo %! > "%PID_PATH%"
     ) else (
-        %JAVA% -cp "%PARENTDIR%\*,%PARENTDIR%\custom_connectors\*,.\camunda-zeebe-%CAMUNDA_VERSION%\lib\*" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> %PARENTDIR%\log\connectors.log 2>>&1 &
+        %JAVA% -cp "%PARENTDIR%\*,%PARENTDIR%\custom_connectors\*,.\camunda-zeebe-%CAMUNDA_VERSION%\lib\*" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> %PARENTDIR%\log\connectors.log 2>>&1
         echo %! > "%CONNECTORS_PID_PATH%"
         cd /d %PARENTDIR%\camunda-zeebe-%CAMUNDA_VERSION%
         %PARENTDIR%\camunda-zeebe-%CAMUNDA_VERSION%\bin\camunda %extraArgs% 2>&1 | tee %PARENTDIR%\log\camunda.log
@@ -180,7 +182,9 @@ if "%1"=="start" (
 
     if exist "%PID_PATH%" (
         REM stop Camunda Run if the process is still running
-        taskkill /F /PID %PID_PATH%
+        for /F "tokens=*" %%i in (%PID_PATH%) do (
+          taskkill /F /PID %%i
+        )
         REM remove process ID file
         del "%PID_PATH%"
         echo Camunda Run is shutting down.
@@ -189,7 +193,9 @@ if "%1"=="start" (
     )
     if exist "%ELASTIC_PID_PATH%" (
         REM stop Elasticsearch if the process is still running
-        taskkill /F /PID %ELASTIC_PID_PATH%
+        for /F "tokens=*" %%i in (%ELASTIC_PID_PATH%) do (
+          taskkill /F /PID %%i
+        )
         REM remove process ID file
         del "%ELASTIC_PID_PATH%"
         echo Elasticsearch is shutting down.
@@ -197,7 +203,9 @@ if "%1"=="start" (
         echo There is no instance of Elasticsearch to shut down.
     )
     if exist "%CONNECTORS_PID_PATH%" (
-        taskkill /F /PID %CONNECTORS_PID_PATH%
+        for /F "tokens=*" %%i in (%CONNECTORS_PID_PATH%) do (
+          taskkill /F /PID %%i
+        )
         del "%CONNECTORS_PID_PATH%"
         echo Connectors is shutting down.
     ) else (
