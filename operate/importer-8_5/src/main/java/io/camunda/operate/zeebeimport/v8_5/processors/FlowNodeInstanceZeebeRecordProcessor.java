@@ -21,6 +21,7 @@ import io.camunda.operate.store.FlowNodeStore;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.util.SoftHashMap;
+import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -50,13 +51,21 @@ public class FlowNodeInstanceZeebeRecordProcessor {
   @Autowired protected FlowNodeStore flowNodeStore;
   @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
   @Autowired private OperateProperties operateProperties;
+  @Autowired private PartitionHolder partitionHolder;
 
   // treePath by flowNodeInstanceKey cache
-  private Map<String, String> treePathCache;
+  private final Map<Integer, Map<String, String>> treePathCaches = new HashMap<>();
 
   @PostConstruct
   private void init() {
-    treePathCache = new SoftHashMap<>(operateProperties.getImporter().getFlowNodeTreeCacheSize());
+    partitionHolder
+        .getPartitionIds()
+        .forEach(
+            partitionId -> {
+              treePathCaches.put(
+                  partitionId,
+                  new SoftHashMap(operateProperties.getImporter().getFlowNodeTreeCacheSize()));
+            });
   }
 
   public void processIncidentRecord(final Record record, final BatchRequest batchRequest)
@@ -201,6 +210,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
   private String getParentTreePath(
       final Record record, final ProcessInstanceRecordValue recordValue) {
     String parentTreePath;
+    final var partitionCache = treePathCaches.get(record.getPartitionId());
     // if scopeKey differs from processInstanceKey, then it's inner tree level and we need to search
     // for parent 1st
     if (recordValue.getFlowScopeKey() == recordValue.getProcessInstanceKey()) {
@@ -209,11 +219,9 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       // find parent flow node instance
       parentTreePath = null;
       // search in cache
-      if (treePathCache.get(ConversionUtils.toStringOrNull(recordValue.getFlowScopeKey()))
-          != null) {
-        parentTreePath =
-            treePathCache.get(ConversionUtils.toStringOrNull(recordValue.getFlowScopeKey()));
-      }
+      // find parent flow node instance
+      parentTreePath =
+          partitionCache.get(ConversionUtils.toStringOrNull(recordValue.getFlowScopeKey()));
       // query from ELS
       if (parentTreePath == null) {
         parentTreePath = flowNodeStore.findParentTreePathFor(recordValue.getFlowScopeKey());
@@ -229,7 +237,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
         parentTreePath = ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey());
       }
     }
-    treePathCache.put(
+    partitionCache.put(
         ConversionUtils.toStringOrNull(record.getKey()),
         String.join("/", parentTreePath, ConversionUtils.toStringOrNull(record.getKey())));
     return parentTreePath;
