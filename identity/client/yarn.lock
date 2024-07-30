@@ -308,7 +308,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/colors@npm:^11.23.1":
+"@carbon/colors@npm:^11.23.0, @carbon/colors@npm:^11.23.1":
   version: 11.23.1
   resolution: "@carbon/colors@npm:11.23.1"
   dependencies:
@@ -326,7 +326,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/grid@npm:^11.24.1":
+"@carbon/grid@npm:^11.24.0, @carbon/grid@npm:^11.24.1":
   version: 11.24.1
   resolution: "@carbon/grid@npm:11.24.1"
   dependencies:
@@ -336,7 +336,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/icon-helpers@npm:^10.49.1":
+"@carbon/icon-helpers@npm:^10.49.0":
   version: 10.49.1
   resolution: "@carbon/icon-helpers@npm:10.49.1"
   dependencies:
@@ -345,20 +345,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/icons-react@npm:^11.43.0":
-  version: 11.44.1
-  resolution: "@carbon/icons-react@npm:11.44.1"
+"@carbon/icons-react@npm:^11.45.0":
+  version: 11.45.0
+  resolution: "@carbon/icons-react@npm:11.45.0"
   dependencies:
-    "@carbon/icon-helpers": "npm:^10.49.1"
+    "@carbon/icon-helpers": "npm:^10.49.0"
     "@ibm/telemetry-js": "npm:^1.5.0"
     prop-types: "npm:^15.7.2"
   peerDependencies:
     react: ">=16"
-  checksum: 10c0/ff6015903cf4d91fce9a3d5ed7b05982688e0d99ba4c0c04850ab961436225960f8184bfed5e4c26d104967fd0dd311c8809e589f340cf4126c0392b5b7fdfd9
+  checksum: 10c0/0c5f3d673a4db933e1bacdb72aca7f2a761eec0b5e2bc82937679068eb2740e341d8a78aeacd88b18d9bef82aaac07b0191779faea2bb55cc4082935ffb24762
   languageName: node
   linkType: hard
 
-"@carbon/layout@npm:^11.22.0, @carbon/layout@npm:^11.23.1":
+"@carbon/layout@npm:^11.23.0, @carbon/layout@npm:^11.23.1":
   version: 11.23.1
   resolution: "@carbon/layout@npm:11.23.1"
   dependencies:
@@ -367,7 +367,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/motion@npm:^11.19.1":
+"@carbon/motion@npm:^11.19.0":
   version: 11.19.1
   resolution: "@carbon/motion@npm:11.19.1"
   dependencies:
@@ -376,15 +376,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/react@npm:1.59.0":
-  version: 1.59.0
-  resolution: "@carbon/react@npm:1.59.0"
+"@carbon/react@npm:1.62.1":
+  version: 1.62.1
+  resolution: "@carbon/react@npm:1.62.1"
   dependencies:
     "@babel/runtime": "npm:^7.18.3"
     "@carbon/feature-flags": "npm:^0.20.0"
-    "@carbon/icons-react": "npm:^11.43.0"
-    "@carbon/layout": "npm:^11.22.0"
-    "@carbon/styles": "npm:^1.59.0"
+    "@carbon/icons-react": "npm:^11.45.0"
+    "@carbon/layout": "npm:^11.23.0"
+    "@carbon/styles": "npm:^1.61.0"
     "@floating-ui/react": "npm:^0.26.0"
     "@ibm/telemetry-js": "npm:^1.5.0"
     classnames: "npm:2.5.1"
@@ -401,27 +401,26 @@ __metadata:
     react-is: "npm:^18.2.0"
     tabbable: "npm:^6.2.0"
     use-resize-observer: "npm:^6.0.0"
-    wicg-inert: "npm:^3.1.1"
     window-or-global: "npm:^1.0.1"
   peerDependencies:
     react: ^16.8.6 || ^17.0.1 || ^18.2.0
     react-dom: ^16.8.6 || ^17.0.1 || ^18.2.0
     sass: ^1.33.0
-  checksum: 10c0/60b2b5f7382d461b9005f0b980013ad8e60ad71432c42c511b29583ab78de7e3a6e7faff5124052fa94322b3e310be83876097c8dfe869f713624a15d2c974c2
+  checksum: 10c0/55ba2389a631f9d937f82283765b033e302f42ac24374d159d8b5dfa3e805d5474ece8103b3cc4432fbfbe5c679fc2cf066000fc489aab93e0870b2d6a505967
   languageName: node
   linkType: hard
 
-"@carbon/styles@npm:^1.59.0":
-  version: 1.60.1
-  resolution: "@carbon/styles@npm:1.60.1"
+"@carbon/styles@npm:^1.61.0":
+  version: 1.61.0
+  resolution: "@carbon/styles@npm:1.61.0"
   dependencies:
-    "@carbon/colors": "npm:^11.23.1"
+    "@carbon/colors": "npm:^11.23.0"
     "@carbon/feature-flags": "npm:^0.20.0"
-    "@carbon/grid": "npm:^11.24.1"
-    "@carbon/layout": "npm:^11.23.1"
-    "@carbon/motion": "npm:^11.19.1"
-    "@carbon/themes": "npm:^11.37.1"
-    "@carbon/type": "npm:^11.28.1"
+    "@carbon/grid": "npm:^11.24.0"
+    "@carbon/layout": "npm:^11.23.0"
+    "@carbon/motion": "npm:^11.19.0"
+    "@carbon/themes": "npm:^11.37.0"
+    "@carbon/type": "npm:^11.28.0"
     "@ibm/plex": "npm:6.0.0-next.6"
     "@ibm/telemetry-js": "npm:^1.5.0"
   peerDependencies:
@@ -429,11 +428,11 @@ __metadata:
   peerDependenciesMeta:
     sass:
       optional: true
-  checksum: 10c0/a7ab79104940d70417499a5545a12b82c1360ce577e166afbe9beb5445ac01426f760fe6b8be83f772c4ead7e184e7c4699369ab6d6598cc04bf62e9a49da9eb
+  checksum: 10c0/2088c7cf76afe8a5827a59e2d4322773c560bd49424de2373e5019986529dfb7747a2b6bc9390ee0180ae468a12cd3f979001c7946c2571abdb03b1ef6f2fbe8
   languageName: node
   linkType: hard
 
-"@carbon/themes@npm:^11.37.1":
+"@carbon/themes@npm:^11.37.0":
   version: 11.37.1
   resolution: "@carbon/themes@npm:11.37.1"
   dependencies:
@@ -446,7 +445,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/type@npm:^11.28.1":
+"@carbon/type@npm:^11.28.0, @carbon/type@npm:^11.28.1":
   version: 11.28.1
   resolution: "@carbon/type@npm:11.28.1"
   dependencies:
@@ -2492,7 +2491,7 @@ __metadata:
   resolution: "identity-frontend@workspace:."
   dependencies:
     "@camunda/camunda-composite-components": "npm:0.8.1"
-    "@carbon/react": "npm:1.59.0"
+    "@carbon/react": "npm:1.62.1"
     "@types/event-source-polyfill": "npm:1.0.5"
     "@types/node": "npm:20.14.13"
     "@types/react": "npm:18.3.3"
@@ -4834,13 +4833,6 @@ __metadata:
   bin:
     node-which: bin/which.js
   checksum: 10c0/449fa5c44ed120ccecfe18c433296a4978a7583bf2391c50abce13f76878d2476defde04d0f79db8165bdf432853c1f8389d0485ca6e8ebce3bbcded513d5e6a
-  languageName: node
-  linkType: hard
-
-"wicg-inert@npm:^3.1.1":
-  version: 3.1.2
-  resolution: "wicg-inert@npm:3.1.2"
-  checksum: 10c0/5b20eaedcb30f1093fb6afd0480a059e40814da56c6052469c6fe95dd2d288b89c55ed1bdbfae4db70fd5ec8148dda8dd3b671a27a26870c8f77626b13cedd1b
   languageName: node
   linkType: hard
 
