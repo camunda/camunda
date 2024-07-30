@@ -19,15 +19,15 @@ const Disclaimer: React.FC<Props> = () => {
     <span className={styles.container}>
       <Trans i18nKey="nonProductionLicenseLinks">
         Non-Production License. If you would like information on production
-        usage, please refer to our
+        usage, please refer to our{' '}
         <Link
           href="https://legal.camunda.com/#self-managed-non-production-terms"
           target="_blank"
           inline
         >
           terms & conditions page
-        </Link>
-        or
+        </Link>{' '}
+        or{' '}
         <Link href="https://camunda.com/contact/" target="_blank" inline>
           contact sales
         </Link>

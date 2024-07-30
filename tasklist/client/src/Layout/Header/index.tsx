@@ -185,7 +185,7 @@ const Header: React.FC = observer(() => {
                       <div>
                         <Trans i18nKey="nonProductionLicenseLinks">
                           Non-Production License. If you would like information
-                          on production usage, please refer to our
+                          on production usage, please refer to our{' '}
                           <Link
                             className={styles.inlineLink}
                             href="https://legal.camunda.com/#self-managed-non-production-terms"
@@ -193,8 +193,8 @@ const Header: React.FC = observer(() => {
                             inline
                           >
                             terms & conditions page
-                          </Link>
-                          or
+                          </Link>{' '}
+                          or{' '}
                           <Link
                             className={styles.inlineLink}
                             href="https://camunda.com/contact/"
