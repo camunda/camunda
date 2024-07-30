@@ -138,7 +138,7 @@ const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
                   {`${calledDecisionDefinitionName} - ${calledDecisionInstanceId}`}
                 </Link>
               ) : (
-                calledDecisionDefinitionName ?? '—'
+                (calledDecisionDefinitionName ?? '—')
               )}
             </SummaryDataValue>
           </Stack>
