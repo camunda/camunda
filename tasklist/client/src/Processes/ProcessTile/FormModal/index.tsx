@@ -204,7 +204,7 @@ const FormModal: React.FC<Props> = ({
                             hideCloseButton
                             lowContrast
                             title={t('somethingWentWrongTitle')}
-                            subtitle={t('formSubmitFailedSubtitle')}
+                            subtitle={t('formSubmitFailed')}
                           />
                         ),
                       )
@@ -226,7 +226,7 @@ const FormModal: React.FC<Props> = ({
                 hideCloseButton
                 lowContrast
                 title={t('somethingWentWrongTitle')}
-                subtitle={t('formRenderingFailedSubtitle')}
+                subtitle={t('formRenderingFailed')}
               />
             ))
             .with({status: 'error'}, () => (
@@ -236,7 +236,7 @@ const FormModal: React.FC<Props> = ({
                 hideCloseButton
                 lowContrast
                 title={t('somethingWentWrongTitle')}
-                subtitle={t('formLoadFailedSubtitle')}
+                subtitle={t('formLoadFailed')}
               />
             ))
             .exhaustive()}
