@@ -32,7 +32,6 @@ runs:
             - optimize/upgrade/**
             - optimize/util/**
             - optimize/plugins/**
-            - optimize/qa/**
 
           frontend-change:
             - optimize/client/**
