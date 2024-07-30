@@ -66,7 +66,7 @@ if "%1"=="start" (
         )
     )
 
-    for /f "tokens=2 delims==" %%i in ('%JAVA% -version 2>&1') do set JAVA_VERSION=%%i
+    for /f "tokens=2 delims==" %%i in ('%JAVA% -version') do set JAVA_VERSION=%%i
     echo Java version is %JAVA_VERSION%
     if "%JAVA_VERSION%" lss "%EXPECTED_JAVA_VERSION%" (
         echo You must use at least JDK %EXPECTED_JAVA_VERSION% to start Camunda Platform Run.
