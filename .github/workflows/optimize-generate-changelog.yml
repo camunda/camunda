@@ -6,7 +6,7 @@ on:
       branch:
         description: "Branch to use"
         required: true
-        default: "master"
+        default: "main"
       from:
         description: "Tag Name or Commit SHA of previous release (optional)"
 jobs:
@@ -17,7 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
         with:
-          ref: ${{ github.event.inputs.branch || 'master' }}
+          ref: ${{ github.event.inputs.branch || 'main' }}
       - name: Calculate changelog
         uses: ./.github/actions/generate-changelog
         id: changelog

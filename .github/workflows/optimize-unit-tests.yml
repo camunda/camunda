@@ -3,10 +3,25 @@ on:
   workflow_call:
 
 jobs:
+  detect-changes:
+    name: Get changed directories
+    runs-on: ubuntu-latest
+    outputs:
+      backend-changes: ${{ steps.filter.outputs.backend-changes }}
+      frontend-changes: ${{ steps.filter.outputs.frontend-changes }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+
+    - name: Get list of changed directories
+      id: filter
+      uses: ./.github/actions/optimize-paths-filter
   unit-tests-backend:
     name: Optimize Unit Tests - Backend
     runs-on: gcp-core-8-default
     timeout-minutes: 30
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
@@ -38,6 +53,8 @@ jobs:
     name: Optimize Unit Tests - Frontend
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.frontend-changes == 'true' }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4

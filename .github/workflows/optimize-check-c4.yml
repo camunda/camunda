@@ -2,12 +2,16 @@ name: Check if C4 builds
 on:
   push:
     branches:
-      - master
+      - main
+      - maintenance/**
+      - release/**
     paths:
       - "optimize/c4/**"
+      - ".github/workflows/optimize-check-c4.yml"
   pull_request:
     paths:
       - "optimize/c4/**"
+      - ".github/workflows/optimize-check-c4.yml"
 
 jobs:
   build:

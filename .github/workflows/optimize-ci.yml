@@ -2,12 +2,27 @@
 name: Optimize CI
 on:
   pull_request:
+    paths:
+    - ".github/actions/**"
+    - ".github/workflows/optimize-*"
+    - "bom/*"
+    - "parent/*"
+    - "pom.xml"
+    - "optimize/**"
+    - "optimize.Dockerfile"
   push:
     branches:
-    - master
-    - maintenance/*
-    - release/*
-    - optimize-c8
+    - main
+    - maintenance/**
+    - release/**
+    paths:
+    - ".github/actions/**"
+    - ".github/workflows/optimize-*"
+    - "bom/*"
+    - "parent/*"
+    - "pom.xml"
+    - "optimize/**"
+    - "optimize.Dockerfile"
   workflow_dispatch:
 
 # Will limit the workflow to 1 concurrent run per ref (branch / PR)
@@ -24,6 +39,17 @@ permissions:
   pull-requests: write
 
 jobs:
+  detect-changes:
+    name: Get changed directories
+    runs-on: ubuntu-latest
+    outputs:
+      backend-changes: ${{ steps.filter.outputs.backend-changes }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+    - name: Get list of changed directories
+      id: filter
+      uses: ./.github/actions/optimize-paths-filter
   unit-tests:
     name: Unit Tests
     uses: ./.github/workflows/optimize-unit-tests.yml
@@ -76,6 +102,8 @@ jobs:
     name: Integration Tests
     runs-on: gcp-core-32-default
     timeout-minutes: 120
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
     strategy:
       fail-fast: false
       matrix:
@@ -155,6 +183,8 @@ jobs:
     name: Integration Tests OpenSearch
     runs-on: gcp-core-32-default
     timeout-minutes: 120
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
     strategy:
       fail-fast: false
       matrix:
@@ -231,8 +261,9 @@ jobs:
   integration-tests-os-dev:
     name: Integration Tests OpenSearch Development
     runs-on: gcp-core-32-default
+    needs: detect-changes
     # checks that the PR isn't closed AND check whether the labeled event contains 'opensearch' as substring || check whether on new commit of PR the label 'opensearch'' is part of label array
-    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'opensearch') || contains( github.event.pull_request.labels.*.name, 'opensearch'))
+    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'opensearch') || contains( github.event.pull_request.labels.*.name, 'opensearch')) && (needs.detect-changes.outputs.backend-changes == 'true')
     timeout-minutes: 120
     strategy:
       fail-fast: false
@@ -317,9 +348,9 @@ jobs:
         with:
           archive_name: integration-tests-opensearch-dev-${{ matrix.includedGroups }}-docker
 
-  # Only deploy artifacts on push event, which in this case can only be triggered by master and maintenance
+  # Only deploy artifacts on push event, which in this case can only be triggered by main and maintenance
   deploy-artifacts:
-    if: github.event_name == 'push' && (github.ref_name == 'master' || startsWith(github.ref_name, 'maintenance/'))
+    if: github.event_name == 'push' && (github.ref_name == 'main' || startsWith(github.ref_name, 'maintenance/'))
     name: Deploy Artifacts
     needs: [unit-tests, integration-tests]
     uses: ./.github/workflows/optimize-deploy-artifacts.yml

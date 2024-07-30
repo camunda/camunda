@@ -2,14 +2,20 @@ name: Optimize Backend Linting
 on:
   push:
     branches:
-      - master
+      - main
+      - maintenance/**
+      - release/**
+    paths:
+      - "optimize/**"
+      - ".github/workflows/optimize-code-scanning-java.yml"
     paths-ignore:
       - "optimize/client/**"
-      - ".ci/**"
   pull_request:
+    paths:
+      - "optimize/**"
+      - ".github/workflows/optimize-code-scanning-java.yml"
     paths-ignore:
       - "optimize/client/**"
-      - ".ci/**"
 jobs:
   linting:
     name: Linting

@@ -2,11 +2,27 @@ name: Optimize e2e tests sm
 
 on:
   pull_request:
+    paths:
+      - ".github/actions/**"
+      - ".github/workflows/optimize-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "optimize/**"
+      - "optimize.Dockerfile"
   push:
     branches:
-      - master
-      - maintenance/*
-      - release/*
+      - "main"
+      - "maintenance/**"
+      - "release/**"
+    paths:
+      - ".github/actions/**"
+      - ".github/workflows/optimize-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "optimize/**"
+      - "optimize.Dockerfile"
   workflow_dispatch:
 
 # Will limit the workflow to 1 concurrent run per ref (branch / PR)

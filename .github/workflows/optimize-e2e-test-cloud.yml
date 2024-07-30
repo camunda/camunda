@@ -2,10 +2,27 @@ name: Optimize e2e cloud test
 
 on:
   pull_request:
+    paths:
+      - ".github/actions/**"
+      - ".github/workflows/optimize-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "optimize/**"
+      - "optimize.Dockerfile"
   push:
     branches:
-    - master
-    - maintenance/*
+      - "main"
+      - "maintenance/**"
+      - "release/**"
+    paths:
+      - ".github/actions/**"
+      - ".github/workflows/optimize-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "optimize/**"
+      - "optimize.Dockerfile"
   workflow_dispatch:
 
 jobs:

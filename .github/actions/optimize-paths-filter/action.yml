@@ -1,0 +1,40 @@
+---
+name: Common paths filter for optimize
+
+description: Common filters to detect and group changes against a base branch
+
+outputs:
+  backend-changes:
+    description: Output whether any backend has changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.backend-change == 'true'
+      }}
+  frontend-changes:
+    description: Output whether any frontend has changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.frontend-change == 'true'
+      }}
+runs:
+  using: composite
+  steps:
+    - uses: dorny/paths-filter@v3
+      id: filter-common
+      with:
+        base: ${{ github.event.merge_group.base_ref || '' }}
+        ref: ${{ github.event.merge_group.head_ref || github.ref }}
+        filters: |
+          backend-change:
+            - optimize/backend/**
+            - optimize/upgrade/**
+            - optimize/util/**
+            - optimize/plugins/**
+            - optimize/qa/**
+
+          frontend-change:
+            - optimize/client/**
+            - optimize/c4/**
+            - optimize/backend/src/main/resources/localization/**

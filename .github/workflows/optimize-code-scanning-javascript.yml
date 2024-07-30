@@ -3,13 +3,13 @@ name: Optimize Javascript code scan
 on:
   pull_request:
     branches:
-      - "master"
+      - "main"
       - "maintenance/**"
       - "release/**"
     paths:
-      - "**/*.js"
-      - "**/*.tsx"
-      - "**/*.ts"
+      - "optimize/**/*.js"
+      - "optimize/**/*.tsx"
+      - "optimize/**/*.ts"
   schedule:
     - cron: "30 2 * * 1-5"
   workflow_dispatch: # can be used to trigger the workflow manually
