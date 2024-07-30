@@ -9,6 +9,7 @@ package io.camunda.service.transformers;
 
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.service.search.filter.ComparableValueFilter;
 import io.camunda.service.search.filter.DateValueFilter;
 import io.camunda.service.search.filter.DecisionDefinitionFilter;
 import io.camunda.service.search.filter.FilterBase;
@@ -29,6 +30,7 @@ import io.camunda.service.search.sort.UserTaskSort;
 import io.camunda.service.search.sort.VariableSort;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.filter.AuthenticationTransformer;
+import io.camunda.service.transformers.filter.ComparableValueFilterTransformer;
 import io.camunda.service.transformers.filter.DateValueFilterTransformer;
 import io.camunda.service.transformers.filter.DecisionDefinitionFilterTransformer;
 import io.camunda.service.transformers.filter.FilterTransformer;
@@ -102,5 +104,6 @@ public final class ServiceTransformers {
         VariableFilter.class,
         new VariableFilterTransformer(mappers, new VariableValueFilterTransformer()));
     mappers.put(DecisionDefinitionFilter.class, new DecisionDefinitionFilterTransformer());
+    mappers.put(ComparableValueFilter.class, new ComparableValueFilterTransformer());
   }
 }
