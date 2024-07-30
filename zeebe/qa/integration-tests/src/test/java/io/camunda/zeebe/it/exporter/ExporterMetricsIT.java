@@ -7,19 +7,16 @@
  */
 package io.camunda.zeebe.it.exporter;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.camunda.zeebe.qa.util.actuator.PrometheusActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.prometheus.client.CollectorRegistry;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-import org.hawkular.agent.prometheus.text.TextPrometheusMetricsProcessor;
-import org.hawkular.agent.prometheus.types.MetricFamily;
-import org.hawkular.agent.prometheus.walkers.CollectorPrometheusMetricsWalker;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import org.apache.commons.io.IOUtils;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -36,23 +33,13 @@ public class ExporterMetricsIT {
   public void shouldAddMeterToExporterMetrics() throws IOException {
     // given
     final var actuator = PrometheusActuator.of(zeebe);
+    final var metricsPlainText =
+        IOUtils.toString(actuator.metrics().body().asInputStream(), StandardCharsets.UTF_8);
 
-    // when
-    final var metrics = collectMetrics(actuator.metrics().body().asInputStream());
-    final var addedCounter =
-        metrics.stream()
-            .filter(
-                metric -> metric.getName().contains(ExporterMetricsTestExporter.REGISTERED_COUNTER))
-            .findFirst();
+    final var metricLines = Arrays.asList(metricsPlainText.split(System.lineSeparator()));
 
-    // then
-    assertThat(addedCounter).isPresent();
-  }
-
-  private List<MetricFamily> collectMetrics(final InputStream metricsPlainText) {
-    final var walker = new CollectorPrometheusMetricsWalker();
-    final var processor = new TextPrometheusMetricsProcessor(metricsPlainText, walker);
-    processor.walk();
-    return walker.getAllMetricFamilies();
+    Assertions.assertThat(metricLines.stream())
+        .filteredOn(line -> line.startsWith(ExporterMetricsTestExporter.REGISTERED_COUNTER))
+        .hasSize(1);
   }
 }
