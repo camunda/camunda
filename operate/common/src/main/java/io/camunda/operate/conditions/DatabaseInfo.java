@@ -24,7 +24,7 @@ public class DatabaseInfo implements ApplicationContextAware {
   private static ApplicationContext applicationContext;
   private static DatabaseType current;
 
-  public static DatabaseType getCurrent() {
+  public static synchronized DatabaseType getCurrent() {
     if (current == null) {
       if (applicationContext == null) {
         LOGGER.warn("getCurrent() called on DatabaseInfo before application context has been set");
