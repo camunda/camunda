@@ -41,7 +41,7 @@ public class ZeebePriorityDefinitionValidator
       if (priorityValue < PRIORITY_LOWER_BOUND || priorityValue > PRIORITY_UPPER_BOUND) {
         validationResultCollector.addError(
             0,
-            String.format("Priority must be a number between 0 and 100, but was '%s'", priority));
+            String.format("Priority must be a number between 0 and 100, but was '%s'.", priority));
       }
     } catch (final NumberFormatException ignored) {
       /* Handled by previous runtime validation step */

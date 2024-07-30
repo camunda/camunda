@@ -187,12 +187,9 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
   }
 
   @Override
-  public B zeebeTaskPriority(String priority) {
+  public B zeebeTaskPriority(final String priority) {
     final ZeebePriorityDefinition priorityDefinition =
         myself.getCreateSingleExtensionElement(ZeebePriorityDefinition.class);
-    if (priority != null) {
-      priority = priority.trim();
-    }
     priorityDefinition.setPriority(priority);
     return myself;
   }

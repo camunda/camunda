@@ -184,12 +184,12 @@ public final class ZeebeRuntimeValidators {
                 ZeebePriorityDefinition::getPriority,
                 expression ->
                     expression
-                        .isOptional()
+                        .isMandatory()
                         .satisfiesIfStatic(
                             staticExpression ->
                                 ZeebeExpressionValidator.isValidLong(
                                     staticExpression, expressionProcessor),
-                            "be a valid Number"))
+                            "be a valid Number between 0 and 100"))
             .build(expressionLanguage),
         new ZeebePriorityDefinitionValidator());
   }
