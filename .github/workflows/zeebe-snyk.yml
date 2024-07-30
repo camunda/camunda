@@ -161,6 +161,14 @@ jobs:
             [ "${sarif}" == 'true' ] && echo "--sarif-file-output=sarif-results/${name}.sarif"
           }
 
+          function ensureExists() {
+            local projectFile="$1"
+            if [ ! -f "${projectFile}" ]; then
+              echo "Cannot find project file to scan: [ ${projectFile} ]"
+              exit 1
+            fi
+          }
+
           # Print out command if debug logging is enabled
           set -x
 
@@ -170,16 +178,19 @@ jobs:
           # Since the snyk CLI here pass the command as a string, any parenthesis will break the eval
           # call. As such, we need to double escape the `--project-name` in single quotes
           PROJECT_NAME="zeebe(${TARGET}):clients/go/go.mod"
+          ensureExists "clients/go/go.mod"
           snyk "${SNYK_COMMAND}" --file=clients/go/go.mod "'--project-name=${PROJECT_NAME}'" ${SNYK_ARGS} "$(output "${SARIF}" 'go')" || exitCode=1
 
           for project in "${JAVA_PROJECTS[@]}"; do
             PROJECT_NAME="zeebe(${TARGET}):${project}/pom.xml"
+            ensureExists "${project}/pom.xml"
             snyk "${SNYK_COMMAND}" --file=${project}/pom.xml "'--project-name=${PROJECT_NAME}'" ${SNYK_ARGS} "$(output "${SARIF}" "${project/\//-}")" || exitCode=1
           done
 
           # The `container` command does not yet support setting a target reference, as this is a beta
           # feature at the moment. It's added here anyway for now, and hopefully support will come soon.
           PROJECT_NAME="zeebe(${TARGET}):Dockerfile"
+          ensureExists "Dockerfile"
           snyk container "${SNYK_COMMAND}" "${DOCKER_IMAGE}" --file=Dockerfile "'--project-name=${PROJECT_NAME}'" ${SNYK_ARGS} "$(output "${SARIF}" 'docker')" || exitCode=1
 
           # Only fail if we entirely failed to parse the projects
