@@ -177,7 +177,8 @@ public final class DmnDeploymentTest {
   @Test
   public void shouldWriteDecisionRecord() {
     // when
-    engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+    final var deployment =
+        engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
 
     // then
     final var record = RecordingExporter.decisionRecords().getFirst();
@@ -194,7 +195,8 @@ public final class DmnDeploymentTest {
         .hasDecisionId("jedi_or_sith")
         .hasDecisionName("Jedi or Sith")
         .hasDecisionRequirementsId("force_users")
-        .hasVersion(1);
+        .hasVersion(1)
+        .hasDeploymentKey(deployment.getKey());
 
     assertThat(decisionRecord.getDecisionKey()).isPositive();
     assertThat(decisionRecord.getDecisionRequirementsKey()).isPositive();
@@ -203,7 +205,8 @@ public final class DmnDeploymentTest {
   @Test
   public void shouldWriteOneRecordForEachDecision() {
     // when
-    engine.deployment().withXmlClasspathResource(DMN_WITH_TWO_DECISIONS).deploy();
+    final var deployment =
+        engine.deployment().withXmlClasspathResource(DMN_WITH_TWO_DECISIONS).deploy();
 
     // then
     final var decisionRequirementsRecord =
@@ -225,10 +228,11 @@ public final class DmnDeploymentTest {
     assertThat(decisionRecords)
         .extracting(Record::getValue)
         .allSatisfy(
-            record -> {
-              assertThat(record.getDecisionRequirementsId()).isEqualTo(decisionRequirementsId);
-              assertThat(record.getDecisionRequirementsKey()).isEqualTo(decisionRequirementsKey);
-            });
+            record ->
+                Assertions.assertThat(record)
+                    .hasDecisionRequirementsId(decisionRequirementsId)
+                    .hasDecisionRequirementsKey(decisionRequirementsKey)
+                    .hasDeploymentKey(deployment.getKey()));
 
     assertThat(decisionRecords.get(0).getKey())
         .describedAs("Expect that the decision records have different keys")
@@ -238,19 +242,20 @@ public final class DmnDeploymentTest {
   @Test
   public void shouldDeployNewVersion() {
     // given
-    engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+    final var deployment1 =
+        engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
 
     // when
-    final var deploymentEvent =
+    final var deployment2 =
         engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_V2).deploy();
 
     // then
-    assertThat(deploymentEvent.getValue().getDecisionRequirementsMetadata())
+    assertThat(deployment2.getValue().getDecisionRequirementsMetadata())
         .extracting(DecisionRequirementsMetadataValue::getDecisionRequirementsVersion)
         .describedAs("Expect that the DRG version is increased")
         .containsExactly(2);
 
-    assertThat(deploymentEvent.getValue().getDecisionsMetadata())
+    assertThat(deployment2.getValue().getDecisionsMetadata())
         .extracting(DecisionRecordValue::getVersion)
         .describedAs("Expect that the decision version is increased")
         .containsExactly(2);
@@ -266,8 +271,13 @@ public final class DmnDeploymentTest {
     assertThat(RecordingExporter.decisionRecords().limit(2))
         .hasSize(2)
         .extracting(Record::getValue)
-        .extracting(DecisionRecordValue::getDecisionId, DecisionRecordValue::getVersion)
-        .contains(tuple("jedi_or_sith", 1), tuple("jedi_or_sith", 2));
+        .extracting(
+            DecisionRecordValue::getDecisionId,
+            DecisionRecordValue::getVersion,
+            DecisionRecordValue::getDeploymentKey)
+        .contains(
+            tuple("jedi_or_sith", 1, deployment1.getKey()),
+            tuple("jedi_or_sith", 2, deployment2.getKey()));
   }
 
   @Test
@@ -305,12 +315,14 @@ public final class DmnDeploymentTest {
   @Test
   public void shouldOmitRecordsForDuplicate() {
     // given
-    engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+    final var deployment1 =
+        engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
 
     // when
     engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
 
-    engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_V2).deploy();
+    final var deployment3 =
+        engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_V2).deploy();
 
     // then
     assertThat(RecordingExporter.decisionRequirementsRecords().limit(2))
@@ -321,9 +333,9 @@ public final class DmnDeploymentTest {
 
     assertThat(RecordingExporter.decisionRecords().limit(2))
         .extracting(Record::getValue)
-        .extracting(DecisionRecordValue::getVersion)
+        .extracting(DecisionRecordValue::getVersion, DecisionRecordValue::getDeploymentKey)
         .describedAs("Expect to omit decision record for duplicate")
-        .containsExactly(1, 2);
+        .containsExactly(tuple(1, deployment1.getKey()), tuple(2, deployment3.getKey()));
   }
 
   @Test
