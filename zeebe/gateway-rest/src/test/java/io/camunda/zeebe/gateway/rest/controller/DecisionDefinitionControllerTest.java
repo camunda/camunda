@@ -177,7 +177,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldSearchDecisionDefinitionsWithSorting() {
+  void shouldSearchDecisionDefinitionsWithFullSorting() {
     // given
     when(decisionDefinitionServices.search(any(DecisionDefinitionQuery.class)))
         .thenReturn(SEARCH_QUERY_RESULT);
@@ -195,6 +195,24 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
                 },
                 {
                     "field": "version"
+                },
+                {
+                     "field": "decisionId"
+                },
+                {
+                     "field": "decisionRequirementsKey"
+                },
+                {
+                     "field": "decisionRequirementsId"
+                },
+                {
+                     "field": "decisionRequirementsName"
+                },
+                {
+                     "field": "decisionRequirementsVersion"
+                },
+                {
+                     "field": "tenantId"
                 }
             ]
         }""";
@@ -223,6 +241,18 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
                         .name()
                         .asc()
                         .version()
+                        .asc()
+                        .decisionId()
+                        .asc()
+                        .decisionRequirementsKey()
+                        .asc()
+                        .decisionRequirementsId()
+                        .asc()
+                        .decisionRequirementsName()
+                        .asc()
+                        .decisionRequirementsVersion()
+                        .asc()
+                        .tenantId()
                         .asc()
                         .build())
                 .build());
