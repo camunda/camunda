@@ -15,13 +15,64 @@
  */
 package io.camunda.zeebe.client.api.search.response;
 
-import io.camunda.zeebe.client.api.response.UserTaskEvent;
+import java.util.List;
+import java.util.Map;
 
-public interface UserTask extends UserTaskEvent {
+public interface UserTask {
 
-  @Override
+  Long getKey();
+
+  /** State of the task */
+  String getState();
+
+  /** Assignee of the task */
+  String getAssignee();
+
+  /** Element ID */
+  String getElementId();
+
+  /** Instance key of the element */
+  Long getElementInstanceKey();
+
+  /** Candidate groups for the task */
+  List<String> getCandidateGroup();
+
+  /** Candidate users for the task */
+  List<String> getCandidateUser();
+
+  /** BPMN process id of the process associated with this task */
+  String getBpmnProcessId();
+
+  /** Key of the process definition */
+  Long getProcessDefinitionKey();
+
+  /** Key of the process instance */
+  Long getProcessInstanceKey();
+
+  /** Key of the form */
+  Long getFormKey();
+
+  /** Creation date of the task */
   String getCreationDate();
 
-  @Override
+  /** Completion date of the task */
   String getCompletionDate();
+
+  /** Follow-up date of the task */
+  String getFollowUpDate();
+
+  /** Due date of the task */
+  String getDueDate();
+
+  /** Tenant identifiers */
+  String getTenantIds();
+
+  /** External form reference */
+  String getExternalFormReference();
+
+  /** Version of the process definition */
+  Integer getProcessDefinitionVersion();
+
+  /** Custom headers associated with the task */
+  Map<String, String> getCustomHeaders();
 }
