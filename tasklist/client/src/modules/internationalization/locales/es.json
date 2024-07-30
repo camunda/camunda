@@ -310,16 +310,15 @@
     "relativeDateFormat_tomorrow_withTime_speech": "'Mañana a las' p",
     "relativeDateFormat_weekFmt": "EEEE",
     "relativeDateFormat_weekFmt_withTime": "EEEE, p",
-    "relativeDateFormat_weekFmt_speech": "'el' EEEE",
-    "relativeDateFormat_weekFmt_withTime_speech": "'el' EEEE 'a las' p",
+    "relativeDateFormat_weekFmt_withTime_speech": "EEEE 'a las' p",
     "relativeDateFormat_monthFmt": "d MMM",
     "relativeDateFormat_monthFmt_withTime": "d MMM, p",
-    "relativeDateFormat_monthFmt_speech": "'el' d 'de' MMMM",
-    "relativeDateFormat_monthFmt_withTime_speech": "'el' d 'de' MMMM 'a las' p",
+    "relativeDateFormat_monthFmt_speech": "d 'de' MMMM",
+    "relativeDateFormat_monthFmt_withTime_speech": "d 'de' MMMM 'a las' p",
     "relativeDateFormat_yearsFmt": "d MMM yyyy",
     "relativeDateFormat_yearsFmt_withTime": "d MMM yyyy, p",
-    "relativeDateFormat_yearsFmt_speech": "'el' d 'de' MMMM, yyyy",
-    "relativeDateFormat_yearsFmt_withTime_speech": "'el' d 'de' MMMM, yyyy 'a las' p",
+    "relativeDateFormat_yearsFmt_speech": "d 'de' MMMM, yyyy",
+    "relativeDateFormat_yearsFmt_withTime_speech": "d 'de' MMMM, yyyy 'a las' p",
     "relativeDateFormat_unknown": "'Desconocido'"
   }
 }
