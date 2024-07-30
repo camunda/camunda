@@ -291,9 +291,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@camunda/camunda-composite-components@npm:0.8.0":
-  version: 0.8.0
-  resolution: "@camunda/camunda-composite-components@npm:0.8.0"
+"@camunda/camunda-composite-components@npm:0.8.1":
+  version: 0.8.1
+  resolution: "@camunda/camunda-composite-components@npm:0.8.1"
   dependencies:
     jwt-decode: "npm:4.0.0"
     react-error-boundary: "npm:4.0.13"
@@ -304,7 +304,7 @@ __metadata:
     react: 18.x
     react-dom: 18.x
     styled-components: 5.x || 6.x
-  checksum: 10c0/32223622854c8ba952343b1df19afb354029e5ac946f236acfe604cc490dfa0a0a2b8e472581a520f730ace9018d0362070ee4f539194e01a9bb69e886424c5a
+  checksum: 10c0/d42aff4c2b0bfa3f3b481827416e0d6dec7d0daf52da6b07e86508e818dc97e547d8d1636b860f76eda269cebe9693d92f9abe7130e26459b4e04881ffc95e8a
   languageName: node
   linkType: hard
 
@@ -1096,12 +1096,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:20.14.10":
-  version: 20.14.10
-  resolution: "@types/node@npm:20.14.10"
+"@types/node@npm:20.14.13":
+  version: 20.14.13
+  resolution: "@types/node@npm:20.14.13"
   dependencies:
     undici-types: "npm:~5.26.4"
-  checksum: 10c0/0b06cff14365c2d0085dc16cc8cbea5c40ec09cfc1fea966be9eeecf35562760bfde8f88e86de6edfaf394501236e229d9c1084fad04fb4dec472ae245d8ae69
+  checksum: 10c0/10bb3ece675308742301c652ab8c6cb88b1ebddebed22316103c58f94fe7eff131edd5f679e487c19077fadb6b5e6b1ad9a60a2cee2869aa1f20452b9761d570
   languageName: node
   linkType: hard
 
@@ -2003,12 +2003,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-react-refresh@npm:0.4.8":
-  version: 0.4.8
-  resolution: "eslint-plugin-react-refresh@npm:0.4.8"
+"eslint-plugin-react-refresh@npm:0.4.9":
+  version: 0.4.9
+  resolution: "eslint-plugin-react-refresh@npm:0.4.9"
   peerDependencies:
     eslint: ">=7"
-  checksum: 10c0/5ed0c1a59c09baf072fb6db4eb18cb72977f0d0f32f77f78fb82f6cca5385e236a3c19a7ef4821cacbc9f7ae19ecb9f5e7b064d7b11f690c1bfcd8fe20288a5c
+  checksum: 10c0/5be0677746e32d14d2711d8cba30d59b9ffec5d4a46ccae94602f7812176ac491e47a13e9331a3beeb20f29e15fcb2c69295141b582523843ee386e8b716bb30
   languageName: node
   linkType: hard
 
@@ -2469,12 +2469,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"i18next@npm:23.12.1":
-  version: 23.12.1
-  resolution: "i18next@npm:23.12.1"
+"i18next@npm:23.12.2":
+  version: 23.12.2
+  resolution: "i18next@npm:23.12.2"
   dependencies:
     "@babel/runtime": "npm:^7.23.2"
-  checksum: 10c0/dab710559a63da6d9a5ed8b15c9670fa106e6274aada42e2270d7001255e8e855015d2253c857d5e8a41c6e9a49bd5700f3a09546482fd08b3a1e5bf100070a8
+  checksum: 10c0/aa7654afefc3f5383513563226401994558675a57eb562f0c4580d573d8410d24954f25112d45f9b6b1ca3f88c7beea1ac802ed50ad4081a06a17d08857e3c5d
   languageName: node
   linkType: hard
 
@@ -2491,10 +2491,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "identity-frontend@workspace:."
   dependencies:
-    "@camunda/camunda-composite-components": "npm:0.8.0"
+    "@camunda/camunda-composite-components": "npm:0.8.1"
     "@carbon/react": "npm:1.59.0"
     "@types/event-source-polyfill": "npm:1.0.5"
-    "@types/node": "npm:20.14.10"
+    "@types/node": "npm:20.14.13"
     "@types/react": "npm:18.3.3"
     "@types/react-dom": "npm:18.3.0"
     "@types/react-transition-group": "npm:4.4.10"
@@ -2503,22 +2503,22 @@ __metadata:
     "@vitejs/plugin-react": "npm:4.3.1"
     eslint: "npm:8.57.0"
     eslint-plugin-react-hooks: "npm:4.6.2"
-    eslint-plugin-react-refresh: "npm:0.4.8"
+    eslint-plugin-react-refresh: "npm:0.4.9"
     event-source-polyfill: "npm:1.0.31"
-    i18next: "npm:23.12.1"
+    i18next: "npm:23.12.2"
     license-checker: "npm:25.0.1"
-    prettier: "npm:3.3.2"
+    prettier: "npm:3.3.3"
     react: "npm:18.3.1"
     react-debounced: "npm:1.1.2"
     react-dom: "npm:18.3.1"
     react-i18next: "npm:15.0.0"
-    react-router: "npm:6.25.0"
-    react-router-dom: "npm:6.25.0"
+    react-router: "npm:6.25.1"
+    react-router-dom: "npm:6.25.1"
     react-transition-group: "npm:4.4.5"
     sass: "npm:1.77.8"
-    styled-components: "npm:6.1.11"
-    typescript: "npm:5.5.3"
-    vite: "npm:5.3.3"
+    styled-components: "npm:6.1.12"
+    typescript: "npm:5.5.4"
+    vite: "npm:5.3.5"
   languageName: unknown
   linkType: soft
 
@@ -3678,12 +3678,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:3.3.2":
-  version: 3.3.2
-  resolution: "prettier@npm:3.3.2"
+"prettier@npm:3.3.3":
+  version: 3.3.3
+  resolution: "prettier@npm:3.3.3"
   bin:
     prettier: bin/prettier.cjs
-  checksum: 10c0/39ed27d17f0238da6dd6571d63026566bd790d3d0edac57c285fbab525982060c8f1e01955fe38134ab10f0951a6076da37f015db8173c02f14bc7f0803a384c
+  checksum: 10c0/b85828b08e7505716324e4245549b9205c0cacb25342a030ba8885aba2039a115dbcf75a0b7ca3b37bc9d101ee61fab8113fc69ca3359f2a226f1ecc07ad2e26
   languageName: node
   linkType: hard
 
@@ -3841,27 +3841,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-router-dom@npm:6.25.0":
-  version: 6.25.0
-  resolution: "react-router-dom@npm:6.25.0"
+"react-router-dom@npm:6.25.1":
+  version: 6.25.1
+  resolution: "react-router-dom@npm:6.25.1"
   dependencies:
     "@remix-run/router": "npm:1.18.0"
-    react-router: "npm:6.25.0"
+    react-router: "npm:6.25.1"
   peerDependencies:
     react: ">=16.8"
     react-dom: ">=16.8"
-  checksum: 10c0/a837686f3ce9a12224d97e9b200a0e38575f32a568c80d5d8470e8f14208986ab266c1d6ec95e903ab3b1c3d1273cfe886401c33bdef393aa2c7eef4d6987692
+  checksum: 10c0/15e2b5bf89a26db9a108d19a4e0e2054180bfb1f5f62662dd93ad697ee1bdc91a8041efd762d552c95e65fc06ca0cb0c1e88acdeeaf03aba37f7a29e470c7cc4
   languageName: node
   linkType: hard
 
-"react-router@npm:6.25.0":
-  version: 6.25.0
-  resolution: "react-router@npm:6.25.0"
+"react-router@npm:6.25.1":
+  version: 6.25.1
+  resolution: "react-router@npm:6.25.1"
   dependencies:
     "@remix-run/router": "npm:1.18.0"
   peerDependencies:
     react: ">=16.8"
-  checksum: 10c0/82a7e9de69f444c57bbece2904518f1279a8ef80563172fff36cec3b74d854ae5702c560b6f9e02a5439b756f884dc16b81996ba613b3b6c0b31cd16bd1bc189
+  checksum: 10c0/a7e824c1f6d9641beabc23111865ddd2525b3794403e07b297fc2bdd4cddec93e166aacdb9d2602768864d70f3bf490f59eeab8474a04ae1f13a832f305eeec3
   languageName: node
   linkType: hard
 
@@ -4402,9 +4402,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"styled-components@npm:6.1.11":
-  version: 6.1.11
-  resolution: "styled-components@npm:6.1.11"
+"styled-components@npm:6.1.12":
+  version: 6.1.12
+  resolution: "styled-components@npm:6.1.12"
   dependencies:
     "@emotion/is-prop-valid": "npm:1.2.2"
     "@emotion/unitless": "npm:0.8.1"
@@ -4418,7 +4418,7 @@ __metadata:
   peerDependencies:
     react: ">= 16.8.0"
     react-dom: ">= 16.8.0"
-  checksum: 10c0/1d149a51d24f779bba700c8c23ec0538b2d2b57745ccd49d1cfdc2dfce8bcea21e8ff81fed1143d1b35d127cc591717a398da72ea6671abbf705432b13e59e56
+  checksum: 10c0/1ad728aea763a26dbce5ede380ef54b0aacae177166d19346eed97eab8e46935b8797d3ba8e1db689605175d5f9c9892a60d91d2e797e2ea61901fb7f58ed1a5
   languageName: node
   linkType: hard
 
@@ -4565,23 +4565,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:5.5.3":
-  version: 5.5.3
-  resolution: "typescript@npm:5.5.3"
+"typescript@npm:5.5.4":
+  version: 5.5.4
+  resolution: "typescript@npm:5.5.4"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/f52c71ccbc7080b034b9d3b72051d563601a4815bf3e39ded188e6ce60813f75dbedf11ad15dd4d32a12996a9ed8c7155b46c93a9b9c9bad1049766fe614bbdd
+  checksum: 10c0/422be60f89e661eab29ac488c974b6cc0a660fb2228003b297c3d10c32c90f3bcffc1009b43876a082515a3c376b1eefcce823d6e78982e6878408b9a923199c
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A5.5.3#optional!builtin<compat/typescript>":
-  version: 5.5.3
-  resolution: "typescript@patch:typescript@npm%3A5.5.3#optional!builtin<compat/typescript>::version=5.5.3&hash=379a07"
+"typescript@patch:typescript@npm%3A5.5.4#optional!builtin<compat/typescript>":
+  version: 5.5.4
+  resolution: "typescript@patch:typescript@npm%3A5.5.4#optional!builtin<compat/typescript>::version=5.5.4&hash=379a07"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10c0/911c7811d61f57f07df79c4a35f56a0f426a65426a020e5fcd792f66559f399017205f5f10255329ab5a3d8c2d1f1d19530aeceffda70758a521fae1d469432e
+  checksum: 10c0/73409d7b9196a5a1217b3aaad929bf76294d3ce7d6e9766dd880ece296ee91cf7d7db6b16c6c6c630ee5096eccde726c0ef17c7dfa52b01a243e57ae1f09ef07
   languageName: node
   linkType: hard
 
@@ -4768,9 +4768,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:5.3.3":
-  version: 5.3.3
-  resolution: "vite@npm:5.3.3"
+"vite@npm:5.3.5":
+  version: 5.3.5
+  resolution: "vite@npm:5.3.5"
   dependencies:
     esbuild: "npm:^0.21.3"
     fsevents: "npm:~2.3.3"
@@ -4804,7 +4804,7 @@ __metadata:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: 10c0/a796872e1d11875d994615cd00da185c80eeb7753034d35c096050bf3c269c02004070cf623c5fe2a4a90ea2f12488e6f9d13933ec810f117f1b931e1b5e3385
+  checksum: 10c0/795c7e0dbc94b96c4a0aff0d5d4b349dd28ad8b7b70979c1010f96b4d83f7d6c1700ebd6fed91de2e021b0a3689b9abc2d8017f6dfa8c9a6ca5c7af637d6afc6
   languageName: node
   linkType: hard
 

@@ -89,7 +89,7 @@ const apiRequest: <R, P>(
 
     return {
       data: success ? data : null,
-      errors: success ? null : data?.errors ?? [],
+      errors: success ? null : (data?.errors ?? []),
       status: response.status,
       success,
     };
