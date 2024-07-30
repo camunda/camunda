@@ -336,6 +336,7 @@ final class JsonSerializableToJsonTest {
                   .setDecisionKey(2L)
                   .setDecisionRequirementsKey(1L)
                   .setDecisionRequirementsId("drg-id")
+                  .setDeploymentKey(deploymentKey)
                   .setDuplicate(true);
               record
                   .formMetadata()
@@ -377,7 +378,8 @@ final class JsonSerializableToJsonTest {
               "decisionName": "decision-name",
               "decisionKey": 2,
               "duplicate": true,
-              "tenantId": "<default>"
+              "tenantId": "<default>",
+              "deploymentKey": 1234
             }
           ],
           "decisionRequirementsMetadata": [
@@ -1555,6 +1557,32 @@ final class JsonSerializableToJsonTest {
                     .setVersion(1)
                     .setDecisionKey(2L)
                     .setDecisionRequirementsKey(3L)
+                    .setDecisionRequirementsId("decision-requirements-id")
+                    .setDeploymentKey(4L),
+        """
+        {
+          "decisionId": "decision-id",
+          "decisionName": "decision-name",
+          "version": 1,
+          "decisionKey": 2,
+          "decisionRequirementsKey": 3,
+          "decisionRequirementsId": "decision-requirements-id",
+          "duplicate": false,
+          "tenantId": "<default>",
+          "deploymentKey": 4
+        }
+        """
+      },
+      {
+        "DecisionRecord (with empty deployment key)",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new DecisionRecord()
+                    .setDecisionId("decision-id")
+                    .setDecisionName("decision-name")
+                    .setVersion(1)
+                    .setDecisionKey(2L)
+                    .setDecisionRequirementsKey(3L)
                     .setDecisionRequirementsId("decision-requirements-id"),
         """
         {
@@ -1565,7 +1593,8 @@ final class JsonSerializableToJsonTest {
           "decisionRequirementsKey": 3,
           "decisionRequirementsId": "decision-requirements-id",
           "duplicate": false,
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "deploymentKey": -1
         }
         """
       },
