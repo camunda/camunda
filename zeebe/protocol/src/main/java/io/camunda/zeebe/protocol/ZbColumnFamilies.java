@@ -171,7 +171,13 @@ public enum ZbColumnFamilies implements EnumValue {
   USER_TASK_STATES(80),
   COMPENSATION_SUBSCRIPTION(81),
 
+<<<<<<< HEAD
   PROCESS_DEFINITION_KEY_BY_PROCESS_ID_AND_DEPLOYMENT_KEY(82);
+=======
+  PROCESS_DEFINITION_KEY_BY_PROCESS_ID_AND_DEPLOYMENT_KEY(82),
+  DMN_DECISION_KEY_BY_DECISION_ID_AND_DEPLOYMENT_KEY(83),
+  FORM_KEY_BY_FORM_ID_AND_DEPLOYMENT_KEY(84);
+>>>>>>> f0762f1 (feat: store form key by form id and deployment key + enable lookup)
 
   private final int value;
 

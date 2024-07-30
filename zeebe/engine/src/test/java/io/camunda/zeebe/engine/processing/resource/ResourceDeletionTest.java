@@ -1058,12 +1058,14 @@ public class ResourceDeletionTest {
             Form::getFormKey,
             Form::getVersion,
             Form::getResourceName,
-            Form::getTenantId)
+            Form::getTenantId,
+            Form::getDeploymentKey)
         .containsOnly(
             formCreatedRecord.getFormId(),
             formCreatedRecord.getFormKey(),
             formCreatedRecord.getVersion(),
             formCreatedRecord.getResourceName(),
-            formCreatedRecord.getTenantId());
+            formCreatedRecord.getTenantId(),
+            formCreatedRecord.getDeploymentKey());
   }
 }
