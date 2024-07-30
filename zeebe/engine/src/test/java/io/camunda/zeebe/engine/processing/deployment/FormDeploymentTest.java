@@ -103,7 +103,8 @@ public class FormDeploymentTest {
     Assertions.assertThat(record)
         .hasIntent(FormIntent.CREATED)
         .hasValueType(ValueType.FORM)
-        .hasRecordType(RecordType.EVENT);
+        .hasRecordType(RecordType.EVENT)
+        .hasRecordVersion(2);
 
     assertThat(record.getKey()).isPositive();
 

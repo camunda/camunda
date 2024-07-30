@@ -344,7 +344,8 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerFormAppliers(final MutableProcessingState state) {
-    register(FormIntent.CREATED, new FormCreatedApplier(state.getFormState()));
+    register(FormIntent.CREATED, 1, new FormCreatedV1Applier(state.getFormState()));
+    register(FormIntent.CREATED, 2, new FormCreatedV2Applier(state.getFormState()));
     register(FormIntent.DELETED, new FormDeletedApplier(state.getFormState()));
   }
 

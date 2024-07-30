@@ -33,6 +33,18 @@ public interface FormState {
   Optional<PersistedForm> findFormByKey(long formKey, final String tenantId);
 
   /**
+   * Query forms by the given form id and deployment key and return the form.
+   *
+   * @param formId the id of the form
+   * @param deploymentKey the key of the deployment the form was deployed with
+   * @param tenantId the id of the tenant
+   * @return the form, or {@link Optional#empty()} if no form with the given id was deployed with
+   *     the given deployment
+   */
+  Optional<PersistedForm> findFormByIdAndDeploymentKey(
+      DirectBuffer formId, long deploymentKey, final String tenantId);
+
+  /**
    * Gets the next version a form of a given id will receive. This is used, for example, when a new
    * deployment is done. Using this method we decide the version the newly deployed form receives.
    *
