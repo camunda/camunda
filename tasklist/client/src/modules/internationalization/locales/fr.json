@@ -312,16 +312,15 @@
     "relativeDateFormat_tomorrow_withTime_speech": "'Demain à' p",
     "relativeDateFormat_weekFmt": "EEEE",
     "relativeDateFormat_weekFmt_withTime": "EEEE, p",
-    "relativeDateFormat_weekFmt_speech": "'le' EEEE",
-    "relativeDateFormat_weekFmt_withTime_speech": "'le' EEEE 'à' p",
+    "relativeDateFormat_weekFmt_withTime_speech": "EEEE 'à' p",
     "relativeDateFormat_monthFmt": "d MMM",
     "relativeDateFormat_monthFmt_withTime": "d MMM, p",
-    "relativeDateFormat_monthFmt_speech": "'le' d 'de' MMMM",
-    "relativeDateFormat_monthFmt_withTime_speech": "'le' d 'de' MMMM 'à' p",
+    "relativeDateFormat_monthFmt_speech": "d MMMM",
+    "relativeDateFormat_monthFmt_withTime_speech": "d MMMM 'à' p",
     "relativeDateFormat_yearsFmt": "d MMM yyyy",
     "relativeDateFormat_yearsFmt_withTime": "d MMM yyyy, p",
-    "relativeDateFormat_yearsFmt_speech": "'le' d 'de' MMMM, yyyy",
-    "relativeDateFormat_yearsFmt_withTime_speech": "'le' d 'de' MMMM, yyyy 'à' p",
+    "relativeDateFormat_yearsFmt_speech": "d MMMM, yyyy",
+    "relativeDateFormat_yearsFmt_withTime_speech": "d MMMM, yyyy 'à' p",
     "relativeDateFormat_unknown": "'Inconnu'"
   }
 }

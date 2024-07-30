@@ -319,16 +319,15 @@
     "relativeDateFormat_tomorrow_withTime_speech": "'Tomorrow at' p",
     "relativeDateFormat_weekFmt": "EEEE",
     "relativeDateFormat_weekFmt_withTime": "EEEE, p",
-    "relativeDateFormat_weekFmt_speech": "'on' EEEE",
-    "relativeDateFormat_weekFmt_withTime_speech": "'on' EEEE 'at' p",
+    "relativeDateFormat_weekFmt_withTime_speech": "EEEE 'at' p",
     "relativeDateFormat_monthFmt": "d MMM",
     "relativeDateFormat_monthFmt_withTime": "d MMM, p",
-    "relativeDateFormat_monthFmt_speech": "'on the' d 'of' MMMM",
-    "relativeDateFormat_monthFmt_withTime_speech": "'on the' d 'of' MMMM 'at' p",
+    "relativeDateFormat_monthFmt_speech": "do 'of' MMMM",
+    "relativeDateFormat_monthFmt_withTime_speech": "do 'of' MMMM 'at' p",
     "relativeDateFormat_yearsFmt": "d MMM yyyy",
     "relativeDateFormat_yearsFmt_withTime": "d MMM yyyy, p",
-    "relativeDateFormat_yearsFmt_speech": "'on the' d 'of' MMMM, yyyy",
-    "relativeDateFormat_yearsFmt_withTime_speech": "'on the' d 'of' MMMM, yyyy 'at' p",
+    "relativeDateFormat_yearsFmt_speech": "do 'of' MMMM, yyyy",
+    "relativeDateFormat_yearsFmt_withTime_speech": "do 'of' MMMM, yyyy 'at' p",
     "relativeDateFormat_unknown": "'Unknown'"
   }
 }
