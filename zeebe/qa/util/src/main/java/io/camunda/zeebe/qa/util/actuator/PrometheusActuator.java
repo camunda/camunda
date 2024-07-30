@@ -24,9 +24,8 @@ public interface PrometheusActuator {
     return of(node.actuatorUri("prometheus").toString());
   }
 
-  static io.camunda.zeebe.qa.util.actuator.PrometheusActuator of(final String endpoint) {
-    final var target =
-        new HardCodedTarget<>(io.camunda.zeebe.qa.util.actuator.PrometheusActuator.class, endpoint);
+  static PrometheusActuator of(final String endpoint) {
+    final var target = new HardCodedTarget<>(PrometheusActuator.class, endpoint);
     return Feign.builder()
         .encoder(new JacksonEncoder())
         .decoder(new JacksonDecoder())
