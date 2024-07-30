@@ -19,6 +19,7 @@ import io.camunda.service.search.query.SearchQueryResult.Builder;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.service.search.sort.UserTaskSort;
 import io.camunda.service.security.auth.Authentication;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,8 +44,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                   "bpmnProcessId": "b",
                   "state": "s",
                   "assignee": "a",
-                  "candidateUser": ["cu"],
-                  "candidateGroup": ["cg"],
+                  "candidateUser": [],
+                  "candidateGroup": [],
                   "formKey": 0,
                   "elementId": "e",
                   "creationDate": "00:00:00.000Z+00:00",
@@ -64,9 +65,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               ]
           }
       }""";
-  static final String USER_TASKS_SEARCH_URL = "/v2/user-tasks/search";
-  private static final List<String> candidateGroup = List.of("cg");
-  private static final List<String> candidateUser = List.of("cu");
+  private static final String USER_TASKS_SEARCH_URL = "/v2/user-tasks/search";
   private static final SearchQueryResult<UserTaskEntity> SEARCH_QUERY_RESULT =
       new Builder<UserTaskEntity>()
           .total(1L)
@@ -87,8 +86,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "t", // tenantId
                       "00:00:00.000Z+00:00", // dueDate
                       "00:00:00.000Z+00:00", // followUpDate
-                      candidateGroup, // candidateGroups
-                      candidateUser, // candidateUsers
+                      new ArrayList<>(), // candidateGroups
+                      new ArrayList<>(), // candidateUsers
                       "efr", // externalFormReference
                       1, // processDefinitionVersion
                       Collections.emptyMap() // customHeaders
