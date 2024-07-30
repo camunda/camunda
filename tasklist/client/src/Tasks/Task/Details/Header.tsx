@@ -69,7 +69,7 @@ const Header: React.FC<Props> = ({task, user, onAssignmentError}) => {
               <CheckmarkFilled size={16} color="green" />
               {assignee ? (
                 <Trans i18nKey={'completedByUser'}>
-                  Completed by
+                  Completed by{' '}
                   <span className={styles.taskAssignee} data-testid="assignee">
                     <AssigneeTag
                       currentUser={user}
