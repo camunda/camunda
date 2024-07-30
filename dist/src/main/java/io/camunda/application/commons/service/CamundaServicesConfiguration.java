@@ -15,16 +15,13 @@ import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(
-    name = {"zeebe.broker.gateway.enable", "camunda.rest.enabled"},
-    havingValue = "true",
-    matchIfMissing = true)
+@ConditionalOnRestGatewayEnabled
 public class CamundaServicesConfiguration {
 
   private final BrokerClient brokerClient;

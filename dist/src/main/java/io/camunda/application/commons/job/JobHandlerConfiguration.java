@@ -13,6 +13,7 @@ import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.controller.JobActivationRequestResponseObserver;
 import io.camunda.zeebe.gateway.rest.controller.ResponseObserverProvider;
@@ -20,16 +21,12 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.unit.DataSize;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(
-    name = {"zeebe.broker.gateway.enable", "camunda.rest.enabled"},
-    havingValue = "true",
-    matchIfMissing = true)
+@ConditionalOnRestGatewayEnabled
 public class JobHandlerConfiguration {
 
   private final ActivateJobHandlerConfiguration config;

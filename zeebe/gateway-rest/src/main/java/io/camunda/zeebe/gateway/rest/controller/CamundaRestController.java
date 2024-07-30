@@ -5,13 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application.commons.rest;
+package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import org.springframework.web.bind.annotation.RestController;
 
-@Configuration(proxyBeanMethods = false)
-@ComponentScan(basePackages = "io.camunda.zeebe.gateway.rest")
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Documented
 @ConditionalOnRestGatewayEnabled
-public class RestApiConfiguration {}
+@RestController
+public @interface CamundaRestController {}
