@@ -24,13 +24,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestQueryController
-@RequestMapping("/v2")
+@RequestMapping("/v2/process-instances")
 public class ProcessInstanceQueryController {
 
   @Autowired private ProcessInstanceServices processInstanceServices;
 
   @PostMapping(
-      path = "/process-instances/search",
+      path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<ProcessInstanceSearchQueryResponse> searchProcessInstances(
