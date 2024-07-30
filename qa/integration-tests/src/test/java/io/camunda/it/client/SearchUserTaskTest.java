@@ -15,13 +15,12 @@ import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import java.text.SimpleDateFormat;
 import java.time.Duration;
-import java.util.Calendar;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.ZoneId;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -105,23 +104,15 @@ class SearchUserTaskTest {
 
   @Test
   public void shouldRetrieveTaskByCompletionDate() {
-    final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-    dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+    final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    final ZoneId utcZoneId = ZoneId.of("UTC");
 
-    final Date now = new Date();
+    final LocalDateTime now = LocalDateTime.now(utcZoneId);
 
-    final Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-    calendar.setTime(now);
-    calendar.add(Calendar.DAY_OF_YEAR, -1);
-    String dayBefore = dateFormat.format(calendar.getTime());
+    final LocalDateTime dayBefore = now.minusDays(1);
+    final LocalDateTime dayAfter = now.plusDays(1);
 
-    calendar.setTime(now);
-
-    calendar.add(Calendar.DAY_OF_YEAR, 1);
-    String dayAfter = dateFormat.format(calendar.getTime());
-
-    // Create a DateFilter with the formatted date strings for the range
-    final DateFilter dateFilter = new DateFilter().from(dayBefore).to(dayAfter);
+    final DateFilter dateFilter = new DateFilter().from(dayBefore.format(dateFormat)).to(dayAfter.format(dateFormat));
 
     final var result =
         camundaClient.newUserTaskQuery().filter(f -> f.completionDate(dateFilter)).send().join();
@@ -129,18 +120,10 @@ class SearchUserTaskTest {
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getState()).isEqualTo("COMPLETED");
 
-    // Check if the completion date is without the range
-    calendar.add(Calendar.DAY_OF_YEAR, -1);
-    dayBefore = dateFormat.format(calendar.getTime());
+    final LocalDateTime outOfRangeDayBefore = now.minusDays(2);
+    final LocalDateTime outOfRangeDayAfter = now.minusDays(1);
 
-    // Reset to current time
-    calendar.setTime(now);
-
-    // Calculate the date one day after
-    calendar.add(Calendar.DAY_OF_YEAR, 1);
-    dayAfter = dateFormat.format(calendar.getTime());
-
-    final DateFilter dateFilterOutOfRange = new DateFilter().from(dayBefore).to(dayAfter);
+    final DateFilter dateFilterOutOfRange = new DateFilter().from(outOfRangeDayBefore.format(dateFormat)).to(outOfRangeDayAfter.format(dateFormat));
     final var resultOutOfRange =
         camundaClient
             .newUserTaskQuery()
@@ -152,41 +135,25 @@ class SearchUserTaskTest {
 
   @Test
   public void shouldRetrieveTaskByCreationDate() {
-    final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-    dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+    final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    final ZoneId utcZoneId = ZoneId.of("UTC");
 
-    final Date now = new Date();
+    final LocalDateTime now = LocalDateTime.now(utcZoneId);
 
-    final Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-    calendar.setTime(now);
-    calendar.add(Calendar.DAY_OF_YEAR, -1);
-    String dayBefore = dateFormat.format(calendar.getTime());
+    final LocalDateTime dayBefore = now.minusDays(1);
+    final LocalDateTime dayAfter = now.plusDays(1);
 
-    calendar.setTime(now);
-
-    calendar.add(Calendar.DAY_OF_YEAR, 1);
-    String dayAfter = dateFormat.format(calendar.getTime());
-
-    // Create a DateFilter with the formatted date strings for the range
-    final DateFilter dateFilter = new DateFilter().from(dayBefore).to(dayAfter);
+    final DateFilter dateFilter = new DateFilter().from(dayBefore.format(dateFormat)).to(dayAfter.format(dateFormat));
 
     final var result =
         camundaClient.newUserTaskQuery().filter(f -> f.creationDate(dateFilter)).send().join();
 
     assertThat(result.items().size()).isEqualTo(3);
 
-    // Check if the completion date is without the range
-    calendar.add(Calendar.DAY_OF_YEAR, -1);
-    dayBefore = dateFormat.format(calendar.getTime());
+    final LocalDateTime outOfRangeDayBefore = now.minusDays(2);
+    final LocalDateTime outOfRangeDayAfter = now.minusDays(1);
 
-    // Reset to current time
-    calendar.setTime(now);
-
-    // Calculate the date one day after
-    calendar.add(Calendar.DAY_OF_YEAR, 1);
-    dayAfter = dateFormat.format(calendar.getTime());
-
-    final DateFilter dateFilterOutOfRange = new DateFilter().from(dayBefore).to(dayAfter);
+    final DateFilter dateFilterOutOfRange = new DateFilter().from(outOfRangeDayBefore.format(dateFormat)).to(outOfRangeDayAfter.format(dateFormat));
     final var resultOutOfRange =
         camundaClient
             .newUserTaskQuery()
@@ -198,41 +165,25 @@ class SearchUserTaskTest {
 
   @Test
   public void shouldRetrieveTaskByDueDate() {
-    final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-    dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+    final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    final ZoneId utcZoneId = ZoneId.of("UTC");
 
-    final Date now = new Date();
+    final LocalDateTime now = LocalDateTime.now(utcZoneId);
 
-    final Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-    calendar.setTime(now);
-    calendar.add(Calendar.DAY_OF_YEAR, -4);
-    String dayBefore = dateFormat.format(calendar.getTime());
+    final LocalDateTime dayBefore = now.minusDays(4);
+    final LocalDateTime dayAfter = now.plusDays(3);
 
-    calendar.setTime(now);
-
-    calendar.add(Calendar.DAY_OF_YEAR, 3);
-    String dayAfter = dateFormat.format(calendar.getTime());
-
-    // Create a DateFilter with the formatted date strings for the range
-    final DateFilter dateFilter = new DateFilter().from(dayBefore).to(dayAfter);
+    final DateFilter dateFilter = new DateFilter().from(dayBefore.format(dateFormat)).to(dayAfter.format(dateFormat));
 
     final var result =
         camundaClient.newUserTaskQuery().filter(f -> f.dueDate(dateFilter)).send().join();
 
     assertThat(result.items().size()).isEqualTo(3);
 
-    // Check if the completion date is without the range
-    calendar.add(Calendar.DAY_OF_YEAR, -3);
-    dayBefore = dateFormat.format(calendar.getTime());
+    final LocalDateTime outOfRangeDayBefore = now.minusDays(7);
+    final LocalDateTime outOfRangeDayAfter = now.minusDays(4);
 
-    // Reset to current time
-    calendar.setTime(now);
-
-    // Calculate the date one day after
-    calendar.add(Calendar.DAY_OF_YEAR, 1);
-    dayAfter = dateFormat.format(calendar.getTime());
-
-    final DateFilter dateFilterOutOfRange = new DateFilter().from(dayBefore).to(dayAfter);
+    final DateFilter dateFilterOutOfRange = new DateFilter().from(outOfRangeDayBefore.format(dateFormat)).to(outOfRangeDayAfter.format(dateFormat));
     final var resultOutOfRange =
         camundaClient.newUserTaskQuery().filter(f -> f.dueDate(dateFilterOutOfRange)).send().join();
     assertThat(resultOutOfRange.items().size()).isEqualTo(0);
@@ -240,41 +191,25 @@ class SearchUserTaskTest {
 
   @Test
   public void shouldRetrieveTaskByFollowUpDate() {
-    final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-    dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+    final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    final ZoneId utcZoneId = ZoneId.of("UTC");
 
-    final Date now = new Date();
+    final LocalDateTime now = LocalDateTime.now(utcZoneId);
 
-    final Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-    calendar.setTime(now);
-    calendar.add(Calendar.DAY_OF_YEAR, -4);
-    String dayBefore = dateFormat.format(calendar.getTime());
+    final LocalDateTime dayBefore = now.minusDays(4);
+    final LocalDateTime dayAfter = now.plusDays(3);
 
-    calendar.setTime(now);
-
-    calendar.add(Calendar.DAY_OF_YEAR, 3);
-    String dayAfter = dateFormat.format(calendar.getTime());
-
-    // Create a DateFilter with the formatted date strings for the range
-    final DateFilter dateFilter = new DateFilter().from(dayBefore).to(dayAfter);
+    final DateFilter dateFilter = new DateFilter().from(dayBefore.format(dateFormat)).to(dayAfter.format(dateFormat));
 
     final var result =
         camundaClient.newUserTaskQuery().filter(f -> f.followUpDate(dateFilter)).send().join();
 
     assertThat(result.items().size()).isEqualTo(3);
 
-    // Check if the completion date is without the range
-    calendar.add(Calendar.DAY_OF_YEAR, -3);
-    dayBefore = dateFormat.format(calendar.getTime());
+    final LocalDateTime outOfRangeDayBefore = now.minusDays(7);
+    final LocalDateTime outOfRangeDayAfter = now.minusDays(4);
 
-    // Reset to current time
-    calendar.setTime(now);
-
-    // Calculate the date one day after
-    calendar.add(Calendar.DAY_OF_YEAR, 1);
-    dayAfter = dateFormat.format(calendar.getTime());
-
-    final DateFilter dateFilterOutOfRange = new DateFilter().from(dayBefore).to(dayAfter);
+    final DateFilter dateFilterOutOfRange = new DateFilter().from(outOfRangeDayBefore.format(dateFormat)).to(outOfRangeDayAfter.format(dateFormat));
     final var resultOutOfRange =
         camundaClient
             .newUserTaskQuery()
@@ -357,14 +292,11 @@ class SearchUserTaskTest {
       final String userTaskName,
       final String candidateGroup,
       final String candidateUser) {
-    final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-    dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+    final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    final ZoneId utcZoneId = ZoneId.of("UTC");
 
-    final Date now = new Date();
-
-    final Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-    calendar.setTime(now);
-    calendar.add(Calendar.DAY_OF_YEAR, -1);
+    final LocalDateTime now = LocalDateTime.now(utcZoneId);
+    final LocalDateTime dayBefore = now.minusDays(1);
 
     camundaClient
         .newDeployResourceCommand()
@@ -373,8 +305,8 @@ class SearchUserTaskTest {
                 .startEvent()
                 .userTask(userTaskName)
                 .zeebeUserTask()
-                .zeebeDueDate(dateFormat.format(calendar.getTime()))
-                .zeebeFollowUpDate(dateFormat.format(calendar.getTime()))
+                .zeebeDueDate(dayBefore.format(dateFormat))
+                .zeebeFollowUpDate(dayBefore.format(dateFormat))
                 .zeebeCandidateGroups(candidateGroup)
                 .zeebeCandidateUsers(candidateUser)
                 .endEvent()
