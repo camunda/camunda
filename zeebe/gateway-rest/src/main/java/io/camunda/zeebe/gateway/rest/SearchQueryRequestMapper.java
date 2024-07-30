@@ -248,13 +248,13 @@ public final class SearchQueryRequestMapper {
 
     if (filter != null) {
       // key
-      if (filter.getUserTaskKey() != null) {
-        builder.userTaskKeys(filter.getUserTaskKey());
+      if (filter.getKey() != null) {
+        builder.userTaskKeys(filter.getKey());
       }
 
       // state
-      if (filter.getTaskState() != null && !filter.getTaskState().isEmpty()) {
-        builder.states(filter.getTaskState());
+      if (filter.getState() != null && !filter.getState().isEmpty()) {
+        builder.states(filter.getState());
       }
 
       // bpmnProcessId

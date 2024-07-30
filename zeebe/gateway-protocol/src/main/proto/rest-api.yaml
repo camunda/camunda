@@ -1334,10 +1334,10 @@ components:
       description: User task filter request.
       type: object
       properties:
-        userTaskKey:
+        key:
           type: integer
           format: int64
-        taskState:
+        state:
           type: string
         assignee:
           type: string
@@ -1368,10 +1368,10 @@ components:
     UserTaskItem:
       type: object
       properties:
-        userTaskKey:
+        key:
           type: integer
           format: int64
-        taskState:
+        state:
           type: string
         assignee:
           type: string
