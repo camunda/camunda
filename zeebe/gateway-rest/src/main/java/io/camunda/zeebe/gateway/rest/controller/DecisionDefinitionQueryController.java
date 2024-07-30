@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.service.ProcessInstanceServices;
-import io.camunda.service.search.query.ProcessInstanceQuery;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
+import io.camunda.service.DecisionDefinitionServices;
+import io.camunda.service.search.query.DecisionDefinitionQuery;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
@@ -24,36 +24,36 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestQueryController
-@RequestMapping("/v2/process-instances")
-public class ProcessInstanceQueryController {
+@RequestMapping("/v2/decision-definitions")
+public class DecisionDefinitionQueryController {
 
-  @Autowired private ProcessInstanceServices processInstanceServices;
+  @Autowired private DecisionDefinitionServices decisionDefinitionServices;
 
   @PostMapping(
       path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<ProcessInstanceSearchQueryResponse> searchProcessInstances(
-      @RequestBody(required = false) final ProcessInstanceSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toProcessInstanceQuery(query)
+  public ResponseEntity<DecisionDefinitionSearchQueryResponse> searchDecisionDefinitions(
+      @RequestBody(required = false) final DecisionDefinitionSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toDecisionDefinitionQuery(query)
         .fold(this::search, RestErrorMapper::mapProblemToResponse);
   }
 
-  private ResponseEntity<ProcessInstanceSearchQueryResponse> search(
-      final ProcessInstanceQuery query) {
+  private ResponseEntity<DecisionDefinitionSearchQueryResponse> search(
+      final DecisionDefinitionQuery query) {
     try {
       final var result =
-          processInstanceServices
+          decisionDefinitionServices
               .withAuthentication(RequestMapper.getAuthentication())
               .search(query);
       return ResponseEntity.ok(
-          SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result));
+          SearchQueryResponseMapper.toDecisionDefinitionSearchQueryResponse(result));
     } catch (final Throwable e) {
       final var problemDetail =
           RestErrorMapper.createProblemDetail(
               HttpStatus.BAD_REQUEST,
               e.getMessage(),
-              "Failed to execute Process Instance Search Query");
+              "Failed to execute Decision Definition Search Query");
       return RestErrorMapper.mapProblemToResponse(problemDetail);
     }
   }

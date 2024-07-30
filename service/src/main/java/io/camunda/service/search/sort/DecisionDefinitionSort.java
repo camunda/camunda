@@ -7,7 +7,6 @@
  */
 package io.camunda.service.search.sort;
 
-import io.camunda.search.clients.sort.SortOrder;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
@@ -70,14 +69,6 @@ public record DecisionDefinitionSort(List<FieldSorting> orderings) implements So
     public Builder tenantId() {
       currentOrdering = new FieldSorting("tenantId", null);
       return this;
-    }
-
-    public Builder asc() {
-      return addOrdering(SortOrder.ASC);
-    }
-
-    public Builder desc() {
-      return addOrdering(SortOrder.DESC);
     }
 
     @Override

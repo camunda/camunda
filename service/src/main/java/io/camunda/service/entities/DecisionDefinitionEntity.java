@@ -14,10 +14,10 @@ public record DecisionDefinitionEntity(
     String tenantId,
     Long key,
     String id,
+    String decisionId,
     String name,
     Integer version,
     String decisionRequirementsId,
     Long decisionRequirementsKey,
-    String decisionId,
     String decisionRequirementsName,
     Integer decisionRequirementsVersion) {}

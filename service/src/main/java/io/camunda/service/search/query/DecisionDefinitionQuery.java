@@ -27,7 +27,8 @@ public record DecisionDefinitionQuery(
   }
 
   public static final class Builder extends SearchQueryBase.AbstractQueryBuilder<Builder>
-      implements ObjectBuilder<DecisionDefinitionQuery> {
+      implements TypedSearchQueryBuilder<
+          DecisionDefinitionQuery, Builder, DecisionDefinitionFilter, DecisionDefinitionSort> {
 
     private static final DecisionDefinitionFilter EMPTY_FILTER =
         FilterBuilders.decisionDefinition().build();

@@ -26,7 +26,8 @@ public final record ProcessInstanceQuery(
   }
 
   public static final class Builder extends SearchQueryBase.AbstractQueryBuilder<Builder>
-      implements ObjectBuilder<ProcessInstanceQuery> {
+      implements TypedSearchQueryBuilder<
+          ProcessInstanceQuery, Builder, ProcessInstanceFilter, ProcessInstanceSort> {
 
     private static final ProcessInstanceFilter EMPTY_FILTER =
         FilterBuilders.processInstance().build();

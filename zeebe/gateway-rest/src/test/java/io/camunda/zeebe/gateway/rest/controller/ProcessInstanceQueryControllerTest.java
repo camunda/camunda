@@ -18,8 +18,8 @@ import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.SearchQueryResult.Builder;
 import io.camunda.service.search.sort.ProcessInstanceSort;
+import io.camunda.service.security.auth.Authentication;
 import java.util.List;
-import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -68,8 +68,28 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupServices() {
-    when(processInstanceServices.withAuthentication(any(Function.class)))
+    when(processInstanceServices.withAuthentication(any(Authentication.class)))
         .thenReturn(processInstanceServices);
+  }
+
+  @Test
+  void shouldSearchProcessInstancesWithEmptyBody() {
+    // given
+    when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
+        .thenReturn(SEARCH_QUERY_RESULT);
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(processInstanceServices).search(new ProcessInstanceQuery.Builder().build());
   }
 
   @Test
