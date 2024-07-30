@@ -12,7 +12,7 @@ describe('formatDate', () => {
   it('should format date correctly', () => {
     const formattedDate = formatDate('2020-06-02T15:29:12.766');
 
-    expect(formattedDate).toEqual('02 Jun 2020 - 03:29 PM');
+    expect(formattedDate).toEqual('02 Jun 2020 - 3:29 PM');
   });
 
   it('should return empty string and log error on invalid date string', () => {

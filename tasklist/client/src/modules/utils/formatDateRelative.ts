@@ -53,11 +53,12 @@ const getConfiguredDateKey = (
 ) => {
   let keySuffix = '';
 
-  if (isSpeech) {
-    keySuffix += '_speech';
-  }
   if (includeTime) {
     keySuffix += '_withTime';
+  }
+
+  if (isSpeech) {
+    keySuffix += '_speech';
   }
 
   return `relativeDateFormat_${key}${keySuffix}`;
