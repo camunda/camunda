@@ -141,7 +141,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-client-java</artifactId>
+      <artifactId>zeebe-client-java</artifactId>
     </dependency>
 
     <dependency>
@@ -443,11 +443,6 @@
     <dependency>
       <groupId>org.apache.httpcomponents.core5</groupId>
       <artifactId>httpcore5</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.graphql-java-kickstart</groupId>
-      <artifactId>graphql-spring-boot-autoconfigure</artifactId>
     </dependency>
 
     <dependency>

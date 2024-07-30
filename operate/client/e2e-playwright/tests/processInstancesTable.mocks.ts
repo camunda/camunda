@@ -6,23 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  deployProcess,
-  createInstances,
-  createSingleInstance,
-} from '../setup-utils';
+import {zeebeGrpcApi} from '../api/zeebe-grpc';
 import {wait} from '../utils/wait';
+
+const {deployProcesses, createInstances, createSingleInstance} = zeebeGrpcApi;
 
 // time difference between start dates in ms for sorting test
 const startDateDifference = 1000;
 
 async function setup() {
-  await deployProcess([
+  await deployProcesses([
     'instancesTableProcessA.bpmn',
     'instancesTableProcessB_v_1.bpmn',
     'instancesTableProcessForInfiniteScroll.bpmn',
   ]);
-  await deployProcess(['instancesTableProcessB_v_2.bpmn']);
+  await deployProcesses(['instancesTableProcessB_v_2.bpmn']);
 
   const processA = await createInstances('instancesTableProcessA', 1, 30);
 

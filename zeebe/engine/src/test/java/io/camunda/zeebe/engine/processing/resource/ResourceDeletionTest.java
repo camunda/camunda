@@ -872,13 +872,15 @@ public class ResourceDeletionTest {
             ProcessMetadataValue::getBpmnProcessId,
             ProcessMetadataValue::getResourceName,
             ProcessMetadataValue::getVersion,
-            ProcessMetadataValue::getProcessDefinitionKey)
+            ProcessMetadataValue::getProcessDefinitionKey,
+            ProcessMetadataValue::getDeploymentKey)
         .containsOnly(
             tuple(
                 processCreatedRecord.getBpmnProcessId(),
                 processCreatedRecord.getResourceName(),
                 processCreatedRecord.getVersion(),
-                processCreatedRecord.getProcessDefinitionKey()));
+                processCreatedRecord.getProcessDefinitionKey(),
+                processCreatedRecord.getDeploymentKey()));
   }
 
   private void verifyInstanceOfProcessWithIdAndVersionIsCompleted(

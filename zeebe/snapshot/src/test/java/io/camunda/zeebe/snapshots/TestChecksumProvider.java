@@ -10,7 +10,7 @@ package io.camunda.zeebe.snapshots;
 import java.nio.file.Path;
 import java.util.Map;
 
-public class TestChecksumProvider implements ChecksumProvider {
+public class TestChecksumProvider implements CRC32CChecksumProvider {
   private final Map<String, Long> snapshotChecksums;
 
   public TestChecksumProvider(final Map<String, Long> snapshotChecksums) {

@@ -15,10 +15,6 @@
  */
 package io.camunda.zeebe.client;
 
-/**
- * @deprecated since 8.6 for removal with 8.8
- */
-@Deprecated
 public interface ZeebeClientCloudBuilderStep1 {
 
   /**

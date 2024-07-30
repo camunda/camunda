@@ -42,14 +42,19 @@ public final class StraightThroughProcessingLoopValidator {
           BpmnElementType.END_EVENT,
           BpmnElementType.SUB_PROCESS,
           BpmnElementType.MULTI_INSTANCE_BODY,
-          BpmnElementType.CALL_ACTIVITY);
+          BpmnElementType.CALL_ACTIVITY,
+          BpmnElementType.INTERMEDIATE_THROW_EVENT);
 
   /**
    * Loops must contain any of the rejected element types for it to be considered a loop. This makes
    * sure we don't reject deployments containing a loop of just gateways.
    */
   private static final EnumSet<BpmnElementType> REJECTED_ELEMENT_TYPES =
-      EnumSet.of(BpmnElementType.MANUAL_TASK, BpmnElementType.TASK, BpmnElementType.CALL_ACTIVITY);
+      EnumSet.of(
+          BpmnElementType.MANUAL_TASK,
+          BpmnElementType.TASK,
+          BpmnElementType.CALL_ACTIVITY,
+          BpmnElementType.INTERMEDIATE_THROW_EVENT);
 
   /**
    * Validates a list of processes for straight-through processing loops. These are loops of

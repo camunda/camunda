@@ -6,17 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  deployProcess,
-  createSingleInstance,
-  completeTask,
-} from '../setup-utils';
+import {zeebeGrpcApi} from '../api/zeebe-grpc';
+
+const {deployProcesses, completeTask, createSingleInstance} = zeebeGrpcApi;
 
 const setup = async () => {
-  await deployProcess(['multiInstanceProcess.bpmn']);
+  await deployProcesses(['multiInstanceProcess.bpmn']);
 
   completeTask('multiInstanceProcessTaskA', false, {}, (job) => {
-    return job.complete({...job.variables, i: job.variables.i + 1});
+    return job.complete({i: Number(job.variables.i) + 1});
   });
 
   completeTask('multiInstanceProcessTaskB', true);
@@ -27,7 +25,7 @@ const setup = async () => {
     {
       i: 0,
       loopCardinality: 5,
-      clients: new Array(5),
+      clients: [0, 1, 2, 3, 4],
     },
   );
 

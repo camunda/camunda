@@ -51,7 +51,7 @@
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.4.0</version.docker-java-api>
     <version.elasticsearch>8.9.2</version.elasticsearch>
-    <version.error-prone>2.28.0</version.error-prone>
+    <version.error-prone>2.29.2</version.error-prone>
     <version.grpc>1.65.1</version.grpc>
     <version.gson>2.11.0</version.gson>
     <version.guava>33.2.1-jre</version.guava>
@@ -77,10 +77,10 @@
     <version.opensearch>2.8.0</version.opensearch>
     <version.opensearch.testcontainers>2.1.0</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
-    <version.protobuf>3.25.3</version.protobuf>
-    <version.protobuf-common>2.41.0</version.protobuf-common>
+    <version.protobuf>3.25.4</version.protobuf>
+    <version.protobuf-common>2.42.0</version.protobuf-common>
     <version.micrometer>1.13.2</version.micrometer>
-    <version.rocksdbjni>8.11.4</version.rocksdbjni>
+    <version.rocksdbjni>9.4.0</version.rocksdbjni>
     <version.sbe>1.31.1</version.sbe>
     <version.scala>2.13.14</version.scala>
     <version.slf4j>2.0.13</version.slf4j>
@@ -123,7 +123,7 @@
     <version.feign>13.3</version.feign>
     <version.google-sdk>26.43.0</version.google-sdk>
     <version.azure-sdk>1.2.25</version.azure-sdk>
-    <version.awssdk>2.26.24</version.awssdk>
+    <version.awssdk>2.26.26</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -153,7 +153,7 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.764</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.766</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.20.0</version.elasticsearch-test-container>
     <version.postgres-test-container>1.20.0</version.postgres-test-container>
     <version.elasticsearch7>7.17.22</version.elasticsearch7>
@@ -826,7 +826,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>camunda-client-java</artifactId>
+        <artifactId>zeebe-client-java</artifactId>
         <version>${project.version}</version>
       </dependency>
 

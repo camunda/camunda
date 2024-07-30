@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import com.google.common.base.Strings;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -172,7 +174,19 @@ public final class BpmnJobBehavior {
   }
 
   private Either<Failure, String> evalTypeExp(final Expression type, final long scopeKey) {
-    return expressionBehavior.evaluateStringExpression(type, scopeKey);
+    return expressionBehavior
+        .evaluateStringExpression(type, scopeKey)
+        .flatMap(
+            result ->
+                Strings.isNullOrEmpty(result)
+                    ? Either.left(
+                        new Failure(
+                            String.format(
+                                "Expected result of the expression '%s' to be a not-empty string, but was an empty string.",
+                                type.getExpression()),
+                            ErrorType.EXTRACT_VALUE_ERROR,
+                            scopeKey))
+                    : Either.right(result));
   }
 
   private Either<Failure, Long> evalRetriesExp(final Expression retries, final long scopeKey) {

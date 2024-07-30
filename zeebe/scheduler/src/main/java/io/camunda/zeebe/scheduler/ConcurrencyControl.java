@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.scheduler;
 
+import io.camunda.zeebe.scheduler.ActorTask.ActorLifecyclePhase;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -29,6 +32,20 @@ public interface ConcurrencyControl extends Executor {
    * @param <T> result type of the future
    */
   <T> void runOnCompletion(final ActorFuture<T> future, final BiConsumer<T, Throwable> callback);
+
+  /**
+   * Invoke the callback when the given futures are completed (successfully or exceptionally). This
+   * call does not block the actor.
+   *
+   * <p>The callback is executed while the actor is in the following actor lifecycle phases: {@link
+   * ActorLifecyclePhase#STARTED}
+   *
+   * @param futures the futures to wait on
+   * @param callback The throwable is <code>null</code> when all futures are completed successfully.
+   *     Otherwise, it holds the exception of the last completed future.
+   */
+  <T> void runOnCompletion(
+      final Collection<ActorFuture<T>> futures, final Consumer<Throwable> callback);
 
   /**
    * Schedules an action to be invoked (must be called from an actor thread)

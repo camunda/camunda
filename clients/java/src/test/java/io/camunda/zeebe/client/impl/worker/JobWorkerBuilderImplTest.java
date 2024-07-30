@@ -185,7 +185,7 @@ class JobWorkerBuilderImplTest {
         .open();
 
     // then
-    verify(lastStep, atLeast(1)).requestTimeout(Duration.ofHours(1));
+    verify(lastStep, atLeast(1)).requestTimeout(Duration.ofHours(8));
   }
 
   @Test

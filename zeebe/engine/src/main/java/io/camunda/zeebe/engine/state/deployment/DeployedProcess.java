@@ -52,6 +52,10 @@ public final class DeployedProcess {
     return persistedProcess.getTenantId();
   }
 
+  public long getDeploymentKey() {
+    return persistedProcess.getDeploymentKey();
+  }
+
   @Override
   public String toString() {
     return "DeployedProcess{"

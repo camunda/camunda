@@ -217,7 +217,8 @@ final class JsonSerializableToJsonTest {
                 "checksum": "Y2hlY2tzdW0=",
                 "processDefinitionKey": 123,
                 "duplicate": false,
-                "tenantId": "<default>"
+                "tenantId": "<default>",
+                "deploymentKey": -1
               }
             ],
             "resources": [
@@ -229,7 +230,8 @@ final class JsonSerializableToJsonTest {
             "decisionsMetadata": [],
             "decisionRequirementsMetadata": [],
             "formMetadata": [],
-            "tenantId": "<default>"
+            "tenantId": "<default>",
+            "deploymentKey": -1
           }
         }
         """
@@ -277,7 +279,8 @@ final class JsonSerializableToJsonTest {
               "processesMetadata": [],
               "decisionsMetadata": [],
               "formMetadata": [],
-              "tenantId": "<default>"
+              "tenantId": "<default>",
+              "deploymentKey": -1
           }
         }
         """
@@ -295,8 +298,10 @@ final class JsonSerializableToJsonTest {
               final long processDefinitionKey = 123;
               final int processVersion = 12;
               final DirectBuffer checksum = wrapString("checksum");
+              final long deploymentKey = 1234;
               final DeploymentRecord record = new DeploymentRecord();
               record
+                  .setDeploymentKey(deploymentKey)
                   .resources()
                   .add()
                   .setResourceName(wrapString(resourceName))
@@ -309,7 +314,8 @@ final class JsonSerializableToJsonTest {
                   .setResourceName(wrapString(resourceName))
                   .setVersion(processVersion)
                   .setChecksum(checksum)
-                  .markAsDuplicate();
+                  .setDuplicate(true)
+                  .setDeploymentKey(deploymentKey);
               record
                   .decisionRequirementsMetadata()
                   .add()
@@ -320,7 +326,7 @@ final class JsonSerializableToJsonTest {
                   .setNamespace("namespace")
                   .setResourceName("resource-name")
                   .setChecksum(checksum)
-                  .markAsDuplicate();
+                  .setDuplicate(true);
               record
                   .decisionsMetadata()
                   .add()
@@ -330,7 +336,7 @@ final class JsonSerializableToJsonTest {
                   .setDecisionKey(2L)
                   .setDecisionRequirementsKey(1L)
                   .setDecisionRequirementsId("drg-id")
-                  .markAsDuplicate();
+                  .setDuplicate(true);
               record
                   .formMetadata()
                   .add()
@@ -339,7 +345,7 @@ final class JsonSerializableToJsonTest {
                   .setFormKey(1L)
                   .setResourceName("form1.form")
                   .setChecksum(checksum)
-                  .markAsDuplicate();
+                  .setDuplicate(true);
               return record;
             },
         """
@@ -358,7 +364,8 @@ final class JsonSerializableToJsonTest {
               "processDefinitionKey": 123,
               "resourceName": "resource",
               "duplicate": true,
-              "tenantId": "<default>"
+              "tenantId": "<default>",
+              "deploymentKey": 1234
             }
           ],
           "decisionsMetadata": [
@@ -397,7 +404,8 @@ final class JsonSerializableToJsonTest {
               "tenantId": "<default>"
             }
           ],
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "deploymentKey": 1234
         }
         """
       },
@@ -431,7 +439,8 @@ final class JsonSerializableToJsonTest {
           "decisionsMetadata": [],
           "decisionRequirementsMetadata": [],
           "formMetadata": [],
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "deploymentKey": -1
         }
         """
       },
@@ -446,11 +455,50 @@ final class JsonSerializableToJsonTest {
               final DirectBuffer resource = wrapString("contents");
               final String bpmnProcessId = "testProcess";
               final long processDefinitionKey = 123;
-
               final int processVersion = 12;
               final DirectBuffer checksum = wrapString("checksum");
-              final ProcessRecord record = new ProcessRecord();
+              final long deploymentKey = 1234;
 
+              final ProcessRecord record = new ProcessRecord();
+              record
+                  .setResourceName(wrapString(resourceName))
+                  .setResource(resource)
+                  .setBpmnProcessId(wrapString(bpmnProcessId))
+                  .setKey(processDefinitionKey)
+                  .setResourceName(wrapString(resourceName))
+                  .setVersion(processVersion)
+                  .setChecksum(checksum)
+                  .setDeploymentKey(deploymentKey);
+
+              return record;
+            },
+        """
+        {
+          "resourceName": "resource",
+          "resource": "Y29udGVudHM=",
+          "checksum": "Y2hlY2tzdW0=",
+          "bpmnProcessId": "testProcess",
+          "version": 12,
+          "processDefinitionKey": 123,
+          "resourceName": "resource",
+          "duplicate": false,
+          "tenantId": "<default>",
+          "deploymentKey": 1234
+        }
+        """
+      },
+      new Object[] {
+        "ProcessRecord (with empty deployment key)",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final String resourceName = "resource";
+              final DirectBuffer resource = wrapString("contents");
+              final String bpmnProcessId = "testProcess";
+              final long processDefinitionKey = 123;
+              final int processVersion = 12;
+              final DirectBuffer checksum = wrapString("checksum");
+
+              final ProcessRecord record = new ProcessRecord();
               record
                   .setResourceName(wrapString(resourceName))
                   .setResource(resource)
@@ -472,7 +520,8 @@ final class JsonSerializableToJsonTest {
           "processDefinitionKey": 123,
           "resourceName": "resource",
           "duplicate": false,
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "deploymentKey": -1
         }
         """
       },
@@ -2018,12 +2067,14 @@ final class JsonSerializableToJsonTest {
               "resourceName": "my_first_bpmn.bpmn",
               "checksum": "c2hhMQ==",
               "duplicate": false,
-              "tenantId": "<default>"
+              "tenantId": "<default>",
+              "deploymentKey": -1
             }],
             "decisionsMetadata": [],
             "decisionRequirementsMetadata": [],
             "formMetadata": [],
-            "tenantId": "<default>"
+            "tenantId": "<default>",
+            "deploymentKey": -1
           }
         }
         """

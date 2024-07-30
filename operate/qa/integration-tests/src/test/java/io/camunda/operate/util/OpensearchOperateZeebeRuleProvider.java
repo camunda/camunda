@@ -11,14 +11,14 @@ import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERS
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.componentTemplateRequestBuilder;
 import static org.junit.Assert.assertTrue;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.response.Topology;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.response.Topology;
 import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
 import java.time.Instant;
@@ -47,7 +47,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   @Autowired protected ZeebeRichOpenSearchClient zeebeRichOpenSearchClient;
   protected ZeebeContainer zeebeContainer;
   @Autowired private TestContainerUtil testContainerUtil;
-  private CamundaClient client;
+  private ZeebeClient client;
 
   private String prefix;
   private boolean failed = false;
@@ -117,7 +117,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
         testContainerUtil.startZeebe(zeebeVersion, prefix, 2, isMultitTenancyEnabled());
 
     client =
-        CamundaClient.newClientBuilder()
+        ZeebeClient.newClientBuilder()
             .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
             .usePlaintext()
             .defaultRequestTimeout(REQUEST_TIMEOUT)
@@ -147,7 +147,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   }
 
   @Override
-  public CamundaClient getClient() {
+  public ZeebeClient getClient() {
     return client;
   }
 

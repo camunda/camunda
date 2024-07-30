@@ -56,8 +56,11 @@ public class ReachEndOfLogTest {
         .withXmlResource(
             Bpmn.createExecutableProcess("process")
                 .startEvent()
-                .intermediateThrowEvent("test")
+                .exclusiveGateway("test")
+                .defaultFlow()
                 .connectTo("test")
+                .sequenceFlowId("sf2")
+                .condition("= false")
                 .endEvent()
                 .done())
         .deploy();

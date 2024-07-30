@@ -98,8 +98,8 @@ public class FormMetadataRecord extends UnifiedRecordValue implements FormMetada
     return isDuplicateProp.getValue();
   }
 
-  public FormMetadataRecord markAsDuplicate() {
-    isDuplicateProp.setValue(true);
+  public FormMetadataRecord setDuplicate(final boolean isDuplicate) {
+    isDuplicateProp.setValue(isDuplicate);
     return this;
   }
 

@@ -8,7 +8,7 @@
 package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
-import io.camunda.commons.configuration.GatewayBasedConfiguration;
+import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -21,8 +21,6 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -46,8 +44,6 @@ import org.springframework.context.annotation.Profile;
           type = FilterType.REGEX,
           pattern = "io\\.camunda\\.zeebe\\.gateway\\.rest\\..*")
     })
-@ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.gateway", "io.camunda.zeebe.shared"})
-@EnableAutoConfiguration
 @Profile("gateway")
 public class GatewayModuleConfiguration implements CloseableSilently {
 

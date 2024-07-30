@@ -44,6 +44,7 @@ public final class ProcessExecutionCleanStateTest {
           ZbColumnFamilies.PROCESS_CACHE,
           ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION,
           ZbColumnFamilies.PROCESS_CACHE_DIGEST_BY_ID,
+          ZbColumnFamilies.PROCESS_DEFINITION_KEY_BY_PROCESS_ID_AND_DEPLOYMENT_KEY,
           ZbColumnFamilies.MESSAGE_STATS,
           ZbColumnFamilies.MIGRATIONS_STATE);
 

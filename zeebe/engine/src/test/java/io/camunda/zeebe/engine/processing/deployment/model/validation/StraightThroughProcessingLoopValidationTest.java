@@ -95,6 +95,36 @@ public class StraightThroughProcessingLoopValidationTest {
   }
 
   @Test
+  public void shouldRejectDeploymentWithSimpleIntermediateThrowEventLoop() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final var rejectedDeployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .intermediateThrowEvent("event1")
+                    .intermediateThrowEvent("event2")
+                    .connectTo("event1")
+                    .done())
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains(String.format("Process: %s", processId))
+        .contains(GENERIC_REJECTION_MESSAGE + "event1 > event2 > event1");
+  }
+
+  @Test
   public void shouldRejectDeploymentWithComplexStraightThroughProcessingLoop() {
     // given
     final var processId = Strings.newRandomValidBpmnId();

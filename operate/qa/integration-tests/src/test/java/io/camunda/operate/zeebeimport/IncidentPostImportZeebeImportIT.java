@@ -49,7 +49,7 @@ public class IncidentPostImportZeebeImportIT extends OperateZeebeAbstractIT {
   @Before
   public void before() {
     super.before();
-    cancelProcessInstanceHandler.setCamundaClient(super.getClient());
+    cancelProcessInstanceHandler.setZeebeClient(super.getClient());
   }
 
   @Test

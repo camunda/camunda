@@ -214,7 +214,8 @@ public class ResourceDeletionDeleteProcessor
             .setVersion(process.getVersion())
             .setKey(process.getKey())
             .setResourceName(process.getResourceName())
-            .setTenantId(process.getTenantId());
+            .setTenantId(process.getTenantId())
+            .setDeploymentKey(process.getDeploymentKey());
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETING, processRecord);
 
     final String processId = processRecord.getBpmnProcessId();

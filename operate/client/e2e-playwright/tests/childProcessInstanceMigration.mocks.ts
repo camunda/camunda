@@ -6,18 +6,24 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {deployProcess, createInstances} from '../setup-utils';
+import {zeebeGrpcApi} from '../api/zeebe-grpc';
+
+const {deployProcesses, createInstances} = zeebeGrpcApi;
 
 const setup = async () => {
-  const deployProcessResponse = await deployProcess([
+  const {deployments} = await deployProcesses([
     'ChildProcessInstanceMigration/callActivityParentProcess.bpmn',
     'ChildProcessInstanceMigration/childProcess_v_1.bpmn',
   ]);
-  await deployProcess(['ChildProcessInstanceMigration/childProcess_v_2.bpmn']);
 
+  await deployProcesses([
+    'ChildProcessInstanceMigration/childProcess_v_2.bpmn',
+  ]);
+
+  const [deployment0, deployment1] = deployments;
   if (
-    deployProcessResponse.processes[0] === undefined ||
-    deployProcessResponse.processes[1] === undefined
+    deployment0?.process === undefined ||
+    deployment1?.process === undefined
   ) {
     throw new Error('Error deploying process');
   }
@@ -26,10 +32,9 @@ const setup = async () => {
     version: parentVersion,
     processDefinitionKey: parentProcessDefinitionKey,
     bpmnProcessId: parentBpmnProcessId,
-  } = deployProcessResponse.processes[0];
+  } = deployment0.process;
 
-  const {bpmnProcessId: childBpmnProcessId} =
-    deployProcessResponse.processes[1];
+  const {bpmnProcessId: childBpmnProcessId} = deployment1.process;
 
   return {
     processInstances: await createInstances('callActivityParentProcess', 1, 2),
