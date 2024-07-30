@@ -38,7 +38,7 @@ You can extend an existing controller if there is one for your resource, e.g. th
 
 1. (optional) Generate the data models locally before implementing controllers by running `mvn clean install -Dquickly` on the `zeebe/gateway-rest` module.
 2. Consider the existing controllers for best practices around structuring your controller.
-3. The controllers are Spring `RestController`s, marked as such by adding the appropriate Camunda annotation (refer to the other controllers).
+3. The controllers are Spring `RestController`s, marked as such by adding the appropriate Camunda annotation (refer to the other controllers). There is a separate Camunda annotation for Query endpoint controllers as used by the `ProcessInstanceQueryController`.
 4. Controllers should only take care of
    1. Mapping and potentially validating user input.
    2. Invoking the respective `Services` method to execute the desired action, e.g. `UserTaskServices::completeUserTask´ or `UserTaskServices::search`.
