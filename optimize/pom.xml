@@ -552,7 +552,7 @@
           <gitFlowConfig>
             <productionBranch>optimize-latest</productionBranch>
             <developmentBranch>test-optimize-release</developmentBranch>
-            <supportBranchPrefix>maintenance/</supportBranchPrefix>
+            <supportBranchPrefix>stable/</supportBranchPrefix>
             <releaseBranchPrefix>release/optimize-</releaseBranchPrefix>
           </gitFlowConfig>
           <commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>

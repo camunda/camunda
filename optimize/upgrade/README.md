@@ -6,7 +6,7 @@ Elasticsearch.
 
 ## Running the Upgrade
 
-To run the upgrade, you can run the `upgrade.sh` or the `upgrade.bat` script found in the [distro upgrade folder](https://github.com/camunda/camunda-optimize/tree/master/distro/src/upgrade).
+To run the upgrade, you can run the `upgrade.sh` or the `upgrade.bat` script found in the [distro upgrade folder](https://github.com/camunda/camunda/tree/main/optimize-distro/src/upgrade).
 
 ## Run the tests
 
