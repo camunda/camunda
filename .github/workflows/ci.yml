@@ -91,7 +91,7 @@ jobs:
                 "user_reason": "agent-disconnected"
                 ${{ (env.BUILD_BASE_REF == '') && ' ' || format(', "build_base_ref": "{0}"', env.BUILD_BASE_REF) }}
               }
-              EOF
+          EOF
             fi
           done
 
