@@ -106,6 +106,47 @@ public class DecisionStateMultiTenantTest {
   }
 
   @Test
+  public void shouldStoreDecisionKeyByProcessIdAndDeploymentKeyForMultipleTenants() {
+    // given
+    final var drgKey = 123L;
+    final var drgId = "drgId";
+    final var decisionKey = 456L;
+    final var decisionId = "decisionId";
+    final int version = 1;
+    final var tenant1 = "tenant1";
+    final var tenant2 = "tenant2";
+    final var deploymentKey = 789L;
+    final var drg1 = sampleDecisionRequirementsRecord(tenant1, drgKey, drgId, version);
+    final var drg2 = sampleDecisionRequirementsRecord(tenant2, drgKey, drgId, version);
+    final var decision1 =
+        sampleDecisionRecord(tenant1, decisionKey, decisionId, version, drgKey)
+            .setDeploymentKey(deploymentKey);
+    final var decision2 =
+        sampleDecisionRecord(tenant2, decisionKey, decisionId, version, drgKey)
+            .setDeploymentKey(deploymentKey);
+    decisionState.storeDecisionRequirements(drg1);
+    decisionState.storeDecisionRequirements(drg2);
+    decisionState.storeDecisionRecord(decision1);
+    decisionState.storeDecisionRecord(decision2);
+
+    // when
+    decisionState.storeDecisionKeyByDecisionIdAndDeploymentKey(decision1);
+    decisionState.storeDecisionKeyByDecisionIdAndDeploymentKey(decision2);
+
+    // then
+    final var actualDecision1 =
+        decisionState.findDecisionByIdAndDeploymentKey(
+            tenant1, wrapString(decisionId), deploymentKey);
+    final var actualDecision2 =
+        decisionState.findDecisionByIdAndDeploymentKey(
+            tenant2, wrapString(decisionId), deploymentKey);
+    assertDecision(
+        actualDecision1.orElseThrow(), tenant1, decisionKey, decisionId, version, drgKey);
+    assertDecision(
+        actualDecision2.orElseThrow(), tenant2, decisionKey, decisionId, version, drgKey);
+  }
+
+  @Test
   void shouldNotPutDecisionForDrgBelongingToDifferentTenant() {
     // then
     final var drgKey = 123L;

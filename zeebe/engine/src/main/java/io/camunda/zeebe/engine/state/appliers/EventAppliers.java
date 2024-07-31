@@ -324,7 +324,8 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerDecisionAppliers(final MutableProcessingState state) {
-    register(DecisionIntent.CREATED, new DecisionCreatedApplier(state.getDecisionState()));
+    register(DecisionIntent.CREATED, 1, new DecisionCreatedV1Applier(state.getDecisionState()));
+    register(DecisionIntent.CREATED, 2, new DecisionCreatedV2Applier(state.getDecisionState()));
     register(DecisionIntent.DELETED, new DecisionDeletedApplier(state.getDecisionState()));
   }
 

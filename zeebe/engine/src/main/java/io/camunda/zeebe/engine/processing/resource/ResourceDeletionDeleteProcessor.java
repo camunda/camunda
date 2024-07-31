@@ -200,7 +200,8 @@ public class ResourceDeletionDeleteProcessor
             .setDecisionRequirementsId(
                 BufferUtil.bufferAsString(persistedDecision.getDecisionRequirementsId()))
             .setDecisionRequirementsKey(persistedDecision.getDecisionRequirementsKey())
-            .setTenantId(persistedDecision.getTenantId());
+            .setTenantId(persistedDecision.getTenantId())
+            .setDeploymentKey(persistedDecision.getDeploymentKey());
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), DecisionIntent.DELETED, decisionRecord);
   }
 

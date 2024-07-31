@@ -36,6 +36,18 @@ public interface DecisionState {
   Optional<PersistedDecision> findDecisionByTenantAndKey(final String tenantId, long decisionKey);
 
   /**
+   * Query decisions by the given decision id and deployment key and return the decision.
+   *
+   * @param tenantId the tenant the decision belongs to
+   * @param decisionId the id of the decision
+   * @param deploymentKey the key of the deployment the decision was deployed with
+   * @return the decision, or {@link Optional#empty()} if no decision with the given id was deployed
+   *     with the given deployment
+   */
+  Optional<PersistedDecision> findDecisionByIdAndDeploymentKey(
+      final String tenantId, DirectBuffer decisionId, long deploymentKey);
+
+  /**
    * Query decision requirements (DRGs) by the given decision requirements id and return the latest
    * version of the DRG.
    *
