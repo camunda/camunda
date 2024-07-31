@@ -27,8 +27,6 @@ public class ExporterMetricsIT {
           .withExporter(
               "foo", cfg -> cfg.setClassName(ExporterMetricsTestExporter.class.getName()));
 
-  // TODO: Remove the registry bean addition when spring injects the registry into the broker
-
   @Test
   public void shouldAddMeterToExporterMetrics() throws IOException {
     // given
