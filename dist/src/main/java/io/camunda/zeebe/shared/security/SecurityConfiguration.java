@@ -10,10 +10,15 @@ package io.camunda.zeebe.shared.security;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.TenantAttributeHolder;
 import io.camunda.zeebe.shared.management.ConditionalOnManagementContext;
+import io.camunda.zeebe.shared.security.SecurityConfiguration.GatewaySecurityAuthenticationEnabledCondition;
 import org.springframework.boot.actuate.autoconfigure.web.ManagementContextConfiguration;
 import org.springframework.boot.actuate.autoconfigure.web.ManagementContextType;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.NoneNestedConditions;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ConfigurationCondition.ConfigurationPhase;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
@@ -35,6 +40,7 @@ import reactor.core.publisher.Mono;
 @EnableWebFluxSecurity
 @EnableReactiveMethodSecurity
 @Configuration(proxyBeanMethods = false)
+@Conditional(GatewaySecurityAuthenticationEnabledCondition.class)
 public final class SecurityConfiguration {
 
   @Bean
@@ -91,5 +97,29 @@ public final class SecurityConfiguration {
           .authorizeExchange(spec -> spec.anyExchange().permitAll())
           .build();
     }
+  }
+
+  /**
+   * Condition to check if the gateway is configured to use authentication, i.e. is not explicitly
+   * set to {@code NONE}. It helps deal with the fact that the gateway can be embedded in the broker
+   * or run standalone.
+   */
+  static class GatewaySecurityAuthenticationEnabledCondition extends NoneNestedConditions {
+
+    public GatewaySecurityAuthenticationEnabledCondition() {
+      super(ConfigurationPhase.REGISTER_BEAN);
+    }
+
+    @ConditionalOnProperty(
+        prefix = "zeebe.gateway",
+        value = "security.authentication.mode",
+        havingValue = "none")
+    static class StandaloneGatewayCondition {}
+
+    @ConditionalOnProperty(
+        prefix = "zeebe.broker.gateway",
+        value = "security.authentication.mode",
+        havingValue = "none")
+    static class EmbeddedGatewayCondition {}
   }
 }
