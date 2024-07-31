@@ -83,7 +83,8 @@ public final class StateQueryService implements QueryService {
               },
               new TransientPendingSubscriptionState(),
               new TransientPendingSubscriptionState(),
-              new EngineConfiguration());
+              new EngineConfiguration(),
+              1); // TODO: Use correct number of partitions
     }
   }
 }

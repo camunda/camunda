@@ -27,6 +27,7 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private final InterPartitionCommandSender partitionCommandSender;
   private final KeyGenerator keyGenerator;
+  private final int numberOfPartitions;
 
   public RecordProcessorContextImpl(
       final int partitionId,
@@ -34,13 +35,15 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
       final ZeebeDb zeebeDb,
       final TransactionContext transactionContext,
       final InterPartitionCommandSender partitionCommandSender,
-      final KeyGeneratorControls keyGeneratorControls) {
+      final KeyGeneratorControls keyGeneratorControls,
+      final int numberOfPartitions) {
     this.partitionId = partitionId;
     this.scheduleService = scheduleService;
     this.zeebeDb = zeebeDb;
     this.transactionContext = transactionContext;
     this.partitionCommandSender = partitionCommandSender;
     keyGenerator = keyGeneratorControls;
+    this.numberOfPartitions = numberOfPartitions;
   }
 
   @Override
@@ -81,5 +84,10 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   @Override
   public KeyGenerator getKeyGenerator() {
     return keyGenerator;
+  }
+
+  @Override
+  public int getNumberOfPartitions() {
+    return numberOfPartitions;
   }
 }

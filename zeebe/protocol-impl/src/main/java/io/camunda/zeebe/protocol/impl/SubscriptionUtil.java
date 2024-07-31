@@ -44,7 +44,7 @@ public final class SubscriptionUtil {
     return Math.abs(hashCode % partitionCount) + START_PARTITION_ID;
   }
 
-  public sealed interface Routing {
+  public interface Routing {
     int partitionForCorrelationKey(DirectBuffer correlationKey);
 
     static Routing ofFixedPartitionCount(final int partitionCount) {

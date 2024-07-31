@@ -48,7 +48,6 @@ public final class CatchEventBehavior {
 
   private final ExpressionProcessor expressionProcessor;
   private final SubscriptionCommandSender subscriptionCommandSender;
-  private final Routing routing;
   private final StateWriter stateWriter;
   private final SideEffectWriter sideEffectWriter;
 
@@ -63,6 +62,7 @@ public final class CatchEventBehavior {
   private final DueDateTimerChecker timerChecker;
   private final KeyGenerator keyGenerator;
   private final SignalSubscriptionRecord signalSubscription = new SignalSubscriptionRecord();
+  private final Routing routing;
 
   public CatchEventBehavior(
       final ProcessingState processingState,
@@ -77,8 +77,8 @@ public final class CatchEventBehavior {
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.stateWriter = stateWriter;
     this.sideEffectWriter = sideEffectWriter;
-    this.routing = routing;
 
+    this.routing = routing;
     timerInstanceState = processingState.getTimerState();
     processMessageSubscriptionState = processingState.getProcessMessageSubscriptionState();
     processState = processingState.getProcessState();

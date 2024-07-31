@@ -166,7 +166,8 @@ public class ProcessingStateExtension implements BeforeEachCallback {
                 keyGenerator,
                 new TransientPendingSubscriptionState(),
                 new TransientPendingSubscriptionState(),
-                new EngineConfiguration());
+                new EngineConfiguration(),
+                1); // TODO: Use correct number of partitions
       } catch (final Exception e) {
         ExceptionUtils.throwAsUncheckedException(e);
       }

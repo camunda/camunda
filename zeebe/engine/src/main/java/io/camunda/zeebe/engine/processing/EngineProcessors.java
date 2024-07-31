@@ -80,7 +80,7 @@ public final class EngineProcessors {
       final InterPartitionCommandSender interPartitionCommandSender,
       final FeatureFlags featureFlags,
       final JobStreamer jobStreamer,
-      final Routing routing) {
+      final Routing routingOld) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
     final var scheduledTaskStateFactory =
@@ -110,7 +110,7 @@ public final class EngineProcessors {
             processingState,
             writers,
             subscriptionCommandSender,
-            routing,
+            processingState.getRelocationState(),
             timerChecker,
             jobStreamer,
             jobMetrics,
@@ -159,7 +159,7 @@ public final class EngineProcessors {
             timerChecker,
             commandDistributionBehavior,
             partitionId,
-            routing);
+            processingState.getRelocationState());
 
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
@@ -231,7 +231,8 @@ public final class EngineProcessors {
             processingState.getMessageState(),
             processingState.getMessageSubscriptionState(),
             processingState.getRelocationState(),
-            commandDistributionBehavior));
+            commandDistributionBehavior,
+            processingState.getPartitionId()));
 
     typedRecordProcessors.onCommand(
         ValueType.SCALE,
@@ -283,7 +284,10 @@ public final class EngineProcessors {
         ValueType.SCALE,
         ScaleIntent.RELOCATION_ON_PARTITION_COMPLETE,
         new ScaleRelocationOnPartitionCompleteProcessor(
-            processingState.getPartitionId(), writers, processingState.getRelocationState()));
+            processingState.getPartitionId(),
+            writers,
+            processingState.getRelocationState(),
+            commandDistributionBehavior));
   }
 
   private static BpmnBehaviorsImpl createBehaviors(

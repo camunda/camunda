@@ -17,6 +17,12 @@ public class DbRelocationState implements MutableRelocationState {
   private RoutingInfo routingInfo;
   private final Set<String> relocatingCorrelationKeys = new HashSet<>();
 
+  public DbRelocationState(final int partitionCount) {
+    if (getRoutingInfo() == null) {
+      setRoutingInfo(new RoutingInfo(partitionCount, partitionCount, new HashSet<>()));
+    }
+  }
+
   @Override
   public RoutingInfo getRoutingInfo() {
     return routingInfo;

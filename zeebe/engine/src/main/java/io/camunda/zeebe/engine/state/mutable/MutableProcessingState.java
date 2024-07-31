@@ -74,5 +74,6 @@ public interface MutableProcessingState extends ProcessingState {
 
   KeyGenerator getKeyGenerator();
 
+  @Override
   MutableRelocationState getRelocationState();
 }

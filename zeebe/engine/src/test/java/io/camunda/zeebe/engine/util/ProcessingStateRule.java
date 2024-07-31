@@ -49,7 +49,8 @@ public final class ProcessingStateRule extends ExternalResource {
             keyGenerator,
             new TransientPendingSubscriptionState(),
             new TransientPendingSubscriptionState(),
-            new EngineConfiguration());
+            new EngineConfiguration(),
+            1); // TODO: use correct parttions
   }
 
   @Override

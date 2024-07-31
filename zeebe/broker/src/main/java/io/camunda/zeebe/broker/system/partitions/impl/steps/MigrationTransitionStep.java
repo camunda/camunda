@@ -45,7 +45,11 @@ public class MigrationTransitionStep implements PartitionTransitionStep {
             new DbKeyGenerator(context.getPartitionId(), zeebeDb, zeebeDbContext),
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
-            context.getBrokerCfg().getExperimental().getEngine().createEngineConfiguration());
+            context.getBrokerCfg().getExperimental().getEngine().createEngineConfiguration(),
+            context
+                .getClusterConfigurationService()
+                .getCurrentClusterConfiguration()
+                .partitionCount());
 
     final var dbMigrator = new DbMigratorImpl(processingState);
     try {

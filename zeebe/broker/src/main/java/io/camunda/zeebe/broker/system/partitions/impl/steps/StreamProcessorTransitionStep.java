@@ -152,6 +152,11 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
 
     return StreamProcessor.builder()
         .logStream(context.getLogStream())
+        .numberOfPartitions(
+            context
+                .getClusterConfigurationService()
+                .getCurrentClusterConfiguration()
+                .partitionCount())
         .actorSchedulingService(context.getActorSchedulingService())
         .zeebeDb(context.getZeebeDb())
         .recordProcessors(recordProcessors)

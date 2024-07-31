@@ -8,14 +8,22 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil.Routing;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 
-public interface RelocationState {
+public interface RelocationState extends Routing {
+
+  @Override
+  default int partitionForCorrelationKey(final DirectBuffer correlationKey) {
+    return getRoutingInfo().partitionForCorrelationKey(correlationKey);
+  }
+
   RoutingInfo getRoutingInfo();
 
   record RoutingInfo(
-      int currentPartitionCount, int newPartitionCount, Set<Integer> completedPartitions) {
+      int currentPartitionCount, int newPartitionCount, Set<Integer> completedPartitions)
+      implements Routing {
 
     public int oldPartitionForCorrelationKey(final DirectBuffer correlationKey) {
       return SubscriptionUtil.getSubscriptionPartitionId(correlationKey, currentPartitionCount);
@@ -23,6 +31,15 @@ public interface RelocationState {
 
     public int newPartitionForCorrelationKey(final DirectBuffer correlationKey) {
       return SubscriptionUtil.getSubscriptionPartitionId(correlationKey, newPartitionCount);
+    }
+
+    @Override
+    public int partitionForCorrelationKey(final DirectBuffer correlationKey) {
+      final var partitionId = oldPartitionForCorrelationKey(correlationKey);
+      if (completedPartitions.contains(partitionId)) {
+        return newPartitionForCorrelationKey(correlationKey);
+      }
+      return partitionId;
     }
   }
 }

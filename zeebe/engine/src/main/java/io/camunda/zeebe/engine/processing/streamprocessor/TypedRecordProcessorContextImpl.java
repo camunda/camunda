@@ -49,7 +49,8 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
             context.getKeyGenerator(),
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
-            config);
+            config,
+            context.getNumberOfPartitions());
     this.writers = writers;
     partitionCommandSender = context.getPartitionCommandSender();
     this.config = config;

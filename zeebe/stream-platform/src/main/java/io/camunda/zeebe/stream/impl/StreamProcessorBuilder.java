@@ -58,6 +58,11 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
+  public StreamProcessorBuilder numberOfPartitions(final int numberOfPartitions) {
+    streamProcessorContext.numberOfPartitions(numberOfPartitions);
+    return this;
+  }
+
   public StreamProcessorBuilder commandResponseWriter(
       final CommandResponseWriter commandResponseWriter) {
     streamProcessorContext.commandResponseWriter(commandResponseWriter);

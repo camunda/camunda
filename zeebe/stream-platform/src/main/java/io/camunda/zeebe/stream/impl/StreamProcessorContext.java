@@ -50,6 +50,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private int maxCommandsInBatch = DEFAULT_MAX_COMMANDS_IN_BATCH;
   private boolean enableAsyncScheduledTasks = true;
   private EventFilter processingFilter = e -> true;
+  private int numberOfPartitions;
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -74,6 +75,11 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   @Override
   public boolean enableAsyncScheduledTasks() {
     return enableAsyncScheduledTasks;
+  }
+
+  @Override
+  public int getNumberOfPartitions() {
+    return numberOfPartitions;
   }
 
   public LogStream getLogStream() {
@@ -217,6 +223,11 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public StreamProcessorContext processingFilter(final EventFilter processingFilter) {
     this.processingFilter = processingFilter;
+    return this;
+  }
+
+  public StreamProcessorContext numberOfPartitions(final int numberOfPartitions) {
+    this.numberOfPartitions = numberOfPartitions;
     return this;
   }
 }

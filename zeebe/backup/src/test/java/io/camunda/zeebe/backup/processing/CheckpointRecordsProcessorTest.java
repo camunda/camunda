@@ -73,7 +73,7 @@ final class CheckpointRecordsProcessorTest {
       final ProcessingScheduleService executor, final ZeebeDb zeebeDb) {
     final var context = zeebeDb.createContext();
     return new RecordProcessorContextImpl(
-        1, executor, zeebeDb, context, null, new DbKeyGenerator(1, zeebeDb, context));
+        1, executor, zeebeDb, context, null, new DbKeyGenerator(1, zeebeDb, context), 1);
   }
 
   @AfterEach

@@ -100,7 +100,8 @@ public class ProcessingDbState implements MutableProcessingState {
       final KeyGenerator keyGenerator,
       final TransientPendingSubscriptionState transientMessageSubscriptionState,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final int numberOfPartitions) {
     this.partitionId = partitionId;
     this.zeebeDb = zeebeDb;
     this.keyGenerator = Objects.requireNonNull(keyGenerator);
@@ -132,7 +133,7 @@ public class ProcessingDbState implements MutableProcessingState {
     userTaskState = new DbUserTaskState(zeebeDb, transactionContext);
     compensationSubscriptionState =
         new DbCompensationSubscriptionState(zeebeDb, transactionContext);
-    relocationState = new DbRelocationState();
+    relocationState = new DbRelocationState(numberOfPartitions);
   }
 
   @Override
