@@ -31,11 +31,15 @@ class SearchUserTaskTest {
   private static Long userTaskKeyTaskAssigned;
   private static final ZoneId UTC_ZONE_ID = ZoneId.of("UTC");
 
-  @TestZeebe private final TestStandaloneCamunda testStandaloneCamunda = new TestStandaloneCamunda();
-  private final ZeebeClient camundaClient = testStandaloneCamunda.newClientBuilder().build();
+  @TestZeebe
+  private static TestStandaloneCamunda testStandaloneCamunda = new TestStandaloneCamunda();
+
+  private static ZeebeClient camundaClient;
 
   @BeforeAll
   public static void setup() {
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
+
     deployProcess("process", "simple.bpmn", "test", "", "");
     deployProcess("process-2", "simple-2.bpmn", "test-2", "group", "user");
 
