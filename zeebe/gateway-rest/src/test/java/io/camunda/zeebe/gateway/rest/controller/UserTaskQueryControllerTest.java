@@ -203,9 +203,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
         {
           "type": "about:blank",
-          "title": "Bad Request",
+          "title": "INVALID_ARGUMENT",
           "status": 400,
-          "detail": "Unknown sortOrder: dsc",
+          "detail": "Unknown sortOrder: dsc.",
           "instance": "%s"
         }""",
             USER_TASKS_SEARCH_URL);
@@ -245,9 +245,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
         {
           "type": "about:blank",
-          "title": "Bad Request",
+          "title": "INVALID_ARGUMENT",
           "status": 400,
-          "detail": "Unknown sortBy: unknownField",
+          "detail": "Unknown sortBy: unknownField.",
           "instance": "%s"
         }""",
             USER_TASKS_SEARCH_URL);
@@ -286,9 +286,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
         {
           "type": "about:blank",
-          "title": "Bad Request",
+          "title": "INVALID_ARGUMENT",
           "status": 400,
-          "detail": "Sort field must not be null",
+          "detail": "Sort field must not be null.",
           "instance": "%s"
         }""",
             USER_TASKS_SEARCH_URL);
@@ -327,9 +327,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
         {
           "type": "about:blank",
-          "title": "Bad Request",
+          "title": "INVALID_ARGUMENT",
           "status": 400,
-          "detail": "Invalid date format for 'from': Text 'invalid-date' could not be parsed at index 0",
+          "detail": "Invalid date format for 'from': Text 'invalid-date' could not be parsed at index 0.",
           "instance": "%s"
         }""",
             USER_TASKS_SEARCH_URL);
@@ -367,7 +367,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
         {
           "type": "about:blank",
-          "title": "Bad Request",
+          "title": "INVALID_ARGUMENT",
           "status": 400,
           "detail": "Error: Both searchAfter and searchBefore cannot be set at the same time.",
           "instance": "%s"
