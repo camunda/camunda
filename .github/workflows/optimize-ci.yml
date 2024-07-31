@@ -13,7 +13,7 @@ on:
   push:
     branches:
     - main
-    - maintenance/**
+    - stable/**
     - release/**
     paths:
     - ".github/actions/**"
@@ -348,9 +348,9 @@ jobs:
         with:
           archive_name: integration-tests-opensearch-dev-${{ matrix.includedGroups }}-docker
 
-  # Only deploy artifacts on push event, which in this case can only be triggered by main and maintenance
+  # Only deploy artifacts on push event, which in this case can only be triggered by main and stable
   deploy-artifacts:
-    if: github.event_name == 'push' && (github.ref_name == 'main' || startsWith(github.ref_name, 'maintenance/'))
+    if: github.event_name == 'push' && (github.ref_name == 'main' || startsWith(github.ref_name, 'stable/'))
     name: Deploy Artifacts
     needs: [unit-tests, integration-tests]
     uses: ./.github/workflows/optimize-deploy-artifacts.yml
