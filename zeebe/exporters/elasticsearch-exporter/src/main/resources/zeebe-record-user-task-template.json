@@ -80,7 +80,7 @@
               "type": "keyword"
             },
             "priority": {
-              "type": "long"
+              "type": "integer"
             }
           }
         }
