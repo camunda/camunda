@@ -14,41 +14,30 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 
 public final record UserTaskFilter(
     List<Long> keys,
     List<String> elementIds,
-    List<String> bpmProcessDefinitionIds,
+    List<String> bpmnProcessIds,
     List<String> assignees,
     List<String> states,
     List<Long> processInstanceKeys,
     List<Long> processDefinitionKeys,
     List<String> candidateUsers,
     List<String> candidateGroups,
-    DateValueFilter creationDateFilter,
-    DateValueFilter completionDateFilter,
-    DateValueFilter dueDateFilter,
-    DateValueFilter followUpDateFilter,
-    List<VariableValueFilter> variableFilters,
     List<String> tenantIds)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<UserTaskFilter> {
     private List<Long> keys;
     private List<String> elementIds;
-    private List<String> bpmProcessDefinitionIds;
+    private List<String> bpmnProcessIds;
     private List<String> assignees;
     private List<String> states;
     private List<Long> processInstanceKeys;
     private List<Long> processDefinitionKeys;
     private List<String> candidateUsers;
     private List<String> candidateGroups;
-    private DateValueFilter creationDateFilter;
-    private DateValueFilter completionDateFilter;
-    private DateValueFilter dueDateFilter;
-    private DateValueFilter followUpDateFilter;
-    private List<VariableValueFilter> variableFilters;
     private List<String> tenantIds;
 
     public Builder keys(final Long... values) {
@@ -69,12 +58,12 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder bpmProcessDefinitionIds(final String... values) {
-      return bpmProcessDefinitionIds(collectValuesAsList(values));
+    public Builder bpmnProcessIds(final String... values) {
+      return bpmnProcessIds(collectValuesAsList(values));
     }
 
-    public Builder bpmProcessDefinitionIds(final List<String> values) {
-      bpmProcessDefinitionIds = addValuesToList(bpmProcessDefinitionIds, values);
+    public Builder bpmnProcessIds(final List<String> values) {
+      bpmnProcessIds = addValuesToList(bpmnProcessIds, values);
       return this;
     }
 
@@ -94,60 +83,6 @@ public final record UserTaskFilter(
     public Builder states(final List<String> values) {
       states = addValuesToList(states, values);
       return this;
-    }
-
-    public Builder creationDate(final DateValueFilter value) {
-      creationDateFilter = value;
-      return this;
-    }
-
-    public Builder creationDate(
-        final Function<DateValueFilter.Builder, ObjectBuilder<DateValueFilter>> fn) {
-      return creationDate(FilterBuilders.dateValue(fn));
-    }
-
-    public Builder completionDate(final DateValueFilter value) {
-      completionDateFilter = value;
-      return this;
-    }
-
-    public Builder completionDate(
-        final Function<DateValueFilter.Builder, ObjectBuilder<DateValueFilter>> fn) {
-      return completionDate(FilterBuilders.dateValue(fn));
-    }
-
-    public Builder dueDate(final DateValueFilter value) {
-      dueDateFilter = value;
-      return this;
-    }
-
-    public Builder dueDate(
-        final Function<DateValueFilter.Builder, ObjectBuilder<DateValueFilter>> fn) {
-      return dueDate(FilterBuilders.dateValue(fn));
-    }
-
-    public Builder followUpDate(final DateValueFilter value) {
-      followUpDateFilter = value;
-      return this;
-    }
-
-    public Builder followUpDate(
-        final Function<DateValueFilter.Builder, ObjectBuilder<DateValueFilter>> fn) {
-      return followUpDate(FilterBuilders.dateValue(fn));
-    }
-
-    public Builder variable(final List<VariableValueFilter> values) {
-      variableFilters = addValuesToList(variableFilters, values);
-      return this;
-    }
-
-    public Builder variable(final VariableValueFilter... values) {
-      return variable(collectValuesAsList(values));
-    }
-
-    public Builder variable(
-        final Function<VariableValueFilter.Builder, ObjectBuilder<VariableValueFilter>> fn) {
-      return variable(FilterBuilders.variableValue(fn));
     }
 
     public Builder processInstanceKeys(final Long... values) {
@@ -200,18 +135,13 @@ public final record UserTaskFilter(
       return new UserTaskFilter(
           Objects.requireNonNullElse(keys, Collections.emptyList()),
           Objects.requireNonNullElse(elementIds, Collections.emptyList()),
-          Objects.requireNonNullElse(bpmProcessDefinitionIds, Collections.emptyList()),
+          Objects.requireNonNullElse(bpmnProcessIds, Collections.emptyList()),
           Objects.requireNonNullElse(assignees, Collections.emptyList()),
           Objects.requireNonNullElse(states, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(candidateUsers, Collections.emptyList()),
           Objects.requireNonNullElse(candidateGroups, Collections.emptyList()),
-          creationDateFilter,
-          completionDateFilter,
-          dueDateFilter,
-          followUpDateFilter,
-          Objects.requireNonNullElse(variableFilters, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
     }
   }

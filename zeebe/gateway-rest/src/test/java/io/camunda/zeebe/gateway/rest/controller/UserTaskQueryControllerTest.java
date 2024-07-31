@@ -311,47 +311,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldInvalidateUserTasksSearchQueryWithInvalidDate() {
-    // given
-    final var request =
-        """
-        {
-            "filter": {
-                "creationDate": {
-                    "from": "invalid-date"
-                }
-            }
-        }""";
-    final var expectedResponse =
-        String.format(
-            """
-        {
-          "type": "about:blank",
-          "title": "INVALID_ARGUMENT",
-          "status": 400,
-          "detail": "Invalid date format for 'from': Text 'invalid-date' could not be parsed at index 0.",
-          "instance": "%s"
-        }""",
-            USER_TASKS_SEARCH_URL);
-    // when / then
-    webClient
-        .post()
-        .uri(USER_TASKS_SEARCH_URL)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedResponse);
-
-    verify(userTaskServices, never()).search(any(UserTaskQuery.class));
-  }
-
-  @Test
   void shouldInvalidateUserTasksSearchQueryWithConflictingPagination() {
     // given
     final var request =

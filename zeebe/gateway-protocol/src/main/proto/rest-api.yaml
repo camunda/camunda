@@ -1353,17 +1353,9 @@ components:
         processInstanceKey:
           type: integer
           format: int64
-        creationDate:
-          $ref: "#/components/schemas/DateFilter"
-        completionDate:
-          $ref: "#/components/schemas/DateFilter"
-        followUpDate:
-          $ref: "#/components/schemas/DateFilter"
-        dueDate:
-          $ref: "#/components/schemas/DateFilter"
         tenantIds:
           type: string
-        bpmnProcessDefinitionId:
+        bpmnDefinitionId:
           type: string
     UserTaskItem:
       type: object
