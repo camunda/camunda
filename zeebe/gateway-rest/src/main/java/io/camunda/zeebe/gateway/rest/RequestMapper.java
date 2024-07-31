@@ -207,20 +207,20 @@ public class RequestMapper {
   }
 
   public record CompleteUserTaskRequest(
-      final long userTaskKey, final Map<String, Object> variables, final String action) {}
+      long userTaskKey, Map<String, Object> variables, String action) {}
 
-  public record UpdateUserTaskRequest(final long userTaskKey, final UserTaskRecord changeset, final String action) {}
+  public record UpdateUserTaskRequest(long userTaskKey, UserTaskRecord changeset, String action) {}
 
   public record AssignUserTaskRequest(
-      final long userTaskKey, final String assignee, final String action, final boolean allowOverride) {}
+      long userTaskKey, String assignee, String action, boolean allowOverride) {}
 
   public record FailJobRequest(
-      final long jobKey,
-      final int retries,
-      final String errorMessage,
-      final Long retryBackoff,
-      final Map<String, Object> variables) {}
+      long jobKey,
+      int retries,
+      String errorMessage,
+      Long retryBackoff,
+      Map<String, Object> variables) {}
 
   public record ErrorJobRequest(
-      final long jobKey, final String errorCode, final String errorMessage, final Map<String, Object> variables) {}
+      long jobKey, String errorCode, String errorMessage, Map<String, Object> variables) {}
 }
