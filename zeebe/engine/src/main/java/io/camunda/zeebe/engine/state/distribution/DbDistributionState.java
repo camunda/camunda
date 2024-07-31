@@ -167,8 +167,7 @@ public class DbDistributionState implements MutableDistributionState {
   }
 
   @Override
-  public CommandDistributionRecord getCommandDistributionRecord(
-      final long distributionKey) {
+  public CommandDistributionRecord getCommandDistributionRecord(final long distributionKey) {
     this.distributionKey.wrapLong(distributionKey);
 
     final var persistedDistribution =

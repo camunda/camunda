@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.scale;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
@@ -43,6 +42,5 @@ public class ScaleTest {
                 .limit(r -> r.getIntent().equals(ScaleIntent.RELOCATION_COMPLETED)))
         .describedAs("Expect relocation to be completed")
         .isNotEmpty();
-    fail();
   }
 }
