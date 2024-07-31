@@ -61,7 +61,7 @@
               <exclude>clients/go/vendor/**/*.md</exclude>
               <exclude>**/node_modules/**/*.md</exclude>
               <exclude>tasklist/client/**/*.md</exclude>
-              <exclude>**/.node/**/*.md</exclude>
+              <exclude>optimize/client/**/*.md</exclude>
             </excludes>
             <flexmark></flexmark>
           </markdown>

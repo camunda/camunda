@@ -33,7 +33,7 @@ jobs:
       identity-frontend-tests: ${{ steps.filter.outputs.identity-frontend-tests }}
       frontend-changes: ${{ steps.filter.outputs.frontend-changes }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       # Detect changes against the base branch
@@ -45,7 +45,7 @@ jobs:
     if: needs.detect-changes.outputs.actionlint == 'true'
     needs: [detect-changes]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     env:
       # renovate: datasource=github-releases depName=rhysd/actionlint
       ACTIONLINT_VERSION: '1.7.1'
@@ -69,7 +69,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [detect-changes]
     name: Java checks
-    timeout-minutes: 30
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -375,7 +375,7 @@ jobs:
     if: needs.detect-changes.outputs.identity-frontend-tests == 'true'
     needs: [detect-changes]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     defaults:
       run:
         working-directory: identity/client
