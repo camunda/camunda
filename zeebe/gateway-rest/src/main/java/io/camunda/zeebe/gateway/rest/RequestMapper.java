@@ -12,15 +12,11 @@ import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.valida
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
-import io.camunda.identity.automation.usermanagement.CamundaGroup;
-import io.camunda.identity.automation.usermanagement.CamundaUserWithPassword;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
-import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupRequest;
-import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
@@ -32,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -40,14 +37,13 @@ import org.springframework.http.ResponseEntity;
 
 public class RequestMapper {
 
-  public static Either<ProblemDetail, CompleteUserTaskRequest> toUserTaskCompletionRequest(
+  public static CompleteUserTaskRequest toUserTaskCompletionRequest(
       final UserTaskCompletionRequest completionRequest, final long userTaskKey) {
 
-    return Either.right(
-        new CompleteUserTaskRequest(
-            userTaskKey,
-            getMapOrEmpty(completionRequest, UserTaskCompletionRequest::getVariables),
-            getStringOrEmpty(completionRequest, UserTaskCompletionRequest::getAction)));
+    return new CompleteUserTaskRequest(
+        userTaskKey,
+        getMapOrEmpty(completionRequest, UserTaskCompletionRequest::getVariables),
+        getStringOrEmpty(completionRequest, UserTaskCompletionRequest::getAction));
   }
 
   public static Either<ProblemDetail, AssignUserTaskRequest> toUserTaskAssignmentRequest(
@@ -59,84 +55,71 @@ public class RequestMapper {
     final boolean allowOverride =
         assignmentRequest.getAllowOverride() == null || assignmentRequest.getAllowOverride();
 
-    return validateAssignmentRequest(assignmentRequest)
-        .<Either<ProblemDetail, AssignUserTaskRequest>>map(Either::left)
-        .orElseGet(
-            () ->
-                Either.right(
-                    new AssignUserTaskRequest(
-                        userTaskKey,
-                        assignmentRequest.getAssignee(),
-                        actionValue.isBlank() ? "assign" : actionValue,
-                        allowOverride)));
+    return getResult(
+        validateAssignmentRequest(assignmentRequest),
+        () ->
+            new AssignUserTaskRequest(
+                userTaskKey,
+                assignmentRequest.getAssignee(),
+                actionValue.isBlank() ? "assign" : actionValue,
+                allowOverride));
   }
 
-  public static Either<ProblemDetail, AssignUserTaskRequest> toUserTaskUnassignmentRequest(
-      final long userTaskKey) {
-    return Either.right(new AssignUserTaskRequest(userTaskKey, "", "unassign", true));
+  public static AssignUserTaskRequest toUserTaskUnassignmentRequest(final long userTaskKey) {
+    return new AssignUserTaskRequest(userTaskKey, "", "unassign", true);
   }
 
   public static Either<ProblemDetail, UpdateUserTaskRequest> toUserTaskUpdateRequest(
       final UserTaskUpdateRequest updateRequest, final long userTaskKey) {
 
-    return validateUpdateRequest(updateRequest)
-        .<Either<ProblemDetail, UpdateUserTaskRequest>>map(Either::left)
-        .orElseGet(
-            () ->
-                Either.right(
-                    new UpdateUserTaskRequest(
-                        userTaskKey,
-                        getRecordWithChangedAttributes(updateRequest),
-                        getStringOrEmpty(updateRequest, UserTaskUpdateRequest::getAction))));
+    return getResult(
+        validateUpdateRequest(updateRequest),
+        () ->
+            new UpdateUserTaskRequest(
+                userTaskKey,
+                getRecordWithChangedAttributes(updateRequest),
+                getStringOrEmpty(updateRequest, UserTaskUpdateRequest::getAction)));
   }
 
   public static Either<ProblemDetail, ActivateJobsRequest> toJobsActivationRequest(
       final JobActivationRequest activationRequest) {
 
-    final var validationErrorResponse = validateJobActivationRequest(activationRequest);
-    return validationErrorResponse
-        .<Either<ProblemDetail, ActivateJobsRequest>>map(Either::left)
-        .orElseGet(
-            () ->
-                Either.right(
-                    new ActivateJobsRequest(
-                        activationRequest.getType(),
-                        activationRequest.getMaxJobsToActivate(),
-                        getStringListOrEmpty(activationRequest, JobActivationRequest::getTenantIds),
-                        activationRequest.getTimeout(),
-                        getStringOrEmpty(activationRequest, JobActivationRequest::getWorker),
-                        getStringListOrEmpty(
-                            activationRequest, JobActivationRequest::getFetchVariable),
-                        getLongOrZero(
-                            activationRequest, JobActivationRequest::getRequestTimeout))));
+    return getResult(
+        validateJobActivationRequest(activationRequest),
+        () ->
+            new ActivateJobsRequest(
+                activationRequest.getType(),
+                activationRequest.getMaxJobsToActivate(),
+                getStringListOrEmpty(activationRequest, JobActivationRequest::getTenantIds),
+                activationRequest.getTimeout(),
+                getStringOrEmpty(activationRequest, JobActivationRequest::getWorker),
+                getStringListOrEmpty(activationRequest, JobActivationRequest::getFetchVariable),
+                getLongOrZero(activationRequest, JobActivationRequest::getRequestTimeout)));
   }
 
-  public static Either<ProblemDetail, FailJobRequest> toJobFailRequest(
+  public static FailJobRequest toJobFailRequest(
       final JobFailRequest failRequest, final long jobKey) {
 
-    return Either.right(
-        new FailJobRequest(
-            jobKey,
-            getIntOrZero(failRequest, JobFailRequest::getRetries),
-            getStringOrEmpty(failRequest, JobFailRequest::getErrorMessage),
-            getLongOrZero(failRequest, JobFailRequest::getRetryBackOff),
-            getMapOrEmpty(failRequest, JobFailRequest::getVariables)));
+    return new FailJobRequest(
+        jobKey,
+        getIntOrZero(failRequest, JobFailRequest::getRetries),
+        getStringOrEmpty(failRequest, JobFailRequest::getErrorMessage),
+        getLongOrZero(failRequest, JobFailRequest::getRetryBackOff),
+        getMapOrEmpty(failRequest, JobFailRequest::getVariables));
   }
 
   public static Either<ProblemDetail, ErrorJobRequest> toJobErrorRequest(
       final JobErrorRequest errorRequest, final long jobKey) {
 
     final var validationErrorResponse = validateJobErrorRequest(errorRequest);
-    return validationErrorResponse
-        .<Either<ProblemDetail, ErrorJobRequest>>map(Either::left)
-        .orElseGet(
-            () ->
-                Either.right(
-                    new ErrorJobRequest(
-                        jobKey,
-                        errorRequest.getErrorCode(),
-                        getStringOrEmpty(errorRequest, JobErrorRequest::getErrorMessage),
-                        getMapOrEmpty(errorRequest, JobErrorRequest::getVariables))));
+    return getResult(
+        validationErrorResponse,
+        () ->
+            new ErrorJobRequest(
+                jobKey,
+                errorRequest.getErrorCode(),
+                getStringOrEmpty(errorRequest, JobErrorRequest::getErrorMessage),
+                getMapOrEmpty(errorRequest, JobErrorRequest::getVariables)));
   }
 
   public static CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
@@ -149,7 +132,7 @@ public class RequestMapper {
                     .orElseGet(result));
   }
 
-  public static CompletableFuture<ResponseEntity<Object>> executeServiceMethodWithNoContenResult(
+  public static CompletableFuture<ResponseEntity<Object>> executeServiceMethodWithNoContentResult(
       final Supplier<CompletableFuture<?>> method) {
     return RequestMapper.executeServiceMethod(method, () -> ResponseEntity.noContent().build());
   }
@@ -165,6 +148,13 @@ public class RequestMapper {
             .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants)
             .encode();
     return new Builder().token(token).tenants(authorizedTenants).build();
+  }
+
+  public static <T> Either<ProblemDetail, T> getResult(
+      final Optional<ProblemDetail> error, final Supplier<T> resultSupplier) {
+    return error
+        .<Either<ProblemDetail, T>>map(Either::left)
+        .orElseGet(() -> Either.right(resultSupplier.get()));
   }
 
   private static UserTaskRecord getRecordWithChangedAttributes(
@@ -187,24 +177,6 @@ public class RequestMapper {
       record.setFollowUpDate(changeset.getFollowUpDate()).setFollowUpDateChanged();
     }
     return record;
-  }
-
-  public static CamundaUserWithPassword toUserWithPassword(
-      final CamundaUserWithPasswordRequest dto) {
-    final CamundaUserWithPassword camundaUserWithPassword = new CamundaUserWithPassword();
-
-    camundaUserWithPassword.setId(dto.getId());
-    camundaUserWithPassword.setUsername(dto.getUsername());
-    camundaUserWithPassword.setPassword(dto.getPassword());
-    camundaUserWithPassword.setName(dto.getName());
-    camundaUserWithPassword.setEmail(dto.getEmail());
-    camundaUserWithPassword.setEnabled(dto.getEnabled());
-
-    return camundaUserWithPassword;
-  }
-
-  public static CamundaGroup toGroup(final CamundaGroupRequest groupRequest) {
-    return new CamundaGroup(groupRequest.getId(), groupRequest.getName());
   }
 
   private static <R> Map<String, Object> getMapOrEmpty(

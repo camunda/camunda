@@ -18,4 +18,7 @@ public final class ErrorMessages {
   public static final String ERROR_MESSAGE_EMPTY_ATTRIBUTE = "No %s provided";
   public static final String ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE =
       "The value for %s is '%s' but must be %s";
+  public static final String ERROR_SORT_FIELD_MUST_NOT_BE_NULL = "Sort field must not be null";
+  public static final String ERROR_UNKNOWN_SORT_BY = "Unknown sortBy: %s";
+  public static final String ERROR_UNKNOWN_SORT_ORDER = "Unknown sortOrder: %s";
 }
