@@ -140,7 +140,7 @@ public class UserTaskFilterTest {
   @Test
   public void shouldQueryByUserTaskKey() {
     // given
-    final var userTaskFilter = FilterBuilders.userTask((f) -> f.userTaskKeys(4503599627370497L));
+    final var userTaskFilter = FilterBuilders.userTask((f) -> f.keys(4503599627370497L));
     final var searchQuery =
         SearchQueryBuilders.userTaskSearchQuery((q) -> q.filter(userTaskFilter));
 

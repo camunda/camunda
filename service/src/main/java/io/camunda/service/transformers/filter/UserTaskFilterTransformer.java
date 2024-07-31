@@ -32,7 +32,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
   @Override
   public SearchQuery toSearchQuery(final UserTaskFilter filter) {
-    final var userTaskKeysQuery = getUserTaskKeysQuery(filter.userTaskKeys());
+    final var userTaskKeysQuery = getUserTaskKeysQuery(filter.keys());
 
     final var creationDateQuery = getDateFilter(filter.creationDateFilter(), "creationTime");
     final var completionTimeQuery = getDateFilter(filter.completionDateFilter(), "completionTime");

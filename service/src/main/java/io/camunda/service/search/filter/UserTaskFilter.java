@@ -17,7 +17,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public final record UserTaskFilter(
-    List<Long> userTaskKeys,
+    List<Long> keys,
     List<String> elementIds,
     List<String> bpmProcessDefinitionIds,
     List<String> assignees,
@@ -35,7 +35,7 @@ public final record UserTaskFilter(
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<UserTaskFilter> {
-    private List<Long> userTaskKeys;
+    private List<Long> keys;
     private List<String> elementIds;
     private List<String> bpmProcessDefinitionIds;
     private List<String> assignees;
@@ -51,20 +51,20 @@ public final record UserTaskFilter(
     private List<VariableValueFilter> variableFilters;
     private List<String> tenantIds;
 
-    public Builder userTaskKeys(final Long... values) {
-      return userTaskKeys(collectValuesAsList(values));
+    public Builder keys(final Long... values) {
+      return keys(collectValuesAsList(values));
     }
 
-    public Builder userTaskKeys(final List<Long> values) {
-      userTaskKeys = addValuesToList(userTaskKeys, values);
+    public Builder keys(final List<Long> values) {
+      keys = addValuesToList(keys, values);
       return this;
     }
 
-    public Builder userTaskElementIds(final String... values) {
-      return userTaskElementIds(collectValuesAsList(values));
+    public Builder elementIds(final String... values) {
+      return elementIds(collectValuesAsList(values));
     }
 
-    public Builder userTaskElementIds(final List<String> values) {
+    public Builder elementIds(final List<String> values) {
       elementIds = addValuesToList(elementIds, values);
       return this;
     }
@@ -198,7 +198,7 @@ public final record UserTaskFilter(
     @Override
     public UserTaskFilter build() {
       return new UserTaskFilter(
-          Objects.requireNonNullElse(userTaskKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(keys, Collections.emptyList()),
           Objects.requireNonNullElse(elementIds, Collections.emptyList()),
           Objects.requireNonNullElse(bpmProcessDefinitionIds, Collections.emptyList()),
           Objects.requireNonNullElse(assignees, Collections.emptyList()),
