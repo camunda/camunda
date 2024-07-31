@@ -241,8 +241,6 @@ public final class SearchQueryRequestMapper {
         case "version" -> builder.version();
         case "decisionRequirementsId" -> builder.decisionRequirementsId();
         case "decisionRequirementsKey" -> builder.decisionRequirementsKey();
-        case "decisionRequirementsName" -> builder.decisionRequirementsName();
-        case "decisionRequirementsVersion" -> builder.decisionRequirementsVersion();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

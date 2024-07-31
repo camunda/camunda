@@ -209,12 +209,6 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                      "field": "decisionRequirementsId"
                 },
                 {
-                     "field": "decisionRequirementsName"
-                },
-                {
-                     "field": "decisionRequirementsVersion"
-                },
-                {
                      "field": "tenantId"
                 }
             ]
@@ -250,10 +244,6 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                         .decisionRequirementsKey()
                         .asc()
                         .decisionRequirementsId()
-                        .asc()
-                        .decisionRequirementsName()
-                        .asc()
-                        .decisionRequirementsVersion()
                         .asc()
                         .tenantId()
                         .asc()
