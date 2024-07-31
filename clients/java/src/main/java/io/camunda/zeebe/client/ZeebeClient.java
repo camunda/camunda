@@ -569,7 +569,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   ProcessInstanceQuery newProcessInstanceQuery();
-  
+
   /**
    * Executes a search request to query user tasks.
    *
