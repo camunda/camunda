@@ -19,6 +19,7 @@ import io.camunda.service.search.query.SearchQueryResult.Builder;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.service.search.sort.UserTaskSort;
 import io.camunda.service.security.auth.Authentication;
+import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

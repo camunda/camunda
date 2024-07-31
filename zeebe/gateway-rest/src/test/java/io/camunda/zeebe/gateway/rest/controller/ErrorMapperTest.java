@@ -16,6 +16,7 @@ import io.camunda.service.UserTaskServices;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
+import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;

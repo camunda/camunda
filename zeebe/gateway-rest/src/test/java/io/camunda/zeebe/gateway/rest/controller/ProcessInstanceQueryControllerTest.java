@@ -19,6 +19,7 @@ import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.SearchQueryResult.Builder;
 import io.camunda.service.search.sort.ProcessInstanceSort;
 import io.camunda.service.security.auth.Authentication;
+import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

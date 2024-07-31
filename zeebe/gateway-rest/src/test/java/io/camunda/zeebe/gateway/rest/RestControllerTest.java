@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest.controller;
+package io.camunda.zeebe.gateway.rest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
@@ -15,7 +15,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
     properties = {
       "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
     })
-abstract class RestControllerTest {
+public abstract class RestControllerTest {
 
   @Autowired protected WebTestClient webClient;
 }
