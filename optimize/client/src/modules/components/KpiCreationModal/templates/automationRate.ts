@@ -32,6 +32,7 @@ export default function automationRate(): KpiTemplate {
           description: t('report.kpiTemplates.automationRate-filter1').toString(),
           type: 'executedFlowNodes',
           data: {
+            operator: 'in',
             values: [],
           },
           filterLevel: 'view',

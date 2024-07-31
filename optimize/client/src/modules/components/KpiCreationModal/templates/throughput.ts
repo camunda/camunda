@@ -35,6 +35,7 @@ export default function throughput(): KpiTemplate {
           description: t('report.kpiTemplates.throughput-filter1').toString(),
           type: 'executedFlowNodes',
           data: {
+            operator: 'in',
             values: [],
           },
           filterLevel: 'view',
