@@ -81,5 +81,5 @@ public interface UserTaskRecordValue
    */
   long getProcessDefinitionKey();
 
-  long getPriority();
+  int getPriority();
 }

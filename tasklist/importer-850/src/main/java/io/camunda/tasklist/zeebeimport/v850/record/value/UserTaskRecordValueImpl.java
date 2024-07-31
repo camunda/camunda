@@ -46,7 +46,7 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
   private String externalFormReference;
   private Map<String, String> customHeaders;
   private long creationTimestamp;
-  private long priority;
+  private int priority;
 
   @Override
   public long getUserTaskKey() {
@@ -170,7 +170,7 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
   }
 
   @Override
-  public long getPriority() {
+  public int getPriority() {
     return priority;
   }
 

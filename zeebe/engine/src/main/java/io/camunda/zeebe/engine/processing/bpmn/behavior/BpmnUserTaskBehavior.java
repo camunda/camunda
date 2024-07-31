@@ -256,12 +256,12 @@ public final class BpmnUserTaskBehavior {
     return expressionBehavior.evaluateStringExpression(externalFormReference, scopeKey);
   }
 
-  public Either<Failure, Long> evaluatePriorityExpression(
+  public Either<Failure, Integer> evaluatePriorityExpression(
       final Expression priorityExpression, final long scopeKey) {
     if (priorityExpression == null) {
       return Either.right(ZeebePriorityDefinition.DEFAULT_NUMBER_PRIORITY);
     }
-    return expressionBehavior.evaluateLongExpression(priorityExpression, scopeKey);
+    return expressionBehavior.evaluateIntegerExpression(priorityExpression, scopeKey);
   }
 
   public void cancelUserTask(final BpmnElementContext context) {
@@ -295,7 +295,7 @@ public final class BpmnUserTaskBehavior {
     private String externalFormReference;
     private String followUpDate;
     private Long formKey;
-    private Long priority;
+    private Integer priority;
 
     public String getAssignee() {
       return getOrEmpty(assignee);
@@ -360,11 +360,11 @@ public final class BpmnUserTaskBehavior {
       return this;
     }
 
-    public Long getPriority() {
+    public Integer getPriority() {
       return priority == null ? ZeebePriorityDefinition.DEFAULT_NUMBER_PRIORITY : priority;
     }
 
-    public UserTaskProperties priority(final Long priority) {
+    public UserTaskProperties priority(final Integer priority) {
       this.priority = priority;
       return this;
     }

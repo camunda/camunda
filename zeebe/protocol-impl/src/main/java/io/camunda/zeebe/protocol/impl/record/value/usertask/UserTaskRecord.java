@@ -79,7 +79,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
       new ArrayProperty<>("changedAttributes", StringValue::new);
   private final StringProperty actionProp = new StringProperty("action", EMPTY_STRING);
   private final LongProperty creationTimestampProp = new LongProperty("creationTimestamp", -1L);
-  private final LongProperty priorityProp = new LongProperty(PRIORITY, 50);
+  private final IntegerProperty priorityProp = new IntegerProperty(PRIORITY, 50);
 
   public UserTaskRecord() {
     super(21);
@@ -258,11 +258,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   }
 
   @Override
-  public long getPriority() {
+  public int getPriority() {
     return priorityProp.getValue();
   }
 
-  public UserTaskRecord setPriority(final long priority) {
+  public UserTaskRecord setPriority(final int priority) {
     priorityProp.setValue(priority);
     return this;
   }

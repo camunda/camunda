@@ -187,7 +187,7 @@ public final class ZeebeRuntimeValidators {
                         .isMandatory()
                         .satisfiesIfStatic(
                             staticExpression ->
-                                ZeebeExpressionValidator.isValidLong(
+                                ZeebeExpressionValidator.isValidInt(
                                     staticExpression, expressionProcessor),
                             "be a valid Number between 0 and 100"))
             .build(expressionLanguage),
