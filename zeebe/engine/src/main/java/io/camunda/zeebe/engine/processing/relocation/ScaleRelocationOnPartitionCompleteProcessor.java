@@ -40,8 +40,6 @@ public class ScaleRelocationOnPartitionCompleteProcessor
     stateWriter.appendFollowUpEvent(
         record.getKey(), ScaleIntent.RELOCATION_ON_PARTITION_COMPLETED, record.getValue());
 
-    commandDistributionBehavior.acknowledgeCommand(record);
-
     if (partitionId == 1) {
       // TODO: Update state to track relocation progress
     }
@@ -50,5 +48,7 @@ public class ScaleRelocationOnPartitionCompleteProcessor
       stateWriter.appendFollowUpEvent(
           record.getKey(), ScaleIntent.RELOCATION_COMPLETED, record.getValue());
     }
+
+    commandDistributionBehavior.acknowledgeCommand(record);
   }
 }

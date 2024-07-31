@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.data.MapEntry.entry;
+import static org.junit.Assert.fail;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
@@ -182,5 +183,7 @@ public class ScaleTest {
             ProcessInstances.getCurrentVariables(processInstanceKey3).get("p"));
 
     assertThat(correlatedValues).contains("\"p1\"", "\"p2\"", "\"p3\"");
+
+    fail();
   }
 }
