@@ -72,38 +72,34 @@ const getConfiguredTranslatedFormat = (
 ) => {
   let value = '';
 
-  // Allows inheritance of the format if the time or speech equivalent is not defined
   if (isSpeech && includeTime) {
     value = t(getConfiguredDateKey(key, isSpeech, includeTime), {
       ...options,
       defaultValue: '',
     });
   }
-  if (includeTime) {
-    value =
-      value ||
-      t(getConfiguredDateKey(key, false, includeTime), {
-        ...options,
-        defaultValue: '',
-      });
+
+  if (!value && includeTime) {
+    value = t(getConfiguredDateKey(key, false, includeTime), {
+      ...options,
+      defaultValue: '',
+    });
   }
-  if (isSpeech) {
-    value =
-      value ||
-      t(getConfiguredDateKey(key, isSpeech, false), {
-        ...options,
-        defaultValue: '',
-      });
+
+  if (!value && isSpeech) {
+    value = t(getConfiguredDateKey(key, isSpeech, false), {
+      ...options,
+      defaultValue: '',
+    });
   }
-  value =
+
+  return (
     value ||
-    t(getConfiguredDateKey(key, false, false), {...options, defaultValue: ''});
-
-  if (typeof value !== 'string') {
-    console.warn(`Unexpected translation type for 'relativeDateFormat_${key}'`);
-  }
-
-  return value;
+    t(getConfiguredDateKey(key, false, false), {
+      ...options,
+      defaultValue: '',
+    })
+  );
 };
 
 function getResolution(time: Date, now: Date): Resolution {
@@ -135,11 +131,15 @@ function getResolution(time: Date, now: Date): Resolution {
   return {type: 'years'};
 }
 
-function getFormat(
-  resolution: Resolution,
-  isSpeech: boolean = false,
-  includeTime: boolean = false,
-) {
+function getFormat({
+  resolution,
+  isSpeech = false,
+  includeTime = false,
+}: {
+  resolution: Resolution;
+  isSpeech?: boolean;
+  includeTime?: boolean;
+}) {
   const getTranslatedFormat = (key: TextMapKeys, options = {}) =>
     getConfiguredTranslatedFormat(key, isSpeech, includeTime, options);
 
@@ -184,13 +184,13 @@ function getFormat(
 
 function formatDate(time: Date, now?: Date) {
   const resolution = getResolution(time, now ?? new Date());
-  const text = format(time, getFormat(resolution), {
+  const text = format(time, getFormat({resolution}), {
     locale: getCurrentDateLocale(),
   });
-  const speech = format(time, getFormat(resolution, true), {
+  const speech = format(time, getFormat({resolution, isSpeech: true}), {
     locale: getCurrentDateLocale(),
   });
-  const absoluteText = format(time, getFormat({type: 'years'}), {
+  const absoluteText = format(time, getFormat({resolution: {type: 'years'}}), {
     locale: getCurrentDateLocale(),
   });
   return {
@@ -220,15 +220,23 @@ function formatISODate(dateString: string | null) {
 
 function formatDateTime(time: Date, now?: Date) {
   const resolution = getResolution(time, now ?? new Date());
-  const text = format(time, getFormat(resolution, false, true), {
+  const text = format(time, getFormat({resolution, includeTime: true}), {
     locale: getCurrentDateLocale(),
   });
-  const speech = format(time, getFormat(resolution, true, true), {
-    locale: getCurrentDateLocale(),
-  });
-  const absoluteText = format(time, getFormat({type: 'years'}, false, true), {
-    locale: getCurrentDateLocale(),
-  });
+  const speech = format(
+    time,
+    getFormat({resolution, isSpeech: true, includeTime: true}),
+    {
+      locale: getCurrentDateLocale(),
+    },
+  );
+  const absoluteText = format(
+    time,
+    getFormat({resolution: {type: 'years'}, includeTime: true}),
+    {
+      locale: getCurrentDateLocale(),
+    },
+  );
   return {
     date: time,
     relative: {

@@ -125,11 +125,8 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
     const isActive = useIsCurrentTaskOpen(taskId);
     const {filter, sortBy} = useTaskFilters();
     const {t} = useTranslation();
-    const creationDate = useMemo(
-      () => formatISODateTime(creationDateString),
-      [creationDateString, t], // t needed to retrigger rendering when language changes
-    );
 
+    const creationDate = formatISODateTime(creationDateString);
     const completionDate = formatISODate(completionDateString);
     const dueDate = formatISODate(dueDateString);
     const followUpDate = formatISODate(followUpDateString);
