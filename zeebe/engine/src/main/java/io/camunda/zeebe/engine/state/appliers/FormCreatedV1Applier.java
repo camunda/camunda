@@ -12,19 +12,18 @@ import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 
-public class FormDeletedApplier implements TypedEventApplier<FormIntent, FormRecord> {
+public class FormCreatedV1Applier implements TypedEventApplier<FormIntent, FormRecord> {
 
   private final MutableFormState formState;
 
-  public FormDeletedApplier(final MutableFormState formState) {
-    this.formState = formState;
+  public FormCreatedV1Applier(final MutableFormState state) {
+    formState = state;
   }
 
   @Override
-  public void applyState(final long key, final FormRecord value) {
-    formState.deleteFormInFormsColumnFamily(value);
-    formState.deleteFormInFormByIdAndVersionColumnFamily(value);
-    formState.deleteFormInFormVersionColumnFamily(value);
-    formState.deleteFormInFormKeyByFormIdAndDeploymentKeyColumnFamily(value);
+  public void applyState(final long formKey, final FormRecord value) {
+    formState.storeFormInFormColumnFamily(value);
+    formState.storeFormInFormByIdAndVersionColumnFamily(value);
+    formState.updateLatestVersion(value);
   }
 }

@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
@@ -31,15 +32,31 @@ public class DbFormState implements MutableFormState {
   private final DbString tenantIdKey;
   private final DbLong dbFormKey;
   private final DbTenantAwareKey<DbLong> tenantAwareFormKey;
+  private final DbForeignKey<DbTenantAwareKey<DbLong>> fkFormKey;
   private final PersistedForm dbPersistedForm;
   private final ColumnFamily<DbTenantAwareKey<DbLong>, PersistedForm> formsByKey;
   private final DbString dbFormId;
   private final VersionManager versionManager;
+
   private final DbLong formVersion;
   private final DbCompositeKey<DbString, DbLong> idAndVersionKey;
   private final DbTenantAwareKey<DbCompositeKey<DbString, DbLong>> tenantAwareIdAndVersionKey;
   private final ColumnFamily<DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>, PersistedForm>
       formByIdAndVersionColumnFamily;
+
+  private final DbLong dbDeploymentKey;
+  private final DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>
+      tenantAwareFormIdAndDeploymentKey;
+
+  /**
+   * <b>Note</b>: Will only be filled with entries deployed from 8.6 onwards; previously deployed
+   * forms will not have an entry in this column family.
+   */
+  private final ColumnFamily<
+          DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>,
+          DbForeignKey<DbTenantAwareKey<DbLong>>>
+      formKeyByFormIdAndDeploymentKeyColumnFamily;
+
   private final Cache<TenantIdAndFormId, PersistedForm> formsByTenantIdAndIdCache;
 
   public DbFormState(
@@ -49,6 +66,7 @@ public class DbFormState implements MutableFormState {
     tenantIdKey = new DbString();
     dbFormKey = new DbLong();
     tenantAwareFormKey = new DbTenantAwareKey<>(tenantIdKey, dbFormKey, PlacementType.PREFIX);
+    fkFormKey = new DbForeignKey<>(tenantAwareFormKey, ZbColumnFamilies.FORMS);
     dbPersistedForm = new PersistedForm();
     formsByKey =
         zeebeDb.createColumnFamily(
@@ -65,6 +83,17 @@ public class DbFormState implements MutableFormState {
             transactionContext,
             tenantAwareIdAndVersionKey,
             dbPersistedForm);
+
+    dbDeploymentKey = new DbLong();
+    tenantAwareFormIdAndDeploymentKey =
+        new DbTenantAwareKey<>(
+            tenantIdKey, new DbCompositeKey<>(dbFormId, dbDeploymentKey), PlacementType.PREFIX);
+    formKeyByFormIdAndDeploymentKeyColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.FORM_KEY_BY_FORM_ID_AND_DEPLOYMENT_KEY,
+            transactionContext,
+            tenantAwareFormIdAndDeploymentKey,
+            fkFormKey);
 
     versionManager =
         new VersionManager(
@@ -92,6 +121,16 @@ public class DbFormState implements MutableFormState {
     formVersion.wrapLong(record.getVersion());
     dbPersistedForm.wrap(record);
     formByIdAndVersionColumnFamily.upsert(tenantAwareIdAndVersionKey, dbPersistedForm);
+  }
+
+  @Override
+  public void storeFormInFormKeyByFormIdAndDeploymentKeyColumnFamily(final FormRecord record) {
+    tenantIdKey.wrapString(record.getTenantId());
+    dbFormKey.wrapLong(record.getFormKey());
+    dbFormId.wrapString(record.getFormId());
+    dbDeploymentKey.wrapLong(record.getDeploymentKey());
+    formKeyByFormIdAndDeploymentKeyColumnFamily.upsert(
+        tenantAwareFormIdAndDeploymentKey, fkFormKey);
   }
 
   @Override
@@ -124,6 +163,14 @@ public class DbFormState implements MutableFormState {
   }
 
   @Override
+  public void deleteFormInFormKeyByFormIdAndDeploymentKeyColumnFamily(final FormRecord record) {
+    tenantIdKey.wrapString(record.getTenantId());
+    dbFormId.wrapString(record.getFormId());
+    dbDeploymentKey.wrapLong(record.getDeploymentKey());
+    formKeyByFormIdAndDeploymentKeyColumnFamily.deleteIfExists(tenantAwareFormIdAndDeploymentKey);
+  }
+
+  @Override
   public Optional<PersistedForm> findLatestFormById(
       final DirectBuffer formId, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
@@ -145,6 +192,17 @@ public class DbFormState implements MutableFormState {
     tenantIdKey.wrapString(tenantId);
     dbFormKey.wrapLong(formKey);
     return Optional.ofNullable(formsByKey.get(tenantAwareFormKey)).map(PersistedForm::copy);
+  }
+
+  @Override
+  public Optional<PersistedForm> findFormByIdAndDeploymentKey(
+      final DirectBuffer formId, final long deploymentKey, final String tenantId) {
+    tenantIdKey.wrapString(tenantId);
+    dbFormId.wrapBuffer(formId);
+    dbDeploymentKey.wrapLong(deploymentKey);
+    return Optional.ofNullable(
+            formKeyByFormIdAndDeploymentKeyColumnFamily.get(tenantAwareFormIdAndDeploymentKey))
+        .flatMap(key -> findFormByKey(key.inner().wrappedKey().getValue(), tenantId));
   }
 
   @Override
