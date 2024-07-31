@@ -26,7 +26,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.containers.localstack.LocalStackContainer;
@@ -85,7 +84,6 @@ final class BackupUploadIT {
   }
 
   @Test
-  @Disabled("https://github.com/camunda/camunda/issues/18177")
   void shouldSaveBackupWithManyFiles() throws IOException {
     // given
     // Default values for the configuration
@@ -118,9 +116,12 @@ final class BackupUploadIT {
     final var s2 = Files.createFile(tempDir.resolve("snapshot/snapshot-file-2"));
 
     for (int i = 0; i < numberOfSegments; i++) {
-      largeNumberOfSegments.put(
-          "segment-file-%d".formatted(i),
-          Files.createFile(tempDir.resolve("segments/segment-file-%d".formatted(i))));
+      final var seg =
+          Files.createFile(tempDir.resolve(("segments/segment" + "-file-%d").formatted(i)));
+      largeNumberOfSegments.put("segment-file-%d".formatted(i), seg);
+      // We need to actually write some bytes onto the file, see issue:
+      // https://github.com/camunda/camunda/issues/18177
+      Files.write(seg, RandomUtils.nextBytes(16));
     }
 
     return new BackupImpl(
