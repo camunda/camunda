@@ -11,6 +11,7 @@ import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FOR
 
 import com.github.sisyphsu.dateparser.DateParserUtils;
 import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
@@ -36,6 +37,17 @@ public class DateFormatterUtil {
     try {
       final OffsetDateTime parsedOffsetDateTime = DateParserUtils.parseOffsetDateTime(dateString);
       return Optional.of(parsedOffsetDateTime.format(OPTIMIZE_FORMATTER));
+    } catch (DateTimeParseException ex) {
+      return Optional.empty();
+    }
+  }
+
+  public static Optional<OffsetDateTime> getOffsetDateTimeFromIsoZoneDateTimeString(
+      final String dateString) {
+    try {
+      return Optional.of(
+          ZonedDateTime.parse(dateString, DateTimeFormatter.ISO_ZONED_DATE_TIME)
+              .toOffsetDateTime());
     } catch (DateTimeParseException ex) {
       return Optional.empty();
     }
