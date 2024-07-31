@@ -35,14 +35,14 @@ git config --global user.email "${GITHUB_ACTOR_ID}+${GITHUB_ACTOR}@users.noreply
 if [[ "$RELEASE_TYPE" == "minor" || "$RELEASE_TYPE" == "major" ]]; then
   git remote set-url origin https://$GITHUB_ACTOR_ID:$GITHUB_APP_PRIVATE_KEY@github.com/camunda/camunda-optimize-examples.git
   git fetch
-  git checkout master
+  git checkout main
   git checkout -b release/$RELEASE_VERSION
   git push origin release/$RELEASE_VERSION
 fi
 
 git remote set-url origin "https://${GITHUB_ACTOR_ID}:${GITHUB_APP_PRIVATE_KEY}@github.com/camunda/camunda-optimize.git"
 git fetch
-git checkout master
+git checkout main
 # We need to pull with rebase here because we changed the remote from examples to optimize main repo and we need to override the changes
 git pull --rebase
 mvn -B gitflow:release-start -DpushRemote=true -DdevelopmentVersion="${NEXT_DEVELOPMENT_VERSION}-SNAPSHOT" -DreleaseVersion=${RELEASE_VERSION}
