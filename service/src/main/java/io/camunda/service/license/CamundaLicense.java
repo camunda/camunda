@@ -7,34 +7,34 @@
  */
 package io.camunda.service.license;
 
-import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
 import org.camunda.bpm.licensecheck.LicenseKey;
 import org.camunda.bpm.licensecheck.LicenseKeyImpl;
 
 public class CamundaLicense {
 
-  public static final String LICENSE_ENV_VAR_KEY = "CAMUNDA_LICENSE_KEY";
-  public static String licenseStr;
-  public static boolean isLicenseValid;
+  public String license;
+  public boolean isValid;
+  private volatile boolean isInitialized;
 
-  public CamundaLicense() {}
+  public CamundaLicense(final String license) {
+    this.license = license;
+  }
 
   public boolean isValid() {
-    if (!isLicenseInitialized()) {
-      initializeStoredLicense();
+    initializeLicenseKey();
+    return isValid;
+  }
+
+  protected void initializeLicenseKey() {
+    if (!isInitialized) {
+      synchronized (this) {
+        if (!isInitialized) {
+          isValid = determineLicenseValidity(license);
+          isInitialized = true;
+        }
+      }
     }
-
-    return isLicenseValid;
-  }
-
-  protected boolean isLicenseInitialized() {
-    return StringUtils.isNotBlank(licenseStr);
-  }
-
-  public void initializeStoredLicense() {
-    licenseStr = getEnvironmentVariableValue(LICENSE_ENV_VAR_KEY);
-    isLicenseValid = determineLicenseValidity(licenseStr);
   }
 
   protected boolean determineLicenseValidity(final String licenseStr) {
@@ -49,9 +49,5 @@ public class CamundaLicense {
 
   protected LicenseKey getLicenseKey(final String licenseStr) throws InvalidLicenseException {
     return new LicenseKeyImpl(licenseStr);
-  }
-
-  protected String getEnvironmentVariableValue(final String envVarName) {
-    return System.getenv().getOrDefault(envVarName, "");
   }
 }

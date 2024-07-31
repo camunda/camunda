@@ -10,7 +10,6 @@ package io.camunda.application.commons.service;
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.CamundaServices;
 import io.camunda.service.JobServices;
-import io.camunda.service.ManagementService;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -27,7 +26,6 @@ import org.springframework.context.annotation.Configuration;
     havingValue = "true",
     matchIfMissing = true)
 public class CamundaServicesConfiguration {
-
   private final BrokerClient brokerClient;
   private final CamundaSearchClient camundaSearchClient;
 
@@ -51,11 +49,6 @@ public class CamundaServicesConfiguration {
   @Bean
   public UserTaskServices userTaskServices(final CamundaServices camundaServices) {
     return camundaServices.userTaskServices();
-  }
-
-  @Bean
-  public ManagementService managementService(final CamundaServices camundaServices) {
-    return camundaServices.managementService();
   }
 
   @Bean
