@@ -6,11 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {memo, useMemo} from 'react';
+import {memo} from 'react';
 import {OverflowMenu, OverflowMenuItem} from '@carbon/react';
 import {SortAscending, Checkmark} from '@carbon/react/icons';
 import {tracking} from 'modules/tracking';
 import {useTaskFilters, TaskFilters} from 'modules/hooks/useTaskFilters';
+import {t as _t} from 'i18next';
 import {useTranslation} from 'react-i18next';
 import styles from './styles.module.scss';
 import sharedStyles from 'modules/styles/panelHeader.module.scss';
@@ -26,12 +27,30 @@ const SORTING_OPTIONS_ORDER: TaskFilters['sortBy'][] = [
   'due',
   'follow-up',
 ];
+
 const COMPLETED_SORTING_OPTIONS_ORDER: TaskFilters['sortBy'][] = [
   'creation',
   'due',
   'follow-up',
   'completion',
 ];
+
+const getFilterLabels = () =>
+  ({
+    'all-open': _t('allOpenTasks'),
+    'assigned-to-me': _t('assignedToMe'),
+    unassigned: _t('unassigned'),
+    completed: _t('completed'),
+    custom: _t('customFilter'),
+  }) as Record<string, string>;
+
+const getSortingOptions = () =>
+  ({
+    creation: _t('creationDate'),
+    'follow-up': _t('followUpDate'),
+    due: _t('dueDate'),
+    completion: _t('completionDate'),
+  }) as Record<string, string>;
 
 const Filters: React.FC<Props> = memo(({disabled}) => {
   const customFilters = getStateLocally('customFilters');
@@ -43,32 +62,13 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
 
   const {t} = useTranslation();
 
-  const filterLabels: Record<string, string> = useMemo(() => {
-    return {
-      'all-open': t('allOpenTasks'),
-      'assigned-to-me': t('assignedToMe'),
-      unassigned: t('unassigned'),
-      completed: t('completed'),
-      custom: t('customFilter'),
-    };
-  }, [t]);
-
-  const sortingOptions: Record<TaskFilters['sortBy'], string> = useMemo(() => {
-    return {
-      creation: t('creationDate'),
-      'follow-up': t('followUpDate'),
-      due: t('dueDate'),
-      completion: t('completionDate'),
-    };
-  }, [t]);
-
   return (
     <section
       className={sharedStyles.panelHeader}
       aria-label={t('filtersAriaLabel')}
     >
       <h1 className={styles.header}>
-        {filterLabels?.[filter] ?? customFilters?.[filter]?.name}
+        {getFilterLabels()?.[filter] ?? customFilters?.[filter]?.name}
       </h1>
       <OverflowMenu
         aria-label={t('sortTasksAriaLabel')}
@@ -91,7 +91,9 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
                     visibility: sortBy === id ? undefined : 'hidden',
                   }}
                 />
-                <span className={styles.menuItem}>{sortingOptions[id]}</span>
+                <span className={styles.menuItem}>
+                  {getSortingOptions()[id]}
+                </span>
               </div>
             }
             onClick={() => {

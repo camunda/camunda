@@ -7,6 +7,7 @@
  */
 
 import {useState} from 'react';
+import {t as _t} from 'i18next';
 import {Trans, useTranslation} from 'react-i18next';
 import {Stack} from '@carbon/react';
 import {CheckmarkFilled} from '@carbon/react/icons';
@@ -23,13 +24,13 @@ import {getTaskAssignmentChangeErrorMessage} from './getTaskAssignmentChangeErro
 import {shouldDisplayNotification} from './shouldDisplayNotification';
 import styles from './Header.module.scss';
 
-const getAssignmentToggleLabels = (t: (key: string) => string) =>
+const getAssignmentToggleLabels = () =>
   ({
-    assigning: t('assigning'),
-    unassigning: t('unassigning'),
-    assignmentSuccessful: t('assignmentSuccessful'),
-    unassignmentSuccessful: t('unassignmentSuccessful'),
-  }) as const;
+    assigning: _t('assigning'),
+    unassigning: _t('unassigning'),
+    assignmentSuccessful: _t('assignmentSuccessful'),
+    unassignmentSuccessful: _t('unassignmentSuccessful'),
+  }) as Record<AssignmentStatus, string>;
 
 type AssignmentStatus =
   | 'off'
@@ -168,15 +169,13 @@ const AssignButton: React.FC<{
     return 'inactive';
   }
 
-  const assignmentToggleLabels = getAssignmentToggleLabels(t);
-
   return (
     <AsyncActionButton
       inlineLoadingProps={{
         description:
           assignmentStatus === 'off'
             ? undefined
-            : assignmentToggleLabels[assignmentStatus],
+            : getAssignmentToggleLabels()[assignmentStatus],
         'aria-live': ['assigning', 'unassigning'].includes(assignmentStatus)
           ? 'assertive'
           : 'polite',

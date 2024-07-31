@@ -111,7 +111,6 @@ const Tasks: React.FC = observer(() => {
         aria-label={t('appPanel')}
       >
         {' '}
-        {/* Title for screen readers */}
         <Filters disabled={isPending} />
         <AvailableTasks
           loading={isLoading}
@@ -126,7 +125,6 @@ const Tasks: React.FC = observer(() => {
         aria-label={t('availableTasksTitle')}
       >
         {' '}
-        {/* Title for screen readers */}
         <Outlet />
       </section>
     </main>

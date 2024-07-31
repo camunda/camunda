@@ -25,7 +25,6 @@ import {TrackPagination} from 'modules/tracking/TrackPagination';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 import {ErrorWithinLayout, FallbackErrorPage} from 'errorBoundaries';
 import {tracking} from 'modules/tracking';
-import 'modules/internationalization/i18next';
 
 const Wrapper: React.FC = () => {
   return (
@@ -79,9 +78,7 @@ const router = createBrowserRouter(
     </Route>,
   ),
   {
-    basename: import.meta.env.DEV
-      ? '/'
-      : (window.clientConfig?.baseName ?? '/'),
+    basename: import.meta.env.DEV ? '/' : window.clientConfig?.baseName ?? '/',
   },
 );
 
