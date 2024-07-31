@@ -135,16 +135,13 @@ public class RequestMapper {
   public static Either<ProblemDetail, UpdateJobRequest> toJobUpdateRequest(
       final JobUpdateRequest updateRequest, final long jobKey) {
     final var validationJobUpdateResponse = validateJobUpdateRequest(updateRequest);
-    return validationJobUpdateResponse
-        .<Either<ProblemDetail, UpdateJobRequest>>map(Either::left)
-        .orElseGet(
-            () ->
-                Either.right(
-                    new UpdateJobRequest(
-                        jobKey,
-                        getIntOrZero(updateRequest, r -> updateRequest.getChangeset().getRetries()),
-                        getLongOrZero(
-                            updateRequest, r -> updateRequest.getChangeset().getTimeout()))));
+    return getResult(
+        validationJobUpdateResponse,
+        () ->
+            new UpdateJobRequest(
+                jobKey,
+                getIntOrZero(updateRequest, r -> updateRequest.getChangeset().getRetries()),
+                getLongOrZero(updateRequest, r -> updateRequest.getChangeset().getTimeout())));
   }
 
   public static CompletableFuture<ResponseEntity<Object>> executeServiceMethod(

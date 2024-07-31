@@ -146,7 +146,7 @@ public class JobController {
 
   private CompletableFuture<ResponseEntity<Object>> updateJob(
       final UpdateJobRequest updateJobRequest) {
-    return RequestMapper.executeServiceMethodWithNoContenResult(
+    return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             jobServices
                 .withAuthentication(RequestMapper.getAuthentication())
