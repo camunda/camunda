@@ -89,7 +89,7 @@ const FieldsModal: React.FC<Props> = ({
   initialValues,
 }) => {
   const {t, i18n} = useTranslation();
-  const label = t('advancedFilters');
+  const label = t('customFiltersModalAdvancedFiltersLabel');
   const {isMultiTenancyVisible} = useMultiTenancyDropdown();
   const {data: currentUser} = useCurrentUser();
   const groups = currentUser?.groups ?? [];
@@ -147,8 +147,8 @@ const FieldsModal: React.FC<Props> = ({
           {({handleSubmit, form, values}) => (
             <>
               <ModalHeader
-                title={t('applyFiltersTitle')}
-                iconDescription={t('modalClose')}
+                title={t('customFiltersModalApplyFiltersTitle')}
+                iconDescription={t('customFiltersModalCloseButton')}
                 buttonOnClick={onClose}
               />
               <ModalBody hasForm>
@@ -165,7 +165,7 @@ const FieldsModal: React.FC<Props> = ({
                         <TextInput
                           {...input}
                           id={input.name}
-                          labelText={t('filterNameLabel')}
+                          labelText={t('customFiltersModalFilterNameLabel')}
                           className={styles.nameField}
                         />
                       )}
@@ -175,7 +175,7 @@ const FieldsModal: React.FC<Props> = ({
                   <Field name="assignee">
                     {({input}) => (
                       <RadioButtonGroup
-                        legendText={t('assigneeLegend')}
+                        legendText={t('customFiltersModalAssigneeLabel')}
                         name={input.name}
                         onChange={input.onChange}
                         valueSelected={input.value}
@@ -183,17 +183,22 @@ const FieldsModal: React.FC<Props> = ({
                         orientation="vertical"
                       >
                         <RadioButton
-                          labelText={t('assigneeAll')}
+                          labelText={t('customFiltersModalAssigneeAll')}
                           value="all"
                           data-modal-primary-focus
                         />
                         <RadioButton
-                          labelText={t('assigneeUnassigned')}
+                          labelText={t('customFiltersModalAssigneeUnassigned')}
                           value="unassigned"
                         />
-                        <RadioButton labelText={t('assigneeMe')} value="me" />
                         <RadioButton
-                          labelText={t('assigneeUserAndGroup')}
+                          labelText={t('customFiltersModalAssigneeMe')}
+                          value="me"
+                        />
+                        <RadioButton
+                          labelText={t(
+                            'customFiltersModalAssigneeUserAndGround',
+                          )}
                           value="user-and-group"
                         />
                       </RadioButtonGroup>
@@ -203,7 +208,7 @@ const FieldsModal: React.FC<Props> = ({
                   <Field name="status">
                     {({input}) => (
                       <RadioButtonGroup
-                        legendText={t('statusLegend')}
+                        legendText={t('customFiltersModalStatusLabel')}
                         name={input.name}
                         onChange={input.onChange}
                         valueSelected={input.value}
@@ -211,10 +216,16 @@ const FieldsModal: React.FC<Props> = ({
                         orientation="vertical"
                         className={styles.secondColumn}
                       >
-                        <RadioButton labelText={t('statusAll')} value="all" />
-                        <RadioButton labelText={t('statusOpen')} value="open" />
                         <RadioButton
-                          labelText={t('statusCompleted')}
+                          labelText={t('customFiltersModalStatusAll')}
+                          value="all"
+                        />
+                        <RadioButton
+                          labelText={t('customFiltersModalStatusOpen')}
+                          value="open"
+                        />
+                        <RadioButton
+                          labelText={t('customFiltersModalStatusCompleted')}
                           value="completed"
                         />
                       </RadioButtonGroup>
@@ -228,8 +239,10 @@ const FieldsModal: React.FC<Props> = ({
                           <TextInput
                             {...input}
                             id={input.name}
-                            labelText={t('assignedToLabel')}
-                            placeholder={t('assignedToPlaceholder')}
+                            labelText={t('customFiltersModalAssignedToLabel')}
+                            placeholder={t(
+                              'customFiltersModalAssignedToPlaceholder',
+                            )}
                           />
                         )}
                       </Field>
@@ -239,16 +252,18 @@ const FieldsModal: React.FC<Props> = ({
                             <TextInput
                               {...input}
                               id={input.name}
-                              labelText={t('inAGroupLabel')}
+                              labelText={t('customFiltersModalInAGroupLabel')}
                               className={styles.secondColumn}
-                              placeholder={t('inAGroupPlaceholder')}
+                              placeholder={t(
+                                'customFiltersModalInAGroupPlaceholder',
+                              )}
                               disabled={currentUser === undefined}
                             />
                           ) : (
                             <Select
                               {...input}
                               id={input.name}
-                              labelText={t('inAGroupLabel')}
+                              labelText={t('customFiltersModalInAGroupLabel')}
                               className={styles.secondColumn}
                             >
                               <SelectItem value="" text="" />
@@ -272,7 +287,9 @@ const FieldsModal: React.FC<Props> = ({
                         id={input.name}
                         tenantId={values.tenant}
                         disabled={!isOpen}
-                        labelText={t('tasksForLatestProcessVersionLabel')}
+                        labelText={t(
+                          'customFiltersModalLatestProcessVersionLabel',
+                        )}
                       />
                     )}
                   </Field>
@@ -282,7 +299,7 @@ const FieldsModal: React.FC<Props> = ({
                         <MultiTenancySelect
                           {...input}
                           id={input.name}
-                          labelText={t('tenantLabel')}
+                          labelText={t('multiTenancyDropdownLabel')}
                           className={styles.secondColumn}
                         />
                       )}
@@ -298,8 +315,12 @@ const FieldsModal: React.FC<Props> = ({
                         labelText={label}
                         aria-label={label}
                         hideLabel
-                        labelA={t('toggleHiddenLabel')}
-                        labelB={t('toggleVisibleLabel')}
+                        labelA={t(
+                          'customFiltersModalAdvancedFiltersToggleHidden',
+                        )}
+                        labelB={t(
+                          'customFiltersModalAdvancedFiltersToggleVisible',
+                        )}
                         toggled={input.value}
                         onToggle={input.onChange}
                       />
@@ -310,7 +331,7 @@ const FieldsModal: React.FC<Props> = ({
                     <>
                       <FormGroup
                         className={styles.dateRangeFormGroup}
-                        legendText={t('dueDateLegend')}
+                        legendText={t('customFiltersModalDueDateLabel')}
                       >
                         <Field name="dueDateFrom">
                           {({input}) => (
@@ -321,13 +342,13 @@ const FieldsModal: React.FC<Props> = ({
                               }}
                               className={styles.datePicker}
                               datePickerType="single"
-                              dateFormat={t('flatpickr_dateFormat')}
+                              dateFormat={t('globalWrittenCalendarDateFormat')}
                               locale={i18n.resolvedLanguage as LocaleKey}
                             >
                               <DatePickerInput
                                 id="due-date-from"
-                                placeholder={t('datePlaceholder')}
-                                labelText={t('fromLabel')}
+                                placeholder={t('globalDatePlaceholder')}
+                                labelText={t('customFiltersModalFromLabel')}
                                 size="md"
                               />
                             </DatePicker>
@@ -342,13 +363,13 @@ const FieldsModal: React.FC<Props> = ({
                               }}
                               className={styles.datePicker}
                               datePickerType="single"
-                              dateFormat={t('flatpickr_dateFormat')}
+                              dateFormat={t('globalWrittenCalendarDateFormat')}
                               locale={i18n.resolvedLanguage as LocaleKey}
                             >
                               <DatePickerInput
                                 id="due-date-to"
-                                placeholder={t('datePlaceholder')}
-                                labelText={t('toLabel')}
+                                placeholder={t('globalDatePlaceholder')}
+                                labelText={t('customFiltersModalToLabel')}
                                 size="md"
                               />
                             </DatePicker>
@@ -357,7 +378,7 @@ const FieldsModal: React.FC<Props> = ({
                       </FormGroup>
 
                       <FormGroup
-                        legendText={t('followUpDateLegend')}
+                        legendText={t('customFiltersModalFollowUpDateLabel')}
                         className={cn(
                           styles.dateRangeFormGroup,
                           styles.secondColumn,
@@ -372,13 +393,13 @@ const FieldsModal: React.FC<Props> = ({
                               }}
                               className={styles.datePicker}
                               datePickerType="single"
-                              dateFormat={t('flatpickr_dateFormat')}
+                              dateFormat={t('globalWrittenCalendarDateFormat')}
                               locale={i18n.resolvedLanguage as LocaleKey}
                             >
                               <DatePickerInput
                                 id="follow-up-date-from"
-                                placeholder={t('datePlaceholder')}
-                                labelText={t('fromLabel')}
+                                placeholder={t('globalDatePlaceholder')}
+                                labelText={t('customFiltersModalFromLabel')}
                                 size="md"
                               />
                             </DatePicker>
@@ -393,13 +414,13 @@ const FieldsModal: React.FC<Props> = ({
                               }}
                               className={styles.datePicker}
                               datePickerType="single"
-                              dateFormat={t('flatpickr_dateFormat')}
+                              dateFormat={t('globalWrittenCalendarDateFormat')}
                               locale={i18n.resolvedLanguage as LocaleKey}
                             >
                               <DatePickerInput
                                 id="follow-up-date-to"
-                                placeholder={t('datePlaceholder')}
-                                labelText={t('toLabel')}
+                                placeholder={t('globalDatePlaceholder')}
+                                labelText={t('customFiltersModalToLabel')}
                                 size="md"
                               />
                             </DatePicker>
@@ -412,7 +433,7 @@ const FieldsModal: React.FC<Props> = ({
                           <TextInput
                             {...input}
                             id={input.name}
-                            labelText={t('taskIdLabel')}
+                            labelText={t('customFiltersModalTaskIDLabel')}
                           />
                         )}
                       </Field>
@@ -422,7 +443,9 @@ const FieldsModal: React.FC<Props> = ({
                           <>
                             <FormGroup
                               className={styles.variableFormGroup}
-                              legendText={t('taskVariablesLegend')}
+                              legendText={t(
+                                'customFiltersModalTaskVariableLabel',
+                              )}
                             >
                               <div className={styles.variableGrid}>
                                 {fields.map((name, index) => (
@@ -433,7 +456,9 @@ const FieldsModal: React.FC<Props> = ({
                                           {...input}
                                           id={input.name}
                                           className={styles.variableGridItem}
-                                          labelText={t('nameLabel')}
+                                          labelText={t(
+                                            'taskDetailsNewVariableNameFieldLabel',
+                                          )}
                                           autoFocus={
                                             index === (fields.length ?? 1) - 1
                                           }
@@ -452,7 +477,9 @@ const FieldsModal: React.FC<Props> = ({
                                           {...input}
                                           id={input.name}
                                           className={styles.variableGridItem}
-                                          labelText={t('valueLabel')}
+                                          labelText={t(
+                                            'customFiltersModalVariableValueLabel',
+                                          )}
                                           invalid={
                                             meta.submitError !== undefined &&
                                             !arrayMeta.dirtySinceLastSubmit
@@ -466,10 +493,9 @@ const FieldsModal: React.FC<Props> = ({
                                       type="button"
                                       className={styles.variableGridRemove}
                                       hasIconOnly
-                                      iconDescription={t('removeNewVariable', {
-                                        count: index + 1,
-                                        ordinal: true,
-                                      })}
+                                      iconDescription={t(
+                                        'customFiltersModalRemoveVariableButton',
+                                      )}
                                       renderIcon={Close}
                                       kind="ghost"
                                       size="md"
@@ -483,7 +509,7 @@ const FieldsModal: React.FC<Props> = ({
                               <Button
                                 type="button"
                                 iconDescription={t(
-                                  'addVariableIconDescription',
+                                  'customFiltersModalAddVariableButtonAria',
                                 )}
                                 renderIcon={Add}
                                 kind="tertiary"
@@ -492,7 +518,7 @@ const FieldsModal: React.FC<Props> = ({
                                   fields.push({name: '', value: ''})
                                 }
                               >
-                                {t('addVariableButton')}
+                                {t('customFiltersModalAddVariableButton')}
                               </Button>
                             </FormGroup>
                           </>
@@ -517,12 +543,12 @@ const FieldsModal: React.FC<Props> = ({
                   }}
                   type="button"
                 >
-                  {t('resetButton')}
+                  {t('customFiltersModalResetButton')}
                 </Button>
                 {initialValues?.name === undefined ? (
                   <>
                     <Button kind="secondary" onClick={onClose} type="button">
-                      {t('cancelButton')}
+                      {t('customFiltersModalCancelButton')}
                     </Button>
                     <Button
                       kind="secondary"
@@ -532,7 +558,7 @@ const FieldsModal: React.FC<Props> = ({
                       }}
                       type="submit"
                     >
-                      {t('saveButton')}
+                      {t('customFiltersModalSaveButton')}
                     </Button>
                     <Button
                       kind="primary"
@@ -542,16 +568,16 @@ const FieldsModal: React.FC<Props> = ({
                         form.submit();
                       }}
                     >
-                      {t('applyButton')}
+                      {t('customFiltersModalApplyButton')}
                     </Button>
                   </>
                 ) : (
                   <>
                     <Button kind="secondary" onClick={onDelete} type="button">
-                      {t('deleteButton')}
+                      {t('customFiltersModalDeleteButton')}
                     </Button>
                     <Button kind="secondary" onClick={onClose} type="button">
-                      {t('cancelButton')}
+                      {t('customFiltersModalCancelButton')}
                     </Button>
                     <Button
                       kind="primary"
@@ -561,7 +587,7 @@ const FieldsModal: React.FC<Props> = ({
                       }}
                       type="submit"
                     >
-                      {t('saveAndApplyButton')}
+                      {t('customFiltersModalSaveAndApplyButton')}
                     </Button>
                   </>
                 )}

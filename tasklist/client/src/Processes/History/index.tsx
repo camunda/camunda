@@ -22,7 +22,7 @@ const History: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <span className={styles.header}>{t('historyTitle')}</span>
+      <span className={styles.header}>{t('processesHistoryTitle')}</span>
       <div className={styles.itemContainer}>
         {match({status})
           .with({status: 'pending'}, () => <Skeleton />)
@@ -30,10 +30,10 @@ const History: React.FC = () => {
             <Layer>
               <Stack gap={3} className={styles.message}>
                 <span className={styles.messageHeading}>
-                  {t('errorFetchingHistoryTitle')}
+                  {t('processesHistoryFetchingErrorTitle')}
                 </span>
                 <span className={styles.messageBody}>
-                  {t('errorFetchingHistoryBody')}
+                  {t('processesHistoryFetchingErrorBody')}
                 </span>
               </Stack>
             </Layer>
@@ -48,10 +48,10 @@ const History: React.FC = () => {
                 <Layer>
                   <Stack gap={3} className={styles.message}>
                     <span className={styles.messageHeading}>
-                      {t('noHistoryEntriesFound')}
+                      {t('processesHistoryNoEntriesFoundPart1')}
                     </span>
                     <span className={styles.messageBody}>
-                      {t('noHistoryToDisplay')}
+                      {t('processesHistoryNoEntriesFoundPart2')}
                     </span>
                   </Stack>
                 </Layer>

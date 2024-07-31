@@ -18,7 +18,11 @@ const ProcessTag: React.FC<Props> = ({variant}) => {
   const {t} = useTranslation();
 
   if (variant === 'start-form') {
-    return <Tag renderIcon={ModellerFormIcon}>{t('requiresFormInput')}</Tag>;
+    return (
+      <Tag renderIcon={ModellerFormIcon}>
+        {t('processesProcessTileAttributeRequiresForm')}
+      </Tag>
+    );
   } else {
     return null;
   }

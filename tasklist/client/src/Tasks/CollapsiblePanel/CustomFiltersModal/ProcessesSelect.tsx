@@ -34,7 +34,7 @@ const ProcessesSelect: React.FC<Props> = ({
 
   return (
     <Select {...props} disabled={disabled || processes.length === 0}>
-      <SelectItem value="all" text={t('allProcesses')} />
+      <SelectItem value="all" text={t('customFiltersModalAllProcesses')} />
       {processes.map((process) => (
         <SelectItem
           key={process.id}

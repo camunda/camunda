@@ -40,19 +40,19 @@ function convertStatus(status: LoadingStatus): InlineLoadingStatus {
 
 function getAsyncButtonDescription(status: LoadingStatus) {
   if (status === 'active') {
-    return t('startingProcess');
+    return t('processesStartProcessPendingStatusText');
   }
 
   if (status === 'active-tasks') {
-    return t('waitingForTasks');
+    return t('processesStartProcessWaitForTasksText');
   }
 
   if (status === 'finished') {
-    return t('processStarted');
+    return t('processesStartProcessSuccess');
   }
 
   if (status === 'error') {
-    return t('processStartFailed');
+    return t('processesStartProcessFailed');
   }
 
   return '';
@@ -106,7 +106,7 @@ const ProcessTile: React.FC<Props> = ({
       notificationsStore.displayNotification({
         isDismissable: true,
         kind: 'success',
-        title: t('processStartedNotification'),
+        title: t('processesStartProcessNotificationSuccess'),
       });
     },
   });
@@ -130,7 +130,10 @@ const ProcessTile: React.FC<Props> = ({
           </span>
         </Stack>
         <div className={styles.buttonRow}>
-          <ul title={t('processAttributes')} aria-hidden={tags.length === 0}>
+          <ul
+            title={t('processesProcessTileAttributes')}
+            aria-hidden={tags.length === 0}
+          >
             {tags.map((type) => (
               <li key={type}>
                 <ProcessTag variant={type} />
@@ -180,14 +183,14 @@ const ProcessTile: React.FC<Props> = ({
                 notificationsStore.displayNotification({
                   isDismissable: false,
                   kind: 'error',
-                  title: t('processStartFailedNoTenant'),
+                  title: t('processesStartProcessFailedMissingTenant'),
                   subtitle: displayName,
                 });
               } else {
                 notificationsStore.displayNotification({
                   isDismissable: false,
                   kind: 'error',
-                  title: t('processStartFailed'),
+                  title: t('processesStartProcessFailed'),
                   subtitle: displayName,
                 });
               }
@@ -202,7 +205,7 @@ const ProcessTile: React.FC<Props> = ({
               },
             }}
           >
-            {t('startProcessButtonText')}
+            {t('processesTileStartProcessButtonLabel')}
           </AsyncActionButton>
         </div>
       </Stack>

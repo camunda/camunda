@@ -17,7 +17,7 @@ import {t} from 'i18next';
 
 function getRelativeDate(date: number): string {
   if (differenceInSeconds(Date.now(), date) <= 10) {
-    return t('justNow');
+    return t('relativeDateJustNow');
   }
 
   if (differenceInHours(date, Date.now()) > 0) {

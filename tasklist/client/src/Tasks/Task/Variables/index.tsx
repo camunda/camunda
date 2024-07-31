@@ -160,9 +160,11 @@ const Variables: React.FC<Props> = ({
                 }}
                 renderIcon={Add}
                 disabled={!canCompleteTask}
-                title={canCompleteTask ? undefined : t('addVariableTooltip')}
+                title={
+                  canCompleteTask ? undefined : t('variablesAddVariableTooltip')
+                }
               >
-                {t('addVariableButton')}
+                {t('taskVariablesAddVariable')}
               </Button>
             )}
           </div>
@@ -191,11 +193,11 @@ const Variables: React.FC<Props> = ({
                     () => (
                       <Layer className={cn(styles.container, styles.gutter)}>
                         <C3EmptyState
-                          heading={t('noVariablesHeading')}
+                          heading={t('variablesNoVariablesHeading')}
                           description={
                             taskState === 'COMPLETED'
                               ? ''
-                              : t('clickOnAddVariable')
+                              : t('variablesClickOnAddVariablesPrompt')
                           }
                         />
                       </Layer>
@@ -244,7 +246,7 @@ const Variables: React.FC<Props> = ({
                   {hasEmptyNewVariable(values) && (
                     <IconButton
                       className={styles.inlineIcon}
-                      label={t('fillAllFieldsTooltip')}
+                      label={t('variablesFillAllFieldsWarning')}
                       align="top"
                     >
                       <Information size={20} />
@@ -275,7 +277,7 @@ const Variables: React.FC<Props> = ({
               <Suspense>
                 <JSONEditorModal
                   isOpen={isJsonEditorModalOpen}
-                  title={t('editVariableTitle')}
+                  title={t('jsonEditorEditVariableTitle')}
                   onClose={() => {
                     setEditingVariable(undefined);
                   }}

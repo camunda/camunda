@@ -37,14 +37,14 @@ function taskListWithRefUrl(params: Pick<TaskFilters, 'filter' | 'sortBy'>) {
 function createNotification(numTasks: number, navigate: NavigateFunction) {
   const notificationMessage =
     numTasks === 1
-      ? t('oneTaskAssigned')
+      ? t('nativeNotificationOneNewTaskAssigned')
       : numTasks >= 50
-        ? t('fiftyOrMoreTasksAssigned')
-        : t('multipleTasksAssigned', {count: numTasks});
+        ? t('nativeNotificationFiftyOrMoreTasksAssigned')
+        : t('nativeNotificationMultipleTasksAssigned', {count: numTasks});
 
   const notification = new Notification(notificationMessage, {
     icon: '/favicon.ico',
-    body: 'Click here to see the details.',
+    body: t('nativeNotificationNewTasksMessageBody'),
     tag: `${FILTER}-notification`,
   });
   notification.onclick = () => {

@@ -54,14 +54,14 @@ const getConfiguredDateKey = (
   let keySuffix = '';
 
   if (includeTime) {
-    keySuffix += '_withTime';
+    keySuffix += '_time';
   }
 
   if (isSpeech) {
     keySuffix += '_speech';
   }
 
-  return `relativeDateFormat_${key}${keySuffix}`;
+  return `relativeDate${key.charAt(0).toUpperCase() + key.slice(1)}${keySuffix}`;
 };
 
 const getConfiguredTranslatedFormat = (

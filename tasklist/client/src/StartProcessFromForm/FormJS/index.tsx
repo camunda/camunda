@@ -108,7 +108,7 @@ const FormJS: React.FC<Props> = ({
             setSubmissionState('inactive');
           }}
         >
-          {t('submitButtonLabel')}
+          {t('processesStartProcessWithFormSubmitButtonLabel')}
         </AsyncActionButton>
         <PoweredBy />
       </div>

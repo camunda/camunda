@@ -54,7 +54,7 @@ const Details: React.FC = () => {
     if (taskState === 'CANCELED') {
       notificationsStore.displayNotification({
         kind: 'info',
-        title: t('processInstanceCancelledTitle'),
+        title: t('processInstanceCancelledNotification'),
         subtitle: `${task?.processName} (${task?.processInstanceKey})`,
         isDismissable: true,
       });
@@ -65,8 +65,8 @@ const Details: React.FC = () => {
   const tabs = [
     {
       key: 'task',
-      title: t('taskTabLabel'),
-      label: t('showTaskLabel'),
+      title: t('taskDetailsTaskTabLabel'),
+      label: t('taskDetailsShowTaskLabel'),
       selected: useMatch(pages.taskDetails()) !== null,
       to: {
         pathname: pages.taskDetails(id),
@@ -74,8 +74,8 @@ const Details: React.FC = () => {
     },
     {
       key: 'process',
-      title: t('processTabLabel'),
-      label: t('showAssociatedBpmnProcessLabel'),
+      title: t('taskDetailsProcessTabLabel'),
+      label: t('taskDetailsShowBpmnProcessLabel'),
       selected: useMatch(pages.taskDetailsProcess()) !== null,
       to: {
         pathname: pages.taskDetailsProcess(id),
@@ -98,7 +98,7 @@ const Details: React.FC = () => {
           user={currentUser}
           onAssignmentError={onAssignmentError}
         />
-        <TabListNav label={t('taskDetailsNavigationLabel')} items={tabs} />
+        <TabListNav label={t('taskDetailsNavLabel')} items={tabs} />
         <Outlet
           context={
             {task, currentUser, refetch, process} satisfies OutletContext

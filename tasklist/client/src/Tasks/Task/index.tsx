@@ -105,7 +105,7 @@ const Task: React.FC = observer(() => {
 
     notificationsStore.displayNotification({
       kind: 'success',
-      title: t('taskCompleted'),
+      title: t('taskCompletedNotification'),
       isDismissable: true,
     });
   }

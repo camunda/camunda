@@ -13,7 +13,7 @@ import {Restricted} from 'modules/components/Restricted';
 import {useTasks} from 'modules/queries/useTasks';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {useEffect} from 'react';
-import {useTranslation} from 'react-i18next';
+import {useTranslation, Trans} from 'react-i18next';
 import {decodeTaskEmptyPageRef} from 'modules/utils/reftags';
 import {useSearchParams} from 'react-router-dom';
 import {tracking} from 'modules/tracking';
@@ -80,30 +80,32 @@ const EmptyPage: React.FC = () => {
       >
         {isOldUser ? (
           <Restricted
-            fallback={<h3>{t('pickATaskToViewDetails')}</h3>}
+            fallback={<h3>{t('taskEmptyPickPromptRestricted')}</h3>}
             scopes={['write']}
           >
-            <h3>{t('pickATaskToWorkOn')}</h3>
+            <h3>{t('taskEmptyPickPrompt')}</h3>
           </Restricted>
         ) : (
           <>
-            <h3>{t('welcomeToTasklist')}</h3>
+            <h3>{t('taskEmptyHeader')}</h3>
             <p data-testid="first-paragraph">
-              {t('userTasksDescription')}
+              {t('taskEmptyDetail1')}
               <br />
-              {t('bpmnDiagramAndForms')}
+              {t('taskEmptyDetail2')}
             </p>
-            {!hasNoTasks && <p>{t('selectTaskToViewDetails')}</p>}
+            {!hasNoTasks && <p>{t('taskEmptyTaskAvailablePrompt')}</p>}
             <p data-testid="tutorial-paragraph">
-              {t('followTutorialTo')}{' '}
-              <Link
-                href="https://modeler.cloud.camunda.io/tutorial/quick-start-human-tasks"
-                target="_blank"
-                rel="noreferrer"
-                inline
-              >
-                {t('learnHowToCreateTasks')}
-              </Link>
+              <Trans i18nKey="taskEmptyTutorial">
+                Follow our tutorial to{' '}
+                <Link
+                  href="https://modeler.cloud.camunda.io/tutorial/quick-start-human-tasks"
+                  target="_blank"
+                  rel="noreferrer"
+                  inline
+                >
+                  learn how to create tasks.
+                </Link>
+              </Trans>
             </p>
           </>
         )}

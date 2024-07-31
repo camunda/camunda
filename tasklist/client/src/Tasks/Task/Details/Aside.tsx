@@ -36,26 +36,34 @@ const Aside: React.FC<Props> = ({task, user}) => {
 
   return (
     <aside className={styles.aside} aria-label={t('taskDetailsRightPanel')}>
-      <ContainedList label={t('detailsLabel')} kind="disclosed">
+      <ContainedList label={t('taskDetailsDetailsLabel')} kind="disclosed">
         <>
           {taskTenant === undefined ? null : (
             <ContainedListItem>
-              <span className={styles.itemHeading}>{t('tenantLabel')}</span>
+              <span className={styles.itemHeading}>
+                {t('taskDetailsTenantLabel')}
+              </span>
               <br />
               <span className={styles.itemBody}>{taskTenant.name}</span>
             </ContainedListItem>
           )}
         </>
         <ContainedListItem>
-          <span className={styles.itemHeading}>{t('creationDateLabel')}</span>
+          <span className={styles.itemHeading}>
+            {t('taskDetailsCreationDateLabel')}
+          </span>
           <br />
           <span className={styles.itemBody}>{formatDate(creationDate)}</span>
         </ContainedListItem>
         <ContainedListItem>
-          <span className={styles.itemHeading}>{t('candidatesLabel')}</span>
+          <span className={styles.itemHeading}>
+            {t('taskDetailsCandidatesLabel')}
+          </span>
           <br />
           {candidates.length === 0 ? (
-            <span className={styles.itemBody}>{t('noCandidatesLabel')}</span>
+            <span className={styles.itemBody}>
+              {t('taskDetailsNoCandidatesLabel')}
+            </span>
           ) : null}
           {candidates.map((candidate) => (
             <Tag size="sm" type="gray" key={candidate}>
@@ -66,7 +74,7 @@ const Aside: React.FC<Props> = ({task, user}) => {
         {completionDate ? (
           <ContainedListItem>
             <span className={styles.itemHeading}>
-              {t('completionDateLabel')}
+              {t('taskDetailsCompletionDateLabel')}
             </span>
             <br />
             <span className={styles.itemBody}>
@@ -75,15 +83,19 @@ const Aside: React.FC<Props> = ({task, user}) => {
           </ContainedListItem>
         ) : null}
         <ContainedListItem>
-          <span className={styles.itemHeading}>{t('dueDateLabel')}</span>
+          <span className={styles.itemHeading}>
+            {t('taskDetailsDueDateLabel')}
+          </span>
           <br />
           <span className={styles.itemBody}>
-            {dueDate ? formatDate(dueDate) : t('noDueDateLabel')}
+            {dueDate ? formatDate(dueDate) : t('taskDetailsNoDueDateLabel')}
           </span>
         </ContainedListItem>
         {followUpDate ? (
           <ContainedListItem>
-            <span className={styles.itemHeading}>{t('followUpDateLabel')}</span>
+            <span className={styles.itemHeading}>
+              {t('taskDetailsFollowUpDateLabel')}
+            </span>
             <br />
             <span className={styles.itemBody}>{formatDate(followUpDate)}</span>
           </ContainedListItem>

@@ -33,10 +33,12 @@ const DeleteFilterModal: React.FC<Props> = ({
       danger
       open={isOpen}
       size="sm"
-      modalLabel={isOpen ? t('deleteFilterModalLabel') : undefined}
-      modalHeading={isOpen ? t('deleteFilterModalHeading') : undefined}
-      primaryButtonText={t('confirmDeletionButtonText')}
-      secondaryButtonText={t('cancelButtonText')}
+      modalLabel={isOpen ? t('customFiltersModalDeleteModalLabel') : undefined}
+      modalHeading={
+        isOpen ? t('customFiltersModalDeleteModalHeading') : undefined
+      }
+      primaryButtonText={t('customFIltersModalConfirmDeletionButton')}
+      secondaryButtonText={t('tasksFiltersModalCancelButtonLabel')}
       onRequestClose={onClose}
       onRequestSubmit={() => {
         const customFilters = Object.entries(

@@ -24,7 +24,7 @@ const SessionWatcher: React.FC = observer(() => {
     function handleSessionExpiration() {
       removeNotification.current = notificationsStore.displayNotification({
         kind: 'info',
-        title: t('sessionExpired'),
+        title: t('sessionWatcherExpiredTitle'),
         isDismissable: true,
       });
     }

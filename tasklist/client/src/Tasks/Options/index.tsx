@@ -21,17 +21,17 @@ const Options: React.FC<Props> = observer(({onAutoSelectToggle}) => {
   return (
     <section
       className={styles.container}
-      aria-label={t('optionsSectionAriaLabel')}
+      aria-label={t('taskOptionsSectionAria')}
     >
       <Toggle
         id="toggle-auto-select-task"
         data-testid="toggle-auto-select-task"
         size="sm"
-        labelText={t('autoSelectFirstAvailableTaskLabel')}
-        aria-label={t('autoSelectFirstAvailableTaskLabel')}
+        labelText={t('taskOptionsAutoSelectLabel')}
+        aria-label={t('taskOptionsAutoSelectLabel')}
         hideLabel
-        labelA={t('toggleOffLabel')}
-        labelB={t('toggleOnLabel')}
+        labelA={t('taskOptionsAutoSelectOffAria')}
+        labelB={t('taskOptionsAutoSelectOnAria')}
         toggled={autoSelectNextTaskStore.enabled}
         onToggle={(state) => {
           if (state) {

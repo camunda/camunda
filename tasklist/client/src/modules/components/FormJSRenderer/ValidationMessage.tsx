@@ -21,9 +21,11 @@ const ValidationMessage: React.FC<{
     const numberOfNamedFieldsToShow = opts?.numberOfNamedFieldsToShow;
     const parts: string[] = [];
     if (fieldIds.length == 1) {
-      parts.push(t('reviewOneField'));
+      parts.push(t('taskDetailsFormJSSingleFieldError'));
     } else {
-      parts.push(t('reviewMultipleFields', {count: fieldIds.length}));
+      parts.push(
+        t('taskDetailsFormJSMultipleFieldError', {count: fieldIds.length}),
+      );
     }
     const namedFieldsSlice =
       numberOfNamedFieldsToShow !== undefined

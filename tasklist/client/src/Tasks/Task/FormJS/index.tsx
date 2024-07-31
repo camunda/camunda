@@ -149,7 +149,7 @@ const FormJS: React.FC<Props> = ({
                     removeFormReference();
                     notificationsStore.displayNotification({
                       kind: 'error',
-                      title: t('invalidFormSchemaErrorLabel'),
+                      title: t('formJSInvalidSchemaErrorNotificationTitle'),
                       isDismissable: true,
                     });
                   }}

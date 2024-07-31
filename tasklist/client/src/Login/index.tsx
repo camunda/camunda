@@ -72,16 +72,16 @@ const Login: React.FC = () => {
 
             if (error.response?.status === 401) {
               return {
-                [FORM_ERROR]: t('usernamePasswordMismatch'),
+                [FORM_ERROR]: t('loginErrorUsernamePasswordMismatch'),
               };
             }
 
             return {
-              [FORM_ERROR]: t('credentialsNotVerified'),
+              [FORM_ERROR]: t('loginErrorCredentialsNotVerified'),
             };
           } catch {
             return {
-              [FORM_ERROR]: t('credentialsNotVerified'),
+              [FORM_ERROR]: t('loginErrorCredentialsNotVerified'),
             };
           }
         }}
@@ -89,11 +89,11 @@ const Login: React.FC = () => {
           const errors: {username?: string; password?: string} = {};
 
           if (!username) {
-            errors.username = t('usernameRequired');
+            errors.username = t('loginErrorUsernameRequired');
           }
 
           if (!password) {
-            errors.password = t('passwordRequired');
+            errors.password = t('loginErrorPasswordRequired');
           }
 
           return errors;
@@ -120,7 +120,7 @@ const Login: React.FC = () => {
             >
               <Stack>
                 <div className={styles.logo}>
-                  <CamundaLogo aria-label={t('camundaLogo')} />
+                  <CamundaLogo aria-label={t('loginLogoLabel')} />
                 </div>
                 <h1 className={styles.title}>Tasklist</h1>
               </Stack>
@@ -143,10 +143,10 @@ const Login: React.FC = () => {
                         name={input.name}
                         id={input.name}
                         onChange={input.onChange}
-                        labelText={t('usernameLabel')}
+                        labelText={t('loginUsernameFieldLabel')}
                         invalid={meta.error && meta.touched}
                         invalidText={meta.error}
-                        placeholder={t('usernamePlaceholder')}
+                        placeholder={t('loginUsernameFieldPlaceholder')}
                       />
                     )}
                   </Field>
@@ -162,12 +162,12 @@ const Login: React.FC = () => {
                         name={input.name}
                         id={input.name}
                         onChange={input.onChange}
-                        hidePasswordLabel={t('hidePasswordLabel')}
-                        showPasswordLabel={t('showPasswordLabel')}
-                        labelText={t('passwordLabel')}
+                        hidePasswordLabel={t('loginHidePasswordButtonLabel')}
+                        showPasswordLabel={t('loginShowPasswordButtonLabel')}
+                        labelText={t('loginPasswordFieldLabel')}
                         invalid={meta.error && meta.touched}
                         invalidText={meta.error}
-                        placeholder={t('passwordPlaceholder')}
+                        placeholder={t('loginPasswordFieldPlaceholder')}
                       />
                     )}
                   </Field>
@@ -178,7 +178,9 @@ const Login: React.FC = () => {
                   renderIcon={submitting ? LoadingSpinner : undefined}
                   className={styles.button}
                 >
-                  {submitting ? t('loggingIn') : t('login')}
+                  {submitting
+                    ? t('loginLoggingInMessage')
+                    : t('loginButtonLabel')}
                 </Button>
                 <Disclaimer />
               </Stack>

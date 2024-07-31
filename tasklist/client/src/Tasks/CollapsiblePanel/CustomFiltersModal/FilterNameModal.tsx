@@ -24,7 +24,7 @@ const FilterNameModal: React.FC<Props> = ({isOpen, onApply, onCancel}) => {
     <Modal
       variant="composed-modal"
       open={isOpen}
-      aria-label={t('saveFilterAriaLabel')}
+      aria-label={t('customFiltersModalAria')}
       preventCloseOnClickOutside
       size="sm"
     >
@@ -39,7 +39,7 @@ const FilterNameModal: React.FC<Props> = ({isOpen, onApply, onCancel}) => {
             } = {};
 
             if (!filterName) {
-              errors.filterName = t('filterNameRequiredError');
+              errors.filterName = t('customFiltersModalNameRequiredError');
             }
 
             return errors;
@@ -48,7 +48,7 @@ const FilterNameModal: React.FC<Props> = ({isOpen, onApply, onCancel}) => {
           {({handleSubmit, form}) => (
             <>
               <ModalHeader
-                title={t('saveFilterTitle')}
+                title={t('customFiltersModalTitle')}
                 buttonOnClick={onCancel}
               />
               <ModalBody hasForm>
@@ -57,8 +57,8 @@ const FilterNameModal: React.FC<Props> = ({isOpen, onApply, onCancel}) => {
                     {({input, meta}) => (
                       <TextInput
                         id="filterName"
-                        labelText={t('filterNameLabel')}
-                        placeholder={t('filterNamePlaceholder')}
+                        labelText={t('customFiltersNameModalFilterNameLabel')}
+                        placeholder={t('customFiltersModalNamePlaceholder')}
                         required
                         value={input.value}
                         onChange={input.onChange}
@@ -71,8 +71,8 @@ const FilterNameModal: React.FC<Props> = ({isOpen, onApply, onCancel}) => {
                 </form>
               </ModalBody>
               <ModalFooter
-                primaryButtonText={t('saveAndApplyButton')}
-                secondaryButtonText={t('cancelButton')}
+                primaryButtonText={t('customFiltersModalSaveAndApplyButton')}
+                secondaryButtonText={t('customFiltersModalCancelButton')}
                 onRequestSubmit={form.submit}
                 onRequestClose={onCancel}
               />

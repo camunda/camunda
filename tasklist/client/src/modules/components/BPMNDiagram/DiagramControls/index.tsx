@@ -31,8 +31,8 @@ const DiagramControls: React.FC<Props> = ({
         size="sm"
         kind="tertiary"
         align="left"
-        label={t('resetDiagramZoom')}
-        aria-label={t('resetDiagramZoom')}
+        label={t('taskDetailsResetDiagramZoom')}
+        aria-label={t('taskDetailsResetDiagramZoom')}
         onClick={handleZoomReset}
       >
         <CenterCircle />
@@ -42,8 +42,8 @@ const DiagramControls: React.FC<Props> = ({
         size="sm"
         kind="tertiary"
         align="left"
-        label={t('zoomInDiagram')}
-        aria-label={t('zoomInDiagram')}
+        label={t('taskDetailsZoomInDiagram')}
+        aria-label={t('taskDetailsZoomInDiagram')}
         onClick={handleZoomIn}
       >
         <Add />
@@ -53,8 +53,8 @@ const DiagramControls: React.FC<Props> = ({
         size="sm"
         kind="tertiary"
         align="left"
-        label={t('zoomOutDiagram')}
-        aria-label={t('zoomOutDiagram')}
+        label={t('taskDetailsZoomOutDiagram')}
+        aria-label={t('taskDetailsZoomOutDiagram')}
         onClick={handleZoomOut}
       >
         <Subtract />

@@ -65,10 +65,10 @@ const VariableEditor: React.FC<Props> = ({
       <StructuredListHead>
         <StructuredListRow head>
           <StructuredListCell className={styles.listCell} head>
-            {t('variableName')}
+            {t('variableEditorVariableNameLabel')}
           </StructuredListCell>
           <StructuredListCell className={styles.listCell} head>
-            {t('variableValue')}
+            {t('variableEditorVariableValueLabel')}
           </StructuredListCell>
           <StructuredListCell className={styles.listCell} head />
         </StructuredListRow>
@@ -136,8 +136,8 @@ const VariableEditor: React.FC<Props> = ({
                         }}
                         isActive={meta.active}
                         type="text"
-                        labelText={`${variable.name} ${t('valueLabel')}`}
-                        placeholder={`${variable.name} ${t('valuePlaceholder')}`}
+                        labelText={`${variable.name} ${t('tofix_taskVariablesNamedValueLabel')}`}
+                        placeholder={`${variable.name} ${t('tofix_taskVariablesNamedValueLabel')}`}
                         hideLabel
                       />
                     )}
@@ -148,7 +148,7 @@ const VariableEditor: React.FC<Props> = ({
                 >
                   <div className={cn(styles.iconButtons, styles.extraPadding)}>
                     <IconButton
-                      label={t('openJsonCodeEditor')}
+                      label={t('variableEditorOpenJsonLabel')}
                       onClick={() => {
                         if (variable.isValueTruncated) {
                           fetchFullVariable(variable.id);
@@ -212,12 +212,12 @@ const VariableEditor: React.FC<Props> = ({
                               invalid={meta.error !== undefined}
                               invalidText={meta.error}
                               type="text"
-                              labelText={t('variableName', {
+                              labelText={t('variableEditorVariableNameLabel', {
                                 count: index + 1,
                                 ordinal: true,
                               })}
                               hideLabel
-                              placeholder={t('namePlaceholder')}
+                              placeholder={t('variableEditorNamePlaceholder')}
                               autoFocus
                             />
                           )}
@@ -239,14 +239,14 @@ const VariableEditor: React.FC<Props> = ({
                               {...input}
                               id={input.name}
                               type="text"
-                              labelText={t('variableValue', {
+                              labelText={t('variableEditorVariableValueLabel', {
                                 count: index + 1,
                                 ordinal: true,
                               })}
                               hideLabel
                               invalid={meta.error !== undefined}
                               invalidText={meta.error}
-                              placeholder={t('valuePlaceholder')}
+                              placeholder={t('taskVariablesValueLabel')}
                             />
                           )}
                         </DelayedErrorField>
@@ -256,7 +256,7 @@ const VariableEditor: React.FC<Props> = ({
                       >
                         <div className={styles.iconButtons}>
                           <IconButton
-                            label={t('openJsonCodeEditor')}
+                            label={t('variableEditorOpenJsonLabel')}
                             onClick={() => {
                               onEdit(valueFieldName);
                             }}
@@ -268,7 +268,7 @@ const VariableEditor: React.FC<Props> = ({
                             <Popup />
                           </IconButton>
                           <IconButton
-                            label={t('removeNewVariable', {
+                            label={t('taskVariablesRemoveVariable', {
                               count: index + 1,
                               ordinal: true,
                             })}

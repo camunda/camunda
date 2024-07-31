@@ -18,8 +18,8 @@ const FailedVariableFetchError: React.FC = () => {
       role="alert"
       hideCloseButton
       lowContrast
-      title={t('somethingWentWrongTitle')}
-      subtitle={t('failedVariableFetchSubtitle')}
+      title={t('taskDetailsFailedToFetchVariablesErrorTitle')}
+      subtitle={t('taskDetailsFailedToFetchVariablesErrorSubtitle')}
     />
   );
 };

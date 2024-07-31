@@ -26,10 +26,10 @@ import styles from './Header.module.scss';
 
 const getAssignmentToggleLabels = () =>
   ({
-    assigning: _t('assigning'),
-    unassigning: _t('unassigning'),
-    assignmentSuccessful: _t('assignmentSuccessful'),
-    unassignmentSuccessful: _t('unassignmentSuccessful'),
+    assigning: _t('taskHeaderAssigning'),
+    unassigning: _t('taskHeaderUnassigning'),
+    assignmentSuccessful: _t('taskHeaderAssignmentSuccessful'),
+    unassignmentSuccessful: _t('taskHeaderUnassignmentSuccessful'),
   }) as Record<AssignmentStatus, string>;
 
 type AssignmentStatus =
@@ -69,7 +69,7 @@ const Header: React.FC<Props> = ({task, user, onAssignmentError}) => {
             >
               <CheckmarkFilled size={16} color="green" />
               {assignee ? (
-                <Trans i18nKey={'completedByUser'}>
+                <Trans i18nKey="taskDetailsTaskCompletionUsername">
                   Completed by{' '}
                   <span className={styles.taskAssignee} data-testid="assignee">
                     <AssigneeTag
@@ -80,7 +80,7 @@ const Header: React.FC<Props> = ({task, user, onAssignmentError}) => {
                   </span>
                 </Trans>
               ) : (
-                t('completed')
+                t('taskAssignmentStatusCompleted')
               )}
             </Stack>
           </span>
@@ -145,8 +145,8 @@ const AssignButton: React.FC<{
         notificationsStore.displayNotification({
           kind: 'error',
           title: isAssigned
-            ? t('taskCouldNotBeUnassigned')
-            : t('taskCouldNotBeAssigned'),
+            ? t('taskDetailsTaskUnassignmentError')
+            : t('taskDetailsTaskAssignmentError'),
           subtitle: getTaskAssignmentChangeErrorMessage(errorMessage),
           isDismissable: true,
         });
@@ -194,7 +194,7 @@ const AssignButton: React.FC<{
       }}
       status={getAsyncActionButtonStatus()}
     >
-      {isAssigned ? t('unassign') : t('assignToMe')}
+      {isAssigned ? t('taskDetailsUnassign') : t('taskDetailsAssignToMe')}
     </AsyncActionButton>
   );
 };

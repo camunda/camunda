@@ -37,19 +37,19 @@ const COMPLETED_SORTING_OPTIONS_ORDER: TaskFilters['sortBy'][] = [
 
 const getFilterLabels = () =>
   ({
-    'all-open': _t('allOpenTasks'),
-    'assigned-to-me': _t('assignedToMe'),
-    unassigned: _t('unassigned'),
-    completed: _t('completed'),
-    custom: _t('customFilter'),
+    'all-open': _t('taskFiltersAllOpenTasks'),
+    'assigned-to-me': _t('taskFiltersAssignedToMe'),
+    unassigned: _t('taskFiltersUnassigned'),
+    completed: _t('taskFiltersCompleted'),
+    custom: _t('taskFiltersCustomFilter'),
   }) as Record<string, string>;
 
 const getSortingOptions = () =>
   ({
-    creation: _t('creationDate'),
-    'follow-up': _t('followUpDate'),
-    due: _t('dueDate'),
-    completion: _t('completionDate'),
+    creation: _t('taskFiltersSortCreationDate'),
+    'follow-up': _t('taskFiltersSortFollowUpDate'),
+    due: _t('taskFiltersSortDueDate'),
+    completion: _t('taskFiltersSortCompletionDate'),
   }) as Record<string, string>;
 
 const Filters: React.FC<Props> = memo(({disabled}) => {
@@ -65,14 +65,14 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
   return (
     <section
       className={sharedStyles.panelHeader}
-      aria-label={t('filtersAriaLabel')}
+      aria-label={t('taskFiltersHeaderAria')}
     >
       <h1 className={styles.header}>
         {getFilterLabels()?.[filter] ?? customFilters?.[filter]?.name}
       </h1>
       <OverflowMenu
-        aria-label={t('sortTasksAriaLabel')}
-        iconDescription={t('sortTasksIconDescription')}
+        aria-label={t('taskFiltersSortButton')}
+        iconDescription={t('taskFiltersSortButton')}
         renderIcon={SortAscending}
         size="md"
         disabled={disabled}

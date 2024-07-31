@@ -21,11 +21,11 @@ const PoweredBy: React.FC<PoweredByProps> = ({className}) => {
 
   return (
     <p className={cn(className, styles.body)}>
-      {t('poweredBy')}{' '}
+      {t('formJSPoweredByLabel')}{' '}
       <Link href="https://camunda.com/" target="_blank">
         <CamundaLogo
           className={styles.logo}
-          aria-label={t('camundaLogoAriaLabel')}
+          aria-label={t('formJSPoweredByLogoLabel')}
         />
       </Link>
     </p>

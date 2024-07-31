@@ -10,18 +10,18 @@ import {t} from 'i18next';
 
 function getCompleteTaskErrorMessage(code: string) {
   if (code === 'Task is not assigned') {
-    return t('taskNotAssignedError');
+    return t('taskNotCompletedNotAssigned');
   }
 
   if (code.includes('Task is not assigned to')) {
-    return t('taskAssignedToAnotherUser');
+    return t('taskNotCompletedAssignedToOther');
   }
 
   if (code === 'Task is not active') {
     return undefined;
   }
 
-  return t('serviceIsNotReachable');
+  return t('taskNotCompletedNotReachable');
 }
 
 export {getCompleteTaskErrorMessage};

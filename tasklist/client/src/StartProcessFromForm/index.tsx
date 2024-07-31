@@ -106,15 +106,15 @@ const StartProcessFromForm: React.FC = () => {
             .with({pageView: 'submit-success'}, () => (
               <Message
                 icon={{
-                  altText: t('successCheckmarkAltText'),
+                  altText: t('publicStartFormSuccessIconAltText'),
                   path: CheckImage,
                 }}
-                heading={t('successHeading')}
+                heading={t('publicStartFormSuccessMessageTitle')}
                 description={
                   <>
                     {t('formSubmittedSuccessfullyDescription')}
                     <br />
-                    {t('closeWindowInstruction')}
+                    {t('startProcessFromFormCloseWindowInstruction')}
                   </>
                 }
               />
@@ -122,23 +122,25 @@ const StartProcessFromForm: React.FC = () => {
             .with({pageView: 'form-not-found'}, () => (
               <Message
                 icon={{
-                  altText: t('errorRobotAltText'),
+                  altText: t('startProcessFromFormErrorRobot'),
                   path: ErrorRobotImage,
                 }}
-                heading={t('pageNotFoundHeading')}
-                description={t('pageNotFoundDescription')}
+                heading={t('startProcessFromFormPageNotFoundHeading')}
+                description={t('startProcessFromFormPageNotFoundDescription')}
               />
             ))
             .with({pageView: 'failed-submission'}, () => (
               <Message
                 icon={{
-                  altText: t('errorRobotAltText'),
+                  altText: t('startProcessFromFormErrorRobot'),
                   path: ErrorRobotImage,
                 }}
-                heading={t('submissionFailedHeading')}
-                description={t('submissionFailedDescription')}
+                heading={t('startProcessFromFormSubmissionFailedHeading')}
+                description={t(
+                  'startProcessFromFormSubmissionFailedDescription',
+                )}
                 button={{
-                  label: t('reloadButtonLabel'),
+                  label: t('startProcessFromFormReloadButton'),
                   onClick: () => {
                     reset();
                   },
@@ -148,11 +150,11 @@ const StartProcessFromForm: React.FC = () => {
             .with({pageView: 'invalid-form-schema'}, () => (
               <Message
                 icon={{
-                  altText: t('errorRobotAltText'),
+                  altText: t('startProcessFromFormErrorRobot'),
                   path: ErrorRobotImage,
                 }}
-                heading={t('invalidFormHeading')}
-                description={t('invalidFormDescription')}
+                heading={t('startProcessFromFormInvalidFormHeading')}
+                description={t('startProcessFromFormInvalidFormDescription')}
               />
             ))
             .exhaustive()}

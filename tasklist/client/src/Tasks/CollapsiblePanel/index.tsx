@@ -156,14 +156,14 @@ const CollapsiblePanel: React.FC = () => {
         as="nav"
         id="task-nav-bar"
         className={cn(styles.base, styles.collapsedContainer)}
-        aria-label={t('filterControlsAriaLabel')}
+        aria-label={t('taskFilterPanelControlsAria')}
         aria-owns="task-nav-bar-controls"
       >
         <ul id="task-nav-bar-controls" aria-labelledby="task-nav-bar">
           <li>
             <Button
               hasIconOnly
-              iconDescription={t('expandToShowFilters')}
+              iconDescription={t('taskFilterPanelExpandButton')}
               tooltipPosition="right"
               onClick={() => {
                 setIsCollapsed(false);
@@ -180,7 +180,7 @@ const CollapsiblePanel: React.FC = () => {
           <li>
             <Button
               hasIconOnly
-              iconDescription={t('filterTasksAriaLabel')}
+              iconDescription={t('taskFilterPanelFilterButton')}
               tooltipPosition="right"
               onClick={() => {
                 setIsCustomFiltersModalOpen(true);
@@ -206,10 +206,10 @@ const CollapsiblePanel: React.FC = () => {
         aria-owns="filters-menu"
       >
         <span className={sharedStyles.panelHeader}>
-          <h1 id="filters-title">{t('filters')}</h1>
+          <h1 id="filters-title">{t('taskFilterPanelTitle')}</h1>
           <Button
             hasIconOnly
-            iconDescription={t('collapse')}
+            iconDescription={t('taskFilterPanelCollapse')}
             tooltipPosition="right"
             onClick={() => {
               setIsCollapsed(true);
@@ -235,7 +235,7 @@ const CollapsiblePanel: React.FC = () => {
                 }}
                 isActive={filter === 'all-open'}
               >
-                {t('allOpenTasks')}
+                {t('taskFilterPanelAllOpenTasks')}
               </ControlledNavLink>
             </li>
             <li>
@@ -249,7 +249,7 @@ const CollapsiblePanel: React.FC = () => {
                 }}
                 isActive={filter === 'assigned-to-me'}
               >
-                {t('assignedToMe')}
+                {t('assigneeTagAssignedToMe')}
               </ControlledNavLink>
             </li>
             <li>
@@ -263,7 +263,7 @@ const CollapsiblePanel: React.FC = () => {
                 }}
                 isActive={filter === 'unassigned'}
               >
-                {t('unassigned')}
+                {t('taskFilterPanelUnassigned')}
               </ControlledNavLink>
             </li>
             <li>
@@ -277,7 +277,7 @@ const CollapsiblePanel: React.FC = () => {
                 }}
                 isActive={filter === 'completed'}
               >
-                {t('completed')}
+                {t('tasksCompletedFilterLabel')}
               </ControlledNavLink>
             </li>
             {customFilters.map(([filterId, {name}]) => (
@@ -294,11 +294,11 @@ const CollapsiblePanel: React.FC = () => {
                   className={styles.customFilterNav}
                 >
                   {filterId === 'custom' || name === undefined
-                    ? t('custom')
+                    ? t('taskFilterPanelCustom')
                     : name}
                 </ControlledNavLink>
                 <OverflowMenu
-                  iconDescription={t('customFilterActionsAriaLabel')}
+                  iconDescription={t('taskFilterPanelCustomFilterActions')}
                   size="md"
                   className={cn(styles.overflowMenu, {
                     [styles.selected]: filter === filterId,
@@ -308,7 +308,7 @@ const CollapsiblePanel: React.FC = () => {
                   align="top-right"
                 >
                   <OverflowMenuItem
-                    itemText={t('edit')}
+                    itemText={t('taskPanelEdit')}
                     onClick={() => {
                       setCustomFilterToEdit(filterId);
                     }}
@@ -316,7 +316,7 @@ const CollapsiblePanel: React.FC = () => {
                   <OverflowMenuItem
                     hasDivider
                     isDelete
-                    itemText={t('delete')}
+                    itemText={t('taskPanelDelete')}
                     onClick={() => {
                       setCustomFilterToDelete(filterId);
                     }}
@@ -333,7 +333,7 @@ const CollapsiblePanel: React.FC = () => {
               kind="ghost"
               size="md"
             >
-              {t('newFilter')}
+              {t('taskFilterPanelNewFilter')}
             </Button>
           </ButtonSet>
         </div>
