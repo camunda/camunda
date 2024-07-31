@@ -16,7 +16,6 @@
 package io.camunda.zeebe.client.api.search;
 
 import io.camunda.zeebe.client.api.search.TypedSearchQueryRequest.SearchRequestFilter;
-import io.camunda.zeebe.client.protocol.rest.DateFilter;
 
 /** Interface for defining user task filters in search queries. */
 public interface UserTaskFilter extends SearchRequestFilter {
@@ -86,38 +85,6 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter processInstanceKey(final Long processInstanceKey);
 
   /**
-   * Filters user tasks by the specified follow-up date.
-   *
-   * @param dateFilter the follow-up date filter
-   * @return the updated filter
-   */
-  UserTaskFilter followUpDate(final DateFilter dateFilter);
-
-  /**
-   * Filters user tasks by the specified due date.
-   *
-   * @param dateFilter the due date filter
-   * @return the updated filter
-   */
-  UserTaskFilter dueDate(final DateFilter dateFilter);
-
-  /**
-   * Filters user tasks by the specified creation date.
-   *
-   * @param dateFilter the creation date filter
-   * @return the updated filter
-   */
-  UserTaskFilter creationDate(final DateFilter dateFilter);
-
-  /**
-   * Filters user tasks by the specified completion date.
-   *
-   * @param dateFilter the completion date filter
-   * @return the updated filter
-   */
-  UserTaskFilter completionDate(final DateFilter dateFilter);
-
-  /**
    * Filters user tasks by the specified tenant ID.
    *
    * @param tenantId the tenant ID of the user task
@@ -131,5 +98,5 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param bpmnProcessId from the task
    * @return the updated filter
    */
-  UserTaskFilter bpmProcessId(final String bpmnProcessId);
+  UserTaskFilter bpmnProcessId(final String bpmnProcessId);
 }

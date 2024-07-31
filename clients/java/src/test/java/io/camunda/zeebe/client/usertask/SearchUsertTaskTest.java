@@ -17,12 +17,11 @@ package io.camunda.zeebe.client.usertask;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.protocol.rest.DateFilter;
 import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 
-public final class SearchUsertTaskTest extends ClientRestTest {
+public final class SearchUserTaskTest extends ClientRestTest {
 
   @Test
   void shouldSearchUserTask() {
@@ -54,7 +53,7 @@ public final class SearchUsertTaskTest extends ClientRestTest {
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getTaskState()).isEqualTo("completed");
+    assertThat(request.getFilter().getState()).isEqualTo("completed");
   }
 
   @Test
@@ -65,7 +64,7 @@ public final class SearchUsertTaskTest extends ClientRestTest {
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getUserTaskKey()).isEqualTo(12345L);
+    assertThat(request.getFilter().getKey()).isEqualTo(12345L);
   }
 
   @Test
@@ -121,81 +120,6 @@ public final class SearchUsertTaskTest extends ClientRestTest {
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
     assertThat(request.getFilter().getProcessInstanceKey()).isEqualTo(456L);
-  }
-
-  @Test
-  void shouldSearchUserTaskByFollowUpDate() {
-    // when
-    client
-        .newUserTaskQuery()
-        .filter(
-            f ->
-                f.followUpDate(
-                    new DateFilter().from("2023-10-01T00:00:00Z").to("2023-10-01T00:00:00Z")))
-        .send()
-        .join();
-
-    // then
-    final UserTaskSearchQueryRequest request =
-        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getFollowUpDate().getFrom()).isEqualTo("2023-10-01T00:00:00Z");
-    assertThat(request.getFilter().getFollowUpDate().getTo()).isEqualTo("2023-10-01T00:00:00Z");
-  }
-
-  @Test
-  void shouldSearchUserTaskByDueDate() {
-    // when
-    client
-        .newUserTaskQuery()
-        .filter(
-            f ->
-                f.dueDate(new DateFilter().from("2023-10-01T00:00:00Z").to("2023-10-01T00:00:00Z")))
-        .send()
-        .join();
-
-    // then
-    final UserTaskSearchQueryRequest request =
-        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getDueDate().getFrom()).isEqualTo("2023-10-01T00:00:00Z");
-    assertThat(request.getFilter().getDueDate().getTo()).isEqualTo("2023-10-01T00:00:00Z");
-  }
-
-  @Test
-  void shouldSearchUserTaskByCreationDate() {
-    // when
-    client
-        .newUserTaskQuery()
-        .filter(
-            f ->
-                f.creationDate(
-                    new DateFilter().from("2023-10-01T00:00:00Z").to("2023-10-01T00:00:00Z")))
-        .send()
-        .join();
-
-    // then
-    final UserTaskSearchQueryRequest request =
-        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getCreationDate().getFrom()).isEqualTo("2023-10-01T00:00:00Z");
-    assertThat(request.getFilter().getCreationDate().getTo()).isEqualTo("2023-10-01T00:00:00Z");
-  }
-
-  @Test
-  void shouldSearchUserTaskByCompletionDate() {
-    // when
-    client
-        .newUserTaskQuery()
-        .filter(
-            f ->
-                f.completionDate(
-                    new DateFilter().from("2023-10-01T00:00:00Z").to("2023-10-01T00:00:00Z")))
-        .send()
-        .join();
-
-    // then
-    final UserTaskSearchQueryRequest request =
-        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getCompletionDate().getFrom()).isEqualTo("2023-10-01T00:00:00Z");
-    assertThat(request.getFilter().getCompletionDate().getTo()).isEqualTo("2023-10-01T00:00:00Z");
   }
 
   @Test
