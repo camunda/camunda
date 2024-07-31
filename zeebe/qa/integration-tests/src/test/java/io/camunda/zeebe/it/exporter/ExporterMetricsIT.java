@@ -29,6 +29,8 @@ public class ExporterMetricsIT {
           .withBean(
               "collectorRegistry", CollectorRegistry.defaultRegistry, CollectorRegistry.class);
 
+  // TODO: Remove the registry bean addition when spring injects the registry into the broker
+
   @Test
   public void shouldAddMeterToExporterMetrics() throws IOException {
     // given
