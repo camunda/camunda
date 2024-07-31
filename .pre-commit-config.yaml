@@ -1,5 +1,0 @@
-repos:
-- repo: https://github.com/rhysd/actionlint
-  rev: v1.6.24
-  hooks:
-  - id: actionlint
