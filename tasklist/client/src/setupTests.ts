@@ -12,6 +12,7 @@ import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {configure} from 'modules/testing-library';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 import {reactQueryClient} from 'modules/react-query/reactQueryClient';
+import en from 'modules/internationalization/locales/en.json';
 
 function mockMatchMedia() {
   Object.defineProperty(window, 'matchMedia', {
@@ -43,6 +44,21 @@ beforeAll(() => {
   nodeMockServer.listen({
     onUnhandledRequest: 'error',
   });
+
+  vi.mock('react-i18next', () => ({
+    useTranslation: () => {
+      return {
+        t: (str: string) => (en.translation as Record<string, string>)[str],
+        i18n: {
+          changeLanguage: () => new Promise<void>(() => {}),
+        },
+      };
+    },
+    initReactI18next: {
+      type: '3rdParty',
+      init: () => {},
+    },
+  }));
 
   Object.defineProperty(window, 'clientConfig', {
     writable: true,
