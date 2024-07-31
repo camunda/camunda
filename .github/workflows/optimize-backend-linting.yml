@@ -7,12 +7,12 @@ on:
       - release/**
     paths:
       - "optimize/**"
-      - ".github/workflows/optimize-code-scanning-java.yml"
+      - ".github/workflows/optimize-backend-linting.yml"
       - "!optimize/client/**"
   pull_request:
     paths:
       - "optimize/**"
-      - ".github/workflows/optimize-code-scanning-java.yml"
+      - ".github/workflows/optimize-backend-linting.yml"
       - "!optimize/client/**"
 jobs:
   linting:
