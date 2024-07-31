@@ -5,10 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest.controller.license;
+package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.service.ManagementService;
-import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
