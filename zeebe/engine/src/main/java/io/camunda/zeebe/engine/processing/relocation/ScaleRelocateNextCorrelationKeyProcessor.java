@@ -31,6 +31,7 @@ public class ScaleRelocateNextCorrelationKeyProcessor implements TypedRecordProc
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final int partitionId;
 
   public ScaleRelocateNextCorrelationKeyProcessor(
       final KeyGenerator keyGenerator,
@@ -38,7 +39,8 @@ public class ScaleRelocateNextCorrelationKeyProcessor implements TypedRecordProc
       final MessageState messageState,
       final MessageSubscriptionState messageSubscriptionState,
       final RelocationState relocationState,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final int partitionId) {
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     commandWriter = writers.command();
@@ -46,6 +48,7 @@ public class ScaleRelocateNextCorrelationKeyProcessor implements TypedRecordProc
     this.messageSubscriptionState = messageSubscriptionState;
     this.relocationState = relocationState;
     this.commandDistributionBehavior = commandDistributionBehavior;
+    this.partitionId = partitionId;
   }
 
   @Override
@@ -55,15 +58,17 @@ public class ScaleRelocateNextCorrelationKeyProcessor implements TypedRecordProc
     if (nextCorrelationKey == null) {
       // TODO: also notify other partitions
       // TODO: Define event applier, what info do we need from the key/value?
+      final ScaleRecord partitionCompleteRecord = new ScaleRecord();
+      partitionCompleteRecord.setCompletedPartition(partitionId);
       commandWriter.appendFollowUpCommand(
-          -1, ScaleIntent.RELOCATION_ON_PARTITION_COMPLETE, new ScaleRecord());
+          -1, ScaleIntent.RELOCATION_ON_PARTITION_COMPLETE, partitionCompleteRecord);
       final var distributionKey = keyGenerator.nextKey();
 
       commandDistributionBehavior.distributeCommand(
           distributionKey,
           ValueType.SCALE,
           ScaleIntent.RELOCATION_ON_PARTITION_COMPLETE,
-          new ScaleRecord());
+          partitionCompleteRecord);
       return;
     }
 

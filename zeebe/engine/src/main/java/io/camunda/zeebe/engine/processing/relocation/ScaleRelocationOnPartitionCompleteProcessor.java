@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.relocation;
 
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -21,18 +22,26 @@ public class ScaleRelocationOnPartitionCompleteProcessor
   private final int partitionId;
   private final StateWriter stateWriter;
   private final RelocationState relocationState;
+  private final CommandDistributionBehavior commandDistributionBehavior;
 
   public ScaleRelocationOnPartitionCompleteProcessor(
-      final int partitionId, final Writers writers, final RelocationState relocationState) {
+      final int partitionId,
+      final Writers writers,
+      final RelocationState relocationState,
+      final CommandDistributionBehavior commandDistributionBehavior) {
     this.partitionId = partitionId;
     stateWriter = writers.state();
     this.relocationState = relocationState;
+    this.commandDistributionBehavior = commandDistributionBehavior;
   }
 
   @Override
   public void processRecord(final TypedRecord<ScaleRecord> record) {
     stateWriter.appendFollowUpEvent(
         record.getKey(), ScaleIntent.RELOCATION_ON_PARTITION_COMPLETED, record.getValue());
+
+    commandDistributionBehavior.acknowledgeCommand(record);
+
     if (partitionId == 1) {
       // TODO: Update state to track relocation progress
     }
