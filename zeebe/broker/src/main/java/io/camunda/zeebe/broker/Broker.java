@@ -24,12 +24,7 @@ import io.camunda.zeebe.util.LogUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import io.camunda.zeebe.util.jar.ExternalJarLoadException;
-import io.micrometer.core.instrument.Clock;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.prometheus.PrometheusConfig;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.netty.util.NetUtil;
-import io.prometheus.client.CollectorRegistry;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -65,10 +60,6 @@ public final class Broker implements AutoCloseable {
 
     healthCheckService = new BrokerHealthCheckService(localBroker);
 
-    final MeterRegistry meterRegistry =
-        new PrometheusMeterRegistry(
-            PrometheusConfig.DEFAULT, CollectorRegistry.defaultRegistry, Clock.SYSTEM);
-
     final var startupContext =
         new BrokerStartupContextImpl(
             localBroker,
@@ -82,7 +73,7 @@ public final class Broker implements AutoCloseable {
             systemContext.getBrokerClient(),
             additionalPartitionListeners,
             systemContext.getShutdownTimeout(),
-            meterRegistry);
+            systemContext.getMeterRegistry());
 
     brokerStartupActor = new BrokerStartupActor(startupContext);
     scheduler.submitActor(brokerStartupActor);

@@ -11,7 +11,6 @@ import io.camunda.zeebe.qa.util.actuator.PrometheusActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.prometheus.client.CollectorRegistry;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -25,9 +24,8 @@ public class ExporterMetricsIT {
   @TestZeebe
   private final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
-          .withExporter("foo", cfg -> cfg.setClassName(ExporterMetricsTestExporter.class.getName()))
-          .withBean(
-              "collectorRegistry", CollectorRegistry.defaultRegistry, CollectorRegistry.class);
+          .withExporter(
+              "foo", cfg -> cfg.setClassName(ExporterMetricsTestExporter.class.getName()));
 
   // TODO: Remove the registry bean addition when spring injects the registry into the broker
 
