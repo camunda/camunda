@@ -26,15 +26,15 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class ElementTreePathBuilderTest {
+  private static final AtomicLong PROCESS_DEFINITION_KEY_SEQUENCER = new AtomicLong(1000);
   @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
-
   private MutableElementInstanceState elementInstanceState;
   private MutableProcessState processState;
 
@@ -90,6 +90,7 @@ public class ElementTreePathBuilderTest {
     final String callActivityId = "callActivity";
 
     final var processARecord = createProcessInstanceRecord();
+    processARecord.setElementId("processA");
     final ElementInstance processA =
         elementInstanceState.newInstance(
             100, processARecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
@@ -97,8 +98,8 @@ public class ElementTreePathBuilderTest {
         processARecord.getProcessDefinitionKey(),
         createParentProcess(
             processARecord.getProcessDefinitionKey(),
-            "A",
-            c -> c.id(callActivityId).zeebeProcessId("B")));
+            "processA",
+            c -> c.id(callActivityId).zeebeProcessId("processB")));
 
     final var callActivityRecord =
         createProcessInstanceRecord(processARecord.getProcessDefinitionKey());
@@ -116,17 +117,17 @@ public class ElementTreePathBuilderTest {
     processState.putProcess(
         processBRecord.getProcessDefinitionKey(),
         createChildProcess(
-            processBRecord.getProcessDefinitionKey(), "B", ServiceTaskBuilder::done));
+            processBRecord.getProcessDefinitionKey(), "processB", ServiceTaskBuilder::done));
 
     final var subProcessCRecord = createProcessInstanceRecord();
-    callActivityRecord.setElementId("subProcessC");
+    subProcessCRecord.setElementId("subProcessC");
     final ElementInstance subProcessC =
         elementInstanceState.newInstance(
             processB, 103, subProcessCRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
     processState.putProcess(
         subProcessCRecord.getProcessDefinitionKey(),
         createChildProcess(
-            subProcessCRecord.getProcessDefinitionKey(), "C", ServiceTaskBuilder::done));
+            subProcessCRecord.getProcessDefinitionKey(), "subProcessC", ServiceTaskBuilder::done));
 
     // when
     final ElementTreePathBuilder builder =
@@ -150,7 +151,7 @@ public class ElementTreePathBuilderTest {
   }
 
   private ProcessInstanceRecord createProcessInstanceRecord() {
-    return createProcessInstanceRecord(ThreadLocalRandom.current().nextLong(1000));
+    return createProcessInstanceRecord(PROCESS_DEFINITION_KEY_SEQUENCER.incrementAndGet());
   }
 
   private ProcessInstanceRecord createProcessInstanceRecord(final long processDefinitionKey) {
