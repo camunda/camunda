@@ -33,7 +33,7 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
   const BASE_INFO_SIDEBAR_ITEMS = [
     {
       key: 'docs',
-      label: t('documentation'),
+      label: t('headerSidebarDocumentationLink'),
       onClick: () => {
         tracking.track({
           eventName: 'info-bar',
@@ -45,7 +45,7 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
     },
     {
       key: 'academy',
-      label: t('camundaAcademy'),
+      label: t('headerSidebarCamundaAcademyLink'),
       onClick: () => {
         tracking.track({
           eventName: 'info-bar',
@@ -58,7 +58,7 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
   ];
   const FEEDBACK_AND_SUPPORT_ITEM = {
     key: 'feedbackAndSupport',
-    label: t('feedbackAndSupport'),
+    label: t('headerSidebarFeedbackAndSupportLink'),
     onClick: () => {
       tracking.track({
         eventName: 'info-bar',
@@ -70,7 +70,7 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
   } as const;
   const COMMUNITY_FORUM_ITEM = {
     key: 'communityForum',
-    label: t('communityForum'),
+    label: t('headerSidebarCommunityForumLink'),
     onClick: () => {
       tracking.track({
         eventName: 'info-bar',
@@ -115,7 +115,7 @@ const Header: React.FC = observer(() => {
     <C3Navigation
       notificationSideBar={IS_SAAS ? {} : undefined}
       appBar={{
-        ariaLabel: t('appPanel'),
+        ariaLabel: t('headerAppBarLabel'),
         isOpen: false,
         elementClicked: (app: string) => {
           tracking.track({
@@ -144,7 +144,7 @@ const Header: React.FC = observer(() => {
           {
             isCurrentPage: !isProcessesPage,
             key: 'tasks',
-            label: t('tasks'),
+            label: t('headerNavItemTasks'),
             routeProps: {
               to: pages.initial,
               onClick: () => {
@@ -178,12 +178,12 @@ const Header: React.FC = observer(() => {
             : [
                 {
                   key: 'non-production-license',
-                  label: t('nonProductionLicense'),
+                  label: t('headerNonProductionLicenseLabel'),
                   color: 'cool-gray',
                   tooltip: {
                     content: (
                       <div>
-                        <Trans i18nKey="nonProductionLicenseLinks">
+                        <Trans i18nKey="headerNonProductionLicenseText">
                           Non-Production License. If you would like information
                           on production usage, please refer to our{' '}
                           <Link
@@ -207,24 +207,24 @@ const Header: React.FC = observer(() => {
                         </Trans>
                       </div>
                     ),
-                    buttonLabel: t('nonProductionLicense'),
+                    buttonLabel: t('headerNonProductionLicenseLabel'),
                   },
                 },
               ],
       }}
       infoSideBar={{
         isOpen: false,
-        ariaLabel: t('info'),
+        ariaLabel: t('headerInfoLabel'),
         elements: getInfoSidebarItems(
           ['paid-cc', 'enterprise'].includes(salesPlanType!),
         ),
       }}
       userSideBar={{
-        ariaLabel: t('settings'),
+        ariaLabel: t('headerSettingsLabel'),
         version: import.meta.env.VITE_VERSION,
         customElements: {
           profile: {
-            label: t('profile'),
+            label: t('headerProfileLabel'),
             user: {
               name: displayName ?? '',
               email: '',
@@ -244,7 +244,7 @@ const Header: React.FC = observer(() => {
             : [
                 {
                   key: 'cookie',
-                  label: t('cookiePreferences'),
+                  label: t('headerCookiePreferencesLabel'),
                   onClick: () => {
                     tracking.track({
                       eventName: 'user-side-bar',
@@ -259,7 +259,7 @@ const Header: React.FC = observer(() => {
               ]),
           {
             key: 'terms',
-            label: t('termsOfUse'),
+            label: t('headerTermsOfUseLabel'),
             onClick: () => {
               tracking.track({
                 eventName: 'user-side-bar',
@@ -274,7 +274,7 @@ const Header: React.FC = observer(() => {
           },
           {
             key: 'privacy',
-            label: t('privacyPolicy'),
+            label: t('headerPrivacyPolicyLabel'),
             onClick: () => {
               tracking.track({
                 eventName: 'user-side-bar',
@@ -286,7 +286,7 @@ const Header: React.FC = observer(() => {
           },
           {
             key: 'imprint',
-            label: t('imprint'),
+            label: t('headerImprintLabel'),
             onClick: () => {
               tracking.track({
                 eventName: 'user-side-bar',
@@ -301,7 +301,7 @@ const Header: React.FC = observer(() => {
           ? [
               {
                 key: 'logout',
-                label: t('logOut'),
+                label: t('headerLogOutLabel'),
                 renderIcon: ArrowRight,
                 kind: 'ghost',
                 onClick: authenticationStore.handleLogout,

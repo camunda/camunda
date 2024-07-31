@@ -282,7 +282,7 @@ const FieldsModal: React.FC<Props> = ({
                         <MultiTenancySelect
                           {...input}
                           id={input.name}
-                          labelText={t('tenantLabel')}
+                          labelText={t('multiTenancyDropdownLabel')}
                           className={styles.secondColumn}
                         />
                       )}
@@ -433,7 +433,9 @@ const FieldsModal: React.FC<Props> = ({
                                           {...input}
                                           id={input.name}
                                           className={styles.variableGridItem}
-                                          labelText={t('nameLabel')}
+                                          labelText={t(
+                                            'taskDetailsNewVariableNameFieldLabel',
+                                          )}
                                           autoFocus={
                                             index === (fields.length ?? 1) - 1
                                           }

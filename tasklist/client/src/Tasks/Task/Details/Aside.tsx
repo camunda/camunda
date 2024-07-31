@@ -40,7 +40,9 @@ const Aside: React.FC<Props> = ({task, user}) => {
         <>
           {taskTenant === undefined ? null : (
             <ContainedListItem>
-              <span className={styles.itemHeading}>{t('tenantLabel')}</span>
+              <span className={styles.itemHeading}>
+                {t('taskDetailsTenantLabel')}
+              </span>
               <br />
               <span className={styles.itemBody}>{taskTenant.name}</span>
             </ContainedListItem>

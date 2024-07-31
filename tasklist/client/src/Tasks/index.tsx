@@ -108,9 +108,8 @@ const Tasks: React.FC = observer(() => {
       <Stack
         as="section"
         className={styles.tasksPanel}
-        aria-label={t('appPanel')}
+        aria-label={t('tasksPanelLabel')}
       >
-        {' '}
         <Filters disabled={isPending} />
         <AvailableTasks
           loading={isLoading}
@@ -124,7 +123,6 @@ const Tasks: React.FC = observer(() => {
         className={styles.detailsPanel}
         aria-label={t('availableTasksTitle')}
       >
-        {' '}
         <Outlet />
       </section>
     </main>

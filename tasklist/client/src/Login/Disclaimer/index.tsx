@@ -17,7 +17,7 @@ type Props = {
 const Disclaimer: React.FC<Props> = () => {
   return window.clientConfig?.isEnterprise ? null : (
     <span className={styles.container}>
-      <Trans i18nKey="nonProductionLicenseLinks">
+      <Trans i18nKey="headerNonProductionLicenseText">
         Non-Production License. If you would like information on production
         usage, please refer to our{' '}
         <Link

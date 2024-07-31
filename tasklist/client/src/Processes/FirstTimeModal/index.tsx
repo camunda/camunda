@@ -40,10 +40,10 @@ const FirstTimeModal: React.FC = () => {
 
   return (
     <Modal
-      aria-label={t('startProcessOnDemandAriaLabel')}
-      modalHeading={t('startProcessOnDemandModalHeading')}
-      secondaryButtonText={t('cancelButtonText')}
-      primaryButtonText={t('continueButtonText')}
+      aria-label={t('processesFirstTimeModalAriaLabel')}
+      modalHeading={t('processesFirstTimeModalHeading')}
+      secondaryButtonText={t('processesFirstTimeModalCancelButtonLabel')}
+      primaryButtonText={t('processesFirstTimeModalContinueButtonLabel')}
       open={isOpen}
       onRequestClose={() => {
         goToInitialPage();
@@ -70,10 +70,10 @@ const FirstTimeModal: React.FC = () => {
             data-testid="alpha-warning-modal-image"
           />
           <div>
-            <p>{t('startProcessesOnDemandText')}</p>
-            <p>{t('executeProcessesText')}</p>
+            <p>{t('processesFirstTimeModalBodyPart1')}</p>
+            <p>{t('processesFirstTimeModalBodyPart2')}</p>
             <br />
-            <p>{t('triggerTasksOnDemandText')}</p>
+            <p>{t('processesFirstTimeModalBodyPart3')}</p>
           </div>
         </div>
       ) : null}

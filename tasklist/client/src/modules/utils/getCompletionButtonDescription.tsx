@@ -11,15 +11,15 @@ import {t} from 'i18next';
 
 function getCompletionButtonDescription(status: InlineLoadingStatus) {
   if (status === 'active') {
-    return t('completingTask');
+    return t('taskDetailsCompletingTaskMessage');
   }
 
   if (status === 'error') {
-    return t('completionFailed');
+    return t('taskDetailsCompletionFailedMessage');
   }
 
   if (status === 'finished') {
-    return t('completed');
+    return t('taskDetailsCompletedTaskMessage');
   }
 
   return undefined;

@@ -9,6 +9,7 @@
 import {InlineLoadingStatus} from '@carbon/react';
 import {AsyncActionButton} from './AsyncActionButton';
 import {t} from 'i18next';
+import {getCompletionButtonDescription} from 'modules/utils/getCompletionButtonDescription';
 
 type Props = {
   submissionState: InlineLoadingStatus;
@@ -18,22 +19,6 @@ type Props = {
   isHidden: boolean;
   isDisabled: boolean;
 };
-
-function getCompletionButtonDescription(status: InlineLoadingStatus) {
-  if (status === 'active') {
-    return t('completingTask');
-  }
-
-  if (status === 'error') {
-    return t('completionFailed');
-  }
-
-  if (status === 'finished') {
-    return t('completed');
-  }
-
-  return undefined;
-}
 
 const CompleteTaskButton: React.FC<Props> = ({
   submissionState,
@@ -55,13 +40,15 @@ const CompleteTaskButton: React.FC<Props> = ({
         type: 'submit',
         disabled: submissionState === 'active' || isDisabled,
         onClick,
-        title: isDisabled ? t('taskNotAssignedError') : undefined,
+        title: isDisabled
+          ? t('taskDetailsDisabledCompleteButtonTitle')
+          : undefined,
       }}
       status={submissionState}
       isHidden={isHidden}
       onError={onError}
     >
-      {t('completeTask')}
+      {t('taskDetailsCompleteTaskButtonLabel')}
     </AsyncActionButton>
   );
 };

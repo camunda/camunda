@@ -106,10 +106,10 @@ const StartProcessFromForm: React.FC = () => {
             .with({pageView: 'submit-success'}, () => (
               <Message
                 icon={{
-                  altText: t('successCheckmarkAltText'),
+                  altText: t('publicStartFormSuccessIconAltText'),
                   path: CheckImage,
                 }}
-                heading={t('successHeading')}
+                heading={t('publicStartFormSuccessMessageTitle')}
                 description={
                   <>
                     {t('formSubmittedSuccessfullyDescription')}

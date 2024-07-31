@@ -45,9 +45,9 @@ const MultiTenancyDropdown: React.FC<Props> = ({
       id="tenantId"
       items={currentUser?.tenants ?? []}
       itemToString={(item) => (item ? `${item.name} - ${item.id}` : '')}
-      label={t('tenantLabel')}
+      label={t('multiTenancyDropdownLabel')}
       hideLabel={hideLabel}
-      titleText={t('tenantTitle')}
+      titleText={t('multiTenancyDropdownLabel')}
       initialSelectedItem={initialSelectedItem ?? defaultTenant}
       onChange={(event) => {
         const id = event.selectedItem?.id;

@@ -78,24 +78,24 @@ const FormModal: React.FC<Props> = ({
         aria-label={`Start process ${processDisplayName}`}
         modalHeading={
           <>
-            {t('startProcessTitle', {processDisplayName})}
+            {t('processesStartProcessWithForm', {processDisplayName})}
             <Copy
-              feedback={t('copiedFeedback')}
+              feedback={t('processesStartProcessWithFormCopyURLButtonLabel')}
               onClick={() => {
                 navigator.clipboard.writeText(window.location.href);
               }}
               align="bottom"
               className="cds--copy-btn"
-              aria-label={t('shareProcessUrl')}
+              aria-label={t('processesStartProcessWithFormShareURLAriaLabel')}
             >
               <Share />
             </Copy>
           </>
         }
-        secondaryButtonText={t('cancelButtonText')}
+        secondaryButtonText={t('processesProcessTileCancelButtonLabel')}
         primaryButtonText={
           <>
-            {t('startProcessButtonText')}
+            {t('processesStartProcessWithFormStartButtonLabel')}
             {isSubmitting ? (
               <Loading
                 withOverlay={false}
@@ -186,8 +186,8 @@ const FormModal: React.FC<Props> = ({
                             role="alert"
                             hideCloseButton
                             lowContrast
-                            title={t('somethingWentWrongTitle')}
-                            subtitle={t('selectTenantSubtitle')}
+                            title={t('errorGenericErrorTitle')}
+                            subtitle={t('processesFetchErrorMissingTenant')}
                           />
                         ),
                       )
@@ -203,8 +203,10 @@ const FormModal: React.FC<Props> = ({
                             role="alert"
                             hideCloseButton
                             lowContrast
-                            title={t('somethingWentWrongTitle')}
-                            subtitle={t('formSubmitFailed')}
+                            title={t('errorGenericErrorTitle')}
+                            subtitle={t(
+                              'processesStartProcessWithModalSubmissionFailed',
+                            )}
                           />
                         ),
                       )
@@ -225,8 +227,10 @@ const FormModal: React.FC<Props> = ({
                 role="alert"
                 hideCloseButton
                 lowContrast
-                title={t('somethingWentWrongTitle')}
-                subtitle={t('formRenderingFailed')}
+                title={t('errorGenericErrorTitle')}
+                subtitle={t(
+                  'processesStartProcessWithModalFormRenderingFailed',
+                )}
               />
             ))
             .with({status: 'error'}, () => (
@@ -235,8 +239,8 @@ const FormModal: React.FC<Props> = ({
                 role="alert"
                 hideCloseButton
                 lowContrast
-                title={t('somethingWentWrongTitle')}
-                subtitle={t('formLoadFailed')}
+                title={t('errorGenericErrorTitle')}
+                subtitle={t('processesStartProcessWithModalFormLoadFailed')}
               />
             ))
             .exhaustive()}

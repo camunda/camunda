@@ -70,7 +70,7 @@ const START_FORM_FILTER_OPTIONS: FilterOption[] = [
   },
   {
     id: 'yes',
-    textKey: 'requiresFormInputToStart',
+    textKey: 'processesFormFilterRequiresForm',
     searchParamValue: 'yes',
     params: {
       isStartedByForm: true,
@@ -78,7 +78,7 @@ const START_FORM_FILTER_OPTIONS: FilterOption[] = [
   },
   {
     id: 'no',
-    textKey: 'notRequiresFormInputToStart',
+    textKey: 'processesFormFilterRequiresNoForm',
     searchParamValue: 'no',
     params: {
       isStartedByForm: false,
@@ -100,8 +100,8 @@ const FilterDropdown: React.FC<{
       className={styles.dropdown}
       hideLabel
       selectedItem={selected}
-      titleText={t('filterProcesses')}
-      label={t('filterProcessesLabel')}
+      titleText={t('processesFilterDropdownLabel')}
+      label={t('processesFilterDropdownLabel')}
       items={items}
       itemToString={(item) => (item ? t(item.textKey) : '')}
       onChange={(data) => {
@@ -203,8 +203,8 @@ const Processes: React.FC = observer(() => {
         kind: 'error',
         title:
           bpmnProcessId === null
-            ? t('processDoesNotExistNoStartForm')
-            : t('processDoesNotExistWithForm', {bpmnProcessId}),
+            ? t('processesStartFormNotFound')
+            : t('processesProcessNoFormOrNotExistError', {bpmnProcessId}),
       });
       navigate({
         ...location,
@@ -233,9 +233,9 @@ const Processes: React.FC = observer(() => {
 
   const processSearchProps: React.ComponentProps<typeof Search> = {
     size: 'md',
-    placeholder: t('searchProcesses'),
-    labelText: t('searchProcessesLabel'),
-    closeButtonLabelText: t('clearSearchProcesses'),
+    placeholder: t('processesFilterFieldLabel'),
+    labelText: t('processesFilterFieldLabel'),
+    closeButtonLabelText: t('processesClearFilterFieldButtonLabel'),
     value: searchValue,
     onChange: (event) => {
       setSearchValue(event.target.value);
@@ -267,7 +267,7 @@ const Processes: React.FC = observer(() => {
                 <Column sm={4} md={8} lg={16}>
                   <Stack gap={4}>
                     <h1>{t('processes')}</h1>
-                    <p>{t('browseAndRunProcesses')}</p>
+                    <p>{t('processesSubtitle')}</p>
                   </Stack>
                 </Column>
               </Grid>
@@ -349,12 +349,12 @@ const Processes: React.FC = observer(() => {
                     }
                     heading={
                       isFiltered
-                        ? t('noProcessFoundWithThatName')
-                        : t('noPublishedProcessesYet')
+                        ? t('processesProcessNotFoundError')
+                        : t('processesProcessNotPublishedError')
                     }
                     description={
                       <span data-testid="empty-message">
-                        {t('contactYourProcessAdministrator')}
+                        {t('processesErrorBody')}
                         <Link
                           href="https://docs.camunda.io/docs/components/modeler/web-modeler/run-or-publish-your-process/#publishing-a-process"
                           target="_blank"
@@ -366,7 +366,7 @@ const Processes: React.FC = observer(() => {
                             });
                           }}
                         >
-                          {t('learnHowToPublishProcesses')}
+                          {t('processesErrorBodyLinkLabel')}
                         </Link>
                       </span>
                     }

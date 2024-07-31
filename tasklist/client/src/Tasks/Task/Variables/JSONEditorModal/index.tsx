@@ -84,7 +84,7 @@ const JSONEditorModal: React.FC<Props> = observer(
         primaryButtonDisabled={!isValid}
         preventCloseOnClickOutside
         primaryButtonText={t('applyButtonText')}
-        secondaryButtonText={t('cancelButtonText')}
+        secondaryButtonText={t('taskDetailsJSONEditorCancelButtonLabel')}
         size="lg"
       >
         {isOpen ? (

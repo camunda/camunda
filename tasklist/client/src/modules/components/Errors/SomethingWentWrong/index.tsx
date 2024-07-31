@@ -21,10 +21,10 @@ const SomethingWentWrong: React.FC<{className?: string}> = ({className}) => {
         <Stack gap={6} orientation="horizontal">
           <ErrorRobot />
           <Stack gap={4}>
-            <Heading>{t('somethingWentWrongTitle')}</Heading>
-            <p>{t('pageCouldNotBeLoaded')}</p>
+            <Heading>{t('errorGenericErrorTitle')}</Heading>
+            <p>{t('errorGenericErrorMessage')}</p>
             <Button kind="primary" onClick={() => window.location.reload()}>
-              {t('tryAgain')}
+              {t('errorGenericErrorButtonLabel')}
             </Button>
           </Stack>
         </Stack>
