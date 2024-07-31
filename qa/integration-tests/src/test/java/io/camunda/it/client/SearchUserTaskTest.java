@@ -17,6 +17,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -29,8 +30,6 @@ import org.junit.jupiter.api.Test;
 class SearchUserTaskTest {
   @TestZeebe static final TestStandaloneCamunda testStandaloneCamunda = new TestStandaloneCamunda();
 
-  private static final DateTimeFormatter DATE_FORMAT =
-      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
   private static final ZoneId UTC_ZONE_ID = ZoneId.of("UTC");
   private static final ZeebeClient camundaClient = testStandaloneCamunda.newClientBuilder().build();
   private static Long userTaskKeyTaskAssigned;
@@ -107,13 +106,13 @@ class SearchUserTaskTest {
 
   @Test
   public void shouldRetrieveTaskByCompletionDate() {
-    final LocalDateTime now = LocalDateTime.now(UTC_ZONE_ID);
+    final OffsetDateTime now = OffsetDateTime.now(ZoneId.of(String.valueOf(UTC_ZONE_ID)));
 
-    final LocalDateTime dayBefore = now.minusDays(1);
-    final LocalDateTime dayAfter = now.plusDays(1);
+    final OffsetDateTime dayBefore = now.minusDays(1);
+    final OffsetDateTime dayAfter = now.plusDays(1);
 
     final DateFilter dateFilter =
-        new DateFilter().from(formatDateTime(dayBefore)).to(formatDateTime(dayAfter));
+        new DateFilter().from(dayBefore.toString()).to(dayAfter.toString());
 
     final var result =
         camundaClient.newUserTaskQuery().filter(f -> f.completionDate(dateFilter)).send().join();
@@ -121,13 +120,11 @@ class SearchUserTaskTest {
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getState()).isEqualTo("COMPLETED");
 
-    final LocalDateTime outOfRangeDayBefore = now.minusDays(2);
-    final LocalDateTime outOfRangeDayAfter = now.minusDays(1);
+    final OffsetDateTime outOfRangeDayBefore = now.minusDays(2);
+    final OffsetDateTime outOfRangeDayAfter = now.minusDays(1);
 
     final DateFilter dateFilterOutOfRange =
-        new DateFilter()
-            .from(formatDateTime(outOfRangeDayBefore))
-            .to(formatDateTime(outOfRangeDayAfter));
+        new DateFilter().from(outOfRangeDayBefore.toString()).to(outOfRangeDayAfter.toString());
     final var resultOutOfRange =
         camundaClient
             .newUserTaskQuery()
@@ -139,26 +136,24 @@ class SearchUserTaskTest {
 
   @Test
   public void shouldRetrieveTaskByCreationDate() {
-    final LocalDateTime now = LocalDateTime.now(UTC_ZONE_ID);
+    final OffsetDateTime now = OffsetDateTime.now(ZoneId.of(String.valueOf(UTC_ZONE_ID)));
 
-    final LocalDateTime dayBefore = now.minusDays(1);
-    final LocalDateTime dayAfter = now.plusDays(1);
+    final OffsetDateTime dayBefore = now.minusDays(1);
+    final OffsetDateTime dayAfter = now.plusDays(1);
 
     final DateFilter dateFilter =
-        new DateFilter().from(formatDateTime(dayBefore)).to(formatDateTime(dayAfter));
+        new DateFilter().from(dayBefore.toString()).to(dayAfter.toString());
 
     final var result =
         camundaClient.newUserTaskQuery().filter(f -> f.creationDate(dateFilter)).send().join();
 
     assertThat(result.items().size()).isEqualTo(3);
 
-    final LocalDateTime outOfRangeDayBefore = now.minusDays(2);
-    final LocalDateTime outOfRangeDayAfter = now.minusDays(1);
+    final OffsetDateTime outOfRangeDayBefore = now.minusDays(2);
+    final OffsetDateTime outOfRangeDayAfter = now.minusDays(1);
 
     final DateFilter dateFilterOutOfRange =
-        new DateFilter()
-            .from(formatDateTime(outOfRangeDayBefore))
-            .to(formatDateTime(outOfRangeDayAfter));
+        new DateFilter().from(outOfRangeDayBefore.toString()).to(outOfRangeDayAfter.toString());
     final var resultOutOfRange =
         camundaClient
             .newUserTaskQuery()
@@ -170,26 +165,24 @@ class SearchUserTaskTest {
 
   @Test
   public void shouldRetrieveTaskByDueDate() {
-    final LocalDateTime now = LocalDateTime.now(UTC_ZONE_ID);
+    final OffsetDateTime now = OffsetDateTime.now(ZoneId.of(String.valueOf(UTC_ZONE_ID)));
 
-    final LocalDateTime dayBefore = now.minusDays(4);
-    final LocalDateTime dayAfter = now.plusDays(3);
+    final OffsetDateTime dayBefore = now.minusDays(4);
+    final OffsetDateTime dayAfter = now.plusDays(3);
 
     final DateFilter dateFilter =
-        new DateFilter().from(formatDateTime(dayBefore)).to(formatDateTime(dayAfter));
+        new DateFilter().from(dayBefore.toString()).to(dayAfter.toString());
 
     final var result =
         camundaClient.newUserTaskQuery().filter(f -> f.dueDate(dateFilter)).send().join();
 
     assertThat(result.items().size()).isEqualTo(3);
 
-    final LocalDateTime outOfRangeDayBefore = now.minusDays(7);
-    final LocalDateTime outOfRangeDayAfter = now.minusDays(4);
+    final OffsetDateTime outOfRangeDayBefore = now.minusDays(7);
+    final OffsetDateTime outOfRangeDayAfter = now.minusDays(4);
 
     final DateFilter dateFilterOutOfRange =
-        new DateFilter()
-            .from(formatDateTime(outOfRangeDayBefore))
-            .to(formatDateTime(outOfRangeDayAfter));
+        new DateFilter().from(outOfRangeDayBefore.toString()).to(outOfRangeDayAfter.toString());
     final var resultOutOfRange =
         camundaClient.newUserTaskQuery().filter(f -> f.dueDate(dateFilterOutOfRange)).send().join();
     assertThat(resultOutOfRange.items().size()).isEqualTo(0);
@@ -197,26 +190,24 @@ class SearchUserTaskTest {
 
   @Test
   public void shouldRetrieveTaskByFollowUpDate() {
-    final LocalDateTime now = LocalDateTime.now(UTC_ZONE_ID);
+    final OffsetDateTime now = OffsetDateTime.now(ZoneId.of(String.valueOf(UTC_ZONE_ID)));
 
-    final LocalDateTime dayBefore = now.minusDays(4);
-    final LocalDateTime dayAfter = now.plusDays(3);
+    final OffsetDateTime dayBefore = now.minusDays(4);
+    final OffsetDateTime dayAfter = now.plusDays(3);
 
     final DateFilter dateFilter =
-        new DateFilter().from(formatDateTime(dayBefore)).to(formatDateTime(dayAfter));
+        new DateFilter().from(dayBefore.toString()).to(dayAfter.toString());
 
     final var result =
         camundaClient.newUserTaskQuery().filter(f -> f.followUpDate(dateFilter)).send().join();
 
     assertThat(result.items().size()).isEqualTo(3);
 
-    final LocalDateTime outOfRangeDayBefore = now.minusDays(7);
-    final LocalDateTime outOfRangeDayAfter = now.minusDays(4);
+    final OffsetDateTime outOfRangeDayBefore = now.minusDays(7);
+    final OffsetDateTime outOfRangeDayAfter = now.minusDays(4);
 
     final DateFilter dateFilterOutOfRange =
-        new DateFilter()
-            .from(formatDateTime(outOfRangeDayBefore))
-            .to(formatDateTime(outOfRangeDayAfter));
+        new DateFilter().from(outOfRangeDayBefore.toString()).to(outOfRangeDayAfter.toString());
     final var resultOutOfRange =
         camundaClient
             .newUserTaskQuery()
@@ -360,9 +351,5 @@ class SearchUserTaskTest {
                   camundaClient.newUserTaskQuery().filter(f -> f.state("COMPLETED")).send().join();
               assertThat(resultComplete.items().size()).isEqualTo(1);
             });
-  }
-
-  private static String formatDateTime(final LocalDateTime dateTime) {
-    return dateTime.atZone(UTC_ZONE_ID).format(DATE_FORMAT);
   }
 }
