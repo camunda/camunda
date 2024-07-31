@@ -9,16 +9,16 @@ package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.protocol.rest.DateFilter;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.protocol.rest.DateFilter;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import org.awaitility.Awaitility;
@@ -29,7 +29,10 @@ import org.junit.jupiter.api.Test;
 class SearchUserTaskTest {
   @TestZeebe static final TestStandaloneCamunda testStandaloneCamunda = new TestStandaloneCamunda();
 
-  static final CamundaClient camundaClient = testStandaloneCamunda.newClientBuilder().build();
+  private static final DateTimeFormatter DATE_FORMAT =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+  private static final ZoneId UTC_ZONE_ID = ZoneId.of("UTC");
+  private static final ZeebeClient camundaClient = testStandaloneCamunda.newClientBuilder().build();
   private static Long userTaskKeyTaskAssigned;
 
   @BeforeAll
@@ -104,15 +107,13 @@ class SearchUserTaskTest {
 
   @Test
   public void shouldRetrieveTaskByCompletionDate() {
-    final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-    final ZoneId utcZoneId = ZoneId.of("UTC");
-
-    final LocalDateTime now = LocalDateTime.now(utcZoneId);
+    final LocalDateTime now = LocalDateTime.now(UTC_ZONE_ID);
 
     final LocalDateTime dayBefore = now.minusDays(1);
     final LocalDateTime dayAfter = now.plusDays(1);
 
-    final DateFilter dateFilter = new DateFilter().from(dayBefore.format(dateFormat)).to(dayAfter.format(dateFormat));
+    final DateFilter dateFilter =
+        new DateFilter().from(formatDateTime(dayBefore)).to(formatDateTime(dayAfter));
 
     final var result =
         camundaClient.newUserTaskQuery().filter(f -> f.completionDate(dateFilter)).send().join();
@@ -123,7 +124,10 @@ class SearchUserTaskTest {
     final LocalDateTime outOfRangeDayBefore = now.minusDays(2);
     final LocalDateTime outOfRangeDayAfter = now.minusDays(1);
 
-    final DateFilter dateFilterOutOfRange = new DateFilter().from(outOfRangeDayBefore.format(dateFormat)).to(outOfRangeDayAfter.format(dateFormat));
+    final DateFilter dateFilterOutOfRange =
+        new DateFilter()
+            .from(formatDateTime(outOfRangeDayBefore))
+            .to(formatDateTime(outOfRangeDayAfter));
     final var resultOutOfRange =
         camundaClient
             .newUserTaskQuery()
@@ -135,15 +139,13 @@ class SearchUserTaskTest {
 
   @Test
   public void shouldRetrieveTaskByCreationDate() {
-    final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-    final ZoneId utcZoneId = ZoneId.of("UTC");
-
-    final LocalDateTime now = LocalDateTime.now(utcZoneId);
+    final LocalDateTime now = LocalDateTime.now(UTC_ZONE_ID);
 
     final LocalDateTime dayBefore = now.minusDays(1);
     final LocalDateTime dayAfter = now.plusDays(1);
 
-    final DateFilter dateFilter = new DateFilter().from(dayBefore.format(dateFormat)).to(dayAfter.format(dateFormat));
+    final DateFilter dateFilter =
+        new DateFilter().from(formatDateTime(dayBefore)).to(formatDateTime(dayAfter));
 
     final var result =
         camundaClient.newUserTaskQuery().filter(f -> f.creationDate(dateFilter)).send().join();
@@ -153,7 +155,10 @@ class SearchUserTaskTest {
     final LocalDateTime outOfRangeDayBefore = now.minusDays(2);
     final LocalDateTime outOfRangeDayAfter = now.minusDays(1);
 
-    final DateFilter dateFilterOutOfRange = new DateFilter().from(outOfRangeDayBefore.format(dateFormat)).to(outOfRangeDayAfter.format(dateFormat));
+    final DateFilter dateFilterOutOfRange =
+        new DateFilter()
+            .from(formatDateTime(outOfRangeDayBefore))
+            .to(formatDateTime(outOfRangeDayAfter));
     final var resultOutOfRange =
         camundaClient
             .newUserTaskQuery()
@@ -165,15 +170,13 @@ class SearchUserTaskTest {
 
   @Test
   public void shouldRetrieveTaskByDueDate() {
-    final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-    final ZoneId utcZoneId = ZoneId.of("UTC");
-
-    final LocalDateTime now = LocalDateTime.now(utcZoneId);
+    final LocalDateTime now = LocalDateTime.now(UTC_ZONE_ID);
 
     final LocalDateTime dayBefore = now.minusDays(4);
     final LocalDateTime dayAfter = now.plusDays(3);
 
-    final DateFilter dateFilter = new DateFilter().from(dayBefore.format(dateFormat)).to(dayAfter.format(dateFormat));
+    final DateFilter dateFilter =
+        new DateFilter().from(formatDateTime(dayBefore)).to(formatDateTime(dayAfter));
 
     final var result =
         camundaClient.newUserTaskQuery().filter(f -> f.dueDate(dateFilter)).send().join();
@@ -183,7 +186,10 @@ class SearchUserTaskTest {
     final LocalDateTime outOfRangeDayBefore = now.minusDays(7);
     final LocalDateTime outOfRangeDayAfter = now.minusDays(4);
 
-    final DateFilter dateFilterOutOfRange = new DateFilter().from(outOfRangeDayBefore.format(dateFormat)).to(outOfRangeDayAfter.format(dateFormat));
+    final DateFilter dateFilterOutOfRange =
+        new DateFilter()
+            .from(formatDateTime(outOfRangeDayBefore))
+            .to(formatDateTime(outOfRangeDayAfter));
     final var resultOutOfRange =
         camundaClient.newUserTaskQuery().filter(f -> f.dueDate(dateFilterOutOfRange)).send().join();
     assertThat(resultOutOfRange.items().size()).isEqualTo(0);
@@ -191,15 +197,13 @@ class SearchUserTaskTest {
 
   @Test
   public void shouldRetrieveTaskByFollowUpDate() {
-    final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-    final ZoneId utcZoneId = ZoneId.of("UTC");
-
-    final LocalDateTime now = LocalDateTime.now(utcZoneId);
+    final LocalDateTime now = LocalDateTime.now(UTC_ZONE_ID);
 
     final LocalDateTime dayBefore = now.minusDays(4);
     final LocalDateTime dayAfter = now.plusDays(3);
 
-    final DateFilter dateFilter = new DateFilter().from(dayBefore.format(dateFormat)).to(dayAfter.format(dateFormat));
+    final DateFilter dateFilter =
+        new DateFilter().from(formatDateTime(dayBefore)).to(formatDateTime(dayAfter));
 
     final var result =
         camundaClient.newUserTaskQuery().filter(f -> f.followUpDate(dateFilter)).send().join();
@@ -209,7 +213,10 @@ class SearchUserTaskTest {
     final LocalDateTime outOfRangeDayBefore = now.minusDays(7);
     final LocalDateTime outOfRangeDayAfter = now.minusDays(4);
 
-    final DateFilter dateFilterOutOfRange = new DateFilter().from(outOfRangeDayBefore.format(dateFormat)).to(outOfRangeDayAfter.format(dateFormat));
+    final DateFilter dateFilterOutOfRange =
+        new DateFilter()
+            .from(formatDateTime(outOfRangeDayBefore))
+            .to(formatDateTime(outOfRangeDayAfter));
     final var resultOutOfRange =
         camundaClient
             .newUserTaskQuery()
@@ -292,7 +299,8 @@ class SearchUserTaskTest {
       final String userTaskName,
       final String candidateGroup,
       final String candidateUser) {
-    final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    final DateTimeFormatter dateFormat =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     final ZoneId utcZoneId = ZoneId.of("UTC");
 
     final LocalDateTime now = LocalDateTime.now(utcZoneId);
@@ -352,5 +360,9 @@ class SearchUserTaskTest {
                   camundaClient.newUserTaskQuery().filter(f -> f.state("COMPLETED")).send().join();
               assertThat(resultComplete.items().size()).isEqualTo(1);
             });
+  }
+
+  private static String formatDateTime(final LocalDateTime dateTime) {
+    return dateTime.atZone(UTC_ZONE_ID).format(DATE_FORMAT);
   }
 }

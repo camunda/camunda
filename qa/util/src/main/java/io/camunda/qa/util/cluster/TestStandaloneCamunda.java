@@ -7,10 +7,6 @@
  */
 package io.camunda.qa.util.cluster;
 
-import com.github.dockerjava.api.model.ExposedPort;
-import com.github.dockerjava.api.model.HostConfig;
-import com.github.dockerjava.api.model.PortBinding;
-import com.github.dockerjava.api.model.Ports;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
@@ -72,16 +68,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
           .withEnv("xpack.security.enabled", "false")
           .withEnv("xpack.watcher.enabled", "false")
           .withEnv("xpack.ml.enabled", "false")
-          .withEnv("action.destructive_requires_name", "false")
-          .withExposedPorts(9200, 9300) // Expose the ports used by Elasticsearch
-          .withCreateContainerCmdModifier(
-              cmd ->
-                  cmd.withHostConfig(
-                      new HostConfig()
-                          .withPortBindings(
-                              new PortBinding(Ports.Binding.bindPort(9200), new ExposedPort(9200)),
-                              new PortBinding(
-                                  Ports.Binding.bindPort(9300), new ExposedPort(9300)))));
+          .withEnv("action.destructive_requires_name", "false");
   private final BrokerBasedProperties brokerProperties;
   private final OperateProperties operateProperties;
   private final TasklistProperties tasklistProperties;
@@ -169,7 +156,11 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     // because @ConditionalOnRestGatewayEnabled relies on the zeebe.broker.gateway.enable property,
     // we need to hook in at the last minute and set the property as it won't resolve from the
     // config bean
+    final String esURL = String.format("http://%s", esContainer.getHttpHostAddress());
+
     withProperty("zeebe.broker.gateway.enable", brokerProperties.getGateway().isEnable());
+    withProperty("camunda.rest.query.enabled", true);
+    withProperty("camunda.database.url", esURL);
     return super.createSpringBuilder();
   }
 
