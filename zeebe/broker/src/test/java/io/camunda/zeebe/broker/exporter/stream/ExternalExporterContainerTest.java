@@ -148,7 +148,6 @@ final class ExternalExporterContainerTest {
     final var exporterClass = createUnloadedExporter(ExporterWithMetrics.class);
     final var jarFile = exporterClass.toJar(new File(jarDirectory, "exporter.jar"));
     final var descriptor = runtime.loadExternalExporter(jarFile, EXPORTER_CLASS_NAME);
-    final var expectedClassLoader = descriptor.newInstance().getClass().getClassLoader();
 
     final var registry = new SimpleMeterRegistry();
 
