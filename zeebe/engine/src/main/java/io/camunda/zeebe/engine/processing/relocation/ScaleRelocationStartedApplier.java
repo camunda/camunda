@@ -23,6 +23,8 @@ public class ScaleRelocationStartedApplier implements TypedEventApplier<ScaleInt
 
   @Override
   public void applyState(final long key, final ScaleRecord value) {
+    // TODO: Do not simply overwrite, but merge to handle the case where this partition received
+    // RELOCATION_START and RELOCATION_ON_PARTITION_COMPLETED out of order.
     relocationState.setRoutingInfo(
         new RoutingInfo(
             value.getRoutingInfo().currentPartitionCount(),

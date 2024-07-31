@@ -43,6 +43,8 @@ public class ScaleRelocationOnPartitionCompleteProcessor
     if (partitionId == 1) {
       // TODO: Update state to track relocation progress
     }
+    // TODO: local routing info should be merged with the routing info from the received record to
+    // handle the case where this partition has not received "RELOCATION_START" command yet.
     final var routingInfo = relocationState.getRoutingInfo();
     if (routingInfo.completedPartitions().size() == routingInfo.newPartitionCount()) {
       stateWriter.appendFollowUpEvent(
