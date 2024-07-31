@@ -11,12 +11,15 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.service.entities.DecisionDefinitionEntity;
 import io.camunda.service.entities.ProcessInstanceEntity;
+import io.camunda.service.entities.UserTaskEntity;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResponse;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -44,6 +47,17 @@ public final class SearchQueryResponseMapper {
         .items(
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toDecisionDefinitions)
+                .orElseGet(Collections::emptyList));
+  }
+
+  public static UserTaskSearchQueryResponse toUserTaskSearchQueryResponse(
+      final SearchQueryResult<UserTaskEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new UserTaskSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toUserTasks)
                 .orElseGet(Collections::emptyList));
   }
 
@@ -89,5 +103,32 @@ public final class SearchQueryResponseMapper {
         .decisionRequirementsId(d.decisionRequirementsId())
         .decisionRequirementsName(d.decisionRequirementsName())
         .decisionRequirementsVersion(d.decisionRequirementsVersion());
+  }
+
+  private static List<UserTaskItem> toUserTasks(final List<UserTaskEntity> tasks) {
+    return tasks.stream().map(SearchQueryResponseMapper::toUserTask).toList();
+  }
+
+  private static UserTaskItem toUserTask(final UserTaskEntity t) {
+    return new UserTaskItem()
+        .tenantIds(t.tenantId())
+        .key(t.key())
+        .processInstanceKey(t.processInstanceId())
+        .processDefinitionKey(t.processDefinitionId())
+        .elementInstanceKey(t.flowNodeInstanceId())
+        .bpmnProcessId(t.bpmnProcessId())
+        .state(t.state())
+        .assignee(t.assignee())
+        .candidateUser(t.candidateUsers())
+        .candidateGroup(t.candidateGroups())
+        .formKey(t.formKey())
+        .elementId(t.flowNodeBpmnId())
+        .creationDate(t.creationTime())
+        .completionDate(t.completionTime())
+        .dueDate(t.dueDate())
+        .followUpDate(t.followUpDate())
+        .externalFormReference(t.externalFormReference())
+        .processDefinitionVersion(t.processDefinitionVersion())
+        .customHeaders(t.customHeaders());
   }
 }
