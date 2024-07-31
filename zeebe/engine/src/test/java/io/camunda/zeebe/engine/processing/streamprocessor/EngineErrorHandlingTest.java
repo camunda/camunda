@@ -117,7 +117,8 @@ public final class EngineErrorHandlingTest {
                             .appendFollowUpEvent(
                                 record.getKey(), DeploymentIntent.CREATED, record.getValue());
                       }
-                    }));
+                    }),
+        1);
 
     final long failingKey = keyGenerator.nextKey();
     streams
@@ -190,7 +191,8 @@ public final class EngineErrorHandlingTest {
                   ValueType.PROCESS_INSTANCE,
                   ProcessInstanceIntent.ACTIVATE_ELEMENT,
                   errorProneProcessor);
-        });
+        },
+        1);
 
     final long failingEventPosition =
         streams
@@ -235,7 +237,8 @@ public final class EngineErrorHandlingTest {
                       throw new NullPointerException();
                     }
                   });
-        });
+        },
+        1);
 
     final long failingEventPosition =
         streams
@@ -279,7 +282,8 @@ public final class EngineErrorHandlingTest {
                   ValueType.PROCESS_INSTANCE,
                   ProcessInstanceIntent.COMPLETE_ELEMENT,
                   dumpProcessorRef.get());
-        });
+        },
+        1);
 
     streams
         .newRecord(STREAM_NAME)
@@ -364,7 +368,8 @@ public final class EngineErrorHandlingTest {
                   ValueType.PROCESS_INSTANCE,
                   ProcessInstanceIntent.ACTIVATE_ELEMENT,
                   new DumpProcessor(processingContext.getWriters()));
-        });
+        },
+        1);
 
     // when
     latch.await(2000, TimeUnit.MILLISECONDS);
@@ -417,7 +422,8 @@ public final class EngineErrorHandlingTest {
                               Records.processInstance(processInstanceKey));
                     }
                   });
-        });
+        },
+        1);
 
     streams
         .newRecord(STREAM_NAME)
@@ -512,7 +518,8 @@ public final class EngineErrorHandlingTest {
                               Records.timer(TimerInstance.NO_ELEMENT_INSTANCE));
                     }
                   });
-        });
+        },
+        1);
 
     streams
         .newRecord(STREAM_NAME)

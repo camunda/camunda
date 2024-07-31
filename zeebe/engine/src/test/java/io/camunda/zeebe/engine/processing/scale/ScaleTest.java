@@ -40,7 +40,7 @@ public class ScaleTest {
           .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
           .endEvent("end")
           .done();
-  @Rule public final EngineRule engine = EngineRule.multiplePartition(3);
+  @Rule public final EngineRule engine = new EngineRule(3, 1);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

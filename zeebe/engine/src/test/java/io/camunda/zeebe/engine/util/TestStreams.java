@@ -206,9 +206,16 @@ public final class TestStreams {
   public StreamProcessor startStreamProcessor(
       final String log,
       final ZeebeDbFactory zeebeDbFactory,
-      final TypedRecordProcessorFactory typedRecordProcessorFactory) {
+      final TypedRecordProcessorFactory typedRecordProcessorFactory,
+      final int numberOfPartitions) {
     return startStreamProcessor(
-        log, zeebeDbFactory, typedRecordProcessorFactory, Optional.empty(), cfg -> {}, true);
+        log,
+        zeebeDbFactory,
+        typedRecordProcessorFactory,
+        Optional.empty(),
+        cfg -> {},
+        true,
+        numberOfPartitions);
   }
 
   public StreamProcessor startStreamProcessor(
@@ -217,7 +224,8 @@ public final class TestStreams {
       final TypedRecordProcessorFactory typedRecordProcessorFactory,
       final Optional<StreamProcessorListener> streamProcessorListenerOpt,
       final Consumer<StreamProcessorBuilder> processorConfiguration,
-      final boolean awaitOpening) {
+      final boolean awaitOpening,
+      final int routingPartitionCount) {
     final SynchronousLogStream stream = getLogStream(log);
     return buildStreamProcessor(
         stream,
@@ -225,7 +233,8 @@ public final class TestStreams {
         processorConfiguration,
         typedRecordProcessorFactory,
         awaitOpening,
-        streamProcessorListenerOpt);
+        streamProcessorListenerOpt,
+        routingPartitionCount);
   }
 
   public StreamProcessor buildStreamProcessor(
@@ -234,7 +243,8 @@ public final class TestStreams {
       final Consumer<StreamProcessorBuilder> processorConfiguration,
       final TypedRecordProcessorFactory factory,
       final boolean awaitOpening,
-      final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt,
+      final int routingPartitionCount) {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
 
@@ -263,6 +273,7 @@ public final class TestStreams {
     final var builder =
         StreamProcessor.builder()
             .logStream(stream.getAsyncLogStream())
+            .numberOfPartitions(routingPartitionCount)
             .zeebeDb(zeebeDb)
             .actorSchedulingService(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)

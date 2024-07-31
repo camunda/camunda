@@ -63,10 +63,12 @@ public class StreamProcessingComposite implements CommandWriter {
 
   public StreamProcessor startTypedStreamProcessor(
       final StreamProcessorTestFactory factory,
-      final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt,
+      final int numberOfPartitions) {
     return startTypedStreamProcessor(
         (processingContext) -> createTypedRecordProcessors(factory, processingContext),
-        streamProcessorListenerOpt);
+        streamProcessorListenerOpt,
+        numberOfPartitions);
   }
 
   private TypedRecordProcessors createTypedRecordProcessors(
@@ -82,9 +84,10 @@ public class StreamProcessingComposite implements CommandWriter {
 
   public StreamProcessor startTypedStreamProcessor(
       final TypedRecordProcessorFactory factory,
-      final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt,
+      final int numberOfPartitions) {
     return startTypedStreamProcessor(
-        partitionId, factory, streamProcessorListenerOpt, cfg -> {}, true);
+        partitionId, factory, streamProcessorListenerOpt, cfg -> {}, true, numberOfPartitions);
   }
 
   public StreamProcessor startTypedStreamProcessor(
@@ -92,7 +95,8 @@ public class StreamProcessingComposite implements CommandWriter {
       final TypedRecordProcessorFactory factory,
       final Optional<StreamProcessorListener> streamProcessorListenerOpt,
       final Consumer<StreamProcessorBuilder> processorConfiguration,
-      final boolean awaitOpening) {
+      final boolean awaitOpening,
+      final int routingPartitionCount) {
     final var result =
         streams.startStreamProcessor(
             getLogName(partitionId),
@@ -104,7 +108,8 @@ public class StreamProcessingComposite implements CommandWriter {
             }),
             streamProcessorListenerOpt,
             processorConfiguration,
-            awaitOpening);
+            awaitOpening,
+            routingPartitionCount);
 
     return result;
   }

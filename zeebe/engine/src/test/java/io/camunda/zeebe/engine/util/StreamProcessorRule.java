@@ -65,6 +65,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   private ListLogStorage sharedStorage = null;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private int maxCommandsInBatch = StreamProcessorContext.DEFAULT_MAX_COMMANDS_IN_BATCH;
+  private final int routingPartitionCount;
 
   public StreamProcessorRule() {
     this(new TemporaryFolder());
@@ -75,11 +76,11 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   }
 
   public StreamProcessorRule(final int partitionId) {
-    this(partitionId, 1, DefaultZeebeDbFactory.defaultFactory(), new TemporaryFolder());
+    this(partitionId, 1, 1, DefaultZeebeDbFactory.defaultFactory(), new TemporaryFolder());
   }
 
   public StreamProcessorRule(final int partitionId, final TemporaryFolder temporaryFolder) {
-    this(partitionId, 1, DefaultZeebeDbFactory.defaultFactory(), temporaryFolder);
+    this(partitionId, 1, 1, DefaultZeebeDbFactory.defaultFactory(), temporaryFolder);
   }
 
   public StreamProcessorRule(
@@ -87,7 +88,17 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final int partitionCount,
       final ZeebeDbFactory dbFactory,
       final ListLogStorage sharedStorage) {
-    this(startPartitionId, partitionCount, dbFactory, new TemporaryFolder());
+    this(startPartitionId, partitionCount, partitionCount, dbFactory, new TemporaryFolder());
+    this.sharedStorage = sharedStorage;
+  }
+
+  public StreamProcessorRule(
+      final int startPartitionId,
+      final int partitionCount,
+      final int routingPartitionCount,
+      final ZeebeDbFactory dbFactory,
+      final ListLogStorage sharedStorage) {
+    this(startPartitionId, partitionCount, routingPartitionCount, dbFactory, new TemporaryFolder());
     this.sharedStorage = sharedStorage;
   }
 
@@ -96,8 +107,18 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final int partitionCount,
       final ZeebeDbFactory dbFactory,
       final TemporaryFolder temporaryFolder) {
+    this(startPartitionId, partitionCount, partitionCount, dbFactory, temporaryFolder);
+  }
+
+  public StreamProcessorRule(
+      final int startPartitionId,
+      final int partitionCount,
+      final int routingPartitionCount,
+      final ZeebeDbFactory dbFactory,
+      final TemporaryFolder temporaryFolder) {
     this.startPartitionId = startPartitionId;
     this.partitionCount = partitionCount;
+    this.routingPartitionCount = routingPartitionCount;
 
     final SetupRule rule = new SetupRule(startPartitionId, partitionCount);
 
@@ -133,7 +154,8 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   public StreamProcessor startTypedStreamProcessor(
       final StreamProcessorTestFactory factory,
       final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
-    return streamProcessingComposite.startTypedStreamProcessor(factory, streamProcessorListenerOpt);
+    return streamProcessingComposite.startTypedStreamProcessor(
+        factory, streamProcessorListenerOpt, partitionCount);
   }
 
   public StreamProcessor startTypedStreamProcessor(
@@ -143,7 +165,12 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final Consumer<StreamProcessorBuilder> processorConfiguration,
       final boolean awaitOpening) {
     return streamProcessingComposite.startTypedStreamProcessor(
-        partitionId, factory, streamProcessorListenerOpt, processorConfiguration, awaitOpening);
+        partitionId,
+        factory,
+        streamProcessorListenerOpt,
+        processorConfiguration,
+        awaitOpening,
+        routingPartitionCount);
   }
 
   public void pauseProcessing(final int partitionId) {
