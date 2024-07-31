@@ -186,7 +186,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             """
         {
           "type": "about:blank",
-          "title": "Bad Request",
+          "title": "INVALID_ARGUMENT",
           "status": 400,
           "detail": "Unknown sortOrder: dsc.",
           "instance": "%s"
@@ -228,7 +228,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             """
         {
           "type": "about:blank",
-          "title": "Bad Request",
+          "title": "INVALID_ARGUMENT",
           "status": 400,
           "detail": "Unknown sortBy: tenantId.",
           "instance": "%s"
@@ -269,7 +269,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             """
         {
           "type": "about:blank",
-          "title": "Bad Request",
+          "title": "INVALID_ARGUMENT",
           "status": 400,
           "detail": "Sort field must not be null.",
           "instance": "%s"

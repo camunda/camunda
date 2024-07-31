@@ -278,7 +278,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
             """
         {
           "type": "about:blank",
-          "title": "Bad Request",
+          "title": "INVALID_ARGUMENT",
           "status": 400,
           "detail": "Unknown sortBy: unknownField.",
           "instance": "%s"
