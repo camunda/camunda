@@ -28,11 +28,11 @@ import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
 class SearchUserTaskTest {
-  @TestZeebe static final TestStandaloneCamunda testStandaloneCamunda = new TestStandaloneCamunda();
-
-  private static final ZoneId UTC_ZONE_ID = ZoneId.of("UTC");
-  private static final ZeebeClient camundaClient = testStandaloneCamunda.newClientBuilder().build();
   private static Long userTaskKeyTaskAssigned;
+  private static final ZoneId UTC_ZONE_ID = ZoneId.of("UTC");
+
+  @TestZeebe private final TestStandaloneCamunda testStandaloneCamunda = new TestStandaloneCamunda();
+  private final ZeebeClient camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
   @BeforeAll
   public static void setup() {
