@@ -1414,15 +1414,6 @@ components:
           type: object
           additionalProperties:
             type: string
-    DateFilter:
-      type: object
-      properties:
-        from:
-          type: string
-          format: date-time
-        to:
-          type: string
-          format: date-time
     TopologyResponse:
       description: The response of a topology request.
       type: object
