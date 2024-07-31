@@ -567,7 +567,9 @@ final class JsonSerializableToJsonTest {
               final String errorMessage = "error";
               final ErrorType errorType = ErrorType.IO_MAPPING_ERROR;
               final long jobKey = 123;
-
+              final var elementInstancePath = List.of(List.of(101L, 102L), List.of(103L, 104L));
+              final var processDefinitionPath = List.of(101L, 102L);
+              final var callingElementPath = List.of(12345, 67890);
               return new IncidentRecord()
                   .setElementInstanceKey(elementInstanceKey)
                   .setProcessDefinitionKey(processDefinitionKey)
@@ -577,7 +579,10 @@ final class JsonSerializableToJsonTest {
                   .setErrorMessage(errorMessage)
                   .setErrorType(errorType)
                   .setJobKey(jobKey)
-                  .setVariableScopeKey(elementInstanceKey);
+                  .setVariableScopeKey(elementInstanceKey)
+                  .setElementInstancePath(elementInstancePath)
+                  .setProcessDefinitionPath(processDefinitionPath)
+                  .setCallingElementPath(callingElementPath);
             },
         """
         {
@@ -590,7 +595,10 @@ final class JsonSerializableToJsonTest {
           "elementInstanceKey": 34,
           "jobKey": 123,
           "variableScopeKey": 34,
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "elementInstancePath":[[101, 102], [103, 104]],
+          "processDefinitionPath": [101, 102],
+          "callingElementPath": [12345, 67890]
         }
         """
       },
@@ -611,7 +619,10 @@ final class JsonSerializableToJsonTest {
           "elementInstanceKey": -1,
           "jobKey": -1,
           "variableScopeKey": -1,
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "elementInstancePath":[],
+          "processDefinitionPath":[],
+          "callingElementPath":[]
         }
         """
       },

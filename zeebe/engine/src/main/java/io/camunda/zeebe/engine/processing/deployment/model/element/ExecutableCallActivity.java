@@ -16,6 +16,12 @@ public class ExecutableCallActivity extends ExecutableActivity {
   private boolean propagateAllChildVariablesEnabled;
   private boolean propagateAllParentVariablesEnabled;
 
+  /**
+   * The index of this call activity element ID in a <i>lexicographically</i> sorted list of all
+   * Call Activity IDs in all the processes in one BPMN deployment resource.
+   */
+  private int lexicographicIndex;
+
   public ExecutableCallActivity(final String id) {
     super(id);
   }
@@ -41,7 +47,16 @@ public class ExecutableCallActivity extends ExecutableActivity {
     return propagateAllParentVariablesEnabled;
   }
 
-  public void setPropagateAllParentVariablesEnabled(boolean propagateAllParentVariablesEnabled) {
+  public void setPropagateAllParentVariablesEnabled(
+      final boolean propagateAllParentVariablesEnabled) {
     this.propagateAllParentVariablesEnabled = propagateAllParentVariablesEnabled;
+  }
+
+  public int getLexicographicIndex() {
+    return lexicographicIndex;
+  }
+
+  public void setLexicographicIndex(final int index) {
+    lexicographicIndex = index;
   }
 }

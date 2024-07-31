@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.function.Function;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -107,6 +108,8 @@ public final class CallActivityIncidentTest {
         getCallActivityInstance(processInstanceKey);
 
     assertIncidentCreated(incident, elementInstance)
+        .hasElementInstancePath(List.of(List.of(processInstanceKey, elementInstance.getKey())))
+        .hasProcessDefinitionKey(incident.getValue().getProcessDefinitionKey())
         .hasErrorType(ErrorType.CALLED_ELEMENT_ERROR)
         .hasErrorMessage(
             "Expected process with BPMN process id '"
@@ -189,6 +192,8 @@ public final class CallActivityIncidentTest {
         getCallActivityInstance(processInstanceKey);
 
     assertIncidentCreated(incident, elementInstance, tenantId)
+        .hasElementInstancePath(List.of(List.of(processInstanceKey, elementInstance.getKey())))
+        .hasProcessDefinitionKey(incident.getValue().getProcessDefinitionKey())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """

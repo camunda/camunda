@@ -10,12 +10,15 @@ package io.camunda.zeebe.engine.processing.job;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -38,6 +41,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final JobBatchCollector jobBatchCollector;
   private final KeyGenerator keyGenerator;
   private final JobMetrics jobMetrics;
+  private final ElementInstanceState elementInstanceState;
+  private final ProcessState processState;
 
   public JobBatchActivateProcessor(
       final Writers writers,
@@ -54,6 +59,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
+    elementInstanceState = state.getElementInstanceState();
+    processState = state.getProcessState();
   }
 
   @Override
@@ -136,6 +143,14 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
                 "The job with key '%s' can not be activated, because with %s it is larger than the configured message size (per default is 4 MB). "
                     + "Try to reduce the size by reducing the number of fetched variables or modifying the variable values.",
                 jobKey, jobSize));
+
+    final var treePathProperties =
+        new ElementTreePathBuilder()
+            .withElementInstanceState(elementInstanceState)
+            .withProcessState(processState)
+            .withElementInstanceKey(job.getElementInstanceKey())
+            .build();
+
     final var incidentEvent =
         new IncidentRecord()
             .setErrorType(ErrorType.MESSAGE_SIZE_EXCEEDED)
@@ -147,7 +162,10 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
             .setElementInstanceKey(job.getElementInstanceKey())
             .setJobKey(jobKey)
             .setTenantId(job.getTenantId())
-            .setVariableScopeKey(job.getElementInstanceKey());
+            .setVariableScopeKey(job.getElementInstanceKey())
+            .setElementInstancePath(treePathProperties.elementInstancePath())
+            .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
+            .setCallingElementPath(treePathProperties.callingElementPath());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
   }

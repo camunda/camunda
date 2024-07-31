@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.CallActivityBuilder;
+import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -22,10 +23,12 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.Before;
@@ -55,18 +58,25 @@ public final class CallActivityTest {
     return builder.endEvent().done();
   }
 
+  private static BpmnModelInstance childProcess(
+      final String jobType, final Consumer<ServiceTaskBuilder> consumer) {
+    final var builder =
+        Bpmn.createExecutableProcess(PROCESS_ID_CHILD)
+            .startEvent()
+            .serviceTask("child-task", t -> t.zeebeJobType(jobType));
+
+    consumer.accept(builder);
+
+    return builder.endEvent().done();
+  }
+
   @Before
   public void init() {
     jobType = helper.getJobType();
 
     final var parentProcess = parentProcess(CallActivityBuilder::done);
 
-    final var childProcess =
-        Bpmn.createExecutableProcess(PROCESS_ID_CHILD)
-            .startEvent()
-            .serviceTask("child-task", t -> t.zeebeJobType(jobType))
-            .endEvent()
-            .done();
+    final var childProcess = childProcess(jobType, ServiceTaskBuilder::done);
 
     ENGINE
         .deployment()
@@ -661,12 +671,7 @@ public final class CallActivityTest {
     final var incidentResolved =
         ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentKey).resolve();
 
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.CALL_ACTIVITY)
-                .getFirst()
-                .getPosition())
+    assertThat(getCallActivityInstance(processInstanceKey).getPosition())
         .describedAs("Expected call activity to be ACTIVATED after incident is resolved")
         .isGreaterThan(incidentResolved.getPosition());
   }
@@ -752,6 +757,111 @@ public final class CallActivityTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
+  @Test
+  public void shouldPropagateTreePathPropertiesWithIncident() {
+    // given
+    final String rootProcessId = "root";
+    final String callActivity1Id = "callParent";
+    final String callActivity2Id = "callChild";
+    // every deployment resource will have indexes starting from zero
+    final var ca1Index = 0;
+    final var ca2Index = 0;
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-root.bpmn",
+            Bpmn.createExecutableProcess(rootProcessId)
+                .startEvent()
+                .callActivity(callActivity1Id, c -> c.zeebeProcessId(PROCESS_ID_PARENT))
+                .done())
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentProcess(c -> c.id(callActivity2Id).zeebeProcessId(PROCESS_ID_CHILD)))
+        .withXmlResource(
+            "wf-child.bpmn",
+            childProcess(jobType, c -> c.zeebeOutputExpression("assert(x, x != null)", "y")))
+        .deploy();
+
+    final var rootInstanceKey = ENGINE.processInstance().ofBpmnProcessId(rootProcessId).create();
+
+    final var rootInstance = getProcessInstanceRecordValue(rootInstanceKey);
+    final var parentInstance = getChildInstanceOf(rootInstanceKey);
+    final var parentInstanceKey = parentInstance.getProcessInstanceKey();
+    final var childInstance = getChildInstanceOf(parentInstanceKey);
+    final long childInstanceKey = childInstance.getProcessInstanceKey();
+    final var callActivity1Key = getCallActivityInstanceKey(rootInstanceKey);
+    final var callActivity2Key = getCallActivityInstanceKey(parentInstanceKey);
+
+    completeJobWith(Map.of());
+
+    // then
+    final IncidentRecordValue incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(childInstanceKey)
+            .getFirst()
+            .getValue();
+
+    Assertions.assertThat(incident)
+        .hasOnlyElementInstancePath(
+            List.of(rootInstanceKey, callActivity1Key),
+            List.of(parentInstanceKey, callActivity2Key),
+            List.of(childInstanceKey, incident.getElementInstanceKey()))
+        .hasOnlyProcessDefinitionPath(
+            rootInstance.getProcessDefinitionKey(),
+            parentInstance.getProcessDefinitionKey(),
+            childInstance.getProcessDefinitionKey())
+        .hasOnlyCallingElementPath(ca1Index, ca2Index);
+  }
+
+  @Test
+  public void shouldPropagateCorrectIndexesInCallingElementPathWhenMultipleProcessesInSameFile() {
+    // given
+    final String rootProcessId = "root-process";
+    // call activities { "call-parent", "call-child" } when sorted wll be {"call-child",
+    // "call-parent"}
+    final var ca1Index = 1;
+    final var ca2Index = 0;
+
+    ENGINE.deployment().withXmlClasspathResource("/processes/callActivity.bpmn").deploy();
+    final var rootInstanceKey = ENGINE.processInstance().ofBpmnProcessId(rootProcessId).create();
+
+    final var rootInstance = getProcessInstanceRecordValue(rootInstanceKey);
+    final var parentInstance = getChildInstanceOf(rootInstanceKey);
+    final var parentInstanceKey = parentInstance.getProcessInstanceKey();
+    final var childInstance = getChildInstanceOf(parentInstanceKey);
+    final long childInstanceKey = childInstance.getProcessInstanceKey();
+    final var callActivity1Key = getCallActivityInstanceKey(rootInstanceKey);
+    final var callActivity2Key = getCallActivityInstanceKey(parentInstanceKey);
+
+    completeJobWith(Map.of());
+
+    // then
+    final IncidentRecordValue incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(childInstanceKey)
+            .getFirst()
+            .getValue();
+
+    Assertions.assertThat(incident)
+        .hasOnlyElementInstancePath(
+            List.of(rootInstanceKey, callActivity1Key),
+            List.of(parentInstanceKey, callActivity2Key),
+            List.of(childInstanceKey, incident.getElementInstanceKey()))
+        .hasOnlyProcessDefinitionPath(
+            rootInstance.getProcessDefinitionKey(),
+            parentInstance.getProcessDefinitionKey(),
+            childInstance.getProcessDefinitionKey())
+        .hasOnlyCallingElementPath(ca1Index, ca2Index);
+  }
+
+  private static ProcessInstanceRecordValue getProcessInstanceRecordValue(
+      final long processInstanceKey) {
+    return RecordingExporter.processInstanceRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst()
+        .getValue();
+  }
+
   private void completeJobWith(final Map<String, Object> variables) {
 
     RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).getFirst().getValue();
@@ -774,11 +884,14 @@ public final class CallActivityTest {
   }
 
   private long getCallActivityInstanceKey(final long processInstanceKey) {
+    return getCallActivityInstance(processInstanceKey).getKey();
+  }
 
+  private static Record<ProcessInstanceRecordValue> getCallActivityInstance(
+      final long processInstanceKey) {
     return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
         .withElementType(BpmnElementType.CALL_ACTIVITY)
-        .getFirst()
-        .getKey();
+        .getFirst();
   }
 }
