@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
+import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
@@ -22,6 +23,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
@@ -130,6 +132,21 @@ public class RequestMapper {
         jobKey, getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables));
   }
 
+  public static Either<ProblemDetail, UpdateJobRequest> toJobUpdateRequest(
+      final JobUpdateRequest updateRequest, final long jobKey) {
+    final var validationJobUpdateResponse = validateJobUpdateRequest(updateRequest);
+    return validationJobUpdateResponse
+        .<Either<ProblemDetail, UpdateJobRequest>>map(Either::left)
+        .orElseGet(
+            () ->
+                Either.right(
+                    new UpdateJobRequest(
+                        jobKey,
+                        getIntOrZero(updateRequest, r -> updateRequest.getChangeset().getRetries()),
+                        getLongOrZero(
+                            updateRequest, r -> updateRequest.getChangeset().getTimeout()))));
+  }
+
   public static CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
       final Supplier<CompletableFuture<?>> method, final Supplier<ResponseEntity<Object>> result) {
     return method
@@ -233,4 +250,6 @@ public class RequestMapper {
       long jobKey, String errorCode, String errorMessage, Map<String, Object> variables) {}
 
   public record CompleteJobRequest(long jobKey, Map<String, Object> variables) {}
+
+  public record UpdateJobRequest(long jobKey, Integer retries, Long timeout) {}
 }
