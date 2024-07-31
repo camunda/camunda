@@ -328,7 +328,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
           "type": "about:blank",
           "title": "INVALID_ARGUMENT",
           "status": 400,
-          "detail": "Error: Both searchAfter and searchBefore cannot be set at the same time.",
+          "detail": "Both searchAfter and searchBefore cannot be set at the same time.",
           "instance": "%s"
         }""",
             USER_TASKS_SEARCH_URL);

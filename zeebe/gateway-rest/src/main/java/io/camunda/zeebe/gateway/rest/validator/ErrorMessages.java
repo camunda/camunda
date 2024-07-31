@@ -21,4 +21,6 @@ public final class ErrorMessages {
   public static final String ERROR_SORT_FIELD_MUST_NOT_BE_NULL = "Sort field must not be null";
   public static final String ERROR_UNKNOWN_SORT_BY = "Unknown sortBy: %s";
   public static final String ERROR_UNKNOWN_SORT_ORDER = "Unknown sortOrder: %s";
+  public static final String ERROR_SEARCH_BEFORE_AND_AFTER =
+      "Both searchAfter and searchBefore cannot be set at the same time";
 }

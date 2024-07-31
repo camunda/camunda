@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SEARCH_BEFORE_AND_AFTER;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SORT_FIELD_MUST_NOT_BE_NULL;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_BY;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_ORDER;
@@ -80,28 +81,20 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::decisionDefinitionSearchQuery);
   }
 
-  private static <
-          T,
-          B extends TypedSearchQueryBuilder<T, B, F, S>,
-          F extends FilterBase,
-          S extends SortOption>
-      Either<ProblemDetail, T> buildSearchQuery(
-          final F filter,
-          final Either<List<String>, S> sorting,
-          final Either<List<String>, SearchQueryPage> page,
-          final Supplier<B> queryBuilderSupplier) {
-    final List<String> validationErrors = new ArrayList<>();
-    if (sorting.isLeft()) {
-      validationErrors.addAll(sorting.getLeft());
-    }
-    if (page.isLeft()) {
-      validationErrors.addAll(page.getLeft());
-    }
+  public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
+      final UserTaskSearchQueryRequest request) {
 
-    return RequestMapper.getResult(
-        RequestValidator.createProblemDetail(validationErrors),
-        () ->
-            queryBuilderSupplier.get().page(page.get()).filter(filter).sort(sorting.get()).build());
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.userTaskSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            request.getSort(),
+            SortOptionBuilders::userTask,
+            SearchQueryRequestMapper::applyUserTaskSortField);
+    final var filter = toUserTaskFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userTaskSearchQuery);
   }
 
   private static ProcessInstanceFilter toProcessInstanceFilter(
@@ -161,158 +154,7 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  public static List<VariableValueFilter> toVariableValueFilter(
-      final List<VariableValueFilterRequest> filters) {
-    if (filters != null && !filters.isEmpty()) {
-      return filters.stream().map(SearchQueryRequestMapper::toVariableValueFilter).toList();
-    }
-    return null;
-  }
-
-  private static VariableValueFilter toVariableValueFilter(final VariableValueFilterRequest f) {
-    return FilterBuilders.variableValue(
-        (v) ->
-            v.name(f.getName())
-                .eq(f.getEq())
-                .gt(f.getGt())
-                .gte(f.getGte())
-                .lt(f.getLt())
-                .lte(f.getLte()));
-  }
-
-  public static Either<List<String>, SearchQueryPage> toSearchQueryPage(
-      final SearchQueryPageRequest requestedPage) {
-    if (requestedPage == null) {
-      return Either.right(null);
-    }
-
-    final Object[] searchAfter = toArrayOrNull(requestedPage.getSearchAfter());
-    final Object[] searchBefore = toArrayOrNull(requestedPage.getSearchBefore());
-
-    if (searchAfter != null && searchBefore != null) {
-      return Either.left(
-          List.of("Error: Both searchAfter and searchBefore cannot be set at the same time"));
-    }
-
-    return Either.right(
-        SearchQueryPage.of(
-            (p) ->
-                p.size(requestedPage.getLimit())
-                    .from(requestedPage.getFrom())
-                    .searchAfter(searchAfter)
-                    .searchBefore(searchBefore)));
-  }
-
-  private static <T, B extends SortOption.AbstractBuilder<B> & ObjectBuilder<T>>
-      Either<List<String>, T> toSearchQuerySort(
-          final List<SearchQuerySortRequest> sorting,
-          final Supplier<B> builderSupplier,
-          final BiFunction<String, B, List<String>> sortFieldMapper) {
-    if (sorting != null && !sorting.isEmpty()) {
-      final List<String> validationErrors = new ArrayList<>();
-      final var builder = builderSupplier.get();
-      for (final SearchQuerySortRequest sort : sorting) {
-        validationErrors.addAll(sortFieldMapper.apply(sort.getField(), builder));
-        validationErrors.addAll(applySortOrder(sort.getOrder(), builder));
-      }
-
-      return validationErrors.isEmpty()
-          ? Either.right(builder.build())
-          : Either.left(validationErrors);
-    }
-
-    return Either.right(null);
-  }
-
-  private static List<String> applyProcessInstanceSortField(
-      final String field, final ProcessInstanceSort.Builder builder) {
-    final List<String> validationErrors = new ArrayList<>();
-    if (field == null) {
-      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
-    } else {
-      switch (field) {
-        case "processInstanceKey" -> builder.processInstanceKey();
-        case "startDate" -> builder.startDate();
-        case "endDate" -> builder.endDate();
-        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
-      }
-    }
-    return validationErrors;
-  }
-
-  private static List<String> applyDecisionDefinitionSortField(
-      final String field, final DecisionDefinitionSort.Builder builder) {
-    final List<String> validationErrors = new ArrayList<>();
-    if (field == null) {
-      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
-    } else {
-      switch (field) {
-        case "id" -> builder.id();
-        case "decisionId" -> builder.decisionId();
-        case "name" -> builder.name();
-        case "version" -> builder.version();
-        case "decisionRequirementsId" -> builder.decisionRequirementsId();
-        case "decisionRequirementsKey" -> builder.decisionRequirementsKey();
-        case "decisionRequirementsName" -> builder.decisionRequirementsName();
-        case "decisionRequirementsVersion" -> builder.decisionRequirementsVersion();
-        case "tenantId" -> builder.tenantId();
-        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
-      }
-    }
-    return validationErrors;
-  }
-
-  private static List<String> applySortOrder(
-      final String order, final SortOption.AbstractBuilder<?> builder) {
-    final List<String> validationErrors = new ArrayList<>();
-    switch (order.toLowerCase()) {
-      case "asc" -> builder.asc();
-      case "desc" -> builder.desc();
-      default -> validationErrors.add(ERROR_UNKNOWN_SORT_ORDER.formatted(order));
-    }
-    return validationErrors;
-  }
-
-  private static Object[] toArrayOrNull(final List<Object> values) {
-    if (values == null || values.isEmpty()) {
-      return null;
-    } else {
-      return values.toArray();
-    }
-  }
-
-  public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
-      final UserTaskSearchQueryRequest request) {
-
-    if (request == null) {
-      return Either.right(SearchQueryBuilders.userTaskSearchQuery().build());
-    }
-    final var page = toSearchQueryPage(request.getPage());
-    final var sort =
-        toSearchQuerySort(
-            request.getSort(),
-            SortOptionBuilders::userTask,
-            SearchQueryRequestMapper::applyUserTaskSortField);
-    final var filter = toUserTaskFilter(request.getFilter());
-    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userTaskSearchQuery);
-  }
-
-  private static List<String> applyUserTaskSortField(
-      final String field, final UserTaskSort.Builder builder) {
-    final List<String> validationErrors = new ArrayList<>();
-    if (field == null) {
-      validationErrors.add("Sort field must not be null");
-    } else {
-      switch (field) {
-        case "creationTime" -> builder.creationDate();
-        case "completionTime" -> builder.completionDate();
-        default -> validationErrors.add("Unknown sortBy: " + field);
-      }
-    }
-    return validationErrors;
-  }
-
-  public static UserTaskFilter toUserTaskFilter(final UserTaskFilterRequest filter) {
+  private static UserTaskFilter toUserTaskFilter(final UserTaskFilterRequest filter) {
     final var builder = FilterBuilders.userTask();
 
     if (filter != null) {
@@ -368,5 +210,163 @@ public final class SearchQueryRequestMapper {
     }
 
     return builder.build();
+  }
+
+  private static List<String> applyProcessInstanceSortField(
+      final String field, final ProcessInstanceSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case "processInstanceKey" -> builder.processInstanceKey();
+        case "startDate" -> builder.startDate();
+        case "endDate" -> builder.endDate();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  private static List<String> applyDecisionDefinitionSortField(
+      final String field, final DecisionDefinitionSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case "id" -> builder.id();
+        case "decisionId" -> builder.decisionId();
+        case "name" -> builder.name();
+        case "version" -> builder.version();
+        case "decisionRequirementsId" -> builder.decisionRequirementsId();
+        case "decisionRequirementsKey" -> builder.decisionRequirementsKey();
+        case "decisionRequirementsName" -> builder.decisionRequirementsName();
+        case "decisionRequirementsVersion" -> builder.decisionRequirementsVersion();
+        case "tenantId" -> builder.tenantId();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  private static List<String> applyUserTaskSortField(
+      final String field, final UserTaskSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case "creationTime" -> builder.creationDate();
+        case "completionTime" -> builder.completionDate();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  private static List<VariableValueFilter> toVariableValueFilter(
+      final List<VariableValueFilterRequest> filters) {
+    if (filters != null && !filters.isEmpty()) {
+      return filters.stream().map(SearchQueryRequestMapper::toVariableValueFilter).toList();
+    }
+    return null;
+  }
+
+  private static VariableValueFilter toVariableValueFilter(final VariableValueFilterRequest f) {
+    return FilterBuilders.variableValue(
+        (v) ->
+            v.name(f.getName())
+                .eq(f.getEq())
+                .gt(f.getGt())
+                .gte(f.getGte())
+                .lt(f.getLt())
+                .lte(f.getLte()));
+  }
+
+  private static Either<List<String>, SearchQueryPage> toSearchQueryPage(
+      final SearchQueryPageRequest requestedPage) {
+    if (requestedPage == null) {
+      return Either.right(null);
+    }
+
+    final Object[] searchAfter = toArrayOrNull(requestedPage.getSearchAfter());
+    final Object[] searchBefore = toArrayOrNull(requestedPage.getSearchBefore());
+
+    if (searchAfter != null && searchBefore != null) {
+      return Either.left(List.of(ERROR_SEARCH_BEFORE_AND_AFTER));
+    }
+
+    return Either.right(
+        SearchQueryPage.of(
+            (p) ->
+                p.size(requestedPage.getLimit())
+                    .from(requestedPage.getFrom())
+                    .searchAfter(searchAfter)
+                    .searchBefore(searchBefore)));
+  }
+
+  private static <T, B extends SortOption.AbstractBuilder<B> & ObjectBuilder<T>>
+      Either<List<String>, T> toSearchQuerySort(
+          final List<SearchQuerySortRequest> sorting,
+          final Supplier<B> builderSupplier,
+          final BiFunction<String, B, List<String>> sortFieldMapper) {
+    if (sorting != null && !sorting.isEmpty()) {
+      final List<String> validationErrors = new ArrayList<>();
+      final var builder = builderSupplier.get();
+      for (final SearchQuerySortRequest sort : sorting) {
+        validationErrors.addAll(sortFieldMapper.apply(sort.getField(), builder));
+        validationErrors.addAll(applySortOrder(sort.getOrder(), builder));
+      }
+
+      return validationErrors.isEmpty()
+          ? Either.right(builder.build())
+          : Either.left(validationErrors);
+    }
+
+    return Either.right(null);
+  }
+
+  private static <
+          T,
+          B extends TypedSearchQueryBuilder<T, B, F, S>,
+          F extends FilterBase,
+          S extends SortOption>
+      Either<ProblemDetail, T> buildSearchQuery(
+          final F filter,
+          final Either<List<String>, S> sorting,
+          final Either<List<String>, SearchQueryPage> page,
+          final Supplier<B> queryBuilderSupplier) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (sorting.isLeft()) {
+      validationErrors.addAll(sorting.getLeft());
+    }
+    if (page.isLeft()) {
+      validationErrors.addAll(page.getLeft());
+    }
+
+    return RequestMapper.getResult(
+        RequestValidator.createProblemDetail(validationErrors),
+        () ->
+            queryBuilderSupplier.get().page(page.get()).filter(filter).sort(sorting.get()).build());
+  }
+
+  private static List<String> applySortOrder(
+      final String order, final SortOption.AbstractBuilder<?> builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    switch (order.toLowerCase()) {
+      case "asc" -> builder.asc();
+      case "desc" -> builder.desc();
+      default -> validationErrors.add(ERROR_UNKNOWN_SORT_ORDER.formatted(order));
+    }
+    return validationErrors;
+  }
+
+  private static Object[] toArrayOrNull(final List<Object> values) {
+    if (values == null || values.isEmpty()) {
+      return null;
+    } else {
+      return values.toArray();
+    }
   }
 }
