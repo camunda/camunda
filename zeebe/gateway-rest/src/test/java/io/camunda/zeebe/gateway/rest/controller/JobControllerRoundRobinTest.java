@@ -80,7 +80,7 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
         {
           "jobs": [
             {
-              "key": 2251799813685248,
+              "key": 4503599627370496,
               "type": "TEST",
               "processInstanceKey": 123,
               "processDefinitionKey": 4532,
@@ -96,7 +96,7 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
               "worker": "bar"
             },
             {
-              "key": 2251799813685249,
+              "key": 4503599627370497,
               "type": "TEST",
               "processInstanceKey": 123,
               "processDefinitionKey": 4532,

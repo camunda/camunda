@@ -19,9 +19,9 @@ import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
@@ -127,7 +127,7 @@ public class RequestMapper {
       final JobCompletionRequest completionRequest, final long jobKey) {
 
     return new CompleteJobRequest(
-            jobKey, getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables));
+        jobKey, getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables));
   }
 
   public static CompletableFuture<ResponseEntity<Object>> executeServiceMethod(

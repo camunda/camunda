@@ -11,13 +11,13 @@ import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.zeebe.gateway.rest.RequestMapper.CompleteJobRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.ErrorJobRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.FailJobRequest;
-import io.camunda.zeebe.gateway.rest.RequestMapper.CompleteJobRequest;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,8 +80,7 @@ public class JobController {
   public CompletableFuture<ResponseEntity<Object>> completeJob(
       @PathVariable final long jobKey,
       @RequestBody(required = false) final JobCompletionRequest completionRequest) {
-    return RequestMapper.toJobCompletionRequest(completionRequest, jobKey)
-        .fold(this::completeJob, RestErrorMapper::mapProblemToCompletedResponse);
+    return completeJob(RequestMapper.toJobCompletionRequest(completionRequest, jobKey));
   }
 
   private CompletableFuture<ResponseEntity<Object>> activateJobs(
