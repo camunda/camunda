@@ -11,13 +11,10 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.search.connect.SearchClientConnectException;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.SecurityConfiguration;
 import io.camunda.search.connect.jackson.JacksonConfiguration;
 import io.camunda.search.connect.util.SecurityUtil;
-import java.net.URI;
-import java.net.URISyntaxException;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -29,7 +26,7 @@ import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class ElasticsearchConnector {
+public class ElasticsearchConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchConnector.class);
 
@@ -50,7 +47,7 @@ public final class ElasticsearchConnector {
     LOGGER.debug("Creating Elasticsearch Client ...");
 
     // create rest client
-    final var restClient = createRestClient(configuration);
+    final var restClient = createRestClient();
 
     // Create the transport with a Jackson mapper
     final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(objectMapper));
@@ -59,81 +56,64 @@ public final class ElasticsearchConnector {
     return new ElasticsearchClient(transport);
   }
 
-  private RestClient createRestClient(final ConnectConfiguration configuration) {
-    final var httpHost = getHttpHost(configuration);
-    final var restClientBuilder = RestClient.builder(httpHost);
-
-    if (configuration.getConnectTimeout() != null || configuration.getSocketTimeout() != null) {
-      restClientBuilder.setRequestConfigCallback(
-          configCallback -> setTimeouts(configCallback, configuration));
-    }
-    final var restClient =
-        restClientBuilder
-            .setHttpClientConfigCallback(
-                httpClientBuilder -> configureHttpClient(httpClientBuilder, configuration))
-            .build();
-
-    return restClient;
+  public RestClient createRestClient() {
+    final var httpHost = getHttpHost();
+    return RestClient.builder(httpHost)
+        .setHttpClientConfigCallback(this::configureHttpClient)
+        .setRequestConfigCallback(this::configureTimeouts)
+        .build();
   }
 
   protected HttpAsyncClientBuilder configureHttpClient(
-      final HttpAsyncClientBuilder httpAsyncClientBuilder,
-      final ConnectConfiguration configuration) {
-    setupAuthentication(httpAsyncClientBuilder, configuration);
-    final var security = configuration.getSecurity();
-    if (security != null && security.isEnabled()) {
-      setupSSLContext(httpAsyncClientBuilder, security);
-    }
+      final HttpAsyncClientBuilder httpAsyncClientBuilder) {
+    configureAuthentication(httpAsyncClientBuilder);
+    configureSSLContext(httpAsyncClientBuilder, configuration.getSecurity());
     return httpAsyncClientBuilder;
   }
 
-  private void setupSSLContext(
+  private void configureSSLContext(
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final SecurityConfiguration configuration) {
-    try {
-      final var sslContext = SecurityUtil.getSSLContext(configuration, "elasticsearch-host");
-      httpAsyncClientBuilder.setSSLContext(sslContext);
-      if (!configuration.isVerifyHostname()) {
-        httpAsyncClientBuilder.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
+    if (configuration != null && configuration.isEnabled()) {
+      try {
+        final var sslContext = SecurityUtil.getSSLContext(configuration, "elasticsearch-host");
+        httpAsyncClientBuilder.setSSLContext(sslContext);
+        if (!configuration.isVerifyHostname()) {
+          httpAsyncClientBuilder.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
+        }
+      } catch (Exception e) {
+        LOGGER.error("Error in setting up SSLContext", e);
       }
-    } catch (Exception e) {
-      LOGGER.error("Error in setting up SSLContext", e);
     }
   }
 
-  private Builder setTimeouts(final Builder builder, final ConnectConfiguration elsConfig) {
-    if (elsConfig.getSocketTimeout() != null) {
-      builder.setSocketTimeout(elsConfig.getSocketTimeout());
+  private Builder configureTimeouts(final Builder builder) {
+    if (configuration.getSocketTimeout() != null) {
+      // builder.setSocketTimeout(os.getSocketTimeout());
+      builder.setSocketTimeout(configuration.getSocketTimeout());
     }
-    if (elsConfig.getConnectTimeout() != null) {
-      builder.setConnectTimeout(elsConfig.getConnectTimeout());
+    if (configuration.getConnectTimeout() != null) {
+      builder.setConnectTimeout(configuration.getConnectTimeout());
     }
     return builder;
   }
 
-  private HttpHost getHttpHost(final ConnectConfiguration elsConfig) {
-    try {
-      final var uri = new URI(elsConfig.getUrl());
-      return new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
-    } catch (URISyntaxException e) {
-      throw new SearchClientConnectException("Error in url: " + elsConfig.getUrl(), e);
-    }
+  private HttpHost getHttpHost() {
+    final var uri = configuration.getUrlAsUri();
+    return new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
   }
 
-  private void setupAuthentication(
-      final HttpAsyncClientBuilder builder, final ConnectConfiguration configuration) {
-    final var username = configuration.getUsername();
-    final var password = configuration.getPassword();
-
-    if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
+  private void configureAuthentication(final HttpAsyncClientBuilder builder) {
+    if (configuration.hasBasicAuthenticationConfigured()) {
+      final var credentialsProvider = new BasicCredentialsProvider();
+      credentialsProvider.setCredentials(
+          AuthScope.ANY,
+          new UsernamePasswordCredentials(
+              configuration.getUsername(), configuration.getPassword()));
+      builder.setDefaultCredentialsProvider(credentialsProvider);
+    } else {
       LOGGER.warn(
           "Username and/or password for are empty. Basic authentication for elasticsearch is not used.");
-      return;
     }
-
-    final var credentialsProvider = new BasicCredentialsProvider();
-    credentialsProvider.setCredentials(
-        AuthScope.ANY, new UsernamePasswordCredentials(username, password));
-    builder.setDefaultCredentialsProvider(credentialsProvider);
   }
 }

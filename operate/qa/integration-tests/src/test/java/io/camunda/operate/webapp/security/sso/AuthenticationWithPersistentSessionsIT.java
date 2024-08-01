@@ -30,8 +30,8 @@ import com.auth0.Tokens;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.connect.ElasticsearchConnector;
-import io.camunda.operate.connect.OpensearchConnector;
+import io.camunda.operate.connect.ElasticsearchClientProvider;
+import io.camunda.operate.connect.OpensearchClientProvider;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
@@ -113,11 +113,11 @@ import org.springframework.web.client.RestTemplate;
       RetryElasticsearchClient.class,
       ElasticsearchTaskStore.class,
       OperateProfileService.class,
-      ElasticsearchConnector.class,
+      ElasticsearchClientProvider.class,
       ElasticsearchSessionRepository.class,
       OpensearchSessionRepository.class,
       RichOpenSearchClient.class,
-      OpensearchConnector.class,
+      OpensearchClientProvider.class,
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
       DatabaseInfo.class,

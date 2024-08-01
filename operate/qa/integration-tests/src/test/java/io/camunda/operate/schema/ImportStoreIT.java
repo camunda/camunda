@@ -12,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.connect.ElasticsearchConnector;
-import io.camunda.operate.connect.OpensearchConnector;
+import io.camunda.operate.connect.ElasticsearchClientProvider;
+import io.camunda.operate.connect.OpensearchClientProvider;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
@@ -50,8 +50,8 @@ import org.springframework.test.context.ContextConfiguration;
       DatabaseInfo.class,
       OperateProperties.class,
       RetryElasticsearchClient.class,
-      ElasticsearchConnector.class,
-      OpensearchConnector.class,
+      ElasticsearchClientProvider.class,
+      OpensearchClientProvider.class,
       ElasticsearchTaskStore.class,
       JacksonConfig.class,
       OperateDateTimeFormatter.class,

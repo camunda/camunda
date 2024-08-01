@@ -10,7 +10,7 @@ package io.camunda.search.connect;
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
-import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.search.connect.os.OpensearchClientConnector;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
 import java.util.function.Function;
@@ -30,7 +30,7 @@ public interface SearchClientProvider extends Function<ConnectConfiguration, Cam
 
     public static CamundaSearchClient createOpensearchProvider(
         final ConnectConfiguration configuration) {
-      final var connector = new OpensearchConnector(configuration);
+      final var connector = new OpensearchClientConnector(configuration);
       final var opensearch = connector.createClient();
       return new OpensearchSearchClient(opensearch);
     }

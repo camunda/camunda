@@ -12,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.operate.JacksonConfig;
-import io.camunda.operate.connect.ElasticsearchConnector;
-import io.camunda.operate.connect.OpensearchConnector;
+import io.camunda.operate.connect.ElasticsearchClientProvider;
+import io.camunda.operate.connect.OpensearchClientProvider;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
@@ -44,11 +44,11 @@ import org.springframework.test.context.ContextConfiguration;
       TestTemplate.class,
       TestDynamicIndex.class,
       ElasticsearchSchemaManager.class,
-      ElasticsearchConnector.class,
+      ElasticsearchClientProvider.class,
       ElasticsearchTaskStore.class,
       ElasticsearchSchemaTestHelper.class,
       OpensearchSchemaManager.class,
-      OpensearchConnector.class,
+      OpensearchClientProvider.class,
       OpensearchTaskStore.class,
       OpenSearchSchemaTestHelper.class,
       JacksonConfig.class,
