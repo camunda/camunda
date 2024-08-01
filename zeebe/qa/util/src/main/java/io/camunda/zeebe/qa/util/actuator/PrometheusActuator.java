@@ -10,11 +10,8 @@ package io.camunda.zeebe.qa.util.actuator;
 import feign.Feign;
 import feign.Headers;
 import feign.RequestLine;
-import feign.Response;
 import feign.Retryer;
 import feign.Target.HardCodedTarget;
-import feign.jackson.JacksonDecoder;
-import feign.jackson.JacksonEncoder;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 
 @SuppressWarnings({"unused", "UnusedReturnValue"})
@@ -26,14 +23,10 @@ public interface PrometheusActuator {
 
   static PrometheusActuator of(final String endpoint) {
     final var target = new HardCodedTarget<>(PrometheusActuator.class, endpoint);
-    return Feign.builder()
-        .encoder(new JacksonEncoder())
-        .decoder(new JacksonDecoder())
-        .retryer(Retryer.NEVER_RETRY)
-        .target(target);
+    return Feign.builder().retryer(Retryer.NEVER_RETRY).target(target);
   }
 
   @RequestLine("GET")
   @Headers("Accept: text/plain")
-  Response metrics();
+  String metrics();
 }
