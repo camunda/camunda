@@ -180,7 +180,7 @@
     <!-- GraphQL dependencies -->
     <version.graphql-kickstart>15.2.0</version.graphql-kickstart>
     <version.graphql-kickstart-spring-boot>15.1.0</version.graphql-kickstart-spring-boot>
-    <version.graphql-java>21.5</version.graphql-java>
+    <version.graphql-java>230521-nf-execution</version.graphql-java>
     <version.graphql-java.scalars>21.0</version.graphql-java.scalars>
     <version.graphql-java.dataloader>3.3.0</version.graphql-java.dataloader>
     <version.graphql-java-annotations>21.2</version.graphql-java-annotations>
