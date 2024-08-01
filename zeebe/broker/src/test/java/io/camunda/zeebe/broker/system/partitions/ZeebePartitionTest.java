@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -396,7 +397,7 @@ public class ZeebePartitionTest {
         .thenReturn(CompletableActorFuture.completed(null));
     when(transitionStep.transitionTo(any(), anyLong(), any()))
         .thenReturn(CompletableActorFuture.completed(null));
-    when(ctx.getCurrentRole()).thenReturn(Role.FOLLOWER);
+    doReturn(Role.FOLLOWER).when(ctx).getCurrentRole();
     partition.onNewRole(Role.FOLLOWER, 0);
     schedulerRule.workUntilDone();
 
