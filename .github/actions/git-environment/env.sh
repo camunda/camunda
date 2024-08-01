@@ -48,8 +48,8 @@ fi
 # getLatestTag
 if $is_maintenance_branch;
 then
-    latest_tag="${maintenance_version}-latest"
+    latest_tag="${maintenance_version}-C8-latest"
 else
-    latest_tag="latest"
+    latest_tag="C8-latest"
 fi
 echo "latest_tag=${latest_tag}" | tee -a "$GITHUB_ENV" "$GITHUB_OUTPUT"

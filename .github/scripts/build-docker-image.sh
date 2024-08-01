@@ -9,7 +9,7 @@ if [ "${PUSH_LATEST_TAG}" = "true" ]; then
 fi
 
 if [ "${IS_MAIN}" = "true" ]; then
-    tags+=("${DOCKER_IMAGE_DOCKER_HUB}:SNAPSHOT")
+    tags+=("${DOCKER_IMAGE_DOCKER_HUB}:C8-SNAPSHOT")
 fi
 
 printf -v tag_arguments -- "-t %s " "${tags[@]}"
