@@ -176,7 +176,7 @@ public class ClusterEndpoint {
     return switch (resource) {
       case brokers ->
           switch (subResource) {
-              // POST /cluster/brokers/1/partitions/2
+            // POST /cluster/brokers/1/partitions/2
             case partitions ->
                 ClusterApiUtils.mapOperationResponse(
                     requestSender
@@ -191,7 +191,7 @@ public class ClusterEndpoint {
           };
       case partitions ->
           switch (subResource) {
-              // POST /cluster/partitions/2/brokers/1
+            // POST /cluster/partitions/2/brokers/1
             case brokers ->
                 ClusterApiUtils.mapOperationResponse(
                     requestSender
