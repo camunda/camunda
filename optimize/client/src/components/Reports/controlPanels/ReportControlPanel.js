@@ -378,7 +378,6 @@ export default withErrorHandling(
                   <li className="select">
                     <span className="label">{t(`report.view.label`)}</span>
                     <View
-                      type="process"
                       report={report.data}
                       onChange={(change) => updateReport(change, true)}
                       variables={variables}
@@ -391,7 +390,6 @@ export default withErrorHandling(
                     <Measure report={data} onChange={(change) => updateReport(change, true)} />
                   )}
                   <GroupBy
-                    type="process"
                     report={report.data}
                     onChange={(change) => updateReport(change, true)}
                     variables={{variable: variables}}
@@ -401,11 +399,7 @@ export default withErrorHandling(
                     onChange={(change) => updateReport(change, true)}
                     variables={variables}
                   />
-                  <Sorting
-                    type="process"
-                    report={report.data}
-                    onChange={(change) => updateReport(change, true)}
-                  />
+                  <Sorting report={report.data} onChange={(change) => updateReport(change, true)} />
                   {isDurationHeatmap(data) && (
                     <li className="select">
                       <span className="label">{t('report.heatTarget.label')}</span>

@@ -61,7 +61,7 @@ jest.mock('services', () => ({
       currentUserRole: 'editor',
       data: {subEntityCounts: {}, roleCounts: {}},
       lastModifier: 'user_id',
-      reportType: 'process', // or 'decision'
+      reportType: 'process',
       entityType: 'report',
     },
     {

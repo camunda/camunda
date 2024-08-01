@@ -118,7 +118,7 @@ export default class Configuration extends Component {
 
   render() {
     const {report, type, disabled, autoPreviewDisabled} = this.props;
-    const {reportType, data, result} = report;
+    const {data, result} = report;
     const {configuration, view, distributedBy, groupBy} = data;
     const Component = visualizations[type];
 
@@ -160,7 +160,7 @@ export default class Configuration extends Component {
               <ShowInstanceCount
                 showInstanceCount={configuration.showInstanceCount}
                 onChange={this.updateConfiguration}
-                label={reportType === 'decision' ? 'evaluation' : 'instance'}
+                label="instance"
               />
               <DateVariableUnit
                 configuration={configuration}

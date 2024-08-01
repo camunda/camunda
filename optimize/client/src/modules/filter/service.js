@@ -33,33 +33,6 @@ export async function loadValues(
   return await response.json();
 }
 
-export async function loadDecisionValues(
-  type,
-  decisionDefinitionKey,
-  decisionDefinitionVersions,
-  tenantIds,
-  variableId,
-  variableType,
-  resultOffset,
-  numResults,
-  valueFilter
-) {
-  const endpoint = type === 'inputVariable' ? 'inputs' : 'outputs';
-
-  const response = await post(`api/decision-variables/${endpoint}/values`, {
-    decisionDefinitionKey,
-    decisionDefinitionVersions,
-    tenantIds,
-    variableId,
-    variableType,
-    resultOffset,
-    numResults,
-    valueFilter,
-  });
-
-  return await response.json();
-}
-
 export function filterSameTypeExistingFilters(filters, newFilter) {
   const uniqueFilters = [
     'runningInstancesOnly',
@@ -77,7 +50,6 @@ export function filterSameTypeExistingFilters(filters, newFilter) {
     'doesNotIncludeIncident',
     'includesOpenIncident',
     'includesResolvedIncident',
-    'evaluationDateTime',
   ];
 
   return filters.filter(

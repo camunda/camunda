@@ -26,20 +26,18 @@ jest.mock('services', () => {
     loadProcessDefinitionXml: jest.fn().mockReturnValue('I am a process definition xml'),
     loadVariables: jest.fn().mockReturnValue([]),
     reportConfig: {
-      process: {
-        getLabelFor: () => 'foo',
-        options: {
-          view: {foo: {data: 'foo', label: 'viewfoo'}},
-          groupBy: {
-            foo: {data: 'foo', label: 'groupbyfoo'},
-            variable: {data: {value: []}, label: 'Variables'},
-          },
-          visualization: {foo: {data: 'foo', label: 'visualizationfoo'}},
+      getLabelFor: () => 'foo',
+      options: {
+        view: {foo: {data: 'foo', label: 'viewfoo'}},
+        groupBy: {
+          foo: {data: 'foo', label: 'groupbyfoo'},
+          variable: {data: {value: []}, label: 'Variables'},
         },
-        isAllowed: jest.fn().mockReturnValue(true),
-        getNext: jest.fn(),
-        update: jest.fn(),
+        visualization: {foo: {data: 'foo', label: 'visualizationfoo'}},
       },
+      isAllowed: jest.fn().mockReturnValue(true),
+      getNext: jest.fn(),
+      update: jest.fn(),
     },
     getFlowNodeNames: jest.fn().mockReturnValue({
       a: 'foo',
@@ -752,5 +750,4 @@ it('should show Sorting with proper values for reports grouped by date', () => {
   const node = shallow(<ReportControlPanel {...props} report={reportWithGRoupByDate} />);
 
   expect(node.find('Sorting').prop('report')).toBe(reportWithGRoupByDate.data);
-  expect(node.find('Sorting').prop('type')).toBe('process');
 });
