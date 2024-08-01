@@ -8,12 +8,14 @@
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
 import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 
 public final class ExecutableBusinessRuleTask extends ExecutableJobWorkerTask
     implements ExecutableCalledDecision {
 
   private Expression decisionId;
   private String resultVariable;
+  private ZeebeBindingType bindingType;
 
   public ExecutableBusinessRuleTask(final String id) {
     super(id);
@@ -37,5 +39,15 @@ public final class ExecutableBusinessRuleTask extends ExecutableJobWorkerTask
   @Override
   public void setResultVariable(final String resultVariable) {
     this.resultVariable = resultVariable;
+  }
+
+  @Override
+  public ZeebeBindingType getBindingType() {
+    return bindingType;
+  }
+
+  @Override
+  public void setBindingType(final ZeebeBindingType bindingType) {
+    this.bindingType = bindingType;
   }
 }
