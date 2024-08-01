@@ -68,32 +68,41 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - env:
-          GH_TOKEN: ${{ github.token }}
-          BUILD_BASE_REF: "${{ github.base_ref && format('refs/heads/{0}', github.base_ref) || github.event.merge_group.base_ref }}"
-        run: |
-          gh api -X GET "repos/camunda/camunda/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs?per_page=100" --jq '.jobs[] | select(.conclusion=="failure") .id' | while read job_id; do
-            echo "Processing job: $job_id"
-            if gh api -X GET "/repos/camunda/camunda/check-runs/$job_id/annotations" --jq '.[] | select(.message | contains("lost communication with the server") or contains("runner has received a shutdown signal"))' | grep -q message; then
-              job_name=$(gh api "repos/camunda/camunda/actions/jobs/$job_id" --jq '.name')
-              runner_name=$(gh api "repos/camunda/camunda/actions/jobs/$job_id" --jq '.runner_name' | tr '[:upper:]' '[:lower:]')
-              cat <<EOF
-              {
-                "report_time": "$(date '+%Y-%m-%d %H:%M:%S')",
-                "ci_url": "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY",
-                "workflow_name": "$GITHUB_WORKFLOW",
-                "job_name": "$job_name",
-                "build_id": "$GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT",
-                "build_trigger": "$GITHUB_EVENT_NAME",
-                "build_status": "aborted",
-                "build_ref": "$GITHUB_REF",
-                "runner_name": "$runner_name",
-                "user_reason": "agent-disconnected"
-                ${{ (env.BUILD_BASE_REF == '') && ' ' || format(', "build_base_ref": "{0}"', env.BUILD_BASE_REF) }}
-              }
-          EOF
-            fi
-          done
+      - name: Observe all jobs
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-all-jobs
+        with:
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+      # - env:
+      #     GH_TOKEN: ${{ github.token }}
+      #     BUILD_BASE_REF: "${{ github.base_ref && format('refs/heads/{0}', github.base_ref) || github.event.merge_group.base_ref }}"
+      #   run: |
+      #     gh api -X GET "repos/camunda/camunda/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs?per_page=100" --jq '.jobs[] | select(.conclusion=="failure") .id' | while read job_id; do
+      #       echo "Processing job: $job_id"
+      #       if gh api -X GET "/repos/camunda/camunda/check-runs/$job_id/annotations" --jq '.[] | select(.message | contains("lost communication with the server") or contains("runner has received a shutdown signal"))' | grep -q message; then
+      #         job_name=$(gh api "repos/camunda/camunda/actions/jobs/$job_id" --jq '.name')
+      #         runner_name=$(gh api "repos/camunda/camunda/actions/jobs/$job_id" --jq '.runner_name' | tr '[:upper:]' '[:lower:]')
+      #         cat <<EOF
+      #         {
+      #           "report_time": "$(date '+%Y-%m-%d %H:%M:%S')",
+      #           "ci_url": "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY",
+      #           "workflow_name": "$GITHUB_WORKFLOW",
+      #           "job_name": "$job_name",
+      #           "build_id": "$GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT",
+      #           "build_trigger": "$GITHUB_EVENT_NAME",
+      #           "build_status": "aborted",
+      #           "build_ref": "$GITHUB_REF",
+      #           "runner_name": "$runner_name",
+      #           "user_reason": "agent-disconnected"
+      #           ${{ (env.BUILD_BASE_REF == '') && ' ' || format(', "build_base_ref": "{0}"', env.BUILD_BASE_REF) }}
+      #         }
+      #     EOF
+      #       fi
+      #     done
 
   actionlint:
     if: needs.detect-changes.outputs.actionlint == 'true'
