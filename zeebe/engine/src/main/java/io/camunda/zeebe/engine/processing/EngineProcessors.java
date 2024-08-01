@@ -278,7 +278,12 @@ public final class EngineProcessors {
     typedRecordProcessors.onCommand(
         ValueType.SCALE,
         ScaleIntent.RELOCATE_MESSAGE_COMPLETE,
-        new ScaleRelocateMessageCompleteProcessor(writers, processingState.getMessageState()));
+        new ScaleRelocateMessageCompleteProcessor(
+            processingState.getKeyGenerator(),
+            writers,
+            processingState.getMessageState(),
+            processingState.getRelocationState(),
+            commandDistributionBehavior));
 
     typedRecordProcessors.onCommand(
         ValueType.SCALE,

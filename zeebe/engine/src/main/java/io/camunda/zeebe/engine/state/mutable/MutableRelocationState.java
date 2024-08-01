@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.RelocationState;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import org.agrona.DirectBuffer;
 
 public interface MutableRelocationState extends RelocationState {
@@ -16,4 +17,6 @@ public interface MutableRelocationState extends RelocationState {
   void markAsRelocating(DirectBuffer correlationKey);
 
   void markAsDone(DirectBuffer correlationKey);
+
+  void enqueue(MessageRecord messageRecord);
 }
