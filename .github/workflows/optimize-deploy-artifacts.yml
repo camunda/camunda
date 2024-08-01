@@ -68,7 +68,7 @@ jobs:
       with:
         parameters: install -DskipTests -Dskip.docker
     - name: Build Docker Image
-      run: ./.github/scripts/build-docker-image.sh
+      run: ./.github/optimize/scripts/build-docker-image.sh
     # The SmokeTest is running as part of the "deploy-artifact" job to ensure we only push the artifact on success
     # It uses the previously created docker image before it was pushed
     - name: Start Smoketest
