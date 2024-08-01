@@ -365,7 +365,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
         singletonList(
             expect(
                 ZeebeFormDefinition.class,
-                "Attribute 'bindingType' must be one of: deployment, latest"))
+                "Attribute 'bindingType' must be one of: deployment, latest, versionTag"))
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ////////////////////////////////// Native user tasks ////////////////////////////////////////
@@ -660,7 +660,7 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
         singletonList(
             expect(
                 ZeebeFormDefinition.class,
-                "Attribute 'bindingType' must be one of: deployment, latest"))
+                "Attribute 'bindingType' must be one of: deployment, latest, versionTag"))
       }
     };
   }
