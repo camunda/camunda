@@ -140,7 +140,7 @@ const Processes: React.FC = observer(() => {
     setSearchParams(current);
   };
   const selectedTenantId = hasMultipleTenants
-    ? (searchParams.get('tenantId') ?? defaultTenant?.id)
+    ? searchParams.get('tenantId') ?? defaultTenant?.id
     : defaultTenant?.id;
   const startFormFilterSearchParam =
     searchParams.get('hasStartForm') ?? undefined;
@@ -266,7 +266,7 @@ const Processes: React.FC = observer(() => {
               <Grid narrow>
                 <Column sm={4} md={8} lg={16}>
                   <Stack gap={4}>
-                    <h1>{t('processes')}</h1>
+                    <h1>{t('headerNavItemProcesses')}</h1>
                     <p>{t('processesSubtitle')}</p>
                   </Stack>
                 </Column>

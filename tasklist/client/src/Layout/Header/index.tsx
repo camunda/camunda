@@ -158,7 +158,7 @@ const Header: React.FC = observer(() => {
           {
             isCurrentPage: isProcessesPage,
             key: 'processes',
-            label: t('processes'),
+            label: t('headerNavItemProcesses'),
             routeProps: {
               to: pages.processes({
                 tenantId: getStateLocally('tenantId') ?? undefined,

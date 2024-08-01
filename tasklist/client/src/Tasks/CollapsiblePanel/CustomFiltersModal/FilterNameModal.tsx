@@ -24,7 +24,7 @@ const FilterNameModal: React.FC<Props> = ({isOpen, onApply, onCancel}) => {
     <Modal
       variant="composed-modal"
       open={isOpen}
-      aria-label={t('customFiltersModalAria')}
+      aria-label={t('customFiltersModalSaveAria')}
       preventCloseOnClickOutside
       size="sm"
     >

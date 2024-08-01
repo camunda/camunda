@@ -277,7 +277,7 @@ const CollapsiblePanel: React.FC = () => {
                 }}
                 isActive={filter === 'completed'}
               >
-                {t('tasksCompletedFilterLabel')}
+                {t('taskFilterPanelCompleted')}
               </ControlledNavLink>
             </li>
             {customFilters.map(([filterId, {name}]) => (
