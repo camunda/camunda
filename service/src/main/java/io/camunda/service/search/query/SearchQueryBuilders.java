@@ -49,4 +49,14 @@ public final class SearchQueryBuilders {
       final Function<DecisionDefinitionQuery.Builder, ObjectBuilder<DecisionDefinitionQuery>> fn) {
     return fn.apply(decisionDefinitionSearchQuery()).build();
   }
+
+  public static DecisionRequirementQuery.Builder decisionRequirementSearchQuery() {
+    return new DecisionRequirementQuery.Builder();
+  }
+
+  public static DecisionRequirementQuery decisionRequirementSearchQuery(
+      final Function<DecisionRequirementQuery.Builder, ObjectBuilder<DecisionRequirementQuery>>
+          fn) {
+    return fn.apply(decisionRequirementSearchQuery()).build();
+  }
 }
