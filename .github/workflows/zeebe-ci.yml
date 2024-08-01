@@ -116,6 +116,14 @@ jobs:
         if: failure()
         with:
           name: "[IT] ${{ matrix.name }}"
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "integration-tests/${{ matrix.group }}"
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   unit-tests:
     name: Unit tests
     runs-on: [ self-hosted, linux, amd64, "16" ]
@@ -155,6 +163,13 @@ jobs:
         if: failure()
         with:
           name: "unit tests"
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   smoke-tests:
     name: "[Smoke] ${{ matrix.os }} with ${{ matrix.arch }}"
     timeout-minutes: 20
@@ -213,6 +228,14 @@ jobs:
         if: failure()
         with:
           name: "[Smoke] ${{ matrix.os }} with ${{ matrix.arch }}"
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "smoke-tests/${{ matrix.os }}"
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   property-tests:
     name: Property Tests
     runs-on: [ self-hosted, linux, amd64, "16" ]
@@ -248,6 +271,72 @@ jobs:
         if: failure()
         with:
           name: Property Tests
+<<<<<<< HEAD
+=======
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+  performance-tests:
+    name: Performance Tests
+    runs-on: [ self-hosted, linux, amd64, "16" ]
+    timeout-minutes: 30
+    env:
+      ZEEBE_PERFORMANCE_TEST_RESULTS_DIR: "/tmp/jmh"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          go: false
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - uses: ./.github/actions/build-zeebe
+        with:
+          go: false
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+      - name: Maven Test Build
+        run: >
+          ./mvnw -B --no-snapshot-updates
+          -P include-performance-tests
+          -D skipChecks
+          -T1C
+          test
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+        env:
+          LARGE_STATE_CONTROLLER_PERFORMANCE_TEST_SIZE_GB: "4"
+      - name: Duplicate Test Check
+        uses: ./.github/actions/check-duplicate-tests
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Summarize test results
+        if: always()
+        run: |
+          echo '## Performance Test Results' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          FILES="${ZEEBE_PERFORMANCE_TEST_RESULTS_DIR}/*.txt"
+          for file in $FILES; do
+            cat "${file}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          done
+          echo '```' >> $GITHUB_STEP_SUMMARY
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: Performance Tests
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+>>>>>>> 50c1053 (build: observe status of CI jobs)
   go-client:
     name: Go client tests
     runs-on: ubuntu-latest
@@ -270,6 +359,13 @@ jobs:
       - name: Run Go tests
         working-directory: clients/go
         run: go test -mod=vendor -v ./...
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   go-lint:
     name: Go linting
     runs-on: ubuntu-latest
@@ -290,6 +386,13 @@ jobs:
           skip-pkg-cache: true
           skip-build-cache: true
           working-directory: clients/go
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   go-apidiff:
     name: Go Backward Compatibility
     runs-on: ubuntu-latest
@@ -311,7 +414,18 @@ jobs:
           git fetch --depth=1 origin ${{ env.GO_CLIENT_BASE_REF }}
       - uses: joelanford/go-apidiff@main
         with:
+<<<<<<< HEAD
           base-ref: origin/${{ env.GO_CLIENT_BASE_REF }}
+=======
+          base-ref:  origin/${{ env.GO_CLIENT_BASE_REF }}
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+>>>>>>> 50c1053 (build: observe status of CI jobs)
   java-checks:
     name: Java checks
     runs-on: ubuntu-latest
@@ -325,6 +439,13 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - run: ./mvnw -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   docker-checks:
     name: Docker checks
     runs-on: ubuntu-latest
@@ -375,6 +496,14 @@ jobs:
           revision: ${{ github.sha }}
           version: ${{ steps.build-zeebe-docker.outputs.version }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
+      - name: Observe build status
+        if: always()
+        uses: ./.github/actions/observe-build-status
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   test-summary:
     # Used by bors to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
