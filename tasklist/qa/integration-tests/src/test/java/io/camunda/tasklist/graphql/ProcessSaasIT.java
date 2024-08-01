@@ -70,7 +70,7 @@ public class ProcessSaasIT extends TasklistZeebeIntegrationTest {
         responseProcessDefinition.get("$.data.processes[0].processDefinitionId"));
 
     LOGGER.info("Should return all process based on Process id query");
-    testProcessRetrieval("2251799813685249", 1);
+    testProcessRetrieval("2251799813685250", 1);
 
     LOGGER.info("Should return all process based on partial Process id query");
     testProcessRetrieval("799813685", 0);
