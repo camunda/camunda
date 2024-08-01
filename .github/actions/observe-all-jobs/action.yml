@@ -76,7 +76,7 @@ runs:
           job_name=$(gh api "repos/camunda/camunda/actions/jobs/$job_id" --jq '.name')
           runner_name=$(gh api "repos/camunda/camunda/actions/jobs/$job_id" --jq '.runner_name' | tr '[:upper:]' '[:lower:]')
 
-          cat <<EOF #| tr '\n' ' ' | $BG_COMMAND insert "${{ inputs.big_query_table_name }}"
+          cat <<EOF | tr '\n' ' ' | $BG_COMMAND insert "${{ inputs.big_query_table_name }}"
       {
         "report_time": "$(date '+%Y-%m-%d %H:%M:%S')",
         "ci_url": "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY",
@@ -93,5 +93,6 @@ runs:
       EOF
         fi
       done
+
 
     # See https://github.com/actions/runner/issues/409#issuecomment-1013325196 for above ternary operator!
