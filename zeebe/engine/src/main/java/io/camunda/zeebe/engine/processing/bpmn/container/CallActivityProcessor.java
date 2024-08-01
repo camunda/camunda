@@ -224,7 +224,12 @@ public final class CallActivityProcessor
                             Either.left(
                                 new Failure(
                                     String.format(
-                                        "Expected process with BPMN process id '%s' to be deployed with deployment %s, but not found.",
+                                        """
+                                        Expected to call process with BPMN process id '%s' with binding type 'deployment', \
+                                        but no such process found in the deployment with key %s which contained the current process. \
+                                        To resolve this incident, migrate the process instance to a process definition \
+                                        that is deployed together with the intended process definition to call.\
+                                        """,
                                         BufferUtil.bufferAsString(processId), deploymentKey),
                                     ErrorType.CALLED_ELEMENT_ERROR))));
   }

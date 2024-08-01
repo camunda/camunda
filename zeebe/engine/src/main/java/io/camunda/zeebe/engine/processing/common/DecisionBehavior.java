@@ -66,9 +66,13 @@ public class DecisionBehavior {
                 tenantId, BufferUtil.wrapString(decisionId), deploymentKey))
         .orElse(
             new Failure(
-                "no decision found for id '%s' in deployment %s"
-                    .formatted(decisionId, deploymentKey)))
-        .mapLeft(failure -> formatDecisionLookupFailure(failure, decisionId));
+                """
+                Expected to evaluate decision '%s' with binding type 'deployment', \
+                but no such decision found in the deployment with key %s which contained the current process. \
+                To resolve this incident, migrate the process instance to a process definition \
+                that is deployed together with the intended decision to evaluate.\
+                """
+                    .formatted(decisionId, deploymentKey)));
   }
 
   public Either<Failure, PersistedDecision> findDecisionByKeyAndTenant(

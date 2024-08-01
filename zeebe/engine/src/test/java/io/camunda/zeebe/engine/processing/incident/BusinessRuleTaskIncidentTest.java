@@ -140,10 +140,12 @@ public class BusinessRuleTaskIncidentTest {
         .hasErrorType(ErrorType.CALLED_DECISION_ERROR)
         .hasErrorMessage(
             """
-            Expected to evaluate decision 'jedi_or_sith', \
-            but no decision found for id 'jedi_or_sith' in deployment \
+            Expected to evaluate decision '%s' with binding type 'deployment', \
+            but no such decision found in the deployment with key %s which contained the current process. \
+            To resolve this incident, migrate the process instance to a process definition \
+            that is deployed together with the intended decision to evaluate.\
             """
-                + deployment.getKey());
+                .formatted(DECISION_ID, deployment.getKey()));
   }
 
   @Test
