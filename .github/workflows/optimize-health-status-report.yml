@@ -31,7 +31,7 @@ jobs:
 
       - name: Genetare config file
         run: |
-          cd ${{ github.workspace }}/optimize/scripts/healthStatusReport
+          cd ${{ github.workspace }}/.github/optimize/scripts/healthStatusReport
           yarn
           npx ts-node createHealthStatusConfig.ts
           cat config.json
@@ -43,7 +43,7 @@ jobs:
         uses: misiekhardcore/infra-report-action@42096709b605df6eb1a5d4630dffb5350d915187 # v1.5.0
         id: get-report
         with:
-          config_file_path: ${{ github.workspace }}/optimize/scripts/healthStatusReport/config.json
+          config_file_path: ${{ github.workspace }}/.github/optimize/scripts/healthStatusReport/config.json
           github_token: ${{ secrets.GITHUB_TOKEN }}
           argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
 
