@@ -134,7 +134,7 @@ camunda:
     # Zeebe instance
     zeebe:
       # Gateway address
-      gatewayAdress: localhost:26500
+      gatewayAddress: localhost:26500
     # ELS instance to export Zeebe data to
     zeebeElasticsearch:
       # Cluster name
