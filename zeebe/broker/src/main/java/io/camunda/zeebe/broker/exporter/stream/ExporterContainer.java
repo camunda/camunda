@@ -21,6 +21,7 @@ import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.jar.ThreadContextUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -49,13 +50,15 @@ final class ExporterContainer implements Controller {
   ExporterContainer(
       final ExporterDescriptor descriptor,
       final int partitionId,
-      final ExporterInitializationInfo initializationInfo) {
+      final ExporterInitializationInfo initializationInfo,
+      final MeterRegistry meterRegistry) {
     this.initializationInfo = initializationInfo;
     context =
         new ExporterContext(
             Loggers.getExporterLogger(descriptor.getId()),
             descriptor.getConfiguration(),
-            partitionId);
+            partitionId,
+            meterRegistry);
 
     exporter = descriptor.newInstance();
   }

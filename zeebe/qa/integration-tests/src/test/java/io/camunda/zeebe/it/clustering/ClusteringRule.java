@@ -70,6 +70,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.util.NetUtil;
 import java.io.File;
 import java.io.IOException;
@@ -366,7 +367,8 @@ public class ClusteringRule extends ExternalResource {
             null,
             scheduler,
             atomixCluster,
-            brokerClient);
+            brokerClient,
+            new SimpleMeterRegistry());
     systemContexts.put(nodeId, systemContext);
 
     final Broker broker =
