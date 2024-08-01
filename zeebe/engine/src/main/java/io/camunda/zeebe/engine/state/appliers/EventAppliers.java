@@ -105,6 +105,7 @@ public final class EventAppliers implements EventApplier {
     registerCommandDistributionAppliers(state);
     registerEscalationAppliers();
     registerResourceDeletionAppliers();
+
     registerUserAppliers(state);
     return this;
   }
