@@ -51,11 +51,11 @@
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.4.0</version.docker-java-api>
     <version.elasticsearch>8.9.2</version.elasticsearch>
-    <version.error-prone>2.28.0</version.error-prone>
+    <version.error-prone>2.29.2</version.error-prone>
     <version.grpc>1.65.1</version.grpc>
     <version.gson>2.11.0</version.gson>
     <version.guava>33.2.1-jre</version.guava>
-    <version.hamcrest>2.2</version.hamcrest>
+    <version.hamcrest>3.0</version.hamcrest>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
     <version.httpclient5>5.3.1</version.httpclient5>
@@ -89,7 +89,7 @@
     <version.wiremock>3.9.1</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
-    <version.testcontainers>1.20.0</version.testcontainers>
+    <version.testcontainers>1.20.1</version.testcontainers>
     <version.netflix.concurrency>0.5.1</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.5</version.zeebe-test-container>
     <version.feel-scala>1.18.0-alpha1</version.feel-scala>
@@ -122,8 +122,8 @@
     <version.zpt>8.5.5</version.zpt>
     <version.feign>13.3</version.feign>
     <version.google-sdk>26.43.0</version.google-sdk>
-    <version.azure-sdk>1.2.25</version.azure-sdk>
-    <version.awssdk>2.26.25</version.awssdk>
+    <version.azure-sdk>1.2.26</version.azure-sdk>
+    <version.awssdk>2.26.27</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -146,17 +146,17 @@
     <version.commons-io>2.16.1</version.commons-io>
     <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
     <version.unboundid-ldapsdk>7.0.1</version.unboundid-ldapsdk>
-    <version.parsson>1.1.6</version.parsson>
+    <version.parsson>1.1.7</version.parsson>
     <version.springdoc>2.6.0</version.springdoc>
     <version.jakarta.json>2.0.1</version.jakarta.json>
 
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.765</version.aws-java-sdk>
-    <version.elasticsearch-test-container>1.20.0</version.elasticsearch-test-container>
-    <version.postgres-test-container>1.20.0</version.postgres-test-container>
-    <version.elasticsearch7>7.17.22</version.elasticsearch7>
+    <version.aws-java-sdk>1.12.767</version.aws-java-sdk>
+    <version.elasticsearch-test-container>1.20.1</version.elasticsearch-test-container>
+    <version.postgres-test-container>1.20.1</version.postgres-test-container>
+    <version.elasticsearch7>7.17.23</version.elasticsearch7>
     <version.lucene>8.11.3</version.lucene>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
     <version.joda-time>2.12.7</version.joda-time>
@@ -219,7 +219,7 @@
     <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
-    <plugin.version.google-java-format>1.22.0</plugin.version.google-java-format>
+    <plugin.version.google-java-format>1.23.0</plugin.version.google-java-format>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>

@@ -12,6 +12,7 @@ import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.search.connect.SearchClientProvider;
 import io.camunda.search.connect.SearchClientProvider.SearchClientProviders;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -20,11 +21,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(
-    prefix = "zeebe.broker.gateway",
-    name = "enable",
-    havingValue = "true",
-    matchIfMissing = true)
+@ConditionalOnRestGatewayEnabled
 @EnableConfigurationProperties(SearchClientProperties.class)
 public class SearchClientDatabaseConfiguration {
 

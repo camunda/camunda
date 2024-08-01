@@ -22,6 +22,10 @@ public final class FilterBuilders {
     return new UserTaskFilter.Builder();
   }
 
+  public static DecisionDefinitionFilter.Builder decisionDefinition() {
+    return new DecisionDefinitionFilter.Builder();
+  }
+
   public static ProcessInstanceFilter processInstance(
       final Function<ProcessInstanceFilter.Builder, ObjectBuilder<ProcessInstanceFilter>> fn) {
     return fn.apply(processInstance()).build();
@@ -30,6 +34,12 @@ public final class FilterBuilders {
   public static UserTaskFilter userTask(
       final Function<UserTaskFilter.Builder, ObjectBuilder<UserTaskFilter>> fn) {
     return fn.apply(userTask()).build();
+  }
+
+  public static DecisionDefinitionFilter decisionDefinition(
+      final Function<DecisionDefinitionFilter.Builder, ObjectBuilder<DecisionDefinitionFilter>>
+          fn) {
+    return fn.apply(decisionDefinition()).build();
   }
 
   public static VariableFilter.Builder variable() {

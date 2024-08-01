@@ -30,5 +30,8 @@ public final class CalledDecisionTransformer {
 
     final var resultVariable = calledDecision.getResultVariable();
     executableElement.setResultVariable(resultVariable);
+
+    final var bindingType = calledDecision.getBindingType();
+    executableElement.setBindingType(bindingType);
   }
 }

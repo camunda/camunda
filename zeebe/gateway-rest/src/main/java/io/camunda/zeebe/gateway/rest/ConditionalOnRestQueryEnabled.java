@@ -5,21 +5,23 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest.controller;
+package io.camunda.zeebe.gateway.rest;
 
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
+/**
+ * The REST Query API is enabled when the REST Gateway itself and the Query API are enabled. The
+ * Query API is disabled by default and has to be enabled specifically by setting {@code
+ * camunda.rest.query.enabled} to {@code true}.
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Documented
 @ConditionalOnRestGatewayEnabled
-@RestController
-@RequestMapping("v2")
-public @interface ZeebeRestController {}
+@ConditionalOnProperty(name = "camunda.rest.query.enabled", havingValue = "true")
+public @interface ConditionalOnRestQueryEnabled {}

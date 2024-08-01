@@ -19,6 +19,9 @@ public interface ProcessState {
   DeployedProcess getProcessByProcessIdAndVersion(
       DirectBuffer processId, int version, final String tenantId);
 
+  DeployedProcess getProcessByProcessIdAndDeploymentKey(
+      DirectBuffer processId, long deploymentKey, final String tenantId);
+
   DeployedProcess getProcessByKeyAndTenant(long key, String tenantId);
 
   DirectBuffer getLatestVersionDigest(DirectBuffer processId, final String tenantId);

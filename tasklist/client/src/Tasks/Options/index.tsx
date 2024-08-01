@@ -28,8 +28,12 @@ const Options: React.FC<Props> = observer(({onAutoSelectToggle}) => {
         labelB="On"
         toggled={autoSelectNextTaskStore.enabled}
         onToggle={(state) => {
-          autoSelectNextTaskStore.toggle();
-          onAutoSelectToggle?.(!state);
+          if (state) {
+            autoSelectNextTaskStore.enable();
+          } else {
+            autoSelectNextTaskStore.disable();
+          }
+          onAutoSelectToggle?.(state);
         }}
       />
     </section>

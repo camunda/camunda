@@ -42,6 +42,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthMonitor;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.List;
 
@@ -73,6 +74,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private BackupStore backupStore;
   private DynamicPartitionConfig partitionConfig;
   private CommandApiService commandApiService;
+  private MeterRegistry meterRegistry;
 
   @Override
   public int getPartitionId() {
@@ -288,6 +290,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public void setBackupStore(final BackupStore backupStore) {
     this.backupStore = backupStore;
+  }
+
+  @Override
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
   }
 
   public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {

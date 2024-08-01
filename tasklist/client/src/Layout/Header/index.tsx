@@ -6,10 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {observer} from 'mobx-react-lite';
 import {Link as RouterLink, matchPath, useLocation} from 'react-router-dom';
-import {Link} from '@carbon/react';
+import {
+  Link,
+  Dropdown,
+  SwitcherDivider,
+  OnChangeData,
+  Layer,
+} from '@carbon/react';
 import {ArrowRight} from '@carbon/react/icons';
 import {C3Navigation} from '@camunda/camunda-composite-components';
 import {pages} from 'modules/routing';
@@ -19,6 +26,7 @@ import {themeStore} from 'modules/stores/theme';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {getStateLocally} from 'modules/utils/localStorage';
 import styles from './styles.module.scss';
+import {languageItems, SelectionOption} from 'modules/internationalization';
 
 function getInfoSidebarItems(isPaidPlan: boolean) {
   const BASE_INFO_SIDEBAR_ITEMS = [
@@ -223,6 +231,7 @@ const Header: React.FC = observer(() => {
               changeTheme(theme as 'system' | 'dark' | 'light');
             },
           },
+          customSection: <LanguageSelector />,
         },
         elements: [
           ...(window.Osano?.cm === undefined
@@ -296,6 +305,44 @@ const Header: React.FC = observer(() => {
           : undefined,
       }}
     />
+  );
+});
+
+const LanguageSelector: React.FC = observer(() => {
+  const {i18n, t} = useTranslation();
+
+  const [selectedLanguage, setSelectedLanguage] = useState(
+    i18n.resolvedLanguage ?? 'en',
+  );
+
+  useEffect(() => {
+    if (selectedLanguage !== i18n.language) {
+      i18n.changeLanguage(selectedLanguage);
+      localStorage.setItem('language', selectedLanguage);
+    }
+  }, [selectedLanguage, i18n]);
+
+  const handleLanguageChange = (e: OnChangeData<SelectionOption>) => {
+    setSelectedLanguage(e.selectedItem?.id ?? 'en');
+  };
+
+  return (
+    <Layer>
+      <SwitcherDivider />
+      <div className={styles.languageDropdownPadding}>
+        <Dropdown
+          id="language-dropdown"
+          label={t('chooseLanguage')}
+          titleText={t('language')}
+          items={languageItems}
+          itemToString={(item) => (item ? item.label : '')}
+          onChange={handleLanguageChange}
+          selectedItem={languageItems.find(
+            (item) => item.id === selectedLanguage,
+          )}
+        />
+      </div>
+    </Layer>
   );
 });
 

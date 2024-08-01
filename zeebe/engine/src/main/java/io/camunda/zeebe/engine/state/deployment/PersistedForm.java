@@ -30,16 +30,18 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
   private final BinaryProperty checksumProp = new BinaryProperty("checksum", new UnsafeBuffer());
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1L);
 
   public PersistedForm() {
-    super(7);
+    super(8);
     declareProperty(formIdProp)
         .declareProperty(versionProp)
         .declareProperty(formKeyProp)
         .declareProperty(resourceNameProp)
         .declareProperty(resourceProp)
         .declareProperty(checksumProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(deploymentKeyProp);
   }
 
   public PersistedForm copy() {
@@ -51,6 +53,7 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
     copy.resourceProp.setValue(BufferUtil.cloneBuffer(getResource()));
     copy.checksumProp.setValue(BufferUtil.cloneBuffer(getChecksum()));
     copy.tenantIdProp.setValue(getTenantId());
+    copy.deploymentKeyProp.setValue(getDeploymentKey());
     return copy;
   }
 
@@ -82,6 +85,10 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
     return bufferAsString(tenantIdProp.getValue());
   }
 
+  public long getDeploymentKey() {
+    return deploymentKeyProp.getValue();
+  }
+
   public void wrap(final FormRecord record) {
     formIdProp.setValue(record.getFormId());
     versionProp.setValue(record.getVersion());
@@ -90,5 +97,6 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
     resourceProp.setValue(BufferUtil.wrapArray(record.getResource()));
     checksumProp.setValue(record.getChecksumBuffer());
     tenantIdProp.setValue(record.getTenantId());
+    deploymentKeyProp.setValue(record.getDeploymentKey());
   }
 }

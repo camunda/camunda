@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.function.Function;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -85,6 +87,43 @@ public final class CallActivityIncidentTest {
   }
 
   @Test
+  public void shouldCreateIncidentIfProcessIsNotDeployedInSameDeploymentForBindingTypeDeployment() {
+    // given
+    final var childProcessId = Strings.newRandomValidBpmnId();
+    final var childProcess = Bpmn.createExecutableProcess(childProcessId).startEvent().done();
+    ENGINE.deployment().withXmlResource("wf-child.bpmn", childProcess).deploy();
+    final var parentProcess =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .callActivity(
+                "call",
+                c -> c.zeebeProcessId(childProcessId).zeebeBindingType(ZeebeBindingType.deployment))
+            .done();
+    final var deployment =
+        ENGINE.deployment().withXmlResource("wf-parent.bpmn", parentProcess).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    // then
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        getCallActivityInstance(processInstanceKey);
+
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.CALLED_ELEMENT_ERROR)
+        .hasErrorMessage(
+            """
+            Expected to call process with BPMN process id '%s' with binding type 'deployment', \
+            but no such process found in the deployment with key %s which contained the current process. \
+            To resolve this incident, migrate the process instance to a process definition \
+            that is deployed together with the intended process definition to call.\
+            """
+                .formatted(childProcessId, deployment.getKey()));
+  }
+
+  @Test
   public void shouldCreateIncidentIfProcessHasNoNoneStartEvent() {
     // given
     ENGINE
@@ -107,6 +146,8 @@ public final class CallActivityIncidentTest {
         getCallActivityInstance(processInstanceKey);
 
     assertIncidentCreated(incident, elementInstance)
+        .hasElementInstancePath(List.of(List.of(processInstanceKey, elementInstance.getKey())))
+        .hasProcessDefinitionKey(incident.getValue().getProcessDefinitionKey())
         .hasErrorType(ErrorType.CALLED_ELEMENT_ERROR)
         .hasErrorMessage(
             "Expected process with BPMN process id '"
@@ -189,6 +230,8 @@ public final class CallActivityIncidentTest {
         getCallActivityInstance(processInstanceKey);
 
     assertIncidentCreated(incident, elementInstance, tenantId)
+        .hasElementInstancePath(List.of(List.of(processInstanceKey, elementInstance.getKey())))
+        .hasProcessDefinitionKey(incident.getValue().getProcessDefinitionKey())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """

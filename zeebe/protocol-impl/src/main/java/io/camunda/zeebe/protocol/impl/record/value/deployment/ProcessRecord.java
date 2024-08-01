@@ -32,16 +32,18 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
   private final BinaryProperty resourceProp = new BinaryProperty("resource", new UnsafeBuffer());
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
 
   public ProcessRecord() {
-    super(7);
+    super(8);
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)
         .declareProperty(resourceNameProp)
         .declareProperty(checksumProp)
         .declareProperty(resourceProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(deploymentKeyProp);
   }
 
   public ProcessRecord wrap(final ProcessMetadata metadata, final byte[] resource) {
@@ -52,6 +54,7 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
     resourceNameProp.setValue(metadata.getResourceNameBuffer());
     resourceProp.setValue(BufferUtil.wrapArray(resource));
     tenantIdProp.setValue(metadata.getTenantId());
+    deploymentKeyProp.setValue(metadata.getDeploymentKey());
     return this;
   }
 
@@ -83,6 +86,16 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
   @Override
   public boolean isDuplicate() {
     return false;
+  }
+
+  @Override
+  public long getDeploymentKey() {
+    return deploymentKeyProp.getValue();
+  }
+
+  public ProcessRecord setDeploymentKey(final long deploymentKey) {
+    deploymentKeyProp.setValue(deploymentKey);
+    return this;
   }
 
   public ProcessRecord setChecksum(final DirectBuffer checksumBuffer) {

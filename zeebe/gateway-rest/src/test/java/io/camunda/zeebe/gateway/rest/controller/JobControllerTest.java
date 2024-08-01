@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.service.JobServices;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -111,5 +112,229 @@ public class JobControllerTest extends RestControllerTest {
         .isNoContent();
 
     Mockito.verify(jobServices).failJob(1L, 0, "", 0L, null);
+  }
+
+  @Test
+  void shouldThrowErrorJob() {
+    // given
+    when(jobServices.errorJob(anyLong(), anyString(), anyString(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+        {
+          "errorCode": "400",
+          "errorMessage": "error",
+          "variables": {
+            "foo": "bar"
+          }
+        }""";
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/error")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(jobServices).errorJob(1L, "400", "error", Map.of("foo", "bar"));
+  }
+
+  @Test
+  void shouldRejectThrowErrorJobWithoutBody() {
+    // given
+    final var expectedBody =
+        """
+        {
+          "type": "about:blank",
+          "status": 400,
+          "title": "Bad Request",
+          "detail": "Required request body is missing",
+          "instance": "%s"
+        }"""
+            .formatted(JOBS_BASE_URL + "/1/error");
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/error")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  @Test
+  void shouldRejectThrowErrorJobWithoutErrorCode() {
+    // given
+    final var request =
+        """
+        {
+          "errorMessage": "error",
+          "variables": {
+            "foo": "bar"
+          }
+        }""";
+
+    final var expectedBody =
+        """
+        {
+          "type": "about:blank",
+          "status": 400,
+          "title": "INVALID_ARGUMENT",
+          "detail": "No errorCode provided.",
+          "instance": "%s"
+        }"""
+            .formatted(JOBS_BASE_URL + "/1/error");
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/error")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  @Test
+  void shouldRejectThrowErrorJobWithEmptyErrorCode() {
+    // given
+    final var request =
+        """
+        {
+          "errorCode": "",
+          "errorMessage": "error",
+          "variables": {
+            "foo": "bar"
+          }
+        }""";
+
+    final var expectedBody =
+        """
+        {
+          "type": "about:blank",
+          "status": 400,
+          "title": "INVALID_ARGUMENT",
+          "detail": "No errorCode provided.",
+          "instance": "%s"
+        }"""
+            .formatted(JOBS_BASE_URL + "/1/error");
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/error")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  @Test
+  void shouldRejectThrowErrorJobWithOnlySpacesErrorCode() {
+    // given
+    final var request =
+        """
+        {
+          "errorCode": "    ",
+          "errorMessage": "error",
+          "variables": {
+            "foo": "bar"
+          }
+        }""";
+
+    final var expectedBody =
+        """
+        {
+          "type": "about:blank",
+          "status": 400,
+          "title": "INVALID_ARGUMENT",
+          "detail": "No errorCode provided.",
+          "instance": "%s"
+        }"""
+            .formatted(JOBS_BASE_URL + "/1/error");
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/error")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  @Test
+  void shouldCompleteJob() {
+    // given
+    when(jobServices.completeJob(anyLong(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(jobServices).completeJob(1L, Map.of());
+  }
+
+  @Test
+  void shouldCompleteJobWithVariables() {
+    // given
+    when(jobServices.completeJob(anyLong(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+        {
+          "variables": {
+            "foo": "bar"
+          }
+        }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(jobServices).completeJob(1L, Map.of("foo", "bar"));
   }
 }

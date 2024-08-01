@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import io.camunda.zeebe.gateway.protocol.rest.AssignUserToGroupRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaGroupRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
-import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
+import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@ZeebeRestController
+@CamundaRestController
 @RequestMapping("/v2/groups")
 public class GroupController {
 

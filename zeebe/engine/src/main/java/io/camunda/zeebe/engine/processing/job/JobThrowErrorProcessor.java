@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.StringUtil.limitString;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
+import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer.CatchEventTupl
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -58,6 +60,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   private final EventScopeInstanceState eventScopeInstanceState;
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
   private final JobMetrics jobMetrics;
+  private final ProcessState processState;
 
   public JobThrowErrorProcessor(
       final ProcessingState state,
@@ -67,6 +70,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     this.keyGenerator = keyGenerator;
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
+    processState = state.getProcessState();
     eventScopeInstanceState = state.getEventScopeInstanceState();
 
     defaultProcessor =
@@ -153,6 +157,13 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   private void raiseIncident(
       final long key, final JobRecord job, final StateWriter stateWriter, final Failure failure) {
 
+    final var treePathProperties =
+        new ElementTreePathBuilder()
+            .withElementInstanceState(elementInstanceState)
+            .withProcessState(processState)
+            .withElementInstanceKey(job.getElementInstanceKey())
+            .build();
+
     incidentEvent.reset();
     incidentEvent
         .setErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
@@ -164,7 +175,10 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
         .setElementInstanceKey(job.getElementInstanceKey())
         .setTenantId(job.getTenantId())
         .setJobKey(key)
-        .setVariableScopeKey(job.getElementInstanceKey());
+        .setVariableScopeKey(job.getElementInstanceKey())
+        .setElementInstancePath(treePathProperties.elementInstancePath())
+        .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
+        .setCallingElementPath(treePathProperties.callingElementPath());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
   }

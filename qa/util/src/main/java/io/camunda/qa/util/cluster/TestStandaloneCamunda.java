@@ -128,7 +128,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     operateProperties.getZeebeElasticsearch().setUrl(esURL);
     tasklistProperties.getElasticsearch().setUrl(esURL);
     tasklistProperties.getZeebeElasticsearch().setUrl(esURL);
-    return super.start();
+    return super.start().withRecordingExporter(true);
   }
 
   @Override
@@ -156,7 +156,11 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     // because @ConditionalOnRestGatewayEnabled relies on the zeebe.broker.gateway.enable property,
     // we need to hook in at the last minute and set the property as it won't resolve from the
     // config bean
+    final String esURL = String.format("http://%s", esContainer.getHttpHostAddress());
+
     withProperty("zeebe.broker.gateway.enable", brokerProperties.getGateway().isEnable());
+    withProperty("camunda.rest.query.enabled", true);
+    withProperty("camunda.database.url", esURL);
     return super.createSpringBuilder();
   }
 

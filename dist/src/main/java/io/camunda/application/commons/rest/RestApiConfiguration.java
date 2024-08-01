@@ -7,14 +7,11 @@
  */
 package io.camunda.application.commons.rest;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(basePackages = "io.camunda.zeebe.gateway.rest")
-@ConditionalOnProperty(
-    name = {"zeebe.broker.gateway.enable", "camunda.rest.enabled"},
-    havingValue = "true",
-    matchIfMissing = true)
+@ConditionalOnRestGatewayEnabled
 public class RestApiConfiguration {}
