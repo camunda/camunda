@@ -74,20 +74,13 @@ public final class CallActivityTest {
   @Before
   public void init() {
     jobType = helper.getJobType();
-
-    final var parentProcess = parentProcess(CallActivityBuilder::done);
-
-    final var childProcess = childProcess(jobType, ServiceTaskBuilder::done);
-
-    ENGINE
-        .deployment()
-        .withXmlResource("wf-parent.bpmn", parentProcess)
-        .withXmlResource("wf-child.bpmn", childProcess)
-        .deploy();
   }
 
   @Test
   public void shouldActivateCallActivity() {
+    // given
+    deployDefaultParentAndChildProcess();
+
     // when
     final var processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
@@ -108,6 +101,9 @@ public final class CallActivityTest {
 
   @Test
   public void shouldCreateInstanceOfCalledElement() {
+    // given
+    deployDefaultParentAndChildProcess();
+
     // when
     final var processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
@@ -216,6 +212,9 @@ public final class CallActivityTest {
 
   @Test
   public void shouldHaveReferenceToParentInstance() {
+    // given
+    deployDefaultParentAndChildProcess();
+
     // when
     final var processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
@@ -237,6 +236,9 @@ public final class CallActivityTest {
 
   @Test
   public void shouldCompleteCallActivity() {
+    // given
+    deployDefaultParentAndChildProcess();
+
     // when
     final var processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
@@ -262,6 +264,9 @@ public final class CallActivityTest {
 
   @Test
   public void shouldCopyVariablesToChild() {
+    // given
+    deployDefaultParentAndChildProcess();
+
     // when
     final var processInstanceKey =
         ENGINE
@@ -291,6 +296,7 @@ public final class CallActivityTest {
   @Test
   public void shouldPropagateVariablesToParent() {
     // given
+    deployDefaultParentAndChildProcess();
     final var processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
 
@@ -315,6 +321,7 @@ public final class CallActivityTest {
         .deployment()
         .withXmlResource(
             "wf-parent.bpmn", parentProcess(c -> c.zeebePropagateAllChildVariables(false)))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
         .deploy();
 
     final var processInstanceKey =
@@ -462,6 +469,7 @@ public final class CallActivityTest {
             "wf-parent.bpmn",
             parentProcess(
                 c -> c.zeebePropagateAllChildVariables(false).zeebeOutputExpression("x", "y")))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
         .deploy();
 
     final var processInstanceKey =
@@ -493,6 +501,7 @@ public final class CallActivityTest {
             "wf-parent.bpmn",
             parentProcess(
                 c -> c.zeebePropagateAllChildVariables(true).zeebeOutputExpression("x", "x")))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
         .deploy();
 
     final var processInstanceKey =
@@ -594,6 +603,7 @@ public final class CallActivityTest {
                         .boundaryEvent(
                             "timeout", b -> b.cancelActivity(true).timerWithDuration("PT0.1S"))
                         .endEvent()))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
         .deploy();
 
     // when
@@ -621,6 +631,7 @@ public final class CallActivityTest {
   @Test
   public void shouldTerminateChildInstance() {
     // given
+    deployDefaultParentAndChildProcess();
     final var processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
 
@@ -656,6 +667,7 @@ public final class CallActivityTest {
         .withXmlResource(
             "wf-parent.bpmn",
             parentProcess(c -> c.zeebeOutputExpression("assert(x, x != null)", "y")))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
         .deploy();
 
     final var processInstanceKey =
@@ -960,6 +972,18 @@ public final class CallActivityTest {
             parentInstance.getProcessDefinitionKey(),
             childInstance.getProcessDefinitionKey())
         .hasOnlyCallingElementPath(ca1Index, ca2Index);
+  }
+
+  private void deployDefaultParentAndChildProcess() {
+    final var parentProcess = parentProcess(CallActivityBuilder::done);
+
+    final var childProcess = childProcess(jobType, ServiceTaskBuilder::done);
+
+    ENGINE
+        .deployment()
+        .withXmlResource("wf-parent.bpmn", parentProcess)
+        .withXmlResource("wf-child.bpmn", childProcess)
+        .deploy();
   }
 
   private static ProcessInstanceRecordValue getProcessInstanceRecordValue(
