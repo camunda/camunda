@@ -8,6 +8,7 @@
 
 import React, {useMemo} from 'react';
 import {NavLink, useLocation} from 'react-router-dom';
+import {t} from 'i18next';
 import {useTranslation} from 'react-i18next';
 import {isBefore} from 'date-fns';
 import {Stack} from '@carbon/react';
@@ -59,12 +60,12 @@ function getNavLinkLabel({
   const isAssignedToCurrentUser = assigneeId === currentUserId;
   if (isAssigned) {
     if (isAssignedToCurrentUser) {
-      return `Task assigned to me: ${name}`;
+      return t('availableTasksNavLinkAssignedToMe', {name});
     } else {
-      return `Assigned task: ${name}`;
+      return t('availableTasksNavLinkAssignedTask', {name});
     }
   } else {
-    return `Unassigned task: ${name}`;
+    return t('availableTasksNavLinkUnassignedTask', {name});
   }
 }
 

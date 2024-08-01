@@ -139,12 +139,12 @@ const Task: React.FC = observer(() => {
 
   function handleSubmissionFailure(error: Error) {
     const errorMessage = isRequestError(error)
-      ? (error?.networkError?.message ?? error.message)
+      ? error?.networkError?.message ?? error.message
       : error.message;
 
     notificationsStore.displayNotification({
       kind: 'error',
-      title: 'Task could not be completed',
+      title: t('taskCouldNotBeCompletedNotification'),
       subtitle: getCompleteTaskErrorMessage(errorMessage),
       isDismissable: true,
     });
