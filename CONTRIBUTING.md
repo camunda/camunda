@@ -104,7 +104,7 @@ Build instructions by component:
 Zeebe is a multi-module Maven project. To **quickly** build all components, run the command: `mvn clean install -Dquickly` in the root folder.
 
 > [!NOTE]
-> All Camunda core modules are built and tested with JDK 21. Most modules use language level 21, exceptions are: zeebe-bpmn-model, zeebe-client-java, zeebe-gateway-protocol zeebe-gateway-protocol-impl, zeebe-protocol and zeebe-protocol-jackson which use language level 8
+> All Camunda core modules are built and tested with JDK 21. Most modules use language level 21, exceptions are: camunda-client-java, camunda-process-test-java, zeebe-bpmn-model, zeebe-build-tools, zeebe-client-java, zeebe-gateway-protocol zeebe-gateway-protocol-impl, zeebe-protocol, and zeebe-protocol-jackson which use language level 8.
 
 For contributions to Camunda, building quickly is typically sufficient. However, users are recommended to build the full distribution.
 
