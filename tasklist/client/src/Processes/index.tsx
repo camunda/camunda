@@ -140,7 +140,7 @@ const Processes: React.FC = observer(() => {
     setSearchParams(current);
   };
   const selectedTenantId = hasMultipleTenants
-    ? searchParams.get('tenantId') ?? defaultTenant?.id
+    ? (searchParams.get('tenantId') ?? defaultTenant?.id)
     : defaultTenant?.id;
   const startFormFilterSearchParam =
     searchParams.get('hasStartForm') ?? undefined;

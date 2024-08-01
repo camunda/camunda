@@ -308,7 +308,7 @@ const CollapsiblePanel: React.FC = () => {
                   align="top-right"
                 >
                   <OverflowMenuItem
-                    itemText={t('taskPanelEdit')}
+                    itemText={t('taskFilterPanelEdit')}
                     onClick={() => {
                       setCustomFilterToEdit(filterId);
                     }}
@@ -316,7 +316,7 @@ const CollapsiblePanel: React.FC = () => {
                   <OverflowMenuItem
                     hasDivider
                     isDelete
-                    itemText={t('taskPanelDelete')}
+                    itemText={t('taskFilterPanelDelete')}
                     onClick={() => {
                       setCustomFilterToDelete(filterId);
                     }}

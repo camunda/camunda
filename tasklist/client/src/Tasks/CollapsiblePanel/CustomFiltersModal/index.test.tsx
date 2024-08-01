@@ -263,7 +263,7 @@ describe('<CustomFiltersModal />', () => {
       within(dialog).getByRole('textbox', {name: /value/i}),
     ).toBeInTheDocument();
     expect(
-      within(dialog).getByRole('button', {name: /remove 1st new variable/i}),
+      within(dialog).getByRole('button', {name: /remove variable/i}),
     ).toBeInTheDocument();
   });
 

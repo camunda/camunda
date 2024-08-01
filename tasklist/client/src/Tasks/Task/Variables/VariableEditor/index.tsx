@@ -65,10 +65,10 @@ const VariableEditor: React.FC<Props> = ({
       <StructuredListHead>
         <StructuredListRow head>
           <StructuredListCell className={styles.listCell} head>
-            {t('variableEditorVariableNameLabel')}
+            {t('variableEditorVariableNameHeader')}
           </StructuredListCell>
           <StructuredListCell className={styles.listCell} head>
-            {t('variableEditorVariableValueLabel')}
+            {t('variableEditorVariableValueHeader')}
           </StructuredListCell>
           <StructuredListCell className={styles.listCell} head />
         </StructuredListRow>

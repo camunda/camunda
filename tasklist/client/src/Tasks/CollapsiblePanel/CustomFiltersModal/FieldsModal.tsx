@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {Fragment} from 'react';
+import {Fragment} from 'react';
 import {
   Button,
   DatePicker,

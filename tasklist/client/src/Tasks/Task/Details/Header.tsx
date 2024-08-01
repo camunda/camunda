@@ -8,7 +8,7 @@
 
 import {useState} from 'react';
 import {t as _t} from 'i18next';
-import {Trans, useTranslation} from 'react-i18next';
+import {useTranslation} from 'react-i18next';
 import {Stack} from '@carbon/react';
 import {CheckmarkFilled} from '@carbon/react/icons';
 import {AssigneeTag} from 'Tasks/AssigneeTag';
@@ -69,8 +69,8 @@ const Header: React.FC<Props> = ({task, user, onAssignmentError}) => {
             >
               <CheckmarkFilled size={16} color="green" />
               {assignee ? (
-                <Trans i18nKey="taskDetailsTaskCompletionUsername">
-                  Completed by{' '}
+                <>
+                  {t('taskDetailsTaskCompletedBy') + ' '}
                   <span className={styles.taskAssignee} data-testid="assignee">
                     <AssigneeTag
                       currentUser={user}
@@ -78,7 +78,7 @@ const Header: React.FC<Props> = ({task, user, onAssignmentError}) => {
                       isShortFormat={true}
                     />
                   </span>
-                </Trans>
+                </>
               ) : (
                 t('taskAssignmentStatusCompleted')
               )}
