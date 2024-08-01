@@ -192,7 +192,12 @@ public class JobBasedUserTaskFormTest {
     // then
     assertFormIncident(
         processInstanceKey,
-        "Expected to find a form with id '%s' in deployment %s, but not found."
+        """
+        Expected to use a form with id '%s' with binding type 'deployment', \
+        but no such form found in the deployment with key %s which contained the current process. \
+        To resolve this incident, migrate the process instance to a process definition \
+        that is deployed together with the intended form to use.\
+        """
             .formatted(FORM_ID_1, deployment.getKey()));
   }
 
