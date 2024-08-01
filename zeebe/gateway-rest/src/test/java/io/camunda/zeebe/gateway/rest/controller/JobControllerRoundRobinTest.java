@@ -64,6 +64,14 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
     stub.addAvailableJobs("TEST", 2);
     stub.registerWith(stubbedBrokerClient);
 
+    // calculate the expected partition ID to build the assertion key for (other test methods can
+    // have moved the current partition ID already)
+    final int expectedPartitionId =
+        getExpectedPartitionId(
+            getBasePartition(stub),
+            1,
+            stubbedBrokerClient.getTopologyManager().getTopology().getPartitionsCount());
+
     final var request =
         """
         {
@@ -75,12 +83,13 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
           "tenantIds": ["default"],
           "worker": "bar"
         }""";
+
     final var expectedBody =
         """
         {
           "jobs": [
             {
-              "key": 4503599627370496,
+              "key": %d,
               "type": "TEST",
               "processInstanceKey": 123,
               "processDefinitionKey": 4532,
@@ -96,7 +105,7 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
               "worker": "bar"
             },
             {
-              "key": 4503599627370497,
+              "key": %d,
               "type": "TEST",
               "processInstanceKey": 123,
               "processDefinitionKey": 4532,
@@ -112,7 +121,10 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
               "worker": "bar"
             }
           ]
-        }""";
+        }"""
+            .formatted(
+                Protocol.encodePartitionId(expectedPartitionId, 0),
+                Protocol.encodePartitionId(expectedPartitionId, 1));
     // when / then
     webClient
         .post()
@@ -128,8 +140,9 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody);
 
-    Mockito.verify(responseObserver, Mockito.times(1)).onNext(any());
-    Mockito.verify(responseObserver).onCompleted();
+    // two responses where received (base partition determination and tested activation)
+    Mockito.verify(responseObserver, Mockito.times(2)).onNext(any());
+    Mockito.verify(responseObserver, Mockito.times(2)).onCompleted();
   }
 
   @Test
@@ -190,36 +203,14 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
           "worker": "bar"
         }""";
 
-    /*
-     * Get the baseline partition since the current one could be any partition.
-     * The job activation handler is created once for all tests, so previous tests can have moved
-     * the round-robin index by any number already.
-     */
-    stub.addAvailableJobs("TEST", 1);
-    final String result =
-        webClient
-            .post()
-            .uri(JOBS_BASE_URL + "/activation")
-            .accept(MediaType.APPLICATION_JSON)
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(request)
-            .exchange()
-            .expectStatus()
-            .isOk()
-            .expectHeader()
-            .contentType(MediaType.APPLICATION_JSON)
-            .expectBody(String.class)
-            .returnResult()
-            .getResponseBody();
-
-    final int basePartition = Protocol.decodePartitionId(JsonPath.read(result, "$.jobs[0].key"));
+    final int basePartition = getBasePartition(stub);
     final int partitionsCount =
         stubbedBrokerClient.getTopologyManager().getTopology().getPartitionsCount();
-
     // try activating jobs on each partition round-robin
     for (int partitionOffset = 1; partitionOffset <= partitionsCount; partitionOffset++) {
       // calculate the expected partition ID to build the assertion key for
-      final int expectedPartitionId = (basePartition + partitionOffset - 1) % partitionsCount + 1;
+      final int expectedPartitionId =
+          getExpectedPartitionId(basePartition, partitionOffset, partitionsCount);
       // reset the results and add new jobs that can be fetched
       responseObserver.reset();
       stub.addAvailableJobs("TEST", 2);
@@ -293,6 +284,47 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
         .json(expectedBody);
 
     assertThat(callCounter).hasValue(1);
+  }
+
+  /**
+   * Get the baseline partition since the current one could be any partition. The job activation
+   * handler is created once for all tests, so previous tests can have moved the round-robin index
+   * by any number already.
+   */
+  private int getBasePartition(final ActivateJobsStub stub) {
+    stub.addAvailableJobs("BASE", 1);
+    final var request =
+        """
+        {
+          "type": "BASE",
+          "maxJobsToActivate": 1,
+          "requestTimeout": 100,
+          "timeout": 100
+        }""";
+    final String result =
+        webClient
+            .post()
+            .uri(JOBS_BASE_URL + "/activation")
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .expectHeader()
+            .contentType(MediaType.APPLICATION_JSON)
+            .expectBody(String.class)
+            .returnResult()
+            .getResponseBody();
+    // reset the results in the test class' observer (created anew per request in production setup)
+    responseObserver.reset();
+    // return the current partition
+    return Protocol.decodePartitionId(JsonPath.read(result, "$.jobs[0].key"));
+  }
+
+  private static int getExpectedPartitionId(
+      final int basePartition, final int partitionOffset, final int partitionsCount) {
+    return (basePartition + partitionOffset - 1) % partitionsCount + 1;
   }
 
   @TestConfiguration
