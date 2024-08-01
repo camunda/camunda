@@ -11,8 +11,9 @@ For community-maintained Camunda projects, please visit the [Camunda Community H
   - [Code of Conduct](#code-of-conduct)
 - [GitHub issue guidelines](#github-issue-guidelines)
   - [Starting on an issue](#starting-on-an-issue)
-- [Build Camunda from source](#build-camunda-from-source)
-  - [Build Zeebe](#build-zeebe)
+- [Build and run Camunda from source](#build-and-run-camunda-from-source)
+  - [Build](#build)
+  - [Run](#run)
   - [Test execution](#test-execution)
     - [Test troubleshooting](#test-troubleshooting)
   - [Build profiling](#build-profiling)
@@ -87,28 +88,39 @@ The `main` branch contains the current in-development state of the project. To w
    git push --force-with-lease
    ```
 
-## Build Camunda from source
-We are currently working on [architecture streamlining](https://camunda.com/blog/2024/04/simplified-deployment-options-accelerated-getting-started-experience/) to simplify the deployment and build process. While this is in progress, each component has its own build instructions. 
+## Build and run Camunda from source
+We are currently working on [architecture streamlining](https://camunda.com/blog/2024/04/simplified-deployment-options-accelerated-getting-started-experience/) to simplify the deployment and build process. While this is in progress, the build instructions are subject to change. The most recent build instructions will always be in this document.
 
-> [!NOTE]
-> Zeebe is necessary for all components except Identity.
+This is a small overview of the contents of this repository:
+- `authentication` - configures authentication for Camunda 8
+- `bom` - bill of materials (BOM) for importing Zeebe dependencies
+- `build-tools` - Zeebe build tools
+- `clients` - client libraries
+- `dist` - provides the Camunda 8 distributions
+- `identity` - component within self-managed Camunda 8 responsible for authentication and authorization
+- `licenses` - the Camunda 8 licenses
+- `monitor` - Monitoring for self-managed Camunda 8
+- `operate` - Monitoring tool for monitoring and troubleshooting processes running in Zeebe
+- `parent` - Parent POM for all Zeebe projects
+- `qa` - quality assurance for Camunda 8
+- `search` - the search clients for Camunda 8 data
+- `service` - internal services for Camunda 8
+- `spring-boot-starter-sdk` - official SDK for Spring Boot
+- `tasklist` - graphical and API application to manage user tasks in Zeebe
+- `testing` - testing libraries for processes and process applications
+- `webapps-common` - shared code between the Camunda 8 web apps
+- `zeebe` - the process automation engine powering Camunda 8
 
-Build instructions by component:
-* [Zeebe](#build-zeebe) (below)
-* [Operate](operate/README.md)
-* [Tasklist](tasklist/README.md)
-* Identity - coming soon
-* Optimize - coming soon
+### Build
 
-### Build Zeebe
-Zeebe is a multi-module Maven project. To **quickly** build all components, run the command: `mvn clean install -Dquickly` in the root folder.
+To **quickly** build all components, run the command: `mvn clean install -DskipTests` in the root folder.
 
 > [!NOTE]
 > All Camunda core modules are built and tested with JDK 21. Most modules use language level 21, exceptions are: camunda-client-java, camunda-process-test-java, zeebe-bpmn-model, zeebe-build-tools, zeebe-client-java, zeebe-gateway-protocol zeebe-gateway-protocol-impl, zeebe-protocol, and zeebe-protocol-jackson which use language level 8.
 
 For contributions to Camunda, building quickly is typically sufficient. However, users are recommended to build the full distribution.
 
-To fully build the Zeebe distribution, run the command: `mvn clean install -DskipTests` in the root folder. This is slightly slower than building quickly but ensures the distribution is assembled completely. The resulting Zeebe distribution can be found in the folder `dist/target`, i.e.
+To fully build the Camunda distribution and run all tests, run the command: `mvn clean install` in the root folder. This is slightly slower than building quickly but ensures the distribution is assembled completely. The resulting distribution can be found in the folder `dist/target`, i.e.
 
 ```
 dist/target/camunda-zeebe-X.Y.Z-SNAPSHOT.tar.gz
@@ -122,36 +134,28 @@ docker build \
   --tag camunda/zeebe:local \
   --build-arg DISTBALL='dist/target/camunda-zeebe*.tar.gz' \
   --target app \
+  --file ./camunda.Dockerfile
   .
 ```
 
-This is a small overview of the contents of the different modules:
-- `.ci` 
-- `.github`
-- `.idea`
-- `.mvn`
-- `authentication`
-- `bom` - bill of materials (BOM) for importing Zeebe dependencies
-- `build-tools` - Zeebe build tools
-- `clients` - client libraries
-- `dist` 
-- `identity` - component within self-managed Camunda 8 responsible for authentication and authorization
-- `licenses`
-- `monitor` - Monitoring for self-managed Camunda 8
-- `operate` - Monitoring tool for monitoring and troubleshooting processes running in Zeebe
-- `parent` - Parent POM for all Zeebe projects
-- `qa` 
-- `search`
-- `service`
-- `spring-boot-starter-sdk` - official SDK for Spring Boot
-- `tasklist` - graphical and API application to manage user tasks in Zeebe
-- `testing` - testing libraries for processes and process applications
-- `webapps-common` 
-- `zeebe` - the process automation engine powering Camunda 8
+### Run
+
+Operate, Tasklist, and Optimize use Elasticsearch as its underlying data store. Therefore you have to download and run Elasticsearch. (For information on what version of Elasticsearch is needed, refer to the [Supported Environments documentation](https://docs.camunda.io/docs/next/reference/supported-environments/#component-requirements)).
+
+To run Elasticsearch:
+* Download and unzip [Elasticsearch](https://www.elastic.co/downloads/elasticsearch).
+* For non-production cases, disable Elasticsearch's security packages by setting the `xpack.security.*` configuration options to false in `ELASTICSEARCH_HOME/config/elasticsearch.yml`.
+* Start Elasticsearch by running `ELASTICSEARCH_HOME/bin/elasticsearch` (macOS/Linux) (or `ELASTICSEARCH_HOME\bin\elasticsearch.bat` on Windows).
+
+To start Camunda:
+* Extract the `dist/target/camunda-zeebe-X.Y.Z-SNAPSHOT.tar.gz` (or `dist/target/camunda-zeebe-X.Y.Z-SNAPSHOT.zip`) distribution package
+* Run `CAMUNDA_HOME/bin/camunda` (macOS/Linux) (or `CAMUNDA_HOME\bin\camunda.bat` on Windows).
+
+If you need to change any of the default configuration values for Camunda, the configuration files are available in `CAMUNDA_HOME/config`. After updating the configuration you need to restart any running services for the changes to take effect.
 
 ### Test execution
 
-Tests can be executed via Maven (`mvn verify`) or in your preferred IDE. The Zeebe Team uses mostly [Intellij IDEA](https://www.jetbrains.com/idea/), where we also [provide settings for](https://github.com/camunda/camunda/tree/main/.idea).
+Tests can be executed via Maven (`mvn verify`) or in your preferred IDE. The Zeebe Team uses mostly [Intellij IDEA](https://www.jetbrains.com/idea/), which we also [provide settings for](https://github.com/camunda/camunda/tree/main/.idea).
 
 > [!TIP]
 > To execute the tests quickly, run `mvn verify -Dquickly -DskipTests=false`.
