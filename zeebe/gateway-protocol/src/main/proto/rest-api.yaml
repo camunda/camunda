@@ -418,6 +418,33 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /decision-requirements/search:
+    post:
+      tags:
+        - Decision Requirement
+      summary: Decision Requirement Search Query
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionRequirementSearchQueryRequest'
+      responses:
+        '200':
+          description: >
+            The Decision Requirement Search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionRequirementSearchQueryResponse"
+        '400':
+          description: >
+            The Decision Requirement Search Query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /decision-definitions/search:
     post:
       tags:
@@ -2113,6 +2140,59 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RoleResponse"
+    DecisionRequirementSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          allOf:
+            - $ref: "#/components/schemas/DecisionRequirementFilterRequest"
+    DecisionRequirementFilterRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: integer
+          format: int64
+        name:
+          type: string
+        version:
+          type: integer
+          format: int32
+        decisionRequirementsId:
+          type: string
+        tenantId:
+          type: string
+    DecisionRequirementSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionRequirementItem"
+    DecisionRequirementItem:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: integer
+          format: int64
+        name:
+          type: string
+        version:
+          type: integer
+          format: int32
+        decisionRequirementsId:
+          type: string
+        resourceName:
+          type: string
+        tenantId:
+          type: string
   securitySchemes:
     bearerAuth:
       type: http

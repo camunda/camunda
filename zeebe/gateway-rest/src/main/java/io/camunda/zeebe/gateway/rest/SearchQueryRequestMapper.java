@@ -13,6 +13,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOW
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_ORDER;
 
 import io.camunda.service.search.filter.DecisionDefinitionFilter;
+import io.camunda.service.search.filter.DecisionRequirementFilter;
 import io.camunda.service.search.filter.FilterBase;
 import io.camunda.service.search.filter.FilterBuilders;
 import io.camunda.service.search.filter.ProcessInstanceFilter;
@@ -20,11 +21,13 @@ import io.camunda.service.search.filter.UserTaskFilter;
 import io.camunda.service.search.filter.VariableValueFilter;
 import io.camunda.service.search.page.SearchQueryPage;
 import io.camunda.service.search.query.DecisionDefinitionQuery;
+import io.camunda.service.search.query.DecisionRequirementQuery;
 import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.TypedSearchQueryBuilder;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.service.search.sort.DecisionDefinitionSort;
+import io.camunda.service.search.sort.DecisionRequirementSort;
 import io.camunda.service.search.sort.ProcessInstanceSort;
 import io.camunda.service.search.sort.SortOption;
 import io.camunda.service.search.sort.SortOptionBuilders;
@@ -32,6 +35,8 @@ import io.camunda.service.search.sort.UserTaskSort;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
@@ -79,6 +84,22 @@ public final class SearchQueryRequestMapper {
             SearchQueryRequestMapper::applyDecisionDefinitionSortField);
     final var filter = toDecisionDefinitionFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::decisionDefinitionSearchQuery);
+  }
+
+  public static Either<ProblemDetail, DecisionRequirementQuery> toDecisionRequirementQuery(
+      final DecisionRequirementSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.decisionRequirementSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            request.getSort(),
+            SortOptionBuilders::decisionRequirement,
+            SearchQueryRequestMapper::applyDecisionRequirementSortField);
+    final var filter = toDecisionRequirementFilter(request.getFilter());
+    return buildSearchQuery(
+        filter, sort, page, SearchQueryBuilders::decisionRequirementSearchQuery);
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
@@ -145,6 +166,34 @@ public final class SearchQueryRequestMapper {
       }
       if (filter.getDecisionRequirementsVersion() != null) {
         builder.decisionRequirementsVersions(filter.getDecisionRequirementsVersion());
+      }
+      if (filter.getTenantId() != null) {
+        builder.tenantIds(filter.getTenantId());
+      }
+    }
+
+    return builder.build();
+  }
+
+  private static DecisionRequirementFilter toDecisionRequirementFilter(
+      final DecisionRequirementFilterRequest filter) {
+    final var builder = FilterBuilders.decisionRequirement();
+
+    if (filter != null) {
+      if (filter.getKey() != null) {
+        builder.keys(filter.getKey());
+      }
+      if (filter.getId() != null) {
+        builder.ids(filter.getId());
+      }
+      if (filter.getName() != null) {
+        builder.names(filter.getName());
+      }
+      if (filter.getVersion() != null) {
+        builder.versions(filter.getVersion());
+      }
+      if (filter.getDecisionRequirementsId() != null) {
+        builder.decisionRequirementsIds(filter.getDecisionRequirementsId());
       }
       if (filter.getTenantId() != null) {
         builder.tenantIds(filter.getTenantId());
@@ -243,6 +292,25 @@ public final class SearchQueryRequestMapper {
         case "decisionRequirementsKey" -> builder.decisionRequirementsKey();
         case "decisionRequirementsName" -> builder.decisionRequirementsName();
         case "decisionRequirementsVersion" -> builder.decisionRequirementsVersion();
+        case "tenantId" -> builder.tenantId();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  private static List<String> applyDecisionRequirementSortField(
+      final String field, final DecisionRequirementSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case "id" -> builder.id();
+        case "key" -> builder.decisionRequirementsKey();
+        case "name" -> builder.name();
+        case "version" -> builder.version();
+        case "decisionRequirementsId" -> builder.decisionRequirementsId();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
