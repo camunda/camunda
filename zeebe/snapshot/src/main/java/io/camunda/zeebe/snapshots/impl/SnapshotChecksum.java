@@ -28,11 +28,6 @@ final class SnapshotChecksum {
 
   public static ImmutableChecksumsSFV read(final Path checksumPath) throws IOException {
     try (final RandomAccessFile checksumFile = new RandomAccessFile(checksumPath.toFile(), "r")) {
-      if (checksumFile.length() == 8) {
-        // compatibility mode
-        final long combinedChecksum = checksumFile.readLong();
-        return new SfvChecksumImpl(combinedChecksum);
-      }
       final SfvChecksumImpl sfvChecksum = new SfvChecksumImpl();
       String line;
       while ((line = checksumFile.readLine()) != null) {

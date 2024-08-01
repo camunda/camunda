@@ -14,7 +14,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
-import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
+import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistableSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
@@ -202,13 +202,7 @@ public final class FileBasedSnapshotStoreImpl {
 
       final var metadata = collectMetadata(path, snapshotId);
       return new FileBasedSnapshot(
-          path,
-          checksumPath,
-          actualChecksum.getCombinedValue(),
-          snapshotId,
-          metadata,
-          this::onSnapshotDeleted,
-          actor);
+          path, checksumPath, actualChecksum, snapshotId, metadata, this::onSnapshotDeleted, actor);
     } catch (final Exception e) {
       LOGGER.warn("Could not load snapshot in {}", path, e);
       return null;
@@ -482,7 +476,7 @@ public final class FileBasedSnapshotStoreImpl {
 
   FileBasedSnapshot persistNewSnapshot(
       final FileBasedSnapshotId snapshotId,
-      final ImmutableChecksumsSFV immutableChecksumsSFV,
+      final MutableChecksumsSFV mutableChecksumsSFV,
       final FileBasedSnapshotMetadata metadata) {
     final var currentPersistedSnapshot = currentPersistedSnapshotRef.get();
 
@@ -506,7 +500,7 @@ public final class FileBasedSnapshotStoreImpl {
       final var tmpChecksumPath =
           checksumPath.resolveSibling(checksumPath.getFileName().toString() + TMP_CHECKSUM_SUFFIX);
       try {
-        SnapshotChecksum.persist(tmpChecksumPath, immutableChecksumsSFV);
+        SnapshotChecksum.persist(tmpChecksumPath, mutableChecksumsSFV);
         FileUtil.moveDurably(tmpChecksumPath, checksumPath);
       } catch (final IOException e) {
         rollbackPartialSnapshot(destination);
@@ -517,7 +511,7 @@ public final class FileBasedSnapshotStoreImpl {
           new FileBasedSnapshot(
               destination,
               checksumPath,
-              immutableChecksumsSFV.getCombinedValue(),
+              mutableChecksumsSFV,
               snapshotId,
               metadata,
               this::onSnapshotDeleted,

@@ -16,6 +16,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
+import io.camunda.zeebe.snapshots.impl.SfvChecksumImpl;
 import io.camunda.zeebe.snapshots.impl.SnapshotWriteException;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -108,9 +109,9 @@ public class ReceivedSnapshotTest {
     assertThat(receiverSnapshotStore.getLatestSnapshot())
         .as("the received snapshot was committed and is the latest snapshot")
         .hasValue(receivedSnapshot);
-    assertThat(receivedSnapshot.getChecksum())
+    assertThat(receivedSnapshot.getChecksums().sameChecksums(persistedSnapshot.getChecksums()))
         .as("the received snapshot has the same checksum as the sent snapshot")
-        .isEqualTo(persistedSnapshot.getChecksum());
+        .isTrue();
     assertThat(receivedSnapshot.getId())
         .as("the received snapshot has the same ID as the sent snapshot")
         .isEqualTo(persistedSnapshot.getId());
@@ -145,9 +146,9 @@ public class ReceivedSnapshotTest {
     assertThat(receivedSnapshot)
         .as("the previous snapshot should still be the latest snapshot")
         .isEqualTo(receiverSnapshotStore.getLatestSnapshot().orElseThrow());
-    assertThat(receivedSnapshot.getChecksum())
+    assertThat(receivedSnapshot.getChecksums().sameChecksums(persistedSnapshot.getChecksums()))
         .as("the received snapshot still has the same checksum")
-        .isEqualTo(persistedSnapshot.getChecksum());
+        .isTrue();
   }
 
   @Test
@@ -256,9 +257,12 @@ public class ReceivedSnapshotTest {
     assertThat(secondReceivedSnapshot.getPath())
         .as("the second received snapshot was not removed as it's not considered older")
         .exists();
-    assertThat(receivedPersistedSnapshot.getChecksum())
+    assertThat(
+            receivedPersistedSnapshot
+                .getChecksums()
+                .sameChecksums(persistedSnapshot.getChecksums()))
         .as("the received, persisted snapshot have the same checksum as the persisted one")
-        .isEqualTo(persistedSnapshot.getChecksum());
+        .isTrue();
   }
 
   @Test
@@ -279,32 +283,9 @@ public class ReceivedSnapshotTest {
     assertThat(receivedSnapshot.getPath())
         .as("the received snapshot was removed on persist of the other snapshot")
         .doesNotExist();
-    assertThat(receivedPersisted.getChecksum())
+    assertThat(receivedPersisted.getChecksums().sameChecksums(persistedSnapshot.getChecksums()))
         .as("the received, persisted snapshot have the same checksum as the persisted one")
-        .isEqualTo(persistedSnapshot.getChecksum());
-  }
-
-  @Test
-  public void shouldCompleteExceptionallyOnConsumingChunkWithInvalidSnapshotChecksum() {
-    // given
-    final var persistedSnapshot = takePersistedSnapshot();
-
-    // when
-    final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
-
-    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
-      receivedSnapshot.apply(snapshotChunkReader.next()).join();
-
-      final var originalChunk = snapshotChunkReader.next();
-      final SnapshotChunk corruptedChunk =
-          SnapshotChunkWrapper.withSnapshotChecksum(originalChunk, 0xCAFEL);
-
-      // then
-      assertThatThrownBy(() -> receivedSnapshot.apply(corruptedChunk).join())
-          .as("the snapshot chunk should not be applied as it had a different snapshot checksum")
-          .hasCauseInstanceOf(SnapshotWriteException.class);
-    }
+        .isTrue();
   }
 
   @Test
@@ -339,7 +320,7 @@ public class ReceivedSnapshotTest {
       while (snapshotChunkReader.hasNext()) {
         final var originalChunk = snapshotChunkReader.next();
         final var corruptedChunk =
-            SnapshotChunkWrapper.withSnapshotChecksum(originalChunk, 0xDEADBEEFL);
+            SnapshotChunkWrapper.withSnapshotChecksums(originalChunk, new SfvChecksumImpl());
         receivedSnapshot.apply(corruptedChunk).join();
       }
     }

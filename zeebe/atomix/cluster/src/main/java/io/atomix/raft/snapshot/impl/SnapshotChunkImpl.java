@@ -34,7 +34,6 @@ public final class SnapshotChunkImpl
   private int totalCount;
   private String chunkName;
   private long checksum;
-  private long snapshotChecksum;
   private long fileBlockPosition;
   private long totalFileSize;
 
@@ -45,7 +44,6 @@ public final class SnapshotChunkImpl
     totalCount = chunk.getTotalCount();
     chunkName = chunk.getChunkName();
     checksum = chunk.getChecksum();
-    snapshotChecksum = chunk.getSnapshotChecksum();
     content.wrap(chunk.getContent());
     fileBlockPosition = chunk.getFileBlockPosition();
     totalFileSize = chunk.getTotalFileSize();
@@ -67,7 +65,6 @@ public final class SnapshotChunkImpl
 
     totalCount = SnapshotChunkDecoder.totalCountNullValue();
     checksum = SnapshotChunkDecoder.checksumNullValue();
-    snapshotChecksum = SnapshotChunkDecoder.snapshotChecksumNullValue();
     fileBlockPosition = SnapshotChunkDecoder.fileBlockPositionNullValue();
     totalFileSize = SnapshotChunkDecoder.totalFileSizeNullValue();
 
@@ -98,7 +95,6 @@ public final class SnapshotChunkImpl
         .snapshotId(snapshotId)
         .chunkName(chunkName)
         .checksum(checksum)
-        .snapshotChecksum(snapshotChecksum)
         .putContent(content, 0, content.capacity());
   }
 
@@ -112,7 +108,6 @@ public final class SnapshotChunkImpl
     snapshotId = decoder.snapshotId();
     chunkName = decoder.chunkName();
     checksum = decoder.checksum();
-    snapshotChecksum = decoder.snapshotChecksum();
 
     if (decoder.contentLength() > 0) {
       decoder.wrapContent(content);
@@ -142,11 +137,6 @@ public final class SnapshotChunkImpl
   @Override
   public byte[] getContent() {
     return BufferUtil.bufferAsArray(content);
-  }
-
-  @Override
-  public long getSnapshotChecksum() {
-    return snapshotChecksum;
   }
 
   @Override
@@ -181,8 +171,6 @@ public final class SnapshotChunkImpl
         + '\''
         + ", checksum="
         + checksum
-        + ", snapshotChecksum="
-        + snapshotChecksum
         + ", fileBlockPosition="
         + fileBlockPosition
         + ", totalFileSize="

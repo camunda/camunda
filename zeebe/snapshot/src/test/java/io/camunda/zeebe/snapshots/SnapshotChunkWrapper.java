@@ -14,7 +14,7 @@ public final class SnapshotChunkWrapper implements SnapshotChunk {
   private String snapshotId;
   private Integer totalCount;
   private Long checksum;
-  private Long snapshotChecksum;
+  private MutableChecksumsSFV snapshotChecksum;
   private byte[] contents;
 
   private SnapshotChunkWrapper(final SnapshotChunk wrappedChunk) {
@@ -44,10 +44,10 @@ public final class SnapshotChunkWrapper implements SnapshotChunk {
     return wrapper;
   }
 
-  public static SnapshotChunk withSnapshotChecksum(
-      final SnapshotChunk wrappedChunk, final Long snapshotChecksum) {
+  public static SnapshotChunk withSnapshotChecksums(
+      final SnapshotChunk wrappedChunk, final MutableChecksumsSFV snapshotChecksums) {
     final var wrapper = new SnapshotChunkWrapper(wrappedChunk);
-    wrapper.snapshotChecksum = snapshotChecksum;
+    wrapper.snapshotChecksum = snapshotChecksums;
 
     return wrapper;
   }
@@ -95,14 +95,6 @@ public final class SnapshotChunkWrapper implements SnapshotChunk {
       return wrappedChunk.getContent();
     }
     return contents;
-  }
-
-  @Override
-  public long getSnapshotChecksum() {
-    if (snapshotChecksum == null) {
-      return wrappedChunk.getSnapshotChecksum();
-    }
-    return snapshotChecksum;
   }
 
   @Override
