@@ -15,17 +15,20 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.clients.sort.SearchSortOptions;
 import io.camunda.search.clients.sort.SortOptionsBuilders;
+import io.camunda.search.clients.source.SearchSourceConfig;
+import io.camunda.search.clients.source.SourceConfigBuilders;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
 
-public final record SearchQueryRequest(
+public record SearchQueryRequest(
     List<String> index,
     SearchQuery query,
     List<SearchSortOptions> sort,
     Object[] searchAfter,
     Integer from,
-    Integer size) {
+    Integer size,
+    SearchSourceConfig source) {
 
   public static SearchQueryRequest of(
       final Function<Builder, ObjectBuilder<SearchQueryRequest>> fn) {
@@ -40,6 +43,7 @@ public final record SearchQueryRequest(
     private Object[] searchAfter;
     private Integer from;
     private Integer size;
+    private SearchSourceConfig source;
 
     public Builder index(final List<String> values) {
       index = addValuesToList(index, values);
@@ -88,9 +92,19 @@ public final record SearchQueryRequest(
       return this;
     }
 
+    public Builder source(final SearchSourceConfig value) {
+      source = value;
+      return this;
+    }
+
+    public Builder source(
+        final Function<SearchSourceConfig.Builder, ObjectBuilder<SearchSourceConfig>> fn) {
+      return source(SourceConfigBuilders.sourceConfig(fn));
+    }
+
     @Override
     public SearchQueryRequest build() {
-      return new SearchQueryRequest(index, query, sort, searchAfter, from, size);
+      return new SearchQueryRequest(index, query, sort, searchAfter, from, size, source);
     }
   }
 }
