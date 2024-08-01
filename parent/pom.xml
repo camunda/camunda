@@ -157,7 +157,7 @@
     <version.elasticsearch-test-container>1.20.1</version.elasticsearch-test-container>
     <version.postgres-test-container>1.20.1</version.postgres-test-container>
     <version.elasticsearch7>7.17.23</version.elasticsearch7>
-    <version.lucene>8.11.3</version.lucene>
+    <version.lucene>9.11.1</version.lucene>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
     <version.joda-time>2.12.7</version.joda-time>
     <version.commons-collections4>4.4</version.commons-collections4>
