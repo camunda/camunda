@@ -9,11 +9,11 @@ package io.camunda.service;
 
 import io.camunda.service.license.CamundaLicense;
 
-public final class ManagementService {
+public final class ManagementServices {
 
   private CamundaLicense camundaLicense;
 
-  public ManagementService withLicense(final CamundaLicense license) {
+  public ManagementServices withLicense(final CamundaLicense license) {
     camundaLicense = license;
     return this;
   }

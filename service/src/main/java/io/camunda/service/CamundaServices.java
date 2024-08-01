@@ -44,8 +44,8 @@ public final class CamundaServices extends ApiServices<CamundaServices> {
     return new VariableServices(brokerClient, searchClient, transformers, authentication);
   }
 
-  public ManagementService managementService() {
-    return new ManagementService();
+  public ManagementServices managementService() {
+    return new ManagementServices();
   }
 
   @Override

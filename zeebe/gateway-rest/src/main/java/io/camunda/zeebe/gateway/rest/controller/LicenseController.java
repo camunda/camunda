@@ -7,18 +7,21 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.service.ManagementService;
+import io.camunda.service.ManagementServices;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@ZeebeRestController
-public final class LicenseController {
+@ConditionalOnRestGatewayEnabled
+@RestController
+public class LicenseController {
 
-  @Autowired private ManagementService managementService;
+  @Autowired private ManagementServices managementServices;
 
   @GetMapping(path = "/camunda-license", produces = MediaType.APPLICATION_JSON_VALUE)
   public boolean get() {
-    return managementService.isCamundaLicenseValid();
+    return managementServices.isCamundaLicenseValid();
   }
 }

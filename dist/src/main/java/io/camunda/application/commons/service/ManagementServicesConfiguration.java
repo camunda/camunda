@@ -7,31 +7,33 @@
  */
 package io.camunda.application.commons.service;
 
-import io.camunda.application.commons.service.CamundaLicenseConfiguration.LicenseKeyProperties;
-import io.camunda.service.CamundaServices;
-import io.camunda.service.ManagementService;
+import io.camunda.application.commons.service.ManagementServicesConfiguration.LicenseKeyProperties;
+import io.camunda.service.ManagementServices;
 import io.camunda.service.license.CamundaLicense;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@Configuration(proxyBeanMethods = false)
+@Configuration
 @EnableConfigurationProperties(LicenseKeyProperties.class)
-public class CamundaLicenseConfiguration {
+public class ManagementServicesConfiguration {
   private final LicenseKeyProperties licenseKeyProperties;
 
-  public CamundaLicenseConfiguration(final LicenseKeyProperties licenseKeyProperties) {
+  @Autowired
+  public ManagementServicesConfiguration(final LicenseKeyProperties licenseKeyProperties) {
     this.licenseKeyProperties = licenseKeyProperties;
   }
 
   @Bean
-  public ManagementService managementService(
-      final CamundaServices camundaServices, final CamundaLicense camundaLicense) {
-    final var managementService = camundaServices.managementService().withLicense(camundaLicense);
+  public ManagementServices managementService(final CamundaLicense camundaLicense) {
+    final ManagementServices managementServices =
+        new ManagementServices().withLicense(camundaLicense);
     // trigger to log if license is valid or not during startup
-    managementService.isCamundaLicenseValid();
-    return managementService;
+    managementServices.isCamundaLicenseValid();
+
+    return managementServices;
   }
 
   @Bean
