@@ -5,14 +5,14 @@ description: Common filters to detect and group changes against a base branch
 
 outputs:
   backend-changes:
-    description: Output whether any backend has changed
+    description: Output whether any backend file has changed
     value: >-
       ${{
         github.event_name == 'push' ||
         steps.filter-common.outputs.backend-change == 'true'
       }}
   frontend-changes:
-    description: Output whether any frontend has changed
+    description: Output whether any frontend file has changed
     value: >-
       ${{
         github.event_name == 'push' ||
