@@ -12,11 +12,11 @@ import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 
-public class FormCreatedApplier implements TypedEventApplier<FormIntent, FormRecord> {
+public class FormCreatedV2Applier implements TypedEventApplier<FormIntent, FormRecord> {
 
   private final MutableFormState formState;
 
-  public FormCreatedApplier(final MutableFormState state) {
+  public FormCreatedV2Applier(final MutableFormState state) {
     formState = state;
   }
 
@@ -25,5 +25,6 @@ public class FormCreatedApplier implements TypedEventApplier<FormIntent, FormRec
     formState.storeFormInFormColumnFamily(value);
     formState.storeFormInFormByIdAndVersionColumnFamily(value);
     formState.updateLatestVersion(value);
+    formState.storeFormInFormKeyByFormIdAndDeploymentKeyColumnFamily(value);
   }
 }

@@ -21,6 +21,7 @@ public class FormRecordImpl implements Form {
   private byte[] checksum;
   private boolean duplicate;
   private String tenantId;
+  private long deploymentKey;
 
   @Override
   public byte[] getResource() {
@@ -88,6 +89,15 @@ public class FormRecordImpl implements Form {
   }
 
   @Override
+  public long getDeploymentKey() {
+    return deploymentKey;
+  }
+
+  public void setDeploymentKey(final long deploymentKey) {
+    this.deploymentKey = deploymentKey;
+  }
+
+  @Override
   public String getTenantId() {
     return tenantId;
   }
@@ -107,7 +117,8 @@ public class FormRecordImpl implements Form {
         resourceName,
         checksum,
         duplicate,
-        tenantId);
+        tenantId,
+        deploymentKey);
   }
 
   @Override
@@ -125,6 +136,7 @@ public class FormRecordImpl implements Form {
     return version == that.version
         && formKey == that.formKey
         && duplicate == that.duplicate
+        && deploymentKey == that.deploymentKey
         && Objects.equals(resource, that.resource)
         && Objects.equals(formId, that.formId)
         && Objects.equals(resourceName, that.resourceName)
@@ -154,6 +166,8 @@ public class FormRecordImpl implements Form {
         + ", tenantId='"
         + tenantId
         + '\''
+        + ", deploymentKey="
+        + deploymentKey
         + "} "
         + super.toString();
   }

@@ -54,4 +54,9 @@ public interface FormMetadataValue extends RecordValue, TenantOwned {
    *     {@code false}
    */
   boolean isDuplicate();
+
+  /**
+   * @return the key of the deployment this form was deployed with
+   */
+  long getDeploymentKey();
 }
