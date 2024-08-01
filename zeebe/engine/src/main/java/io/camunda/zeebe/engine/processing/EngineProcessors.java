@@ -38,6 +38,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorCo
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
+import io.camunda.zeebe.engine.processing.user.UserEventProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskEventProcessors;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -184,6 +185,9 @@ public final class EngineProcessors {
 
     UserTaskEventProcessors.addUserTaskProcessors(
         typedRecordProcessors, processingState, bpmnBehaviors, writers);
+
+    UserEventProcessors.addUserProcessors(
+        typedRecordProcessors, processingState, writers, commandDistributionBehavior);
 
     return typedRecordProcessors;
   }

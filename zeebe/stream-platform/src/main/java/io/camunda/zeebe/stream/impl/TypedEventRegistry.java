@@ -40,6 +40,7 @@ import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionReco
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
@@ -94,6 +95,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.USER_TASK, UserTaskRecord.class);
     registry.put(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionRecord.class);
     registry.put(ValueType.MESSAGE_CORRELATION, MessageCorrelationRecord.class);
+    registry.put(ValueType.USER, UserRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
 

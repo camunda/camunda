@@ -47,6 +47,7 @@ import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -78,6 +79,7 @@ import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -228,7 +230,7 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.MESSAGE_CORRELATION,
         new Mapping<>(MessageCorrelationRecordValue.class, MessageCorrelationIntent.class));
-
+    mapping.put(ValueType.USER, new Mapping<>(UserRecordValue.class, UserIntent.class));
     return mapping;
   }
 

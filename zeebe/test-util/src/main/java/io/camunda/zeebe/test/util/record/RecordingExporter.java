@@ -61,6 +61,7 @@ import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -422,6 +423,10 @@ public final class RecordingExporter implements Exporter {
   public static CompensationSubscriptionRecordStream compensationSubscriptionRecords() {
     return new CompensationSubscriptionRecordStream(
         records(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionRecordValue.class));
+  }
+
+  public static UserRecordStream userRecords() {
+    return new UserRecordStream(records(ValueType.USER, UserRecordValue.class));
   }
 
   public static void autoAcknowledge(final boolean shouldAcknowledgeRecords) {

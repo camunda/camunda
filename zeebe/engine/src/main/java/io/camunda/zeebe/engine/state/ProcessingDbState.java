@@ -53,10 +53,12 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.engine.state.signal.DbSignalSubscriptionState;
+import io.camunda.zeebe.engine.state.user.DbUserState;
 import io.camunda.zeebe.engine.state.variable.DbVariableState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
@@ -91,6 +93,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableDistributionState distributionState;
   private final MutableUserTaskState userTaskState;
   private final MutableCompensationSubscriptionState compensationSubscriptionState;
+  private final MutableUserState userState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -133,6 +136,7 @@ public class ProcessingDbState implements MutableProcessingState {
     userTaskState = new DbUserTaskState(zeebeDb, transactionContext);
     compensationSubscriptionState =
         new DbCompensationSubscriptionState(zeebeDb, transactionContext);
+    userState = new DbUserState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -246,6 +250,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableCompensationSubscriptionState getCompensationSubscriptionState() {
     return compensationSubscriptionState;
+  }
+
+  @Override
+  public MutableUserState getUserState() {
+    return userState;
   }
 
   @Override
