@@ -260,6 +260,7 @@ public final class EngineProcessors {
         ValueType.SCALE,
         ScaleIntent.RELOCATE_MESSAGE_START,
         new ScaleRelocateMessageStartProcessor(
+            processingState.getKeyGenerator(),
             writers,
             processingState.getMessageState(),
             processingState.getRelocationState(),

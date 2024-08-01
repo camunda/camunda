@@ -80,7 +80,9 @@ public final class MessageEventProcessors {
                 processingState.getPartitionId(),
                 messageState,
                 subscriptionState,
+                processingState.getRelocationState(),
                 subscriptionCommandSender,
+                commandDistributionBehavior,
                 writers,
                 keyGenerator))
         .onCommand(

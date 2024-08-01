@@ -18,10 +18,12 @@ import io.camunda.zeebe.protocol.impl.record.value.scale.ScaleRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ScaleIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
 import org.agrona.collections.MutableBoolean;
 
 public class ScaleRelocateMessageStartProcessor implements TypedRecordProcessor<ScaleRecord> {
+  private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final MessageState messageState;
@@ -29,10 +31,12 @@ public class ScaleRelocateMessageStartProcessor implements TypedRecordProcessor<
   private final CommandDistributionBehavior commandDistributionBehavior;
 
   public ScaleRelocateMessageStartProcessor(
+      final KeyGenerator keyGenerator,
       final Writers writers,
       final MessageState messageState,
       final RelocationState relocationState,
       final CommandDistributionBehavior commandDistributionBehavior) {
+    this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     commandWriter = writers.command();
     this.messageState = messageState;
@@ -73,13 +77,14 @@ public class ScaleRelocateMessageStartProcessor implements TypedRecordProcessor<
           return true;
         });
     if (!foundAny.get()) {
-      final var newScaleRecord = new ScaleRecord();
-      newScaleRecord.setCorrelationKey(correlationKey);
-      stateWriter.appendFollowUpEvent(
-          record.getKey(), ScaleIntent.RELOCATE_CORRELATION_KEY_COMPLETED, newScaleRecord);
-
-      commandWriter.appendFollowUpCommand(
-          -1, ScaleIntent.RELOCATE_NEXT_CORRELATION_KEY, newScaleRecord);
+      MessageRelocationHelper.completeRelocationOfCorrelationKey(
+          keyGenerator,
+          commandDistributionBehavior,
+          relocationState,
+          correlationKey,
+          stateWriter,
+          commandWriter,
+          record.getKey());
     }
   }
 }

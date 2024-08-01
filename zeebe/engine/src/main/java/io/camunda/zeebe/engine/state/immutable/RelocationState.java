@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.immutable;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil.Routing;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import java.util.Collection;
 import java.util.Set;
 import org.agrona.DirectBuffer;
@@ -28,6 +29,8 @@ public interface RelocationState extends Routing {
   boolean isRelocated(final DirectBuffer correlationKey);
 
   Collection<MessageRecord> getQueuedMessages();
+
+  Collection<MessageSubscriptionRecord> getQueuedMessageSubscriptions();
 
   record RoutingInfo(
       int currentPartitionCount, int newPartitionCount, Set<Integer> completedPartitions)

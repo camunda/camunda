@@ -15,12 +15,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.RelocationState;
 import io.camunda.zeebe.protocol.impl.record.value.scale.ScaleRecord;
-import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.ScaleIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.List;
 import org.agrona.collections.MutableBoolean;
 
 public class ScaleRelocateMessageCompleteProcessor implements TypedRecordProcessor<ScaleRecord> {
@@ -66,32 +63,14 @@ public class ScaleRelocateMessageCompleteProcessor implements TypedRecordProcess
         });
 
     if (!foundAny.get()) {
-      // Check relocation queue
-      final var queuedMessages = relocationState.getQueuedMessages();
-      for (final var message : queuedMessages) {
-        final var distributionKey = keyGenerator.nextKey();
-        final var relocationRecord = new ScaleRecord();
-        relocationRecord.setMessageRecord(message);
-        commandDistributionBehavior.distributeCommand(
-            distributionKey,
-            ValueType.MESSAGE,
-            MessageIntent.PUBLISH,
-            message,
-            List.of(
-                relocationState
-                    .getRoutingInfo()
-                    .newPartitionForCorrelationKey(message.getCorrelationKeyBuffer())));
-      }
-    }
-
-    if (!foundAny.get()) {
-      final var newScaleRecord = new ScaleRecord();
-      newScaleRecord.setCorrelationKey(correlationKey);
-      stateWriter.appendFollowUpEvent(
-          record.getKey(), ScaleIntent.RELOCATE_CORRELATION_KEY_COMPLETED, newScaleRecord);
-
-      commandWriter.appendFollowUpCommand(
-          -1, ScaleIntent.RELOCATE_NEXT_CORRELATION_KEY, newScaleRecord);
+      MessageRelocationHelper.completeRelocationOfCorrelationKey(
+          keyGenerator,
+          commandDistributionBehavior,
+          relocationState,
+          correlationKey,
+          stateWriter,
+          commandWriter,
+          record.getKey());
     }
   }
 }

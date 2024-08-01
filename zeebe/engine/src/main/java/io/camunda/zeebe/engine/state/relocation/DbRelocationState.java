@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.relocation;
 
 import io.camunda.zeebe.engine.state.mutable.MutableRelocationState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.HashSet;
@@ -20,7 +21,9 @@ public class DbRelocationState implements MutableRelocationState {
   private RoutingInfo routingInfo;
   private final Set<String> relocatingCorrelationKeys = new HashSet<>();
   private final Set<String> completedCorrelationKeys = new HashSet<>();
-  private final LinkedList<MessageRecord> queueMessages = new LinkedList<>();
+  private final LinkedList<MessageRecord> queuedMessages = new LinkedList<>();
+  private final LinkedList<MessageSubscriptionRecord> queuedMessageSubscriptions =
+      new LinkedList<>();
 
   public DbRelocationState(final int partitionCount) {
     if (getRoutingInfo() == null) {
@@ -45,7 +48,12 @@ public class DbRelocationState implements MutableRelocationState {
 
   @Override
   public Collection<MessageRecord> getQueuedMessages() {
-    return queueMessages;
+    return queuedMessages;
+  }
+
+  @Override
+  public Collection<MessageSubscriptionRecord> getQueuedMessageSubscriptions() {
+    return queuedMessageSubscriptions;
   }
 
   @Override
@@ -63,13 +71,21 @@ public class DbRelocationState implements MutableRelocationState {
     final var key = BufferUtil.bufferAsString(correlationKey);
     relocatingCorrelationKeys.remove(key);
     completedCorrelationKeys.add(key);
-    queueMessages.clear();
+    queuedMessages.clear();
+    queuedMessageSubscriptions.clear();
   }
 
   @Override
   public void enqueue(final MessageRecord messageRecord) {
     final var copy = new MessageRecord();
     BufferUtil.copy(messageRecord, copy);
-    queueMessages.add(copy);
+    queuedMessages.add(copy);
+  }
+
+  @Override
+  public void enqueue(final MessageSubscriptionRecord messageSubscriptionRecord) {
+    final var copy = new MessageSubscriptionRecord();
+    BufferUtil.copy(messageSubscriptionRecord, copy);
+    queuedMessageSubscriptions.add(copy);
   }
 }
