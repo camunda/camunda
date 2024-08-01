@@ -11,9 +11,11 @@ import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.zeebe.gateway.rest.RequestMapper.CompleteJobRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.ErrorJobRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.FailJobRequest;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -71,6 +73,16 @@ public class JobController {
         .fold(this::errorJob, RestErrorMapper::mapProblemToCompletedResponse);
   }
 
+  @PostMapping(
+      path = "/{jobKey}/completion",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public CompletableFuture<ResponseEntity<Object>> completeJob(
+      @PathVariable final long jobKey,
+      @RequestBody(required = false) final JobCompletionRequest completionRequest) {
+    return completeJob(RequestMapper.toJobCompletionRequest(completionRequest, jobKey));
+  }
+
   private CompletableFuture<ResponseEntity<Object>> activateJobs(
       final ActivateJobsRequest activationRequest) {
     final var result = new CompletableFuture<ResponseEntity<Object>>();
@@ -108,5 +120,14 @@ public class JobController {
                     errorJobRequest.errorCode(),
                     errorJobRequest.errorMessage(),
                     errorJobRequest.variables()));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> completeJob(
+      final CompleteJobRequest completeJobRequest) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            jobServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .completeJob(completeJobRequest.jobKey(), completeJobRequest.variables()));
   }
 }

@@ -290,4 +290,51 @@ public class JobControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody);
   }
+
+  @Test
+  void shouldCompleteJob() {
+    // given
+    when(jobServices.completeJob(anyLong(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(jobServices).completeJob(1L, Map.of());
+  }
+
+  @Test
+  void shouldCompleteJobWithVariables() {
+    // given
+    when(jobServices.completeJob(anyLong(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+        {
+          "variables": {
+            "foo": "bar"
+          }
+        }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(jobServices).completeJob(1L, Map.of("foo", "bar"));
+  }
 }
