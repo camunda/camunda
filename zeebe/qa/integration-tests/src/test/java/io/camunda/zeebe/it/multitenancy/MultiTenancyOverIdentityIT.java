@@ -39,6 +39,7 @@ import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -196,7 +197,9 @@ public class MultiTenancyOverIdentityIT {
 
   @AutoCloseResource
   private static final TestStandaloneBroker ZEEBE =
-      new TestStandaloneBroker().withAdditionalProfile(Profile.IDENTITY_AUTH);
+      new TestStandaloneBroker()
+          .withAdditionalProfile(Profile.IDENTITY_AUTH)
+          .withRecordingExporter(true);
 
   private static final String TENANT_A = "tenant-a";
   private static final String TENANT_B = "tenant-b";
@@ -833,6 +836,45 @@ public class MultiTenancyOverIdentityIT {
       assertThat(result)
           .describedAs(
               "Expect that job can be competed as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldCompleteZeebeUserTaskForTenant() {
+    // given
+    process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .userTask()
+            .zeebeUserTask()
+            .endEvent()
+            .done();
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      final var userTask = RecordingExporter.userTaskRecords(UserTaskIntent.CREATED).getFirst();
+
+      // when
+      final Future<CompleteUserTaskResponse> result =
+          client.newUserTaskCompleteCommand(userTask.getKey()).send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that user task can be completed as the client has access to process of tenant-a")
           .succeedsWithin(Duration.ofSeconds(10));
     }
   }
