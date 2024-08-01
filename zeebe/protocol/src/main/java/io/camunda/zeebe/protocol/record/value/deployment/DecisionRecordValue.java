@@ -64,4 +64,9 @@ public interface DecisionRecordValue extends RecordValue, TenantOwned {
    *     otherwise {@code false}
    */
   boolean isDuplicate();
+
+  /**
+   * @return the key of the deployment this decision was deployed with
+   */
+  long getDeploymentKey();
 }

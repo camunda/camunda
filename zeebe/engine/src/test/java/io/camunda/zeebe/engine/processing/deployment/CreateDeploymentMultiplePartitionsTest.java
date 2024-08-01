@@ -469,7 +469,6 @@ public final class CreateDeploymentMultiplePartitionsTest {
                   .withPartitionId(partitionId)
                   .withIntents(ProcessIntent.CREATED)
                   .withBpmnProcessId(processId)
-                  .limit(1)
                   .getFirst();
           assertThat(record).isNotNull();
           assertThat(record.getRecordVersion()).isEqualTo(2);
@@ -532,6 +531,32 @@ public final class CreateDeploymentMultiplePartitionsTest {
                 .distinct())
         .describedAs("All created events get the same key")
         .hasSize(1);
+  }
+
+  @Test
+  public void shouldWriteDecisionCreatedEventsWithDeploymentKeyOnAllPartitions() {
+    // given
+    final var decisionId = "jedi_or_sith";
+
+    // when
+    final var deployment =
+        ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_V2).deploy();
+
+    // then
+    ENGINE.forEachPartition(
+        partitionId -> {
+          final var record =
+              RecordingExporter.decisionRecords()
+                  .withPartitionId(partitionId)
+                  .withIntents(DecisionIntent.CREATED)
+                  .withDecisionId(decisionId)
+                  .getFirst();
+          assertThat(record)
+              .isNotNull()
+              .extracting(Record::getValue)
+              .extracting(DecisionRecordValue::getDeploymentKey)
+              .isEqualTo(deployment.getKey());
+        });
   }
 
   @Test

@@ -145,7 +145,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                                 .setVersion(decision.getVersion())
                                 .setDecisionRequirementsId(decision.getDecisionRequirementsId())
                                 .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
-                                .setTenantId(decision.getTenantId()));
+                                .setTenantId(decision.getTenantId())
+                                .setDeploymentKey(decision.getDeploymentKey()));
                       });
             });
     return Either.right(null);
@@ -276,7 +277,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                   .setDecisionName(decision.getName())
                   .setDecisionRequirementsId(parsedDrg.getId())
                   .setDecisionRequirementsKey(drgRecord.getDecisionRequirementsKey())
-                  .setTenantId(drgRecord.getTenantId());
+                  .setTenantId(drgRecord.getTenantId())
+                  .setDeploymentKey(deploymentEvent.getDeploymentKey());
 
               decisionState
                   .findLatestDecisionByIdAndTenant(
