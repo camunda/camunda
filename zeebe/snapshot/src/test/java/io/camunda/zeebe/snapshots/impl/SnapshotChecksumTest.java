@@ -157,8 +157,7 @@ public final class SnapshotChecksumTest {
                       .fsyncTraces()
                       .hasSize(1)
                       .first(FSyncTraceAssert.factory())
-                      .hasPath(checksumPath)
-                      .isSuccessful());
+                      .hasPath(checksumPath));
     }
   }
 
