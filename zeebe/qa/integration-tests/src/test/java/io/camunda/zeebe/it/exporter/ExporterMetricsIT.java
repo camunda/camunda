@@ -12,9 +12,6 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import org.apache.commons.io.IOUtils;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -28,15 +25,15 @@ public class ExporterMetricsIT {
               "foo", cfg -> cfg.setClassName(ExporterMetricsTestExporter.class.getName()));
 
   @Test
-  public void shouldAddMeterToExporterMetrics() throws IOException {
+  void shouldAddMeterToExporterMetrics() throws IOException {
     // given
     final var actuator = PrometheusActuator.of(zeebe);
-    final var metricsPlainText =
-        IOUtils.toString(actuator.metrics().body().asInputStream(), StandardCharsets.UTF_8);
 
-    final var metricLines = Arrays.asList(metricsPlainText.split(System.lineSeparator()));
+    // when
+    final var metricsPlainText = actuator.metrics();
 
-    Assertions.assertThat(metricLines.stream())
+    // then
+    Assertions.assertThat(metricsPlainText.lines())
         .filteredOn(line -> line.startsWith(ExporterMetricsTestExporter.REGISTERED_COUNTER))
         .hasSize(1);
   }
