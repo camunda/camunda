@@ -101,7 +101,7 @@ jobs:
           done
 
       - name: Wait for front-end to start
-        run: ./.github/scripts/wait-for.sh http://localhost:3000/ready
+        run: ./optimize/scripts/wait-for.sh http://localhost:3000/ready
 
       - name: Run tests
         working-directory: ./optimize/client

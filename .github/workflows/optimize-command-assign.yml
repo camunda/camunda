@@ -53,7 +53,7 @@ jobs:
           PROJECT_ID: ${{ steps.vars.outputs.project_id }}
           PROJECT_OWNER: ${{ github.event.client_payload.github.payload.organization.login }}
           GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
-        run: ./.github/scripts/commands/get-issue-project-data.sh
+        run: ./optimize/scripts/commands/get-issue-project-data.sh
 
       - name: Validate inputs
         run: |
