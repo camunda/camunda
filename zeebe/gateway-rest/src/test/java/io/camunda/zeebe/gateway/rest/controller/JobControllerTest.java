@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.service.JobServices;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
