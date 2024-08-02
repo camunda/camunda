@@ -172,6 +172,10 @@
           <usedDependencies>
             <dependency>org.yaml:snakeyaml</dependency>
           </usedDependencies>
+          <ignoredUnusedDeclaredDependencies>
+            <ignoredUnusedDeclaredDependency>org.junit.jupiter:junit-jupiter-params</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>io.camunda:zeebe-protocol-asserts</ignoredUnusedDeclaredDependency>
+          </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
     </plugins>
