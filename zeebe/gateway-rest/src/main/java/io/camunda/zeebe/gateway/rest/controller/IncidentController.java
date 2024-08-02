@@ -34,10 +34,6 @@ public class IncidentController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> incidentResolution(
       @PathVariable final long incidentKey) {
-    return resolveIncident(incidentKey);
-  }
-
-  private CompletableFuture<ResponseEntity<Object>> resolveIncident(final long incidentKey) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             incidentServices

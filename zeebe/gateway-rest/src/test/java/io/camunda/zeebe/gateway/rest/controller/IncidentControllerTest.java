@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 import io.camunda.service.CamundaServiceException;
@@ -20,8 +19,6 @@ import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,31 +62,15 @@ public class IncidentControllerTest extends RestControllerTest {
   @Test
   void shouldReturnNotFoundIfIncidentNotFound() {
     // given
-    when(incidentServices.resolveIncident(anyLong()))
-        .thenReturn(CompletableFuture.completedFuture(new IncidentRecord()));
-
-    // when/then
-    webClient
-        .post()
-        .uri(INCIDENT_BASE_URL + "/1/resolution")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isNoContent();
-
-    Mockito.verify(incidentServices).resolveIncident(1L);
-  }
-
-  @Test
-  void shouldYieldNotFoundWhenTaskNotFound() {
-    // given
     Mockito.when(incidentServices.resolveIncident(anyLong()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new CamundaServiceException(
                     new BrokerRejection(
-                        IncidentIntent.RESOLVE, 1L, RejectionType.NOT_FOUND, "Incident not found"))));
+                        IncidentIntent.RESOLVE,
+                        1L,
+                        RejectionType.NOT_FOUND,
+                        "Incident not found"))));
 
     final var expectedBody =
         """

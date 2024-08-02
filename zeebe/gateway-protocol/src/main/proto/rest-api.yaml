@@ -1351,7 +1351,10 @@ paths:
     post:
       tags:
         - Incident
-      summary: Resolves a given incident. This simply marks the incident as resolved; most likely a call to Update job will be necessary to reset the job’s retries, followed by this call.
+      summary: Resolves a given incident.
+      description: |
+        Marks the incident as resolved; most likely a call to Update job will be necessary
+        to reset the job’s retries, followed by this call.
       parameters:
         - name: incidentKey
           in: path
