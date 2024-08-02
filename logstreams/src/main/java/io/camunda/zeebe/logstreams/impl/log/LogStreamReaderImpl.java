@@ -11,6 +11,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import java.util.NoSuchElementException;
+import net.jcip.annotations.NotThreadSafe;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -21,6 +22,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * <p>This implementation assumes that blocks have no padding - they contain a contiguous series of
  * {@link LoggedEvent} which fits exactly within the block.
  */
+@NotThreadSafe
 final class LogStreamReaderImpl implements LogStreamReader {
   private final LogStorageReader reader;
 
