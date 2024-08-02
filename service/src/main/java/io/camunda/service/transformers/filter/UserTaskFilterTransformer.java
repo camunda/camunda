@@ -14,11 +14,9 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.service.search.filter.ComparableValueFilter;
-import io.camunda.service.search.filter.DateValueFilter;
 import io.camunda.service.search.filter.UserTaskFilter;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.service.transformers.filter.ComparableValueFilterTransformer.ComparableFieldFilter;
-import io.camunda.service.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -84,6 +82,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     }
     return null;
   }
+
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
     return longTerms("processInstanceId", processInstanceKeys);
   }

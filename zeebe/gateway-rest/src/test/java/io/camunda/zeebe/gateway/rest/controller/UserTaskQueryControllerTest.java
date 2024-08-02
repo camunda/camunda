@@ -91,7 +91,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       new ArrayList<>(), // candidateUsers
                       "efr", // externalFormReference
                       1, // processDefinitionVersion
-                      Collections.emptyMap() // customHeaders
+                      Collections.emptyMap(), // customHeaders
+                      20 // priority
                       )))
           .sortValues(new Object[] {"v"})
           .build();
