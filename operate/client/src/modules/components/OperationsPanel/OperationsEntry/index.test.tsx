@@ -331,6 +331,7 @@ describe('OperationsEntry', () => {
       <OperationsEntry
         operation={{
           ...OPERATIONS.EDIT,
+          endDate: null,
           operationsTotalCount: 10,
           operationsFinishedCount: 0,
         }}
@@ -357,6 +358,7 @@ describe('OperationsEntry', () => {
       <OperationsEntry
         operation={{
           ...OPERATIONS.EDIT,
+          endDate: null,
           operationsTotalCount: 10,
           operationsFinishedCount: 5,
         }}
