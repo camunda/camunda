@@ -66,7 +66,7 @@ jobs:
     - name: Generate production .tar.gz
       uses: ./.github/actions/run-maven
       with:
-        parameters: install -DskipTests -Dskip.docker
+        parameters: install -DskipTests -Dskip.docker -PrunAssembly
     - name: Build Docker Image
       run: ./.github/optimize/scripts/build-docker-image.sh
     # The SmokeTest is running as part of the "deploy-artifact" job to ensure we only push the artifact on success
@@ -96,7 +96,7 @@ jobs:
     - name: Deploy to Artifactory
       uses: ./.github/actions/run-maven
       with:
-        parameters: deploy -Dskip.fe.build -DskipTests -Dskip.docker
+        parameters: deploy -Dskip.fe.build -DskipTests -Dskip.docker -PrunAssembly
     - name: Docker log dump
       uses: ./.github/actions/docker-logs
       if: always()
