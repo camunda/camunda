@@ -12,9 +12,11 @@ import {BPMNDiagram} from 'modules/components/BPMNDiagram';
 import {SomethingWentWrong} from 'modules/components/Errors/SomethingWentWrong';
 import {OutletContext} from '../Details';
 import styles from './index.module.scss';
+import {useTranslation} from 'react-i18next';
 
 const ProcessView: React.FC = () => {
   const {task, process} = useOutletContext<OutletContext>();
+  const {t} = useTranslation();
 
   if (process === undefined) {
     return <SomethingWentWrong className={styles.somethingWentWrong} />;
@@ -27,7 +29,9 @@ const ProcessView: React.FC = () => {
     <Layer className={styles.container}>
       <div className={styles.header}>
         <span className={styles.processName}>{name}</span>
-        <Tag className={styles.version}>Version: {version}</Tag>
+        <Tag className={styles.version}>
+          {t('processViewProcessVersion', {version})}
+        </Tag>
       </div>
       {bpmnXml !== null ? (
         <Layer className={styles.diagramFrame}>

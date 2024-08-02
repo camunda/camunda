@@ -11,40 +11,46 @@ import {OverflowMenu, OverflowMenuItem} from '@carbon/react';
 import {SortAscending, Checkmark} from '@carbon/react/icons';
 import {tracking} from 'modules/tracking';
 import {useTaskFilters, TaskFilters} from 'modules/hooks/useTaskFilters';
+import {t as _t} from 'i18next';
+import {useTranslation} from 'react-i18next';
 import styles from './styles.module.scss';
 import sharedStyles from 'modules/styles/panelHeader.module.scss';
 import {useSearchParams} from 'react-router-dom';
 import {getStateLocally} from 'modules/utils/localStorage';
 
-const FILTER_LABELS: Record<string, string> = {
-  'all-open': 'All open tasks',
-  'assigned-to-me': 'Assigned to me',
-  unassigned: 'Unassigned',
-  completed: 'Completed',
-  custom: 'Custom filter',
-};
-
 type Props = {
   disabled: boolean;
 };
 
-const SORTING_OPTIONS: Record<TaskFilters['sortBy'], string> = {
-  creation: 'Creation date',
-  'follow-up': 'Follow-up date',
-  due: 'Due date',
-  completion: 'Completion date',
-};
 const SORTING_OPTIONS_ORDER: TaskFilters['sortBy'][] = [
   'creation',
   'due',
   'follow-up',
 ];
+
 const COMPLETED_SORTING_OPTIONS_ORDER: TaskFilters['sortBy'][] = [
   'creation',
   'due',
   'follow-up',
   'completion',
 ];
+
+const getFilterLabels = () =>
+  ({
+    'all-open': _t('taskFiltersAllOpenTasks'),
+    'assigned-to-me': _t('taskFiltersAssignedToMe'),
+    unassigned: _t('taskFiltersUnassigned'),
+    completed: _t('taskFiltersCompleted'),
+    custom: _t('taskFiltersCustomFilter'),
+  }) as Record<string, string>;
+
+const getSortingOptions = () =>
+  ({
+    creation: _t('taskFiltersSortCreationDate'),
+    'follow-up': _t('taskFiltersSortFollowUpDate'),
+    due: _t('taskFiltersSortDueDate'),
+    completion: _t('taskFiltersSortCompletionDate'),
+  }) as Record<string, string>;
 
 const Filters: React.FC<Props> = memo(({disabled}) => {
   const customFilters = getStateLocally('customFilters');
@@ -54,14 +60,19 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
     ? COMPLETED_SORTING_OPTIONS_ORDER
     : SORTING_OPTIONS_ORDER;
 
+  const {t} = useTranslation();
+
   return (
-    <section className={sharedStyles.panelHeader} aria-label="Filters">
+    <section
+      className={sharedStyles.panelHeader}
+      aria-label={t('taskFiltersHeaderAria')}
+    >
       <h1 className={styles.header}>
-        {FILTER_LABELS?.[filter] ?? customFilters?.[filter]?.name}
+        {getFilterLabels()?.[filter] ?? customFilters?.[filter]?.name}
       </h1>
       <OverflowMenu
-        aria-label="Sort tasks"
-        iconDescription="Sort tasks"
+        aria-label={t('taskFiltersSortButton')}
+        iconDescription={t('taskFiltersSortButton')}
         renderIcon={SortAscending}
         size="md"
         disabled={disabled}
@@ -80,7 +91,9 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
                     visibility: sortBy === id ? undefined : 'hidden',
                   }}
                 />
-                <span className={styles.menuItem}>{SORTING_OPTIONS[id]}</span>
+                <span className={styles.menuItem}>
+                  {getSortingOptions()[id]}
+                </span>
               </div>
             }
             onClick={() => {

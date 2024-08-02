@@ -26,7 +26,7 @@ const Handle = styled.div`
   height: 100%;
 `;
 
-const Panel = styled.div`
+const Panel = styled.section`
   width: 540px;
   border-left: solid 1px var(--cds-border-subtle-01);
   &.resizing {
