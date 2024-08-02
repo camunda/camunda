@@ -24,22 +24,16 @@ import org.agrona.concurrent.UnsafeBuffer;
 final class LogStreamReaderImpl implements LogStreamReader {
   private final LogStorageReader reader;
 
-  private final LoggedEventImpl currentEvent;
-  private final DirectBuffer currentEventBuffer;
+  private LoggedEventImpl currentEvent;
+  private DirectBuffer currentEventBuffer;
 
-  private final LoggedEventImpl nextEvent;
-  private final DirectBuffer nextEventBuffer;
+  private LoggedEventImpl nextEvent;
+  private DirectBuffer nextEventBuffer;
 
   private int nextEventOffset;
 
   LogStreamReaderImpl(final LogStorageReader reader) {
     this.reader = reader;
-
-    currentEvent = new LoggedEventImpl();
-    currentEventBuffer = new UnsafeBuffer();
-
-    nextEvent = new LoggedEventImpl();
-    nextEventBuffer = new UnsafeBuffer();
 
     reset();
     seekToFirstEvent();
@@ -147,6 +141,14 @@ final class LogStreamReaderImpl implements LogStreamReader {
   }
 
   @Override
+  public LoggedEvent peekNext() {
+    if (!hasNext()) {
+      throw new NoSuchElementException();
+    }
+    return nextEvent;
+  }
+
+  @Override
   public void close() {
     reset();
     reader.close();
@@ -168,19 +170,14 @@ final class LogStreamReaderImpl implements LogStreamReader {
     return -1;
   }
 
-  @Override
-  public LoggedEvent peekNext() {
-    if (!hasNext()) {
-      throw new NoSuchElementException();
-    }
-    return nextEvent;
-  }
-
   private void reset() {
-    currentEventBuffer.wrap(0, 0);
-    currentEvent.wrap(currentEventBuffer, 0);
+    currentEvent = new LoggedEventImpl();
+    currentEventBuffer = new UnsafeBuffer();
 
-    nextEventBuffer.wrap(0, 0);
+    nextEvent = new LoggedEventImpl();
+    nextEventBuffer = new UnsafeBuffer();
+
+    currentEvent.wrap(currentEventBuffer, 0);
     nextEvent.wrap(nextEventBuffer, 0);
     nextEventOffset = 0;
   }
