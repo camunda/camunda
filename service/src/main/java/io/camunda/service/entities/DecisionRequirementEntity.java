@@ -13,7 +13,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 public record DecisionRequirementEntity(
     String tenantId,
     Long key,
-    String id,
     String decisionRequirementsId,
     String name,
     Integer version,

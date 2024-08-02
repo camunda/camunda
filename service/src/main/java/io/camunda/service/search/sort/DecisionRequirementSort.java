@@ -7,7 +7,6 @@
  */
 package io.camunda.service.search.sort;
 
-import io.camunda.service.search.sort.DecisionDefinitionSort.Builder;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
@@ -27,11 +26,6 @@ public record DecisionRequirementSort(List<FieldSorting> orderings) implements S
   public static final class Builder extends AbstractBuilder<Builder>
       implements ObjectBuilder<DecisionRequirementSort> {
 
-    public Builder id() {
-      currentOrdering = new FieldSorting("id", null);
-      return this;
-    }
-
     public Builder decisionRequirementsId() {
       currentOrdering = new FieldSorting("decisionRequirementsId", null);
       return this;
@@ -47,7 +41,7 @@ public record DecisionRequirementSort(List<FieldSorting> orderings) implements S
       return this;
     }
 
-    public DecisionRequirementSort.Builder decisionRequirementsKey() {
+    public DecisionRequirementSort.Builder key() {
       currentOrdering = new FieldSorting("key", null);
       return this;
     }
