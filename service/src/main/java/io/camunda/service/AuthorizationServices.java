@@ -12,19 +12,19 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationCreateRequest;
-import io.camunda.zeebe.protocol.impl.record.value.identity.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.impl.record.value.identity.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public class IdentityServices<T> extends ApiServices<IdentityServices<T>> {
+public class AuthorizationServices<T> extends ApiServices<AuthorizationServices<T>> {
 
-  public IdentityServices(
+  public AuthorizationServices(
       final BrokerClient brokerClient, final CamundaSearchClient dataStoreClient) {
     this(brokerClient, dataStoreClient, null, null);
   }
 
-  public IdentityServices(
+  public AuthorizationServices(
       final BrokerClient brokerClient,
       final CamundaSearchClient searchClient,
       final ServiceTransformers transformers,
@@ -33,8 +33,8 @@ public class IdentityServices<T> extends ApiServices<IdentityServices<T>> {
   }
 
   @Override
-  public IdentityServices<T> withAuthentication(final Authentication authentication) {
-    return new IdentityServices<>(brokerClient, searchClient, transformers, authentication);
+  public AuthorizationServices<T> withAuthentication(final Authentication authentication) {
+    return new AuthorizationServices<>(brokerClient, searchClient, transformers, authentication);
   }
 
   public CompletableFuture<AuthorizationRecord> createAuthorization(

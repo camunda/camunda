@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-import io.camunda.zeebe.engine.state.identity.PermissionsRecordValue;
-import io.camunda.zeebe.protocol.impl.record.value.identity.AuthorizationRecord;
+import io.camunda.zeebe.engine.state.authorization.PermissionsRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 
 public interface AuthorizationState {
   AuthorizationRecord getAuthorization(Long authorizationKey);

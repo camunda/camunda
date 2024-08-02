@@ -8,8 +8,8 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
-import io.camunda.zeebe.protocol.impl.record.value.identity.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.impl.record.value.identity.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import java.util.List;

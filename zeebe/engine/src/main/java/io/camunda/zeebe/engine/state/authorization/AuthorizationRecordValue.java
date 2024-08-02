@@ -5,12 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.state.identity;
+package io.camunda.zeebe.engine.state.authorization;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.identity.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 
 public class AuthorizationRecordValue extends UnpackedObject implements DbValue {
   private final ObjectProperty<AuthorizationRecord> recordProp =

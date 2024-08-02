@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement.dto;
 
-import io.camunda.zeebe.protocol.impl.record.value.identity.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationOwnerType;
 import java.util.List;
 
 public class AuthorizationAssignRequest {
