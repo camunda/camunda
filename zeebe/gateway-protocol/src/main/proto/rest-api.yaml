@@ -1198,6 +1198,8 @@ components:
       properties:
         changeset:
           $ref: "#/components/schemas/JobChangeset"
+      required:
+        - changeset
     JobChangeset:
       description: |
         JSON object with changed job attribute values.
@@ -1212,7 +1214,6 @@ components:
 
         The job cannot be completed or failed with this endpoint, use the Complete job or Fail job endpoints instead.
       type: object
-      nullable: true
       additionalProperties: true
       properties:
         retries:

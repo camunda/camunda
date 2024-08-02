@@ -435,7 +435,7 @@ public class JobControllerTest extends RestControllerTest {
           "type": "about:blank",
           "status": 400,
           "title": "INVALID_ARGUMENT",
-          "detail": "At least one field between retries, timeout is required.",
+          "detail": "At least one of [retries, timeout] is required.",
           "instance": "%s"
         }"""
             .formatted(JOBS_BASE_URL + "/1");
@@ -486,6 +486,35 @@ public class JobControllerTest extends RestControllerTest {
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  @Test
+  void shouldRejectUpdateJobNoBody() {
+    // given
+    final var expectedBody =
+        """
+        {
+          "type": "about:blank",
+          "status": 400,
+          "title": "Bad Request",
+          "detail": "Required request body is missing",
+          "instance": "%s"
+        }"""
+            .formatted(JOBS_BASE_URL + "/1");
+
+    // when/then
+    webClient
+        .patch()
+        .uri(JOBS_BASE_URL + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isBadRequest()
