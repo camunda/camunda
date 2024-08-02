@@ -12,10 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.sort.SearchSortOptions;
 import io.camunda.search.clients.sort.SortOrder;
-import io.camunda.service.DecisionRequirementServices;
+import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.query.filter.DecisionDefinitionSearchQueryStub;
 import io.camunda.service.search.query.SearchQueryBuilders;
-import io.camunda.service.search.sort.DecisionRequirementSort;
+import io.camunda.service.search.sort.DecisionRequirementsSort;
 import io.camunda.service.util.StubbedCamundaSearchClient;
 import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
@@ -25,15 +25,15 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class DecisionRequirementSortTest {
-  private DecisionRequirementServices services;
+public class DecisionRequirementsSortTest {
+  private DecisionRequirementsServices services;
   private StubbedCamundaSearchClient client;
 
   @BeforeEach
   public void before() {
     client = new StubbedCamundaSearchClient();
     new DecisionDefinitionSearchQueryStub().registerWith(client);
-    services = new DecisionRequirementServices(null, client);
+    services = new DecisionRequirementsServices(null, client);
   }
 
   private static Stream<Arguments> provideSortParameters() {
@@ -52,9 +52,10 @@ public class DecisionRequirementSortTest {
   public void shouldSortByField(
       final String field,
       final SortOrder sortOrder,
-      final Function<DecisionRequirementSort.Builder, ObjectBuilder<DecisionRequirementSort>> fn) {
+      final Function<DecisionRequirementsSort.Builder, ObjectBuilder<DecisionRequirementsSort>>
+          fn) {
     // when
-    services.search(SearchQueryBuilders.decisionRequirementSearchQuery(q -> q.sort(fn)));
+    services.search(SearchQueryBuilders.decisionRequirementsSearchQuery(q -> q.sort(fn)));
 
     // then
     final SearchQueryRequest searchRequest = client.getSingleSearchRequest();
@@ -80,7 +81,7 @@ public class DecisionRequirementSortTest {
   private record TestArguments(
       String field,
       SortOrder sortOrder,
-      Function<DecisionRequirementSort.Builder, ObjectBuilder<DecisionRequirementSort>> fn)
+      Function<DecisionRequirementsSort.Builder, ObjectBuilder<DecisionRequirementsSort>> fn)
       implements Arguments {
 
     @Override

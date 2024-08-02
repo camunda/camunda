@@ -13,14 +13,14 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.service.search.filter.DecisionRequirementFilter;
+import io.camunda.service.search.filter.DecisionRequirementsFilter;
 import java.util.List;
 
 public final class DecisionRequirementFilterTransformer
-    implements FilterTransformer<DecisionRequirementFilter> {
+    implements FilterTransformer<DecisionRequirementsFilter> {
 
   @Override
-  public SearchQuery toSearchQuery(final DecisionRequirementFilter filter) {
+  public SearchQuery toSearchQuery(final DecisionRequirementsFilter filter) {
     final var idsQuery = getIdsQuery(filter.ids());
     final var keysQuery = getKeysQuery(filter.keys());
     final var namesQuery = getNamesQuery(filter.names());
@@ -39,7 +39,7 @@ public final class DecisionRequirementFilterTransformer
   }
 
   @Override
-  public List<String> toIndices(final DecisionRequirementFilter filter) {
+  public List<String> toIndices(final DecisionRequirementsFilter filter) {
     return List.of("operate-decision-requirements-8.3.0_alias");
   }
 

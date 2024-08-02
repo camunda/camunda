@@ -15,7 +15,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public record DecisionRequirementFilter(
+public record DecisionRequirementsFilter(
     List<String> ids,
     List<Long> keys,
     List<String> names,
@@ -24,7 +24,7 @@ public record DecisionRequirementFilter(
     List<String> tenantIds)
     implements FilterBase {
 
-  public static final class Builder implements ObjectBuilder<DecisionRequirementFilter> {
+  public static final class Builder implements ObjectBuilder<DecisionRequirementsFilter> {
 
     private List<String> ids;
     private List<Long> keys;
@@ -88,8 +88,8 @@ public record DecisionRequirementFilter(
     }
 
     @Override
-    public DecisionRequirementFilter build() {
-      return new DecisionRequirementFilter(
+    public DecisionRequirementsFilter build() {
+      return new DecisionRequirementsFilter(
           Objects.requireNonNullElse(ids, Collections.emptyList()),
           Objects.requireNonNullElse(keys, Collections.emptyList()),
           Objects.requireNonNullElse(names, Collections.emptyList()),

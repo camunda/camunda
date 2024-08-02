@@ -11,20 +11,20 @@ import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
 
-public record DecisionRequirementSort(List<FieldSorting> orderings) implements SortOption {
+public record DecisionRequirementsSort(List<FieldSorting> orderings) implements SortOption {
 
   @Override
   public List<FieldSorting> getFieldSortings() {
     return orderings;
   }
 
-  public static DecisionRequirementSort of(
-      final Function<Builder, ObjectBuilder<DecisionRequirementSort>> fn) {
-    return SortOptionBuilders.decisionRequirement(fn);
+  public static DecisionRequirementsSort of(
+      final Function<Builder, ObjectBuilder<DecisionRequirementsSort>> fn) {
+    return SortOptionBuilders.decisionRequirements(fn);
   }
 
   public static final class Builder extends AbstractBuilder<Builder>
-      implements ObjectBuilder<DecisionRequirementSort> {
+      implements ObjectBuilder<DecisionRequirementsSort> {
 
     public Builder decisionRequirementsId() {
       currentOrdering = new FieldSorting("decisionRequirementsId", null);
@@ -41,7 +41,7 @@ public record DecisionRequirementSort(List<FieldSorting> orderings) implements S
       return this;
     }
 
-    public DecisionRequirementSort.Builder key() {
+    public DecisionRequirementsSort.Builder key() {
       currentOrdering = new FieldSorting("key", null);
       return this;
     }
@@ -57,8 +57,8 @@ public record DecisionRequirementSort(List<FieldSorting> orderings) implements S
     }
 
     @Override
-    public DecisionRequirementSort build() {
-      return new DecisionRequirementSort(orderings);
+    public DecisionRequirementsSort build() {
+      return new DecisionRequirementsSort(orderings);
     }
   }
 }
