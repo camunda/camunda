@@ -52,7 +52,7 @@ public final class CamundaServices extends ApiServices<CamundaServices> {
     return new DecisionRequirementServices(
         brokerClient, searchClient, transformers, authentication);
   }
-  
+
   public IncidentServices incidentServices() {
     return new IncidentServices(brokerClient, searchClient, transformers, authentication);
   }
