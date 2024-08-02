@@ -8,22 +8,40 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.service.IncidentServices;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
+import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
 @RequestMapping("v2/incidents")
 public class IncidentController {
 
-  private final ResponseObserverProvider responseObserverProvider;
   private final IncidentServices incidentServices;
 
   @Autowired
-  public IncidentController(
-      final IncidentServices incidentServices,
-      final ResponseObserverProvider responseObserverProvider
-  ) {
+  public IncidentController(final IncidentServices incidentServices) {
     this.incidentServices = incidentServices;
-    this.responseObserverProvider = responseObserverProvider;
+  }
+
+  @PostMapping(
+      path = "/{incidentKey}/resolution",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public CompletableFuture<ResponseEntity<Object>> incidentResolution(
+      @PathVariable final long incidentKey) {
+    return resolveIncident(incidentKey);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> resolveIncident(final long incidentKey) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            incidentServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .resolveIncident(incidentKey));
   }
 }
