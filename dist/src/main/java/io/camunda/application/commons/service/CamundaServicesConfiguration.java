@@ -69,6 +69,7 @@ public class CamundaServicesConfiguration {
   public DecisionRequirementServices decisionRequirementServices(
       final CamundaServices camundaServices) {
     return camundaServices.decisionRequirementServices();
+  }
 
   @Bean
   public IncidentServices incidentServices(final CamundaServices camundaServices) {
