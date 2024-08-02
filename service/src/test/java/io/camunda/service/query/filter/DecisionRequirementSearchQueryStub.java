@@ -21,13 +21,13 @@ public class DecisionRequirementSearchQueryStub implements RequestStub<DecisionR
   public SearchQueryResponse<DecisionRequirementEntity> handle(final SearchQueryRequest request)
       throws Exception {
 
-    final var decisionDefinition =
+    final var decisionRequirement =
         new DecisionRequirementEntity("t", 123L, "id", "dId", "name", 1, "rN");
 
     final SearchQueryHit<DecisionRequirementEntity> hit =
         new SearchQueryHit.Builder<DecisionRequirementEntity>()
             .id("1234")
-            .source(decisionDefinition)
+            .source(decisionRequirement)
             .build();
 
     final SearchQueryResponse<DecisionRequirementEntity> response =

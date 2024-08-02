@@ -8,7 +8,7 @@
 package io.camunda.service.search.filter;
 
 import static io.camunda.util.CollectionUtil.addValuesToList;
-import static io.camunda.util.CollectionUtil.collectValues;
+import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
@@ -38,8 +38,8 @@ public record DecisionRequirementFilter(
       return this;
     }
 
-    public Builder ids(final String value, final String... values) {
-      return ids(collectValues(value, values));
+    public Builder ids(final String... values) {
+      return ids(collectValuesAsList(values));
     }
 
     public Builder keys(final List<Long> values) {
@@ -47,8 +47,8 @@ public record DecisionRequirementFilter(
       return this;
     }
 
-    public Builder keys(final Long value, final Long... values) {
-      return keys(collectValues(value, values));
+    public Builder keys(final Long... values) {
+      return keys(collectValuesAsList(values));
     }
 
     public Builder names(final List<String> values) {
@@ -56,8 +56,8 @@ public record DecisionRequirementFilter(
       return this;
     }
 
-    public Builder names(final String value, final String... values) {
-      return names(collectValues(value, values));
+    public Builder names(final String... values) {
+      return names(collectValuesAsList(values));
     }
 
     public Builder versions(final List<Integer> values) {
@@ -65,8 +65,8 @@ public record DecisionRequirementFilter(
       return this;
     }
 
-    public Builder versions(final Integer value, final Integer... values) {
-      return versions(collectValues(value, values));
+    public Builder versions(final Integer... values) {
+      return versions(collectValuesAsList(values));
     }
 
     public Builder decisionRequirementsIds(final List<String> values) {
@@ -74,8 +74,8 @@ public record DecisionRequirementFilter(
       return this;
     }
 
-    public Builder decisionRequirementsIds(final String value, final String... values) {
-      return decisionRequirementsIds(collectValues(value, values));
+    public Builder decisionRequirementsIds(final String... values) {
+      return decisionRequirementsIds(collectValuesAsList(values));
     }
 
     public Builder tenantIds(final List<String> values) {
@@ -83,8 +83,8 @@ public record DecisionRequirementFilter(
       return this;
     }
 
-    public Builder tenantIds(final String value, final String... values) {
-      return tenantIds(collectValues(value, values));
+    public Builder tenantIds(final String... values) {
+      return tenantIds(collectValuesAsList(values));
     }
 
     @Override
