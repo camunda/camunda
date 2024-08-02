@@ -200,6 +200,6 @@ final class LogStreamReaderImpl implements LogStreamReader {
   }
 
   private boolean isEventBufferValid(final DirectBuffer eventBuffer) {
-    return eventBuffer.addressOffset() != 0;
+    return eventBuffer.capacity() > 0;
   }
 }
