@@ -54,7 +54,7 @@ public final class ProcessingExporterTransistor implements StreamProcessorLifecy
 
   @Override
   public void onClose() {
-    executorService.shutdownNow();
+    executorService.close();
   }
 
   private void onNewEventCommitted() {
