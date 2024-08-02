@@ -15,16 +15,6 @@
 // import static io.camunda.optimize.service.util.configuration.EmailSecurityProtocol.NONE;
 // import static io.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 // import static io.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
-// import static
-// io.camunda.optimize.test.optimize.UiConfigurationClient.TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME;
-// import static
-// io.camunda.optimize.test.optimize.UiConfigurationClient.TEST_INVALID_PORT_WEBHOOK_NAME;
-// import static io.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_METHOD;
-// import static io.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_NAME;
-// import static
-// io.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_URL_INVALID_PORT;
-// import static io.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_URL_PATH;
-// import static io.camunda.optimize.test.optimize.UiConfigurationClient.createWebhookHostUrl;
 // import static io.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 // import static io.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 // import static org.mockserver.model.HttpRequest.request;
@@ -50,7 +40,6 @@
 // import io.camunda.optimize.service.util.ProcessReportDataType;
 // import io.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 // import io.camunda.optimize.service.util.configuration.EmailAuthenticationConfiguration;
-// import io.camunda.optimize.service.util.configuration.WebhookConfiguration;
 // import io.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 // import io.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 // import io.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -378,53 +367,6 @@
 //    emailAuthenticationConfiguration.setSecurityProtocol(NONE);
 //  }
 //
-//  protected void setWebhookConfiguration(final Integer webhookPort) {
-//    // payload using all possible placeholders
-//    final String payload =
-//        "{\n"
-//            + Stream.of(WebhookConfiguration.Placeholder.values())
-//                .map(
-//                    placeholder ->
-//                        String.format(
-//                            "\"%s\": \"%s\"",
-//                            placeholder.name(), placeholder.getPlaceholderString()))
-//                .collect(Collectors.joining(",\n"))
-//            + "\n}";
-//
-//    setWebhookConfiguration(webhookPort, payload);
-//  }
-//
-//  protected void setWebhookConfiguration(final Integer webhookPort, final String payload) {
-//    Map<String, WebhookConfiguration> webhookConfigurationMap = new HashMap<>();
-//    final WebhookConfiguration webhook1 =
-//        uiConfigurationClient.createWebhookConfiguration(
-//            createWebhookHostUrl(webhookPort) + TEST_WEBHOOK_URL_PATH,
-//            ImmutableMap.of("Content-Type", "application/json"),
-//            TEST_WEBHOOK_METHOD,
-//            payload);
-//    final WebhookConfiguration webhook2 =
-//        uiConfigurationClient.createWebhookConfiguration(
-//            createWebhookHostUrl(webhookPort) + TEST_WEBHOOK_URL_PATH,
-//            ImmutableMap.of("Content-Type", "some/customType"),
-//            TEST_WEBHOOK_METHOD,
-//            payload);
-//    final WebhookConfiguration webhook3 =
-//        uiConfigurationClient.createWebhookConfiguration(
-//            TEST_WEBHOOK_URL_INVALID_PORT + TEST_WEBHOOK_URL_PATH,
-//            ImmutableMap.of("Content-Type", "application/json"),
-//            TEST_WEBHOOK_METHOD,
-//            payload);
-//
-//    webhookConfigurationMap.put(TEST_WEBHOOK_NAME, webhook1);
-//    webhookConfigurationMap.put(TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME, webhook2);
-//    webhookConfigurationMap.put(TEST_INVALID_PORT_WEBHOOK_NAME, webhook3);
-//
-//    embeddedOptimizeExtension
-//        .getConfigurationService()
-//        .setConfiguredWebhooks(webhookConfigurationMap);
-//    embeddedOptimizeExtension.reloadConfiguration();
-//  }
-//
 //  protected AlertCreationRequestDto addReminderToAlert(AlertCreationRequestDto alert) {
 //    AlertInterval reminderInterval = new AlertInterval();
 //    reminderInterval.setValue(3);
@@ -433,17 +375,6 @@
 //    alert.setThreshold(1500.0);
 //    alert.getCheckInterval().setValue(5);
 //    return alert;
-//  }
-//
-//  protected void assertWebhookRequestReceived(final MockServerClient client, final Integer times)
-// {
-//    client.verify(
-//        request().withMethod(TEST_WEBHOOK_METHOD).withPath(TEST_WEBHOOK_URL_PATH),
-//        VerificationTimes.exactly(times));
-//  }
-//
-//  protected void clearWebhookRequestsFromClient(final MockServerClient client) {
-//    client.clear(request().withPath(TEST_WEBHOOK_URL_PATH));
 //  }
 //
 //  private DecisionDefinitionEngineDto deployAndStartSimpleDecisionDefinition(String definitionKey)
