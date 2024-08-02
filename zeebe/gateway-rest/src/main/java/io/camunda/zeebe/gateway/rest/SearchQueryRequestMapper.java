@@ -127,10 +127,6 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getDmnDecisionRequirementsId())
           .ifPresent(builder::dmnDecisionRequirementsIds);
       ofNullable(filter.getDecisionRequirementsKey()).ifPresent(builder::decisionRequirementsKeys);
-      ofNullable(filter.getDecisionRequirementsName())
-          .ifPresent(builder::decisionRequirementsNames);
-      ofNullable(filter.getDecisionRequirementsVersion())
-          .ifPresent(builder::decisionRequirementsVersions);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
 
@@ -218,10 +214,10 @@ public final class SearchQueryRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "dmnDecisionId" -> builder.dmnDecisionId();
-        case "dmnDecisionName" -> builder.dmnDecisionName();
+        case "dmnDecisionId" -> builder.decisionId();
+        case "dmnDecisionName" -> builder.name();
         case "version" -> builder.version();
-        case "dmnDecisionRequirementsId" -> builder.dmnDecisionRequirementsId();
+        case "dmnDecisionRequirementsId" -> builder.decisionRequirementsId();
         case "decisionRequirementsKey" -> builder.decisionRequirementsKey();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));

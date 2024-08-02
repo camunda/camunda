@@ -165,8 +165,6 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                         .dmnDecisionRequirementsIds("drId")
                         .decisionRequirementsKeys(2L)
                         .dmnDecisionIds("dId")
-                        .decisionRequirementsNames("drName")
-                        .decisionRequirementsVersions(3)
                         .build())
                 .build());
   }
@@ -222,15 +220,15 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
             new DecisionDefinitionQuery.Builder()
                 .sort(
                     new DecisionDefinitionSort.Builder()
-                        .dmnDecisionName()
+                        .name()
                         .desc()
                         .version()
                         .asc()
-                        .dmnDecisionId()
+                        .decisionId()
                         .asc()
                         .decisionRequirementsKey()
                         .asc()
-                        .dmnDecisionRequirementsId()
+                        .decisionRequirementsId()
                         .asc()
                         .tenantId()
                         .asc()

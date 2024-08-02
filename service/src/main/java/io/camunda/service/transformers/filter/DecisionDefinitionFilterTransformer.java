@@ -21,12 +21,12 @@ public final class DecisionDefinitionFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final DecisionDefinitionFilter filter) {
-    final var decisionKeysQuery = getDecisionKeysQuery(filter.decisionKeys());
-    final var decisionIdsQuery = getDmnDecisionIdsQuery(filter.dmnDecisionIds());
-    final var dmnDecisionNamesQuery = getDmnDecisionNamesQuery(filter.dmnDecisionNames());
+    final var decisionKeysQuery = getDecisionKeysQuery(filter.keys());
+    final var decisionIdsQuery = getDmnDecisionIdsQuery(filter.decisionIds());
+    final var dmnDecisionNamesQuery = getDmnDecisionNamesQuery(filter.names());
     final var versionsQuery = getVersionsQuery(filter.versions());
     final var decisionRequirementsIdsQuery =
-        getDmnDecisionRequirementsIdsQuery(filter.dmnDecisionRequirementsIds());
+        getDmnDecisionRequirementsIdsQuery(filter.decisionRequirementsIds());
     final var decisionRequirementsKeysQuery =
         getDecisionRequirementsKeysQuery(filter.decisionRequirementsKeys());
     final var tenantIdsQuery = getTenantIdsQuery(filter.tenantIds());
