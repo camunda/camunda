@@ -19,6 +19,7 @@ import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public final class ProcessingExporterTransistor implements StreamProcessorLifecycleAware {
 
@@ -54,7 +55,13 @@ public final class ProcessingExporterTransistor implements StreamProcessorLifecy
 
   @Override
   public void onClose() {
-    executorService.shutdownNow();
+    executorService.shutdown();
+    try {
+      executorService.awaitTermination(1, TimeUnit.HOURS);
+    } catch (final InterruptedException e) {
+      executorService.shutdownNow();
+      throw new RuntimeException(e);
+    }
   }
 
   private void onNewEventCommitted() {
