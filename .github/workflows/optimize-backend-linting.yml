@@ -2,14 +2,18 @@ name: Optimize Backend Linting
 on:
   push:
     branches:
-      - master
-    paths-ignore:
-      - "optimize/client/**"
-      - ".ci/**"
+      - main
+      - stable/**
+      - release/**
+    paths:
+      - "optimize/**"
+      - ".github/workflows/optimize-backend-linting.yml"
+      - "!optimize/client/**"
   pull_request:
-    paths-ignore:
-      - "optimize/client/**"
-      - ".ci/**"
+    paths:
+      - "optimize/**"
+      - ".github/workflows/optimize-backend-linting.yml"
+      - "!optimize/client/**"
 jobs:
   linting:
     name: Linting

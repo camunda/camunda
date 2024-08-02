@@ -2,7 +2,7 @@ name: Camunda Helm Chart Integration Test
 
 on:
   schedule:
-    - cron: '0 5 * * *'
+    - cron: "0 5 * * *"
   workflow_dispatch:
 
 jobs:
@@ -25,6 +25,9 @@ jobs:
         tasklist:
           image:
             tag: SNAPSHOT
+        optimize:
+          image:
+            tag: SNAPSHOT
       vault-secret-mapping: |
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR | TEST_DOCKER_USERNAME;
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
@@ -33,7 +36,7 @@ jobs:
   notify:
     name: Send slack notification
     runs-on: ubuntu-latest
-    needs: [ helm-deploy ]
+    needs: [helm-deploy]
     if: ${{ always() }}
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
