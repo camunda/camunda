@@ -551,7 +551,7 @@
         <configuration>
           <gitFlowConfig>
             <productionBranch>optimize-latest</productionBranch>
-            <developmentBranch>test-optimize-release</developmentBranch>
+            <developmentBranch>main</developmentBranch>
             <supportBranchPrefix>stable/</supportBranchPrefix>
             <releaseBranchPrefix>release/optimize-</releaseBranchPrefix>
           </gitFlowConfig>
