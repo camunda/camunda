@@ -32,6 +32,11 @@ public record RoutingState(
     return new RoutingState(version + 1, updatedPartitions, messageRoutingConfiguration);
   }
 
+  public RoutingState setMessageRoutingConfiguration(
+      final MessageRoutingConfiguration messageRoutingConfiguration) {
+    return new RoutingState(version + 1, activePartitions, messageRoutingConfiguration);
+  }
+
   public RoutingState merge(final RoutingState other) {
     if (version >= other.version) {
       return this;

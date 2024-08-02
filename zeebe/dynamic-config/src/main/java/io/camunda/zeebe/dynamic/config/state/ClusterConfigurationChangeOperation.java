@@ -49,6 +49,9 @@ public sealed interface ClusterConfigurationChangeOperation {
   record RelocationStartOperation(MemberId memberId, int oldPartitionCount, int newPartitionCount)
       implements ClusterConfigurationChangeOperation {}
 
+  record RelocationStatusOperation(MemberId memberId)
+      implements ClusterConfigurationChangeOperation {}
+
   sealed interface PartitionChangeOperation extends ClusterConfigurationChangeOperation {
     int partitionId();
 

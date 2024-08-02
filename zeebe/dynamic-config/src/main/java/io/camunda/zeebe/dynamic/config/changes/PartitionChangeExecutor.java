@@ -90,9 +90,13 @@ public interface PartitionChangeExecutor {
       final int priorityOfLocalMember,
       final DynamicPartitionConfig partitionConfig);
 
+  // TODO: Following methods do not belong here
   /**
    * Starts the relocation process for the given partition. Should complete only after Partition 1
    * has committed/started processed the request)
    */
   ActorFuture<Void> startRelocation(final int oldPartitionCount, final int newPartitionCount);
+
+  /** Returns the true if relocation has completed */
+  ActorFuture<Boolean> relocationStatus();
 }

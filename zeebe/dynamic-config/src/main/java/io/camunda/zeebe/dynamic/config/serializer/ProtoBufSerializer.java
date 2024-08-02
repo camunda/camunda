@@ -48,6 +48,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.RelocationStartOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.RelocationStatusOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.RoutingAddPartitionOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
@@ -470,6 +471,8 @@ public class ProtoBufSerializer
                   .setOldPartitionCount(relocationStartOperation.oldPartitionCount())
                   .setNewPartitionCount(relocationStartOperation.newPartitionCount())
                   .build());
+      case final RelocationStatusOperation relocationStatusOperation ->
+          builder.setRelocationStatus(Topology.RelocationStatusOperation.newBuilder().build());
       default ->
           throw new IllegalArgumentException(
               "Unknown operation type: " + operation.getClass().getSimpleName());
@@ -593,6 +596,8 @@ public class ProtoBufSerializer
           MemberId.from(topologyChangeOperation.getMemberId()),
           topologyChangeOperation.getRelocationStart().getOldPartitionCount(),
           topologyChangeOperation.getRelocationStart().getNewPartitionCount());
+    } else if (topologyChangeOperation.hasRelocationStatus()) {
+      return new RelocationStatusOperation(MemberId.from(topologyChangeOperation.getMemberId()));
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any

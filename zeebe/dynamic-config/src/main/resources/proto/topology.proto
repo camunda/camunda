@@ -85,7 +85,7 @@ message TopologyChangeOperation {
     PartitionBootstrapOperation partitionBootstrap = 11;
     RoutingAddPartitionOperation routingAddPartition = 12;
     RelocationStartOperation relocationStart = 13;
-
+    RelocationStatusOperation relocationStatus = 14;
   }
 }
 
@@ -140,6 +140,8 @@ message MemberRemoveOperation {
 message RoutingAddPartitionOperation {
   int32 partitionId = 1;
 }
+
+message RelocationStatusOperation {}
 
 message RelocationStartOperation {
   int32 oldPartitionCount = 1;

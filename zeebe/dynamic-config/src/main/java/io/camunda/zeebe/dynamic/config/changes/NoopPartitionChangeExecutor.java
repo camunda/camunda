@@ -67,4 +67,9 @@ public final class NoopPartitionChangeExecutor implements PartitionChangeExecuto
       final int oldPartitionCount, final int newPartitionCount) {
     return CompletableActorFuture.completed(null);
   }
+
+  @Override
+  public ActorFuture<Boolean> relocationStatus() {
+    return CompletableActorFuture.completed(true);
+  }
 }

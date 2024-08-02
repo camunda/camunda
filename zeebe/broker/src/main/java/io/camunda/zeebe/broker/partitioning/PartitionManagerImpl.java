@@ -35,6 +35,7 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRelocationRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerRelocationStatusRequest;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -472,6 +473,42 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
     concurrencyControl.run(
         () -> internalStartRelocation(oldPartitionCount, newPartitionCount, future));
     return future;
+  }
+
+  @Override
+  public ActorFuture<Boolean> relocationStatus() {
+    final var future = concurrencyControl.<Boolean>createFuture();
+    concurrencyControl.run(() -> relocationStatus(future));
+    return future;
+  }
+
+  private void relocationStatus(final ActorFuture<Boolean> future) {
+    final var request = new BrokerRelocationStatusRequest();
+    brokerClient
+        .sendRequest(request)
+        .whenComplete(
+            (response, error) -> {
+              if (error != null) {
+                future.completeExceptionally(error);
+                return;
+              }
+              try {
+                if (response.isResponse()) {
+                  future.complete(response.getResponse().isCompleted());
+                } else if (response.isRejection()) {
+                  future.completeExceptionally(
+                      new BrokerRejectionException(response.getRejection()));
+                } else if (response.isError()) {
+                  future.completeExceptionally(new BrokerErrorException(response.getError()));
+                } else {
+                  future.completeExceptionally(
+                      new IllegalBrokerResponseException(
+                          "Expected broker response to be either response, rejection, or error, but is neither of them"));
+                }
+              } catch (final RuntimeException e) {
+                future.completeExceptionally(new BrokerResponseException(e));
+              }
+            });
   }
 
   private void internalStartRelocation(

@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.*;
+
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.RelocationStatusOperation;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
@@ -65,8 +68,7 @@ public class PartitionScaleRequestTransformer implements ConfigurationChangeRequ
       // Bootstrap primary replica
       final MemberId primary = partitionMetadata.getPrimary().get();
       operations.add(
-          new ClusterConfigurationChangeOperation.PartitionChangeOperation
-              .PartitionBootstrapOperation(
+          new PartitionChangeOperation.PartitionBootstrapOperation(
               primary, partitionId, partitionMetadata.getPriority(primary)));
 
       // then join rest of the members
@@ -75,22 +77,20 @@ public class PartitionScaleRequestTransformer implements ConfigurationChangeRequ
           .forEach(
               m ->
                   operations.add(
-                      new ClusterConfigurationChangeOperation.PartitionChangeOperation
-                          .PartitionJoinOperation(
+                      new PartitionChangeOperation.PartitionJoinOperation(
                           m, partitionId, partitionMetadata.getPriority(m))));
 
       // allow routing requests to partition
-      operations.add(
-          new ClusterConfigurationChangeOperation.RoutingAddPartitionOperation(
-              primary, partitionId));
+      operations.add(new RoutingAddPartitionOperation(primary, partitionId));
     }
 
     // Add a step to start Relocation in partition 1 => leader of partition, ensure it is written
     // and committed to the logstream
     // TODO: instead of 0, choose the current coordinator.
     operations.add(
-        new ClusterConfigurationChangeOperation.RelocationStartOperation(
-            MemberId.from("0"), previousPartitionsCount, partitionsCount));
+        new RelocationStartOperation(MemberId.from("0"), previousPartitionsCount, partitionsCount));
+
+    operations.add(new RelocationStatusOperation(MemberId.from("0")));
 
     return Either.right(operations);
   }
