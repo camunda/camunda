@@ -14,6 +14,11 @@ import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.BrokerResponseException;
+import io.camunda.zeebe.broker.client.api.IllegalBrokerResponseException;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
@@ -29,6 +34,7 @@ import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerRelocationRequest;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -65,6 +71,7 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
   private final ZeebePartitionFactory zeebePartitionFactory;
   private final RaftPartitionFactory raftPartitionFactory;
   private final ClusterConfigurationService clusterConfigurationService;
+  private final BrokerClient brokerClient;
 
   public PartitionManagerImpl(
       final ConcurrencyControl concurrencyControl,
@@ -80,12 +87,14 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
       final ExporterRepository exporterRepository,
       final AtomixServerTransport gatewayBrokerTransport,
       final JobStreamer jobStreamer,
-      final ClusterConfigurationService clusterConfigurationService) {
+      final ClusterConfigurationService clusterConfigurationService,
+      final BrokerClient brokerClient) {
     this.brokerCfg = brokerCfg;
     this.concurrencyControl = concurrencyControl;
     this.actorSchedulingService = actorSchedulingService;
     this.healthCheckService = healthCheckService;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
+    this.brokerClient = brokerClient;
     final var featureFlags = brokerCfg.getExperimental().getFeatures().toFeatureFlags();
     this.clusterConfigurationService = clusterConfigurationService;
     // TODO: Do this as a separate step before starting the partition manager
@@ -454,6 +463,46 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
     concurrencyControl.run(
         () -> bootstrap2Partition(partitionMetadata, partitionConfig).onComplete(future));
     return future;
+  }
+
+  @Override
+  public ActorFuture<Void> startRelocation(
+      final int oldPartitionCount, final int newPartitionCount) {
+    final var future = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> internalStartRelocation(oldPartitionCount, newPartitionCount, future));
+    return future;
+  }
+
+  private void internalStartRelocation(
+      final int oldPartitionCount, final int newPartitionCount, final ActorFuture<Void> future) {
+
+    final var request = new BrokerRelocationRequest(oldPartitionCount, newPartitionCount);
+    brokerClient
+        .sendRequest(request)
+        .whenComplete(
+            (response, error) -> {
+              if (error != null) {
+                future.completeExceptionally(error);
+                return;
+              }
+              try {
+                if (response.isResponse()) {
+                  future.complete(null);
+                } else if (response.isRejection()) {
+                  future.completeExceptionally(
+                      new BrokerRejectionException(response.getRejection()));
+                } else if (response.isError()) {
+                  future.completeExceptionally(new BrokerErrorException(response.getError()));
+                } else {
+                  future.completeExceptionally(
+                      new IllegalBrokerResponseException(
+                          "Expected broker response to be either response, rejection, or error, but is neither of them"));
+                }
+              } catch (final RuntimeException e) {
+                future.completeExceptionally(new BrokerResponseException(e));
+              }
+            });
   }
 
   private void disableExporter(

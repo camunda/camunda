@@ -85,6 +85,13 @@ public class PartitionScaleRequestTransformer implements ConfigurationChangeRequ
               primary, partitionId));
     }
 
+    // Add a step to start Relocation in partition 1 => leader of partition, ensure it is written
+    // and committed to the logstream
+    // TODO: instead of 0, choose the current coordinator.
+    operations.add(
+        new ClusterConfigurationChangeOperation.RelocationStartOperation(
+            MemberId.from("0"), previousPartitionsCount, partitionsCount));
+
     return Either.right(operations);
   }
 }

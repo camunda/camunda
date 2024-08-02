@@ -84,6 +84,8 @@ message TopologyChangeOperation {
     PartitionEnableExporterOperation partitionEnableExporter = 10;
     PartitionBootstrapOperation partitionBootstrap = 11;
     RoutingAddPartitionOperation routingAddPartition = 12;
+    RelocationStartOperation relocationStart = 13;
+
   }
 }
 
@@ -137,6 +139,11 @@ message MemberRemoveOperation {
 
 message RoutingAddPartitionOperation {
   int32 partitionId = 1;
+}
+
+message RelocationStartOperation {
+  int32 oldPartitionCount = 1;
+  int32 newPartitionCount = 2;
 }
 
 enum State {

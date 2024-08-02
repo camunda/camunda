@@ -20,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.RelocationStartOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.RoutingAddPartitionOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -94,6 +95,12 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
       case final RoutingAddPartitionOperation routingAddPartitionOperation ->
           new RoutingAddPartitionApplier(
               routingAddPartitionOperation.partitionId(), routingAddPartitionOperation.memberId());
+      case final RelocationStartOperation relocationStartOperation ->
+          new RelocationStartApplier(
+              relocationStartOperation.oldPartitionCount(),
+              relocationStartOperation.newPartitionCount(),
+              relocationStartOperation.memberId(),
+              partitionChangeExecutor);
       case null, default -> new FailingApplier(operation);
     };
   }

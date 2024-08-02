@@ -89,4 +89,10 @@ public interface PartitionChangeExecutor {
       final int partitionId,
       final int priorityOfLocalMember,
       final DynamicPartitionConfig partitionConfig);
+
+  /**
+   * Starts the relocation process for the given partition. Should complete only after Partition 1
+   * has committed/started processed the request)
+   */
+  ActorFuture<Void> startRelocation(final int oldPartitionCount, final int newPartitionCount);
 }

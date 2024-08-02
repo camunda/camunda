@@ -47,6 +47,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.RelocationStartOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.RoutingAddPartitionOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
@@ -463,6 +464,12 @@ public class ProtoBufSerializer
               Topology.RoutingAddPartitionOperation.newBuilder()
                   .setPartitionId(routingAddPartitionOperation.partitionId())
                   .build());
+      case final RelocationStartOperation relocationStartOperation ->
+          builder.setRelocationStart(
+              Topology.RelocationStartOperation.newBuilder()
+                  .setOldPartitionCount(relocationStartOperation.oldPartitionCount())
+                  .setNewPartitionCount(relocationStartOperation.newPartitionCount())
+                  .build());
       default ->
           throw new IllegalArgumentException(
               "Unknown operation type: " + operation.getClass().getSimpleName());
@@ -581,6 +588,11 @@ public class ProtoBufSerializer
       return new RoutingAddPartitionOperation(
           MemberId.from(topologyChangeOperation.getMemberId()),
           topologyChangeOperation.getRoutingAddPartition().getPartitionId());
+    } else if (topologyChangeOperation.hasRelocationStart()) {
+      return new RelocationStartOperation(
+          MemberId.from(topologyChangeOperation.getMemberId()),
+          topologyChangeOperation.getRelocationStart().getOldPartitionCount(),
+          topologyChangeOperation.getRelocationStart().getNewPartitionCount());
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any

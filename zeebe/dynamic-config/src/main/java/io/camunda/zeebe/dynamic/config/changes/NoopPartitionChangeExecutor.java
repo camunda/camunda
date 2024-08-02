@@ -61,4 +61,10 @@ public final class NoopPartitionChangeExecutor implements PartitionChangeExecuto
       final DynamicPartitionConfig partitionConfig) {
     return CompletableActorFuture.completed(null);
   }
+
+  @Override
+  public ActorFuture<Void> startRelocation(
+      final int oldPartitionCount, final int newPartitionCount) {
+    return CompletableActorFuture.completed(null);
+  }
 }
