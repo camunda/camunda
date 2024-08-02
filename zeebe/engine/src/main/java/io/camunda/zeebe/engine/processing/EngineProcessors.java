@@ -41,6 +41,7 @@ import io.camunda.zeebe.engine.processing.relocation.ScaleRelocateMessageSubscri
 import io.camunda.zeebe.engine.processing.relocation.ScaleRelocateNextCorrelationKeyProcessor;
 import io.camunda.zeebe.engine.processing.relocation.ScaleRelocationOnPartitionCompleteProcessor;
 import io.camunda.zeebe.engine.processing.relocation.ScaleRelocationStartProcessor;
+import io.camunda.zeebe.engine.processing.relocation.ScaleRelocationStatusProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -294,6 +295,11 @@ public final class EngineProcessors {
             writers,
             processingState.getRelocationState(),
             commandDistributionBehavior));
+
+    typedRecordProcessors.onCommand(
+        ValueType.SCALE,
+        ScaleIntent.RELOCATION_STATUS,
+        new ScaleRelocationStatusProcessor(processingState.getRelocationState(), writers));
   }
 
   private static BpmnBehaviorsImpl createBehaviors(

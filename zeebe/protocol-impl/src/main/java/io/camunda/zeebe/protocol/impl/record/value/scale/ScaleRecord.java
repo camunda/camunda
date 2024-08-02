@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.scale;
 
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -42,14 +43,18 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
   private final IntegerProperty completedPartitionProp =
       new IntegerProperty("completedPartition", -1);
 
+  // ScaleRelocationStatusResponse
+  private final BooleanProperty successProp = new BooleanProperty("completed", false);
+
   public ScaleRecord() {
-    super(6);
+    super(7);
     declareProperty(currentPartitionCountProp)
         .declareProperty(newPartitionCountProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(messageSubscriptionRecord)
         .declareProperty(messageRecord)
-        .declareProperty(completedPartitionProp);
+        .declareProperty(completedPartitionProp)
+        .declareProperty(successProp);
   }
 
   @Override
@@ -93,6 +98,14 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
 
   public void setCompletedPartition(final int partitionId) {
     completedPartitionProp.setValue(partitionId);
+  }
+
+  public void setCompleted() {
+    successProp.setValue(true);
+  }
+
+  public boolean isCompleted() {
+    return successProp.getValue();
   }
 
   record RoutingInfoRecord(int currentPartitionCount, int newPartitionCount)

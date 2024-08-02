@@ -33,7 +33,10 @@ public enum ScaleIntent implements Intent {
   RELOCATION_ON_PARTITION_COMPLETE(14),
   RELOCATION_COMPLETED(15),
   RELOCATE_MESSAGE_ENQUEUED(16),
-  RELOCATE_MESSAGE_SUBSCRIPTION_ENQUEUED(17);
+  RELOCATE_MESSAGE_SUBSCRIPTION_ENQUEUED(17),
+  RELOCATION_STATUS(18), // query
+  RELOCATION_STATUS_RESPONSE(19), // response
+  ;
 
   private final short value;
 
@@ -58,6 +61,7 @@ public enum ScaleIntent implements Intent {
       case RELOCATION_COMPLETED:
       case RELOCATE_MESSAGE_ENQUEUED:
       case RELOCATE_MESSAGE_SUBSCRIPTION_ENQUEUED:
+      case RELOCATION_STATUS_RESPONSE:
         return true;
       default:
         return false;
@@ -102,6 +106,10 @@ public enum ScaleIntent implements Intent {
         return RELOCATE_MESSAGE_ENQUEUED;
       case 17:
         return RELOCATE_MESSAGE_SUBSCRIPTION_ENQUEUED;
+      case 18:
+        return RELOCATION_STATUS;
+      case 19:
+        return RELOCATION_STATUS_RESPONSE;
       default:
         return Intent.UNKNOWN;
     }

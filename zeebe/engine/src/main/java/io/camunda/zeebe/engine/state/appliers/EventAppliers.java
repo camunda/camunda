@@ -134,6 +134,7 @@ public final class EventAppliers implements EventApplier {
         ScaleIntent.RELOCATE_CORRELATION_KEY_COMPLETED,
         new ScaleRelocateCorrelationKeyCompletedApplier(state.getRelocationState()));
     register(ScaleIntent.RELOCATION_COMPLETED, NOOP_EVENT_APPLIER);
+    register(ScaleIntent.RELOCATION_STATUS_RESPONSE, NOOP_EVENT_APPLIER);
   }
 
   private void registerProcessAppliers(final MutableProcessingState state) {
