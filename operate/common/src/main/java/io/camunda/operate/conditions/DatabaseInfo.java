@@ -24,6 +24,9 @@ public class DatabaseInfo implements ApplicationContextAware {
   private static ApplicationContext applicationContext;
   private static DatabaseType current;
 
+  @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(
+      value = "LI_LAZY_INIT_STATIC",
+      justification = "We want to avoid the fight for a lock on this method.")
   public static DatabaseType getCurrent() {
     if (current == null) {
       if (applicationContext == null) {
