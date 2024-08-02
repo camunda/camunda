@@ -20,6 +20,8 @@ import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.util.LogStreamReaderRule;
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
 import io.camunda.zeebe.logstreams.util.TestEntry;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.util.ByteValue;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -429,6 +431,24 @@ public final class LogStreamReaderTest {
 
     // when / then
     assertThatThrownBy(reader::peekNext).isInstanceOf(NoSuchElementException.class);
+  }
+
+  @Test
+  public void shouldNotInvalidateEventsOnClose() {
+    // given
+    writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
+    writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
+    final var event = reader.next();
+    final var nextEvent = reader.peekNext();
+
+    // when
+    reader.close();
+
+    // then
+    assertThatCode(() -> event.readValue(new UnifiedRecordValue(1))).doesNotThrowAnyException();
+    assertThatCode(() -> event.readMetadata(new RecordMetadata())).doesNotThrowAnyException();
+    assertThatCode(() -> nextEvent.readValue(new UnifiedRecordValue(1))).doesNotThrowAnyException();
+    assertThatCode(() -> nextEvent.readMetadata(new RecordMetadata())).doesNotThrowAnyException();
   }
 
   private long writeEvents(final int eventCount) {
