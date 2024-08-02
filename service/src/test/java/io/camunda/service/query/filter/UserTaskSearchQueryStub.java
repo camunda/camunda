@@ -43,7 +43,7 @@ public class UserTaskSearchQueryStub implements RequestStub<UserTaskEntity> {
             "externalFormReference1",
             1,
             Map.of(),
-            50L);
+            50);
 
     final SearchQueryHit<UserTaskEntity> hit =
         new SearchQueryHit.Builder<UserTaskEntity>().id("1234").source(userTask).build();

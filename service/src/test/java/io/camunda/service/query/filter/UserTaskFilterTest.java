@@ -17,14 +17,21 @@ import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.sort.SortOrder;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.entities.UserTaskEntity;
+import io.camunda.service.search.filter.ComparableValueFilter;
 import io.camunda.service.search.filter.FilterBuilders;
 import io.camunda.service.search.filter.UserTaskFilter;
+import io.camunda.service.search.filter.UserTaskFilter.Builder;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.util.StubbedBrokerClient;
 import io.camunda.service.util.StubbedCamundaSearchClient;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class UserTaskFilterTest {
 
@@ -42,7 +49,7 @@ public class UserTaskFilterTest {
   @Test
   public void shouldQueryOnlyByUserTasks() {
     // given
-    final UserTaskFilter filter = new UserTaskFilter.Builder().build();
+    final UserTaskFilter filter = new Builder().build();
     final var searchQuery = SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(filter));
 
     // when
@@ -63,7 +70,7 @@ public class UserTaskFilterTest {
   @Test
   public void shouldReturnUserTasks() {
     // given
-    final UserTaskFilter filter = new UserTaskFilter.Builder().build();
+    final UserTaskFilter filter = new Builder().build();
     final var searchQuery = SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(filter));
 
     // when
@@ -392,56 +399,84 @@ public class UserTaskFilterTest {
             });
   }
 
-  @Test
-  public void shouldQueryWithinPriorityRange() {
-    // given
-    final var priorityFilter = FilterBuilders.userTask().priority((f) -> f.gt(10L).lt(100L));
-    final var searchQuery =
-        SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(priorityFilter.build()));
-    // when
-    services.search(searchQuery);
-    // then
-    final var searchRequest = client.getSingleSearchRequest();
-    final var queryVariant = searchRequest.query().queryOption();
+  @Nested
+  class PriorityFilters {
+    private static Stream<Arguments> providePriorityFilters() {
+      return Stream.of(
+          Arguments.of(new ComparableValueFilter.Builder().eq(100).build(), SearchBoolQuery.class),
+          Arguments.of(new ComparableValueFilter.Builder().neq(10).build(), SearchBoolQuery.class),
+          Arguments.of(new ComparableValueFilter.Builder().gt(10).build(), SearchRangeQuery.class),
+          Arguments.of(new ComparableValueFilter.Builder().gte(10).build(), SearchRangeQuery.class),
+          Arguments.of(new ComparableValueFilter.Builder().lt(100).build(), SearchRangeQuery.class),
+          Arguments.of(
+              new ComparableValueFilter.Builder().lte(100).build(), SearchRangeQuery.class),
+          Arguments.of(
+              new ComparableValueFilter.Builder().gt(20).lt(100).build(), SearchRangeQuery.class),
+          Arguments.of(
+              new ComparableValueFilter.Builder().gte(20).lte(100).build(),
+              SearchRangeQuery.class));
+    }
 
-    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
-    assertThat(queryVariant)
-        .isInstanceOfSatisfying(
-            SearchBoolQuery.class,
-            (t) ->
-                assertThat(t.must().get(1).queryOption())
-                    .isInstanceOfSatisfying(
-                        SearchRangeQuery.class,
-                        (term) -> {
-                          assertThat(term.field()).isEqualTo("priority");
-                          assertThat(term.gt()).isEqualTo(10L);
-                          assertThat(term.lt()).isEqualTo(100L);
-                        }));
-  }
+    @ParameterizedTest
+    @MethodSource("providePriorityFilters")
+    public void shouldQueryByPriority(
+        final ComparableValueFilter filter, final Class<? extends SearchQueryOption> queryClass) {
+      // given
+      final var priorityFilter = FilterBuilders.userTask().priority(filter);
+      final var searchQuery =
+          SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(priorityFilter.build()));
 
-  @Test
-  public void shouldQueryWithPriority() {
-    // given
-    final var priorityFilter = FilterBuilders.userTask().priority((f) -> f.eq(10L));
-    final var searchQuery =
-        SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(priorityFilter.build()));
-    // when
-    services.search(searchQuery);
-    // then
-    final var searchRequest = client.getSingleSearchRequest();
-    final var queryVariant = searchRequest.query().queryOption();
+      // when
+      services.search(searchQuery);
 
-    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
-    assertThat(queryVariant)
-        .isInstanceOfSatisfying(
-            SearchBoolQuery.class,
-            (t) ->
-                assertThat(t.must().get(1).queryOption())
-                    .isInstanceOfSatisfying(
-                        SearchTermQuery.class,
-                        (term) -> {
-                          assertThat(term.field()).isEqualTo("priority");
-                          assertThat(term.value().longValue()).isEqualTo(10L);
-                        }));
+      // then
+      final var searchRequest = client.getSingleSearchRequest();
+      final var queryVariant = searchRequest.query().queryOption();
+
+      assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+      assertThat(queryVariant)
+          .isInstanceOfSatisfying(
+              SearchBoolQuery.class,
+              (t) ->
+                  assertThat(t.must().get(1).queryOption())
+                      .isInstanceOfSatisfying(
+                          queryClass,
+                          (term) -> {
+                            switch (term) {
+                              case final SearchRangeQuery rangeQuery -> {
+                                assertThat(rangeQuery.field()).isEqualTo("priority");
+                                assertThat(rangeQuery.gt()).isEqualTo(filter.gt());
+                                assertThat(rangeQuery.gte()).isEqualTo(filter.gte());
+                                assertThat(rangeQuery.lt()).isEqualTo(filter.lt());
+                                assertThat(rangeQuery.lte()).isEqualTo(filter.lte());
+                              }
+                              case final SearchBoolQuery boolQuery -> {
+                                if (filter.eq() != null) {
+                                  assertThat(boolQuery.must().getFirst().queryOption())
+                                      .isInstanceOf(SearchTermQuery.class);
+                                  assertThat(
+                                          ((SearchTermQuery)
+                                                  boolQuery.must().getFirst().queryOption())
+                                              .value()
+                                              .intValue())
+                                      .isEqualTo(filter.eq());
+                                }
+                                if (filter.neq() != null) {
+                                  assertThat(boolQuery.mustNot().getFirst().queryOption())
+                                      .isInstanceOf(SearchTermQuery.class);
+                                  assertThat(
+                                          ((SearchTermQuery)
+                                                  boolQuery.mustNot().getFirst().queryOption())
+                                              .value()
+                                              .intValue())
+                                      .isEqualTo(filter.neq());
+                                }
+                              }
+                              default ->
+                                  throw new IllegalArgumentException(
+                                      "Unexpected query class: " + queryClass);
+                            }
+                          }));
+    }
   }
 }

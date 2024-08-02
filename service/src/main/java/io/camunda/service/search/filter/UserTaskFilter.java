@@ -137,11 +137,6 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder priority(
-        final Function<ComparableValueFilter.Builder, ObjectBuilder<ComparableValueFilter>> fn) {
-      return priority(FilterBuilders.comparableValue(fn));
-    }
-
     @Override
     public UserTaskFilter build() {
       return new UserTaskFilter(

@@ -32,4 +32,4 @@ public final record UserTaskEntity(
     String externalFormReference,
     Integer processDefinitionVersion,
     Map<String, String> customHeaders,
-    Long priority) {}
+    Integer priority) {}
