@@ -7,6 +7,7 @@
  */
 package io.camunda.service.transformers.filter;
 
+import static io.camunda.search.clients.query.SearchQueryBuilders.bool;
 import static io.camunda.search.clients.query.SearchQueryBuilders.not;
 import static io.camunda.search.clients.query.SearchQueryBuilders.range;
 
@@ -16,6 +17,7 @@ import io.camunda.search.clients.types.TypedValue;
 import io.camunda.service.search.filter.ComparableValueFilter;
 import io.camunda.service.search.filter.FilterBase;
 import io.camunda.service.transformers.filter.ComparableValueFilterTransformer.ComparableFieldFilter;
+import java.util.Collections;
 
 public class ComparableValueFilterTransformer implements FilterTransformer<ComparableFieldFilter> {
 
@@ -26,7 +28,11 @@ public class ComparableValueFilterTransformer implements FilterTransformer<Compa
     final SearchQuery valueQuery;
 
     if (filterParams.eq() != null) {
-      valueQuery = of(filterParams.eq(), field);
+      valueQuery =
+          bool()
+              .must(Collections.singletonList(of(filterParams.eq(), field)))
+              .build()
+              .toSearchQuery();
     } else if (filterParams.neq() != null) {
       valueQuery = not(of(filterParams.neq(), field));
     } else {
