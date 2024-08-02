@@ -7,9 +7,11 @@
  */
 package io.camunda.application.commons.service;
 
+import io.camunda.application.commons.service.ManagementServicesConfiguration.ClientModeProperty;
 import io.camunda.application.commons.service.ManagementServicesConfiguration.LicenseKeyProperties;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.CamundaLicense;
+import io.camunda.service.license.SaaSLicense;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -17,13 +19,18 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@EnableConfigurationProperties(LicenseKeyProperties.class)
+@EnableConfigurationProperties({LicenseKeyProperties.class, ClientModeProperty.class})
 public class ManagementServicesConfiguration {
+  private static final String SELF_MANAGED_MODE = "self-managed";
   private final LicenseKeyProperties licenseKeyProperties;
+  private final ClientModeProperty clientModeProperty;
 
   @Autowired
-  public ManagementServicesConfiguration(final LicenseKeyProperties licenseKeyProperties) {
+  public ManagementServicesConfiguration(
+      final LicenseKeyProperties licenseKeyProperties,
+      final ClientModeProperty clientModeProperty) {
     this.licenseKeyProperties = licenseKeyProperties;
+    this.clientModeProperty = clientModeProperty;
   }
 
   @Bean
@@ -38,10 +45,18 @@ public class ManagementServicesConfiguration {
 
   @Bean
   public CamundaLicense camundaLicense() {
-    final String license = licenseKeyProperties.key();
-    return new CamundaLicense(license);
+    final String clientMode = clientModeProperty.key();
+    if (SELF_MANAGED_MODE.equalsIgnoreCase(clientMode)) {
+      final String license = licenseKeyProperties.key();
+      return new CamundaLicense(license);
+    } else {
+      return new SaaSLicense();
+    }
   }
 
   @ConfigurationProperties("camunda.license")
   public record LicenseKeyProperties(String key) {}
+
+  @ConfigurationProperties("camunda.client.mode")
+  public record ClientModeProperty(String key) {}
 }
