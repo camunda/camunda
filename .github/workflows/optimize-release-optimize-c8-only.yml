@@ -161,7 +161,7 @@ jobs:
           mvn -f optimize \
             -DpushChanges=false \
             -DskipTests=true \
-            -Prelease,engine-latest \
+            -Prelease,engine-latest,runAssembly \
             release:prepare \
             -Dtag=${TAG} \
             -DreleaseVersion="${RELEASE_VERSION}" \
@@ -184,7 +184,7 @@ jobs:
             -DskipTests=true \
             -B \
             --fail-at-end \
-            -Prelease,engine-latest \
+            -Prelease,engine-latest,runAssembly \
             -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
             release:perform \
             -Darguments="-Dmaven.deploy.skip=${IS_DRY_RUN} -DskipTests -DskipNexusStagingDeployMojo=${IS_DRY_RUN} -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -f pom.xml"
