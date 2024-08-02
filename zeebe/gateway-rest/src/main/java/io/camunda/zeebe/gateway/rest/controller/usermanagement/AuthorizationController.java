@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import io.camunda.service.AuthorizationServices;
 import io.camunda.service.CamundaServices;
-import io.camunda.service.IdentityServices;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
-import io.camunda.zeebe.gateway.rest.controller.ZeebeRestController;
+import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.dto.AuthorizationAssignRequest;
-import io.camunda.zeebe.protocol.impl.record.value.identity.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -20,13 +20,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@ZeebeRestController
+@CamundaRestController
 @RequestMapping("/v2/authorizations")
 public class AuthorizationController {
-  private final IdentityServices<AuthorizationRecord> identityServices;
+  private final AuthorizationServices<AuthorizationRecord> identityServices;
 
   public AuthorizationController(final CamundaServices camundaServices) {
-    identityServices = camundaServices.identityServices();
+    identityServices = camundaServices.authorizationServices();
   }
 
   @PostMapping(
@@ -34,7 +34,7 @@ public class AuthorizationController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> createAuthorization(
       @RequestBody final AuthorizationAssignRequest authorizationAssignRequest) {
-    return RequestMapper.executeServiceMethodWithNoContenResult(
+    return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             identityServices
                 .withAuthentication(RequestMapper.getAuthentication())
