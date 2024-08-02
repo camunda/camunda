@@ -119,12 +119,12 @@ const Tasks: React.FC = observer(() => {
         />
         <Options onAutoSelectToggle={onAutoSelectToggle} />
       </Stack>
-      <section
+      <div
         className={styles.detailsPanel}
         aria-label={t('availableTasksTitle')}
       >
         <Outlet />
-      </section>
+      </div>
     </main>
   );
 });
