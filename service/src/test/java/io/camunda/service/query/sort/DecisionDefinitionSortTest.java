@@ -38,21 +38,14 @@ public class DecisionDefinitionSortTest {
 
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
-        new TestArguments("id", SortOrder.ASC, s -> s.id().asc()),
-        new TestArguments("decisionId", SortOrder.ASC, s -> s.decisionId().asc()),
-        new TestArguments("name", SortOrder.DESC, s -> s.name().desc()),
+        new TestArguments("decisionId", SortOrder.ASC, s -> s.dmnDecisionId().asc()),
+        new TestArguments("name", SortOrder.DESC, s -> s.dmnDecisionName().desc()),
         new TestArguments(
-            "decisionRequirementsId", SortOrder.DESC, s -> s.decisionRequirementsId().desc()),
+            "decisionRequirementsId", SortOrder.DESC, s -> s.dmnDecisionRequirementsId().desc()),
         new TestArguments(
             "decisionRequirementsKey", SortOrder.DESC, s -> s.decisionRequirementsKey().desc()),
         new TestArguments("tenantId", SortOrder.ASC, s -> s.tenantId().asc()),
-        new TestArguments("version", SortOrder.ASC, s -> s.version().asc()),
-        new TestArguments(
-            "decisionRequirementsName", SortOrder.ASC, s -> s.decisionRequirementsName().asc()),
-        new TestArguments(
-            "decisionRequirementsVersion",
-            SortOrder.ASC,
-            s -> s.decisionRequirementsVersion().asc()));
+        new TestArguments("version", SortOrder.ASC, s -> s.version().asc()));
   }
 
   @ParameterizedTest

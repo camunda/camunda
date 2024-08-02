@@ -53,7 +53,8 @@ public final class DecisionDefinitionFilterTest {
   @Test
   public void shouldQueryByDecisionDefinitionKey() {
     // given
-    final var decisionDefinitionFilter = FilterBuilders.decisionDefinition(f -> f.keys(123L));
+    final var decisionDefinitionFilter =
+        FilterBuilders.decisionDefinition(f -> f.decisionKeys(123L));
     final var searchQuery =
         SearchQueryBuilders.decisionDefinitionSearchQuery(q -> q.filter(decisionDefinitionFilter));
 
@@ -74,32 +75,10 @@ public final class DecisionDefinitionFilterTest {
   }
 
   @Test
-  public void shouldQueryByDecisionDefinitionId() {
-    // given
-    final var decisionDefinitionFilter = FilterBuilders.decisionDefinition(f -> f.ids("1234"));
-    final var searchQuery =
-        SearchQueryBuilders.decisionDefinitionSearchQuery(q -> q.filter(decisionDefinitionFilter));
-
-    // when
-    services.search(searchQuery);
-
-    // then
-    final var searchRequest = client.getSingleSearchRequest();
-
-    final var queryVariant = searchRequest.query().queryOption();
-    assertThat(queryVariant)
-        .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            t -> {
-              assertThat(t.field()).isEqualTo("id");
-              assertThat(t.value().stringValue()).isEqualTo("1234");
-            });
-  }
-
-  @Test
   public void shouldQueryByDecisionDefinitionName() {
     // given
-    final var decisionDefinitionFilter = FilterBuilders.decisionDefinition(f -> f.names("foo"));
+    final var decisionDefinitionFilter =
+        FilterBuilders.decisionDefinition(f -> f.dmnDecisionNames("foo"));
     final var searchQuery =
         SearchQueryBuilders.decisionDefinitionSearchQuery(q -> q.filter(decisionDefinitionFilter));
 
@@ -146,7 +125,7 @@ public final class DecisionDefinitionFilterTest {
   public void shouldQueryByDecisionId() {
     // given
     final var decisionDefinitionFilter =
-        FilterBuilders.decisionDefinition(f -> f.decisionIds("foo"));
+        FilterBuilders.decisionDefinition(f -> f.dmnDecisionIds("foo"));
     final var searchQuery =
         SearchQueryBuilders.decisionDefinitionSearchQuery(q -> q.filter(decisionDefinitionFilter));
 
@@ -170,7 +149,7 @@ public final class DecisionDefinitionFilterTest {
   public void shouldQueryByDecisionRequirementsId() {
     // given
     final var decisionDefinitionFilter =
-        FilterBuilders.decisionDefinition(f -> f.decisionRequirementsIds("567"));
+        FilterBuilders.decisionDefinition(f -> f.dmnDecisionRequirementsIds("567"));
     final var searchQuery =
         SearchQueryBuilders.decisionDefinitionSearchQuery(q -> q.filter(decisionDefinitionFilter));
 
@@ -214,52 +193,6 @@ public final class DecisionDefinitionFilterTest {
   }
 
   @Test
-  public void shouldQueryByDecisionRequirementsName() {
-    // given
-    final var decisionDefinitionFilter =
-        FilterBuilders.decisionDefinition(f -> f.decisionRequirementsNames("foo"));
-    final var searchQuery =
-        SearchQueryBuilders.decisionDefinitionSearchQuery(q -> q.filter(decisionDefinitionFilter));
-
-    // when
-    services.search(searchQuery);
-
-    // then
-    final var searchRequest = client.getSingleSearchRequest();
-    final var queryVariant = searchRequest.query().queryOption();
-    assertThat(queryVariant)
-        .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            t -> {
-              assertThat(t.field()).isEqualTo("decisionRequirementsName");
-              assertThat(t.value().stringValue()).isEqualTo("foo");
-            });
-  }
-
-  @Test
-  public void shouldQueryByDecisionRequirementsVersion() {
-    // given
-    final var decisionDefinitionFilter =
-        FilterBuilders.decisionDefinition(f -> f.decisionRequirementsVersions(1));
-    final var searchQuery =
-        SearchQueryBuilders.decisionDefinitionSearchQuery(q -> q.filter(decisionDefinitionFilter));
-
-    // when
-    services.search(searchQuery);
-
-    // then
-    final var searchRequest = client.getSingleSearchRequest();
-    final var queryVariant = searchRequest.query().queryOption();
-    assertThat(queryVariant)
-        .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            t -> {
-              assertThat(t.field()).isEqualTo("decisionRequirementsVersion");
-              assertThat(t.value().intValue()).isEqualTo(1);
-            });
-  }
-
-  @Test
   public void shouldQueryByTenantId() {
     // given
     final var decisionDefinitionFilter = FilterBuilders.decisionDefinition(f -> f.tenantIds("foo"));
@@ -286,7 +219,7 @@ public final class DecisionDefinitionFilterTest {
   public void shouldQueryByTenantIdAndDecisionDefinitionName() {
     // given
     final var decisionDefinitionFilter =
-        FilterBuilders.decisionDefinition(f -> f.tenantIds("tenant").names("foo"));
+        FilterBuilders.decisionDefinition(f -> f.tenantIds("tenant").dmnDecisionNames("foo"));
     final var searchQuery =
         SearchQueryBuilders.decisionDefinitionSearchQuery(q -> q.filter(decisionDefinitionFilter));
 

@@ -39,15 +39,12 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
           "items": [
               {
                   "tenantId": "t",
-                  "key": 0,
-                  "id": "id",
-                  "decisionId": "dId",
-                  "name": "name",
+                  "decisionKey": 0,
+                  "dmnDecisionId": "dId",
+                  "dmnDecisionName": "name",
                   "version": 1,
-                  "decisionRequirementsId": "drId",
-                  "decisionRequirementsKey": 2,
-                  "decisionRequirementsName": "drName",
-                  "decisionRequirementsVersion": 3
+                  "dmnDecisionRequirementsId": "drId",
+                  "decisionRequirementsKey": 2
               }
           ],
           "page": {
@@ -62,10 +59,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
   static final SearchQueryResult<DecisionDefinitionEntity> SEARCH_QUERY_RESULT =
       new Builder<DecisionDefinitionEntity>()
           .total(1L)
-          .items(
-              List.of(
-                  new DecisionDefinitionEntity(
-                      "t", 0L, "id", "dId", "name", 1, "drId", 2L, "drName", 3)))
+          .items(List.of(new DecisionDefinitionEntity("t", 0L, "dId", "name", 1, "drId", 2L)))
           .sortValues(new Object[] {"v"})
           .build();
 
@@ -133,13 +127,12 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         {
           "filter":{
             "tenantId": "t",
-            "key": 0,
-            "id": "id",
-            "name": "name",
+            "decisionKey": 0,
+            "dmnDecisionName": "name",
             "version": 1,
-            "decisionRequirementsId": "drId",
+            "dmnDecisionRequirementsId": "drId",
             "decisionRequirementsKey": 2,
-            "decisionId": "dId",
+            "dmnDecisionId": "dId",
             "decisionRequirementsName": "drName",
             "decisionRequirementsVersion": 3
           }
@@ -166,13 +159,12 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                 .filter(
                     new DecisionDefinitionFilter.Builder()
                         .tenantIds("t")
-                        .keys(0L)
-                        .ids("id")
-                        .names("name")
+                        .decisionKeys(0L)
+                        .dmnDecisionNames("name")
                         .versions(1)
-                        .decisionRequirementsIds("drId")
+                        .dmnDecisionRequirementsIds("drId")
                         .decisionRequirementsKeys(2L)
-                        .decisionIds("dId")
+                        .dmnDecisionIds("dId")
                         .decisionRequirementsNames("drName")
                         .decisionRequirementsVersions(3)
                         .build())
@@ -189,24 +181,21 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         {
             "sort": [
                 {
-                    "field": "id",
+                    "field": "dmnDecisionName",
                     "order": "desc"
                 },
                 {
-                    "field": "name",
+                    "field": "version",
                     "order": "asc"
                 },
                 {
-                    "field": "version"
-                },
-                {
-                     "field": "decisionId"
+                     "field": "dmnDecisionId"
                 },
                 {
                      "field": "decisionRequirementsKey"
                 },
                 {
-                     "field": "decisionRequirementsId"
+                     "field": "dmnDecisionRequirementsId"
                 },
                 {
                      "field": "tenantId"
@@ -233,17 +222,15 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
             new DecisionDefinitionQuery.Builder()
                 .sort(
                     new DecisionDefinitionSort.Builder()
-                        .id()
+                        .dmnDecisionName()
                         .desc()
-                        .name()
-                        .asc()
                         .version()
                         .asc()
-                        .decisionId()
+                        .dmnDecisionId()
                         .asc()
                         .decisionRequirementsKey()
                         .asc()
-                        .decisionRequirementsId()
+                        .dmnDecisionRequirementsId()
                         .asc()
                         .tenantId()
                         .asc()

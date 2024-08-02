@@ -1968,19 +1968,17 @@ components:
     DecisionDefinitionFilterRequest:
       type: object
       properties:
-        id:
-          type: string
-        key:
+        decisionKey:
           type: integer
           format: int64
-        decisionId:
+        dmnDecisionId:
           type: string
-        name:
+        dmnDecisionName:
           type: string
         version:
           type: integer
           format: int32
-        decisionRequirementsId:
+        dmnDecisionRequirementsId:
           type: string
         decisionRequirementsKey:
           type: integer
@@ -2004,19 +2002,17 @@ components:
     DecisionDefinitionItem:
       type: object
       properties:
-        id:
-          type: string
-        key:
+        decisionKey:
           type: integer
           format: int64
-        decisionId:
+        dmnDecisionId:
           type: string
-        name:
+        dmnDecisionName:
           type: string
         version:
           type: integer
           format: int32
-        decisionRequirementsId:
+        dmnDecisionRequirementsId:
           type: string
         decisionRequirementsKey:
           type: integer
