@@ -9,12 +9,19 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+import io.camunda.service.CamundaServiceException;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.security.auth.Authentication;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,6 +58,63 @@ public class IncidentControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isNoContent();
+
+    Mockito.verify(incidentServices).resolveIncident(1L);
+  }
+
+  @Test
+  void shouldReturnNotFoundIfIncidentNotFound() {
+    // given
+    when(incidentServices.resolveIncident(anyLong()))
+        .thenReturn(CompletableFuture.completedFuture(new IncidentRecord()));
+
+    // when/then
+    webClient
+        .post()
+        .uri(INCIDENT_BASE_URL + "/1/resolution")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(incidentServices).resolveIncident(1L);
+  }
+
+  @Test
+  void shouldYieldNotFoundWhenTaskNotFound() {
+    // given
+    Mockito.when(incidentServices.resolveIncident(anyLong()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaServiceException(
+                    new BrokerRejection(
+                        IncidentIntent.RESOLVE, 1L, RejectionType.NOT_FOUND, "Incident not found"))));
+
+    final var expectedBody =
+        """
+        {
+          "type": "about:blank",
+          "status": 404,
+          "title": "NOT_FOUND",
+          "detail": "Command 'RESOLVE' rejected with code 'NOT_FOUND': Incident not found",
+          "instance": "%s"
+        }"""
+            .formatted(INCIDENT_BASE_URL + "/1/resolution");
+
+    // when / then
+    webClient
+        .post()
+        .uri(INCIDENT_BASE_URL + "/1/resolution")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
 
     Mockito.verify(incidentServices).resolveIncident(1L);
   }
