@@ -10,18 +10,21 @@ import {Button, Heading, Stack} from '@carbon/react';
 import {ErrorRobot} from 'modules/images/error-robot';
 import styles from './styles.module.scss';
 import cn from 'classnames';
+import {useTranslation} from 'react-i18next';
 
 const SomethingWentWrong: React.FC<{className?: string}> = ({className}) => {
+  const {t} = useTranslation();
+
   return (
     <div className={cn(className, styles.container)}>
       <div className={styles.content}>
         <Stack gap={6} orientation="horizontal">
           <ErrorRobot />
           <Stack gap={4}>
-            <Heading>Something went wrong</Heading>
-            <p>This page could not be loaded. Try again later.</p>
+            <Heading>{t('errorGenericErrorTitle')}</Heading>
+            <p>{t('errorGenericErrorMessage')}</p>
             <Button kind="primary" onClick={() => window.location.reload()}>
-              Try again
+              {t('errorGenericErrorButtonLabel')}
             </Button>
           </Stack>
         </Stack>

@@ -7,6 +7,8 @@
  */
 
 import {useState} from 'react';
+import {t as _t} from 'i18next';
+import {useTranslation} from 'react-i18next';
 import {Stack} from '@carbon/react';
 import {CheckmarkFilled} from '@carbon/react/icons';
 import {AssigneeTag} from 'Tasks/AssigneeTag';
@@ -22,12 +24,13 @@ import {getTaskAssignmentChangeErrorMessage} from './getTaskAssignmentChangeErro
 import {shouldDisplayNotification} from './shouldDisplayNotification';
 import styles from './Header.module.scss';
 
-const ASSIGNMENT_TOGGLE_LABEL = {
-  assigning: 'Assigning...',
-  unassigning: 'Unassigning...',
-  assignmentSuccessful: 'Assignment successful',
-  unassignmentSuccessful: 'Unassignment successful',
-} as const;
+const getAssignmentToggleLabels = () =>
+  ({
+    assigning: _t('taskHeaderAssigning'),
+    unassigning: _t('taskHeaderUnassigning'),
+    assignmentSuccessful: _t('taskHeaderAssignmentSuccessful'),
+    unassignmentSuccessful: _t('taskHeaderUnassignmentSuccessful'),
+  }) as Record<AssignmentStatus, string>;
 
 type AssignmentStatus =
   | 'off'
@@ -44,9 +47,10 @@ type Props = {
 
 const Header: React.FC<Props> = ({task, user, onAssignmentError}) => {
   const {id, name, processName, assignee, taskState} = task;
+  const {t} = useTranslation();
 
   return (
-    <header className={styles.header} title="Task details header">
+    <header className={styles.header} title={t('taskDetailsHeader')}>
       <div className={styles.headerLeftContainer}>
         <span className={styles.taskName}>{name}</span>
         <span className={styles.processName}>{processName}</span>
@@ -64,11 +68,9 @@ const Header: React.FC<Props> = ({task, user, onAssignmentError}) => {
               gap={2}
             >
               <CheckmarkFilled size={16} color="green" />
-              Completed
               {assignee ? (
                 <>
-                  {' '}
-                  by
+                  {t('taskDetailsTaskCompletedBy') + ' '}
                   <span className={styles.taskAssignee} data-testid="assignee">
                     <AssigneeTag
                       currentUser={user}
@@ -77,7 +79,9 @@ const Header: React.FC<Props> = ({task, user, onAssignmentError}) => {
                     />
                   </span>
                 </>
-              ) : null}
+              ) : (
+                t('taskAssignmentStatusCompleted')
+              )}
             </Stack>
           </span>
         ) : (
@@ -113,6 +117,7 @@ const AssignButton: React.FC<{
   const isAssigned = assignee !== null;
   const [assignmentStatus, setAssignmentStatus] =
     useState<AssignmentStatus>('off');
+  const {t} = useTranslation();
   const {mutateAsync: assignTask, isPending: assignIsPending} = useAssignTask();
   const {mutateAsync: unassignTask, isPending: unassignIsPending} =
     useUnassignTask();
@@ -140,8 +145,8 @@ const AssignButton: React.FC<{
         notificationsStore.displayNotification({
           kind: 'error',
           title: isAssigned
-            ? 'Task could not be unassigned'
-            : 'Task could not be assigned',
+            ? t('taskDetailsTaskUnassignmentError')
+            : t('taskDetailsTaskAssignmentError'),
           subtitle: getTaskAssignmentChangeErrorMessage(errorMessage),
           isDismissable: true,
         });
@@ -170,7 +175,7 @@ const AssignButton: React.FC<{
         description:
           assignmentStatus === 'off'
             ? undefined
-            : ASSIGNMENT_TOGGLE_LABEL[assignmentStatus],
+            : getAssignmentToggleLabels()[assignmentStatus],
         'aria-live': ['assigning', 'unassigning'].includes(assignmentStatus)
           ? 'assertive'
           : 'polite',
@@ -189,7 +194,7 @@ const AssignButton: React.FC<{
       }}
       status={getAsyncActionButtonStatus()}
     >
-      {isAssigned ? 'Unassign' : 'Assign to me'}
+      {isAssigned ? t('taskDetailsUnassign') : t('taskDetailsAssignToMe')}
     </AsyncActionButton>
   );
 };

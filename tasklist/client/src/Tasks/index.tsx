@@ -13,6 +13,7 @@ import {observer} from 'mobx-react-lite';
 import {useTasks} from 'modules/queries/useTasks';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {useAutoSelectNextTask} from 'modules/auto-select-task/useAutoSelectNextTask';
+import {useTranslation} from 'react-i18next';
 import {autoSelectNextTaskStore} from 'modules/stores/autoSelectFirstTask';
 import {pages} from 'modules/routing';
 import {Options} from './Options';
@@ -78,6 +79,7 @@ function useAutoSelectNextTaskSideEffects() {
 
 const Tasks: React.FC = observer(() => {
   const filters = useTaskFilters();
+  const {t} = useTranslation();
   const {fetchPreviousTasks, fetchNextTasks, isLoading, isPending, data} =
     useTasks(filters);
   const tasks = useMemo(() => data?.pages.flat() ?? [], [data]);
@@ -103,7 +105,11 @@ const Tasks: React.FC = observer(() => {
   return (
     <main className={styles.container}>
       <CollapsiblePanel />
-      <Stack as="section" className={styles.tasksPanel} aria-label="Left panel">
+      <Stack
+        as="section"
+        className={styles.tasksPanel}
+        aria-label={t('tasksPanelLabel')}
+      >
         <Filters disabled={isPending} />
         <AvailableTasks
           loading={isLoading}
@@ -113,9 +119,12 @@ const Tasks: React.FC = observer(() => {
         />
         <Options onAutoSelectToggle={onAutoSelectToggle} />
       </Stack>
-      <section className={styles.detailsPanel}>
+      <div
+        className={styles.detailsPanel}
+        aria-label={t('availableTasksTitle')}
+      >
         <Outlet />
-      </section>
+      </div>
     </main>
   );
 });

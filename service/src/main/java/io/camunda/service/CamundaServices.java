@@ -48,6 +48,10 @@ public final class CamundaServices extends ApiServices<CamundaServices> {
     return new DecisionDefinitionServices(brokerClient, searchClient, transformers, authentication);
   }
 
+  public IncidentServices incidentServices() {
+    return new IncidentServices(brokerClient, searchClient, transformers, authentication);
+  }
+
   @Override
   public CamundaServices withAuthentication(final Authentication authentication) {
     return new CamundaServices(brokerClient, searchClient, transformers, authentication);

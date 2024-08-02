@@ -7,6 +7,7 @@
  */
 
 import {useProcessInstances} from 'modules/queries/useProcessInstances';
+import {useTranslation} from 'react-i18next';
 import capitalize from 'lodash/capitalize';
 import {formatDate} from 'modules/utils/formatDate';
 import {Skeleton} from './Skeleton';
@@ -17,10 +18,11 @@ import {ProcessInstanceStateIcon} from './ProcessInstanceStateIcon';
 
 const History: React.FC = () => {
   const {data: processInstances, status} = useProcessInstances();
+  const {t} = useTranslation();
 
   return (
     <div className={styles.container}>
-      <span className={styles.header}>History</span>
+      <span className={styles.header}>{t('processesHistoryTitle')}</span>
       <div className={styles.itemContainer}>
         {match({status})
           .with({status: 'pending'}, () => <Skeleton />)
@@ -28,10 +30,10 @@ const History: React.FC = () => {
             <Layer>
               <Stack gap={3} className={styles.message}>
                 <span className={styles.messageHeading}>
-                  Oops! Something went wrong while fetching the history
+                  {t('processesHistoryFetchingErrorTitle')}
                 </span>
                 <span className={styles.messageBody}>
-                  Please check your internet connection and try again.
+                  {t('processesHistoryFetchingErrorBody')}
                 </span>
               </Stack>
             </Layer>
@@ -46,11 +48,10 @@ const History: React.FC = () => {
                 <Layer>
                   <Stack gap={3} className={styles.message}>
                     <span className={styles.messageHeading}>
-                      No history entries found
+                      {t('processesHistoryNoEntriesFoundPart1')}
                     </span>
                     <span className={styles.messageBody}>
-                      There is no history to display. Start a new process to see
-                      it here.
+                      {t('processesHistoryNoEntriesFoundPart2')}
                     </span>
                   </Stack>
                 </Layer>
