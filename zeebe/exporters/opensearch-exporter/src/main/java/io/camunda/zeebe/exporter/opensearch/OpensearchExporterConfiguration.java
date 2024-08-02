@@ -129,6 +129,8 @@ public class OpensearchExporterConfiguration {
         return index.messageCorrelation;
       case USER:
         return index.user;
+      case AUTHORIZATION:
+        return index.authorization;
       default:
         return false;
     }
@@ -196,6 +198,8 @@ public class OpensearchExporterConfiguration {
     public boolean compensationSubscription = true;
     public boolean messageCorrelation = true;
     public boolean user = true;
+
+    public boolean authorization = true;
 
     // index settings
     private Integer numberOfShards = null;
@@ -299,6 +303,8 @@ public class OpensearchExporterConfiguration {
           + messageCorrelation
           + ", user="
           + user
+          + ", authorization="
+          + authorization
           + '}';
     }
   }
