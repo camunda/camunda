@@ -26,6 +26,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Profile;
 
 @SpringBootApplication
 @ComponentScan(
@@ -67,6 +68,7 @@ public class ModulesTestApplication {
   }
 
   @Bean(name = "dataGenerator")
+  @Profile("dev-data")
   @ConditionalOnMissingBean
   public DataGenerator stubDataGenerator() {
     return TasklistZeebeIntegrationTest.IS_ELASTIC
