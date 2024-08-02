@@ -13,7 +13,6 @@ import {
   Stack,
   Tag,
   TagSkeleton,
-  Tooltip,
 } from '@carbon/react';
 import {Folder} from '@carbon/icons-react';
 
@@ -48,9 +47,9 @@ export default function CollectionHeader({
       <Folder size="24" />
       {collectionEntity && (
         <>
-          <Tooltip content={collectionEntity.name} position="bottom" overflowOnly>
-            <span className="text">{collectionEntity.name}</span>
-          </Tooltip>
+          <span title={collectionEntity.name} className="text">
+            {collectionEntity.name}
+          </span>
           {collectionEntity.currentUserRole === 'manager' && (
             <OverflowMenu>
               <OverflowMenuItem itemText={t('common.edit')} onClick={onEditStart} />
