@@ -5074,10 +5074,10 @@ dmn-js-boxed-expression@^16.6.1:
     min-dom "^4.2.1"
     table-js "^9.1.0"
 
-dmn-js-decision-table@^16.6.1:
-  version "16.6.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-16.6.1.tgz#6fe8fe3ffbe25a41485f659f1ade7af8285ec1ce"
-  integrity sha512-d89IKxs23NM+T93TDTtNLCIxe/2bZAs4pYyiiNc4DCTnQXKsbTYxf7RXo5do47mei6aL79Gg0UwId5SGEFlRpQ==
+dmn-js-decision-table@^16.6.2:
+  version "16.6.2"
+  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-16.6.2.tgz#cc28b3754466b84c1befcdcfbe7859e778f5f9e8"
+  integrity sha512-dTQtQT4ibPnfu33vhCYzjOTg+nXP4XY23Jruo2jJF+8XhRoUeK5wYFGLbRKcMqh51/gFWsax46JMjYaCoQz3ww==
   dependencies:
     "@bpmn-io/dmn-variable-resolver" "^0.7.0"
     css.escape "^1.5.1"
@@ -5135,13 +5135,13 @@ dmn-js-shared@^16.6.1:
     selection-update "^0.1.2"
     table-js "^9.1.0"
 
-dmn-js@16.6.1:
-  version "16.6.1"
-  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-16.6.1.tgz#3addc972b09f216575f2a9fd454c1b39e5336dff"
-  integrity sha512-JJnz/QeQzduQomM4iDX3zTmEpFTJqXWMwMV9MhU3Oha31te5tbHS8uLNakU9igemk5W+4JBahVrlgeHEdiKsNQ==
+dmn-js@16.6.2:
+  version "16.6.2"
+  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-16.6.2.tgz#86c50dd62ca0978e78c69c3c8af2f5a766168a1b"
+  integrity sha512-EDunPMp0BUglESPH+Oz6jh2ZvUwghLqd8Hv57LmaRJYc04/q24RT8vugwF1KpLfuAb2NALg6afmVEgCFkJHOPA==
   dependencies:
     dmn-js-boxed-expression "^16.6.1"
-    dmn-js-decision-table "^16.6.1"
+    dmn-js-decision-table "^16.6.2"
     dmn-js-drd "^16.6.1"
     dmn-js-literal-expression "^16.6.1"
     dmn-js-shared "^16.6.1"
