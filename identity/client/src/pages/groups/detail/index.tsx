@@ -23,6 +23,7 @@ import Members from "src/pages/groups/detail/members";
 import { useEntityModal } from "src/components/modal";
 import EditModal from "src/pages/groups/modals/EditModal";
 import DeleteModal from "src/pages/groups/modals/DeleteModal";
+import Roles from "src/pages/groups/detail/roles/List.tsx";
 
 const Details: FC = () => {
   const navigate = useNavigate();
@@ -85,7 +86,7 @@ const Details: FC = () => {
                 {
                   key: "roles",
                   label: t("Roles"),
-                  content: t("Roles"),
+                  content: <Roles group={group} loadingGroup={loading} />,
                 },
               ]}
               selectedTabKey={tab}

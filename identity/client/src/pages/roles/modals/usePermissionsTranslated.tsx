@@ -8,7 +8,7 @@
 import { ReactElement } from "react";
 import useTranslate from "src/utility/localization";
 
-type TranslatedPermissionItem = {
+export type TranslatedPermissionItem = {
   permission: string;
   description: ReactElement | string;
 };
@@ -24,5 +24,4 @@ const usePermissionsTranslated = (initialPermissions: string[] = []) => {
   return translatedItems;
 };
 
-export type { TranslatedPermissionItem };
 export default usePermissionsTranslated;
