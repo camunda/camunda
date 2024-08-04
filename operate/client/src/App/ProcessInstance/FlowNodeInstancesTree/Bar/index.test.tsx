@@ -57,4 +57,39 @@ describe('<Bar />', () => {
 
     expect(await screen.findByText(MOCK_TIMESTAMP)).toBeInTheDocument();
   });
+
+  it('should show latest successful migration date', async () => {
+    render(
+      <Bar
+        flowNodeInstance={mockStartNode}
+        nodeName={mockStartEventBusinessObject.name}
+        isRoot
+        latestMigrationDate={MOCK_TIMESTAMP}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    expect(
+      screen.getByText(`Migrated 2018-12-12 00:00:00`),
+    ).toBeInTheDocument();
+  });
+
+  it('should not show latest successful migration date for non-root', async () => {
+    render(
+      <Bar
+        flowNodeInstance={mockStartNode}
+        nodeName={mockStartEventBusinessObject.name}
+        latestMigrationDate={MOCK_TIMESTAMP}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    expect(
+      screen.queryByText(`Migrated 2018-12-12 00:00:00`),
+    ).not.toBeInTheDocument();
+  });
 });

@@ -14,11 +14,9 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_KEY;
 import static io.camunda.operate.util.ElasticsearchUtil.scroll;
 import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.property.MigrationProperties;
 import io.camunda.operate.schema.SchemaManager;
@@ -37,19 +35,11 @@ import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
 
 /**
  * This migration plan scrolls the srcIndex, get additional data from list-view index and reindex
  * the batch of source data combining data from source index and list-view.
  */
-@Component
-@Conditional(ElasticsearchCondition.class)
-@Scope(SCOPE_PROTOTYPE)
 public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQueryAndScriptPlan {
 
   private static final Logger LOGGER =
@@ -58,16 +48,25 @@ public class ElasticsearchReindexWithQueryAndScriptPlan implements ReindexWithQu
   private String srcIndex;
   private String dstIndex;
 
-  @Autowired private MigrationProperties migrationProperties;
+  private final MigrationProperties migrationProperties;
   private String listViewIndexName;
 
-  @Autowired
-  @Qualifier("operateObjectMapper")
-  private ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
 
-  @Autowired private RestHighLevelClient esClient;
+  private final RestHighLevelClient esClient;
 
-  @Autowired private RetryElasticsearchClient retryElasticsearchClient;
+  private final RetryElasticsearchClient retryElasticsearchClient;
+
+  public ElasticsearchReindexWithQueryAndScriptPlan(
+      final MigrationProperties migrationProperties,
+      final ObjectMapper objectMapper,
+      RestHighLevelClient esClient,
+      final RetryElasticsearchClient retryElasticsearchClient) {
+    this.migrationProperties = migrationProperties;
+    this.objectMapper = objectMapper;
+    this.esClient = esClient;
+    this.retryElasticsearchClient = retryElasticsearchClient;
+  }
 
   @Override
   public ReindexWithQueryAndScriptPlan setSrcIndex(String srcIndex) {

@@ -256,16 +256,22 @@ public final class ProcessDeploymentTest {
     final var firstProcessRecord =
         RecordingExporter.processRecords().withBpmnProcessId(processId).getFirst();
     assertThat(firstProcessRecord).isNotNull();
+    assertThat(firstProcessRecord.getRecordVersion()).isEqualTo(2);
     assertThat(firstProcessRecord.getValue().getResourceName()).isEqualTo("process.bpmn");
     assertThat(firstProcessRecord.getValue().getVersion()).isEqualTo(1);
+    assertThat(firstProcessRecord.getValue().getDeploymentKey())
+        .isEqualTo(deployment.getDeploymentKey());
     assertThat(firstProcessRecord.getKey())
         .isEqualTo(firstProcessRecord.getValue().getProcessDefinitionKey());
 
     final var secondProcessRecord =
         RecordingExporter.processRecords().withBpmnProcessId(processId2).getFirst();
     assertThat(secondProcessRecord).isNotNull();
+    assertThat(secondProcessRecord.getRecordVersion()).isEqualTo(2);
     assertThat(secondProcessRecord.getValue().getResourceName()).isEqualTo("process2.bpmn");
     assertThat(secondProcessRecord.getValue().getVersion()).isEqualTo(1);
+    assertThat(secondProcessRecord.getValue().getDeploymentKey())
+        .isEqualTo(deployment.getDeploymentKey());
     assertThat(secondProcessRecord.getKey())
         .isEqualTo(secondProcessRecord.getValue().getProcessDefinitionKey());
   }
@@ -425,7 +431,7 @@ public final class ProcessDeploymentTest {
   }
 
   @Test
-  public void shouldFilterWithOneDifferentAndOneEqual() {
+  public void shouldNotFilterWithOneDifferentAndOneEqual() {
     // given
     final Record<DeploymentRecordValue> original =
         ENGINE
@@ -447,7 +453,7 @@ public final class ProcessDeploymentTest {
     final var repeatedProcesses = repeated.getValue().getProcessesMetadata();
     assertThat(repeatedProcesses.size()).isEqualTo(originalProcesses.size()).isEqualTo(2);
 
-    assertSameResource(
+    assertDifferentResources(
         findProcess(originalProcesses, processId), findProcess(repeatedProcesses, processId));
     assertDifferentResources(
         findProcess(originalProcesses, processId2), findProcess(repeatedProcesses, processId2));

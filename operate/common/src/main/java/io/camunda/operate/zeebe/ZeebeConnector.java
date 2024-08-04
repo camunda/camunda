@@ -33,10 +33,10 @@ public class ZeebeConnector {
   }
 
   public ZeebeClient newZeebeClient(final ZeebeProperties zeebeProperties) {
-    final var gatewayAdress = getGatewayAddress(zeebeProperties);
+    final var gatewayAddress = getGatewayAddress(zeebeProperties);
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder()
-            .gatewayAddress(gatewayAdress)
+            .gatewayAddress(gatewayAddress)
             .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE);
     if (zeebeProperties.isSecure()) {
       builder.caCertificatePath(zeebeProperties.getCertificatePath());

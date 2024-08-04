@@ -1,10 +1,23 @@
-# Zeebe - Workflow Engine for Microservices Orchestration
+# Camunda 8 orchestrates complex business processes that span people, systems, and devices
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.camunda.zeebe/camunda-zeebe/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.camunda.zeebe/camunda-zeebe)
 
-Zeebe provides visibility into and control over business processes that span multiple microservices. It is the engine that powers [Camunda Platform 8](https://camunda.com/platform/zeebe/).
+Camunda 8 delivers scalable, on-demand process automation as a service. Camunda 8 is combined with powerful execution engines for BPMN processes and DMN decisions, and paired with tools for collaborative modeling, operations, and analytics.
 
-**Why Zeebe?**
+This repository contains the core execution cluster components of Camunda 8:
+
+* [Zeebe](https://docs.camunda.io/docs/components/zeebe/zeebe-overview/) - The cloud-native process engine of Camunda 8.
+* [Tasklist](https://docs.camunda.io/docs/components/tasklist/introduction-to-tasklist/) - Complete tasks that require human input.
+* [Operate](https://docs.camunda.io/docs/components/operate/operate-introduction/) - Manage, monitor, and troubleshoot your processes.
+* [Optimize](https://docs.camunda.io/optimize/components/what-is-optimize/) - Improve your processes by identifying constraints in your system.
+
+In addition to the core execution cluster components, the Camunda 8 stack also includes:
+* [Console](https://docs.camunda.io/docs/components/console/introduction-to-console/) - Configure and deploy clusters with Console.
+* [Web Modeler](https://docs.camunda.io/docs/components/modeler/about-modeler/) - Web Application to model BPMN, DMN, & Forms and deploy or start new instances.
+* [Desktop Modeler](https://docs.camunda.io/docs/next/components/modeler/desktop-modeler/) - Use Desktop Modeler as a desktop application for modeling BPMN, DMN, and Forms with your local process application project.
+* [Connectors](https://docs.camunda.io/docs/next/components/connectors/introduction-to-connectors/) - Integrate with an external system by using a Connector.
+
+Using Camunda 8, you can:
 
 * Define processes visually in [BPMN 2.0](https://www.omg.org/spec/BPMN/2.0.2/)
 * Choose your programming language
@@ -15,7 +28,7 @@ Zeebe provides visibility into and control over business processes that span mul
 * Export process data for monitoring and analysis
 * Engage with an active community
 
-[Learn more at camunda.com](https://camunda.com/platform/zeebe/)
+[Learn more at camunda.com](https://camunda.com/platform/).
 
 ## Release Lifecycle
 
@@ -26,23 +39,23 @@ Minor releases are supported with patches for eighteen months after their releas
 Here is a diagram illustrating the lifecycle of minor releases over a 27-month period:
 
 ```
-2022                       2023                                2024
+2024                       2025                                2026
 Ap Ma Ju Ju Au Se Oc No De Ja Fe Ma Ap Ma Ju Ju Au Se Oc No De Ja Fe Ma Ap Ma Ju
-8.0--------------------------------------------------|
-                  8.1--------------------------------------------------|
-                                    8.2-----------------------------------------
-                                                      8.3-----------------------
-                                                                        8.4-----
+8.5--------------------------------------------------|
+                  8.6--------------------------------------------------|
+                                    8.7-----------------------------------------
+                                                      8.8-----------------------
+                                                                        8.9-----
 1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27
 ```
 
 Here is a diagram illustrating the release schedule of the five alpha releases prior to an upcoming minor release over a 7-month period:
 
 ```
-2022                                2023
+2024                                2025
 Oct       Nov          Dec          Jan          Feb          Mar          Apr
-8.1-----------------------------------------------------------------------------
-          8.2-alpha1   8.2-alpha2   8.2-alpha3   8.2-alpha4   8.2-alpha5   8.2--
+8.6-----------------------------------------------------------------------------
+          8.6-alpha1   8.6-alpha2   8.6-alpha3   8.6-alpha4   8.6-alpha5   8.7--
 1         2            3            4            5            6            7
 ```
 
@@ -59,7 +72,6 @@ To learn more about what we're currently working on, check the [GitHub issues](h
 * [Documentation Home](https://docs.camunda.io)
 * [Issue Tracker](https://github.com/camunda/camunda/issues)
 * [User Forum](https://forum.camunda.io)
-* [Slack Channel](https://www.camunda.com/slack)
 * [Contribution Guidelines](/CONTRIBUTING.md)
 
 ## Recommended Docs Entries for New Users
@@ -71,7 +83,7 @@ To learn more about what we're currently working on, check the [GitHub issues](h
 * [Installation and Configuration](https://docs.camunda.io/docs/self-managed/zeebe-deployment/)
 * [Java Client](https://docs.camunda.io/docs/apis-clients/java-client/)
 * [Go Client](https://docs.camunda.io/docs/apis-clients/go-client/)
-* [Spring Integration](https://github.com/camunda-community-hub/spring-zeebe/)
+* [Spring SDK](https://docs.camunda.io/docs/apis-tools/spring-zeebe-sdk/getting-started/)
 
 ## Contributing
 
@@ -93,10 +105,11 @@ below, which are made available under the [Apache License, Version
 Available under the [Apache License, Version 2.0](/licenses/APACHE-2.0.txt):
 - Java Client ([clients/java](/clients/java))
 - Go Client ([clients/go](/clients/go))
-- Exporter API ([exporter-api](/exporter-api))
-- Protocol ([protocol](/protocol))
-- Gateway Protocol Implementation ([gateway-protocol-impl](/gateway-protocol-impl))
-- BPMN Model API ([bpmn-model](/bpmn-model))
+- Spring SDK ([spring-boot-starter-camunda-sdk](/clients/spring-boot-starter-camunda-sdk))
+- Exporter API ([exporter-api](/zeebe/exporter-api))
+- Protocol ([protocol](/zeebe/protocol))
+- Gateway Protocol Implementation ([gateway-protocol-impl](/zeebe/gateway-protocol-impl))
+- BPMN Model API ([bpmn-model](/zeebe/bpmn-model))
 
 ### Clarification on gRPC Code Generation
 

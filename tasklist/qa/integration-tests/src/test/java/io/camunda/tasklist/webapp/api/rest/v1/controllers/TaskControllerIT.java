@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.JsonPath;
 import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.property.IdentityProperties;
@@ -31,6 +32,7 @@ import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -497,6 +499,13 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       assertThat(result)
           .hasOkHttpStatus()
           .hasApplicationJsonContentType()
+          .satisfies(
+              payload ->
+                  assertThat(
+                          (List<?>)
+                              JsonPath.parse(payload.getContentAsString(StandardCharsets.UTF_8))
+                                  .read("$.*.variables.*.draft"))
+                      .isEmpty())
           .extractingListContent(objectMapper, TaskSearchResponse.class)
           .hasSize(2)
           .flatExtracting("variables")

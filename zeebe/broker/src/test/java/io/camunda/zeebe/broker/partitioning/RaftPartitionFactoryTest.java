@@ -82,6 +82,21 @@ public final class RaftPartitionFactoryTest {
   }
 
   @Test
+  void shouldSetRaftSnapshotChunkSize() {
+    // given
+    final var chunkSize = DataSize.ofMegabytes(2);
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.getExperimental().getRaft().setSnapshotChunkSize(chunkSize);
+
+    // when
+    final var partition = buildRaftPartition(brokerCfg);
+
+    // then
+    assertThat(partition.getPartitionConfig().getSnapshotChunkSize())
+        .isEqualTo(chunkSize.toBytes());
+  }
+
+  @Test
   void shouldSetRaftConfigurationChangeTimeout() {
     // given
     final Duration expected = Duration.ofSeconds(15);

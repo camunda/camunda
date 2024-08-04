@@ -13,6 +13,7 @@ import io.camunda.service.search.query.SearchQueryBase;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 
 public abstract class SearchQueryService<T extends ApiServices<T>, Q extends SearchQueryBase, D>
     extends ApiServices<T> {
@@ -20,10 +21,11 @@ public abstract class SearchQueryService<T extends ApiServices<T>, Q extends Sea
   protected final SearchClientBasedQueryExecutor executor;
 
   protected SearchQueryService(
+      final BrokerClient brokerClient,
       final CamundaSearchClient searchClient,
       final ServiceTransformers transformers,
       final Authentication authentication) {
-    super(searchClient, transformers, authentication);
+    super(brokerClient, searchClient, transformers, authentication);
     executor = initiateExecutor();
   }
 

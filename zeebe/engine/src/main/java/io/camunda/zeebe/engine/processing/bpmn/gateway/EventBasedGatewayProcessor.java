@@ -39,7 +39,7 @@ public final class EventBasedGatewayProcessor
   }
 
   @Override
-  public Either<Failure, ?> onActivate(
+  public Either<Failure, ?> finalizeActivation(
       final ExecutableEventBasedGateway element, final BpmnElementContext context) {
     return eventSubscriptionBehavior
         .subscribeToEvents(element, context)
@@ -50,8 +50,12 @@ public final class EventBasedGatewayProcessor
   @Override
   public Either<Failure, ?> onComplete(
       final ExecutableEventBasedGateway element, final BpmnElementContext context) {
+    return SUCCESS.thenDo(ok -> eventSubscriptionBehavior.unsubscribeFromEvents(context));
+  }
 
-    eventSubscriptionBehavior.unsubscribeFromEvents(context);
+  @Override
+  public Either<Failure, ?> finalizeCompletion(
+      final ExecutableEventBasedGateway element, final BpmnElementContext context) {
 
     final var eventTrigger =
         eventSubscriptionBehavior

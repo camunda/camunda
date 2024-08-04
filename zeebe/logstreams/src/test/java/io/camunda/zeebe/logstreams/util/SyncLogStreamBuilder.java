@@ -8,18 +8,14 @@
 package io.camunda.zeebe.logstreams.util;
 
 import com.netflix.concurrency.limits.Limit;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
-import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import java.util.Objects;
 
 public final class SyncLogStreamBuilder implements LogStreamBuilder {
   private final LogStreamBuilder delegate;
-  private ActorSchedulingService actorSchedulingService;
 
   SyncLogStreamBuilder() {
     this(LogStream.builder());
@@ -32,7 +28,6 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   @Override
   public SyncLogStreamBuilder withActorSchedulingService(
       final ActorSchedulingService actorSchedulingService) {
-    this.actorSchedulingService = actorSchedulingService;
     delegate.withActorSchedulingService(actorSchedulingService);
     return this;
   }
@@ -62,44 +57,19 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   }
 
   @Override
-  public LogStreamBuilder withAppendLimit(final Limit appendLimit) {
-    delegate.withAppendLimit(appendLimit);
-    return this;
-  }
-
-  @Override
   public LogStreamBuilder withRequestLimit(final Limit requestLimit) {
     delegate.withRequestLimit(requestLimit);
     return this;
   }
 
   @Override
-  public ActorFuture<LogStream> buildAsync() {
-    return delegate.buildAsync();
+  public LogStreamBuilder withWriteRateLimit(final RateLimit writeRateLimiter) {
+    delegate.withWriteRateLimit(writeRateLimiter);
+    return this;
   }
 
+  @Override
   public SyncLogStream build() {
-    final var scheduler =
-        Objects.requireNonNull(
-            actorSchedulingService,
-            "must provide an actor scheduling service through SyncLogStreamBuilder#withActorSchedulingService");
-
-    final var buildFuture = new CompletableActorFuture<SyncLogStream>();
-    scheduler.submitActor(
-        new Actor() {
-          @Override
-          protected void onActorStarting() {
-            actor.runOnCompletionBlockingCurrentPhase(
-                buildAsync(),
-                (logStream, t) -> {
-                  if (t == null) {
-                    buildFuture.complete(new SyncLogStream(logStream));
-                  } else {
-                    buildFuture.completeExceptionally(t);
-                  }
-                });
-          }
-        });
-    return buildFuture.join();
+    return new SyncLogStream(delegate.build());
   }
 }

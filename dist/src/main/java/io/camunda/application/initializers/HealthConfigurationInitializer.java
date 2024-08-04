@@ -9,9 +9,10 @@ package io.camunda.application.initializers;
 
 import io.camunda.application.Profile;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
 import org.springframework.boot.DefaultPropertiesPropertySource;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -27,6 +28,7 @@ public class HealthConfigurationInitializer
   private static final String INDICATOR_GATEWAY_STARTED = "gatewayStarted";
   private static final String INDICATOR_OPERATE_INDICES_CHECK = "indicesCheck";
   private static final String INDICATOR_SPRING_READINESS_STATE = "readinessState";
+  private static final String INDICATOR_TASKLIST_SEARCH_ENGINE_CHECK = "searchEngineCheck";
 
   private static final String SPRING_READINESS_PROPERTY =
       "management.health.readinessstate.enabled";
@@ -38,7 +40,8 @@ public class HealthConfigurationInitializer
   public void initialize(final ConfigurableApplicationContext context) {
     final var environment = context.getEnvironment();
     final var propertySources = environment.getPropertySources();
-    final var activeProfiles = Arrays.asList(environment.getActiveProfiles());
+    final var activeProfiles =
+        Stream.of(environment.getActiveProfiles()).map(String::toLowerCase).toList();
 
     final var healthIndicators = collectHealthIndicators(activeProfiles);
     final var enableReadinessState = shouldReadinessState(activeProfiles);
@@ -62,15 +65,14 @@ public class HealthConfigurationInitializer
   }
 
   protected boolean shouldEnableProbes(final List<String> activeProfiles) {
-    return activeProfiles.stream().anyMatch(p -> p.equalsIgnoreCase(Profile.OPERATE.getId()));
+    return activeProfiles.stream()
+        .anyMatch(Set.of(Profile.OPERATE.getId(), Profile.TASKLIST.getId())::contains);
   }
 
   protected boolean shouldReadinessState(final List<String> activeProfiles) {
     return activeProfiles.stream()
         .anyMatch(
-            p ->
-                p.equalsIgnoreCase(Profile.OPERATE.getId())
-                    || p.equalsIgnoreCase(Profile.BROKER.getId()));
+            Set.of(Profile.OPERATE.getId(), Profile.TASKLIST.getId(), Profile.BROKER)::contains);
   }
 
   /**
@@ -93,6 +95,10 @@ public class HealthConfigurationInitializer
     if (activeProfiles.contains(Profile.OPERATE.getId())) {
       healthIndicators.add(INDICATOR_OPERATE_INDICES_CHECK);
       healthIndicators.add(INDICATOR_SPRING_READINESS_STATE);
+    }
+
+    if (activeProfiles.contains(Profile.TASKLIST.getId())) {
+      healthIndicators.add(INDICATOR_TASKLIST_SEARCH_ENGINE_CHECK);
     }
 
     return healthIndicators;

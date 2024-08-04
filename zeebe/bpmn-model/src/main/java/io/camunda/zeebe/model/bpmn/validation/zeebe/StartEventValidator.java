@@ -15,8 +15,12 @@
  */
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
+import static io.camunda.zeebe.model.bpmn.util.ModelUtil.validateExecutionListenersDefinitionForElement;
+
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
@@ -34,5 +38,19 @@ public class StartEventValidator implements ModelElementValidator<StartEvent> {
     if (eventDefinitions.size() > 1) {
       validationResultCollector.addError(0, "Start event can't have more than one type");
     }
+
+    validateExecutionListenersDefinitionForElement(
+        element,
+        validationResultCollector,
+        listeners -> {
+          final boolean startExecutionListenersDefined =
+              listeners.stream()
+                  .map(ZeebeExecutionListener::getEventType)
+                  .anyMatch(ZeebeExecutionListenerEventType.start::equals);
+          if (startExecutionListenersDefined) {
+            validationResultCollector.addError(
+                0, "Execution listeners of type 'start' are not supported by start events");
+          }
+        });
   }
 }

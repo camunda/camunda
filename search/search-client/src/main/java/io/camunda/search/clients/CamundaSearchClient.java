@@ -15,7 +15,7 @@ import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.util.Either;
 import java.util.function.Function;
 
-public interface CamundaSearchClient {
+public interface CamundaSearchClient extends AutoCloseable {
 
   <T> Either<Exception, SearchQueryResponse<T>> search(
       final SearchQueryRequest searchRequest, final Class<T> documentClass);

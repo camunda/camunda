@@ -34,12 +34,13 @@ defaults:
 env:
   BRANCH_NAME: ${{ inputs.branch }}
   IS_DEFAULT_BRANCH: ${{ inputs.branch == 'main' }}
+  DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
 
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
@@ -72,7 +73,6 @@ jobs:
           secrets: |
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
-            secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
             secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/operate/ci/github-actions OPERATE_CI_ALERT_WEBHOOK_URL;
@@ -101,26 +101,18 @@ jobs:
           password: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       #########################################################################
-      # Build and tag Docker images
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
+      # Build Docker image
+      - name: Build Docker image
+        uses: ./.github/actions/build-platform-docker
         with:
-          images: |
-            registry.camunda.cloud/team-operate/camunda-operate
-          tags: |
+          repository: registry.camunda.cloud/team-operate/camunda-operate
+          version: |
             ${{ env.IMAGE_TAG }}
             ${{ env.CI_IMAGE_TAG }}
             ${{ env.PR_IMAGE_TAG }}
-
-      #########################################################################
-      # Build Docker image
-      - name: Build Docker image
-        uses: ./.github/actions/build-operate-docker
-        with:
-          tags: ${{ steps.meta.outputs.tags }}
           push: ${{ inputs.pushDocker }}
-          platforms: ${{ inputs.pushDocker && 'linux/arm64,linux/amd64' || 'linux/amd64' }}
+          platforms: ${{ inputs.pushDocker && env.DOCKER_PLATFORMS || 'linux/amd64' }}
+          dockerfile: operate.Dockerfile
 
       #########################################################################
       # Docker login for snapshot deployment
@@ -135,11 +127,13 @@ jobs:
       # Build SNAPSHOT Docker image
       - name: Build SNAPSHOT Docker image
         if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
-        uses: ./.github/actions/build-operate-docker
+        uses: ./.github/actions/build-platform-docker
         with:
-          tags: |
-            camunda/operate:SNAPSHOT
+          repository: camunda/operate
+          version: SNAPSHOT
           push: true
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          dockerfile: operate.Dockerfile
 
       #########################################################################
       # Deploy Nexus SNAPSHOT
@@ -150,8 +144,12 @@ jobs:
 
       #########################################################################
       # Collect information about build status for central statistics with CI Analytics
-      - uses: camunda/infra-global-github-actions/submit-build-status@main
-        if: ${{ always() && steps.secrets.outputs.gcloud_sa_key != '' }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
         with:
-          build_status: "${{ contains(steps.*.outcome, 'failure') && 'failure' || 'success' }}"
-          gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

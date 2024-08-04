@@ -7,13 +7,10 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.List;
@@ -40,7 +37,7 @@ public class TopologyControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"/v1/topology", "/v2/topology"})
-  public void shouldGetTopology(final String baseUrl) throws Exception {
+  public void shouldGetTopology(final String baseUrl) {
     // given
     final var version = VersionUtil.getVersion();
     final var expectedResponse =
@@ -99,15 +96,21 @@ public class TopologyControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .perform(get(baseUrl).accept(MediaType.APPLICATION_JSON))
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(content().json(expectedResponse));
+        .get()
+        .uri(baseUrl)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedResponse);
   }
 
   @ParameterizedTest
   @ValueSource(strings = {"/v1/topology", "/v2/topology"})
-  void shouldReturnEmptyTopology(final String baseUrl) throws Exception {
+  void shouldReturnEmptyTopology(final String baseUrl) {
     // given
     final var version = VersionUtil.getVersion();
     final var expectedResponse =
@@ -121,10 +124,16 @@ public class TopologyControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .perform(get(baseUrl).accept(MediaType.APPLICATION_JSON))
-        .andExpect(status().isOk())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(content().json(expectedResponse));
+        .get()
+        .uri(baseUrl)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedResponse);
   }
 
   /**

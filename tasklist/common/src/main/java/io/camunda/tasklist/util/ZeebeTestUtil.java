@@ -41,7 +41,7 @@ public abstract class ZeebeTestUtil {
    * @param classpathResources classpath resources
    * @return process id
    */
-  public static String deployProcess(ZeebeClient client, String... classpathResources) {
+  public static String deployProcess(final ZeebeClient client, final String... classpathResources) {
     return deployProcess(DEFAULT_TENANT_IDENTIFIER, client, classpathResources);
   }
 
@@ -54,12 +54,12 @@ public abstract class ZeebeTestUtil {
    * @return process id
    */
   public static String deployProcess(
-      String tenantId, ZeebeClient client, String... classpathResources) {
+      final String tenantId, final ZeebeClient client, final String... classpathResources) {
     if (classpathResources.length == 0) {
       return null;
     }
     DeployResourceCommandStep1 deployProcessCommandStep1 = client.newDeployResourceCommand();
-    for (String classpathResource : classpathResources) {
+    for (final String classpathResource : classpathResources) {
       deployProcessCommandStep1 =
           deployProcessCommandStep1.addResourceFromClasspath(classpathResource).tenantId(tenantId);
     }
@@ -84,12 +84,15 @@ public abstract class ZeebeTestUtil {
    * @return process id
    */
   public static String deployProcess(
-      ZeebeClient client, BpmnModelInstance processModel, String resourceName) {
+      final ZeebeClient client, final BpmnModelInstance processModel, final String resourceName) {
     return deployProcess(DEFAULT_TENANT_IDENTIFIER, client, processModel, resourceName);
   }
 
   public static String deployProcess(
-      ZeebeClient client, BpmnModelInstance processModel, String resourceName, String tenantId) {
+      final ZeebeClient client,
+      final BpmnModelInstance processModel,
+      final String resourceName,
+      final String tenantId) {
     return deployProcess(tenantId, client, processModel, resourceName);
   }
 
@@ -103,7 +106,10 @@ public abstract class ZeebeTestUtil {
    * @return process id
    */
   public static String deployProcess(
-      String tenantId, ZeebeClient client, BpmnModelInstance processModel, String resourceName) {
+      final String tenantId,
+      final ZeebeClient client,
+      final BpmnModelInstance processModel,
+      final String resourceName) {
     final DeployResourceCommandStep1.DeployResourceCommandStep2 deployProcessCommandStep1 =
         client
             .newDeployResourceCommand()
@@ -114,7 +120,7 @@ public abstract class ZeebeTestUtil {
     return String.valueOf(deploymentEvent.getProcesses().get(0).getProcessDefinitionKey());
   }
 
-  public static void deleteResource(ZeebeClient client, long resourceKey) {
+  public static void deleteResource(final ZeebeClient client, final long resourceKey) {
     client.newDeleteResourceCommand(resourceKey).send().join();
     LOGGER.debug("Deletion of resource [{}] was performed", resourceKey);
   }
@@ -126,7 +132,7 @@ public abstract class ZeebeTestUtil {
    * @return process instance id
    */
   public static String startProcessInstance(
-      ZeebeClient client, String bpmnProcessId, String payload) {
+      final ZeebeClient client, final String bpmnProcessId, final String payload) {
     return startProcessInstance(DEFAULT_TENANT_IDENTIFIER, client, bpmnProcessId, payload);
   }
 
@@ -138,7 +144,10 @@ public abstract class ZeebeTestUtil {
    * @return process instance id
    */
   public static String startProcessInstance(
-      String tenantId, ZeebeClient client, String bpmnProcessId, String payload) {
+      final String tenantId,
+      final ZeebeClient client,
+      final String bpmnProcessId,
+      final String payload) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
         createProcessInstanceCommandStep3 =
             client
@@ -153,7 +162,7 @@ public abstract class ZeebeTestUtil {
     try {
       processInstanceEvent = createProcessInstanceCommandStep3.send().join();
       LOGGER.debug("Process instance created for process [{}]", bpmnProcessId);
-    } catch (ClientException ex) {
+    } catch (final ClientException ex) {
       // retry once
       sleepFor(300L);
       processInstanceEvent = createProcessInstanceCommandStep3.send().join();
@@ -162,17 +171,25 @@ public abstract class ZeebeTestUtil {
     return String.valueOf(processInstanceEvent.getProcessInstanceKey());
   }
 
-  public static void cancelProcessInstance(ZeebeClient client, long processInstanceKey) {
+  public static void cancelProcessInstance(
+      final ZeebeClient client, final long processInstanceKey) {
     client.newCancelInstanceCommand(processInstanceKey).send().join();
   }
 
   public static void completeTask(
-      ZeebeClient client, String jobType, String workerName, String payload) {
+      final ZeebeClient client,
+      final String jobType,
+      final String workerName,
+      final String payload) {
     completeTask(client, jobType, workerName, payload, 1);
   }
 
   public static void completeTask(
-      ZeebeClient client, String jobType, String workerName, String payload, int count) {
+      final ZeebeClient client,
+      final String jobType,
+      final String workerName,
+      final String payload,
+      final int count) {
     handleTasks(
         client,
         jobType,
@@ -188,11 +205,11 @@ public abstract class ZeebeTestUtil {
   }
 
   public static Long failTask(
-      ZeebeClient client,
-      String jobType,
-      String workerName,
-      int numberOfFailures,
-      String errorMessage) {
+      final ZeebeClient client,
+      final String jobType,
+      final String workerName,
+      final int numberOfFailures,
+      final String errorMessage) {
     return handleTasks(
             client,
             jobType,
@@ -210,12 +227,12 @@ public abstract class ZeebeTestUtil {
   }
 
   public static Long failTaskWithRetries(
-      ZeebeClient client,
-      String jobType,
-      String workerName,
-      int numberOfJobs,
-      int numberOfRetries,
-      String errorMessage) {
+      final ZeebeClient client,
+      final String jobType,
+      final String workerName,
+      final int numberOfJobs,
+      final int numberOfRetries,
+      final String errorMessage) {
     return handleTasks(
             client,
             jobType,
@@ -233,12 +250,12 @@ public abstract class ZeebeTestUtil {
   }
 
   public static Long throwErrorInTask(
-      ZeebeClient client,
-      String jobType,
-      String workerName,
-      int numberOfFailures,
-      String errorCode,
-      String errorMessage) {
+      final ZeebeClient client,
+      final String jobType,
+      final String workerName,
+      final int numberOfFailures,
+      final String errorCode,
+      final String errorMessage) {
     return handleTasks(
             client,
             jobType,
@@ -256,11 +273,11 @@ public abstract class ZeebeTestUtil {
   }
 
   private static List<Long> handleTasks(
-      ZeebeClient client,
-      String jobType,
-      String workerName,
-      int jobCount,
-      BiConsumer<JobClient, ActivatedJob> jobHandler) {
+      final ZeebeClient client,
+      final String jobType,
+      final String workerName,
+      final int jobCount,
+      final BiConsumer<JobClient, ActivatedJob> jobHandler) {
     final List<Long> jobKeys = new ArrayList<>();
     while (jobKeys.size() < jobCount) {
       client
@@ -281,12 +298,14 @@ public abstract class ZeebeTestUtil {
     return jobKeys;
   }
 
-  public static void resolveIncident(ZeebeClient client, Long jobKey, Long incidentKey) {
+  public static void resolveIncident(
+      final ZeebeClient client, final Long jobKey, final Long incidentKey) {
     client.newUpdateRetriesCommand(jobKey).retries(3).send().join();
     client.newResolveIncidentCommand(incidentKey).send().join();
   }
 
-  public static void updateVariables(ZeebeClient client, Long scopeKey, String newPayload) {
+  public static void updateVariables(
+      final ZeebeClient client, final Long scopeKey, final String newPayload) {
     client.newSetVariablesCommand(scopeKey).variables(newPayload).local(true).send().join();
   }
 }

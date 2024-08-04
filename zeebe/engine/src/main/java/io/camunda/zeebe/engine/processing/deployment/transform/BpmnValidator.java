@@ -15,21 +15,24 @@ import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
 import io.camunda.zeebe.model.bpmn.validation.ValidationVisitor;
 import io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebeDesignTimeValidators;
 import java.io.StringWriter;
+import org.camunda.bpm.model.xml.impl.validation.ModelValidationResultsImpl;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 
 public final class BpmnValidator {
-
   private final ValidationVisitor designTimeAspectValidator;
   private final ValidationVisitor runtimeAspectValidator;
-
   private final ValidationErrorFormatter formatter = new ValidationErrorFormatter();
+  private final int validatorResultsOutputMaxSize;
 
   public BpmnValidator(
-      final ExpressionLanguage expressionLanguage, final ExpressionProcessor expressionProcessor) {
+      final ExpressionLanguage expressionLanguage,
+      final ExpressionProcessor expressionProcessor,
+      final int validatorResultsOutputMaxSize) {
     designTimeAspectValidator = new ValidationVisitor(ZeebeDesignTimeValidators.VALIDATORS);
     runtimeAspectValidator =
         new ValidationVisitor(
             ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor));
+    this.validatorResultsOutputMaxSize = validatorResultsOutputMaxSize;
   }
 
   public String validate(final BpmnModelInstance modelInstance) {
@@ -45,8 +48,8 @@ public final class BpmnValidator {
 
     if (results1.hasErrors() || results2.hasErrors()) {
       final StringWriter writer = new StringWriter();
-      results1.write(writer, formatter);
-      results2.write(writer, formatter);
+      final var results = new ModelValidationResultsImpl(results1, results2);
+      results.write(writer, formatter, validatorResultsOutputMaxSize);
 
       return writer.toString();
     } else {

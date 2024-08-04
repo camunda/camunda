@@ -25,13 +25,18 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.DependsOn;
 
 @DependsOn("schemaStartup")
 public abstract class AbstractDataGenerator implements DataGenerator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractDataGenerator.class);
-  @Autowired protected ZeebeClient client;
+
+  @Autowired
+  @Qualifier("zeebeClient")
+  protected ZeebeClient client;
+
   @Autowired protected OperateProperties operateProperties;
   protected boolean manuallyCalled = false;
   protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
@@ -47,7 +52,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
     LOGGER.debug("INIT: Generate demo data...");
     try {
       createZeebeDataAsync(false);
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       LOGGER.debug("Demo data could not be generated. Cause: {}", ex.getMessage());
       LOGGER.error("Error occurred when generating demo data.", ex);
     }

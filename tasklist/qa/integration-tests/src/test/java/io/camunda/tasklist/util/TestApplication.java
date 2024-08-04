@@ -20,6 +20,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Profile;
 
 @SpringBootApplication
 @ComponentScan(
@@ -33,7 +34,7 @@ import org.springframework.context.annotation.Import;
           value = TasklistModuleConfiguration.class),
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@Import(WebappsModuleConfiguration.class)
+@Import({WebappsModuleConfiguration.class})
 public class TestApplication {
 
   public static void main(final String[] args) throws Exception {
@@ -41,6 +42,7 @@ public class TestApplication {
   }
 
   @Bean(name = "dataGenerator")
+  @Profile("dev-data")
   @ConditionalOnMissingBean
   public DataGenerator stubDataGenerator() {
     return TasklistZeebeIntegrationTest.IS_ELASTIC

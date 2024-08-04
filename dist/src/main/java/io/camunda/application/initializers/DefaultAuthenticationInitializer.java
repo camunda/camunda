@@ -7,16 +7,16 @@
  */
 package io.camunda.application.initializers;
 
+import static io.camunda.application.Profile.DEFAULT_AUTH_PROFILE;
+import static io.camunda.application.Profile.getAuthProfiles;
+import static io.camunda.application.Profile.getWebappProfiles;
+
 import io.camunda.application.Profile;
-import io.camunda.operate.OperateProfileService;
 import java.util.Set;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 
-/**
- * Adds the "auth" if none of the {@link OperateProfileService#AUTH_PROFILES} is set as an active
- * profile.
- */
+/** Adds the "auth" if none of the {@link Profile#getAuthProfiles()} is set as an active profile. */
 public class DefaultAuthenticationInitializer
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
@@ -25,16 +25,20 @@ public class DefaultAuthenticationInitializer
     final var env = context.getEnvironment();
     final var activeProfiles = Set.of(env.getActiveProfiles());
     if (shouldApplyDefaultAuthenticationProfile(activeProfiles)) {
-      env.addActiveProfile(OperateProfileService.DEFAULT_AUTH);
+      env.addActiveProfile(DEFAULT_AUTH_PROFILE.getId());
     }
   }
 
   protected boolean shouldApplyDefaultAuthenticationProfile(final Set<String> activeProfiles) {
-    if (activeProfiles.contains(Profile.OPERATE.getId())
-        || activeProfiles.contains(Profile.TASKLIST.getId())) {
-      return OperateProfileService.AUTH_PROFILES.stream().noneMatch(activeProfiles::contains);
-    } else {
-      return false;
-    }
+    return webappProfileIsPresent(activeProfiles) && !authProfileIsPresent(activeProfiles);
+  }
+
+  private boolean webappProfileIsPresent(final Set<String> activeProfiles) {
+    return getWebappProfiles().stream()
+        .anyMatch(profile -> activeProfiles.contains(profile.getId()));
+  }
+
+  private boolean authProfileIsPresent(final Set<String> activeProfiles) {
+    return getAuthProfiles().stream().anyMatch(profile -> activeProfiles.contains(profile.getId()));
   }
 }

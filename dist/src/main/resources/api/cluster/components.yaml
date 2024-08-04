@@ -177,6 +177,7 @@ schemas:
           - BROKER_FORCE_REMOVE
           - UNKNOWN
           - PARTITION_DISABLE_EXPORTER
+          - PARTITION_ENABLE_EXPORTER
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:
@@ -273,7 +274,7 @@ schemas:
       - UNKNOWN
       - ENABLED
       - DISABLED
-  
+
   PartitionStateCode:
     title: PartitionStateCode
     description: State of a partition

@@ -20,6 +20,7 @@ import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 import java.util.Arrays;
@@ -349,6 +350,23 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
                 ZeebeFormDefinition.class,
                 "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
       },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask(
+                "task",
+                task ->
+                    task.zeebeFormId("formId")
+                        .getElement()
+                        .getSingleExtensionElement(ZeebeFormDefinition.class)
+                        .setAttributeValue(ZeebeConstants.ATTRIBUTE_BINDING_TYPE, "foo"))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Attribute 'bindingType' must be one of: deployment, latest"))
+      },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ////////////////////////////////// Native user tasks ////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -625,6 +643,24 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .endEvent()
             .done(),
         EMPTY_LIST
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask(
+                "task",
+                task ->
+                    task.zeebeUserTask()
+                        .zeebeFormId("formId")
+                        .getElement()
+                        .getSingleExtensionElement(ZeebeFormDefinition.class)
+                        .setAttributeValue(ZeebeConstants.ATTRIBUTE_BINDING_TYPE, "foo"))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Attribute 'bindingType' must be one of: deployment, latest"))
       }
     };
   }

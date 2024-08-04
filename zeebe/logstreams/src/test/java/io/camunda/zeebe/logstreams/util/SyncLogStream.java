@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.logstreams.util;
 
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -43,21 +45,6 @@ public class SyncLogStream implements SynchronousLogStream {
   }
 
   @Override
-  public int getPartitionId() {
-    return logStream.getPartitionId();
-  }
-
-  @Override
-  public String getLogName() {
-    return logStream.getLogName();
-  }
-
-  @Override
-  public void close() {
-    logStream.closeAsync().join();
-  }
-
-  @Override
   public long getLastWrittenPosition() {
     return lastWrittenPosition;
   }
@@ -65,16 +52,6 @@ public class SyncLogStream implements SynchronousLogStream {
   @Override
   public void setLastWrittenPosition(final long position) {
     lastWrittenPosition = position;
-  }
-
-  @Override
-  public LogStreamReader newLogStreamReader() {
-    return logStream.newLogStreamReader().join();
-  }
-
-  @Override
-  public LogStreamWriter newLogStreamWriter() {
-    return logStream.newLogStreamWriter().join();
   }
 
   @Override
@@ -90,6 +67,46 @@ public class SyncLogStream implements SynchronousLogStream {
         .pollInterval(Duration.ofMillis(50))
         .pollInSameThread()
         .until(this::getLastWrittenPosition, p -> p >= position);
+  }
+
+  @Override
+  public void close() {
+    logStream.close();
+  }
+
+  @Override
+  public int getPartitionId() {
+    return logStream.getPartitionId();
+  }
+
+  @Override
+  public String getLogName() {
+    return logStream.getLogName();
+  }
+
+  @Override
+  public LogStreamReader newLogStreamReader() {
+    return logStream.newLogStreamReader();
+  }
+
+  @Override
+  public LogStreamWriter newLogStreamWriter() {
+    return logStream.newLogStreamWriter();
+  }
+
+  @Override
+  public FlowControl getFlowControl() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void registerRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void removeRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
+    throw new UnsupportedOperationException();
   }
 
   private Either<WriteFailure, Long> syncTryWrite(

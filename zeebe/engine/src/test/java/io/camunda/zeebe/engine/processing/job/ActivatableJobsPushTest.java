@@ -154,6 +154,11 @@ public class ActivatableJobsPushTest {
         JobIntent.CREATED,
         JobBatchIntent.ACTIVATED);
 
+    await("waiting for the expected number of jobs to be activated")
+        .atMost(MAX_WAIT_TIME_FOR_ACTIVATED_JOBS)
+        .pollInterval(Duration.ofMillis(10))
+        .untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(numberOfJobs));
+
     // assert job stream
     jobStream
         .getActivatedJobs()

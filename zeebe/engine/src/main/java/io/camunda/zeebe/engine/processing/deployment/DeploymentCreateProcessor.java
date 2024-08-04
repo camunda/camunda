@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_IN
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static java.util.function.Predicate.not;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -81,7 +82,8 @@ public final class DeploymentCreateProcessor
       final Writers writers,
       final KeyGenerator keyGenerator,
       final FeatureFlags featureFlags,
-      final CommandDistributionBehavior distributionBehavior) {
+      final CommandDistributionBehavior distributionBehavior,
+      final EngineConfiguration config) {
     processState = processingState.getProcessState();
     decisionState = processingState.getDecisionState();
     formState = processingState.getFormState();
@@ -95,7 +97,7 @@ public final class DeploymentCreateProcessor
     this.distributionBehavior = distributionBehavior;
     deploymentTransformer =
         new DeploymentTransformer(
-            stateWriter, processingState, expressionProcessor, keyGenerator, featureFlags);
+            stateWriter, processingState, expressionProcessor, keyGenerator, featureFlags, config);
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
   }
@@ -147,6 +149,9 @@ public final class DeploymentCreateProcessor
 
   private void transformAndDistributeDeployment(final TypedRecord<DeploymentRecord> command) {
     final DeploymentRecord deploymentEvent = command.getValue();
+    final long key = keyGenerator.nextKey();
+    deploymentEvent.setDeploymentKey(key);
+
     // Note: transforming a resource will also write the CREATE events for said resource
     final Either<Failure, Void> result = deploymentTransformer.transform(deploymentEvent);
 
@@ -161,7 +166,6 @@ public final class DeploymentCreateProcessor
       throw new TimerCreationFailedException(reason);
     }
 
-    final long key = keyGenerator.nextKey();
     final var recordWithoutResource = createDeploymentWithoutResources(deploymentEvent);
     responseWriter.writeEventOnCommand(
         key, DeploymentIntent.CREATED, recordWithoutResource, command);
@@ -187,7 +191,9 @@ public final class DeploymentCreateProcessor
         .forEach(
             metadata -> {
               for (final DeploymentResource resource : deploymentEvent.getResources()) {
-                if (resource.getResourceName().equals(metadata.getResourceName())) {
+                final var resourceChecksum =
+                    deploymentTransformer.getChecksum(resource.getResource());
+                if (resourceChecksum.equals(metadata.getChecksumBuffer())) {
                   stateWriter.appendFollowUpEvent(
                       metadata.getKey(),
                       ProcessIntent.CREATED,

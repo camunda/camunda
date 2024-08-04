@@ -195,3 +195,6 @@ docker run --platform=linux/arm64 camunda/zeebe:SNAPSHOT
 
 or using the equivalent [platform property of docker-compose](https://docs.docker.com/compose/compose-file/#platform).
 
+## How to create a new REST endpoint
+
+Follow the [REST endpoint guide](../../docs/rest-controller.md). It will walk you through the required steps to consider.

@@ -9,12 +9,12 @@ component/zeebe:
         - 'Dockerfile'
         - 'bom/*'
         - 'build-tools/**'
+        - 'camunda.Dockerfile'
         - 'clients/**'
         - 'dist/**'
         - 'monitor/**'
         - 'parent/*'
         - 'pom.xml'
-        - 'spring-boot-starter-camunda-sdk/**'
         - 'zeebe/**'
 component/operate:
   - changed-files:
@@ -25,15 +25,18 @@ component/operate:
         - '.github/renovate.json'
         - '.github/workflows/operate-*'
         - 'bom/*'
+        - 'camunda.Dockerfile'
         - 'dist/**'
         - 'operate.Dockerfile'
         - 'operate/**'
         - 'parent/*'
         - 'pom.xml'
+        - 'webapps-common/**'
 component/identity:
   - changed-files:
       - any-glob-to-any-file:
           - '.github/workflows/identity-*'
+          - 'camunda.Dockerfile'
           - 'identity/**'
 component/tasklist:
   - changed-files:
@@ -44,8 +47,33 @@ component/tasklist:
           - '.github/renovate.json'
           - '.github/workflows/tasklist-*'
           - 'bom/*'
+          - 'camunda.Dockerfile'
           - 'dist/**'
           - 'parent/*'
           - 'pom.xml'
           - 'tasklist/**'
           - 'tasklist.Dockerfile'
+          - 'webapps-common/**'
+component/optimize:
+  - changed-files:
+      - any-glob-to-any-file:
+        - '.ci/docker/test/*'
+        - '.github/ISSUE_TEMPLATE/optimize-*'
+        - '.github/actions/**'
+        - '.github/renovate.json'
+        - '.github/workflows/optimize-*'
+        - 'bom/*'
+        - 'camunda.Dockerfile'
+        - 'dist/**'
+        - 'optimize.Dockerfile'
+        - 'optimize/**'
+        - 'parent/*'
+        - 'pom.xml'
+        - 'webapps-common/**'
+component/build-pipeline:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/actions/**'
+          - '.github/workflows/**'
+          - '.github/actionlint*'
+          - 'maven-settings.xml'

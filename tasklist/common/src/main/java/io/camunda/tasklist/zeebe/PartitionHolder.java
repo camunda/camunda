@@ -11,8 +11,7 @@ import io.camunda.tasklist.ApplicationShutdownService;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.CollectionUtil;
 import io.camunda.tasklist.util.ThreadUtil;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.webapps.zeebe.PartitionSupplier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -37,8 +36,8 @@ public class PartitionHolder {
   @Autowired private TasklistProperties tasklistProperties;
 
   @Autowired
-  @Qualifier("tasklistZeebeClient")
-  private ZeebeClient zeebeClient;
+  @Qualifier("tasklistPartitionSupplier")
+  private PartitionSupplier partitionSupplier;
 
   @Autowired(required = false)
   private ApplicationShutdownService applicationShutdownService;
@@ -58,7 +57,7 @@ public class PartitionHolder {
   }
 
   public List<Integer> getPartitionIdsWithWaitingTimeAndRetries(
-      long waitingTimeInMilliseconds, int maxRetries) {
+      final long waitingTimeInMilliseconds, final int maxRetries) {
     int retries = 0;
     while (partitionIds.isEmpty() && retries <= maxRetries) {
       if (retries > 0) {
@@ -101,21 +100,24 @@ public class PartitionHolder {
   }
 
   protected Optional<List<Integer>> getPartitionIdsFromZeebe() {
-    LOGGER.debug("Requesting partition ids from Zeebe client");
-    try {
-      final Topology topology = zeebeClient.newTopologyRequest().send().join();
-      final int partitionCount = topology.getPartitionsCount();
+    LOGGER.debug("Requesting partition ids");
+
+    final var result = partitionSupplier.getPartitionsCount();
+
+    if (result.isLeft()) {
+      final var t = result.getLeft();
+      LOGGER.warn(
+          "Error occurred when requesting partition ids from Zeebe client: " + t.getMessage(), t);
+    } else {
+      final var partitionCount = result.get();
       if (partitionCount > 0) {
         return Optional.of(CollectionUtil.fromTo(1, partitionCount));
       }
-    } catch (Exception t) {
-      LOGGER.warn(
-          "Error occurred when requesting partition ids from Zeebe client: " + t.getMessage(), t);
     }
     return Optional.empty();
   }
 
-  protected void sleepFor(long milliseconds) {
+  protected void sleepFor(final long milliseconds) {
     ThreadUtil.sleepFor(milliseconds);
   }
 }

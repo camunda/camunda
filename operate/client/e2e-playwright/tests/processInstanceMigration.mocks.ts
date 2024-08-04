@@ -6,35 +6,42 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {deployProcess, createInstances} from '../setup-utils';
+import {zeebeGrpcApi} from '../api/zeebe-grpc';
+
+const {deployProcesses, createInstances} = zeebeGrpcApi;
 
 const setup = async () => {
-  const deployProcessResponse = await deployProcess([
+  const {deployments: deploymentsV1} = await deployProcesses([
     'ProcessInstanceMigration/orderProcessMigration_v_1.bpmn',
   ]);
-  await deployProcess([
-    'ProcessInstanceMigration/orderProcessMigration_v_2.bpmn',
-  ]);
-  await deployProcess([
-    'ProcessInstanceMigration/orderProcessMigration_v_3.bpmn',
-  ]);
 
-  if (deployProcessResponse.processes[0] === undefined) {
+  if (deploymentsV1[0] === undefined) {
     throw new Error('Error deploying process');
   }
 
-  const {version, processDefinitionKey, bpmnProcessId} =
-    deployProcessResponse.processes[0];
+  const {deployments: deploymentsV2} = await deployProcesses([
+    'ProcessInstanceMigration/orderProcessMigration_v_2.bpmn',
+  ]);
+  if (deploymentsV2[0] === undefined) {
+    throw new Error('Error deploying process');
+  }
+
+  const {deployments: deploymentsV3} = await deployProcesses([
+    'ProcessInstanceMigration/orderProcessMigration_v_3.bpmn',
+  ]);
+  if (deploymentsV3[0] === undefined) {
+    throw new Error('Error deploying process');
+  }
 
   return {
-    processInstances: await createInstances(
+    processV1Instances: await createInstances(
       'orderProcessMigration',
-      version,
+      deploymentsV1[0].process.version,
       10,
     ),
-    processDefinitionKey,
-    bpmnProcessId,
-    version,
+    processV1: deploymentsV1[0].process,
+    processV2: deploymentsV2[0].process,
+    processV3: deploymentsV3[0].process,
   };
 };
 

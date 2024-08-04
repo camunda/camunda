@@ -44,6 +44,7 @@ public class RaftPartitionConfig {
   private RaftStorageConfig storageConfig;
   private EntryValidator entryValidator;
   private Duration configurationChangeTimeout;
+  private int snapshotChunkSize;
 
   /**
    * Returns the Raft leader election timeout.
@@ -135,6 +136,14 @@ public class RaftPartitionConfig {
     this.snapshotRequestTimeout = snapshotRequestTimeout;
   }
 
+  public int getSnapshotChunkSize() {
+    return snapshotChunkSize;
+  }
+
+  public void setSnapshotChunkSize(final int snapshotChunkSize) {
+    this.snapshotChunkSize = snapshotChunkSize;
+  }
+
   public Duration getConfigurationChangeTimeout() {
     return configurationChangeTimeout;
   }
@@ -217,6 +226,8 @@ public class RaftPartitionConfig {
         + requestTimeout
         + ", snapshotRequestTimeout="
         + snapshotRequestTimeout
+        + ", snapshotChunkSize="
+        + snapshotChunkSize
         + ", configurationChangeTimeout="
         + configurationChangeTimeout
         + ", minStepDownFailureCount="

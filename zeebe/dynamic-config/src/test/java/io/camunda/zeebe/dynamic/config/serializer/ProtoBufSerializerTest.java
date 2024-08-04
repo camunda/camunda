@@ -221,7 +221,8 @@ final class ProtoBufSerializerTest {
         topologyWithClusterChangePlanWithMemberOperations(),
         topologyWithExporterState(),
         topologyWithExporterDisableOperation(),
-        topologyWithExporterEnableOperation());
+        topologyWithExporterEnableOperation(),
+        topologyWithUninitializedPartitionConfig());
   }
 
   private static ClusterConfiguration topologyWithOneMemberNoPartitions() {
@@ -360,5 +361,13 @@ final class ProtoBufSerializerTest {
                 // without initialize from another exporter
                 new PartitionEnableExporterOperation(
                     MemberId.from("1"), 1, "expA", Optional.empty())));
+  }
+
+  private static ClusterConfiguration topologyWithUninitializedPartitionConfig() {
+    return ClusterConfiguration.init()
+        .addMember(
+            MemberId.from("0"),
+            MemberState.initializeAsActive(
+                Map.of(1, PartitionState.active(1, DynamicPartitionConfig.uninitialized()))));
   }
 }

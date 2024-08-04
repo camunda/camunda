@@ -20,13 +20,18 @@ public class TenantAwareTasklistEntity<T extends TasklistEntity<T>> extends Task
     return tenantId;
   }
 
-  public T setTenantId(String id) {
-    this.tenantId = id;
+  public T setTenantId(final String id) {
+    tenantId = id;
     return (T) this;
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), tenantId);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -38,11 +43,6 @@ public class TenantAwareTasklistEntity<T extends TasklistEntity<T>> extends Task
     }
     final TenantAwareTasklistEntity<?> that = (TenantAwareTasklistEntity<?>) o;
     return Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), tenantId);
   }
 
   @Override

@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.jar.ExternalJarClassLoader;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -131,7 +132,8 @@ final class ExternalExporterContainerTest {
     final var descriptor = runtime.loadExternalExporter(jarFile, EXPORTER_CLASS_NAME);
     final var expectedClassLoader = descriptor.newInstance().getClass().getClassLoader();
     final var container =
-        new ExporterContainer(descriptor, 0, new ExporterInitializationInfo(0, null));
+        new ExporterContainer(
+            descriptor, 0, new ExporterInitializationInfo(0, null), new SimpleMeterRegistry());
 
     // when
     container.close();
@@ -143,8 +145,45 @@ final class ExternalExporterContainerTest {
         .isInstanceOf(ExternalJarClassLoader.class);
   }
 
+  @Test
+  void shouldRegisterNewMeterInRegistry(final @TempDir File jarDirectory) throws Exception {
+    // given
+    final var exporterClass = createUnloadedExporter(ExporterWithMetrics.class);
+    final var jarFile = exporterClass.toJar(new File(jarDirectory, "exporter.jar"));
+    final var descriptor = runtime.loadExternalExporter(jarFile, EXPORTER_CLASS_NAME);
+
+    final var registry = new SimpleMeterRegistry();
+
+    final var container =
+        new ExporterContainer(descriptor, 0, new ExporterInitializationInfo(0, null), registry);
+
+    // when
+    container.configureExporter();
+
+    // then
+    assertThat(registry.getMeters().stream())
+        .filteredOn(meter -> meter.getId().getName().contains("new.counter"))
+        .hasSize(1);
+  }
+
   private Unloaded<TclExporter> createUnloadedExporter() {
-    return new ByteBuddy().subclass(TclExporter.class).name(EXPORTER_CLASS_NAME).make();
+    return createUnloadedExporter(TclExporter.class);
+  }
+
+  private <T extends Exporter> Unloaded<T> createUnloadedExporter(final Class<T> exporterClass) {
+    return new ByteBuddy().subclass(exporterClass).name(EXPORTER_CLASS_NAME).make();
+  }
+
+  public abstract static class ExporterWithMetrics implements Exporter {
+
+    @Override
+    public void configure(final Context context) throws Exception {
+      Exporter.super.configure(context);
+      context.getMeterRegistry().counter("new.counter");
+    }
+
+    @Override
+    public void export(final Record<?> record) {}
   }
 
   // the class must be visible to the generated exporter for ByteBuddy to delegate method invocation

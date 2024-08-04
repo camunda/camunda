@@ -30,6 +30,14 @@
 # Relative paths are resolved relative to the installation directory of the broker.
 # ----------------------------------------------------
 
+# Enable the Camunda REST API to start on broker startup.
+# This setting can also be overridden using the environment variable CAMUNDA_REST_ENABLED.
+# camunda.rest.enabled: true
+
+# Enable the Camunda REST Query API to start on broker startup.
+# This setting can also be overridden using the environment variable CAMUNDA_REST_QUERY_ENABLED.
+# camunda.rest.query.enabled: false
+
 # zeebe:
   # broker:
     # gateway:
@@ -49,10 +57,16 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_HOST.
       # host: 0.0.0.0
 
-      # Controls the advertised host; if omitted defaults to the host. This is particularly useful if your
-      # broker stands behind a proxy.
-      # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_ADVERTISEDHOST.
-      # advertisedHost: 0.0.0.0
+      # Controls the advertised host. This is particularly useful if your broker stands behind a
+      # proxy. If not set, its default is computed as:
+      #   - If zeebe.broker.gateway.network.host was explicitly, use this.
+      #   - If not, try to resolve the machine's hostname to an IP address and use that.
+      #   - If the hostname is not resolvable, use the first non-loopback IP address.
+      #   - If there is none, use the loopback address.
+      #
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_NETWORK_ADVERTISEDHOST.
+      #
+      # advertisedHost:
 
       # If a port offset is set it will be added to all ports specified in the config
       # or the default values. This is a shortcut to not always specifying every port.
@@ -90,10 +104,13 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT.
         # port: 26501
 
-        # Controls the advertised host; if omitted defaults to the host. This is particularly useful if your
-        # broker stands behind a proxy.
+        # Controls the advertised host. This is particularly useful if your broker stands behind a proxy.
+        # If omitted, defaults to:
+        #   - If zeebe.broker.network.commandApi.host was set, use this.
+        #   - Use the resolved value of zeebe.broker.network.advertisedHost
+        #
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_COMMANDAPI_ADVERTISEDHOST.
-        # advertisedHost: 0.0.0.0
+        # advertisedHost:
 
         # Controls the advertised port; if omitted defaults to the port. This is particularly useful if your
         # broker stands behind a proxy.
@@ -109,10 +126,13 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT.
         # port: 26502
 
-        # Controls the advertised host; if omitted defaults to the host. This is particularly useful if your
-        # broker stands behind a proxy.
+        # Controls the advertised host. This is particularly useful if your broker stands behind a proxy.
+        # If omitted, defaults to:
+        #   - If zeebe.broker.network.internalApi.host was set, use this.
+        #   - Use the resolved value of zeebe.broker.network.advertisedHost
+        #
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_INTERNALAPI_ADVERTISEDHOST.
-        # advertisedHost: 0.0.0.0
+        # advertisedHost:
 
         # Controls the advertised port; if omitted defaults to the port. This is particularly useful if your
         # broker stands behind a proxy.
@@ -486,16 +506,6 @@
       # ioThreadCount: 2
 
     # flowControl:
-      # Configure flow control for appending. See ZEEBE_BROKER_BACKPRESSURE for available configuration options.
-      # append:
-        # enabled: true
-        # algorithm: "legacyVegas"
-        # useWindowed: false
-        # legacyVegas:
-          # initialLimit: 1024
-          # maxConcurrency: 32768
-          # alphaLimit: 0.7
-          # betaLimit: 0.95
       # Configure flow control for user requests. This setting takes precedence over the backpressure configuration.
       # request:
         # enabled: true
@@ -507,6 +517,16 @@
           # minLimit: 1
           # maxLimit: 1000
           # backoffRatio: 0.9
+      # Configure a rate limit for all writes.
+      # write:
+        # enabled: false
+        # rampUp: 0 # ramp up time, for example 10s
+        # limit: 1000 # maximum number of records written per second
+        # throttling:
+          # enabled: false # If enabled, throttle the write rate based on exporting backlog
+          # acceptableBacklog: 100000 # when exporting is a bottleneck, the write rate is throttled to keep the backlog at this value
+          # minimumLimit: 100 # Even when exporting is fully blocked, always allow this many writes per second
+          # resolution: 15s # How often to adjust the the throttling
 
     # backpressure:
       # Configure backpressure below.
@@ -707,6 +727,7 @@
         #     jobBatch: false
         #     message: true
         #     messageBatch: false
+        #     messageCorrelation: true
         #     messageStartSubscription: true
         #     messageSubscription: true
         #     process: true
@@ -788,6 +809,7 @@
         #     jobBatch: false
         #     message: true
         #     messageBatch: false
+        #     messageCorrelation: true
         #     messageStartSubscription: true
         #     messageSubscription: true
         #     process: true
@@ -919,6 +941,11 @@
         # If the network latency between brokers is high, it would help to set a higher timeout here.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_SNAPSHOTREQUESTTIMEOUT.
         # snapshotRequestTimeout: 2500ms
+
+        # Sets the maximum size of snapshot chunks sent by raft leaders to the followers.
+        # The default value is 1GB.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_SNAPSHOTCHUNKSIZE.
+        # snapshotChunkSize: 1GB
 
         # Sets the timeout for configuration change requests such as joining or leaving. Since changes are usually a multi-step
         # process with multiple commits, a higher timeout than the default requestTimeout is recommended.
@@ -1103,6 +1130,13 @@
           # that could be marked as timed-out in a single trigger run.
           # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENGINE_JOBS_TIMEOUTCHECKERBATCHLIMIT
           # timeoutCheckerBatchLimit: 0x7fffffff
+
+        # validators:
+          # Allows to configure the maximum output size (in bytes) for BPMN validator results.
+          # These results details are typically returned in our gRPC endpoint responses and can cause issues in proxy servers if they are too long to be contained in proxy-headers.
+          # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENGINE_VALIDATORS_RESULTSOUTPUTMAXSIZE
+          # PS: The default value is 12kb. Increasing it to a higher value introduces a risk that it will be throttled by NGINX proxy configs or the zeebe client configs.
+          # resultsOutputMaxSize: 12288
 
       # Allows to configure feature flags. These are used to test new features in dev and int environments prior
       # to rolling them out to production

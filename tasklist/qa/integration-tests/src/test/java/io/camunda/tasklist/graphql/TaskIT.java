@@ -92,7 +92,8 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     }
   }
 
-  private BpmnModelInstance getModelForDueAndFollowUpDates(Date dueDate, Date followUpDate) {
+  private BpmnModelInstance getModelForDueAndFollowUpDates(
+      final Date dueDate, final Date followUpDate) {
     final String dueDateString = SIMPLE_DATE_FORMAT.format(dueDate);
     final String followUpDateString = SIMPLE_DATE_FORMAT.format(followUpDate);
 
@@ -110,7 +111,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     return model;
   }
 
-  private void assertSorting(GraphQLResponse response) {
+  private void assertSorting(final GraphQLResponse response) {
     final List<TaskDTO> tasks = Arrays.asList(response.get("$.data.tasks", TaskDTO[].class));
     final Comparator<TaskDTO> comparator = comparing(TaskDTO::getCreationTime).reversed();
     assertThat(tasks).isSortedAccordingTo(comparator);
@@ -128,10 +129,10 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
   private void assertTasksPage(
       final GraphQLResponse response,
-      int pageSize,
-      List<String> searchAfter,
-      List<String> searchBefore,
-      boolean hasFirst) {
+      final int pageSize,
+      final List<String> searchAfter,
+      final List<String> searchBefore,
+      final boolean hasFirst) {
     assertTrue(response.isOk());
     assertEquals(String.valueOf(pageSize), response.get("$.data.tasks.length()"));
     for (int i = 0; i < pageSize; i++) {
@@ -204,7 +205,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
                     + "\"}) {processDefinitionId}}");
 
         assertEquals(3, tasksByProcessDefinition.size());
-        for (TaskDTO taskDto : tasksByProcessDefinition) {
+        for (final TaskDTO taskDto : tasksByProcessDefinition) {
           assertEquals(taskDto.getProcessDefinitionId(), responseProcessDefinitionId);
         }
 
@@ -216,7 +217,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
         assertEquals(1, tasksByProcessInstance.size());
 
-        for (TaskDTO taskDto : tasksByProcessInstance) {
+        for (final TaskDTO taskDto : tasksByProcessInstance) {
           assertEquals(taskDto.getProcessInstanceId(), responseProcessInstanceId);
         }
       }
@@ -537,7 +538,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     @Nested
     class RetrieveByNameAndVariables {
       private List<TaskDTO> startProcessWithCandidateUserAndSearchBy(
-          String candidateUsersInput, String candidateUserQuery) {
+          final String candidateUsersInput, final String candidateUserQuery) {
 
         final BpmnModelInstance model =
             Bpmn.createExecutableProcess(BPMN_PROCESS_ID)
@@ -607,7 +608,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
         final String candidateUsers = candidateUser1 + ", " + candidateUser2;
 
         final List<TaskDTO> tasks =
-            this.startProcessWithCandidateUserAndSearchBy(candidateUsers, candidateUser2);
+            startProcessWithCandidateUserAndSearchBy(candidateUsers, candidateUser2);
         assertEquals(1, tasks.size());
         assertTrue(Arrays.asList(tasks.get(0).getCandidateUsers()).contains(candidateUser2));
       }

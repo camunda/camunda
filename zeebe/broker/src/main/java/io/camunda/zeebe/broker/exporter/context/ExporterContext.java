@@ -12,6 +12,7 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.EnsureUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 
 public final class ExporterContext implements Context {
@@ -21,14 +22,24 @@ public final class ExporterContext implements Context {
   private final Logger logger;
   private final Configuration configuration;
   private final int partitionId;
+  private final MeterRegistry meterRegistry;
 
   private RecordFilter filter = DEFAULT_FILTER;
 
   public ExporterContext(
-      final Logger logger, final Configuration configuration, final int partitionId) {
+      final Logger logger,
+      final Configuration configuration,
+      final int partitionId,
+      final MeterRegistry meterRegistry) {
     this.logger = logger;
     this.configuration = configuration;
     this.partitionId = partitionId;
+    this.meterRegistry = meterRegistry;
+  }
+
+  @Override
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
   }
 
   @Override

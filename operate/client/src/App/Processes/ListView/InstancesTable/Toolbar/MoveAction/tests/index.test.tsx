@@ -327,7 +327,9 @@ describe('<MoveAction />', () => {
     ).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole('checkbox', {name: /do not show this message again/i}),
+      screen.getByRole('checkbox', {
+        name: /don't show this message next time/i,
+      }),
     );
 
     await user.click(screen.getByRole('button', {name: /close/i}));

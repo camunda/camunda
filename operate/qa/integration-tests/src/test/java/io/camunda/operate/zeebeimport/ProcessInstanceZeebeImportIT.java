@@ -380,7 +380,8 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
 
     // when payload updated
-    // TODO    ZeebeUtil.updateVariables(zeebeClient, gatewayActivity.getKey(), processInstanceKey,
+    // TODO    ZeebeUtil.updateVariables(zeebeClient, gatewayActivity.getKey(),
+    // processInstanceKey,
     // "{\"foo\": 7}", processId, processId);
     //    elasticsearchTestRule.processAllEvents(5);
 
@@ -593,7 +594,8 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
 
     final String processId = "eventProcess";
     deployProcess("messageEventProcess_v_1.bpmn");
-    //    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId,
+    //    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient,
+    // processId,
     // "{\"a\": \"b\"}");
     final Long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"clientId\": \"5\"}");

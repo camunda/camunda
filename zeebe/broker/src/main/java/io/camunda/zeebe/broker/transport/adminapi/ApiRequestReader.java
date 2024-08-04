@@ -24,12 +24,16 @@ public class ApiRequestReader implements RequestReader<AdminRequestDecoder> {
     return messageDecoder;
   }
 
+  @Override
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+    messageDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
+  }
+
   public long key() {
     return messageDecoder.key();
   }
 
-  @Override
-  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    messageDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
+  public String payload() {
+    return messageDecoder.payload();
   }
 }

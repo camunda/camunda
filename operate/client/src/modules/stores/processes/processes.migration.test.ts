@@ -308,7 +308,7 @@ describe('processes.migration store', () => {
     expect(processesStore.latestProcessVersion).toEqual(3);
   });
 
-  it('should not pre-set target process version', async () => {
+  it('should pre-set latest previous target process version', async () => {
     // given: demoProcess version 3 (latest version) as source process
     locationSpy.mockImplementation(() => ({
       ...originalWindow.location,

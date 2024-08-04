@@ -1,6 +1,6 @@
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -22,7 +22,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.14.0
+    image: docker.elastic.co/kibana/kibana:8.14.3
     ports:
       - 5601:5601
     links:
@@ -76,7 +76,7 @@ services:
     command: [ "sysctl", "-w", "vm.max_map_count=262144" ]
 
   opensearch:
-    image: opensearchproject/opensearch:2.14.0
+    image: opensearchproject/opensearch:2.15.0
     container_name: opensearch
     depends_on:
       - opensearch-init
@@ -104,7 +104,7 @@ services:
       - ./os-snapshots:/usr/local/os-snapshots
   zeebe-opensearch:
     container_name: zeebe-opensearch
-    image: camunda/zeebe:8.5.2
+    image: camunda/zeebe:8.5.5
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
@@ -119,7 +119,7 @@ services:
       - 8000:8000
     restart: always
   operate-opensearch:
-    image: camunda/operate:8.5.2
+    image: camunda/operate:8.5.4
     container_name: operate-opensearch
     environment:
       - SERVER_PORT=8080

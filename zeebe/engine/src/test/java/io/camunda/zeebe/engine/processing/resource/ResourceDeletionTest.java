@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
@@ -251,12 +252,17 @@ public class ResourceDeletionTest {
             .get(0)
             .getProcessDefinitionKey();
     final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var partitionId = Protocol.decodePartitionId(processInstanceKey);
 
     // Note! We don't register the banned instance using an event. You won't see the Error Event in
     // the log!
+    // We need to pause processing to prevent potential transaction corruption when modifying the
+    // state from the test thread concurrently to processing.
+    engine.pauseProcessing(partitionId);
     final var bannedInstanceState =
         (MutableBannedInstanceState) engine.getProcessingState().getBannedInstanceState();
     bannedInstanceState.banProcessInstance(processInstanceKey);
+    engine.resumeProcessing(partitionId);
 
     // when
     engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
@@ -833,7 +839,8 @@ public class ResourceDeletionTest {
             DecisionRecordValue::getDecisionKey,
             DecisionRecordValue::getDecisionRequirementsId,
             DecisionRecordValue::getDecisionRequirementsKey,
-            DecisionRecordValue::isDuplicate)
+            DecisionRecordValue::isDuplicate,
+            DecisionRecordValue::getDeploymentKey)
         .containsOnly(
             decisionCreatedRecord.getDecisionId(),
             decisionCreatedRecord.getDecisionName(),
@@ -841,7 +848,8 @@ public class ResourceDeletionTest {
             decisionCreatedRecord.getDecisionKey(),
             decisionCreatedRecord.getDecisionRequirementsId(),
             decisionCreatedRecord.getDecisionRequirementsKey(),
-            decisionCreatedRecord.isDuplicate());
+            decisionCreatedRecord.isDuplicate(),
+            decisionCreatedRecord.getDeploymentKey());
   }
 
   private void verifyProcessIdWithVersionIsDeleted(final String processId, final int version) {
@@ -866,13 +874,15 @@ public class ResourceDeletionTest {
             ProcessMetadataValue::getBpmnProcessId,
             ProcessMetadataValue::getResourceName,
             ProcessMetadataValue::getVersion,
-            ProcessMetadataValue::getProcessDefinitionKey)
+            ProcessMetadataValue::getProcessDefinitionKey,
+            ProcessMetadataValue::getDeploymentKey)
         .containsOnly(
             tuple(
                 processCreatedRecord.getBpmnProcessId(),
                 processCreatedRecord.getResourceName(),
                 processCreatedRecord.getVersion(),
-                processCreatedRecord.getProcessDefinitionKey()));
+                processCreatedRecord.getProcessDefinitionKey(),
+                processCreatedRecord.getDeploymentKey()));
   }
 
   private void verifyInstanceOfProcessWithIdAndVersionIsCompleted(
@@ -1050,12 +1060,14 @@ public class ResourceDeletionTest {
             Form::getFormKey,
             Form::getVersion,
             Form::getResourceName,
-            Form::getTenantId)
+            Form::getTenantId,
+            Form::getDeploymentKey)
         .containsOnly(
             formCreatedRecord.getFormId(),
             formCreatedRecord.getFormKey(),
             formCreatedRecord.getVersion(),
             formCreatedRecord.getResourceName(),
-            formCreatedRecord.getTenantId());
+            formCreatedRecord.getTenantId(),
+            formCreatedRecord.getDeploymentKey());
   }
 }

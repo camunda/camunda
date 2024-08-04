@@ -33,7 +33,7 @@ import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthentication;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorization;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationServiceImpl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -65,10 +65,11 @@ class ProcessStoreElasticSearchTest {
   @Mock private ProcessIndex processIndex;
   @Mock private TenantAwareElasticsearchClient tenantAwareClient;
   @InjectMocks private ProcessStoreElasticSearch processStore;
-  @InjectMocks private IdentityAuthorizationService identityService;
+  @InjectMocks private IdentityAuthorizationServiceImpl identityService;
   @Mock private ObjectMapper objectMapper;
   @InjectMocks private SpringContextHolder springContextHolder;
   @Mock private TasklistProperties tasklistProperties;
+  @Mock private io.camunda.identity.autoconfigure.IdentityProperties identityProperties;
 
   @BeforeEach
   public void setup() {
@@ -168,7 +169,7 @@ class ProcessStoreElasticSearchTest {
     // when
     when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
     when(tasklistProperties.getIdentity().isResourcePermissionsEnabled()).thenReturn(true);
-    when(tasklistProperties.getIdentity().getBaseUrl()).thenReturn("baseUrl");
+    when(identityProperties.baseUrl()).thenReturn("baseUrl");
     mockAuthenticationOverIdentity(false);
     when(processIndex.getAlias()).thenReturn("index_alias");
     final SearchResponse searchResponse = mock(SearchResponse.class);
@@ -229,17 +230,15 @@ class ProcessStoreElasticSearchTest {
     assertNotNull(processesWithCondition);
   }
 
-  private void mockAuthenticationOverIdentity(Boolean isAuthorizated) {
+  private void mockAuthenticationOverIdentity(final Boolean isAuthorizated) {
     // Mock IdentityProperties
-    final IdentityProperties identityProperties = mock(IdentityProperties.class);
+    final IdentityProperties tasklistIdentityProperties = mock(IdentityProperties.class);
     springContextHolder.setApplicationContext(mock(ConfigurableApplicationContext.class));
-
-    // Define behavior of IdentityProperties methods
-    when(identityProperties.isResourcePermissionsEnabled()).thenReturn(true);
-    when(identityProperties.getBaseUrl()).thenReturn("baseUrl");
+    when(tasklistIdentityProperties.isResourcePermissionsEnabled()).thenReturn(true);
 
     // Define behavior of tasklistProperties.getIdentity()
-    when(tasklistProperties.getIdentity()).thenReturn(identityProperties);
+    when(tasklistProperties.getIdentity()).thenReturn(tasklistIdentityProperties);
+    when(identityProperties.baseUrl()).thenReturn("baseUrl");
 
     // Mock Authentication
     final Authentication auth = mock(Authentication.class);

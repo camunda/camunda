@@ -32,7 +32,6 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -65,7 +64,7 @@ public class Migrator {
 
   @Autowired private IndexSchemaValidator indexSchemaValidator;
 
-  @Autowired private BeanFactory beanFactory;
+  @Autowired private MigrationPlanFactory migrationPlanFactory;
 
   @Bean("migrationThreadPoolExecutor")
   public ThreadPoolTaskExecutor getTaskExecutor() {
@@ -263,10 +262,10 @@ public class Migrator {
           "Migration plan contains steps that can't be applied together. Check your upgrade path.");
     }
     if (onlyAffectedVersions.size() == 0) {
-      final ReindexPlan reindexPlan = beanFactory.getBean(ReindexPlan.class);
+      final ReindexPlan reindexPlan = migrationPlanFactory.createReindexPlan();
       return reindexPlan.setSrcIndex(srcIndex).setDstIndex(dstIndex);
     } else if (onlyAffectedVersions.get(0) instanceof ProcessorStep) {
-      final ReindexPlan reindexPlan = beanFactory.getBean(ReindexPlan.class);
+      final ReindexPlan reindexPlan = migrationPlanFactory.createReindexPlan();
       return reindexPlan.setSrcIndex(srcIndex).setDstIndex(dstIndex).setSteps(onlyAffectedVersions);
     } else if (onlyAffectedVersions.get(0) instanceof SetBpmnProcessIdStep
         && onlyAffectedVersions.size() == 1) {
@@ -275,7 +274,7 @@ public class Migrator {
       final String listViewIndexName =
           String.format("%s-%s", indexPrefix, listViewTemplate.getIndexName());
       final ReindexWithQueryAndScriptPlan reindexPlan =
-          beanFactory.getBean(ReindexWithQueryAndScriptPlan.class);
+          migrationPlanFactory.createReindexWithQueryAndScriptPlan();
       return reindexPlan
           .setSrcIndex(srcIndex)
           .setDstIndex(dstIndex)
@@ -284,7 +283,7 @@ public class Migrator {
     } else if (onlyAffectedVersions.get(0) instanceof FillPostImporterQueueStep
         && onlyAffectedVersions.size() == 1) {
       final FillPostImporterQueuePlan fillPostImporterQueuePlan =
-          beanFactory.getBean(FillPostImporterQueuePlan.class);
+          migrationPlanFactory.createFillPostImporterQueuePlan();
       return fillPostImporterQueuePlan
           .setListViewIndexName(
               String.format("%s-%s", indexPrefix, listViewTemplate.getIndexName()))

@@ -40,6 +40,7 @@ faces-config.NavData
 work/
 public/
 tngp-data
+*.sst
 
 .flattened-pom.xml
 
@@ -52,3 +53,4 @@ hs_err*.log
 .vscode
 .eslintcache
 els-snapshots
+.yarn

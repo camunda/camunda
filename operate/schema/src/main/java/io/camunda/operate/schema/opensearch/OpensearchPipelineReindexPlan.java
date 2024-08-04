@@ -8,9 +8,7 @@
 package io.camunda.operate.schema.opensearch;
 
 import static io.camunda.operate.util.CollectionUtil.map;
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
-import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.property.MigrationProperties;
 import io.camunda.operate.schema.SchemaManager;
@@ -28,25 +26,16 @@ import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch.core.ReindexRequest;
 import org.opensearch.client.opensearch.core.reindex.Destination;
 import org.opensearch.client.opensearch.core.reindex.Source;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
 
-@Component
-@Conditional(OpensearchCondition.class)
-@Scope(SCOPE_PROTOTYPE)
 public class OpensearchPipelineReindexPlan extends PipelineReindexPlan implements ReindexPlan {
 
   private final RichOpenSearchClient richOpenSearchClient;
   private final MigrationProperties migrationProperties;
   private Script script;
 
-  @Autowired
   public OpensearchPipelineReindexPlan(
       final RichOpenSearchClient richOpenSearchClient,
       final MigrationProperties migrationProperties) {
-    super();
     this.richOpenSearchClient = richOpenSearchClient;
     this.migrationProperties = migrationProperties;
   }

@@ -59,6 +59,7 @@ interface InstanceOperationEntity {
   type: OperationEntityType;
   state: 'SENT' | 'COMPLETED' | 'SCHEDULED' | 'LOCKED' | 'FAILED';
   errorMessage: null | string;
+  completedDate: null | string;
 }
 
 type ResourceBasedPermissionDto =

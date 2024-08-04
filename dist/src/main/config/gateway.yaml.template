@@ -30,6 +30,14 @@
 
 # ----------------------------------------------------
 
+# Enable the Camunda REST API to start on gateway startup.
+# This setting can also be overridden using the environment variable CAMUNDA_REST_ENABLED.
+# camunda.rest.enabled: true
+
+# Enable the Camunda REST Query API to start on gateway startup.
+# This setting can also be overridden using the environment variable CAMUNDA_REST_QUERY_ENABLED.
+# camunda.rest.query.enabled: false
+
 # zeebe:
   # gateway:
     # network:
@@ -87,10 +95,15 @@
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_PORT.
       # port: 26502
 
-      # Controls the advertised host; if omitted defaults to the host. This is particularly useful if your
-      # gateway stands behind a proxy.
+      # Controls the advertised host. This is particularly useful if your broker stands behind a
+      # proxy. If not set, its default is computed as:
+      #   - If zeebe.gateway.cluster.host was explicitly set, use this.
+      #   - If not, try to resolve the machine's hostname to an IP address and use that.
+      #   - If the hostname is not resolvable, use the first non-loopback IP address.
+      #   - If there is none, use the loopback address.
+      #
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST.
-      # advertisedHost: 0.0.0.0
+      # advertisedHost:
 
       # Controls the advertised port; if omitted defaults to the port. This is particularly useful if your
       # gateway stands behind a proxy.
@@ -197,21 +210,6 @@
       # Sets the number of threads the gateway will use to communicate with the broker cluster
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_THREADS_MANAGEMENTTHREADS.
       # managementThreads: 1
-      #
-      # A separate thread pool is used to run the gRPC business logic. The thread pool is elastic
-      # (meaning it will start/stop threads dynamically), but will always keep a minimum number of
-      # threads, and only start up to a maximum number of threads. By default, this range is from
-      # 1 thread per core, up to 2 threads per core.
-      #
-      # Sets the minimum number of threads in the gRPC thread pool. Only accepts static values;
-      # defaults to the number of cores available.
-      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_THREADS_GRPCMINTHREADS.
-      # grpcMinThreads:
-      #
-      # Sets the maximum number of threads in the gRPC thread pool. Only accepts static values;
-      # defaults to twice the number of cores available.
-      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_THREADS_GRPCMAXTHREADS.
-      # grpcMaxThreads:
 
     # security:
       # Enables TLS authentication between clients and the gateway

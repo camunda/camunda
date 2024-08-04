@@ -42,44 +42,50 @@
     },
     {
       "matchManagers": ["maven"],
-      "matchPackagePrefixes": ["org.opensearch.client", "org.elasticsearch", "co.elastic"],
+      "matchPackageNames": ["org.opensearch.client{/,}**", "org.elasticsearch{/,}**", "co.elastic{/,}**"],
       "matchUpdateTypes": ["minor", "major"],
       "enabled": false
     },
     {
       "description": "Skip lucene major updates to avoid breaking changes.",
       "matchManagers": ["maven"],
-      "matchPackagePrefixes": ["org.apache.lucene"],
+      "matchPackageNames": ["org.apache.lucene{/,}**"],
       "matchUpdateTypes": ["major"],
       "enabled": false
     },
     {
       "matchManagers": ["maven"],
-      "matchPackagePrefixes": ["com.graphql-java"],
+      "matchPackageNames": ["com.graphql-java{/,}**"],
       "matchUpdateTypes": ["major"],
       "enabled": false
     },
     {
       "description": "Digest updates cover all use cases since they are used as base, so we disable other types.",
       "matchManagers": ["dockerfile"],
+      "matchFileNames": ["Dockerfile", "camunda.Dockerfile"],
       "matchUpdateTypes": ["major", "minor", "patch"],
       "enabled": false
     },
     {
       "matchManagers": ["maven"],
-      "matchPackagePrefixes": ["org.jacoco"],
+      "matchPackageNames": ["org.jacoco{/,}**"],
       "allowedVersions": "!/0.8.9/"
+    },
+    {
+      "description": "Do not update Netty as it is incompatible with grpc-java < 1.65; this can be removed after that",
+      "matchManagers": ["maven"],
+      "matchPackageNames": ["io.netty{/,}**"]
     },
     {
       "description" : "Exclude SNAPSHOT versions, renovate may suggest them for pre-release values.",
       "matchManagers": ["maven"],
-      "matchPackagePatterns": [".*"],
+      "matchPackageNames": ["*"],
       "allowedVersions": "!/-SNAPSHOT$/"
     },
     {
       "description" : "Exclude internal Maven modules and Maven dependencies lacking metadata.",
       "matchManagers": ["maven"],
-      "matchPackagePatterns": [
+      "matchPackageNames": [
         "io.camunda:operate-parent",
         "io.camunda:operate-qa",
         "io.camunda:operate-qa-migration-tests-parent",
@@ -93,7 +99,7 @@
       "description": "Exclude frontend deps until migration is done in Operate (see issues #17736, #17844, #18851)",
       "matchManagers": ["npm", "nvm"],
       "matchFileNames": ["operate/**"],
-      "matchPackagePatterns": [
+      "matchPackageNames": [
         "react-router-dom",
         "msw",
         "@carbon/react"
@@ -110,7 +116,7 @@
       "additionalBranchPrefix": "fe-"
     },
     {
-      "matchPackagePrefixes": ["@types/"],
+      "matchPackageNames": ["@types/{/,}**"],
       "groupName": "definitelyTyped"
     },
     {
@@ -123,10 +129,20 @@
     },
     {
       "matchManagers": ["npm", "nvm"],
-      "matchPackagePatterns": ["*"],
+      "matchPackageNames": ["*"],
       "matchUpdateTypes": ["patch"],
       "groupName": "all non-major dependencies",
       "groupSlug": "all-minor-patch"
+    },
+    {
+      "description": "For known GitHub repositories that use GitHub tags/releases of format 'v1.2.3' and where we ignore the 'v' prefix, we also tell Renovate to ignore it via extractVersion when updating .tool-version file",
+      "matchFileNames": [
+        ".github/workflows/*.yml"
+      ],
+      "matchPackageNames": [
+        "rhysd/actionlint"
+      ],
+      "extractVersion": "^v(?<version>.*)$"
     },
     {
       "description": "Both dependencies need to be updated at once for green CI.",
@@ -135,15 +151,35 @@
     },
     {
       "description": "Automerge all updates with green CI.",
-      "matchPackagePatterns": ["*"],
+      "matchPackageNames": ["*"],
       "automerge": true,
       "addLabels": ["automerge"]
     }
   ],
   "dockerfile": {
+    "fileMatch": ["(^|\\/)([\\w-]+\\.)?[Dd]ockerfile$"],
     "ignorePaths": [
       "zeebe/benchmarks/**",
       "clients/go/vendor/**"
     ]
-  }
+  },
+  "customManagers": [
+    {
+      "fileMatch": ["\\.yml$"],
+      "customType": "regex",
+      "matchStrings": [
+        "renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.* '(?<currentValue>.*)'\\s"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ["package\\.json"],
+      "matchStrings": [
+        "mcr\\.microsoft\\.com\\\/playwright:(?<currentValue>.*?)\\s"
+      ],
+      "depNameTemplate": "mcr.microsoft.com/playwright",
+      "datasourceTemplate": "docker"
+    }
+  ]
 }

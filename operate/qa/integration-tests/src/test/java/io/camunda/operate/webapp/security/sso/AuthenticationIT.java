@@ -45,13 +45,13 @@ import io.camunda.operate.webapp.security.sso.model.ClusterInfo;
 import io.camunda.operate.webapp.security.sso.model.ClusterInfo.SalesPlan;
 import io.camunda.operate.webapp.security.sso.model.ClusterMetadata;
 import io.camunda.webapps.WebappsModuleConfiguration;
+import jakarta.json.Json;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -167,7 +167,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   }
 
   private static String toJSON(final Map map) {
-    return new JSONObject(map).toString();
+    return Json.createObjectBuilder(map).build().toString();
   }
 
   @Before

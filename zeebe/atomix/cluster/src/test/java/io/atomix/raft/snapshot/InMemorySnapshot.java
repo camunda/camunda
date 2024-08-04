@@ -57,16 +57,24 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
     term = Long.parseLong(parts[1]);
   }
 
-  InMemorySnapshot(final TestSnapshotStore testSnapshotStore, final long index, final long term) {
+  InMemorySnapshot(
+      final TestSnapshotStore testSnapshotStore,
+      final long index,
+      final long term,
+      final int nodeId) {
     this.testSnapshotStore = testSnapshotStore;
     this.index = index;
     this.term = term;
-    id = String.format("%d-%d", index, term);
+    id = String.format("%d-%d-%d", index, term, nodeId);
   }
 
   public static InMemorySnapshot newPersistedSnapshot(
-      final long index, final long term, final int size, final TestSnapshotStore snapshotStore) {
-    final var snapshot = new InMemorySnapshot(snapshotStore, index, term);
+      final int nodeId,
+      final long index,
+      final long term,
+      final int size,
+      final TestSnapshotStore snapshotStore) {
+    final var snapshot = new InMemorySnapshot(snapshotStore, index, term, nodeId);
     for (int i = 0; i < size; i++) {
       snapshot.writeChunks("chunk-" + i, ("test-" + i).getBytes());
     }
@@ -117,6 +125,9 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
         }
         return ByteBuffer.wrap(iterator.firstEntry().getKey().getBytes());
       }
+
+      @Override
+      public void setMaximumChunkSize(final int maximumChunkSize) {}
 
       @Override
       public void close() {

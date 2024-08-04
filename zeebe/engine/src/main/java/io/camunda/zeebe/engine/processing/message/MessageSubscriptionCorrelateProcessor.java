@@ -11,12 +11,16 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.MessageSubscription;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -32,7 +36,7 @@ public final class MessageSubscriptionCorrelateProcessor
   private final MessageCorrelator messageCorrelator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
-  private final int partitionId;
+  private final TypedResponseWriter responseWriter;
 
   public MessageSubscriptionCorrelateProcessor(
       final int partitionId,
@@ -40,10 +44,10 @@ public final class MessageSubscriptionCorrelateProcessor
       final MessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender,
       final Writers writers) {
-    this.partitionId = partitionId;
     this.subscriptionState = subscriptionState;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
     messageCorrelator =
         new MessageCorrelator(
             partitionId, messageState, commandSender, stateWriter, writers.sideEffect());
@@ -64,9 +68,34 @@ public final class MessageSubscriptionCorrelateProcessor
     final var messageSubscription = subscription.getRecord();
     stateWriter.appendFollowUpEvent(
         subscription.getKey(), MessageSubscriptionIntent.CORRELATED, messageSubscription);
+    writeCorrelationResponse(record, messageSubscription);
 
     if (!messageSubscription.isInterrupting()) {
       messageCorrelator.correlateNextMessage(subscription.getKey(), messageSubscription);
+    }
+  }
+
+  private void writeCorrelationResponse(
+      final TypedRecord<MessageSubscriptionRecord> record,
+      final MessageSubscriptionRecord messageSubscription) {
+    if (messageSubscription.hasRequestData()) {
+      final var messageCorrelationRecord =
+          new MessageCorrelationRecord()
+              .setName(messageSubscription.getMessageName())
+              .setCorrelationKey(messageSubscription.getCorrelationKey())
+              .setVariables(messageSubscription.getVariablesBuffer())
+              .setTenantId(messageSubscription.getTenantId())
+              .setProcessInstanceKey(messageSubscription.getProcessInstanceKey());
+
+      stateWriter.appendFollowUpEvent(
+          record.getKey(), MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);
+      responseWriter.writeResponse(
+          record.getValue().getMessageKey(),
+          MessageCorrelationIntent.CORRELATED,
+          messageCorrelationRecord,
+          ValueType.MESSAGE_CORRELATION,
+          messageSubscription.getRequestId(),
+          messageSubscription.getRequestStreamId());
     }
   }
 

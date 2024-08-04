@@ -141,6 +141,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   // Used for randomizing election timeout
   private final Random random;
   private PersistedSnapshot currentSnapshot;
+  private final int snapshotChunkSize;
 
   private boolean ongoingTransition = false;
   // Keeps track of snapshot replication to notify new listeners about missed events
@@ -233,6 +234,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
             new RaftServiceMetrics(name),
             ContextualLoggerFactory.getLogger(
                 LogCompactor.class, LoggerContext.builder(getClass()).addValue(name).build()));
+
+    snapshotChunkSize = partitionConfig.getSnapshotChunkSize();
 
     this.partitionConfig = partitionConfig;
     cluster = new RaftClusterContext(localMemberId, this);
@@ -810,13 +813,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       log.error("Failed to close metastore", e);
     }
 
-    // Close the snapshot store.
-    try {
-      persistedSnapshotStore.close();
-    } catch (final Exception e) {
-      log.error("Failed to close snapshot store", e);
-    }
-
     // close thread contexts
     threadContext.close();
   }
@@ -1219,6 +1215,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       state = newState;
       stateChangeListeners.forEach(l -> l.accept(state));
     }
+  }
+
+  public int getSnapshotChunkSize() {
+    return snapshotChunkSize;
   }
 
   /** Raft server state. */

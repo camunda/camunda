@@ -18,12 +18,14 @@ import io.camunda.zeebe.engine.util.TestStreams;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.stream.impl.StreamProcessorBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.util.ArrayList;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.junit.rules.TemporaryFolder;
 
 /** Helper class which should help to make it easy to create an engine for tests. */
@@ -34,7 +36,10 @@ public final class TestEngine {
   private final int partitionCount;
 
   private TestEngine(
-      final int partitionId, final int partitionCount, final TestContext testContext) {
+      final int partitionId,
+      final int partitionCount,
+      final TestContext testContext,
+      final Consumer<StreamProcessorBuilder> processorConfiguration) {
     this.partitionCount = partitionCount;
 
     testStreams =
@@ -82,7 +87,9 @@ public final class TestEngine {
                             new ProcessingExporterTransistor(
                                 testStreams.getLogStream(
                                     StreamProcessingComposite.getLogName(partitionId)))),
-                Optional.empty()));
+                Optional.empty(),
+                processorConfiguration,
+                true));
     interPartitionCommandSenders.forEach(s -> s.initializeWriters(partitionCount));
   }
 
@@ -95,7 +102,7 @@ public final class TestEngine {
   }
 
   public static TestEngine createSinglePartitionEngine(final TestContext testContext) {
-    return new TestEngine(1, 1, testContext);
+    return new TestEngine(1, 1, testContext, cfg -> {});
   }
 
   public void reset() {

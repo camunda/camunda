@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -18,7 +18,6 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
@@ -32,26 +31,29 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   private static final int BLOCK_SIZE = 512 * 1024;
 
   private final Path directory;
-  private final ActorControl actor;
-  private final FileBasedSnapshotStore snapshotStore;
+  private final ConcurrencyControl actor;
+  private final FileBasedSnapshotStoreImpl snapshotStore;
 
   private final FileBasedSnapshotId snapshotId;
   private long expectedSnapshotChecksum;
   private int expectedTotalCount;
   private FileBasedSnapshotMetadata metadata;
+  private ByteBuffer metadataBuffer;
+  private long writtenMetadataBytes;
   private SfvChecksumImpl checksumCollection;
 
   FileBasedReceivedSnapshot(
       final FileBasedSnapshotId snapshotId,
       final Path directory,
-      final FileBasedSnapshotStore snapshotStore,
-      final ActorControl actor) {
+      final FileBasedSnapshotStoreImpl snapshotStore,
+      final ConcurrencyControl actor) {
     this.snapshotId = snapshotId;
     this.snapshotStore = snapshotStore;
     this.directory = directory;
     this.actor = actor;
     expectedSnapshotChecksum = Long.MIN_VALUE;
     expectedTotalCount = Integer.MIN_VALUE;
+    writtenMetadataBytes = 0;
   }
 
   @Override
@@ -68,15 +70,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
         });
   }
 
-  private boolean containsChunk(final String chunkId) {
-    return Files.exists(directory.resolve(chunkId));
-  }
-
   private void applyInternal(final SnapshotChunk snapshotChunk) throws SnapshotWriteException {
-    if (containsChunk(snapshotChunk.getChunkName())) {
-      return;
-    }
-
     checkSnapshotIdIsValid(snapshotChunk.getSnapshotId());
 
     final long currentSnapshotChecksum = snapshotChunk.getSnapshotChecksum();
@@ -107,11 +101,6 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     }
 
     final var snapshotFile = tmpSnapshotDirectory.resolve(chunkName);
-    if (Files.exists(snapshotFile)) {
-      throw new SnapshotWriteException(
-          String.format(
-              "Received a snapshot snapshotChunk which already exist '%s'.", snapshotFile));
-    }
 
     LOGGER.trace("Consume snapshot snapshotChunk {} of snapshot {}", chunkName, snapshotId);
     writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
@@ -122,17 +111,26 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     checksumCollection.updateFromBytes(
         snapshotFile.getFileName().toString(), snapshotChunk.getContent());
 
-    if (snapshotChunk.getChunkName().equals(FileBasedSnapshotStore.METADATA_FILE_NAME)) {
+    if (snapshotChunk.getChunkName().equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME)) {
       try {
-        collectMetadata(snapshotChunk.getContent());
+        collectMetadata(snapshotChunk);
       } catch (final IOException e) {
         throw new SnapshotWriteException("Cannot decode snapshot metadata");
       }
     }
   }
 
-  private void collectMetadata(final byte[] content) throws IOException {
-    metadata = FileBasedSnapshotMetadata.decode(content);
+  private void collectMetadata(final SnapshotChunk chunk) throws IOException {
+    if (metadataBuffer == null) {
+      metadataBuffer = ByteBuffer.allocate(Math.toIntExact(chunk.getTotalFileSize()));
+    }
+
+    metadataBuffer.put(Math.toIntExact(chunk.getFileBlockPosition()), chunk.getContent());
+    writtenMetadataBytes += chunk.getContent().length;
+
+    if (writtenMetadataBytes == chunk.getTotalFileSize()) {
+      metadata = FileBasedSnapshotMetadata.decode(metadataBuffer.array());
+    }
   }
 
   private void checkChunkChecksumIsValid(
@@ -194,17 +192,20 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
   private void writeReceivedSnapshotChunk(
       final SnapshotChunk snapshotChunk, final Path snapshotFile) throws SnapshotWriteException {
+
     try (final var channel =
-        FileChannel.open(snapshotFile, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+        FileChannel.open(snapshotFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
       final ByteBuffer buffer = ByteBuffer.wrap(snapshotChunk.getContent());
 
       while (buffer.hasRemaining()) {
         final int newLimit = Math.min(buffer.capacity(), buffer.position() + BLOCK_SIZE);
+        channel.position(snapshotChunk.getFileBlockPosition() + buffer.position());
         channel.write(buffer.limit(newLimit));
         buffer.limit(buffer.capacity());
       }
 
       channel.force(true);
+
     } catch (final IOException e) {
       throw new SnapshotWriteException(
           String.format("Failed to write snapshot chunk %s", snapshotChunk), e);
@@ -227,7 +228,11 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   @Override
   public ActorFuture<PersistedSnapshot> persist() {
     final CompletableActorFuture<PersistedSnapshot> future = new CompletableActorFuture<>();
-    actor.call(() -> persistInternal(future));
+    actor.call(
+        () -> {
+          persistInternal(future);
+          return null;
+        });
     return future;
   }
 
@@ -281,7 +286,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
         // backward compatibility
         metadata =
             new FileBasedSnapshotMetadata(
-                FileBasedSnapshotStore.VERSION,
+                FileBasedSnapshotStoreImpl.VERSION,
                 snapshotId.getProcessedPosition(),
                 snapshotId.getExportedPosition(),
                 Long.MAX_VALUE);
@@ -301,8 +306,6 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     return "FileBasedReceivedSnapshot{"
         + "directory="
         + directory
-        + ", snapshotStore="
-        + snapshotStore.getName()
         + ", metadata="
         + snapshotId
         + '}';

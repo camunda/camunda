@@ -38,18 +38,10 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
         && (shouldInstallOnTransition(targetRole, context.getCurrentRole())
             || targetRole == Role.INACTIVE)) {
       context.getComponentHealthMonitor().removeComponent(logStream.getLogName());
-      final ActorFuture<Void> future = logStream.closeAsync();
-      future.onComplete(
-          (ok, error) -> {
-            if (error == null) {
-              context.setLogStream(null);
-            }
-          });
-
-      return future;
-    } else {
-      return CompletableActorFuture.completed(null);
+      logStream.close();
+      context.setLogStream(null);
     }
+    return CompletableActorFuture.completed(null);
   }
 
   @Override
@@ -57,25 +49,10 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     if ((context.getLogStream() == null && targetRole != Role.INACTIVE)
         || shouldInstallOnTransition(targetRole, context.getCurrentRole())) {
-      final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
-
       final var logStorage = context.getLogStorage();
-      buildLogstream(context, logStorage)
-          .onComplete(
-              ((logStream, err) -> {
-                if (err == null) {
-                  context.setLogStream(logStream);
+      context.setLogStream(buildLogStream(context, logStorage));
 
-                  context
-                      .getComponentHealthMonitor()
-                      .registerComponent(logStream.getLogName(), logStream);
-                  openFuture.complete(null);
-                } else {
-                  openFuture.completeExceptionally(err);
-                }
-              }));
-
-      return openFuture;
+      return CompletableActorFuture.completed(null);
     } else {
       return CompletableActorFuture.completed(null);
     }
@@ -86,22 +63,23 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
     return "LogStream";
   }
 
-  private ActorFuture<LogStream> buildLogstream(
+  private LogStream buildLogStream(
       final PartitionTransitionContext context, final AtomixLogStorage atomixLogStorage) {
     final var flowControlCfg = context.getBrokerCfg().getFlowControl();
     return logStreamBuilderSupplier
         .get()
         .withLogStorage(atomixLogStorage)
-        .withLogName("logstream-" + context.getRaftPartition().name())
+        .withLogName("logStream-" + context.getRaftPartition().name())
         .withPartitionId(context.getPartitionId())
         .withMaxFragmentSize(context.getMaxFragmentSize())
         .withActorSchedulingService(context.getActorSchedulingService())
-        .withAppendLimit(flowControlCfg.getAppend().buildLimit())
         .withRequestLimit(
             flowControlCfg.getRequest() != null
                 ? flowControlCfg.getRequest().buildLimit()
                 : context.getBrokerCfg().getBackpressure().buildLimit())
-        .buildAsync();
+        .withWriteRateLimit(
+            flowControlCfg.getWrite() != null ? flowControlCfg.getWrite().buildLimit() : null)
+        .build();
   }
 
   private boolean shouldInstallOnTransition(final Role newRole, final Role currentRole) {

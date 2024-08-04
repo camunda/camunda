@@ -13,7 +13,8 @@ import {
   instanceWithIncident,
   mockResponses,
   runningInstance,
-} from '../mocks/processInstance.mocks';
+  compensationProcessInstance,
+} from '../mocks/processInstance';
 
 test.describe('process instance page', () => {
   for (const theme of ['light', 'dark']) {
@@ -197,6 +198,42 @@ test.describe('process instance page', () => {
           waitUntil: 'networkidle',
         },
       });
+
+      await expect(processInstancePage.executionCountToggleOn).toBeEnabled();
+      await processInstancePage.executionCountToggleOn.click({force: true});
+
+      await page.getByText(/show end date/i).click();
+
+      await expect(page).toHaveScreenshot();
+    });
+
+    test(`compensation process instance - ${theme}`, async ({
+      page,
+      commonPage,
+      processInstancePage,
+    }) => {
+      await commonPage.changeTheme(theme);
+
+      await page.route(
+        /^.*\/api.*$/i,
+        mockResponses({
+          processInstanceDetail: compensationProcessInstance.detail,
+          flowNodeInstances: compensationProcessInstance.flowNodeInstances,
+          statistics: compensationProcessInstance.statistics,
+          sequenceFlows: compensationProcessInstance.sequenceFlows,
+          variables: compensationProcessInstance.variables,
+          xml: compensationProcessInstance.xml,
+        }),
+      );
+
+      await processInstancePage.navigateToProcessInstance({
+        id: '1',
+        options: {
+          waitUntil: 'networkidle',
+        },
+      });
+
+      await processInstancePage.executionCountToggleOn.click({force: true});
 
       await page.getByText(/show end date/i).click();
 

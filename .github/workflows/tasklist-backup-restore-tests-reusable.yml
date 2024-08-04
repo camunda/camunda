@@ -21,12 +21,12 @@ jobs:
     steps:
       # Setup: checkout
       - name: Checkout repository
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
       # Setup: import secrets from vault
       - name: Import Secrets
         id: secrets # important to refer to it in later steps
-        uses: hashicorp/vault-action@148ee648ccb26f28892776406f3c3c4cf8ac033f
+        uses: hashicorp/vault-action@8b7eaceb79bd7be97b311993e7c1cc5d051213c7
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -73,18 +73,6 @@ jobs:
       - name: Run backup and restore tests
         run: |
           mvn -B -pl tasklist/qa/backup-restore-tests -DskipChecks -DtasklistDatabase=${{ inputs.database }} -P -docker,-skipTests verify
-
-      # Reports: publish test results
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2.16.1
-        if: always()
-        with:
-          check_name: "Tasklist BackupRestore test results with '${{ inputs.database }}'"
-          comment_mode: off
-          report_individual_runs: true
-          report_suite_logs: error
-          files: |
-            tasklist/**/target/surefire-reports/*.xml
 
       # Notify: send Slack notification on tests failure
       - name: Send Slack notification on failure

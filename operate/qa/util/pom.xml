@@ -135,6 +135,7 @@
         <configuration>
           <ignoredUsedUndeclaredDependencies>
             <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
+            <dependency>io.camunda:zeebe-client-java</dependency>
           </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>

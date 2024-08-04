@@ -7,10 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config;
 
-import io.atomix.cluster.ClusterMembershipService;
-import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
-import io.atomix.utils.Version;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.InitializerError.PersistedConfigurationIsBroken;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
@@ -21,7 +18,6 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -45,6 +41,11 @@ import org.slf4j.LoggerFactory;
  *     static configuration. See {@link StaticInitializer}.
  * <li>When the local configuration is empty, a non-coordinating member waits until it receives a
  *     valid configuration from the coordinator via gossip. See {@link GossipInitializer}.
+ * <li>After initialization, the configuration can be modified using {@link
+ *     ClusterConfigurationModifier}. Currently only {@link
+ *     io.camunda.zeebe.dynamic.config.ClusterConfigurationModifier.ExporterStateInitializer} is
+ *     available. It overwrites the local member's state to keep it in sync with the statically
+ *     configured exporters.
  */
 public interface ClusterConfigurationInitializer {
   Logger LOG = LoggerFactory.getLogger(ClusterConfigurationInitializer.class);
@@ -81,6 +82,35 @@ public interface ClusterConfigurationInitializer {
                   after.initialize().onComplete(chainedInitialize);
                 } else {
                   chainedInitialize.complete(configuration);
+                }
+              });
+      return chainedInitialize;
+    };
+  }
+
+  /**
+   * Chain a modifier that updates the configuration after it is initialized.
+   *
+   * @param modifier a modifier that updates the configuration
+   * @return the chained initializer
+   */
+  default ClusterConfigurationInitializer andThen(final ClusterConfigurationModifier modifier) {
+    final ClusterConfigurationInitializer actual = this;
+    return () -> {
+      final ActorFuture<ClusterConfiguration> chainedInitialize = new CompletableActorFuture<>();
+      actual
+          .initialize()
+          .onComplete(
+              (configuration, error) -> {
+                if (error != null) {
+                  LOG.error("Failed to initialize configuration", error);
+                  chainedInitialize.completeExceptionally(error);
+                } else if (configuration.isUninitialized()) {
+                  // Do not modify uninitialized configuration. ClusterConfigurationManager will
+                  // fail anyway when it sees an uninitialized configuration.
+                  chainedInitialize.complete(configuration);
+                } else {
+                  modifier.modify(configuration).onComplete(chainedInitialize);
                 }
               });
       return chainedInitialize;
@@ -326,112 +356,6 @@ public interface ClusterConfigurationInitializer {
       } catch (final Exception e) {
         return CompletableActorFuture.completedExceptionally(e);
       }
-    }
-  }
-
-  /** Initializer that allows rolling update from 8.3.x to 8.4.x */
-  class RollingUpdateAwareInitializerV83ToV84 implements ClusterConfigurationInitializer {
-    private static final Logger LOGGER =
-        LoggerFactory.getLogger(RollingUpdateAwareInitializerV83ToV84.class);
-    private static final Duration RETRY_DELAY = Duration.ofMillis(200);
-    private final ClusterMembershipService membershipService;
-    private final StaticInitializer staticInitializer;
-    private final int staticClusterSize;
-    private final ConcurrencyControl executor;
-    private final CompletableActorFuture<ClusterConfiguration> initializeFuture;
-
-    public RollingUpdateAwareInitializerV83ToV84(
-        final ClusterMembershipService membershipService,
-        final StaticConfiguration staticConfiguration,
-        final ConcurrencyControl executor) {
-      this.membershipService = membershipService;
-      staticInitializer = new StaticInitializer(staticConfiguration);
-      staticClusterSize = staticConfiguration.clusterMembers().size();
-      this.executor = executor;
-      initializeFuture = new CompletableActorFuture<>();
-    }
-
-    @Override
-    public ActorFuture<ClusterConfiguration> initialize() {
-      if (staticClusterSize == 1) {
-        // Cluster will be initialized via normal static initializer
-        initializeFuture.complete(ClusterConfiguration.uninitialized());
-        return initializeFuture;
-      }
-
-      final Version version = membershipService.getLocalMember().version();
-      if (isVersion84(version)) {
-        final boolean knowOtherMembers = hasOtherReachableBrokers(membershipService);
-        if (knowOtherMembers && isRollingUpdate(membershipService)) {
-          LOGGER.debug(
-              "Cluster is doing rolling update. Cannot initialize cluster configuration via gossip. Initializing cluster configuration from static configuration.");
-          staticInitializer.initialize().onComplete(initializeFuture);
-        } else if (!knowOtherMembers) {
-          LOGGER.debug(
-              "No other members are reachable. Cannot initialize configuration. Will retry in {}",
-              RETRY_DELAY);
-          executor.schedule(RETRY_DELAY, this::initialize);
-        } else {
-          // do not initialize. It is not rolling update so initialize via gossip or sync
-          LOGGER.trace(
-              "Cluster is not doing rolling update. Will not initialize cluster configuration.");
-          initializeFuture.complete(ClusterConfiguration.uninitialized());
-        }
-      } else {
-        LOGGER.trace(
-            "Cluster is not doing rolling update. Will not initialize cluster configuration.");
-        initializeFuture.complete(ClusterConfiguration.uninitialized());
-      }
-      return initializeFuture;
-    }
-
-    private boolean hasOtherReachableBrokers(final ClusterMembershipService membershipService) {
-      return membershipService.getMembers().stream()
-          .filter(this::isBroker)
-          .map(Member::id)
-          .anyMatch(memberId -> !memberId.equals(membershipService.getLocalMember().id()));
-    }
-
-    private boolean isRollingUpdate(final ClusterMembershipService membershipService) {
-      final List<Member> otherBrokers =
-          membershipService.getMembers().stream()
-              .filter(this::isBroker)
-              .filter(member -> !member.id().equals(membershipService.getLocalMember().id()))
-              .toList();
-      final var cannotDetermineVersionOfOtherMembers =
-          otherBrokers.stream().map(Member::version).noneMatch(Objects::nonNull);
-      if (cannotDetermineVersionOfOtherMembers) {
-        // This is mainly required for testing, where the DiscoveryMembershipProvider cannot
-        // determine version of remote members.
-        LOGGER.warn(
-            "Cannot determine version of remote members. Assuming this is not rolling update and skip initialization.");
-        return false;
-      }
-      return otherBrokers.stream().map(Member::version).anyMatch(this::isVersion83);
-    }
-
-    private boolean isBroker(final Member member) {
-      try {
-        // hacky way to determine if the other member is a broker
-        return Integer.parseInt(member.id().id()) >= 0;
-      } catch (final NumberFormatException e) {
-        return false;
-      }
-    }
-
-    private boolean isVersion84(final Version version) {
-      if (version == null) {
-        // This is mainly required for testing, where the DiscoveryMembershipProvider cannot
-        // determine version of remote members.
-        LOGGER.warn(
-            "Cannot determine version of local member. Assuming this is not rolling update and skip initialization.");
-        return false;
-      }
-      return version.major() == 8 && version.minor() == 4;
-    }
-
-    private boolean isVersion83(final Version version) {
-      return version.major() == 8 && version.minor() == 3;
     }
   }
 

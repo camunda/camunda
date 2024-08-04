@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.impl.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.utils.net.Address;
 import io.camunda.zeebe.test.util.TestConfigurationFactory;
 import io.camunda.zeebe.util.Environment;
 import java.io.File;
@@ -58,6 +59,14 @@ public final class GatewayCfgTest {
     CUSTOM_CFG.getInterceptors().get(1).setId("example2");
     CUSTOM_CFG.getInterceptors().get(1).setClassName("io.camunda.zeebe.example.Interceptor2");
     CUSTOM_CFG.getInterceptors().get(1).setJarPath("./interceptor2.jar");
+    CUSTOM_CFG.getFilters().add(new FilterCfg());
+    CUSTOM_CFG.getFilters().get(0).setId("filterExample");
+    CUSTOM_CFG.getFilters().get(0).setClassName("io.camunda.zeebe.example.Filter");
+    CUSTOM_CFG.getFilters().get(0).setJarPath("./filter.jar");
+    CUSTOM_CFG.getFilters().add(new FilterCfg());
+    CUSTOM_CFG.getFilters().get(1).setId("filterExample2");
+    CUSTOM_CFG.getFilters().get(1).setClassName("io.camunda.zeebe.example.Filter2");
+    CUSTOM_CFG.getFilters().get(1).setJarPath("./filter2.jar");
   }
 
   private final Map<String, String> environment = new HashMap<>();
@@ -141,6 +150,9 @@ public final class GatewayCfgTest {
     setEnv("zeebe.gateway.interceptors.0.id", "overwritten");
     setEnv("zeebe.gateway.interceptors.0.className", "Overwritten");
     setEnv("zeebe.gateway.interceptors.0.jarPath", "./overwritten.jar");
+    setEnv("zeebe.gateway.filters.0.id", "overwrittenFilter");
+    setEnv("zeebe.gateway.filters.0.className", "OverwrittenFilter");
+    setEnv("zeebe.gateway.filters.0.jarPath", "./overwrittenFilter.jar");
 
     final GatewayCfg expected = new GatewayCfg();
     expected
@@ -173,6 +185,11 @@ public final class GatewayCfgTest {
     expected.getInterceptors().get(0).setId("overwritten");
     expected.getInterceptors().get(0).setClassName("Overwritten");
     expected.getInterceptors().get(0).setJarPath("./overwritten.jar");
+
+    expected.getFilters().add(new FilterCfg());
+    expected.getFilters().get(0).setId("overwrittenFilter");
+    expected.getFilters().get(0).setClassName("OverwrittenFilter");
+    expected.getFilters().get(0).setJarPath("./overwrittenFilter.jar");
 
     // when
     final GatewayCfg gatewayCfg = readCustomConfig();
@@ -235,6 +252,22 @@ public final class GatewayCfgTest {
     final var expectedHost = "zeebe";
     final var expectedPort = "5432";
     setEnv("zeebe.gateway.cluster.host", expectedHost);
+    setEnv("zeebe.gateway.cluster.port", expectedPort);
+
+    // when
+    final GatewayCfg actual = readEmptyConfig();
+
+    // then
+    assertThat(actual.getCluster().getAdvertisedHost()).isEqualTo(expectedHost);
+    assertThat(actual.getCluster().getAdvertisedPort()).isEqualTo(Integer.parseInt(expectedPort));
+  }
+
+  @Test
+  public void shouldUseFirstNonLoopBackAdvertisedAddressIfNothingSet() {
+    // given
+    final var expectedHost = Address.defaultAdvertisedHost().getHostAddress();
+    final var expectedPort = "5432";
+    setEnv("zeebe.gateway.cluster.host", null);
     setEnv("zeebe.gateway.cluster.port", expectedPort);
 
     // when

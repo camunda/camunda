@@ -26,6 +26,11 @@ const CANCELED_BADGE = {
 };
 
 const COMPLETED_BADGE = {
+  top: -16,
+  right: 0,
+};
+
+const COMPLETED_END_EVENT_BADGE = {
   bottom: 1,
   left: 17,
 };
@@ -38,4 +43,5 @@ export {
   INCIDENTS_BADGE,
   CANCELED_BADGE,
   COMPLETED_BADGE,
+  COMPLETED_END_EVENT_BADGE,
 };

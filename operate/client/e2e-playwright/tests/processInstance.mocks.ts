@@ -6,13 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {deployProcess, createSingleInstance} from '../setup-utils';
+import {zeebeGrpcApi} from '../api/zeebe-grpc';
+
+const {deployProcesses, createSingleInstance} = zeebeGrpcApi;
 
 export async function setup() {
-  await deployProcess([
+  await deployProcesses([
     'processWithAnIncident.bpmn',
     'processWithMultiIncidents.bpmn',
     'collapsedSubprocess.bpmn',
+    'executionCountProcess.bpmn',
   ]);
 
   const instanceWithIncidentToCancel = await createSingleInstance(
@@ -31,9 +34,15 @@ export async function setup() {
     1,
   );
 
+  const executionCountProcessInstance = await createSingleInstance(
+    'executionCountProcess',
+    1,
+  );
+
   return {
     instanceWithIncidentToCancel,
     instanceWithIncidentToResolve,
     collapsedSubProcessInstance,
+    executionCountProcessInstance,
   };
 }

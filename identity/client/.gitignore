@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
+.yarn/install-state.gz
 
 # Editor directories and files
 .vscode/*

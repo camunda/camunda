@@ -26,7 +26,7 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
   @Autowired private IncidentReader incidentReader;
 
   @Override
-  public void handleWithException(OperationEntity operation) throws Exception {
+  public void handleWithException(final OperationEntity operation) throws Exception {
 
     if (operation.getIncidentKey() == null) {
       failOperation(operation, "Incident key must be defined.");
@@ -36,7 +36,7 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
     final IncidentEntity incident;
     try {
       incident = incidentReader.getIncidentById(operation.getIncidentKey());
-    } catch (NotFoundException ex) {
+    } catch (final NotFoundException ex) {
       failOperation(operation, "No appropriate incidents found: " + ex.getMessage());
       return;
     }

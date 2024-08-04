@@ -26,6 +26,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import org.agrona.concurrent.SnowflakeIdGenerator;
 
 public final class StubBroker implements AutoCloseable {
 
@@ -90,7 +91,9 @@ public final class StubBroker implements AutoCloseable {
     cluster.start().join();
 
     final var transportFactory = new TransportFactory(scheduler);
-    serverTransport = transportFactory.createServerTransport(nodeId, cluster.getMessagingService());
+    final var requestIdGenerator = new SnowflakeIdGenerator(nodeId);
+    serverTransport =
+        transportFactory.createServerTransport(cluster.getMessagingService(), requestIdGenerator);
 
     channelHandler = new StubRequestHandler(msgPackHelper);
     serverTransport.subscribe(partitionId, RequestType.COMMAND, channelHandler);

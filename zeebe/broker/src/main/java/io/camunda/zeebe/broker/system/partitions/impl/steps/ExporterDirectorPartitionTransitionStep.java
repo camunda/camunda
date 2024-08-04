@@ -122,7 +122,8 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .partitionMessagingService(context.getMessagingService())
             .descriptors(exporterDescriptors)
             .exporterMode(exporterMode)
-            .positionsToSkipFilter(exporterFilter);
+            .positionsToSkipFilter(exporterFilter)
+            .meterRegistry(context.getMeterRegistry());
 
     final ExporterDirector director =
         exporterDirectorBuilder.apply(exporterCtx, context.getExporterPhase());
@@ -195,7 +196,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
           config.metadataVersion(), config.initializedFrom().orElse(null));
     }
 
-    // TODO: This case won't happen after https://github.com/camunda/zeebe/issues/18296 and we
+    // TODO: This case won't happen after https://github.com/camunda/camunda/issues/18296 and we
     // handle the default behaviour for newly added exporters.
     return new ExporterInitializationInfo(0, null);
   }
@@ -203,11 +204,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
   private static boolean isEnabled(
       final Map<String, ExporterState> exporterConfig,
       final ExporterDescriptor exporterDescriptor) {
-    // TODO: If the exporter is not found in exporterConfig, it should be considered as disabled.
-    // But we can do that only after https://github.com/camunda/zeebe/issues/18296 is implemented.
-    // Until then, we assume if the exporter is not found in the config, it is considered as
-    // enabled. Note that this is a temporary workaround.
-    return !exporterConfig.containsKey(exporterDescriptor.getId())
-        || exporterConfig.get(exporterDescriptor.getId()).state() == State.ENABLED;
+    return exporterConfig.containsKey(exporterDescriptor.getId())
+        && exporterConfig.get(exporterDescriptor.getId()).state() == State.ENABLED;
   }
 }

@@ -22,11 +22,20 @@ const SORT_BY_FIELD: Record<
 };
 
 const getQueryVariables = (
-  filters: TaskFilters,
+  filters: Omit<
+    TaskFilters,
+    | 'assignee'
+    | 'pageSize'
+    | 'searchBefore'
+    | 'searchBeforeOrEqual'
+    | 'searchAfter'
+    | 'searchAfterOrEqual'
+  >,
   {
     assignee,
     pageSize,
     searchBefore,
+    searchBeforeOrEqual,
     searchAfter,
     searchAfterOrEqual,
   }: Pick<
@@ -34,6 +43,7 @@ const getQueryVariables = (
     | 'assignee'
     | 'pageSize'
     | 'searchBefore'
+    | 'searchBeforeOrEqual'
     | 'searchAfter'
     | 'searchAfterOrEqual'
   >,
@@ -48,6 +58,7 @@ const getQueryVariables = (
     ],
     pageSize,
     searchBefore,
+    searchBeforeOrEqual,
     searchAfter,
     searchAfterOrEqual,
   };
@@ -81,26 +92,20 @@ const getQueryVariables = (
         ...parsedFilters,
       };
     }
-    case 'custom': {
+    case 'all-open': {
+      return {
+        ...BASE_QUERY_VARIABLES,
+        state: 'CREATED',
+        ...parsedFilters,
+      };
+    }
+    case 'custom':
+    default: {
       return {
         ...BASE_QUERY_VARIABLES,
         ...parsedFilters,
         taskVariables,
       };
-    }
-    case 'all-open':
-    default: {
-      return taskVariables === undefined
-        ? {
-            ...BASE_QUERY_VARIABLES,
-            state: 'CREATED',
-            ...parsedFilters,
-          }
-        : {
-            ...BASE_QUERY_VARIABLES,
-            ...parsedFilters,
-            taskVariables,
-          };
     }
   }
 };

@@ -9,6 +9,7 @@ package io.camunda.zeebe.shared;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import io.camunda.application.commons.actor.ActorClockConfiguration;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import org.junit.jupiter.api.Test;
 

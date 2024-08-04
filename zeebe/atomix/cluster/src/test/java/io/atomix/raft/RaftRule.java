@@ -376,7 +376,8 @@ public final class RaftRule extends ExternalResource {
     final var snapshotStore = getSnapshotStore(memberId.id());
 
     return Optional.of(
-        InMemorySnapshot.newPersistedSnapshot(index, raftContext.getTerm(), size, snapshotStore));
+        InMemorySnapshot.newPersistedSnapshot(
+            Integer.parseInt(memberId.id()), index, raftContext.getTerm(), size, snapshotStore));
   }
 
   private TestSnapshotStore getSnapshotStore(final String memberId) {

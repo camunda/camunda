@@ -13,11 +13,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.zeebe.PartitionHolder;
 import io.camunda.tasklist.zeebeimport.ImportPositionHolder;
+import io.camunda.webapps.zeebe.StandalonePartitionSupplier;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -39,7 +41,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.test.util.ReflectionTestUtils;
 
 public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIntegrationTest {
-  public static final Boolean IS_ELASTIC = !TasklistPropertiesUtil.isOpenSearchDatabase();
+  public static final Boolean IS_ELASTIC = TestUtil.isElasticSearch();
 
   @Autowired public BeanFactory beanFactory;
 
@@ -63,6 +65,7 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
   @Autowired protected ImportPositionHolder importPositionHolder;
   @Autowired protected TasklistProperties tasklistProperties;
   protected TasklistTester tester;
+  @Autowired private StandalonePartitionSupplier partitionSupplier;
   @Autowired private ProcessCache processCache;
   @Autowired private TaskService taskService;
   @Autowired private ProcessService processService;
@@ -71,7 +74,7 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
 
   @Autowired private ObjectMapper objectMapper;
 
-  private HttpClient httpClient = HttpClient.newHttpClient();
+  private final HttpClient httpClient = HttpClient.newHttpClient();
 
   @Override
   @BeforeEach
@@ -90,7 +93,7 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
     importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
     importPositionHolder.clearCache();
     importPositionHolder.scheduleImportPositionUpdateTask();
-    ReflectionTestUtils.setField(partitionHolder, "zeebeClient", getClient());
+    ReflectionTestUtils.setField(partitionSupplier, "zeebeClient", getClient());
     ReflectionTestUtils.setField(taskService, "zeebeClient", getClient());
     ReflectionTestUtils.setField(processService, "zeebeClient", getClient());
   }
@@ -111,7 +114,7 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
   }
 
   protected void clearMetrics() {
-    for (Meter meter : meterRegistry.getMeters()) {
+    for (final Meter meter : meterRegistry.getMeters()) {
       meterRegistry.remove(meter);
     }
   }
@@ -120,24 +123,24 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
     return pinZeebeTime(Instant.now());
   }
 
-  protected Instant pinZeebeTime(Instant pinAt) {
+  protected Instant pinZeebeTime(final Instant pinAt) {
     final var pinRequest = new ZeebeClockActuatorPinRequest(pinAt.toEpochMilli());
     try {
       final var body =
           HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(pinRequest));
       return zeebeRequest("POST", "actuator/clock/pin", body);
-    } catch (IOException | InterruptedException e) {
+    } catch (final IOException | InterruptedException e) {
       throw new IllegalStateException("Could not pin zeebe clock", e);
     }
   }
 
-  protected Instant offsetZeebeTime(Duration offsetBy) {
+  protected Instant offsetZeebeTime(final Duration offsetBy) {
     final var offsetRequest = new ZeebeClockActuatorOffsetRequest(offsetBy.toMillis());
     try {
       final var body =
           HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(offsetRequest));
       return zeebeRequest("POST", "actuator/clock/pin", body);
-    } catch (IOException | InterruptedException e) {
+    } catch (final IOException | InterruptedException e) {
       throw new IllegalStateException("Could not offset zeebe clock", e);
     }
   }
@@ -145,13 +148,13 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
   protected Instant resetZeebeTime() {
     try {
       return zeebeRequest("DELETE", "actuator/clock", HttpRequest.BodyPublishers.noBody());
-    } catch (IOException | InterruptedException e) {
+    } catch (final IOException | InterruptedException e) {
       throw new IllegalStateException("Could not reset zeebe clock", e);
     }
   }
 
   private Instant zeebeRequest(
-      String method, String endpoint, HttpRequest.BodyPublisher bodyPublisher)
+      final String method, final String endpoint, final HttpRequest.BodyPublisher bodyPublisher)
       throws IOException, InterruptedException {
     final var fullEndpoint =
         URI.create(
@@ -174,7 +177,7 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
   private static final class ZeebeClockActuatorPinRequest {
     @JsonProperty long epochMilli;
 
-    ZeebeClockActuatorPinRequest(long epochMilli) {
+    ZeebeClockActuatorPinRequest(final long epochMilli) {
       this.epochMilli = epochMilli;
     }
   }
@@ -182,8 +185,8 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
   private static final class ZeebeClockActuatorOffsetRequest {
     @JsonProperty long epochMilli;
 
-    public ZeebeClockActuatorOffsetRequest(long offsetMilli) {
-      this.epochMilli = offsetMilli;
+    public ZeebeClockActuatorOffsetRequest(final long offsetMilli) {
+      epochMilli = offsetMilli;
     }
   }
 

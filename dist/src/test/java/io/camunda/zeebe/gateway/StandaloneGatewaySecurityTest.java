@@ -10,16 +10,21 @@ package io.camunda.zeebe.gateway;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.application.commons.actor.ActorClockConfiguration;
+import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
+import io.camunda.application.commons.actor.ActorSchedulerConfiguration;
+import io.camunda.application.commons.broker.client.BrokerClientConfiguration;
+import io.camunda.application.commons.clustering.AtomixClusterConfiguration;
+import io.camunda.application.commons.clustering.DynamicClusterServices;
+import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
+import io.camunda.application.commons.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.GatewayConfiguration.GatewayProperties;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.shared.ActorClockConfiguration;
-import io.camunda.zeebe.shared.IdleStrategyConfig.IdleStrategySupplier;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
@@ -117,10 +122,10 @@ final class StandaloneGatewaySecurityTest {
             "Expected a certificate chain in order to enable inter-cluster communication security, but none given");
   }
 
-  private GatewayProperties createGatewayCfg() {
+  private GatewayBasedProperties createGatewayCfg() {
     final var gatewayAddress = SocketUtil.getNextAddress();
     final var clusterAddress = SocketUtil.getNextAddress();
-    final var config = new GatewayProperties();
+    final var config = new GatewayBasedProperties();
     config.setNetwork(
         new NetworkCfg().setHost(gatewayAddress.getHostName()).setPort(gatewayAddress.getPort()));
     config.setCluster(
@@ -135,25 +140,31 @@ final class StandaloneGatewaySecurityTest {
     return config;
   }
 
-  private GatewayModuleConfiguration buildGateway(final GatewayProperties gatewayCfg) {
-    final var config = new GatewayConfiguration(gatewayCfg, new LifecycleProperties());
-    final var clusterConfig = new GatewayClusterConfiguration();
-    atomixCluster =
-        new GatewayClusterConfiguration().atomixCluster(clusterConfig.clusterConfig(config));
-    final ActorSchedulerConfiguration actorSchedulerConfiguration =
-        new ActorSchedulerConfiguration(gatewayCfg, new ActorClockConfiguration(false));
-    actorScheduler = actorSchedulerConfiguration.actorScheduler(IdleStrategySupplier.ofDefault());
-    final var topologyServices = new DynamicClusterServices(actorScheduler, atomixCluster);
-    final var clusterTopologyService = topologyServices.gatewayClusterTopologyService();
-    final var topologyManager = topologyServices.brokerTopologyManager(clusterTopologyService);
+  private GatewayModuleConfiguration buildGateway(final GatewayBasedProperties gatewayCfg) {
+    final var gatewayConfig = new GatewayBasedConfiguration(gatewayCfg, new LifecycleProperties());
+    final var schedulerConfig = gatewayConfig.schedulerConfiguration();
+    final var brokerClientConfig = gatewayConfig.brokerClientConfig();
 
-    final BrokerClientComponent brokerClientComponent =
-        new BrokerClientComponent(config, atomixCluster, actorScheduler, topologyManager);
-    brokerClient = brokerClientComponent.brokerClient();
+    final var clusterConfig = gatewayConfig.clusterConfig();
+    final var clusterConfiguration = new AtomixClusterConfiguration(clusterConfig);
+    atomixCluster = clusterConfiguration.atomixCluster();
+    final ActorSchedulerConfiguration actorSchedulerConfiguration =
+        new ActorSchedulerConfiguration(
+            schedulerConfig, IdleStrategySupplier.ofDefault(), new ActorClockConfiguration(false));
+
+    actorScheduler = actorSchedulerConfiguration.scheduler();
+    final var topologyServices = new DynamicClusterServices(actorScheduler, atomixCluster);
+    final var topologyManager = topologyServices.brokerTopologyManager();
+    topologyServices.gatewayClusterTopologyService(topologyManager);
+
+    final var brokerClientConfiguration =
+        new BrokerClientConfiguration(
+            brokerClientConfig, atomixCluster, actorScheduler, topologyManager);
+    brokerClient = brokerClientConfiguration.brokerClient();
     jobStreamClient = new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
 
     return new GatewayModuleConfiguration(
-        config,
+        gatewayConfig,
         null, // identity is disabled by default
         new SpringGatewayBridge(),
         actorScheduler,

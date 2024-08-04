@@ -7,6 +7,7 @@
  */
 package io.camunda.application;
 
+import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
@@ -21,7 +22,7 @@ public class StandaloneGateway {
 
     final var standaloneGatewayApplication =
         MainSupport.createDefaultApplicationBuilder()
-            .sources(GatewayModuleConfiguration.class)
+            .sources(CommonsModuleConfiguration.class, GatewayModuleConfiguration.class)
             .profiles(Profile.GATEWAY.getId(), Profile.STANDALONE.getId())
             .initializers(new HealthConfigurationInitializer())
             .build(args);

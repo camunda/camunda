@@ -96,6 +96,23 @@ public final class NumberOfTakenSequenceFlowsStateTest {
   }
 
   @Test
+  public void shouldReturnTakenSequenceFlows() {
+    // given
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, OTHER_SEQUENCE_FLOW_ELEMENT_ID);
+
+    // then
+    final var takenSequenceFlows =
+        elementInstanceState.getTakenSequenceFlows(FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID);
+    assertThat(takenSequenceFlows)
+        .containsExactlyInAnyOrder(SEQUENCE_FLOW_ELEMENT_ID, OTHER_SEQUENCE_FLOW_ELEMENT_ID);
+  }
+
+  @Test
   public void shouldDecrementNumbers() {
     // given
     elementInstanceState.incrementNumberOfTakenSequenceFlows(

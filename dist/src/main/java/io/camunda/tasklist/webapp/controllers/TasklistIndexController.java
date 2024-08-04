@@ -7,6 +7,8 @@
  */
 package io.camunda.tasklist.webapp.controllers;
 
+import static io.camunda.webapps.controllers.WebappsRequestForwardManager.getRequestedUrl;
+
 import io.camunda.webapps.controllers.WebappsRequestForwardManager;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,5 +34,14 @@ public class TasklistIndexController {
   @RequestMapping(value = {"/tasklist/{regex:[\\w-]+}", "/tasklist/**/{regex:[\\w-]+}"})
   public String forwardToTasklist(final HttpServletRequest request) {
     return webappsRequestForwardManager.forward(request, "tasklist");
+  }
+
+  /**
+   * Redirects the old frontend routes to the /tasklist sub-path. This can be removed after the
+   * creation of the auto-discovery service.
+   */
+  @GetMapping({"/{regex:[\\d]+}", "/processes/*/start"})
+  public String redirectOldRoutes(final HttpServletRequest request) {
+    return "redirect:/tasklist" + getRequestedUrl(request);
   }
 }

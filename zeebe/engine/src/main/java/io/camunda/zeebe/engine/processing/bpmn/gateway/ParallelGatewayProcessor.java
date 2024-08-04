@@ -34,7 +34,7 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
   }
 
   @Override
-  public Either<Failure, ?> onActivate(
+  public Either<Failure, ?> finalizeActivation(
       final ExecutableFlowNode element, final BpmnElementContext context) {
     // the joining of the incoming sequence flows into the parallel gateway happens in the
     // sequence flow processor. The activating event of the parallel gateway is written when all
@@ -52,7 +52,7 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
   }
 
   @Override
-  public Either<Failure, ?> onComplete(
+  public Either<Failure, ?> finalizeCompletion(
       final ExecutableFlowNode element, final BpmnElementContext context) {
     throw new UnsupportedOperationException(
         String.format(

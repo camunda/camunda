@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -45,6 +46,7 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
@@ -179,6 +181,16 @@ public final class RecordingExporter implements Exporter {
   public static MessageStartEventSubscriptionRecordStream messageStartEventSubscriptionRecords(
       final MessageStartEventSubscriptionIntent intent) {
     return messageStartEventSubscriptionRecords().withIntent(intent);
+  }
+
+  public static MessageCorrelationRecordStream messageCorrelationRecords() {
+    return new MessageCorrelationRecordStream(
+        records(ValueType.MESSAGE_CORRELATION, MessageCorrelationRecordValue.class));
+  }
+
+  public static MessageCorrelationRecordStream messageCorrelationRecords(
+      final MessageCorrelationIntent intent) {
+    return messageCorrelationRecords().withIntent(intent);
   }
 
   public static DeploymentRecordStream deploymentRecords() {

@@ -43,7 +43,7 @@ public final class LogStreamTest {
 
     // then
     assertThat(logStream.getPartitionId()).isEqualTo(PARTITION_ID);
-    assertThat(logStream.getLogName()).isEqualTo("0");
+    assertThat(logStream.getLogName()).isEqualTo("logStream-0");
 
     assertThat(logStream.newLogStreamReader()).isNotNull();
     assertThat(logStream.newLogStreamWriter()).isNotNull();
@@ -57,7 +57,7 @@ public final class LogStreamTest {
     logStream.close();
 
     // then
-    assertThatThrownBy(() -> logStream.newLogStreamWriter()).hasMessage("Actor is closed");
+    assertThatThrownBy(() -> logStream.newLogStreamWriter()).hasMessage("logStream-0 is closed");
   }
 
   @Test

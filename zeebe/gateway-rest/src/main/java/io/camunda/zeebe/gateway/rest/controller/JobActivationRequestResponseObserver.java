@@ -47,7 +47,8 @@ public class JobActivationRequestResponseObserver
   public void onError(final Throwable throwable) {
     result.complete(
         RestErrorMapper.mapProblemToResponse(
-            RestErrorMapper.mapErrorToProblem(throwable, JobController::mapRejectionToProblem)));
+            RestErrorMapper.mapErrorToProblem(
+                throwable, RestErrorMapper.DEFAULT_REJECTION_MAPPER)));
   }
 
   public void setCancelationHandler(final Runnable handler) {

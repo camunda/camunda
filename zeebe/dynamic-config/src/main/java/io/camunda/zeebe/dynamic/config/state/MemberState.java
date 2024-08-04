@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableMap;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.UnaryOperator;
 
 /**
@@ -119,6 +120,13 @@ public record MemberState(
     }
 
     if (version == other.version && !equals(other)) {
+      // This is special logic to handle rolling update to 8.6 where we introduced DynamicConfig for
+      // partitions. This can be removed after 8.6 release
+      if (isDynamicConfigMismatchDueToUpgrade86(partitions, other.partitions())) {
+        return mergeUpgradeToV86(other);
+      }
+
+      // If the state is not equal because of other reasons, then it is a conflict
       throw new IllegalStateException(
           String.format(
               "Expected to find same MemberState at same version, but found %s and %s",
@@ -131,6 +139,62 @@ public record MemberState(
     } else {
       return other;
     }
+  }
+
+  /**
+   * Special logic to merge a MemberState from v8.5 with a member state from 8.6. During rolling
+   * update from 8.5 to 8.6, brokers at 8.5 would have received updated from 8.6 with an updated
+   * dynamic partition config. Since brokers at 8.5 cannot read those, it will update only the
+   * version of the member state. When this broker later update to 8.6, it reads the locally
+   * persisted MemberState with an uninitialized partition config. When it again receives an update
+   * from the previous broker, this merge logic ensures that the local uninitialized partition
+   * config will be updated to the valid one received from the other broker. This also ensures that
+   * the local valid config is not overwritten by the uninitialized one received from another
+   * broker.
+   */
+  private MemberState mergeUpgradeToV86(final MemberState other) {
+    final Map<Integer, PartitionState> updatedPartitions =
+        partitions.entrySet().stream()
+            .map(
+                entry -> {
+                  final Integer partitionId = entry.getKey();
+                  final PartitionState partitionState = entry.getValue();
+                  final var otherPartitionState = other.partitions().get(partitionId);
+                  if (!partitionState.config().isInitialized()) {
+                    return Map.entry(
+                        partitionId, partitionState.updateConfig(otherPartitionState.config()));
+                  } else {
+                    return Map.entry(partitionId, partitionState);
+                  }
+                })
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+
+    return new MemberState(version, lastUpdated, state, updatedPartitions);
+  }
+
+  // returns true if the only mismatch is in the dynamic partition config. One would be
+  // uninitialized, and the other would have a valid value.
+  private boolean isDynamicConfigMismatchDueToUpgrade86(
+      final Map<Integer, PartitionState> partitions, final Map<Integer, PartitionState> other) {
+    for (final Entry<Integer, PartitionState> entry : partitions.entrySet()) {
+      final Integer partitionId = entry.getKey();
+      final PartitionState partitionState = entry.getValue();
+      final var otherPartitionState = other.get(partitionId);
+      if (otherPartitionState == null) {
+        return false;
+      }
+      if (otherPartitionState.state() != partitionState.state()) {
+        return false;
+      }
+      if (otherPartitionState.priority() != partitionState.priority()) {
+        return false;
+      }
+      if (partitionState.config().isInitialized() && otherPartitionState.config().isInitialized()) {
+        // The partition config is not uninitialized. So there is an actual inconsistency.
+        return false;
+      }
+    }
+    return partitions.size() == other.size();
   }
 
   private MemberState internalUpdatePartition(

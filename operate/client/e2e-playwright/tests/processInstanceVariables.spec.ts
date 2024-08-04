@@ -85,13 +85,14 @@ test.describe('Process Instance Variables', () => {
     page,
     processInstancePage,
     processesPage,
+    processesPage: {filtersPanel},
   }) => {
     test.slow();
 
     const processInstanceKey = initialData.instance.processInstanceKey;
     processInstancePage.navigateToProcessInstance({id: processInstanceKey});
 
-    expect(processInstancePage.addVariableButton).toBeEnabled();
+    await expect(processInstancePage.addVariableButton).toBeEnabled();
 
     // add a new variable
     await processInstancePage.addVariableButton.click();
@@ -116,12 +117,12 @@ test.describe('Process Instance Variables', () => {
     // go to instance page, filter and find the instance by added variable
     await page.getByRole('link', {name: /processes/i}).click();
 
-    await processesPage.displayOptionalFilter('Process Instance Key(s)');
-    await processesPage.displayOptionalFilter('Variable');
+    await filtersPanel.displayOptionalFilter('Process Instance Key(s)');
+    await filtersPanel.displayOptionalFilter('Variable');
 
-    await processesPage.variableNameFilter.type('secondTestKey');
-    await processesPage.variableValueFilter.type('"secondTestValue"');
-    await processesPage.processInstanceKeysFilter.type(processInstanceKey);
+    await filtersPanel.variableNameFilter.type('secondTestKey');
+    await filtersPanel.variableValueFilter.type('"secondTestValue"');
+    await filtersPanel.processInstanceKeysFilter.type(processInstanceKey);
 
     await expect(page.getByText('1 result')).toBeVisible();
 

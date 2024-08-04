@@ -13,6 +13,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.security.tenant.TasklistTenant;
 import io.camunda.tasklist.webapp.security.tenant.TenantAwareAuthentication;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
+import io.camunda.tasklist.webapp.security.tenant.TenantServiceImpl;
 import java.util.ArrayList;
 import java.util.List;
 import org.assertj.core.api.Assertions;
@@ -29,7 +30,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 public class TenantServiceTest {
 
   @Spy private TasklistProperties tasklistProperties;
-  @InjectMocks private TenantService instance;
+  @InjectMocks private TenantServiceImpl instance;
 
   @Test
   void getAuthenticatedTenantsWhenMultiTenancyIsOff() {

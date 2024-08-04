@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.deployment.transform;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
-import static java.util.function.Predicate.not;
 
 import io.camunda.zeebe.dmn.DecisionEngine;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
@@ -20,7 +19,6 @@ import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
@@ -49,13 +47,13 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
 
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
-  private final Function<DeploymentResource, DirectBuffer> checksumGenerator;
+  private final Function<byte[], DirectBuffer> checksumGenerator;
   private final DecisionState decisionState;
 
   public DmnResourceTransformer(
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
-      final Function<DeploymentResource, DirectBuffer> checksumGenerator,
+      final Function<byte[], DirectBuffer> checksumGenerator,
       final DecisionState decisionState) {
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
@@ -64,7 +62,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
   }
 
   @Override
-  public Either<Failure, Void> transformResource(
+  public Either<Failure, Void> createMetadata(
       final DeploymentResource resource, final DeploymentRecord deployment) {
 
     final var dmnResource = new ByteArrayInputStream(resource.getResource());
@@ -74,8 +72,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
       return checkForDuplicateIds(resource, parsedDrg, deployment)
           .map(
               noDuplicates -> {
-                final var drgKey = appendMetadataToDeploymentEvent(resource, parsedDrg, deployment);
-                writeRecords(deployment, resource, drgKey);
+                appendMetadataToDeploymentEvent(resource, parsedDrg, deployment);
                 return null;
               });
 
@@ -84,6 +81,75 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
           String.format("'%s': %s", resource.getResourceName(), parsedDrg.getFailureMessage());
       return Either.left(new Failure(failure));
     }
+  }
+
+  @Override
+  public Either<Failure, Void> writeRecords(
+      final DeploymentResource resource, final DeploymentRecord deployment) {
+    if (deployment.hasDuplicatesOnly()) {
+      return Either.right(null);
+    }
+    final var checksum = checksumGenerator.apply(resource.getResource());
+    deployment.decisionRequirementsMetadata().stream()
+        .filter(drg -> checksum.equals(drg.getChecksumBuffer()))
+        .findFirst()
+        .ifPresent(
+            drg -> {
+              var drgKey = drg.getDecisionRequirementsKey();
+              if (drg.isDuplicate()) {
+                // create new version as the deployment contains at least one other non-duplicate
+                // resource and all resources in a deployment should be versioned together
+                drgKey = keyGenerator.nextKey();
+                drg.setDecisionRequirementsKey(drgKey)
+                    .setDecisionRequirementsVersion(drg.getDecisionRequirementsVersion() + 1)
+                    .setDuplicate(false);
+              }
+              stateWriter.appendFollowUpEvent(
+                  drgKey,
+                  DecisionRequirementsIntent.CREATED,
+                  new DecisionRequirementsRecord()
+                      .setDecisionRequirementsKey(drgKey)
+                      .setDecisionRequirementsId(drg.getDecisionRequirementsId())
+                      .setDecisionRequirementsName(drg.getDecisionRequirementsName())
+                      .setDecisionRequirementsVersion(drg.getDecisionRequirementsVersion())
+                      .setNamespace(drg.getNamespace())
+                      .setResourceName(drg.getResourceName())
+                      .setChecksum(drg.getChecksumBuffer())
+                      .setResource(resource.getResourceBuffer())
+                      .setTenantId(drg.getTenantId()));
+
+              deployment.decisionsMetadata().stream()
+                  .filter(
+                      decision ->
+                          decision
+                              .getDecisionRequirementsId()
+                              .equals(drg.getDecisionRequirementsId()))
+                  .forEach(
+                      decision -> {
+                        var decisionKey = decision.getDecisionKey();
+                        if (decision.isDuplicate()) {
+                          decisionKey = keyGenerator.nextKey();
+                          decision
+                              .setDecisionKey(decisionKey)
+                              .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+                              .setVersion(decision.getVersion() + 1)
+                              .setDuplicate(false);
+                        }
+                        stateWriter.appendFollowUpEvent(
+                            decisionKey,
+                            DecisionIntent.CREATED,
+                            new DecisionRecord()
+                                .setDecisionKey(decisionKey)
+                                .setDecisionId(decision.getDecisionId())
+                                .setDecisionName(decision.getDecisionName())
+                                .setVersion(decision.getVersion())
+                                .setDecisionRequirementsId(decision.getDecisionRequirementsId())
+                                .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
+                                .setTenantId(decision.getTenantId())
+                                .setDeploymentKey(decision.getDeploymentKey()));
+                      });
+            });
+    return Either.right(null);
   }
 
   private Either<Failure, ?> checkForDuplicateIds(
@@ -155,13 +221,13 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
         .orElse("<?>");
   }
 
-  private long appendMetadataToDeploymentEvent(
+  private void appendMetadataToDeploymentEvent(
       final DeploymentResource resource,
       final ParsedDecisionRequirementsGraph parsedDrg,
       final DeploymentRecord deploymentEvent) {
 
     final LongSupplier newDecisionRequirementsKey = keyGenerator::nextKey;
-    final DirectBuffer checksum = checksumGenerator.apply(resource);
+    final DirectBuffer checksum = checksumGenerator.apply(resource.getResource());
     final var drgRecord = deploymentEvent.decisionRequirementsMetadata().add();
 
     drgRecord
@@ -187,7 +253,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                 drgRecord
                     .setDecisionRequirementsKey(latestDrg.getDecisionRequirementsKey())
                     .setDecisionRequirementsVersion(latestVersion)
-                    .markAsDuplicate();
+                    .setDuplicate(true);
               } else {
                 drgRecord
                     .setDecisionRequirementsKey(newDecisionRequirementsKey.getAsLong())
@@ -211,7 +277,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                   .setDecisionName(decision.getName())
                   .setDecisionRequirementsId(parsedDrg.getId())
                   .setDecisionRequirementsKey(drgRecord.getDecisionRequirementsKey())
-                  .setTenantId(drgRecord.getTenantId());
+                  .setTenantId(drgRecord.getTenantId())
+                  .setDeploymentKey(deploymentEvent.getDeploymentKey());
 
               decisionState
                   .findLatestDecisionByIdAndTenant(
@@ -226,7 +293,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                           decisionRecord
                               .setDecisionKey(latestDecision.getDecisionKey())
                               .setVersion(latestVersion)
-                              .markAsDuplicate();
+                              .setDuplicate(true);
                         } else {
                           decisionRecord
                               .setDecisionKey(newDecisionKey.getAsLong())
@@ -238,8 +305,6 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                               .setDecisionKey(newDecisionKey.getAsLong())
                               .setVersion(INITIAL_VERSION));
             });
-
-    return drgRecord.getDecisionRequirementsKey();
   }
 
   private boolean hasSameResourceNameAs(final DeploymentResource resource, final DeployedDrg drg) {
@@ -262,48 +327,5 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                     .map(PersistedDecision::getDecisionRequirementsKey)
                     .orElse(UNKNOWN_DECISION_REQUIREMENTS_KEY))
         .allMatch(drgKey -> drgKey == drg.getDecisionRequirementsKey());
-  }
-
-  private void writeRecords(
-      final DeploymentRecord deployment,
-      final DeploymentResource resource,
-      final long decisionRequirementsKey) {
-
-    deployment.decisionRequirementsMetadata().stream()
-        .filter(drg -> drg.getDecisionRequirementsKey() == decisionRequirementsKey)
-        .filter(not(DecisionRequirementsMetadataRecord::isDuplicate))
-        .findFirst()
-        .ifPresent(
-            drg ->
-                stateWriter.appendFollowUpEvent(
-                    drg.getDecisionRequirementsKey(),
-                    DecisionRequirementsIntent.CREATED,
-                    new DecisionRequirementsRecord()
-                        .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
-                        .setDecisionRequirementsId(drg.getDecisionRequirementsId())
-                        .setDecisionRequirementsName(drg.getDecisionRequirementsName())
-                        .setDecisionRequirementsVersion(drg.getDecisionRequirementsVersion())
-                        .setNamespace(drg.getNamespace())
-                        .setResourceName(drg.getResourceName())
-                        .setChecksum(drg.getChecksumBuffer())
-                        .setResource(resource.getResourceBuffer())
-                        .setTenantId(drg.getTenantId())));
-
-    deployment.decisionsMetadata().stream()
-        .filter(decision -> decision.getDecisionRequirementsKey() == decisionRequirementsKey)
-        .filter(not(DecisionRecord::isDuplicate))
-        .forEach(
-            decision ->
-                stateWriter.appendFollowUpEvent(
-                    decision.getDecisionKey(),
-                    DecisionIntent.CREATED,
-                    new DecisionRecord()
-                        .setDecisionKey(decision.getDecisionKey())
-                        .setDecisionId(decision.getDecisionId())
-                        .setDecisionName(decision.getDecisionName())
-                        .setVersion(decision.getVersion())
-                        .setDecisionRequirementsId(decision.getDecisionRequirementsId())
-                        .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
-                        .setTenantId(decision.getTenantId())));
   }
 }

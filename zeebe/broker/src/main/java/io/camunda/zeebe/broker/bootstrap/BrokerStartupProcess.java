@@ -55,6 +55,7 @@ public final class BrokerStartupProcess {
     result.add(new MonitoringServerStep());
 
     result.add(new ApiMessagingServiceStep());
+    result.add(new RequestIdGeneratorStep());
     result.add(new GatewayBrokerTransportStep());
     result.add(new CommandApiServiceStep());
 

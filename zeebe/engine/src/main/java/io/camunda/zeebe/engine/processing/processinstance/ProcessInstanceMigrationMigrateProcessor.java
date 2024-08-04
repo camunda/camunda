@@ -15,12 +15,15 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
@@ -31,14 +34,22 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
+import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
@@ -48,6 +59,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -63,6 +75,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final VariableRecord variableRecord = new VariableRecord().setValue(NIL_VALUE);
 
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
@@ -74,12 +87,20 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final EventScopeInstanceState eventScopeInstanceState;
   private final ProcessMessageSubscriptionState processMessageSubscriptionState;
   private final CatchEventBehavior catchEventBehavior;
+  private final CommandDistributionBehavior commandDistributionBehavior;
+  private final DistributionState distributionState;
+  private final int currentPartitionId;
+  private final int partitionsCount;
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers,
       final ProcessingState processingState,
-      final BpmnBehaviors bpmnBehaviors) {
+      final BpmnBehaviors bpmnBehaviors,
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final int partitionId,
+      final int partitionsCount) {
     stateWriter = writers.state();
+    commandWriter = writers.command();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     elementInstanceState = processingState.getElementInstanceState();
@@ -90,7 +111,11 @@ public class ProcessInstanceMigrationMigrateProcessor
     incidentState = processingState.getIncidentState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     processMessageSubscriptionState = processingState.getProcessMessageSubscriptionState();
+    distributionState = processingState.getDistributionState();
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
+    this.commandDistributionBehavior = commandDistributionBehavior;
+    currentPartitionId = partitionId;
+    this.partitionsCount = partitionsCount;
   }
 
   @Override
@@ -203,6 +228,13 @@ public class ProcessInstanceMigrationMigrateProcessor
         targetElementId,
         elementInstanceRecord,
         EnumSet.of(BpmnEventType.MESSAGE));
+    requireMappedBoundaryEventsToStayAttachedToSameElement(
+        processInstanceKey,
+        sourceProcessDefinition,
+        targetProcessDefinition,
+        elementId,
+        targetElementId,
+        sourceElementIdToTargetElementId);
     requireNoConcurrentCommand(eventScopeInstanceState, elementInstance, processInstanceKey);
 
     stateWriter.appendFollowUpEvent(
@@ -284,6 +316,36 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));
 
+    if (ProcessInstanceIntent.ELEMENT_ACTIVATING != elementInstance.getState()) {
+      // Elements in ACTIVATING state haven't subscribed to events yet. We shouldn't subscribe such
+      // elements to events during migration either. For elements that have been ACTIVATED, a
+      // subscription would already exist if needed. So, we want to deal with the expected event
+      // subscriptions. See: https://github.com/camunda/camunda/issues/19212
+      handleCatchEvents(
+          elementInstance,
+          targetProcessDefinition,
+          sourceElementIdToTargetElementId,
+          elementInstanceRecord,
+          targetElementId,
+          processInstanceKey,
+          elementId);
+    }
+  }
+
+  /**
+   * Unsubscribes the element instance from unmapped catch events in the source process, and
+   * subscribes it to unmapped catch events in the target process.
+   *
+   * <p>It also migrates event subscriptions for mapped catch events.
+   */
+  private void handleCatchEvents(
+      final ElementInstance elementInstance,
+      final DeployedProcess targetProcessDefinition,
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final ProcessInstanceRecord elementInstanceRecord,
+      final String targetElementId,
+      final long processInstanceKey,
+      final String elementId) {
     final var context = new BpmnElementContextImpl();
     context.init(elementInstance.getKey(), elementInstanceRecord, elementInstance.getState());
     final var targetElement =
@@ -291,19 +353,29 @@ public class ProcessInstanceMigrationMigrateProcessor
             .getProcess()
             .getElementById(targetElementId, ExecutableActivity.class);
     final List<DirectBuffer> subscribedMessageNames = new ArrayList<>();
+    final Map<String, Boolean> targetCatchEventIdToInterrupting = new HashMap<>();
     catchEventBehavior
         .subscribeToEvents(
             context,
             targetElement,
+            executableCatchEvent -> {
+              final String targetCatchEventId =
+                  BufferUtil.bufferAsString(executableCatchEvent.getId());
+              if (sourceElementIdToTargetElementId.containsValue(targetCatchEventId)) {
+                // We will migrate this mapped catch event, so we don't want to subscribe to it
+                // Store interrupting status, we will use it to update the interrupting status of
+                // the migrated subscription
+                targetCatchEventIdToInterrupting.put(
+                    targetCatchEventId, executableCatchEvent.isInterrupting());
+                return false;
+              }
+
+              return true;
+            },
             catchEvent -> {
               final var element = catchEvent.element();
               final String targetCatchEventId = BufferUtil.bufferAsString(element.getId());
-              requireNoMappedCatchEventsInTarget(
-                  sourceElementIdToTargetElementId,
-                  targetCatchEventId,
-                  processInstanceKey,
-                  elementId,
-                  targetElementId);
+
               if (element.isMessage()) {
                 requireNoSubscriptionForMessage(
                     elementInstance,
@@ -326,17 +398,83 @@ public class ProcessInstanceMigrationMigrateProcessor
                   RejectionType.INVALID_STATE);
             });
 
+    final List<ProcessMessageSubscription> processMessageSubscriptionsToMigrate = new ArrayList<>();
     catchEventBehavior.unsubscribeFromMessageEvents(
         elementInstance.getKey(),
         subscription -> {
+          final long distributionKey = subscription.getKey();
+          requireNoPendingMsgSubMigrationDistribution(
+              distributionState,
+              distributionKey,
+              elementId,
+              processInstanceKey,
+              subscription.getRecord().getElementId());
+
           if (subscribedMessageNames.contains(subscription.getRecord().getMessageNameBuffer())) {
             // We just subscribed to this message for this migration, we don't want to undo that
             return false;
           }
+
           final var catchEventId = subscription.getRecord().getElementId();
-          requireNoMappedCatchEventsInSource(
-              sourceElementIdToTargetElementId, catchEventId, processInstanceKey, elementId);
+          if (sourceElementIdToTargetElementId.containsKey(catchEventId)) {
+            // We will migrate this mapped catch event, so we don't want to unsubscribe from it
+            // avoid reusing the subscription directly as any access to the state (e.g. #get) will
+            // overwrite it
+            final ProcessMessageSubscription copySubscription = new ProcessMessageSubscription();
+            final ProcessMessageSubscriptionRecord subscriptionRecord =
+                new ProcessMessageSubscriptionRecord();
+            subscriptionRecord.wrap(subscription.getRecord());
+            copySubscription.setRecord(subscriptionRecord);
+            copySubscription.setKey(subscription.getKey());
+            copySubscription.setState(subscription.getState());
+            processMessageSubscriptionsToMigrate.add(copySubscription);
+            return false;
+          }
+
           return true;
+        });
+
+    processMessageSubscriptionsToMigrate.forEach(
+        processMessageSubscription -> {
+          final var processMessageSubscriptionRecord = processMessageSubscription.getRecord();
+          final var sourceCatchEventId = processMessageSubscriptionRecord.getElementId();
+          final var targetCatchEventId = sourceElementIdToTargetElementId.get(sourceCatchEventId);
+          final Boolean interrupting = targetCatchEventIdToInterrupting.get(targetCatchEventId);
+          stateWriter.appendFollowUpEvent(
+              processMessageSubscription.getKey(),
+              ProcessMessageSubscriptionIntent.MIGRATED,
+              processMessageSubscriptionRecord
+                  .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+                  .setElementId(BufferUtil.wrapString(targetCatchEventId))
+                  .setInterrupting(interrupting));
+
+          final long distributionKey = processMessageSubscription.getKey();
+
+          final var messageSubscription =
+              new MessageSubscriptionRecord()
+                  .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+                  .setElementInstanceKey(processMessageSubscriptionRecord.getElementInstanceKey())
+                  .setProcessInstanceKey(processMessageSubscriptionRecord.getProcessInstanceKey())
+                  .setMessageName(processMessageSubscriptionRecord.getMessageNameBuffer())
+                  .setCorrelationKey(processMessageSubscriptionRecord.getCorrelationKeyBuffer())
+                  .setTenantId(processMessageSubscriptionRecord.getTenantId())
+                  .setInterrupting(interrupting);
+
+          final var subscriptionPartitionId =
+              SubscriptionUtil.getSubscriptionPartitionId(
+                  BufferUtil.wrapString(messageSubscription.getCorrelationKey()), partitionsCount);
+
+          if (currentPartitionId == subscriptionPartitionId) {
+            commandWriter.appendFollowUpCommand(
+                distributionKey, MessageSubscriptionIntent.MIGRATE, messageSubscription);
+          } else {
+            commandDistributionBehavior.distributeCommand(
+                distributionKey,
+                ValueType.MESSAGE_SUBSCRIPTION,
+                MessageSubscriptionIntent.MIGRATE,
+                messageSubscription,
+                List.of(processMessageSubscriptionRecord.getSubscriptionPartitionId()));
+          }
         });
   }
 

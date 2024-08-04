@@ -4,7 +4,7 @@ networks:
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -27,7 +27,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   opensearch:
-    image: opensearchproject/opensearch:2.14.0
+    image: opensearchproject/opensearch:2.15.0
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster
@@ -50,7 +50,7 @@ services:
       - zeebe_network
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.14.0
+    image: docker.elastic.co/kibana/kibana:8.14.3
     ports:
       - 5601:5601
     environment:
@@ -85,7 +85,7 @@ services:
 
   zeebe-opensearch:
     container_name: zeebe-opensearch
-    image: camunda/zeebe:8.5.2
+    image: camunda/zeebe:SNAPSHOT
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=0.0.0.0
@@ -107,7 +107,7 @@ services:
 
   tasklist-opensearch:
     container_name: tasklist-opensearch
-    image: camunda/tasklist:8.5.2
+    image: camunda/tasklist:SNAPSHOT
     ports:
       - 8080:8080
     environment:
@@ -130,7 +130,7 @@ services:
 
   tasklist:
     container_name: tasklist
-    image: camunda/tasklist:8.5.2
+    image: camunda/tasklist:SNAPSHOT
     ports:
       - 8080:8080
     environment:
@@ -153,7 +153,7 @@ services:
 
   operate:
     container_name: tasklist-operate
-    image: camunda/operate:8.5.2
+    image: camunda/operate:SNAPSHOT
     ports:
       - 8088:8080
     environment:
@@ -169,7 +169,7 @@ services:
 
   zeebe-e2e:
     container_name: zeebe-e2e
-    image: camunda/zeebe:8.5.2
+    image: camunda/zeebe:SNAPSHOT
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=zeebe-e2e
@@ -190,7 +190,7 @@ services:
 
   tasklist-e2e:
     container_name: tasklist-e2e
-    image: camunda/tasklist:8.5.2
+    image: camunda/tasklist:SNAPSHOT
     ports:
       - 8081:8080
     environment:
@@ -212,7 +212,7 @@ services:
 
   tasklist-sso:
     container_name: tasklist-sso
-    image: camunda/tasklist:8.5.2
+    image: camunda/tasklist:SNAPSHOT
     ports:
       - 8080:8080
     environment:
@@ -231,6 +231,34 @@ services:
     depends_on:
       - elasticsearch
       - zeebe
+    networks:
+      - zeebe_network
+    restart: always
+
+  camunda:
+    container_name: camunda
+    image: camunda/camunda:SNAPSHOT
+    environment:
+      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
+      - SPRING_PROFILES_ACTIVE=operate,tasklist,broker,dev,dev-data,auth
+      - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=2
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME=io.camunda.zeebe.exporter.ElasticsearchExporter
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL=http://elasticsearch:9200
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE=1
+      - ZEEBE_BROKER_GATEWAY_ENABLE=true
+      - CAMUNDA_TASKLIST_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=camunda:26500
+      - CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://camunda:8080
+      - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=camunda:26500
+    ports:
+      - 26500:26500
+      - 9600:9600
+      - 8080:8080
+    depends_on:
+      - elasticsearch
     networks:
       - zeebe_network
     restart: always

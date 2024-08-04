@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -19,8 +20,11 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class BpmnStateBehavior {
@@ -98,6 +102,20 @@ public final class BpmnStateBehavior {
     return elementInstanceState.getInstance(context.getFlowScopeKey());
   }
 
+  public List<BpmnElementContext> getChildInstanceContexts(final BpmnElementContext context) {
+    return elementInstanceState.getChildren(context.getElementInstanceKey()).stream()
+        .map(
+            childInstance ->
+                context.copy(
+                    childInstance.getKey(), childInstance.getValue(), childInstance.getState()))
+        .collect(Collectors.toList());
+  }
+
+  public Set<DirectBuffer> getTakenSequenceFlowIds(final BpmnElementContext context) {
+    return elementInstanceState.getTakenSequenceFlows(
+        context.getFlowScopeKey(), context.getElementId());
+  }
+
   public BpmnElementContext getFlowScopeContext(final BpmnElementContext context) {
     final var flowScope = getFlowScopeInstance(context);
     return context.copy(flowScope.getKey(), flowScope.getValue(), flowScope.getState());
@@ -122,6 +140,29 @@ public final class BpmnStateBehavior {
       final DirectBuffer processId, final String tenantId) {
     final var process = processState.getLatestProcessVersionByProcessId(processId, tenantId);
     return Optional.ofNullable(process);
+  }
+
+  public Optional<DeployedProcess> getProcessByProcessIdAndDeploymentKey(
+      final DirectBuffer processId, final long deploymentKey, final String tenantId) {
+    final var process =
+        processState.getProcessByProcessIdAndDeploymentKey(processId, deploymentKey, tenantId);
+    return Optional.ofNullable(process);
+  }
+
+  public Either<Failure, Long> getDeploymentKey(
+      final long processDefinitionKey, final String tenantId) {
+    return getProcess(processDefinitionKey, tenantId)
+        .map(DeployedProcess::getDeploymentKey)
+        .<Either<Failure, Long>>map(Either::right)
+        .orElseGet(
+            () ->
+                // should actually never happen if deployed process was persisted correctly, but
+                // just in case
+                Either.left(
+                    new Failure(
+                        String.format(
+                            "Expected to find deployment key for process definition key %s and tenant %s, but not found.",
+                            processDefinitionKey, tenantId))));
   }
 
   public Optional<ElementInstance> getCalledChildInstance(final BpmnElementContext context) {

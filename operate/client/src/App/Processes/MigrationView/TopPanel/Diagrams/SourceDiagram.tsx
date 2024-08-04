@@ -28,12 +28,14 @@ const SourceDiagram: React.FC = observer(() => {
 
   return (
     <DiagramWrapper>
-      <Header
-        mode="view"
-        label="Source"
-        processName={processName}
-        processVersion={version ?? ''}
-      />
+      {!processInstanceMigrationStore.isSummaryStep && (
+        <Header
+          mode="view"
+          label="Source"
+          processName={processName}
+          processVersion={version ?? ''}
+        />
+      )}
       <DiagramShell status="content">
         {processXmlStore.state.xml !== null && (
           <Diagram

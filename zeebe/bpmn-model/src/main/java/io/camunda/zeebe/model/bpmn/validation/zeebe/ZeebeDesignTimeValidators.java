@@ -22,6 +22,7 @@ import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePublishMessage;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
@@ -49,6 +50,7 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new DefinitionsValidator());
     validators.add(new EndEventValidator());
     validators.add(new EventDefinitionValidator());
+    validators.add(new GatewayValidator());
     validators.add(new EventBasedGatewayValidator());
     validators.add(new ErrorEventDefinitionValidator());
     validators.add(new ExclusiveGatewayValidator());
@@ -122,6 +124,9 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new IntermediateThrowEventValidator());
     validators.add(new CompensationTaskValidator());
     validators.add(new CompensationEventDefinitionValidator());
+    validators.add(new ZeebeBindingTypeValidator<>(ZeebeCalledDecision.class));
+    validators.add(new ZeebeBindingTypeValidator<>(ZeebeCalledElement.class));
+    validators.add(new ZeebeBindingTypeValidator<>(ZeebeFormDefinition.class));
 
     VALIDATORS = Collections.unmodifiableList(validators);
   }

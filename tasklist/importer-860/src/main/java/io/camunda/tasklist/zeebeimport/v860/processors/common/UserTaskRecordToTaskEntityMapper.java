@@ -24,6 +24,7 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -45,7 +46,8 @@ public class UserTaskRecordToTaskEntityMapper {
   private final ObjectMapper objectMapper;
 
   public UserTaskRecordToTaskEntityMapper(
-      final ObjectMapper objectMapper, final FormStore formStore) {
+      @Qualifier("tasklistObjectMapper") final ObjectMapper objectMapper,
+      final FormStore formStore) {
     this.objectMapper = objectMapper;
     this.formStore = formStore;
   }
@@ -60,6 +62,7 @@ public class UserTaskRecordToTaskEntityMapper {
 
     final UserTaskRecordValue recordValue = record.getValue();
     final String processDefinitionId = String.valueOf(recordValue.getProcessDefinitionKey());
+
     final TaskEntity entity =
         new TaskEntity()
             .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
@@ -71,7 +74,10 @@ public class UserTaskRecordToTaskEntityMapper {
             .setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()))
             .setBpmnProcessId(recordValue.getBpmnProcessId())
             .setProcessDefinitionId(processDefinitionId)
-            .setTenantId(recordValue.getTenantId());
+            .setTenantId(recordValue.getTenantId())
+            .setExternalFormReference(recordValue.getExternalFormReference())
+            .setCustomHeaders(recordValue.getCustomHeaders())
+            .setProcessDefinitionVersion(recordValue.getProcessDefinitionVersion());
 
     switch (intent) {
       case CANCELED ->

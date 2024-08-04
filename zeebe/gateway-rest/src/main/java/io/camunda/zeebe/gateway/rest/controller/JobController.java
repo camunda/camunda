@@ -7,57 +7,88 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
-import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
+import io.camunda.service.JobServices;
+import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.zeebe.gateway.rest.RequestMapper.CompleteJobRequest;
+import io.camunda.zeebe.gateway.rest.RequestMapper.ErrorJobRequest;
+import io.camunda.zeebe.gateway.rest.RequestMapper.FailJobRequest;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 
-@ZeebeRestController
+@CamundaRestController
+@RequestMapping("/v2/jobs")
 public class JobController {
 
-  private final ActivateJobsHandler<JobActivationResponse> activateJobsHandler;
   private final ResponseObserverProvider responseObserverProvider;
+  private final JobServices<JobActivationResponse> jobServices;
 
   @Autowired
   public JobController(
-      final ActivateJobsHandler<JobActivationResponse> activateJobsHandler,
+      final JobServices<JobActivationResponse> jobServices,
       final ResponseObserverProvider responseObserverProvider) {
-    this.activateJobsHandler = activateJobsHandler;
+    this.jobServices = jobServices;
     this.responseObserverProvider = responseObserverProvider;
   }
 
   @PostMapping(
-      path = "/jobs/activation",
+      path = "/activation",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> activateJobs(
       @RequestBody final JobActivationRequest activationRequest) {
     return RequestMapper.toJobsActivationRequest(activationRequest)
-        .fold(
-            brokerRequest -> sendBrokerRequest(brokerRequest, activationRequest),
-            JobController::handleRequestMappingError);
+        .fold(this::activateJobs, RestErrorMapper::mapProblemToCompletedResponse);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> sendBrokerRequest(
-      final BrokerActivateJobsRequest brokerRequest, final JobActivationRequest activationRequest) {
+  @PostMapping(
+      path = "/{jobKey}/failure",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public CompletableFuture<ResponseEntity<Object>> failureJob(
+      @PathVariable final long jobKey,
+      @RequestBody(required = false) final JobFailRequest failureRequest) {
+    return failJob(RequestMapper.toJobFailRequest(failureRequest, jobKey));
+  }
+
+  @PostMapping(
+      path = "/{jobKey}/error",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public CompletableFuture<ResponseEntity<Object>> errorJob(
+      @PathVariable final long jobKey, @RequestBody final JobErrorRequest errorRequest) {
+    return RequestMapper.toJobErrorRequest(errorRequest, jobKey)
+        .fold(this::errorJob, RestErrorMapper::mapProblemToCompletedResponse);
+  }
+
+  @PostMapping(
+      path = "/{jobKey}/completion",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public CompletableFuture<ResponseEntity<Object>> completeJob(
+      @PathVariable final long jobKey,
+      @RequestBody(required = false) final JobCompletionRequest completionRequest) {
+    return completeJob(RequestMapper.toJobCompletionRequest(completionRequest, jobKey));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> activateJobs(
+      final ActivateJobsRequest activationRequest) {
     final var result = new CompletableFuture<ResponseEntity<Object>>();
     final var responseObserver = responseObserverProvider.apply(result);
-    activateJobsHandler.activateJobs(
-        brokerRequest,
-        responseObserver,
-        responseObserver::setCancelationHandler,
-        activationRequest.getRequestTimeout() == null ? 0 : activationRequest.getRequestTimeout());
+    jobServices.activateJobs(
+        activationRequest, responseObserver, responseObserver::setCancelationHandler);
     return result.handleAsync(
         (res, ex) -> {
           responseObserver.invokeCancelationHandler();
@@ -65,30 +96,38 @@ public class JobController {
         });
   }
 
-  private static CompletableFuture<ResponseEntity<Object>> handleRequestMappingError(
-      final ProblemDetail problemDetail) {
-    return CompletableFuture.completedFuture(RestErrorMapper.mapProblemToResponse(problemDetail));
+  private CompletableFuture<ResponseEntity<Object>> failJob(final FailJobRequest failJobRequest) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            jobServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .failJob(
+                    failJobRequest.jobKey(),
+                    failJobRequest.retries(),
+                    failJobRequest.errorMessage(),
+                    failJobRequest.retryBackoff(),
+                    failJobRequest.variables()));
   }
 
-  public static ProblemDetail mapRejectionToProblem(final BrokerRejection rejection) {
-    final String message =
-        String.format(
-            "Command '%s' rejected with code '%s': %s",
-            rejection.intent(), rejection.type(), rejection.reason());
-    final String title = rejection.type().name();
-    return switch (rejection.type()) {
-      case NOT_FOUND:
-        yield RestErrorMapper.createProblemDetail(HttpStatus.NOT_FOUND, message, title);
-      case INVALID_STATE:
-        yield RestErrorMapper.createProblemDetail(HttpStatus.CONFLICT, message, title);
-      case INVALID_ARGUMENT:
-      case ALREADY_EXISTS:
-        yield RestErrorMapper.createProblemDetail(HttpStatus.BAD_REQUEST, message, title);
-      default:
-        {
-          yield RestErrorMapper.createProblemDetail(
-              HttpStatus.INTERNAL_SERVER_ERROR, message, title);
-        }
-    };
+  private CompletableFuture<ResponseEntity<Object>> errorJob(
+      final ErrorJobRequest errorJobRequest) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            jobServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .errorJob(
+                    errorJobRequest.jobKey(),
+                    errorJobRequest.errorCode(),
+                    errorJobRequest.errorMessage(),
+                    errorJobRequest.variables()));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> completeJob(
+      final CompleteJobRequest completeJobRequest) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            jobServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .completeJob(completeJobRequest.jobKey(), completeJobRequest.variables()));
   }
 }

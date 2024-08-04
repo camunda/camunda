@@ -98,14 +98,6 @@ jobs:
           ${{ inputs.command }}
 
       # Reports: publish test metrics results
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2.16.1
-        if: ${{ (success() || failure()) }}
-        with:
-          check_name: "Operate ${{ inputs.test-type }} Results"
-          files: |
-            operate/**/target/*-reports/*.xml
-            !operate/**/target/*-reports/*-summary.xml
       - name: Upload Test Report
         if: ${{ (success() || failure()) }}
         uses: ./.github/actions/collect-operate-test-artifacts
@@ -123,3 +115,13 @@ jobs:
               "github_run_url": "https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}",
               "branch": "${{ github.head_ref || github.ref_name }}"
             }
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

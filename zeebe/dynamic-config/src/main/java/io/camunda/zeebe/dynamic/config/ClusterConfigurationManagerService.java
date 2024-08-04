@@ -13,10 +13,10 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.FileInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.GossipInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.InitializerError.PersistedConfigurationIsBroken;
-import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.RollingUpdateAwareInitializerV83ToV84;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.StaticInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.SyncInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
+import io.camunda.zeebe.dynamic.config.ClusterConfigurationModifier.ExporterStateInitializer;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestsHandler;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestServer;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliersImpl;
@@ -119,15 +119,16 @@ public final class ClusterConfigurationManagerService
                 otherKnownMembers,
                 managerActor,
                 clusterConfigurationGossiper::queryClusterConfiguration))
-        // Only to support rolling update from 8.3 to 8.4. Should be removed after 8.4 release
-        .orThen(
-            new RollingUpdateAwareInitializerV83ToV84(
-                membershipService, staticConfiguration, managerActor))
         .orThen(
             new GossipInitializer(
                 clusterConfigurationGossiper,
                 persistedClusterConfiguration,
                 clusterConfigurationGossiper::updateClusterConfiguration,
+                managerActor))
+        .andThen(
+            new ExporterStateInitializer(
+                staticConfiguration.partitionConfig().exporting().exporters().keySet(),
+                staticConfiguration.localMemberId(),
                 managerActor));
   }
 
@@ -138,17 +139,18 @@ public final class ClusterConfigurationManagerService
             .filter(m -> !m.equals(staticConfiguration.localMemberId()))
             .toList();
     return new FileInitializer(configurationFile, new ProtoBufSerializer())
-        // Only to support rolling update from 8.3 to 8.4. Should be removed after 8.4 release
-        .orThen(
-            new RollingUpdateAwareInitializerV83ToV84(
-                memberShipService, staticConfiguration, managerActor))
         .orThen(
             new SyncInitializer(
                 clusterConfigurationGossiper,
                 otherKnownMembers,
                 managerActor,
                 clusterConfigurationGossiper::queryClusterConfiguration))
-        .orThen(new StaticInitializer(staticConfiguration));
+        .orThen(new StaticInitializer(staticConfiguration))
+        .andThen(
+            new ExporterStateInitializer(
+                staticConfiguration.partitionConfig().exporting().exporters().keySet(),
+                staticConfiguration.localMemberId(),
+                managerActor));
   }
 
   /** Starts ClusterConfigurationManager which initializes ClusterConfiguration */

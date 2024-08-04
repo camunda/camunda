@@ -54,6 +54,7 @@ import org.springframework.test.util.ReflectionTestUtils;
     },
     properties = {
       "camunda.tasklist.identity.issuerUrl=http://localhost:18080/auth/realms/camunda-platform",
+      "management.endpoint.health.group.readiness.include=readinessState"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})

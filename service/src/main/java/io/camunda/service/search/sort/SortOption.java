@@ -33,6 +33,14 @@ public interface SortOption {
 
       return self();
     }
+
+    public T asc() {
+      return addOrdering(SortOrder.ASC);
+    }
+
+    public T desc() {
+      return addOrdering(SortOrder.DESC);
+    }
   }
 
   public final record FieldSorting(String field, SortOrder order) {}

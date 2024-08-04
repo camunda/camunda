@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
@@ -266,6 +267,7 @@ public final class TestCluster implements CloseableSilently {
   public ZeebeClientBuilder newClientBuilder() {
     return ZeebeClient.newClientBuilder()
         .usePlaintext()
+        .restAddress(availableGateway().restAddress())
         .grpcAddress(availableGateway().grpcAddress());
   }
 
@@ -357,6 +359,30 @@ public final class TestCluster implements CloseableSilently {
         .atMost(timeout)
         .untilAsserted(() -> assertThat(nodes).allSatisfy(node -> assertProbe(node, probe)));
     return this;
+  }
+
+  /**
+   * returns the broker which is the leader for given partitionId according to the topology response
+   *
+   * @param partitionId id of the partition
+   * @return the broker which is the leader for given partitionId
+   * @throws NoSuchElementException if no leader is found for the partition
+   */
+  public TestStandaloneBroker leaderForPartition(final int partitionId) {
+    try (final var client = newClientBuilder().build()) {
+      final var leaderOfPartition2 =
+          client.newTopologyRequest().send().join().getBrokers().stream()
+              .filter(
+                  b ->
+                      b.getPartitions().stream()
+                          .anyMatch(p -> p.getPartitionId() == partitionId && p.isLeader()))
+              .map(BrokerInfo::getNodeId)
+              .findFirst()
+              .orElseThrow(
+                  () -> new NoSuchElementException("No leader found for partition " + partitionId));
+
+      return brokers().get(MemberId.from(String.valueOf(leaderOfPartition2)));
+    }
   }
 
   @Override

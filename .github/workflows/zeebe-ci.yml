@@ -21,7 +21,7 @@ on:
       - 'pom.xml'
       - 'zeebe/**'
   pull_request:
-    paths:
+    paths: # keep in sync with common-ci.yml trigger
       - '.ci/docker/test/*'
       - '.github/actions/**'
       - '.github/workflows/zeebe-*'
@@ -37,9 +37,12 @@ on:
   workflow_dispatch: { }
   workflow_call: { }
 
+# Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
+# Exception for main branch: complete builds for every commit needed for confidenence
+# Exception for deploy jobs that have to wait for each other to avoid overwriting
 concurrency:
   cancel-in-progress: true
-  group: "${{ github.workflow }}-${{ github.ref }}"
+  group: ${{ github.ref == 'refs/heads/main' && github.sha || format('{0}-{1}', github.workflow, github.ref) }}
 
 defaults:
   run:
@@ -102,7 +105,7 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         with:
           repository: localhost:5000/camunda/zeebe
           version: current-test
@@ -157,10 +160,13 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           job_name: "integration-tests/${{ matrix.group }}"
-          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   unit-tests:
     name: Unit tests
     runs-on: [ self-hosted, linux, amd64, "16" ]
@@ -212,10 +218,13 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          build_status: ${{ contains(steps.*.conclusion, 'failure') && 'failure' || 'success' }}
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   smoke-tests:
     name: "[Smoke] ${{ matrix.os }} with ${{ matrix.arch }}"
     timeout-minutes: 20
@@ -249,7 +258,7 @@ jobs:
         with:
           go: false
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         # Currently only Linux runners support building docker images without further ado
         if: ${{ runner.os == 'Linux' }}
@@ -409,7 +418,7 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
           repository: camunda/zeebe
@@ -487,6 +496,7 @@ jobs:
   java-checks:
     name: Java checks
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
@@ -541,7 +551,7 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
           # we use a local registry for pushing
@@ -590,7 +600,7 @@ jobs:
       - go-apidiff
       - docker-checks
     steps:
-      - run: exit ${{ ((contains(needs.*.result, 'skipped') || contains(needs.*.result, 'failure')) && 1) || 0 }}
+      - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
   deploy-snapshots:
     name: Deploy snapshot artifacts
     needs: [ test-summary ]
@@ -635,6 +645,16 @@ jobs:
         env:
           MAVEN_USERNAME: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
           MAVEN_PASSWORD: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   deploy-docker-snapshot:
     name: Deploy snapshot Docker image
     needs: [ test-summary ]
@@ -655,7 +675,7 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
           repository: camunda/zeebe
@@ -698,6 +718,15 @@ jobs:
         run: ./mvnw -pl zeebe/benchmarks/project jib:build -P starter
       - name: Build Worker Image
         run: ./mvnw -pl zeebe/benchmarks/project jib:build -P worker
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   deploy-snyk-projects:
     name: Deploy Snyk development projects
     needs: [ test-summary ]

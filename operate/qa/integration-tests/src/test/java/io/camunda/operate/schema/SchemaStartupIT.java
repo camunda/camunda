@@ -20,9 +20,9 @@ import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
 import io.camunda.operate.schema.indices.MigrationRepositoryIndex;
 import io.camunda.operate.schema.migration.Migrator;
-import io.camunda.operate.schema.migration.elasticsearch.ElasticsearchFillPostImporterQueuePlan;
+import io.camunda.operate.schema.migration.elasticsearch.ElasticsearchMigrationPlanFactory;
 import io.camunda.operate.schema.migration.elasticsearch.ElasticsearchStepsRepository;
-import io.camunda.operate.schema.opensearch.OpensearchFillPostImporterQueuePlan;
+import io.camunda.operate.schema.opensearch.OpensearchMigrationPlanFactory;
 import io.camunda.operate.schema.opensearch.OpensearchSchemaManager;
 import io.camunda.operate.schema.opensearch.OpensearchStepsRepository;
 import io.camunda.operate.schema.templates.IncidentTemplate;
@@ -49,14 +49,14 @@ import org.springframework.test.context.ContextConfiguration;
     classes = {
       IndexSchemaValidator.class,
       Migrator.class,
+      ElasticsearchMigrationPlanFactory.class,
       ElasticsearchStepsRepository.class,
-      ElasticsearchFillPostImporterQueuePlan.class,
       ElasticsearchSchemaManager.class,
       ElasticsearchSchemaTestHelper.class,
       ElasticsearchTaskStore.class,
       TestElasticsearchConnector.class,
+      OpensearchMigrationPlanFactory.class,
       OpensearchStepsRepository.class,
-      OpensearchFillPostImporterQueuePlan.class,
       OpensearchSchemaManager.class,
       OpenSearchSchemaTestHelper.class,
       OpensearchTaskStore.class,

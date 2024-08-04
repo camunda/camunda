@@ -54,7 +54,7 @@ jobs:
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
-        uses: actions/checkout@b80ff79f1755d06ba70441c368a6fe801f5f3a62
+        uses: actions/checkout@9a9194f87191a7e9055e3e9b95b8cfb13023bb08
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
@@ -62,7 +62,7 @@ jobs:
       # Setup: import secrets from vault
       - name: Import Secrets
         id: secrets  # important to refer to it in later steps
-        uses: hashicorp/vault-action@148ee648ccb26f28892776406f3c3c4cf8ac033f
+        uses: hashicorp/vault-action@8b7eaceb79bd7be97b311993e7c1cc5d051213c7
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -88,22 +88,22 @@ jobs:
         run: |
           mvn -f tasklist -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }}
 
-      # Reports: publish test metrics results
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2.16.1
-        if: ${{ (success() || failure()) }}
-        with:
-          check_name: "Tasklist Test Results"
-          files: |
-            tasklist/**/target/surefire-reports/*.xml
-            tasklist/**/target/failsafe-reports/TEST-*.xml
-
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize
         uses: camunda/infra-global-github-actions/sanitize-branch-name@main
         with:
           branch: ${{ inputs.branch }}
           max_length: '50'
+
+      - name: Upload failed test results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: tasklist-test-results-${{ matrix.database }}
+          path: |
+            **/failsafe-reports/
+            **/surefire-reports/
+          retention-days: 1
 
       # Upload JaCoCo report
       - name: Upload JaCoCo report
@@ -113,3 +113,14 @@ jobs:
           name: jacoco-report-${{ steps.sanitize.outputs.branch_name }}-${{ matrix.database }}
           path: ${{ github.workspace }}/test-coverage/target/site/jacoco-aggregate/
           retention-days: 2
+
+      # Send metrics about CI health
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

@@ -47,12 +47,14 @@ import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Stack;
 import java.util.stream.Collectors;
 import org.agrona.Strings;
 
@@ -61,11 +63,6 @@ public final class ProcessInstanceModificationModifyProcessor
 
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to modify process instance but no process instance found with key '%d'";
-  private static final String ERROR_MESSAGE_PROCESS_INSTANCE_BELONGS_TO_SPECIFIC_TENANT =
-      "Expected to modify process instance but process instance belongs to tenant '%s'"
-          + " while modification is not yet supported with multi-tenancy."
-          + " Only process instances belonging to the default tenant '<default>' can be modified."
-          + " See https://github.com/camunda/camunda/issues/13288 for more details.";
   private static final String ERROR_MESSAGE_ACTIVATE_ELEMENT_NOT_FOUND =
       "Expected to modify instance of process '%s' but it contains one or more activate instructions"
           + " with an element that could not be found: '%s'";
@@ -681,18 +678,41 @@ public final class ProcessInstanceModificationModifyProcessor
   }
 
   private void terminateElement(final ElementInstance elementInstance) {
-    final var elementInstanceKey = elementInstance.getKey();
-    final var elementInstanceRecord = elementInstance.getValue();
-    final BpmnElementType elementType = elementInstance.getValue().getBpmnElementType();
+    final var elementsTerminating = startTerminatingElementAndChildren(elementInstance);
+    terminateElements(elementsTerminating);
+  }
 
-    stateWriter.appendFollowUpEvent(
-        elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATING, elementInstanceRecord);
+  private Stack<ElementInstance> startTerminatingElementAndChildren(
+      final ElementInstance elementInstance) {
+    final var elementInstancesToTerminate = new Stack<ElementInstance>();
+    final var elementInstancesTerminating = new Stack<ElementInstance>();
+    elementInstancesTerminating.push(elementInstance);
 
-    jobBehavior.cancelJob(elementInstance);
-    incidentBehavior.resolveIncidents(elementInstanceKey);
+    while (!elementInstancesTerminating.isEmpty()) {
+      final var currentElement = elementInstancesTerminating.pop();
+      final var elementInstanceKey = currentElement.getKey();
+      final var elementInstanceRecord = currentElement.getValue();
+      final BpmnElementType elementType = currentElement.getValue().getBpmnElementType();
 
-    catchEventBehavior.unsubscribeFromEvents(elementInstanceKey);
+      stateWriter.appendFollowUpEvent(
+          elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATING, elementInstanceRecord);
+      elementInstancesToTerminate.push(currentElement);
 
+      jobBehavior.cancelJob(currentElement);
+      incidentBehavior.resolveIncidents(elementInstanceKey);
+      catchEventBehavior.unsubscribeFromEvents(elementInstanceKey);
+
+      elementInstancesTerminating.addAll(
+          getChildInstances(elementType, elementInstanceKey, currentElement));
+    }
+    return elementInstancesToTerminate;
+  }
+
+  private List<ElementInstance> getChildInstances(
+      final BpmnElementType elementType,
+      final long elementInstanceKey,
+      final ElementInstance currentElement) {
+    final var childInstances = new ArrayList<ElementInstance>();
     // terminate all child instances if the element is an event subprocess
     if (elementType == BpmnElementType.EVENT_SUB_PROCESS
         || elementType == BpmnElementType.SUB_PROCESS
@@ -700,17 +720,25 @@ public final class ProcessInstanceModificationModifyProcessor
         || elementType == BpmnElementType.MULTI_INSTANCE_BODY) {
       elementInstanceState.getChildren(elementInstanceKey).stream()
           .filter(ElementInstance::canTerminate)
-          .forEach(this::terminateElement);
+          .forEach(childInstances::add);
     } else if (elementType == BpmnElementType.CALL_ACTIVITY) {
       final var calledActivityElementInstance =
-          elementInstanceState.getInstance(elementInstance.getCalledChildInstanceKey());
+          elementInstanceState.getInstance(currentElement.getCalledChildInstanceKey());
       if (calledActivityElementInstance != null && calledActivityElementInstance.canTerminate()) {
-        terminateElement(calledActivityElementInstance);
+        childInstances.add(calledActivityElementInstance);
       }
     }
+    return childInstances;
+  }
 
-    stateWriter.appendFollowUpEvent(
-        elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATED, elementInstanceRecord);
+  private void terminateElements(final Stack<ElementInstance> elementsTerminating) {
+    while (!elementsTerminating.isEmpty()) {
+      final var currentElement = elementsTerminating.pop();
+      stateWriter.appendFollowUpEvent(
+          currentElement.getKey(),
+          ProcessInstanceIntent.ELEMENT_TERMINATED,
+          currentElement.getValue());
+    }
   }
 
   private void terminateFlowScopes(

@@ -81,10 +81,11 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
 
   @Autowired private List<ProcessInstanceDependant> processInstanceDependantTemplates;
 
-  private Random random = new Random();
+  private final Random random = new Random();
 
   private DateTimeFormatter dateTimeFormatter;
 
+  @Override
   @Before
   public void before() {
     super.before();
@@ -150,7 +151,7 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
     };
   }
 
-  protected void createOperations(List<Long> ids1) {
+  protected void createOperations(final List<Long> ids1) {
     final ListViewQueryDto query = createGetAllProcessInstancesQuery();
     query.setIds(CollectionUtil.toSafeListOfStrings(ids1));
     final CreateBatchOperationRequestDto batchOperationRequest =
@@ -159,7 +160,7 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
     batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 
-  private void deployProcessWithOneActivity(String processId, String activityId) {
+  private void deployProcessWithOneActivity(final String processId, final String activityId) {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
@@ -170,7 +171,7 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
     deployProcess(process, processId + ".bpmn");
   }
 
-  private void assertInstancesInCorrectIndex(int instancesCount, Instant endDate)
+  private void assertInstancesInCorrectIndex(final int instancesCount, final Instant endDate)
       throws IOException {
     final List<Long> ids = assertProcessInstanceIndex(instancesCount, endDate);
     for (final ProcessInstanceDependant template : processInstanceDependantTemplates) {
@@ -185,7 +186,7 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
     }
   }
 
-  private List<Long> assertProcessInstanceIndex(int instancesCount, Instant endDate)
+  private List<Long> assertProcessInstanceIndex(final int instancesCount, final Instant endDate)
       throws IOException {
     final String destinationIndexName =
         archiver.getDestinationIndexName(
@@ -217,11 +218,11 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private void assertDependentIndex(
-      String mainIndexName,
-      String idFieldName,
-      List<Long> ids,
-      Instant endDate,
-      boolean ignoreAbsentIndex)
+      final String mainIndexName,
+      final String idFieldName,
+      final List<Long> ids,
+      final Instant endDate,
+      final boolean ignoreAbsentIndex)
       throws IOException {
     final String destinationIndexName;
     try {
@@ -234,7 +235,7 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
       final List<Long> idsFromEls =
           testSearchRepository.searchIds(destinationIndexName, idFieldName, ids, 100);
       assertThat(idsFromEls).as(mainIndexName).isSubsetOf(ids);
-    } catch (ElasticsearchStatusException ex) {
+    } catch (final ElasticsearchStatusException ex) {
       if (!ex.getMessage().contains("index_not_found_exception") || !ignoreAbsentIndex) {
         throw ex;
       }
@@ -242,12 +243,13 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
     }
   }
 
-  private void finishInstances(int count, Instant currentTime, String taskId) {
+  private void finishInstances(final int count, final Instant currentTime, final String taskId) {
     pinZeebeTime(currentTime);
     ZeebeTestUtil.completeTask(getClient(), taskId, getWorkerName(), null, count);
   }
 
-  private List<Long> startInstances(String processId, int count, Instant currentTime) {
+  private List<Long> startInstances(
+      final String processId, final int count, final Instant currentTime) {
     assertThat(count).isGreaterThan(0);
     pinZeebeTime(currentTime);
     final List<Long> ids = new ArrayList<>();

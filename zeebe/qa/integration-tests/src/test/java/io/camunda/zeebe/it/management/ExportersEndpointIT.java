@@ -15,7 +15,10 @@ import feign.FeignException;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.ExporterStateCode;
+import io.camunda.zeebe.management.cluster.ExporterStatus;
+import io.camunda.zeebe.management.cluster.ExporterStatus.StatusEnum;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
+import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.qa.util.actuator.ExportersActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -75,9 +78,7 @@ final class ExportersEndpointIT {
     assertThat(response.getExpectedTopology().stream().allMatch(this::hasExporterDisabled))
         .isTrue();
 
-    Awaitility.await()
-        .timeout(Duration.ofSeconds(30))
-        .untilAsserted(() -> ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(response));
+    waitUntilOperationIsApplied(response);
 
     // write more events
     client.newPublishMessageCommand().messageName("test2").correlationKey("key2").send().join();
@@ -91,6 +92,13 @@ final class ExportersEndpointIT {
             .until(RecordingExporter.getRecords()::size, hasStableValue());
 
     assertThat(recordsBeforeDisable).isEqualTo(recordsAfterDisable);
+
+    assertThat(ExportersActuator.of(cluster.anyGateway()).getExporters())
+        .describedAs("Exporter is disabled")
+        .hasSize(1)
+        .first()
+        .isEqualTo(
+            new ExporterStatus().exporterId("recordingExporter").status(StatusEnum.DISABLED));
   }
 
   private boolean hasExporterDisabled(final BrokerState b) {
@@ -111,5 +119,38 @@ final class ExportersEndpointIT {
         .asInstanceOf(InstanceOfAssertFactories.type(FeignException.class))
         .extracting(FeignException::status)
         .isEqualTo(400);
+  }
+
+  @Test
+  void shouldEnableExporter() {
+    // given
+    final var messageName = "enable-exporter-test";
+    final var response =
+        ExportersActuator.of(cluster.anyGateway()).disableExporter("recordingExporter");
+    waitUntilOperationIsApplied(response);
+
+    // when
+    final var enableResponse =
+        ExportersActuator.of(cluster.anyGateway()).enableExporter("recordingExporter");
+    waitUntilOperationIsApplied(enableResponse);
+
+    client.newPublishMessageCommand().messageName(messageName).correlationKey("key2").send().join();
+
+    // then
+    Awaitility.await("Record is exported")
+        .until(
+            () -> RecordingExporter.messageRecords().withName(messageName).findFirst().isPresent());
+
+    assertThat(ExportersActuator.of(cluster.anyGateway()).getExporters())
+        .describedAs("Exporter is enabled")
+        .hasSize(1)
+        .first()
+        .isEqualTo(new ExporterStatus().exporterId("recordingExporter").status(StatusEnum.ENABLED));
+  }
+
+  private void waitUntilOperationIsApplied(final PlannedOperationsResponse response) {
+    Awaitility.await()
+        .timeout(Duration.ofSeconds(30))
+        .untilAsserted(() -> ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(response));
   }
 }

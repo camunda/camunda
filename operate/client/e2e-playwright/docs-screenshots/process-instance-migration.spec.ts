@@ -32,6 +32,7 @@ test.describe('process instance migration', () => {
     page,
     commonPage,
     processesPage,
+    processesPage: {filtersPanel},
     migrationView,
   }) => {
     await page.route(
@@ -67,8 +68,8 @@ test.describe('process instance migration', () => {
       },
     });
 
-    await commonPage.addLeftArrow(processesPage.processNameFilter);
-    await commonPage.addLeftArrow(processesPage.processVersionFilter);
+    await commonPage.addLeftArrow(filtersPanel.processNameFilter);
+    await commonPage.addLeftArrow(filtersPanel.processVersionFilter);
 
     await page.screenshot({
       path: path.join(baseDirectory, 'process-filters.png'),

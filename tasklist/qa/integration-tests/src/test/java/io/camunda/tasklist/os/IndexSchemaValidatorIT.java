@@ -11,11 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
-import io.camunda.tasklist.util.TestUtil;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -32,7 +32,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
-  private static final String ORIGINAL_SCHEMA_PATH_OPENSEARCH = "/tasklist-test-opensearch.json";
+  private static final String ORIGINAL_SCHEMA_PATH_OPENSEARCH =
+      "/tasklist-test-opensearch-schema-validator.json";
   private static final String INDEX_NAME = "test";
 
   @Autowired private TasklistProperties tasklistProperties;

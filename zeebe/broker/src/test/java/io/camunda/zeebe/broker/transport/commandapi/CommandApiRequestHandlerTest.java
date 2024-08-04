@@ -151,7 +151,7 @@ public class CommandApiRequestHandlerTest {
     final var logWriter = mock(LogStreamWriter.class);
     when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
     when(logWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
-        .thenReturn(Either.left(WriteFailure.FULL));
+        .thenReturn(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED));
     handler.addPartition(0, logWriter);
     handler.onRecovered(0);
     handler.onPaused(1);
@@ -172,7 +172,7 @@ public class CommandApiRequestHandlerTest {
         .extracting(ErrorResponse::getErrorData)
         .extracting(errorData -> BufferUtil.bufferAsString(errorData))
         .isEqualTo(
-            "Failed to write client request to partition '0', because the writer buffer is full.");
+            "Failed to write client request to partition '0', because the write limit is exhausted.");
   }
 
   @Test
@@ -181,7 +181,7 @@ public class CommandApiRequestHandlerTest {
     final var logWriter = mock(LogStreamWriter.class);
     when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
     when(logWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
-        .thenReturn(Either.left(WriteFailure.FULL));
+        .thenReturn(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED));
     handler.addPartition(0, logWriter);
     handler.onRecovered(0);
     handler.onPaused(0);

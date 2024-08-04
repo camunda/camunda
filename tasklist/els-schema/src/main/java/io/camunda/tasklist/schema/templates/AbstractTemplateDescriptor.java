@@ -7,11 +7,11 @@
  */
 package io.camunda.tasklist.schema.templates;
 
+import static io.camunda.tasklist.property.TasklistProperties.ELASTIC_SEARCH;
 import static io.camunda.tasklist.schema.indices.AbstractIndexDescriptor.SCHEMA_FOLDER_ELASTICSEARCH;
 import static io.camunda.tasklist.schema.indices.AbstractIndexDescriptor.SCHEMA_FOLDER_OPENSEARCH;
 
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.util.TasklistPropertiesUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -28,15 +28,15 @@ public abstract class AbstractTemplateDescriptor implements TemplateDescriptor {
   @Override
   public String getFullQualifiedName() {
     final String indexPrefix =
-        TasklistPropertiesUtil.isOpenSearchDatabase()
-            ? tasklistProperties.getOpenSearch().getIndexPrefix()
-            : tasklistProperties.getElasticsearch().getIndexPrefix();
+        ELASTIC_SEARCH.equals(tasklistProperties.getDatabase())
+            ? tasklistProperties.getElasticsearch().getIndexPrefix()
+            : tasklistProperties.getOpenSearch().getIndexPrefix();
     return String.format("%s-%s-%s_", indexPrefix, getIndexName(), getVersion());
   }
 
   @Override
   public String getSchemaClasspathFilename() {
-    if (tasklistProperties.getDatabase().equals(TasklistProperties.ELASTIC_SEARCH)) {
+    if (ELASTIC_SEARCH.equals(tasklistProperties.getDatabase())) {
       return String.format(SCHEMA_CREATE_TEMPLATE_JSON_ELASTICSEARCH, getIndexName());
     } else {
       return String.format(SCHEMA_CREATE_TEMPLATE_JSON_OPENSEARCH, getIndexName());

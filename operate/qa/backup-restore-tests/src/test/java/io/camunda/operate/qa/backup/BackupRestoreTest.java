@@ -59,7 +59,7 @@ public class BackupRestoreTest {
 
   private GenericContainer operateContainer;
 
-  private TestContainerUtil testContainerUtil = new TestContainerUtil();
+  private final TestContainerUtil testContainerUtil = new TestContainerUtil();
   private BackupRestoreTestContext testContext;
   private List<String> snapshots;
 
@@ -110,7 +110,7 @@ public class BackupRestoreTest {
           .build()
           .retry();
       LOGGER.info("************ Operate indices deleted ************");
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OperateRuntimeException(
           "Exception occurred while removing Operate and Zeebe indices: " + e.getMessage(), e);
     }
@@ -184,7 +184,7 @@ public class BackupRestoreTest {
                         new RestoreSnapshotRequest(REPOSITORY_NAME, snapshot)
                             .waitForCompletion(true),
                         RequestOptions.DEFAULT);
-              } catch (IOException e) {
+              } catch (final IOException e) {
                 throw new OperateRuntimeException(
                     "Exception occurred while restoring the backup: " + e.getMessage(), e);
               }
@@ -192,7 +192,8 @@ public class BackupRestoreTest {
     LOGGER.info("************ Backup restored ************");
   }
 
-  private void createSnapshotRepository(BackupRestoreTestContext testContext) throws IOException {
+  private void createSnapshotRepository(final BackupRestoreTestContext testContext)
+      throws IOException {
     testContext
         .getEsClient()
         .snapshot()

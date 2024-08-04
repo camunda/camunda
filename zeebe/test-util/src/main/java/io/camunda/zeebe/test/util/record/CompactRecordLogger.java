@@ -27,8 +27,10 @@ import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
@@ -143,6 +145,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.SIGNAL_SUBSCRIPTION, this::summarizeSignalSubscription);
     valueLoggers.put(ValueType.USER_TASK, this::summarizeUserTask);
     valueLoggers.put(ValueType.COMMAND_DISTRIBUTION, this::summarizeCommandDistribution);
+    valueLoggers.put(ValueType.MESSAGE_CORRELATION, this::summarizeMessageCorrelation);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -425,8 +428,13 @@ public class CompactRecordLogger {
           .append(summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()));
     }
 
-    if (value.getJobKind() != null) {
-      result.append(" (").append(value.getJobKind()).append("),");
+    if (value.getJobKind() != null && value.getJobKind() != JobKind.BPMN_ELEMENT) {
+      result
+          .append(" (")
+          .append(value.getJobKind())
+          .append("[")
+          .append(value.getJobListenerEventType())
+          .append("]),");
     }
 
     result.append(" ").append(value.getRetries()).append(" retries,");
@@ -822,6 +830,24 @@ public class CompactRecordLogger {
     return stringBuilder
         .append("%s partition %d".formatted(targetPartitionWord, value.getPartitionId()))
         .toString();
+  }
+
+  private String summarizeMessageCorrelation(final Record<?> record) {
+    final var value = (MessageCorrelationRecordValue) record.getValue();
+    final var correlationKey = value.getCorrelationKey();
+
+    final var result = new StringBuilder().append("\"").append(value.getName()).append("\"");
+
+    if (correlationKey != null && !correlationKey.isEmpty()) {
+      result.append(" correlationKey: ").append(correlationKey);
+    }
+
+    result
+        .append(" processInstanceKey: ")
+        .append(value.getProcessInstanceKey())
+        .append(summarizeVariables(value.getVariables()));
+
+    return result.toString();
   }
 
   /**

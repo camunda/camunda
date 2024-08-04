@@ -39,7 +39,7 @@ import io.camunda.tasklist.webapp.management.dto.GetBackupStateResponseDto;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
-import io.camunda.tasklist.webapp.security.TasklistProfileService;
+import io.camunda.tasklist.webapp.security.TasklistProfileServiceImpl;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -77,9 +77,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       TestConfig.class,
       JacksonConfig.class,
       BackupService.class,
-      TasklistProfileService.class
+      TasklistProfileServiceImpl.class,
     })
-@ActiveProfiles({"test", "backend-test"})
+@ActiveProfiles({"test", "backend-test", "standalone"})
 public class BackupServiceElasticSearchTest {
 
   @SpyBean private BackupManagerElasticSearch backupManager;
@@ -756,7 +756,7 @@ public class BackupServiceElasticSearchTest {
   }
 
   private void assertBackupDetails(
-      List<SnapshotInfo> snapshotInfos, GetBackupStateResponseDto backupState) {
+      final List<SnapshotInfo> snapshotInfos, final GetBackupStateResponseDto backupState) {
     assertThat(backupState.getDetails()).hasSize(snapshotInfos.size());
     assertThat(backupState.getDetails())
         .extracting(GetBackupStateResponseDetailDto::getSnapshotName)
@@ -772,26 +772,31 @@ public class BackupServiceElasticSearchTest {
             snapshotInfos.stream().map(SnapshotInfo::startTime).toArray(Long[]::new));
   }
 
-  private SnapshotInfo createSnapshotInfoMock(String name, String uuid, SnapshotState state) {
+  private SnapshotInfo createSnapshotInfoMock(
+      final String name, final String uuid, final SnapshotState state) {
     return createSnapshotInfoMock(null, name, uuid, state, null);
   }
 
-  private SnapshotInfo createSnapshotInfoMock(Metadata metadata, String uuid, SnapshotState state) {
+  private SnapshotInfo createSnapshotInfoMock(
+      final Metadata metadata, final String uuid, final SnapshotState state) {
     return createSnapshotInfoMock(metadata, null, uuid, state, null);
   }
 
   private SnapshotInfo createSnapshotInfoMock(
-      String name, String uuid, SnapshotState state, List<SnapshotShardFailure> failures) {
+      final String name,
+      final String uuid,
+      final SnapshotState state,
+      final List<SnapshotShardFailure> failures) {
     return createSnapshotInfoMock(null, name, uuid, state, failures);
   }
 
   @NotNull
   private SnapshotInfo createSnapshotInfoMock(
-      Metadata metadata,
-      String name,
-      String uuid,
-      SnapshotState state,
-      List<SnapshotShardFailure> failures) {
+      final Metadata metadata,
+      final String name,
+      final String uuid,
+      final SnapshotState state,
+      final List<SnapshotShardFailure> failures) {
     final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class);
     if (metadata != null) {
       when(snapshotInfo.snapshotId())

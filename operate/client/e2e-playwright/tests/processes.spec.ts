@@ -10,10 +10,12 @@ import {setup} from './processes.mocks';
 import {test} from '../test-fixtures';
 import {expect} from '@playwright/test';
 import {convertToQueryString} from '../utils/convertToQueryString';
-import {deployProcess} from '../setup-utils';
+import {zeebeGrpcApi} from '../api/zeebe-grpc';
 import {config} from '../config';
 import {SETUP_WAITING_TIME} from './constants';
 import {Paths} from 'modules/Routes';
+
+const {deployProcesses} = zeebeGrpcApi;
 
 let initialData: Awaited<ReturnType<typeof setup>>;
 
@@ -95,28 +97,31 @@ test.beforeEach(async ({page, dashboardPage}) => {
 });
 
 test.describe('Processes', () => {
-  test('Processes Page Initial Load', async ({processesPage, page}) => {
-    await processesPage.validateCheckedState({
+  test('Processes Page Initial Load', async ({
+    processesPage: {filtersPanel},
+    page,
+  }) => {
+    await filtersPanel.validateCheckedState({
       checked: [
-        processesPage.runningInstancesCheckbox,
-        processesPage.activeCheckbox,
-        processesPage.incidentsCheckbox,
+        filtersPanel.runningInstancesCheckbox,
+        filtersPanel.activeCheckbox,
+        filtersPanel.incidentsCheckbox,
       ],
       unChecked: [
-        processesPage.finishedInstancesCheckbox,
-        processesPage.completedCheckbox,
-        processesPage.canceledCheckbox,
+        filtersPanel.finishedInstancesCheckbox,
+        filtersPanel.completedCheckbox,
+        filtersPanel.canceledCheckbox,
       ],
     });
 
     await expect(page.getByText('There is no Process selected')).toBeVisible();
     await expect(
-      page.getByText('To see a Diagram, select a Process in the Filters panel'),
+      page.getByText('To see a Diagram, select a Process in the filters panel'),
     ).toBeVisible();
 
-    await processesPage.displayOptionalFilter('Process Instance Key(s)');
+    await filtersPanel.displayOptionalFilter('Process Instance Key(s)');
 
-    await processesPage.processInstanceKeysFilter.fill(
+    await filtersPanel.processInstanceKeysFilter.fill(
       `${initialData.instanceWithoutAnIncident.processInstanceKey}, ${initialData.instanceWithAnIncident.processInstanceKey}`,
     );
 
@@ -138,26 +143,30 @@ test.describe('Processes', () => {
     ).toBeVisible();
   });
 
-  test('Select flow node in diagram', async ({processesPage, page}) => {
+  test('Select flow node in diagram', async ({
+    processesPage,
+    processesPage: {filtersPanel},
+    page,
+  }) => {
     const instance = initialData.instanceWithoutAnIncident;
 
-    await processesPage.displayOptionalFilter('Process Instance Key(s)');
+    await filtersPanel.displayOptionalFilter('Process Instance Key(s)');
 
     // Filter by Process Instance Key
-    await processesPage.processInstanceKeysFilter.fill(
+    await filtersPanel.processInstanceKeysFilter.fill(
       instance.processInstanceKey,
     );
 
     await expect(page.getByTestId('diagram')).not.toBeInViewport();
 
-    await processesPage.selectProcess('Order process');
+    await filtersPanel.selectProcess('Order process');
 
     // Select "Ship Articles" flow node
     const shipArticlesTaskId = 'shipArticles';
     await expect(page.getByTestId('diagram')).toBeInViewport();
 
     await processesPage.diagram.clickFlowNode('Ship Articles');
-    await expect(processesPage.flowNodeFilter).toHaveValue('Ship Articles');
+    await expect(filtersPanel.flowNodeFilter).toHaveValue('Ship Articles');
 
     await expect(
       page.getByText('There are no Instances matching this filter set'),
@@ -183,7 +192,7 @@ test.describe('Processes', () => {
     const checkPaymentTaskId = 'checkPayment';
 
     await processesPage.diagram.clickFlowNode('Check payment');
-    await expect(processesPage.flowNodeFilter).toHaveValue('Check payment');
+    await expect(filtersPanel.flowNodeFilter).toHaveValue('Check payment');
 
     await expect(page.getByRole('table').getByRole('row')).toHaveCount(2);
 
@@ -209,7 +218,11 @@ test.describe('Processes', () => {
     ).toHaveClass(/selected/);
   });
 
-  test('Wait for process creation', async ({processesPage, page}) => {
+  test('Wait for process creation', async ({
+    processesPage,
+    processesPage: {filtersPanel},
+    page,
+  }) => {
     await processesPage.navigateToProcesses({
       searchParams: {
         active: 'true',
@@ -222,9 +235,9 @@ test.describe('Processes', () => {
     await expect(page.getByTestId('data-table-skeleton')).toBeVisible();
     await expect(page.getByTestId('diagram-spinner')).toBeVisible();
 
-    await expect(processesPage.processNameFilter).toBeDisabled();
+    await expect(filtersPanel.processNameFilter).toBeDisabled();
 
-    await deployProcess(['newProcess.bpmn']);
+    await deployProcesses(['newProcess.bpmn']);
 
     await expect(page.getByTestId('diagram')).toBeInViewport({timeout: 20000});
 
@@ -235,8 +248,8 @@ test.describe('Processes', () => {
       page.getByText('There are no Instances matching this filter set'),
     ).toBeVisible();
 
-    await expect(processesPage.processNameFilter).toBeEnabled();
-    await expect(processesPage.processNameFilter).toHaveValue('Test Process');
+    await expect(filtersPanel.processNameFilter).toBeEnabled();
+    await expect(filtersPanel.processNameFilter).toHaveValue('Test Process');
   });
 
   test('Delete process definition after canceling running instance @roundtrip', async ({

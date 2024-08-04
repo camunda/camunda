@@ -46,7 +46,7 @@ public class DeleteProcessDefinitionHandler extends AbstractOperationHandler
   @Autowired private ListViewTemplate listViewTemplate;
 
   @Override
-  public void handleWithException(OperationEntity operation) throws Exception {
+  public void handleWithException(final OperationEntity operation) throws Exception {
 
     final Long processDefinitionKey = operation.getProcessDefinitionKey();
     if (processDefinitionKey == null) {
@@ -92,7 +92,8 @@ public class DeleteProcessDefinitionHandler extends AbstractOperationHandler
     return Set.of(OperationType.DELETE_PROCESS_DEFINITION);
   }
 
-  private void cascadeDeleteProcessInstances(Long processDefinitionKey, OperationEntity operation)
+  private void cascadeDeleteProcessInstances(
+      final Long processDefinitionKey, final OperationEntity operation)
       throws PersistenceException {
 
     // Delete in blocks (to avoid out of memory) and bottom-up from child to parent (to avoid
@@ -149,8 +150,8 @@ public class DeleteProcessDefinitionHandler extends AbstractOperationHandler
     operationsManager.completeOperation(operation);
   }
 
-  private void updateInstancesInBatchOperation(final OperationEntity operation, long increment)
-      throws PersistenceException {
+  private void updateInstancesInBatchOperation(
+      final OperationEntity operation, final long increment) throws PersistenceException {
     operationsManager.updateInstancesInBatchOperation(operation.getBatchOperationId(), increment);
   }
 }

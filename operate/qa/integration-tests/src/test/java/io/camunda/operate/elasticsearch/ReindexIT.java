@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.schema.SchemaManager;
+import io.camunda.operate.schema.migration.MigrationPlanFactory;
 import io.camunda.operate.schema.migration.Plan;
-import io.camunda.operate.schema.migration.ReindexPlan;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import java.util.List;
@@ -22,7 +22,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,7 +30,7 @@ public class ReindexIT extends OperateSearchAbstractIT {
   private String indexPrefix;
   @Autowired private SchemaManager schemaManager;
   @Autowired private TestSearchRepository searchRepository;
-  @Autowired private BeanFactory beanFactory;
+  @Autowired private MigrationPlanFactory migrationPlanFactory;
 
   @Override
   protected void runAdditionalBeforeEachSetup() throws Exception {
@@ -57,8 +56,8 @@ public class ReindexIT extends OperateSearchAbstractIT {
     schemaManager.refresh(idxName("index-*"));
 
     final Plan plan =
-        beanFactory
-            .getBean(ReindexPlan.class)
+        migrationPlanFactory
+            .createReindexPlan()
             .setSrcIndex(idxName("index-1.2.3"))
             .setDstIndex(idxName("index-1.2.4"));
 

@@ -89,6 +89,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
@@ -124,7 +125,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
       ProcessIndex processIndex,
       ListViewTemplate listViewTemplate,
       List<ProcessInstanceDependant> processInstanceDependantTemplates,
-      ObjectMapper objectMapper,
+      @Qualifier("operateObjectMapper") ObjectMapper objectMapper,
       OperateProperties operateProperties,
       RestHighLevelClient esClient,
       TenantAwareElasticsearchClient tenantAwareClient) {

@@ -7,6 +7,7 @@
  */
 package io.camunda.application;
 
+import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
@@ -37,7 +38,10 @@ public class StandaloneOperate {
 
     final var standaloneOperateApplication =
         MainSupport.createDefaultApplicationBuilder()
-            .sources(OperateModuleConfiguration.class, WebappsModuleConfiguration.class)
+            .sources(
+                CommonsModuleConfiguration.class,
+                OperateModuleConfiguration.class,
+                WebappsModuleConfiguration.class)
             .profiles(Profile.OPERATE.getId(), Profile.STANDALONE.getId())
             .addCommandLineProperties(true)
             .properties(getDefaultProperties())
@@ -51,19 +55,8 @@ public class StandaloneOperate {
 
   private static Map<String, Object> getDefaultProperties() {
     final Map<String, Object> defaultsProperties = new HashMap<>();
-    defaultsProperties.putAll(getWebProperties());
     defaultsProperties.putAll(getManagementProperties());
     return defaultsProperties;
-  }
-
-  private static Map<String, Object> getWebProperties() {
-    return Map.of(
-        "server.servlet.session.cookie.name",
-        "OPERATE-SESSION",
-        // Return error messages for all endpoints by default, except for Internal API.
-        // Internal API error handling is defined in InternalAPIErrorController.
-        "server.error.include-message",
-        "always");
   }
 
   public static Map<String, Object> getManagementProperties() {

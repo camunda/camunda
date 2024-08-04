@@ -28,6 +28,7 @@ test.describe('delete resource definitions', () => {
     page,
     commonPage,
     processesPage,
+    processesPage: {filtersPanel},
   }) => {
     await commonPage.mockClientConfig(context);
 
@@ -60,8 +61,8 @@ test.describe('delete resource definitions', () => {
       },
     });
 
-    await commonPage.addLeftArrow(processesPage.processNameFilter);
-    await commonPage.addLeftArrow(processesPage.processVersionFilter);
+    await commonPage.addLeftArrow(filtersPanel.processNameFilter);
+    await commonPage.addLeftArrow(filtersPanel.processVersionFilter);
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/delete-resources/process-filters.png',

@@ -8,9 +8,7 @@
 package io.camunda.operate.schema.migration.elasticsearch;
 
 import static io.camunda.operate.util.CollectionUtil.*;
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
-import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.property.MigrationProperties;
 import io.camunda.operate.schema.SchemaManager;
@@ -24,10 +22,6 @@ import java.util.Optional;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
 
 /**
  * A plan implemented as reindex request in elasticsearch.<br>
@@ -35,9 +29,6 @@ import org.springframework.stereotype.Component;
  * Steps that will be added are elasticsearch ingest processors.<br>
  * The steps will be applied in the order they were added.<br>
  */
-@Component
-@Conditional(ElasticsearchCondition.class)
-@Scope(SCOPE_PROTOTYPE)
 public class ElasticsearchPipelineReindexPlan extends PipelineReindexPlan implements ReindexPlan {
 
   private final RetryElasticsearchClient retryElasticsearchClient;
@@ -45,7 +36,6 @@ public class ElasticsearchPipelineReindexPlan extends PipelineReindexPlan implem
   private final MigrationProperties migrationProperties;
   private Script script;
 
-  @Autowired
   public ElasticsearchPipelineReindexPlan(
       final RetryElasticsearchClient retryElasticsearchClient,
       final MigrationProperties migrationProperties) {

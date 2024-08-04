@@ -9,9 +9,10 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
+import io.camunda.application.commons.CommonsModuleConfiguration;
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
+import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
-import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
-import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -32,12 +33,12 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     implements TestGateway<TestStandaloneBroker> {
 
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
-  private final BrokerProperties config;
+  private final BrokerBasedProperties config;
 
   public TestStandaloneBroker() {
-    super(BrokerModuleConfiguration.class);
+    super(BrokerModuleConfiguration.class, CommonsModuleConfiguration.class);
 
-    config = new BrokerProperties();
+    config = new BrokerBasedProperties();
 
     config.getNetwork().getCommandApi().setPort(SocketUtil.getNextAddress().getPort());
     config.getNetwork().getInternalApi().setPort(SocketUtil.getNextAddress().getPort());
@@ -50,7 +51,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     config.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
 
     //noinspection resource
-    withBean("config", config, BrokerProperties.class).withAdditionalProfile(Profile.BROKER);
+    withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.BROKER);
   }
 
   @Override
@@ -134,7 +135,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   }
 
   /** Returns the broker configuration */
-  public BrokerProperties brokerConfig() {
+  public BrokerBasedProperties brokerConfig() {
     return config;
   }
 
@@ -142,7 +143,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    * Modifies the broker configuration. Will still mutate the configuration if the broker is
    * started, but likely has no effect until it's restarted.
    */
-  public TestStandaloneBroker withBrokerConfig(final Consumer<BrokerProperties> modifier) {
+  public TestStandaloneBroker withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
     modifier.accept(config);
     return this;
   }

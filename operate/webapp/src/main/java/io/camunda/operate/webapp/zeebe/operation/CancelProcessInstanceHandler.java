@@ -26,7 +26,7 @@ public class CancelProcessInstanceHandler extends AbstractOperationHandler
   @Autowired private ProcessInstanceReader processInstanceReader;
 
   @Override
-  public void handleWithException(OperationEntity operation) throws Exception {
+  public void handleWithException(final OperationEntity operation) throws Exception {
     if (operation.getProcessInstanceKey() == null) {
       failOperation(operation, "No process instance id is provided.");
       return;

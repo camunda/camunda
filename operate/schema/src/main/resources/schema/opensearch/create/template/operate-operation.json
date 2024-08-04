@@ -60,7 +60,11 @@
 			},
 			"migrationPlan": {
 				"type": "text"
-			}
-		}
+			},
+      "completedDate": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      }
+    }
 	}
 }

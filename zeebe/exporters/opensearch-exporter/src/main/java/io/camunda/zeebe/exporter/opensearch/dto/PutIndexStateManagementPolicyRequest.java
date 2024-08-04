@@ -20,7 +20,9 @@ public record PutIndexStateManagementPolicyRequest(Policy policy) {
 
     public record State(String name, List<Action> actions, List<Transition> transitions) {
 
-      public record Action(Object delete) {}
+      public record Action(DeleteAction delete) {}
+
+      public record DeleteAction() {}
 
       public record Transition(
           @JsonProperty("state_name") String stateName, Conditions conditions) {

@@ -7,19 +7,30 @@
  */
 package io.camunda.webapps.controllers;
 
+import static io.camunda.webapps.controllers.WebappsRequestForwardManager.getRequestedUrl;
+
 import io.camunda.webapps.WebappsModuleConfiguration.WebappsProperties;
-import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 public class IndexController {
-  @Autowired private ServletContext context;
+
   @Autowired private WebappsProperties webappsProperties;
 
   @GetMapping("/index.html")
   public String index() {
     return "redirect:/" + webappsProperties.defaultApp();
+  }
+
+  /**
+   * Redirects the old frontend routes (common tasklist and operate routes) to the default-app
+   * sub-path. This can be removed after the creation of the auto-discovery service.
+   */
+  @GetMapping({"/processes", "/login"})
+  public String redirectOldRoutes(final HttpServletRequest request) {
+    return "redirect:/" + webappsProperties.defaultApp() + getRequestedUrl(request);
   }
 }

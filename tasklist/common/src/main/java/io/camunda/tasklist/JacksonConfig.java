@@ -56,13 +56,11 @@ public class JacksonConfig {
         .build();
   }
 
-  @Bean
-  public DateTimeFormatter dateTimeFormatter() {
+  private DateTimeFormatter dateTimeFormatter() {
     return DateTimeFormatter.ofPattern(tasklistProperties.getElasticsearch().getDateFormat());
   }
 
-  @Bean
-  public DateTimeFormatter localDateFormatter() {
+  private DateTimeFormatter localDateFormatter() {
     return DateTimeFormatter.ofPattern(tasklistProperties.getZeebeElasticsearch().getDateFormat());
   }
 }

@@ -44,7 +44,7 @@ public class BigProcessDataGenerator {
 
   @Autowired private RestHighLevelClient esClient;
 
-  private void init(TestContext testContext) {
+  private void init(final TestContext testContext) {
     zeebeClient =
         ZeebeClient.newClientBuilder()
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
@@ -52,7 +52,7 @@ public class BigProcessDataGenerator {
             .build();
   }
 
-  public void createData(TestContext testContext) throws Exception {
+  public void createData(final TestContext testContext) throws Exception {
     init(testContext);
     try {
       final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
@@ -120,7 +120,7 @@ public class BigProcessDataGenerator {
     LOGGER.info("Started process instance with id {} ", PROCESS_BPMN_PROCESS_ID);
   }
 
-  private String getAliasFor(String index) {
+  private String getAliasFor(final String index) {
     return String.format("operate-%s-*_alias", index);
   }
 

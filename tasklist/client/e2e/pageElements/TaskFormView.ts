@@ -10,7 +10,6 @@ import {Locator, Page} from '@playwright/test';
 
 class TaskFormView {
   private page: Page;
-  readonly completeTaskButton: Locator;
   readonly nameInput: Locator;
   readonly addressInput: Locator;
   readonly ageInput: Locator;
@@ -27,19 +26,18 @@ class TaskFormView {
   constructor(page: Page) {
     this.page = page;
     this.form = page.getByTestId('embedded-form');
-    this.completeTaskButton = page.getByRole('button', {name: 'Complete Task'});
-    this.nameInput = page.getByLabel('Name*');
-    this.addressInput = page.getByLabel('Address*');
-    this.ageInput = page.getByLabel('Age');
+    this.nameInput = this.form.getByLabel('Name*');
+    this.addressInput = this.form.getByLabel('Address*');
+    this.ageInput = this.form.getByLabel('Age');
     this.numberInput = this.form.getByLabel('Number');
-    this.incrementButton = page.getByRole('button', {name: 'Increment'});
-    this.decrementButton = page.getByRole('button', {name: 'Decrement'});
-    this.dateInput = page.getByPlaceholder('mm/dd/yyyy');
-    this.timeInput = page.getByPlaceholder('hh:mm ?m');
+    this.incrementButton = this.form.getByRole('button', {name: 'Increment'});
+    this.decrementButton = this.form.getByRole('button', {name: 'Decrement'});
+    this.dateInput = this.form.getByPlaceholder('mm/dd/yyyy');
+    this.timeInput = this.form.getByPlaceholder('hh:mm ?m');
     this.checkbox = this.form.getByLabel('Checkbox');
     this.selectDropdown = this.form.getByText('Select').last();
     this.checkbox = this.form.getByLabel('Checkbox');
-    this.tagList = page.getByPlaceholder('Search');
+    this.tagList = this.form.getByPlaceholder('Search');
   }
   async fillDate(date: string) {
     await this.dateInput.click();

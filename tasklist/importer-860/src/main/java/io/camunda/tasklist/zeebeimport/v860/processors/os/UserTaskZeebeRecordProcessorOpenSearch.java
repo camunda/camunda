@@ -22,12 +22,12 @@ import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToTa
 import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToVariableEntityMapper;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import jakarta.json.Json;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.json.JSONObject;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.slf4j.Logger;
@@ -98,12 +98,12 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
           TaskVariableTemplate.VALUE,
           "null".equals(variable.getValue())
               ? "null"
-              : objectMapper.writeValueAsString(JSONObject.stringToValue(variable.getValue())));
+              : objectMapper.writeValueAsString(Json.createValue(variable.getValue())));
       updateFields.put(
           TaskVariableTemplate.FULL_VALUE,
           "null".equals(variable.getFullValue())
               ? "null"
-              : objectMapper.writeValueAsString(JSONObject.stringToValue(variable.getFullValue())));
+              : objectMapper.writeValueAsString(Json.createValue(variable.getFullValue())));
       updateFields.put(TaskVariableTemplate.IS_PREVIEW, variable.getIsPreview());
 
       return new BulkOperation.Builder()

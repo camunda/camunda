@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -76,6 +77,7 @@ public final class EventAppliers implements EventApplier {
     registerDeploymentAppliers(state);
 
     registerMessageAppliers(state);
+    registerMessageCorrelationAppliers(state);
     registerMessageSubscriptionAppliers(state);
     registerMessageStartEventSubscriptionAppliers(state);
 
@@ -106,7 +108,8 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerProcessAppliers(final MutableProcessingState state) {
-    register(ProcessIntent.CREATED, new ProcessCreatedApplier(state));
+    register(ProcessIntent.CREATED, 1, new ProcessCreatedV1Applier(state));
+    register(ProcessIntent.CREATED, 2, new ProcessCreatedV2Applier(state));
     register(ProcessIntent.DELETING, new ProcessDeletingApplier(state));
     register(ProcessIntent.DELETED, new ProcessDeletedApplier(state));
   }
@@ -221,6 +224,11 @@ public final class EventAppliers implements EventApplier {
     register(MessageIntent.EXPIRED, new MessageExpiredApplier(state.getMessageState()));
   }
 
+  private void registerMessageCorrelationAppliers(final MutableProcessingState state) {
+    register(MessageCorrelationIntent.CORRELATED, NOOP_EVENT_APPLIER);
+    register(MessageCorrelationIntent.NOT_CORRELATED, NOOP_EVENT_APPLIER);
+  }
+
   private void registerMessageSubscriptionAppliers(final MutableProcessingState state) {
     register(
         MessageSubscriptionIntent.CREATED,
@@ -239,6 +247,9 @@ public final class EventAppliers implements EventApplier {
     register(
         MessageSubscriptionIntent.DELETED,
         new MessageSubscriptionDeletedApplier(state.getMessageSubscriptionState()));
+    register(
+        MessageSubscriptionIntent.MIGRATED,
+        new MessageSubscriptionMigratedApplier(state.getMessageSubscriptionState()));
   }
 
   private void registerMessageStartEventSubscriptionAppliers(final MutableProcessingState state) {
@@ -285,6 +296,9 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessMessageSubscriptionIntent.DELETED,
         new ProcessMessageSubscriptionDeletedApplier(subscriptionState));
+    register(
+        ProcessMessageSubscriptionIntent.MIGRATED,
+        new ProcessMessageSubscriptionMigratedApplier(subscriptionState));
   }
 
   private void registerProcessEventAppliers(final MutableProcessingState state) {
@@ -310,7 +324,8 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerDecisionAppliers(final MutableProcessingState state) {
-    register(DecisionIntent.CREATED, new DecisionCreatedApplier(state.getDecisionState()));
+    register(DecisionIntent.CREATED, 1, new DecisionCreatedV1Applier(state.getDecisionState()));
+    register(DecisionIntent.CREATED, 2, new DecisionCreatedV2Applier(state.getDecisionState()));
     register(DecisionIntent.DELETED, new DecisionDeletedApplier(state.getDecisionState()));
   }
 
@@ -329,7 +344,8 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerFormAppliers(final MutableProcessingState state) {
-    register(FormIntent.CREATED, new FormCreatedApplier(state.getFormState()));
+    register(FormIntent.CREATED, 1, new FormCreatedV1Applier(state.getFormState()));
+    register(FormIntent.CREATED, 2, new FormCreatedV2Applier(state.getFormState()));
     register(FormIntent.DELETED, new FormDeletedApplier(state.getFormState()));
   }
 

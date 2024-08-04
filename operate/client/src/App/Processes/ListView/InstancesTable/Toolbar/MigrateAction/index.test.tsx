@@ -78,7 +78,7 @@ describe('<MigrateAction />', () => {
     expect(screen.getByRole('button', {name: /migrate/i})).toBeEnabled();
   });
 
-  it('should disable migrate button, when selected instances are called by parent', async () => {
+  it('should enable migrate button when selected instances are called by parent', async () => {
     mockFetchProcessInstances().withSuccess(mockCalledProcessInstances);
 
     const {user} = render(<MigrateAction />, {
@@ -95,7 +95,7 @@ describe('<MigrateAction />', () => {
       processInstancesSelectionStore.selectProcessInstance(instance.id);
     });
 
-    expect(screen.getByRole('button', {name: /migrate/i})).toBeDisabled();
+    expect(screen.getByRole('button', {name: /migrate/i})).toBeEnabled();
   });
 
   it('should disable migrate button, when process XML could not be loaded', async () => {
@@ -183,12 +183,12 @@ describe('<MigrateAction />', () => {
 
     expect(
       screen.getByText(
-        'Migrate is used to move a process to a newer (or older) version of the process.',
+        'Migrate is used to migrate running process instances to a different process definition.',
       ),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'When the migration steps are executed, all process instances are affected. This can lead to interruptions, delays, or changes.',
+        'When the migration steps are executed, all selected process instances will be affected. This can lead to interruptions, delays or changes.',
       ),
     ).toBeInTheDocument();
     expect(

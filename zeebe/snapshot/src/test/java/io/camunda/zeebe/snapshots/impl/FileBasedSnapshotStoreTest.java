@@ -19,11 +19,13 @@ import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.CRC32C;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,6 +36,8 @@ public class FileBasedSnapshotStoreTest {
   private static final String PENDING_DIRECTORY = "pending";
 
   private static final String SNAPSHOT_CONTENT_FILE_NAME = "file1.txt";
+  private static final String SNAPSHOT_CONTENT = "this is the content";
+  private static final Integer PARTITION_ID = 1;
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   @Rule public ActorSchedulerRule scheduler = new ActorSchedulerRule();
@@ -57,11 +61,11 @@ public class FileBasedSnapshotStoreTest {
     final var root = temporaryFolder.getRoot().toPath();
 
     // when
-    final var store = new FileBasedSnapshotStore(1, root);
+    final var store = new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of());
 
     // then
-    assertThat(root.resolve(FileBasedSnapshotStore.SNAPSHOTS_DIRECTORY)).exists().isDirectory();
-    assertThat(root.resolve(FileBasedSnapshotStore.PENDING_DIRECTORY)).exists().isDirectory();
+    assertThat(root.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_DIRECTORY)).exists().isDirectory();
+    assertThat(root.resolve(FileBasedSnapshotStoreImpl.PENDING_DIRECTORY)).exists().isDirectory();
     assertThat(store.getLatestSnapshot()).isEmpty();
   }
 
@@ -253,7 +257,7 @@ public class FileBasedSnapshotStoreTest {
     final var testChecksumProvider = new TestChecksumProvider(badChecksums);
 
     // when
-    final var store = new FileBasedSnapshotStore(1, rootDirectory, testChecksumProvider);
+    final var store = new FileBasedSnapshotStore(0, 1, rootDirectory, testChecksumProvider);
     scheduler.submitActor(store).join();
     final var takenSnapshot = (FileBasedSnapshot) takeTransientSnapshot(1, store).persist().join();
 
@@ -353,12 +357,52 @@ public class FileBasedSnapshotStoreTest {
     assertThat(newSnapshot.getPath()).exists();
   }
 
+  @Test
+  public void shouldRestartWithAReceivedSnapshot() throws IOException {
+    // given
+    final Map<String, Long> fileChecksums = new HashMap<>();
+    final var fileContentChecksum = new CRC32C();
+    fileContentChecksum.update(SNAPSHOT_CONTENT.getBytes(StandardCharsets.UTF_8));
+    fileChecksums.put(SNAPSHOT_CONTENT_FILE_NAME, fileContentChecksum.getValue());
+    final var receiverStorePath = temporaryFolder.newFolder("receiver").toPath();
+
+    final var store =
+        new FileBasedSnapshotStore(
+            0, PARTITION_ID, receiverStorePath, new TestChecksumProvider(fileChecksums));
+    scheduler.submitActor(store);
+
+    // when
+    final var persistedSnapshot = takeTransientSnapshot().persist().join();
+    final var receivedSnapshot = store.newReceivedSnapshot(persistedSnapshot.getId()).join();
+    try (final var reader = persistedSnapshot.newChunkReader()) {
+      while (reader.hasNext()) {
+        receivedSnapshot.apply(reader.next()).join();
+      }
+    }
+
+    receivedSnapshot.persist().join();
+
+    // restart store will attempt to update the latest snapshot to the most recent one and check for
+    // corruption.
+    store.close();
+
+    final var restartedStore =
+        new FileBasedSnapshotStore(
+            0, PARTITION_ID, receiverStorePath, new TestChecksumProvider(fileChecksums));
+    scheduler.submitActor(restartedStore).join();
+
+    assertThat(restartedStore.getLatestSnapshot())
+        .describedAs(
+            "The latest snapshot is not detected as corrupted and should be loaded after restart")
+        .hasValueSatisfying(s -> assertThat(s.getId()).isEqualTo(persistedSnapshot.getId()));
+  }
+
   private boolean createSnapshotDir(final Path path) {
     try {
       FileUtil.ensureDirectoryExists(path);
       Files.write(
           path.resolve(SNAPSHOT_CONTENT_FILE_NAME),
-          "This is the content".getBytes(),
+          SNAPSHOT_CONTENT.getBytes(),
           CREATE_NEW,
           StandardOpenOption.WRITE);
     } catch (final IOException e) {
@@ -379,7 +423,7 @@ public class FileBasedSnapshotStoreTest {
   }
 
   private FileBasedSnapshotStore createStore(final Path root) {
-    final var store = new FileBasedSnapshotStore(1, root);
+    final var store = new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of());
     scheduler.submitActor(store).join();
 
     return store;

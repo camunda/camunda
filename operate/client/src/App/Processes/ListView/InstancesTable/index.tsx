@@ -100,7 +100,7 @@ const InstancesTable: React.FC = observer(() => {
     const processInstanceFilters = getProcessInstanceFilters(location.search);
     const filteredIds = processInstanceFilters.ids?.split(/[\s,]+/);
     const ids = ['EXCLUDE', 'ALL'].includes(selectionMode)
-      ? filteredIds ?? []
+      ? (filteredIds ?? [])
       : selectedProcessInstanceIds;
 
     const requestFilterParameters = {

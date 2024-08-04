@@ -16,6 +16,7 @@ import io.camunda.tasklist.util.TasklistZeebeExtension;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.zeebe.PartitionHolder;
 import io.camunda.tasklist.zeebeimport.ZeebeImporter;
+import io.camunda.webapps.zeebe.StandalonePartitionSupplier;
 import org.apache.hc.core5.http.HttpStatus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -46,6 +47,8 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
   @Autowired private ZeebeImporter zeebeImporter;
 
   @Autowired private PartitionHolder partitionHolder;
+
+  @Autowired private StandalonePartitionSupplier partitionSupplier;
 
   @Autowired private TasklistProperties tasklistProperties;
 
@@ -92,7 +95,7 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
   private void startZeebe() {
     zeebeExtension.beforeEach(null);
-    ReflectionTestUtils.setField(partitionHolder, "zeebeClient", zeebeExtension.getClient());
+    ReflectionTestUtils.setField(partitionSupplier, "zeebeClient", zeebeExtension.getClient());
   }
 
   @Test

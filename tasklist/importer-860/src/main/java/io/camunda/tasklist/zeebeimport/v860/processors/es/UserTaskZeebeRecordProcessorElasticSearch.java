@@ -20,6 +20,7 @@ import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToTa
 import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToVariableEntityMapper;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import jakarta.json.Json;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -28,7 +29,6 @@ import java.util.Optional;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.xcontent.XContentType;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -108,12 +108,12 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
           TaskVariableTemplate.VALUE,
           "null".equals(variable.getValue())
               ? "null"
-              : objectMapper.writeValueAsString(JSONObject.stringToValue(variable.getValue())));
+              : objectMapper.writeValueAsString(Json.createValue(variable.getValue())));
       updateFields.put(
           TaskVariableTemplate.FULL_VALUE,
           "null".equals(variable.getFullValue())
               ? "null"
-              : objectMapper.writeValueAsString(JSONObject.stringToValue(variable.getFullValue())));
+              : objectMapper.writeValueAsString(Json.createValue(variable.getFullValue())));
       updateFields.put(TaskVariableTemplate.IS_PREVIEW, variable.getIsPreview());
 
       return new UpdateRequest()

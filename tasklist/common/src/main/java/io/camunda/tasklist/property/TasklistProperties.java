@@ -27,7 +27,6 @@ public class TasklistProperties {
   public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 1_000_000L;
   public static final String ELASTIC_SEARCH = "elasticsearch";
   public static final String OPEN_SEARCH = "opensearch";
-  public static String database = ELASTIC_SEARCH;
   private static final String UNKNOWN_VERSION = "unknown-version";
 
   private boolean importerEnabled = true;
@@ -46,6 +45,7 @@ public class TasklistProperties {
   private String readerUserId = "view";
   private String readerPassword = "view";
   private String readerDisplayName = "view";
+  private String database = ELASTIC_SEARCH;
 
   private List<String> roles = List.of("OWNER");
 
@@ -385,7 +385,7 @@ public class TasklistProperties {
     return this;
   }
 
-  public static String getDatabase() {
+  public String getDatabase() {
     return database;
   }
 
@@ -427,9 +427,5 @@ public class TasklistProperties {
       return openSearch.getIndexPrefix();
     }
     return null;
-  }
-
-  public String getDatabaseType() {
-    return database;
   }
 }

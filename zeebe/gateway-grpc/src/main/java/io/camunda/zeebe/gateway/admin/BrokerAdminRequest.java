@@ -21,7 +21,7 @@ import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class BrokerAdminRequest extends BrokerRequest<Void> {
+public class BrokerAdminRequest extends BrokerRequest<AdminResponse> {
   private final AdminRequest request = new AdminRequest();
   private final AdminResponse response = new AdminResponse();
 
@@ -43,6 +43,15 @@ public class BrokerAdminRequest extends BrokerRequest<Void> {
 
   public void resumeExporting() {
     request.setType(AdminRequestType.RESUME_EXPORTING);
+  }
+
+  public void getFLowControlConfiguration() {
+    request.setType(AdminRequestType.GET_FLOW_CONTROL);
+  }
+
+  public void setFlowControlConfiguration(final byte[] configuration) {
+    request.setType(AdminRequestType.SET_FLOW_CONTROL);
+    request.setPayload(configuration);
   }
 
   public BrokerAdminRequest banInstance(final long key) {
@@ -105,12 +114,12 @@ public class BrokerAdminRequest extends BrokerRequest<Void> {
   }
 
   @Override
-  protected BrokerResponse<Void> readResponse() {
-    return new BrokerResponse<>(null);
+  protected BrokerResponse<AdminResponse> readResponse() {
+    return new BrokerResponse<>(response);
   }
 
   @Override
-  protected Void toResponseDto(final DirectBuffer buffer) {
+  protected AdminResponse toResponseDto(final DirectBuffer buffer) {
     throw new UnsupportedOperationException();
   }
 

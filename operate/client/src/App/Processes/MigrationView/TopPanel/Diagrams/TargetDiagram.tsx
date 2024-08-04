@@ -25,7 +25,7 @@ const OVERLAY_TYPE = 'migrationTargetSummary';
 
 const TargetDiagram: React.FC = observer(() => {
   const {
-    migrationState: {selectedTargetProcess, selectedTargetVersion},
+    migrationState: {selectedTargetVersion},
     selectedTargetProcessId,
   } = processesStore;
   const isDiagramLoading = processXmlStore.state.status === 'fetching';
@@ -41,6 +41,9 @@ const TargetDiagram: React.FC = observer(() => {
     } else {
       processXmlStore.reset();
     }
+    processInstanceMigrationStore.setTargetProcessDefinitionKey(
+      selectedTargetProcessId ?? null,
+    );
   }, [selectedTargetProcessId]);
 
   const getStatus = () => {
@@ -58,15 +61,12 @@ const TargetDiagram: React.FC = observer(() => {
 
   return (
     <DiagramWrapper>
-      <Header
-        mode={isSummaryStep ? 'view' : 'edit'}
-        label="Target"
-        processName={selectedTargetProcess?.name ?? ''}
-        processVersion={selectedTargetVersion?.toString() ?? ''}
-      >
-        <TargetProcessField />
-        <TargetVersionField />
-      </Header>
+      {!processInstanceMigrationStore.isSummaryStep && (
+        <Header mode="edit" label="Target">
+          <TargetProcessField />
+          <TargetVersionField />
+        </Header>
+      )}
       <DiagramShell
         status={getStatus()}
         emptyMessage={{

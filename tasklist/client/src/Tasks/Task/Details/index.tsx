@@ -7,7 +7,7 @@
  */
 
 import {Section} from '@carbon/react';
-import {Outlet, useMatch} from 'react-router-dom';
+import {Outlet, useMatch, useNavigate} from 'react-router-dom';
 import {CurrentUser, Process, Task} from 'modules/types';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {useTask} from 'modules/queries/useTask';
@@ -19,6 +19,9 @@ import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';
 import {Aside} from './Aside';
 import {Header} from './Header';
 import styles from './styles.module.scss';
+import {useEffect} from 'react';
+import {useTranslation} from 'react-i18next';
+import {notificationsStore} from 'modules/stores/notifications';
 
 type OutletContext = {
   task: Task;
@@ -29,25 +32,41 @@ type OutletContext = {
 
 const Details: React.FC = () => {
   const {id} = useTaskDetailsParams();
+  const {t} = useTranslation();
   const {data: task, refetch} = useTask(id, {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    refetchInterval: 5000,
   });
-  const taskCompleted = task?.taskState === 'COMPLETED';
+  const taskState = task?.taskState;
+  const isTaskCompleted = taskState === 'COMPLETED';
   const {data: process, isLoading: processLoading} = useProcessDefinition(
     task?.processDefinitionKey ?? '',
     {
-      enabled: task !== undefined && !taskCompleted,
+      enabled: task !== undefined && !isTaskCompleted,
     },
   );
   const {data: currentUser} = useCurrentUser();
   const onAssignmentError = () => refetch();
 
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (taskState === 'CANCELED') {
+      notificationsStore.displayNotification({
+        kind: 'info',
+        title: t('processInstanceCancelledNotification'),
+        subtitle: `${task?.processName} (${task?.processInstanceKey})`,
+        isDismissable: true,
+      });
+      navigate(pages.initial);
+    }
+  }, [navigate, task?.processInstanceKey, task?.processName, taskState, t]);
+
   const tabs = [
     {
       key: 'task',
-      title: 'Task',
-      label: 'Show task',
+      title: t('taskDetailsTaskTabLabel'),
+      label: t('taskDetailsShowTaskLabel'),
       selected: useMatch(pages.taskDetails()) !== null,
       to: {
         pathname: pages.taskDetails(id),
@@ -55,14 +74,14 @@ const Details: React.FC = () => {
     },
     {
       key: 'process',
-      title: 'Process',
-      label: 'Show associated BPMN process',
+      title: t('taskDetailsProcessTabLabel'),
+      label: t('taskDetailsShowBpmnProcessLabel'),
       selected: useMatch(pages.taskDetailsProcess()) !== null,
       to: {
         pathname: pages.taskDetailsProcess(id),
       },
       visible:
-        !taskCompleted && process !== undefined && process.bpmnXml !== null,
+        !isTaskCompleted && process !== undefined && process.bpmnXml !== null,
     },
   ];
 
@@ -79,7 +98,7 @@ const Details: React.FC = () => {
           user={currentUser}
           onAssignmentError={onAssignmentError}
         />
-        <TabListNav label="Task Details Navigation" items={tabs} />
+        <TabListNav label={t('taskDetailsNavLabel')} items={tabs} />
         <Outlet
           context={
             {task, currentUser, refetch, process} satisfies OutletContext

@@ -22,8 +22,6 @@ import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.NoopScheduledCommandCache;
@@ -56,16 +54,15 @@ class ProcessingScheduleServiceTest {
 
   private final TestCommandCache commandCache = new TestCommandCache();
   private LifecycleSupplier lifecycleSupplier;
-  private WriterAsyncSupplier writerAsyncSupplier;
+  private final TestWriter testWriter = new TestWriter();
   private TestScheduleServiceActorDecorator scheduleService;
 
   @BeforeEach
   void before() {
     lifecycleSupplier = new LifecycleSupplier();
-    writerAsyncSupplier = new WriterAsyncSupplier();
     final var processingScheduleService =
         new ProcessingScheduleServiceImpl(
-            lifecycleSupplier, lifecycleSupplier, writerAsyncSupplier, commandCache);
+            lifecycleSupplier, lifecycleSupplier, () -> testWriter, commandCache);
 
     scheduleService = new TestScheduleServiceActorDecorator(processingScheduleService);
     actorScheduler.submitActor(scheduleService);
@@ -157,7 +154,7 @@ class ProcessingScheduleServiceTest {
         new ProcessingScheduleServiceImpl(
             lifecycleSupplier,
             lifecycleSupplier,
-            writerAsyncSupplier,
+            () -> testWriter,
             new NoopScheduledCommandCache());
     final var mockedTask = spy(new DummyTask());
 
@@ -172,14 +169,14 @@ class ProcessingScheduleServiceTest {
   @Test
   void shouldFailActorIfWriterCantBeRetrieved() {
     // given
-    writerAsyncSupplier.writerFutureRef.set(
-        CompletableActorFuture.completedExceptionally(new RuntimeException("expected")));
     final var notOpenScheduleService =
         new TestScheduleServiceActorDecorator(
             new ProcessingScheduleServiceImpl(
                 lifecycleSupplier,
                 lifecycleSupplier,
-                writerAsyncSupplier,
+                () -> {
+                  throw new RuntimeException("expected");
+                },
                 new NoopScheduledCommandCache()));
 
     // when
@@ -205,7 +202,7 @@ class ProcessingScheduleServiceTest {
 
     // then
 
-    assertThat(writerAsyncSupplier.writer.entries)
+    assertThat(testWriter.entries)
         .describedAs("Record is written to the log stream")
         .map(LogAppendEntry::key)
         .containsExactly(1L);
@@ -220,7 +217,7 @@ class ProcessingScheduleServiceTest {
     // non-deterministic
     // order
     final var counter = new AtomicInteger(0);
-    writerAsyncSupplier.writer.acceptWrites.set(
+    testWriter.acceptWrites.set(
         () -> {
           final var invocationCount = counter.incrementAndGet();
           // wait a sufficiently high enough invocation count to ensure the second timer is
@@ -255,7 +252,7 @@ class ProcessingScheduleServiceTest {
     actorScheduler.workUntilDone();
 
     // then
-    assertThat(writerAsyncSupplier.writer.entries)
+    assertThat(testWriter.entries)
         .describedAs("Both timers have executed")
         .hasSize(2)
         .map(LogAppendEntry::key)
@@ -315,9 +312,7 @@ class ProcessingScheduleServiceTest {
     assertThat(commandCache.stagedCache().contains(ACTIVATE_ELEMENT, 1)).isTrue();
     assertThat(commandCache.stagedCache().persisted()).isTrue();
     assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1)).isTrue();
-    assertThat(writerAsyncSupplier.writer.entries)
-        .extracting(LogAppendEntry::key)
-        .containsExactly(1L);
+    assertThat(testWriter.entries).extracting(LogAppendEntry::key).containsExactly(1L);
   }
 
   @Test
@@ -335,13 +330,13 @@ class ProcessingScheduleServiceTest {
     actorScheduler.workUntilDone();
 
     // then
-    assertThat(writerAsyncSupplier.writer.entries).isEmpty();
+    assertThat(testWriter.entries).isEmpty();
   }
 
   @Test
   void shouldNotCacheWrittenCommandsIfWriteFails() {
     // given
-    writerAsyncSupplier.writer.acceptWrites.set(
+    testWriter.acceptWrites.set(
         () -> {
           throw new RuntimeException("failure");
         });
@@ -464,17 +459,6 @@ class ProcessingScheduleServiceTest {
     }
   }
 
-  private static final class WriterAsyncSupplier implements Supplier<ActorFuture<LogStreamWriter>> {
-    private final TestWriter writer = new TestWriter();
-    AtomicReference<ActorFuture<LogStreamWriter>> writerFutureRef =
-        new AtomicReference<>(CompletableActorFuture.completed(writer));
-
-    @Override
-    public ActorFuture<LogStreamWriter> get() {
-      return writerFutureRef.get();
-    }
-  }
-
   private static final class LifecycleSupplier implements Supplier<Phase>, BooleanSupplier {
 
     volatile Phase currentPhase = Phase.PROCESSING;
@@ -513,7 +497,7 @@ class ProcessingScheduleServiceTest {
         final List<LogAppendEntry> appendEntries,
         final long sourcePosition) {
       if (!acceptWrites.get().getAsBoolean()) {
-        return Either.left(WriteFailure.FULL);
+        return Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED);
       }
 
       entries.addAll(appendEntries);
@@ -627,7 +611,7 @@ class ProcessingScheduleServiceTest {
           new ProcessingScheduleServiceImpl(
               lifecycleSupplier,
               lifecycleSupplier,
-              writerAsyncSupplier,
+              () -> testWriter,
               new NoopScheduledCommandCache());
       final var mockedTask = spy(new DummyTask());
 
@@ -654,7 +638,7 @@ class ProcessingScheduleServiceTest {
 
       // then
 
-      assertThat(writerAsyncSupplier.writer.entries)
+      assertThat(testWriter.entries)
           .describedAs("Record is written to the log stream")
           .map(LogAppendEntry::key)
           .containsExactly(1L);

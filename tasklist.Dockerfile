@@ -1,6 +1,6 @@
 # hadolint global ignore=DL3006
-ARG BASE_IMAGE="alpine:3.19.1"
-ARG BASE_DIGEST="sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1ad6b"
+ARG BASE_IMAGE="alpine:3.20.2"
+ARG BASE_DIGEST="sha256:0a4eaa0eecf5f8c050e5bba433f58c052be7587ee8af3e8b3910ef9ab5fbe9f5"
 
 # Prepare tasklist Distribution
 FROM ${BASE_IMAGE}@${BASE_DIGEST} as prepare
@@ -42,7 +42,7 @@ LABEL org.opencontainers.image.source="https://github.com/camunda/camunda"
 LABEL org.opencontainers.image.version="${VERSION}"
 LABEL org.opencontainers.image.revision="${REVISION}"
 LABEL org.opencontainers.image.vendor="Camunda Services GmbH"
-LABEL org.opencontainers.image.licenses="Proprietary"
+LABEL org.opencontainers.image.licenses="(Apache-2.0 AND LicenseRef-Camunda-License-1.0)"
 LABEL org.opencontainers.image.title="Camunda Tasklist"
 LABEL org.opencontainers.image.description="Tasklist is a ready-to-use application to rapidly implement business processes alongside user tasks in Zeebe"
 
@@ -65,10 +65,6 @@ WORKDIR ${TASKLIST_HOME}
 VOLUME /tmp
 VOLUME ${TASKLIST_HOME}/logs
 
-COPY --from=prepare /tmp/tasklist ${TASKLIST_HOME}
-# rename tasklist-migrate script to migrate (as expected by SaaS)
-RUN mv ${TASKLIST_HOME}/bin/tasklist-migrate ${TASKLIST_HOME}/bin/migrate
-
 RUN addgroup --gid 1001 camunda && \
     adduser -D -h ${TASKLIST_HOME} -G camunda -u 1001 camunda && \
     # These directories are to be mounted by users, eagerly creating them and setting ownership
@@ -76,6 +72,12 @@ RUN addgroup --gid 1001 camunda && \
     mkdir ${TASKLIST_HOME}/logs && \
     chown -R 1001:0 ${TASKLIST_HOME} && \
     chmod -R 0775 ${TASKLIST_HOME}
+
+COPY --from=prepare --chown=1001:0 --chmod=0775 /tmp/tasklist ${TASKLIST_HOME}
+
+# rename tasklist-migrate script to migrate (as expected by SaaS)
+RUN mv ${TASKLIST_HOME}/bin/tasklist-migrate ${TASKLIST_HOME}/bin/migrate
+
 USER 1001:1001
 
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/tasklist/bin/tasklist"]

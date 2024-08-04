@@ -13,6 +13,7 @@ import io.camunda.operate.entities.MetricEntity;
 import io.camunda.operate.schema.indices.MetricIndex;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +22,9 @@ import org.springframework.stereotype.Component;
 public class UsageMetricDAO extends GenericDAO<MetricEntity, MetricIndex> {
   @Autowired
   public UsageMetricDAO(
-      ObjectMapper objectMapper, MetricIndex index, RestHighLevelClient esClient) {
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper,
+      final MetricIndex index,
+      final RestHighLevelClient esClient) {
     super(objectMapper, index, esClient);
   }
 }

@@ -25,14 +25,14 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
 
   /* This constructor is used for either embedded or linked forms. */
   public FormEntity(
-      String processDefinitionId,
-      String bpmnId,
-      String schema,
-      Long version,
-      String tenantId,
-      String formKey,
-      Boolean embedded,
-      Boolean isDeleted) {
+      final String processDefinitionId,
+      final String bpmnId,
+      final String schema,
+      final Long version,
+      final String tenantId,
+      final String formKey,
+      final Boolean embedded,
+      final Boolean isDeleted) {
     if (embedded) {
       setId(createId(processDefinitionId, bpmnId));
     } else {
@@ -49,26 +49,30 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
 
   /* This constructor is used for embedded forms. */
 
-  public FormEntity(String processDefinitionId, String bpmnId, String schema) {
+  public FormEntity(final String processDefinitionId, final String bpmnId, final String schema) {
     this(processDefinitionId, bpmnId, schema, DEFAULT_TENANT_IDENTIFIER);
   }
 
-  public FormEntity(String processDefinitionId, String bpmnId, String schema, String tenantId) {
+  public FormEntity(
+      final String processDefinitionId,
+      final String bpmnId,
+      final String schema,
+      final String tenantId) {
     setId(createId(processDefinitionId, bpmnId));
-    this.setTenantId(tenantId);
+    setTenantId(tenantId);
     this.bpmnId = bpmnId;
     this.processDefinitionId = processDefinitionId;
     this.schema = schema;
     this.tenantId = tenantId;
-    this.embedded = true;
-    this.isDeleted = false;
+    embedded = true;
+    isDeleted = false;
   }
 
   public Boolean getEmbedded() {
     return embedded;
   }
 
-  public FormEntity setEmbedded(Boolean embedded) {
+  public FormEntity setEmbedded(final Boolean embedded) {
     this.embedded = embedded;
     return this;
   }
@@ -104,36 +108,20 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
     return version;
   }
 
-  public FormEntity setVersion(Long version) {
+  public FormEntity setVersion(final Long version) {
     this.version = version;
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }
 
-  public FormEntity setTenantId(String tenantId) {
+  @Override
+  public FormEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
-  }
-
-  public Boolean getIsDeleted() {
-    return isDeleted;
-  }
-
-  public FormEntity setIsDeleted(Boolean isDeleted) {
-    this.isDeleted = isDeleted;
-    return this;
-  }
-
-  public static String createId(String processId, String formKey) {
-    return String.format("%s_%s", processId, formKey);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), bpmnId, processDefinitionId, schema, version);
   }
 
   @Override
@@ -158,6 +146,11 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), bpmnId, processDefinitionId, schema, version);
+  }
+
+  @Override
   public String toString() {
     return "FormEntity{"
         + "formKey='"
@@ -175,5 +168,18 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
         + ", isDeleted="
         + isDeleted
         + '}';
+  }
+
+  public Boolean getIsDeleted() {
+    return isDeleted;
+  }
+
+  public FormEntity setIsDeleted(final Boolean isDeleted) {
+    this.isDeleted = isDeleted;
+    return this;
+  }
+
+  public static String createId(final String processId, final String formKey) {
+    return String.format("%s_%s", processId, formKey);
   }
 }

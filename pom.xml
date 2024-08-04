@@ -20,13 +20,18 @@
     <module>parent</module>
     <module>dist</module>
     <module>build-tools</module>
-    <module>spring-boot-starter-camunda-sdk</module>
     <module>zeebe</module>
     <module>operate</module>
     <module>tasklist</module>
     <module>identity</module>
+    <module>webapps-common</module>
+    <module>authentication</module>
     <module>search</module>
     <module>service</module>
+    <module>clients/java</module>
+    <module>clients/spring-boot-starter-camunda-sdk</module>
+    <module>testing/camunda-process-test-java</module>
+    <module>testing/camunda-process-test-spring</module>
   </modules>
 
   <scm>
@@ -63,4 +68,23 @@
     </plugins>
   </build>
 
+  <profiles>
+    <!--
+      The QA module is enabled by default, but having it in a profile allows us to exclude it easily.
+      That is useful for example for creating releases. This profile is active if the skipQaBuild
+      property is not present, or is present and set to a value other than 'true'.
+      -->
+    <profile>
+      <id>integration-tests-build</id>
+      <activation>
+        <property>
+          <name>skipQaBuild</name>
+          <value>!true</value>
+        </property>
+      </activation>
+      <modules>
+        <module>qa</module>
+      </modules>
+    </profile>
+  </profiles>
 </project>

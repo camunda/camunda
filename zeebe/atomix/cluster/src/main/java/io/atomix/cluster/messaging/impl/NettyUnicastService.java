@@ -92,7 +92,7 @@ public class NettyUnicastService implements ManagedUnicastService {
     // as we use SO_BROADCAST, it's only possible to bind to wildcard without root privilege, so we
     // don't support binding to multiple interfaces here; wouldn't make sense anyway
     final var port = config.getPort() != null ? config.getPort() : advertisedAddress.port();
-    bindAddress = Address.from("0.0.0.0", port);
+    bindAddress = new Address(new InetSocketAddress(port));
   }
 
   @Override

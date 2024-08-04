@@ -16,17 +16,19 @@ package commands
 
 import (
 	"context"
-	"github.com/camunda/camunda/clients/go/v8/pkg/entities"
-	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 	"io"
 	"log"
 	"time"
+
+	"github.com/camunda/camunda/clients/go/v8/pkg/entities"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 )
 
 const (
 	DefaultJobTimeout     = 5 * time.Minute
 	DefaultJobTimeoutInMs = int64(DefaultJobTimeout / time.Millisecond)
 	DefaultJobWorkerName  = "default"
+	DefaultJobTenantID    = "<default>"
 )
 
 type DispatchActivateJobsCommand interface {

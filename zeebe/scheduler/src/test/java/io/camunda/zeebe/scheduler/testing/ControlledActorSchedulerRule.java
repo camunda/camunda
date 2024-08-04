@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.scheduler.testing;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
@@ -20,6 +22,8 @@ import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import org.agrona.concurrent.IdleStrategy;
 import org.junit.rules.ExternalResource;
 
@@ -50,7 +54,11 @@ public final class ControlledActorSchedulerRule extends ExternalResource {
 
   @Override
   protected void after() {
-    actorScheduler.stop();
+    try {
+      actorScheduler.stop().get(5000, MILLISECONDS);
+    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public ActorFuture<Void> submitActor(final Actor actor) {

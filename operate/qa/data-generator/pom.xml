@@ -12,6 +12,10 @@
   <name>Operate QA Data Generator</name>
 
   <dependencies>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-client-java</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
@@ -21,11 +25,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-qa-util</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
     </dependency>
 
     <!-- ELASTICSEARCH -->

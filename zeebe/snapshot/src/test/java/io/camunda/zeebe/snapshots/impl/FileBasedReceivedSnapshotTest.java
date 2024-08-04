@@ -9,6 +9,7 @@ package io.camunda.zeebe.snapshots.impl;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
@@ -228,14 +229,14 @@ public class FileBasedReceivedSnapshotTest {
 
       final SnapshotChunk corruptedChunk =
           SnapshotChunkWrapper.withSnapshotChecksum(firstChunk, 0xCAFEL);
-      receivedSnapshot.apply(corruptedChunk).join();
-    }
 
-    assertThat(receivedSnapshot.getPath())
-        .asInstanceOf(DirectoryAssert.factory())
-        .as("the received snapshot should contain only the first chunk")
-        .isDirectoryContainingExactly(
-            receivedSnapshot.getPath().resolve(firstChunk.getChunkName()));
+      // then
+      assertThatCode(() -> receivedSnapshot.apply(corruptedChunk).join())
+          .hasCauseInstanceOf(SnapshotWriteException.class)
+          .hasMessageContaining(
+              "Expected snapshot chunk with equal snapshot checksum 562580221, but got chunk with snapshot checksum "
+                  + 0xCAFEL);
+    }
   }
 
   @Test
@@ -252,15 +253,15 @@ public class FileBasedReceivedSnapshotTest {
       receivedSnapshot.apply(firstChunk).join();
 
       final var corruptedChunk = SnapshotChunkWrapper.withChecksum(firstChunk, 0xCAFEL);
-      receivedSnapshot.apply(corruptedChunk).join();
-    }
 
-    // then
-    assertThat(receivedSnapshot.getPath())
-        .asInstanceOf(DirectoryAssert.factory())
-        .as("the received snapshot should contain only the first chunk")
-        .isDirectoryContainingExactly(
-            receivedSnapshot.getPath().resolve(firstChunk.getChunkName()));
+      // then
+      assertThatCode(() -> receivedSnapshot.apply(corruptedChunk).join())
+          .hasCauseInstanceOf(SnapshotWriteException.class)
+          .hasMessageContaining(
+              "Expected to have checksum "
+                  + 0xCAFEL
+                  + " for snapshot chunk file1 (1-0-1-0-0), but calculated 3806033162");
+    }
   }
 
   @Test
@@ -332,7 +333,45 @@ public class FileBasedReceivedSnapshotTest {
         .describedAs("Metadata file is persisted in snapshot path")
         .isDirectoryContaining(
             name ->
-                name.getFileName().toString().equals(FileBasedSnapshotStore.METADATA_FILE_NAME));
+                name.getFileName()
+                    .toString()
+                    .equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME));
+  }
+
+  @Test
+  public void shouldReceiveSnapshotCorrectlyWhenFilesAreChunked() throws IOException {
+    // given
+    final var persistedSnapshot = takePersistedSnapshot(1L);
+    final var receivedSnapshot =
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
+
+    // when
+    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
+      snapshotChunkReader.setMaximumChunkSize(2);
+
+      while (snapshotChunkReader.hasNext()) {
+        receivedSnapshot.apply(snapshotChunkReader.next()).join();
+      }
+    }
+
+    receivedSnapshot.persist().join();
+
+    //    then
+    try (final var files = Files.list(receivedSnapshot.getPath())) {
+      files.forEach(
+          filePath -> {
+            final var fileName = filePath.getFileName().toString();
+            try {
+              final var fileBytes = Files.readAllBytes(filePath);
+              final var persistedFileBytes =
+                  Files.readAllBytes(persistedSnapshot.getPath().resolve(fileName));
+
+              assertThat(fileBytes).isEqualTo(persistedFileBytes);
+            } catch (final IOException e) {
+              throw new RuntimeException(e);
+            }
+          });
+    }
   }
 
   private ReceivedSnapshot receiveSnapshot(final PersistedSnapshot persistedSnapshot) {
@@ -370,7 +409,7 @@ public class FileBasedReceivedSnapshotTest {
   }
 
   private FileBasedSnapshotStore createStore(final Path root) {
-    final var store = new FileBasedSnapshotStore(PARTITION_ID, root);
+    final var store = new FileBasedSnapshotStore(0, PARTITION_ID, root, snapshotPath -> Map.of());
     scheduler.submitActor(store);
 
     return store;

@@ -137,9 +137,8 @@ public final class DbMessageSubscriptionState
 
   @Override
   public void put(final long key, final MessageSubscriptionRecord record) {
-    tenantIdKey.wrapString(record.getTenantId());
-    elementInstanceKey.wrapLong(record.getElementInstanceKey());
-    messageName.wrapBuffer(record.getMessageNameBuffer());
+    wrapSubscriptionKeys(
+        record.getElementInstanceKey(), record.getMessageNameBuffer(), record.getTenantId());
 
     messageSubscription.setKey(key).setRecord(record).setCorrelating(false);
 
@@ -154,6 +153,8 @@ public final class DbMessageSubscriptionState
   public void updateToCorrelatingState(final MessageSubscriptionRecord record) {
     final var messageKey = record.getMessageKey();
     var messageVariables = record.getVariablesBuffer();
+    final var requestId = record.getRequestId();
+    final var requestStreamId = record.getRequestStreamId();
     if (record == messageSubscription.getRecord()) {
       // copy the buffer before loading the subscription to avoid that it is overridden
       messageVariables = BufferUtil.cloneBuffer(record.getVariablesBuffer());
@@ -167,8 +168,13 @@ public final class DbMessageSubscriptionState
               record.getElementInstanceKey(), record.getMessageName()));
     }
 
-    // update the message key and the variables
-    subscription.getRecord().setMessageKey(messageKey).setVariables(messageVariables);
+    // update the message key, variables and request data
+    subscription
+        .getRecord()
+        .setMessageKey(messageKey)
+        .setVariables(messageVariables)
+        .setRequestId(requestId)
+        .setRequestStreamId(requestStreamId);
 
     updateCorrelatingFlag(subscription, true);
 
@@ -218,6 +224,25 @@ public final class DbMessageSubscriptionState
     transientState.remove(
         new PendingSubscription(
             elementInstanceKey.getValue(), messageName.toString(), tenantIdKey.toString()));
+  }
+
+  @Override
+  public void update(final long key, final MessageSubscriptionRecord record) {
+    final MessageSubscription subscription =
+        get(record.getElementInstanceKey(), record.getMessageNameBuffer());
+
+    if (subscription == null) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to update subscription but not found. [element-instance-key: %d, message-name: %s]",
+              record.getElementInstanceKey(), record.getMessageName()));
+    }
+
+    wrapSubscriptionKeys(
+        record.getElementInstanceKey(), record.getMessageNameBuffer(), record.getTenantId());
+    messageSubscription.setKey(key).setRecord(record).setCorrelating(subscription.isCorrelating());
+
+    subscriptionColumnFamily.update(elementKeyAndMessageName, messageSubscription);
   }
 
   private void updateCorrelatingFlag(
@@ -274,5 +299,12 @@ public final class DbMessageSubscriptionState
       final long timestampMs) {
     transientState.update(
         new PendingSubscription(elementInstanceKey, messageName, tenantId), timestampMs);
+  }
+
+  private void wrapSubscriptionKeys(
+      final long elementInstanceKey, final DirectBuffer messageName, final String tenantId) {
+    this.elementInstanceKey.wrapLong(elementInstanceKey);
+    this.messageName.wrapBuffer(messageName);
+    tenantIdKey.wrapString(tenantId);
   }
 }

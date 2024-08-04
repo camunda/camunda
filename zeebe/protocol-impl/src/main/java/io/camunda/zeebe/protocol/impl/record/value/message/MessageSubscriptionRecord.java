@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -36,8 +37,12 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
+  private final LongProperty requestIdProperty = new LongProperty("requestId", -1);
+  private final IntegerProperty requestStreamIdProperty =
+      new IntegerProperty("requestStreamId", -1);
+
   public MessageSubscriptionRecord() {
-    super(9);
+    super(11);
     declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(messageKeyProp)
@@ -46,7 +51,9 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(interruptingProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(variablesProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(requestIdProperty)
+        .declareProperty(requestStreamIdProperty);
   }
 
   public void wrap(final MessageSubscriptionRecord record) {
@@ -59,6 +66,8 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     setBpmnProcessId(record.getBpmnProcessIdBuffer());
     setVariables(record.getVariablesBuffer());
     setTenantId(record.getTenantId());
+    setRequestId(record.getRequestId());
+    setRequestStreamId(record.getRequestStreamId());
   }
 
   @JsonIgnore
@@ -116,6 +125,26 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     return interruptingProp.getValue();
   }
 
+  @Override
+  public long getRequestId() {
+    return requestIdProperty.getValue();
+  }
+
+  @Override
+  public int getRequestStreamId() {
+    return requestStreamIdProperty.getValue();
+  }
+
+  public MessageSubscriptionRecord setRequestStreamId(final int requestStreamId) {
+    requestStreamIdProperty.setValue(requestStreamId);
+    return this;
+  }
+
+  public MessageSubscriptionRecord setRequestId(final long requestId) {
+    requestIdProperty.setValue(requestId);
+    return this;
+  }
+
   public MessageSubscriptionRecord setInterrupting(final boolean interrupting) {
     interruptingProp.setValue(interrupting);
     return this;
@@ -169,5 +198,10 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
   public MessageSubscriptionRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
     return this;
+  }
+
+  @JsonIgnore
+  public boolean hasRequestData() {
+    return getRequestId() != -1 || getRequestStreamId() != -1;
   }
 }

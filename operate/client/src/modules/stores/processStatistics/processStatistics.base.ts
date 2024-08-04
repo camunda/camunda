@@ -18,6 +18,7 @@ import {
   ACTIVE_BADGE,
   CANCELED_BADGE,
   COMPLETED_BADGE,
+  COMPLETED_END_EVENT_BADGE,
   INCIDENTS_BADGE,
 } from 'modules/bpmn-js/badgePositions';
 import {
@@ -40,6 +41,7 @@ const overlayPositions = {
   incidents: INCIDENTS_BADGE,
   canceled: CANCELED_BADGE,
   completed: COMPLETED_BADGE,
+  completedEndEvents: COMPLETED_END_EVENT_BADGE,
 } as const;
 
 class ProcessStatistics extends NetworkReconnectionHandler {
@@ -104,12 +106,21 @@ class ProcessStatistics extends NetworkReconnectionHandler {
   };
 
   get overlaysData() {
-    return this.flowNodeStates.map(({flowNodeState, count, flowNodeId}) => ({
-      payload: {flowNodeState, count},
-      type: `statistics-${flowNodeState}`,
-      flowNodeId,
-      position: overlayPositions[flowNodeState],
-    }));
+    return this.flowNodeStates.map(
+      ({flowNodeState: originalFlowNodeState, count, flowNodeId}) => {
+        const flowNodeState =
+          originalFlowNodeState === 'completed'
+            ? 'completedEndEvents'
+            : originalFlowNodeState;
+
+        return {
+          payload: {flowNodeState, count},
+          type: `statistics-${flowNodeState}`,
+          flowNodeId,
+          position: overlayPositions[flowNodeState],
+        };
+      },
+    );
   }
 
   get flowNodeStates() {

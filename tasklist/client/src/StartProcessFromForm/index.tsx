@@ -13,6 +13,7 @@ import {Content} from '@carbon/react';
 import {FormJS} from './FormJS';
 import {Skeleton} from './FormJS/Skeleton';
 import {useStartExternalProcess} from 'modules/mutations/useStartExternalProcess';
+import {useTranslation} from 'react-i18next';
 import {logger} from 'modules/utils/logger';
 import {tracking} from 'modules/tracking';
 import CheckImage from 'modules/images/orange-check-mark.svg';
@@ -69,6 +70,8 @@ const StartProcessFromForm: React.FC = () => {
     }
   }, [data]);
 
+  const {t} = useTranslation();
+
   return (
     <>
       <Content
@@ -103,15 +106,15 @@ const StartProcessFromForm: React.FC = () => {
             .with({pageView: 'submit-success'}, () => (
               <Message
                 icon={{
-                  altText: 'Success checkmark',
+                  altText: t('publicStartFormSuccessIconAltText'),
                   path: CheckImage,
                 }}
-                heading="Success!"
+                heading={t('publicStartFormSuccessMessageTitle')}
                 description={
                   <>
-                    Your form has been successfully submitted.
+                    {t('formSubmittedSuccessfullyDescription')}
                     <br />
-                    You can close this window now.
+                    {t('startProcessFromFormCloseWindowInstruction')}
                   </>
                 }
               />
@@ -119,23 +122,25 @@ const StartProcessFromForm: React.FC = () => {
             .with({pageView: 'form-not-found'}, () => (
               <Message
                 icon={{
-                  altText: 'Error robot',
+                  altText: t('startProcessFromFormErrorRobot'),
                   path: ErrorRobotImage,
                 }}
-                heading="404 - Page not found"
-                description="We're sorry! The requested URL you're looking for could not be found."
+                heading={t('startProcessFromFormPageNotFoundHeading')}
+                description={t('startProcessFromFormPageNotFoundDescription')}
               />
             ))
             .with({pageView: 'failed-submission'}, () => (
               <Message
                 icon={{
-                  altText: 'Error robot',
+                  altText: t('startProcessFromFormErrorRobot'),
                   path: ErrorRobotImage,
                 }}
-                heading="Something went wrong"
-                description="Please try again later and reload the page."
+                heading={t('startProcessFromFormSubmissionFailedHeading')}
+                description={t(
+                  'startProcessFromFormSubmissionFailedDescription',
+                )}
                 button={{
-                  label: 'Reload',
+                  label: t('startProcessFromFormReloadButton'),
                   onClick: () => {
                     reset();
                   },
@@ -145,11 +150,11 @@ const StartProcessFromForm: React.FC = () => {
             .with({pageView: 'invalid-form-schema'}, () => (
               <Message
                 icon={{
-                  altText: 'Error robot',
+                  altText: t('startProcessFromFormErrorRobot'),
                   path: ErrorRobotImage,
                 }}
-                heading="Invalid form"
-                description="Something went wrong and the form could not be displayed. Please contact your provider."
+                heading={t('startProcessFromFormInvalidFormHeading')}
+                description={t('startProcessFromFormInvalidFormDescription')}
               />
             ))
             .exhaustive()}

@@ -15,7 +15,6 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.*;
 import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
 
-import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.property.MigrationProperties;
 import io.camunda.operate.schema.SchemaManager;
@@ -35,15 +34,7 @@ import org.opensearch.client.opensearch.core.reindex.Source;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
 
-@Component
-@Conditional(OpensearchCondition.class)
-@Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class OpensearchReindexWithQueryAndScriptPlan implements ReindexWithQueryAndScriptPlan {
 
   private static final Logger LOGGER =
@@ -55,7 +46,6 @@ public class OpensearchReindexWithQueryAndScriptPlan implements ReindexWithQuery
   private String dstIndex;
   private String listViewIndexName;
 
-  @Autowired
   public OpensearchReindexWithQueryAndScriptPlan(
       final RichOpenSearchClient richOpenSearchClient,
       final MigrationProperties migrationProperties) {

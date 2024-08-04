@@ -20,11 +20,13 @@ import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstance
 import {
   createInstance,
   createMultiInstanceFlowNodeInstances,
+  createOperation,
 } from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {useEffect} from 'react';
+import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
 jest.mock('modules/utils/bpmn');
 
@@ -50,6 +52,13 @@ describe('FlowNodeInstanceLog', () => {
         state: 'ACTIVE',
         processName: 'processName',
         bpmnProcessId: 'processName',
+        operations: [
+          createOperation({
+            state: 'COMPLETED',
+            type: 'MIGRATE_PROCESS_INSTANCE',
+            completedDate: MOCK_TIMESTAMP,
+          }),
+        ],
       }),
     );
 
@@ -180,5 +189,9 @@ describe('FlowNodeInstanceLog', () => {
     expect((await screen.findAllByText('processName')).length).toBeGreaterThan(
       0,
     );
+
+    expect(
+      screen.getByText('Migrated 2018-12-12 00:00:00'),
+    ).toBeInTheDocument();
   });
 });

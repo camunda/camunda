@@ -9,6 +9,7 @@ package io.camunda.tasklist.util;
 
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
+import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.zeebe.containers.ZeebeContainer;
@@ -55,19 +56,19 @@ public abstract class TasklistZeebeExtension
   public abstract void refreshIndices(Instant instant);
 
   @Override
-  public void beforeEach(ExtensionContext extensionContext) {
+  public void beforeEach(final ExtensionContext extensionContext) {
     startZeebe();
   }
 
   @Override
-  public void handleTestExecutionException(ExtensionContext context, Throwable throwable)
-      throws Throwable {
-    this.failed = true;
+  public void handleTestExecutionException(
+      final ExtensionContext context, final Throwable throwable) throws Throwable {
+    failed = true;
     throw throwable;
   }
 
   @Override
-  public void afterEach(ExtensionContext extensionContext) {
+  public void afterEach(final ExtensionContext extensionContext) {
     stop();
   }
 
@@ -103,7 +104,7 @@ public abstract class TasklistZeebeExtension
       }
       zeebeContainer = zeebeContainerContainerPoolManager.getContainer();
     }
-    this.prefix = zeebeContainer.getEnvMap().get(getZeebeExporterIndexPrefixConfigParameterName());
+    prefix = zeebeContainer.getEnvMap().get(getZeebeExporterIndexPrefixConfigParameterName());
     LOGGER.info("Using Zeebe container with indexPrefix={}", prefix);
     setZeebeIndexesPrefix(prefix);
     final Integer zeebeRestPort = zeebeContainer.getMappedPort(8080);
@@ -165,7 +166,7 @@ public abstract class TasklistZeebeExtension
     return prefix;
   }
 
-  public void setPrefix(String prefix) {
+  public void setPrefix(final String prefix) {
     this.prefix = prefix;
   }
 

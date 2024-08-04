@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.configuration.backpressure;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.concurrency.limits.Limit;
 import com.netflix.concurrency.limits.limit.FixedLimit;
 import com.netflix.concurrency.limits.limit.Gradient2Limit;
@@ -15,12 +16,16 @@ import com.netflix.concurrency.limits.limit.VegasLimit;
 import com.netflix.concurrency.limits.limit.WindowedLimit;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.StabilizingAIMDLimit;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 public final class LimitCfg implements ConfigurationEntry {
 
   private boolean enabled = true;
+
+  @JsonProperty(value = "useWindowed")
   private boolean useWindowed = true;
+
   private LimitAlgorithm algorithm = LimitAlgorithm.AIMD;
   private final AIMDCfg aimd = new AIMDCfg();
   private final FixedCfg fixed = new FixedCfg();
@@ -80,31 +85,6 @@ public final class LimitCfg implements ConfigurationEntry {
 
   public LegacyVegasCfg getLegacyVegas() {
     return legacyVegas;
-  }
-
-  @Override
-  public String toString() {
-    return "LimitCfg{"
-        + "enabled="
-        + enabled
-        + ", useWindowed="
-        + useWindowed
-        + ", algorithm='"
-        + algorithm
-        + '\''
-        + ", aimd="
-        + aimd
-        + ", fixed="
-        + fixed
-        + ", vegas="
-        + vegas
-        + ", gradient="
-        + gradient
-        + ", gradient2="
-        + gradient2
-        + ", legacyVegas="
-        + legacyVegas
-        + '}';
   }
 
   /**
@@ -175,6 +155,56 @@ public final class LimitCfg implements ConfigurationEntry {
         .expectedRTT(aimdCfg.getRequestTimeout().toMillis(), TimeUnit.MILLISECONDS)
         .backoffRatio(aimdCfg.getBackoffRatio())
         .build();
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        enabled, useWindowed, algorithm, aimd, fixed, vegas, gradient, gradient2, legacyVegas);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof final LimitCfg limitCfg)) {
+      return false;
+    }
+    return enabled == limitCfg.enabled
+        && useWindowed == limitCfg.useWindowed
+        && algorithm == limitCfg.algorithm
+        && Objects.equals(aimd, limitCfg.aimd)
+        && Objects.equals(fixed, limitCfg.fixed)
+        && Objects.equals(vegas, limitCfg.vegas)
+        && Objects.equals(gradient, limitCfg.gradient)
+        && Objects.equals(gradient2, limitCfg.gradient2)
+        && Objects.equals(legacyVegas, limitCfg.legacyVegas);
+  }
+
+  @Override
+  public String toString() {
+    return "LimitCfg{"
+        + "enabled="
+        + enabled
+        + ", useWindowed="
+        + useWindowed
+        + ", algorithm='"
+        + algorithm
+        + '\''
+        + ", aimd="
+        + aimd
+        + ", fixed="
+        + fixed
+        + ", vegas="
+        + vegas
+        + ", gradient="
+        + gradient
+        + ", gradient2="
+        + gradient2
+        + ", legacyVegas="
+        + legacyVegas
+        + '}';
   }
 
   public enum LimitAlgorithm {

@@ -21,7 +21,7 @@ import {
 import {
   mockResponses as mockProcessDetailResponses,
   completedOrderProcessInstance,
-} from '../mocks/processInstance.mocks';
+} from '../mocks/processInstance';
 import {open} from 'modules/mocks/diagrams';
 
 test.beforeEach(async ({page, commonPage, context}) => {
@@ -33,6 +33,7 @@ test.describe('delete finished instances', () => {
   test('delete finished instance from processes page', async ({
     page,
     processesPage,
+    processesPage: {filtersPanel},
     commonPage,
   }) => {
     await page.route(
@@ -54,9 +55,9 @@ test.describe('delete finished instances', () => {
       options: {waitUntil: 'networkidle'},
     });
 
-    await processesPage.selectProcess('Order process');
-    await processesPage.selectVersion('1');
-    await processesPage.processVersionFilter.blur();
+    await filtersPanel.selectProcess('Order process');
+    await filtersPanel.selectVersion('1');
+    await filtersPanel.processVersionFilter.blur();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/delete-finished-instances/operate-instances-finished-instances.png',
@@ -89,6 +90,7 @@ test.describe('delete finished instances', () => {
     page,
     commonPage,
     processesPage,
+    processesPage: {filtersPanel},
   }) => {
     const processInstancesMock = {
       totalCount: mockFinishedOrderProcessInstances.totalCount - 1,
@@ -115,9 +117,9 @@ test.describe('delete finished instances', () => {
       options: {waitUntil: 'networkidle'},
     });
 
-    await processesPage.selectProcess('Order process');
-    await processesPage.selectVersion('1');
-    await processesPage.processVersionFilter.blur();
+    await filtersPanel.selectProcess('Order process');
+    await filtersPanel.selectVersion('1');
+    await filtersPanel.processVersionFilter.blur();
 
     await commonPage.expandOperationsPanel();
 

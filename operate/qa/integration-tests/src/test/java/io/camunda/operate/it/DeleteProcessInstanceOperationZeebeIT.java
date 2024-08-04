@@ -22,6 +22,7 @@ public class DeleteProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
 
   @Autowired private BatchOperationReader batchOperationReader;
 
+  @Override
   @Before
   public void before() {
     super.before();

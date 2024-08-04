@@ -25,7 +25,7 @@ import {
 import {
   mockResponses as mockProcessInstanceDetailResponses,
   runningOrderProcessInstance,
-} from '../mocks/processInstance.mocks';
+} from '../mocks/processInstance';
 import {open} from 'modules/mocks/diagrams';
 
 test.beforeEach(async ({page, commonPage, context}) => {
@@ -51,7 +51,12 @@ test.describe('get familiar with operate', () => {
     });
   });
 
-  test('view processes', async ({page, commonPage, processesPage}) => {
+  test('view processes', async ({
+    page,
+    commonPage,
+    processesPage,
+    processesPage: {filtersPanel},
+  }) => {
     await page.route(
       /^.*\/api.*$/i,
       mockProcessesResponses({
@@ -71,9 +76,9 @@ test.describe('get familiar with operate', () => {
       options: {waitUntil: 'networkidle'},
     });
 
-    await processesPage.selectProcess('Order process');
-    await processesPage.selectVersion('1');
-    await processesPage.processVersionFilter.blur();
+    await filtersPanel.selectProcess('Order process');
+    await filtersPanel.selectVersion('1');
+    await filtersPanel.processVersionFilter.blur();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/get-familiar-with-operate/operate-view-process.png',

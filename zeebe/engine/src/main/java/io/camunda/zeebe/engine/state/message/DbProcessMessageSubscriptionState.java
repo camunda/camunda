@@ -138,6 +138,11 @@ public final class DbProcessMessageSubscriptionState
   }
 
   @Override
+  public void update(final long key, final ProcessMessageSubscriptionRecord record) {
+    update(record, s -> s.setRecord(record));
+  }
+
+  @Override
   public ProcessMessageSubscription getSubscription(
       final long elementInstanceKey, final DirectBuffer messageName, final String tenantId) {
     wrapSubscriptionKeys(elementInstanceKey, messageName, tenantId);

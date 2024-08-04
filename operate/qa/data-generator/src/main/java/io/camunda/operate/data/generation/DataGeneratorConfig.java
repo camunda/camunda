@@ -53,7 +53,7 @@ public class DataGeneratorConfig {
 
   @Bean("dataGeneratorThreadPoolExecutor")
   public ThreadPoolTaskExecutor getDataGeneratorTaskExecutor(
-      DataGeneratorProperties dataGeneratorProperties) {
+      final DataGeneratorProperties dataGeneratorProperties) {
     final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setThreadFactory(getThreadFactory());
     executor.setCorePoolSize(dataGeneratorProperties.getThreadCount());
@@ -70,9 +70,9 @@ public class DataGeneratorConfig {
       public Thread newThread(final Runnable runnable) {
         final Thread thread =
             new DataGeneratorThread(
-                this.getThreadGroup(), runnable, this.nextThreadName(), createZeebeClient());
-        thread.setPriority(this.getThreadPriority());
-        thread.setDaemon(this.isDaemon());
+                getThreadGroup(), runnable, nextThreadName(), createZeebeClient());
+        thread.setPriority(getThreadPriority());
+        thread.setDaemon(isDaemon());
         return thread;
       }
     };
@@ -80,7 +80,7 @@ public class DataGeneratorConfig {
 
   public class DataGeneratorThread extends Thread {
 
-    private ZeebeClient zeebeClient;
+    private final ZeebeClient zeebeClient;
 
     public DataGeneratorThread(final ZeebeClient zeebeClient) {
       this.zeebeClient = zeebeClient;

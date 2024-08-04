@@ -18,6 +18,10 @@ public final record TypedValue(ValueType type, Object value) {
   public static final TypedValue FALSE = new TypedValue(ValueType.BOOLEAN, Boolean.FALSE);
 
   public TypedValue(final ValueType type, final Object value) {
+    if (value == null && type != ValueType.NULL) {
+      throw new IllegalArgumentException("Expected non-null value, for value type " + type.name());
+    }
+
     this.type = type;
     this.value = type == ValueType.NULL ? null : value;
   }
@@ -66,15 +70,6 @@ public final record TypedValue(ValueType type, Object value) {
     return (String) value;
   }
 
-  public enum ValueType {
-    DOUBLE,
-    INTEGER,
-    LONG,
-    BOOLEAN,
-    STRING,
-    NULL
-  }
-
   public static TypedValue of(final int value) {
     return new TypedValue(ValueType.INTEGER, value);
   }
@@ -92,11 +87,18 @@ public final record TypedValue(ValueType type, Object value) {
   }
 
   public static TypedValue of(final String value) {
+    if (value == null) {
+      return NULL;
+    }
+
     return new TypedValue(ValueType.STRING, value);
   }
 
   public static <T> List<TypedValue> of(
       final List<T> values, final Function<T, TypedValue> mapper) {
+    if (values == null) {
+      throw new IllegalArgumentException("Expected non-null values collection, for typed values.");
+    }
     return values.stream().map(mapper).collect(Collectors.toList());
   }
 
@@ -117,5 +119,14 @@ public final record TypedValue(ValueType type, Object value) {
       return of((Boolean) value);
     }
     throw new IllegalArgumentException("Non-supported type: " + value.getClass());
+  }
+
+  public enum ValueType {
+    DOUBLE,
+    INTEGER,
+    LONG,
+    BOOLEAN,
+    STRING,
+    NULL
   }
 }

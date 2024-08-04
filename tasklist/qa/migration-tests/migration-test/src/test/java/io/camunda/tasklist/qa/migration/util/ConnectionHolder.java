@@ -23,7 +23,7 @@ public class ConnectionHolder {
   @Autowired private TestContainerUtil testContainerUtil;
 
   @Bean
-  public RestHighLevelClient getEsClient(TestContext testContext) {
+  public RestHighLevelClient tasklistEsClient(TestContext testContext) {
     testContainerUtil.startElasticsearch(testContext);
     return new RestHighLevelClient(
         org.elasticsearch.client.RestClient.builder(

@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /**
@@ -54,7 +55,7 @@ public class PersistOperationHelper {
       final ListViewTemplate listViewTemplate,
       final IncidentReader incidentReader,
       final UserService userService,
-      final ObjectMapper objectMapper) {
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
     this.operationStore = operationStore;
     this.incidentReader = incidentReader;
     this.listViewStore = listViewStore;

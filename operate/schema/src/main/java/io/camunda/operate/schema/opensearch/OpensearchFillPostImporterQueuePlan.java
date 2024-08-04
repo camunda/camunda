@@ -12,10 +12,8 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
-import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.post.PostImporterActionType;
 import io.camunda.operate.entities.post.PostImporterQueueEntity;
@@ -33,14 +31,7 @@ import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
 
-@Component
-@Conditional(OpensearchCondition.class)
-@Scope(SCOPE_PROTOTYPE)
 public class OpensearchFillPostImporterQueuePlan implements FillPostImporterQueuePlan {
 
   private static final Logger LOGGER =
@@ -61,7 +52,6 @@ public class OpensearchFillPostImporterQueuePlan implements FillPostImporterQueu
   private String incidentsIndexName;
   private String postImporterQueueIndexName;
 
-  @Autowired
   public OpensearchFillPostImporterQueuePlan(
       final RichOpenSearchClient richOpenSearchClient,
       final ObjectMapper objectMapper,

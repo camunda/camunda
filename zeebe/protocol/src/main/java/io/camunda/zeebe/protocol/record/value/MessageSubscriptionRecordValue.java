@@ -66,4 +66,20 @@ public interface MessageSubscriptionRecordValue
    *     returns {@code false} if the event is non-interrupting.
    */
   boolean isInterrupting();
+
+  /**
+   * This property is used to give a response back to the client upon correlation of the message. It
+   * is only set if the message came in with a MessageCorrelation.CORRELATE command.
+   *
+   * @return the id of the request that triggered the correlation command
+   */
+  long getRequestId();
+
+  /**
+   * This property is used to give a response back to the client upon correlation of the message. It
+   * is only set if the message came in with a MessageCorrelation.CORRELATE command.
+   *
+   * @return the id of the request stream that triggered the correlation command
+   */
+  int getRequestStreamId();
 }

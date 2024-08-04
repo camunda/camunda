@@ -10,8 +10,8 @@ package io.camunda.tasklist.zeebeimport;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TestApplication;
-import io.camunda.tasklist.util.TestUtil;
 import io.camunda.tasklist.util.apps.retry_after_failure.RetryAfterFailureTestOpenSearchConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;

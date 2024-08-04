@@ -104,4 +104,14 @@ public final class SnapshotChunkWrapper implements SnapshotChunk {
     }
     return snapshotChecksum;
   }
+
+  @Override
+  public long getFileBlockPosition() {
+    return wrappedChunk.getFileBlockPosition();
+  }
+
+  @Override
+  public long getTotalFileSize() {
+    return wrappedChunk.getTotalFileSize();
+  }
 }

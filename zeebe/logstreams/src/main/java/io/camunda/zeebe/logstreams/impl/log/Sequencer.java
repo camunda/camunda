@@ -13,6 +13,8 @@ import static io.camunda.zeebe.logstreams.impl.serializer.SequencedBatchSerializ
 import static io.camunda.zeebe.scheduler.clock.ActorClock.currentTimeMillis;
 
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.InFlightEntry;
 import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -69,6 +71,8 @@ final class Sequencer implements LogStreamWriter, Closeable {
 
   /** {@inheritDoc} */
   @Override
+  // False positive: https://github.com/checkstyle/checkstyle/issues/14891
+  @SuppressWarnings("checkstyle:MissingSwitchDefault")
   public Either<WriteFailure, Long> tryWrite(
       final WriteContext context,
       final List<LogAppendEntry> appendEntries,
@@ -86,9 +90,15 @@ final class Sequencer implements LogStreamWriter, Closeable {
         return Either.left(WriteFailure.INVALID_ARGUMENT);
       }
     }
-    final var permit = flowControl.tryAcquire(context, copyMetadata(appendEntries));
-    if (permit.isLeft()) {
-      return Either.left(WriteFailure.FULL);
+    final InFlightEntry inFlightEntry;
+    switch (flowControl.tryAcquire(context, copyMetadata(appendEntries))) {
+      case Either.Left<Rejection, InFlightEntry>(final var rejected) -> {
+        return switch (rejected) {
+          case RequestLimitExhausted -> Either.left(WriteFailure.REQUEST_LIMIT_EXHAUSTED);
+          case WriteRateLimitExhausted -> Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED);
+        };
+      }
+      case Either.Right<Rejection, InFlightEntry>(final var accepted) -> inFlightEntry = accepted;
     }
 
     final int batchSize = appendEntries.size();
@@ -101,7 +111,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
       final var sequencedBatch =
           new SequencedBatch(
               currentTimeMillis(), currentPosition, sourcePosition, appendEntries, batchLength);
-      flowControl.onAppend(permit.get(), highestPosition);
+      flowControl.onAppend(inFlightEntry, highestPosition);
       logStorage.append(currentPosition, highestPosition, sequencedBatch, flowControl);
       position = currentPosition + batchSize;
       return Either.right(highestPosition);

@@ -16,6 +16,7 @@ import org.camunda.bpm.model.xml.validation.ValidationResult;
 import org.camunda.bpm.model.xml.validation.ValidationResultFormatter;
 
 public final class ValidationErrorFormatter implements ValidationResultFormatter {
+  public static final String OMITTED_RESULTS_SUFFIX_FORMAT = "and %d more errors and/or warnings";
 
   @Override
   public void formatElement(final StringWriter writer, final ModelElementInstance element) {
@@ -31,6 +32,16 @@ public final class ValidationErrorFormatter implements ValidationResultFormatter
     writer.append(": ");
     writer.append(result.getMessage());
     writer.append("\n");
+  }
+
+  @Override
+  public void formatSuffixWithOmittedResultsCount(final StringWriter writer, final int count) {
+    writer.append(String.format(OMITTED_RESULTS_SUFFIX_FORMAT, count));
+  }
+
+  @Override
+  public int getFormattedSuffixWithOmittedResultsSize(final int count) {
+    return String.format(OMITTED_RESULTS_SUFFIX_FORMAT, count).getBytes().length;
   }
 
   /**

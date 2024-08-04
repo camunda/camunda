@@ -14,8 +14,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.NoneNestedConditions;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ConfigurationCondition.ConfigurationPhase;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -61,6 +65,7 @@ public final class SecurityConfiguration {
 
   @Bean
   @ConditionalOnRestGatewayEnabled
+  @Conditional(GatewaySecurityAuthenticationEnabledCondition.class)
   public SecurityFilterChain restGatewaySecurity(
       final HttpSecurity http,
       final IdentityAuthenticationManager authManager,
@@ -99,5 +104,29 @@ public final class SecurityConfiguration {
         .formLogin(FormLoginConfigurer::disable)
         .httpBasic(HttpBasicConfigurer::disable)
         .anonymous(AnonymousConfigurer::disable);
+  }
+
+  /**
+   * Condition to check if the gateway is configured to use authentication, i.e. is not explicitly
+   * set to {@code NONE}. It helps deal with the fact that the gateway can be embedded in the broker
+   * or run standalone.
+   */
+  static class GatewaySecurityAuthenticationEnabledCondition extends NoneNestedConditions {
+
+    public GatewaySecurityAuthenticationEnabledCondition() {
+      super(ConfigurationPhase.REGISTER_BEAN);
+    }
+
+    @ConditionalOnProperty(
+        prefix = "zeebe.gateway",
+        value = "security.authentication.mode",
+        havingValue = "none")
+    static class StandaloneGatewayCondition {}
+
+    @ConditionalOnProperty(
+        prefix = "zeebe.broker.gateway",
+        value = "security.authentication.mode",
+        havingValue = "none")
+    static class EmbeddedGatewayCondition {}
   }
 }
