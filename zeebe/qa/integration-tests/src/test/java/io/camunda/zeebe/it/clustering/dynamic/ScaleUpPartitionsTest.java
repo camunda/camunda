@@ -118,7 +118,7 @@ final class ScaleUpPartitionsTest {
                   .join();
             });
 
-    final var response = actuator.scalePartitions(2);
+    final var response = actuator.scalePartitions(3);
     Awaitility.await()
         .untilAsserted(
             () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(response));
