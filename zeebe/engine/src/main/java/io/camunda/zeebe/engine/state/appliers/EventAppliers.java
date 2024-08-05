@@ -226,7 +226,7 @@ public final class EventAppliers implements EventApplier {
 
   private void registerMessageCorrelationAppliers(final MutableProcessingState state) {
     register(MessageCorrelationIntent.CORRELATING, new MessageCorrelationCorrelatingApplier(state));
-    register(MessageCorrelationIntent.CORRELATED, NOOP_EVENT_APPLIER);
+    register(MessageCorrelationIntent.CORRELATED, new MessageCorrelationCorrelatedApplier(state));
     register(MessageCorrelationIntent.NOT_CORRELATED, NOOP_EVENT_APPLIER);
   }
 
