@@ -48,7 +48,7 @@ jobs:
       - name: Compile
         uses: ./.github/actions/run-maven
         with:
-          parameters: compile -DskipTests -Dskip.docker
+          parameters: -f optimize/pom.xml compile -DskipTests -Dskip.docker
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3
