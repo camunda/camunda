@@ -98,7 +98,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       final long jobKey,
       final Intent intent,
       final JobRecord job) {
-    jobMetrics.jobErrorThrown(job.getType());
+    jobMetrics.jobErrorThrown(job.getType(), job.getJobKind());
 
     final var serviceTaskInstanceKey = job.getElementId();
 
