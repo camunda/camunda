@@ -2,8 +2,8 @@ name: "test c8run"
 
 on:
   push:
-    branches:
-      - "**"
+    paths:
+      - "c8run/**"
 
 jobs:
   test_c8run:
