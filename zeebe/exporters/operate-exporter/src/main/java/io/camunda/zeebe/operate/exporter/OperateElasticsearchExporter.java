@@ -14,10 +14,7 @@ import co.elastic.clients.elasticsearch.core.BulkRequest;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.indices.MetricIndex;
 import io.camunda.operate.schema.indices.ProcessIndex;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.schema.templates.SequenceFlowTemplate;
-import io.camunda.operate.schema.templates.VariableTemplate;
+import io.camunda.operate.schema.templates.*;
 import io.camunda.operate.store.elasticsearch.NewElasticsearchBatchRequest;
 import io.camunda.operate.util.ElasticsearchScriptBuilder;
 import io.camunda.zeebe.exporter.api.Exporter;
@@ -187,6 +184,18 @@ public class OperateElasticsearchExporter implements Exporter {
         .withHandler(
             new MetricFromProcessInstanceHandler(
                 (MetricIndex) new MetricIndex().setIndexPrefix(indexPrefix)))
+        .withHandler(
+            new EventFromIncidentHandler(
+                (EventTemplate) (new EventTemplate().setIndexPrefix(indexPrefix)), concurrencyMode))
+        .withHandler(
+            new EventFromJobHandler(
+                (EventTemplate) (new EventTemplate().setIndexPrefix(indexPrefix)), concurrencyMode))
+        .withHandler(
+            new EventFromProcessInstanceHandler(
+                (EventTemplate) (new EventTemplate().setIndexPrefix(indexPrefix)), concurrencyMode))
+        .withHandler(
+            new EventFromProcessMessageSubscriptionHandler(
+                (EventTemplate) (new EventTemplate().setIndexPrefix(indexPrefix)), concurrencyMode))
         .build();
   }
 
