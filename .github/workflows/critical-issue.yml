@@ -1,7 +1,6 @@
 name: Slack notification for critical issue
 on:
   issues:
-  pull_request:
     types:
       - labeled
 
@@ -9,39 +8,37 @@ jobs:
   slack-notify:
     name: Send slack notification if issue is labeled as critical
     runs-on: ubuntu-latest
+    if: >
+      contains(github.event.issue.labels.*.name, 'severity/critical') &&
+      (
+        contains(github.event.issue.labels.*.name, 'component/zeebe') ||
+        !contains(join(github.event.issue.labels.*.name, ', '), 'component/')
+      )
     steps:
       - id: slack-notify
         name: Send slack notification
-        if: >
-          contains(github.event.pull_request.labels.*.name, 'severity/critical') &&
-          (
-            contains(github.event.pull_request.labels.*.name, 'component/zeebe') ||
-            !contains(github.event.pull_request.labels.*.name, 'component/')
-          )
-        run: |
-          echo "TRUE"
-#        uses: slackapi/slack-github-action@v1.26.0
-#        with:
-#          # For posting a rich message using Block Kit
-#          payload: |
-#            {
-#              "blocks": [
-#                {
-#                  "type": "section",
-#                  "text": {
-#                    "type": "mrkdwn",
-#                    "text": ":alarm: New critical issue! :alarm:"
-#                  }
-#                },
-#                {
-#                  "type": "section",
-#                  "text": {
-#                    "type": "mrkdwn",
-#                    "text": "Please check the issue: ${{ github.event.issue.html_url }}\n \\cc @zeebe-process-automation-team @zeebe-distributed-platform-team "
-#                  }
-#                }
-#              ]
-#            }
-#        env:
-#          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-#          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: New critical issue! :alarm:"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Please check the issue: ${{ github.event.issue.html_url }}\n \\cc @zeebe-process-automation-team @zeebe-distributed-platform-team "
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
