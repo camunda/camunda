@@ -18,18 +18,24 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.ElasticsearchProperties;
 import io.camunda.tasklist.property.SslProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.RetryOperation;
+import io.camunda.zeebe.util.ReflectUtil;
+import io.camunda.zeebe.util.jar.ExternalJarClassLoader;
+import io.camunda.zeebe.util.jar.ThreadContextUtil;
 import jakarta.annotation.PreDestroy;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -47,6 +53,7 @@ import javax.net.ssl.SSLContext;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import org.apache.http.HttpHost;
+import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
@@ -119,8 +126,8 @@ public class ElasticsearchConnector {
     if (elasticsearchClient != null) {
       try {
         elasticsearchClient._transport().close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+      } catch (final IOException e) {
+        throw new UncheckedIOException(e);
       }
     }
   }
@@ -141,7 +148,7 @@ public class ElasticsearchConnector {
     return createEsClient(tasklistProperties.getZeebeElasticsearch());
   }
 
-  public RestHighLevelClient createEsClient(ElasticsearchProperties elsConfig) {
+  public RestHighLevelClient createEsClient(final ElasticsearchProperties elsConfig) {
     LOGGER.debug("Creating Elasticsearch connection...");
     final RestClientBuilder restClientBuilder =
         RestClient.builder(getHttpHost(elsConfig))
@@ -164,27 +171,74 @@ public class ElasticsearchConnector {
   }
 
   private HttpAsyncClientBuilder configureHttpClient(
-      HttpAsyncClientBuilder httpAsyncClientBuilder, ElasticsearchProperties elsConfig) {
+      final HttpAsyncClientBuilder httpAsyncClientBuilder,
+      final ElasticsearchProperties elsConfig) {
     setupAuthentication(httpAsyncClientBuilder, elsConfig);
+
+    LOGGER.trace("Attempt to load interceptor plugins");
+    if (elsConfig.getInterceptorPlugins() != null) {
+      loadInterceptorPlugins(httpAsyncClientBuilder, elsConfig);
+    }
+
     if (elsConfig.getSsl() != null) {
       setupSSLContext(httpAsyncClientBuilder, elsConfig.getSsl());
     }
     return httpAsyncClientBuilder;
   }
 
+  private void loadInterceptorPlugins(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder,
+      final ElasticsearchProperties elsConfig) {
+    LOGGER.trace("Plugins detected to be not empty {}", elsConfig.getInterceptorPlugins());
+    final var interceptors = elsConfig.getInterceptorPlugins();
+    interceptors.forEach(
+        (id, interceptor) -> {
+          LOGGER.trace("Attempting to register {}", interceptor.getId());
+          try {
+            // WARNING! Due to the nature of interceptors, by the moment they (interceptors)
+            // are executed, the below class loader will close the JAR file hence
+            // to avoid NoClassDefFoundError we must not close this class loader.
+            final var classLoader =
+                ExternalJarClassLoader.ofPath(Paths.get(interceptor.getJarPath()));
+
+            final var pluginClass = classLoader.loadClass(interceptor.getClassName());
+            final var plugin = ReflectUtil.newInstance(pluginClass);
+
+            if (plugin instanceof final DatabaseCustomHeaderSupplier dchs) {
+              LOGGER.trace(
+                  "Plugin {} appears to be a DB Header Provider. Registering with interceptor",
+                  interceptor.getId());
+              httpAsyncClientBuilder.addInterceptorLast(
+                  (HttpRequestInterceptor)
+                      (httpRequest, httpContext) -> {
+                        final var customHeader =
+                            ThreadContextUtil.supplyWithClassLoader(
+                                dchs::getElasticsearchCustomHeader, classLoader);
+                        httpRequest.addHeader(customHeader.key(), customHeader.value());
+                      });
+            } else {
+              throw new RuntimeException(
+                  "Unknown type of interceptor plugin or wrong class specified");
+            }
+          } catch (final Exception e) {
+            throw new RuntimeException("Failed to load interceptor plugin due to exception", e);
+          }
+        });
+  }
+
   private void setupSSLContext(
-      HttpAsyncClientBuilder httpAsyncClientBuilder, SslProperties sslConfig) {
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final SslProperties sslConfig) {
     try {
       httpAsyncClientBuilder.setSSLContext(getSSLContext(sslConfig));
       if (!sslConfig.isVerifyHostname()) {
         httpAsyncClientBuilder.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error("Error in setting up SSLContext", e);
     }
   }
 
-  private SSLContext getSSLContext(SslProperties sslConfig)
+  private SSLContext getSSLContext(final SslProperties sslConfig)
       throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
     final KeyStore truststore = loadCustomTrustStore(sslConfig);
     final TrustStrategy trustStrategy =
@@ -197,7 +251,7 @@ public class ElasticsearchConnector {
     }
   }
 
-  private KeyStore loadCustomTrustStore(SslProperties sslConfig) {
+  private KeyStore loadCustomTrustStore(final SslProperties sslConfig) {
     try {
       final KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
       trustStore.load(null);
@@ -207,7 +261,7 @@ public class ElasticsearchConnector {
         setCertificateInTrustStore(trustStore, serverCertificate);
       }
       return trustStore;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String message =
           "Could not create certificate trustStore for the secured Elasticsearch Connection!";
       throw new TasklistRuntimeException(message, e);
@@ -219,7 +273,7 @@ public class ElasticsearchConnector {
     try {
       final Certificate cert = loadCertificateFromPath(serverCertificate);
       trustStore.setCertificateEntry("elasticsearch-host", cert);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String message =
           "Could not load configured server certificate for the secured Elasticsearch Connection!";
       throw new TasklistRuntimeException(message, e);
@@ -229,7 +283,8 @@ public class ElasticsearchConnector {
   private Certificate loadCertificateFromPath(final String certificatePath)
       throws IOException, CertificateException {
     final Certificate cert;
-    try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(certificatePath))) {
+    try (final BufferedInputStream bis =
+        new BufferedInputStream(new FileInputStream(certificatePath))) {
       final CertificateFactory cf = CertificateFactory.getInstance("X.509");
 
       if (bis.available() > 0) {
@@ -243,7 +298,7 @@ public class ElasticsearchConnector {
     return cert;
   }
 
-  public boolean checkHealth(ElasticsearchClient elasticsearchClient) {
+  public boolean checkHealth(final ElasticsearchClient elasticsearchClient) {
     final ElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
     try {
       return RetryOperation.<Boolean>newBuilder()
@@ -264,12 +319,12 @@ public class ElasticsearchConnector {
               })
           .build()
           .retry();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new TasklistRuntimeException("Couldn't connect to Elasticsearch. Abort.", e);
     }
   }
 
-  public boolean checkHealth(RestHighLevelClient esClient) {
+  public boolean checkHealth(final RestHighLevelClient esClient) {
     final ElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
     final RetryPolicy<Boolean> retryPolicy = getConnectionRetryPolicy(elsConfig);
     return Failsafe.with(retryPolicy)
@@ -309,17 +364,17 @@ public class ElasticsearchConnector {
     return builder;
   }
 
-  private HttpHost getHttpHost(ElasticsearchProperties elsConfig) {
+  private HttpHost getHttpHost(final ElasticsearchProperties elsConfig) {
     try {
       final URI uri = new URI(elsConfig.getUrl());
       return new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
-    } catch (URISyntaxException e) {
+    } catch (final URISyntaxException e) {
       throw new TasklistRuntimeException("Error in url: " + elsConfig.getUrl(), e);
     }
   }
 
   private HttpAsyncClientBuilder setupAuthentication(
-      final HttpAsyncClientBuilder builder, ElasticsearchProperties elsConfig) {
+      final HttpAsyncClientBuilder builder, final ElasticsearchProperties elsConfig) {
     if (!StringUtils.hasText(elsConfig.getUsername())
         || !StringUtils.hasText(elsConfig.getPassword())) {
       LOGGER.warn(
@@ -337,39 +392,40 @@ public class ElasticsearchConnector {
 
   public static class CustomOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTime> {
 
-    private DateTimeFormatter formatter;
+    private final DateTimeFormatter formatter;
 
-    public CustomOffsetDateTimeSerializer(DateTimeFormatter formatter) {
+    public CustomOffsetDateTimeSerializer(final DateTimeFormatter formatter) {
       this.formatter = formatter;
     }
 
     @Override
-    public void serialize(OffsetDateTime value, JsonGenerator gen, SerializerProvider provider)
+    public void serialize(
+        final OffsetDateTime value, final JsonGenerator gen, final SerializerProvider provider)
         throws IOException {
       if (value == null) {
         gen.writeNull();
       } else {
-        gen.writeString(value.format(this.formatter));
+        gen.writeString(value.format(formatter));
       }
     }
   }
 
   public static class CustomOffsetDateTimeDeserializer extends JsonDeserializer<OffsetDateTime> {
 
-    private DateTimeFormatter formatter;
+    private final DateTimeFormatter formatter;
 
-    public CustomOffsetDateTimeDeserializer(DateTimeFormatter formatter) {
+    public CustomOffsetDateTimeDeserializer(final DateTimeFormatter formatter) {
       this.formatter = formatter;
     }
 
     @Override
-    public OffsetDateTime deserialize(JsonParser parser, DeserializationContext context)
+    public OffsetDateTime deserialize(final JsonParser parser, final DeserializationContext context)
         throws IOException {
 
       final OffsetDateTime parsedDate;
       try {
-        parsedDate = OffsetDateTime.parse(parser.getText(), this.formatter);
-      } catch (DateTimeParseException exception) {
+        parsedDate = OffsetDateTime.parse(parser.getText(), formatter);
+      } catch (final DateTimeParseException exception) {
         throw new TasklistRuntimeException(
             "Exception occurred when deserializing date.", exception);
       }
@@ -380,7 +436,7 @@ public class ElasticsearchConnector {
   public static class CustomInstantDeserializer extends JsonDeserializer<Instant> {
 
     @Override
-    public Instant deserialize(JsonParser parser, DeserializationContext context)
+    public Instant deserialize(final JsonParser parser, final DeserializationContext context)
         throws IOException {
       return Instant.ofEpochMilli(Long.parseLong(parser.getText()));
     }

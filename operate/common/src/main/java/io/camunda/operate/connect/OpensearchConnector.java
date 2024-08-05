@@ -16,11 +16,16 @@ import io.camunda.operate.opensearch.ExtendedOpenSearchClient;
 import io.camunda.operate.property.OpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.SslProperties;
+import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
+import io.camunda.zeebe.util.ReflectUtil;
+import io.camunda.zeebe.util.jar.ExternalJarClassLoader;
+import io.camunda.zeebe.util.jar.ThreadContextUtil;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -373,10 +378,55 @@ public class OpensearchConnector {
   protected HttpAsyncClientBuilder configureHttpClient(
       final HttpAsyncClientBuilder httpAsyncClientBuilder, final OpensearchProperties osConfig) {
     setupAuthentication(httpAsyncClientBuilder, osConfig);
+
+    LOGGER.trace("Attempt to load interceptor plugins");
+    if (osConfig.getInterceptorPlugins() != null) {
+      loadInterceptorPlugins(httpAsyncClientBuilder, osConfig);
+    }
+
     if (osConfig.getSsl() != null) {
       setupSSLContext(httpAsyncClientBuilder, osConfig.getSsl());
     }
     return httpAsyncClientBuilder;
+  }
+
+  private void loadInterceptorPlugins(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final OpensearchProperties osConfig) {
+    LOGGER.trace("Plugins detected to be not empty {}", osConfig.getInterceptorPlugins());
+
+    final var interceptors = osConfig.getInterceptorPlugins();
+    interceptors.forEach(
+        (id, interceptor) -> {
+          LOGGER.trace("Attempting to register {}", interceptor.getId());
+          try {
+            // WARNING! Due to the nature of interceptors, by the moment they (interceptors)
+            // are executed, the below class loader will close the JAR file hence
+            // to avoid NoClassDefFoundError we must not close this class loader.
+            final var classLoader =
+                ExternalJarClassLoader.ofPath(Paths.get(interceptor.getJarPath()));
+
+            final var pluginClass = classLoader.loadClass(interceptor.getClassName());
+            final var plugin = ReflectUtil.newInstance(pluginClass);
+
+            if (plugin instanceof final DatabaseCustomHeaderSupplier dchs) {
+              LOGGER.trace(
+                  "Plugin {} appears to be a DB Header Provider. Registering with interceptor",
+                  interceptor.getId());
+              httpAsyncClientBuilder.addRequestInterceptorLast(
+                  (httpRequest, entityDetails, httpContext) -> {
+                    final var customHeader =
+                        ThreadContextUtil.supplyWithClassLoader(
+                            dchs::getElasticsearchCustomHeader, classLoader);
+                    httpRequest.addHeader(customHeader.key(), customHeader.value());
+                  });
+            } else {
+              throw new RuntimeException(
+                  "Unknown type of interceptor plugin or wrong class specified");
+            }
+          } catch (final Exception e) {
+            throw new RuntimeException("Failed to load interceptor plugin due to exception", e);
+          }
+        });
   }
 
   private RequestConfig.Builder setTimeouts(
