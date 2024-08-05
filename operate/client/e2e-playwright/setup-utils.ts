@@ -20,6 +20,7 @@ import {
   IProcessVariables,
   ZBWorkerTaskHandler,
   CreateProcessInstanceResponse,
+  EvaluateDecisionRequest,
 } from 'zeebe-node';
 import * as path from 'path';
 import {config} from './config';
@@ -110,10 +111,15 @@ function completeTask(
   });
 }
 
+function evaluateDecision(evaluateDecisionRequest: EvaluateDecisionRequest) {
+  return zbc.evaluateDecision(evaluateDecisionRequest);
+}
+
 export {
   deployProcess,
   createInstances,
   completeTask,
   createSingleInstance,
   deployDecision,
+  evaluateDecision,
 };
