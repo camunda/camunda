@@ -36,7 +36,8 @@ public final class DecisionRequirementsFilterTest {
   @Test
   public void shouldQueryByDecisionRequirementsKey() {
     // given
-    final var decisionRequirementFilter = FilterBuilders.decisionRequirements(f -> f.decisionRequirementsKeys(123L));
+    final var decisionRequirementFilter =
+        FilterBuilders.decisionRequirements(f -> f.decisionRequirementsKeys(123L));
     final var searchQuery =
         SearchQueryBuilders.decisionRequirementsSearchQuery(
             q -> q.filter(decisionRequirementFilter));
@@ -134,7 +135,8 @@ public final class DecisionRequirementsFilterTest {
   @Test
   public void shouldQueryByDecisionRequirementsName() {
     // given
-    final var decisionRequirementFilter = FilterBuilders.decisionRequirements(f -> f.dmnDecisionRequirementsNames("n"));
+    final var decisionRequirementFilter =
+        FilterBuilders.decisionRequirements(f -> f.dmnDecisionRequirementsNames("n"));
     final var searchQuery =
         SearchQueryBuilders.decisionRequirementsSearchQuery(
             q -> q.filter(decisionRequirementFilter));

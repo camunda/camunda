@@ -21,30 +21,19 @@ public final class DecisionRequirementFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final DecisionRequirementsFilter filter) {
-    final var idsQuery = getIdsQuery(filter.ids());
-    final var keysQuery = getKeysQuery(filter.keys());
-    final var namesQuery = getNamesQuery(filter.names());
+    final var keysQuery = getKeysQuery(filter.decisionRequirementsKeys());
+    final var namesQuery = getNamesQuery(filter.dmnDecisionRequirementsNames());
     final var versionsQuery = getVersionsQuery(filter.versions());
     final var decisionRequirementsIdsQuery =
         getDecisionRequirementsIdsQuery(filter.decisionRequirementsIds());
     final var tenantIdsQuery = getTenantIdsQuery(filter.tenantIds());
 
-    return and(
-        idsQuery,
-        keysQuery,
-        namesQuery,
-        versionsQuery,
-        decisionRequirementsIdsQuery,
-        tenantIdsQuery);
+    return and(keysQuery, namesQuery, versionsQuery, decisionRequirementsIdsQuery, tenantIdsQuery);
   }
 
   @Override
   public List<String> toIndices(final DecisionRequirementsFilter filter) {
     return List.of("operate-decision-requirements-8.3.0_alias");
-  }
-
-  private SearchQuery getIdsQuery(final List<String> ids) {
-    return stringTerms("id", ids);
   }
 
   private SearchQuery getKeysQuery(final List<Long> keys) {
