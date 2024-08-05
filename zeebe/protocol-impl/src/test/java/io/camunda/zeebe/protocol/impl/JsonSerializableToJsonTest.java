@@ -2427,13 +2427,19 @@ final class JsonSerializableToJsonTest {
               final String correlationKey = "test-key";
               final String messageName = "test-message";
               final long processInstanceKey = 1L;
+              final long messageKey = 2L;
+              final long requestId = 3L;
+              final int requestStreamId = 4;
 
               return new MessageCorrelationRecord()
                   .setCorrelationKey(correlationKey)
                   .setName(messageName)
                   .setVariables(VARIABLES_MSGPACK)
                   .setTenantId("foo")
-                  .setProcessInstanceKey(processInstanceKey);
+                  .setProcessInstanceKey(processInstanceKey)
+                  .setMessageKey(messageKey)
+                  .setRequestId(requestId)
+                  .setRequestStreamId(requestStreamId);
             },
         """
         {
@@ -2443,7 +2449,10 @@ final class JsonSerializableToJsonTest {
           },
           "name": "test-message",
           "tenantId": "foo",
-          "processInstanceKey": 1
+          "processInstanceKey": 1,
+          "messageKey": 2,
+          "requestId": 3,
+          "requestStreamId": 4
         }
         """
       },
@@ -2467,7 +2476,10 @@ final class JsonSerializableToJsonTest {
           "variables": {},
           "name": "test-message",
           "tenantId": "<default>",
-          "processInstanceKey": -1
+          "processInstanceKey": -1,
+          "messageKey": -1,
+          "requestId": -1,
+          "requestStreamId": -1
         }
         """
       },

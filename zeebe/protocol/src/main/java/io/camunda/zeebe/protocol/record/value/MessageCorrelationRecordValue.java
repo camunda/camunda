@@ -38,4 +38,19 @@ public interface MessageCorrelationRecordValue
    * @return the correlation key of the message
    */
   String getCorrelationKey();
+
+  /**
+   * @return the key of the message
+   */
+  long getMessageKey();
+
+  /**
+   * @return the request id of the initial correlate command
+   */
+  long getRequestId();
+
+  /**
+   * @return the request stream id of the initial correlate command
+   */
+  int getRequestStreamId();
 }
