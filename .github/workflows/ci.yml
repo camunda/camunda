@@ -220,8 +220,6 @@ jobs:
             maven-modules: "zeebe/qa/update-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
-    env:
-      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
       registry:
         image: registry:2
@@ -241,9 +239,6 @@ jobs:
           maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
         with:
-          repository: localhost:5000/camunda/zeebe
-          version: current-test
-          push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV

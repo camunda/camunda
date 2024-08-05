@@ -93,6 +93,10 @@ runs:
       shell: bash
       run: echo "result=$(echo '${{ steps.get-image.outputs.tags }}' | head -n 1)" >> $GITHUB_OUTPUT
 
+    - name: Set Zeebe test image
+      shell: bash
+      run: echo "ZEEBE_TEST_DOCKER_IMAGE=${{ steps.get-image-output.outputs.result }}" >> $GITHUB_ENV
+
     - name: Set DISTBALL path relative to the build context
       id: get-distball
       shell: bash
