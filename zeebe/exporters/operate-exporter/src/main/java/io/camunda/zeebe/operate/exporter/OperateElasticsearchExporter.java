@@ -12,6 +12,8 @@ import static io.camunda.zeebe.protocol.record.ValueType.*;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.schema.indices.DecisionIndex;
+import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.schema.indices.MetricIndex;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.templates.*;
@@ -196,6 +198,16 @@ public class OperateElasticsearchExporter implements Exporter {
         .withHandler(
             new EventFromProcessMessageSubscriptionHandler(
                 (EventTemplate) (new EventTemplate().setIndexPrefix(indexPrefix)), concurrencyMode))
+        .withHandler(
+            new DecisionHandler((DecisionIndex) new DecisionIndex().setIndexPrefix(indexPrefix)))
+        .withHandler(
+            new DecisionRequirementsHandler(
+                (DecisionRequirementsIndex)
+                    new DecisionRequirementsIndex().setIndexPrefix(indexPrefix)))
+        .withHandler(
+            new DecisionEvaluationHandler(
+                (DecisionInstanceTemplate)
+                    new DecisionInstanceTemplate().setIndexPrefix(indexPrefix)))
         .build();
   }
 
@@ -205,9 +217,9 @@ public class OperateElasticsearchExporter implements Exporter {
             PROCESS,
             VARIABLE,
             PROCESS_INSTANCE,
-            //            DECISION,
-            //            DECISION_REQUIREMENTS,
-            //            DECISION_EVALUATION,
+            DECISION,
+            DECISION_REQUIREMENTS,
+            DECISION_EVALUATION,
             JOB,
             INCIDENT
             //            VARIABLE_DOCUMENT,
