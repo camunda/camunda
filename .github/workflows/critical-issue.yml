@@ -10,30 +10,14 @@ jobs:
     name: Send slack notification if issue is labeled as critical
     runs-on: ubuntu-latest
     steps:
-      - id: label-check
-        name: Check if issue has component/* labels but not component/zeebe
-        run: |
-          echo "Debug: List of all labels:"
-          echo "${{ github.event.pull_request.labels.*.name }}"
-          echo "${{ github.event.issue.labels }}"
-
-          labels=$(echo "${{ github.event.pull_request.labels.*.name }}" | tr ' ' '\n' | grep '^component/' || true)
-          echo "Debug: component/* labels found:"
-          echo "$labels"
-
-          if [[ -n "$labels" ]]; then
-            if ! echo "$labels" | grep -q "component/zeebe"; then
-              echo "component/zeebe label not found among component/* labels."
-              echo "skip=true" >> $GITHUB_ENV
-            else
-              echo "component/zeebe label is present."
-            fi
-          else
-            echo "No component/* labels found."
-          fi
       - id: slack-notify
         name: Send slack notification
-        if: ${{ github.event.label.name == 'severity/critical' && env.skip != 'true' }}
+        if: >
+          contains(github.event.pull_request.labels.*.name, 'severity/critical') &&
+          (
+            contains(github.event.pull_request.labels.*.name, 'component/zeebe') ||
+            !contains(github.event.pull_request.labels.*.name, 'component/')
+          )
         run: |
           echo "TRUE"
 #        uses: slackapi/slack-github-action@v1.26.0
