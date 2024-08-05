@@ -1,6 +1,9 @@
 name: Optimize Java code scan
 
 on:
+  push:
+    branches:
+      - "merge-optimize-in"
   pull_request:
     branches:
       - "main"
