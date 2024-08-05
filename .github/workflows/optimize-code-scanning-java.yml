@@ -6,6 +6,7 @@ on:
       - "main"
       - "stable/**"
       - "release/**"
+      - "merge-optimize-in"
     paths:
       - "optimize/backend/src/**/*.java"
       - "optimize/util/**/*.java"
