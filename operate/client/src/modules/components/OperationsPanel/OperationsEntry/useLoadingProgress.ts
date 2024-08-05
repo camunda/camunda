@@ -17,12 +17,21 @@
 
 import {useState, useRef, useEffect} from 'react';
 
+/**
+ * Returns a (faked) progress percentage and an isComplete indicator
+ * based on totalCount, finishedCount and isFinished parameters.
+ *
+ * isFinished means the operation itself is finished
+ * isComplete is true when the visual progress has finished
+ */
 const useLoadingProgress = ({
   totalCount,
   finishedCount,
+  isFinished,
 }: {
   totalCount: number;
   finishedCount: number;
+  isFinished: boolean;
 }) => {
   const [fakeProgressPercentage, setFakeProgressPercentage] = useState(0);
   const [isComplete, setIsComplete] = useState(totalCount === finishedCount);
@@ -64,11 +73,7 @@ const useLoadingProgress = ({
   }, [fakeProgressPercentage, totalCount, finishedCount]);
 
   useEffect(() => {
-    if (
-      totalCount === finishedCount &&
-      !initialCompleteRef.current &&
-      !isComplete
-    ) {
+    if (isFinished && !initialCompleteRef.current && !isComplete) {
       setFakeProgressPercentage(100);
       completedTimeoutId.current = setTimeout(() => {
         setIsComplete(true);
@@ -81,7 +86,7 @@ const useLoadingProgress = ({
         completedTimeoutId.current = null;
       }
     };
-  }, [totalCount, finishedCount, isComplete]);
+  }, [isFinished, isComplete]);
 
   return {fakeProgressPercentage, isComplete};
 };
