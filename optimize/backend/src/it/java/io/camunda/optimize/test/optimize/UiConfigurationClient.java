@@ -16,22 +16,7 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class UiConfigurationClient {
 
-  public static final String TEST_WEBHOOK_HOST = "127.0.0.1";
-  public static final String TEST_WEBHOOK_NAME = "testWebhook";
-  public static final String TEST_WEBHOOK_WITH_PROXY_NAME = "testProxyWebhook";
-  public static final String TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME =
-      "testWebhook_NonStandardContentType";
-  public static final String TEST_INVALID_PORT_WEBHOOK_NAME = "testWebhook_InvalidUrl";
-  public static final String TEST_WEBHOOK_METHOD = "POST";
-  public static final String TEST_WEBHOOK_URL_INVALID_PORT =
-      "http://" + TEST_WEBHOOK_HOST + ":1080";
-  public static final String TEST_WEBHOOK_URL_PATH = "/webhookpath";
-  private static final String TEST_WEBHOOK_URL = "http://" + TEST_WEBHOOK_HOST + ":%d";
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
-
-  public static String createWebhookHostUrl(final int port) {
-    return String.format(TEST_WEBHOOK_URL, port);
-  }
 
   public UIConfigurationResponseDto getUIConfiguration() {
     return requestExecutorSupplier
