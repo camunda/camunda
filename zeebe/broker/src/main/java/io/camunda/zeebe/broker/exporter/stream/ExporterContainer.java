@@ -109,10 +109,16 @@ final class ExporterContainer implements Controller {
     initPosition();
   }
 
-  void openExporter() {
-    LOG.debug("Open exporter with id '{}'", getId());
-    ThreadContextUtil.runWithClassLoader(
-        () -> exporter.open(this), exporter.getClass().getClassLoader());
+  boolean openExporter() {
+    try {
+      ThreadContextUtil.runWithClassLoader(
+          () -> exporter.open(this), exporter.getClass().getClassLoader());
+      LOG.debug("Opened exporter with id '{}'", getId());
+      return true;
+    } catch (final Exception e) {
+      context.getLogger().error("Failed to open exporter with id '{}', retrying...", getId(), e);
+      return false;
+    }
   }
 
   public ExporterContext getContext() {
