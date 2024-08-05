@@ -11,11 +11,11 @@ import static io.camunda.tasklist.property.ImportProperties.DEFAULT_VARIABLE_SIZ
 import static io.camunda.tasklist.qa.util.VariablesUtil.createBigVariableWithSuffix;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-import io.camunda.client.CamundaClient;
 import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.qa.util.ZeebeTestUtil;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.ThreadUtil;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
@@ -46,10 +46,10 @@ public class BigVariableProcessDataGenerator {
       LoggerFactory.getLogger(BigVariableProcessDataGenerator.class);
 
   /**
-   * CamundaClient must not be reused between different test fixtures, as this may be different
+   * ZeebeClient must not be reused between different test fixtures, as this may be different
    * versions of client in the future.
    */
-  private CamundaClient camundaClient;
+  private ZeebeClient zeebeClient;
 
   @Autowired
   @Qualifier("tasklistEsClient")
@@ -58,8 +58,8 @@ public class BigVariableProcessDataGenerator {
   private final Random random = new Random();
 
   private void init(final TestContext testContext) {
-    camundaClient =
-        CamundaClient.newClientBuilder()
+    zeebeClient =
+        ZeebeClient.newClientBuilder()
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
             .usePlaintext()
             .build();
@@ -91,9 +91,9 @@ public class BigVariableProcessDataGenerator {
   }
 
   private void closeClients() {
-    if (camundaClient != null) {
-      camundaClient.close();
-      camundaClient = null;
+    if (zeebeClient != null) {
+      zeebeClient.close();
+      zeebeClient = null;
     }
   }
 
@@ -132,7 +132,7 @@ public class BigVariableProcessDataGenerator {
             + "}";
 
     final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(camundaClient, bpmnProcessId, payload);
+        ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, payload);
     LOGGER.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
     return processInstanceKey;
   }
@@ -141,7 +141,7 @@ public class BigVariableProcessDataGenerator {
     final String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
     final String processDefinitionKey =
         ZeebeTestUtil.deployProcess(
-            camundaClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
+            zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
     LOGGER.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
   }
 

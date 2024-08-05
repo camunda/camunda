@@ -37,6 +37,7 @@ import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.protocol.rest.TopologyResponse;
 import io.camunda.zeebe.client.util.RecordingGatewayService;
+import io.camunda.zeebe.client.util.RestGatewayPaths;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
 import io.grpc.Server;
@@ -78,6 +79,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 @WireMockTest
 public final class OAuthCredentialsProviderTest {
+
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
   private static final Key<String> AUTH_KEY =
       Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
@@ -358,7 +360,7 @@ public final class OAuthCredentialsProviderTest {
             WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
                 .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
                 .withHeader("Accept", equalTo("application/json"))
-                .withHeader("User-Agent", matching("camunda-client-java/\\d+\\.\\d+\\.\\d+.*"))
+                .withHeader("User-Agent", matching("zeebe-client-java/\\d+\\.\\d+\\.\\d+.*"))
                 .withRequestBody(equalTo(encodedBody))
                 .willReturn(
                     WireMock.aResponse()
@@ -572,7 +574,7 @@ public final class OAuthCredentialsProviderTest {
       wireMockInfo
           .getWireMock()
           .register(
-              WireMock.get("/v1/topology")
+              WireMock.get(RestGatewayPaths.getTopologyUrl())
                   .withHeader("Authorization", WireMock.equalTo(TOKEN_TYPE + " " + ACCESS_TOKEN))
                   .willReturn(
                       WireMock.aResponse()
@@ -593,7 +595,7 @@ public final class OAuthCredentialsProviderTest {
       wireMockInfo
           .getWireMock()
           .register(
-              WireMock.get("/v1/topology")
+              WireMock.get(RestGatewayPaths.getTopologyUrl())
                   .willReturn(
                       WireMock.unauthorized()
                           .withBody(JSON_MAPPER.writeValueAsBytes(new ProblemDetail()))

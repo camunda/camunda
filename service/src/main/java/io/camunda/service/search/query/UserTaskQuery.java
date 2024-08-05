@@ -31,7 +31,7 @@ public final record UserTaskQuery(UserTaskFilter filter, UserTaskSort sort, Sear
   }
 
   public static final class Builder extends SearchQueryBase.AbstractQueryBuilder<Builder>
-      implements ObjectBuilder<UserTaskQuery> {
+      implements TypedSearchQueryBuilder<UserTaskQuery, Builder, UserTaskFilter, UserTaskSort> {
 
     private static final UserTaskFilter EMPTY_FILTER = FilterBuilders.userTask().build();
     private static final UserTaskSort EMPTY_SORT = SortOptionBuilders.userTask().build();
@@ -39,19 +39,21 @@ public final record UserTaskQuery(UserTaskFilter filter, UserTaskSort sort, Sear
     private UserTaskFilter filter;
     private UserTaskSort sort;
 
+    @Override
     public Builder filter(final UserTaskFilter value) {
       filter = value;
+      return this;
+    }
+
+    @Override
+    public Builder sort(final UserTaskSort value) {
+      sort = value;
       return this;
     }
 
     public Builder filter(
         final Function<UserTaskFilter.Builder, ObjectBuilder<UserTaskFilter>> fn) {
       return filter(FilterBuilders.userTask(fn));
-    }
-
-    public Builder sort(final UserTaskSort value) {
-      sort = value;
-      return this;
     }
 
     public Builder sort(final Function<UserTaskSort.Builder, ObjectBuilder<UserTaskSort>> fn) {

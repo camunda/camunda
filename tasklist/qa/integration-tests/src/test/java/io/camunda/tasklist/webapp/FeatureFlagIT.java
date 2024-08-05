@@ -52,8 +52,7 @@ public class FeatureFlagIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void shouldNotReturnFormForExternalProcess() {
-    final String processId1 =
-        ZeebeTestUtil.deployProcess(camundaClient, "startedByFormProcess.bpmn");
+    final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "startedByFormProcess.bpmn");
     final String bpmnProcessId = "startedByForm";
     final String formId = "testForm";
 

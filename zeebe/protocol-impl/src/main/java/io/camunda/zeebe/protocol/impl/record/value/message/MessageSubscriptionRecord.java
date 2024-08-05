@@ -199,4 +199,9 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
     tenantIdProp.setValue(tenantId);
     return this;
   }
+
+  @JsonIgnore
+  public boolean hasRequestData() {
+    return getRequestId() != -1 || getRequestStreamId() != -1;
+  }
 }

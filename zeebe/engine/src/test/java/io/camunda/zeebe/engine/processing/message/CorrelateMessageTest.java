@@ -29,7 +29,6 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -97,7 +96,6 @@ public final class CorrelateMessageTest {
   }
 
   @Test
-  @Ignore("Enable in https://github.com/camunda/camunda/issues/20175")
   public void shouldHaveCorrectCorrelatedLifeCycleForMessageEvent() {
     // given
     deployAndStartProcessWithIntermediaryMessageEvent(MESSAGE_NAME, CORRELATION_KEY);
@@ -112,7 +110,7 @@ public final class CorrelateMessageTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limit(r -> r.getIntent().equals(MessageIntent.EXPIRED))
+                .limit(r -> r.getIntent().equals(MessageCorrelationIntent.CORRELATED))
                 .filter(
                     r ->
                         List.of(
@@ -122,12 +120,12 @@ public final class CorrelateMessageTest {
                                 ValueType.MESSAGE)
                             .contains(r.getValueType())))
         .extracting(Record::getIntent)
-        .containsExactly(
+        .containsSubsequence(
             MessageCorrelationIntent.CORRELATE,
             MessageIntent.PUBLISHED,
-            MessageSubscriptionIntent.CORRELATED,
-            MessageIntent.EXPIRED,
+            MessageSubscriptionIntent.CORRELATING,
             ProcessMessageSubscriptionIntent.CORRELATE,
+            MessageIntent.EXPIRED,
             ProcessMessageSubscriptionIntent.CORRELATED,
             MessageSubscriptionIntent.CORRELATE,
             MessageSubscriptionIntent.CORRELATED,
@@ -152,7 +150,6 @@ public final class CorrelateMessageTest {
   }
 
   @Test
-  @Ignore("Enable in https://github.com/camunda/camunda/issues/20175")
   public void shouldCorrelateToMessageIntermediaryEvent() {
     // given
     deployAndStartProcessWithIntermediaryMessageEvent(MESSAGE_NAME, CORRELATION_KEY);
@@ -170,7 +167,6 @@ public final class CorrelateMessageTest {
   }
 
   @Test
-  @Ignore("Enable in https://github.com/camunda/camunda/issues/20175")
   public void shouldCorrelateToMessageBoundaryEvent() {
     // given
     deployAndStartProcessWithMessageBoundaryEvent(MESSAGE_NAME, CORRELATION_KEY);
@@ -290,12 +286,11 @@ public final class CorrelateMessageTest {
   }
 
   @Test
-  @Ignore("Enable in https://github.com/camunda/camunda/issues/20175")
   public void shouldCorrelateMessageWithVariablesToIntermediaryEvent() {
     // given
-    final var processId = "processId";
     final var variables = asMsgPack("foo", "bar");
-    deployAndStartProcessWithIntermediaryMessageEvent(MESSAGE_NAME, CORRELATION_KEY);
+    final var processInstanceKey =
+        deployAndStartProcessWithIntermediaryMessageEvent(MESSAGE_NAME, CORRELATION_KEY);
 
     // when
     final var record =
@@ -308,26 +303,20 @@ public final class CorrelateMessageTest {
 
     // then
     assertMessageIsCorrelated(record);
-    final var processInstanceRecord =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withBpmnProcessId(processId)
-            .filter(r -> r.getValue().getBpmnElementType().equals(BpmnElementType.PROCESS))
-            .getFirst();
     assertThat(
             RecordingExporter.variableRecords(VariableIntent.CREATED)
-                .withScopeKey(processInstanceRecord.getValue().getProcessInstanceKey())
+                .withScopeKey(processInstanceKey)
                 .getFirst())
         .extracting(r -> r.getValue().getName(), r -> r.getValue().getValue())
         .containsExactly("foo", "\"bar\"");
   }
 
   @Test
-  @Ignore("Enable in https://github.com/camunda/camunda/issues/20175")
   public void shouldCorrelateMessageWithVariablesToBoundaryEvent() {
     // given
-    final var processId = "processId";
     final var variables = asMsgPack("foo", "bar");
-    deployAndStartProcessWithMessageBoundaryEvent(MESSAGE_NAME, CORRELATION_KEY);
+    final var processInstanceKey =
+        deployAndStartProcessWithMessageBoundaryEvent(MESSAGE_NAME, CORRELATION_KEY);
 
     // when
     final var record =
@@ -342,7 +331,7 @@ public final class CorrelateMessageTest {
     assertMessageIsCorrelated(record);
     final var processInstanceRecord =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withBpmnProcessId(processId)
+            .withProcessInstanceKey(processInstanceKey)
             .filter(r -> r.getValue().getBpmnElementType().equals(BpmnElementType.PROCESS))
             .getFirst();
     assertThat(

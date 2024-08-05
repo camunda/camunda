@@ -15,8 +15,8 @@
  */
 package io.camunda.process.test.api;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.CamundaClientBuilder;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
 import java.util.function.Consumer;
 
@@ -28,7 +28,7 @@ public interface CamundaProcessTestContext {
    *
    * @return a new Camunda client
    */
-  CamundaClient createClient();
+  ZeebeClient createClient();
 
   /**
    * Creates a new preconfigured Camunda client that is managed by the runtime. The given modifier
@@ -37,7 +37,7 @@ public interface CamundaProcessTestContext {
    * @param modifier to customize the Camunda client
    * @return a new Camunda client
    */
-  CamundaClient createClient(final Consumer<CamundaClientBuilder> modifier);
+  ZeebeClient createClient(final Consumer<ZeebeClientBuilder> modifier);
 
   /**
    * @return the URI of Zeebe's gRPC API address

@@ -53,4 +53,9 @@ public interface ProcessMetadataValue extends RecordValue, TenantOwned {
    * return true if the process is a duplicate (and has been deployed previously), false otherwise
    */
   boolean isDuplicate();
+
+  /**
+   * @return the key of the deployment this process was deployed with
+   */
+  long getDeploymentKey();
 }

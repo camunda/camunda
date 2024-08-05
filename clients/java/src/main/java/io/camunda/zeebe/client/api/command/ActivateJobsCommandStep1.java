@@ -19,7 +19,8 @@ import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import java.time.Duration;
 import java.util.List;
 
-public interface ActivateJobsCommandStep1 {
+public interface ActivateJobsCommandStep1
+    extends CommandWithCommunicationApiStep<ActivateJobsCommandStep1> {
 
   /**
    * Set the type of jobs to work on.

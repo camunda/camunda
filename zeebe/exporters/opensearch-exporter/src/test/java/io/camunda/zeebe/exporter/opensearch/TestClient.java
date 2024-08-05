@@ -23,6 +23,7 @@ import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyReq
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.IsmTemplate;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Action;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.DeleteAction;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition.Conditions;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
@@ -157,7 +158,7 @@ final class TestClient implements CloseableSilently {
             List.of(new Transition(ISM_DELETE_STATE, new Conditions(minimumAge))));
     final var deleteState =
         new State(
-            ISM_DELETE_STATE, List.of(new Action(new ObjectMapper())), Collections.emptyList());
+            ISM_DELETE_STATE, List.of(new Action(new DeleteAction())), Collections.emptyList());
     final var policy =
         new Policy(
             config.retention.getPolicyDescription(),

@@ -15,14 +15,20 @@ class AutoSelectFirstTask {
   constructor() {
     makeObservable(this, {
       enabled: observable,
-      toggle: action.bound,
+      enable: action.bound,
+      disable: action.bound,
     });
     this.enabled = getStateLocally('autoSelectNextTask') ?? false;
   }
 
-  toggle() {
-    storeStateLocally('autoSelectNextTask', !this.enabled);
-    this.enabled = !this.enabled;
+  enable() {
+    storeStateLocally('autoSelectNextTask', true);
+    this.enabled = true;
+  }
+
+  disable() {
+    storeStateLocally('autoSelectNextTask', false);
+    this.enabled = false;
   }
 }
 

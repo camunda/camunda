@@ -9,8 +9,8 @@ package io.camunda.zeebe.restore;
 
 import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
-import io.camunda.commons.configuration.BrokerBasedConfiguration;
-import io.camunda.commons.configuration.WorkingDirectoryConfiguration;
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
+import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import org.slf4j.Logger;

@@ -24,7 +24,6 @@ import io.camunda.zeebe.client.api.response.UpdateTimeoutJobResponse;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.impl.response.UpdateTimeoutJobResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutResponse;
@@ -74,13 +73,11 @@ public class JobUpdateTimeoutCommandImpl
   public ZeebeFuture<UpdateTimeoutJobResponse> send() {
     final UpdateJobTimeoutRequest request = builder.build();
 
-    final RetriableClientFutureImpl<
-            UpdateTimeoutJobResponse, GatewayOuterClass.UpdateJobTimeoutResponse>
-        future =
-            new RetriableClientFutureImpl<>(
-                UpdateTimeoutJobResponseImpl::new,
-                retryPredicate,
-                streamObserver -> send(request, streamObserver));
+    final RetriableClientFutureImpl<UpdateTimeoutJobResponse, UpdateJobTimeoutResponse> future =
+        new RetriableClientFutureImpl<>(
+            UpdateTimeoutJobResponseImpl::new,
+            retryPredicate,
+            streamObserver -> send(request, streamObserver));
 
     send(request, future);
     return future;
@@ -92,5 +89,11 @@ public class JobUpdateTimeoutCommandImpl
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .updateJobTimeout(request, streamObserver);
+  }
+
+  @Override
+  public UpdateTimeoutJobCommandStep2 operationReference(final long operationReference) {
+    builder.setOperationReference(operationReference);
+    return this;
   }
 }

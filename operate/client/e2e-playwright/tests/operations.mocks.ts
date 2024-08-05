@@ -6,14 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  deployProcess,
-  createInstances,
-  createSingleInstance,
-} from '../setup-utils';
+import {zeebeGrpcApi} from '../api/zeebe-grpc';
+
+const {deployProcesses, createSingleInstance, createInstances} = zeebeGrpcApi;
 
 async function createDemoInstances() {
-  await deployProcess(['operationsProcessA.bpmn', 'operationsProcessB.bpmn']);
+  await deployProcesses(['operationsProcessA.bpmn', 'operationsProcessB.bpmn']);
 
   const [singleOperationInstance, batchOperationInstances] = await Promise.all([
     createSingleInstance('operationsProcessA', 1),

@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.Profile;
-import io.camunda.commons.configuration.WorkingDirectoryConfiguration;
+import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
 import java.nio.file.Path;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;

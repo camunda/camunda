@@ -43,7 +43,7 @@ public class CancelProcessInstanceHandler extends AbstractOperationHandler
               processInstance.getState()));
       return;
     }
-    camundaClient.newCancelInstanceCommand(processInstance.getKey()).send().join();
+    zeebeClient.newCancelInstanceCommand(processInstance.getKey()).send().join();
     // mark operation as sent
     markAsSent(operation);
   }

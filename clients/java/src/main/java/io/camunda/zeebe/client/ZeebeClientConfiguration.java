@@ -23,10 +23,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
-/**
- * @deprecated since 8.6 for removal with 8.8
- */
-@Deprecated
 public interface ZeebeClientConfiguration {
 
   /**
@@ -115,7 +111,7 @@ public interface ZeebeClientConfiguration {
   List<ClientInterceptor> getInterceptors();
 
   /**
-   * @see ZeebeClientBuilder#withJsonMapper(io.camunda.zeebe.client.api.JsonMapper)
+   * @see ZeebeClientBuilder#withJsonMapper(JsonMapper)
    */
   JsonMapper getJsonMapper();
 

@@ -17,6 +17,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.ZoneOffset;
@@ -51,6 +52,7 @@ public class ElasticsearchExporter implements Exporter {
   private ElasticsearchExporterConfiguration configuration;
   private ElasticsearchClient client;
   private ElasticsearchRecordCounters recordCounters;
+  private MeterRegistry registry;
 
   private long lastPosition = -1;
   private boolean indexTemplatesCreated;
@@ -66,6 +68,7 @@ public class ElasticsearchExporter implements Exporter {
 
     context.setFilter(new ElasticsearchRecordFilter(configuration));
     indexTemplatesCreated = false;
+    registry = context.getMeterRegistry();
   }
 
   @Override
@@ -180,7 +183,7 @@ public class ElasticsearchExporter implements Exporter {
 
   // TODO: remove this and instead allow client to be inject-able for testing
   protected ElasticsearchClient createClient() {
-    return new ElasticsearchClient(configuration);
+    return new ElasticsearchClient(configuration, registry);
   }
 
   private void flushAndReschedule() {

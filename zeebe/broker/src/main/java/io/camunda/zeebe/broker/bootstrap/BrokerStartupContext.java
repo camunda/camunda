@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import org.agrona.concurrent.SnowflakeIdGenerator;
@@ -117,4 +118,6 @@ public interface BrokerStartupContext {
   SnowflakeIdGenerator getRequestIdGenerator();
 
   void setRequestIdGenerator(SnowflakeIdGenerator requestIdGenerator);
+
+  MeterRegistry getMeterRegistry();
 }

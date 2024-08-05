@@ -60,9 +60,11 @@ describe('<Task />', () => {
 
     expect(screen.getByText('name')).toBeInTheDocument();
     expect(screen.getByText('processName')).toBeInTheDocument();
-    expect(screen.getByTitle('Created Yesterday at 14:00')).toBeInTheDocument();
-    expect(screen.getByTitle('Created Yesterday at 14:00')).toHaveTextContent(
-      'Yesterday, 14:00',
+    expect(
+      screen.getByTitle('Created Yesterday at 2:00 PM'),
+    ).toBeInTheDocument();
+    expect(screen.getByTitle('Created Yesterday at 2:00 PM')).toHaveTextContent(
+      'Yesterday, 2:00 PM',
     );
     expect(screen.getByText('Me')).toBeInTheDocument();
   });

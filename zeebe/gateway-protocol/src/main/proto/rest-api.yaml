@@ -1,27 +1,27 @@
 openapi: "3.0.3"
 info:
-  title: Zeebe REST API
+  title: Camunda 8 REST API
   version: "0.1"
-  description: API for communicating with the Zeebe cluster.
+  description: API for communicating with a Camunda 8 cluster.
   license:
     name: Camunda License Version 1.0
     url: https://github.com/camunda/camunda/blob/main/licenses/CAMUNDA-LICENSE-1.0.txt
 externalDocs:
   description: Find out more
-  url: https://docs.camunda.io/docs/apis-tools/zeebe-api-rest/overview/
+  url: https://docs.camunda.io/docs/apis-tools/camunda-api-rest/overview/
 
 servers:
   - url: "{schema}://{host}:{port}/v2"
     variables:
       host:
         default: localhost
-        description: The hostname of the C8 REST Gateway.
+        description: The hostname of the Camunda 8 REST Gateway.
       port:
         default: "8080"
-        description: The port of the C8 REST API server.
+        description: The port of the Camunda 8 REST API server.
       schema:
         default: http
-        description: The schema of the C8 REST API server.
+        description: The schema of the Camunda 8 REST API server.
 
 paths:
   /topology:
@@ -32,7 +32,11 @@ paths:
       description: Obtains the current topology of the cluster the gateway is part of.
       responses:
         '200':
-          $ref: "#/components/responses/TopologyResponse"
+          description: Obtains the current topology of the cluster the gateway is part of.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TopologyResponse"
   /jobs/activation:
     post:
       tags:
@@ -53,7 +57,216 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/JobActivationResponse"
-
+        '400':
+          description: >
+            The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /jobs/{jobKey}/failure:
+    post:
+      tags:
+        - Job
+      summary: Fail job
+      description: |
+        Mark the job as failed
+      parameters:
+        - name: jobKey
+          in: path
+          required: true
+          description: The key of the job to fail.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobFailRequest"
+      responses:
+        '204':
+          description: The job is failed.
+        '400':
+          description: >
+            The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '404':
+          description: >
+            The job with the given jobKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '409':
+          description: >
+            The job with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /jobs/{jobKey}/error:
+    post:
+      tags:
+        - Job
+      summary: Error job
+      description: |
+        Reports a business error (i.e. non-technical) that occurs while processing a job.
+      parameters:
+        - name: jobKey
+          in: path
+          required: true
+          description: The key of the job.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobErrorRequest"
+      responses:
+        '204':
+          description: An error is thrown for the job.
+        '400':
+          description: >
+            The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '404':
+          description: >
+            The job with the given jobKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '409':
+          description: >
+            The job with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /jobs/{jobKey}/completion:
+    post:
+      tags:
+        - Job
+      summary: Complete job
+      description: |
+        Complete a job with the given payload, which allows completing the associated service task.
+      parameters:
+        - name: jobKey
+          in: path
+          required: true
+          description: The key of the job to complete.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobCompletionRequest"
+      responses:
+        '204':
+          description: The job was completed successfully.
+        '400':
+          description: >
+            The job with the given key cannot be completed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '404':
+          description: The job with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '409':
+          description: >
+            The job with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /incidents/{incidentKey}/resolution:
+    post:
+      tags:
+        - Incident
+      summary: Resolves a given incident.
+      description: >
+        Marks the incident as resolved; most likely a call to Update job will be necessary
+        to reset the job’s retries, followed by this call.
+      parameters:
+        - name: incidentKey
+          in: path
+          required: true
+          description: Key of the incident to resolve.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: The incident is marked as resolved.
+        '400':
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '404':
+          description: The incident with the incidentKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /user-tasks/{userTaskKey}/completion:
     post:
       tags:
@@ -78,8 +291,20 @@ paths:
       responses:
         '204':
           description: The user task was completed successfully.
+        '400':
+          description: >
+            The user task with the given key cannot be completed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         '404':
           description: The user task with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         '409':
           description: >
             The user task with the given key is in the wrong state currently.
@@ -88,10 +313,9 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        '400':
+        '500':
           description: >
-            The user task with the given key cannot be completed.
-            More details are provided in the response body.
+            An internal error occurred while processing the request.
           content:
             application/problem+json:
               schema:
@@ -119,8 +343,20 @@ paths:
       responses:
         '204':
           description: The user task's assignment was adjusted.
+        '400':
+          description: >
+            The assignment of the user task with the given key cannot be completed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         '404':
           description: The user task with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         '409':
           description: >
             The user task with the given key is in the wrong state currently.
@@ -129,10 +365,9 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        '400':
+        '500':
           description: >
-            The assignment of the user task with the given key cannot be completed.
-            More details are provided in the response body.
+            An internal error occurred while processing the request.
           content:
             application/problem+json:
               schema:
@@ -160,8 +395,20 @@ paths:
       responses:
         '204':
           description: The user task was updated successfully.
+        '400':
+          description: >
+            The user task with the given key cannot be updated.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         '404':
           description: The user task with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         '409':
           description: >
             The user task with the given key is in the wrong state currently.
@@ -170,10 +417,9 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        '400':
+        '500':
           description: >
-            The user task with the given key cannot be updated.
-            More details are provided in the response body.
+            An internal error occurred while processing the request.
           content:
             application/problem+json:
               schema:
@@ -195,16 +441,6 @@ paths:
       responses:
         '204':
           description: The user task was unassigned successfully.
-        '404':
-          description: The user task with the given key was not found.
-        '409':
-          description: >
-            The user task with the given key is in the wrong state currently.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
         '400':
           description: >
             The user task with the given key cannot be unassigned.
@@ -213,11 +449,76 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        '404':
+          description: The user task with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '409':
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /user-tasks/search:
+    post:
+      tags:
+        - User task
+      summary: User task search (experimental)
+      description: |
+        Search for user tasks based on given criteria.
+
+        **Note**: This endpoint is experimental and not enabled on Camunda clusters
+        out of the box. It has to be enabled explicitly for a cluster.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserTaskSearchQueryRequest'
+      responses:
+        '200':
+          description: >
+            The User Task Search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserTaskSearchQueryResponse"
+        '400':
+          description: >
+            The User Task Search Query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /process-instances/search:
     post:
       tags:
         - Process Instance
-      summary: Process Instance Search Query
+      summary: Process instance search (experimental)
+      description: |
+        Search for process instances based on given criteria.
+
+        **Note**: This endpoint is experimental and not enabled on Camunda clusters
+        out of the box. It has to be enabled explicitly for a cluster.
       requestBody:
         required: false
         content:
@@ -240,917 +541,285 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-  /users:
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /decision-definitions/search:
     post:
       tags:
-        - User
-      summary: "Create a user"
-      operationId: "createUser"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CamundaUserWithPasswordRequest"
-        required: true
-      responses:
-        "201":
-          description: "Created"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CamundaUserResponse"
-        "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-  /users/{id}:
-    delete:
-      tags:
-        - User
-      summary: "Delete a user"
-      operationId: "deleteUser"
-      parameters:
-        - name: "id"
-          in: "path"
-          required: true
-          schema:
-            type: "integer"
-            format: "int64"
-      responses:
-        "204":
-          description: "No Content"
-        "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-    get:
-      tags:
-        - User
-      summary: "Retrieve details of a user"
-      operationId: "findUserById"
-      parameters:
-        - name: "id"
-          in: "path"
-          required: true
-          schema:
-            type: "integer"
-            format: "int64"
-      responses:
-        "200":
-          description: "OK"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CamundaUserResponse"
-        "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-    put:
-      tags:
-        - User
-      summary: "Update a user"
-      operationId: "updateUser"
-      parameters:
-        - name: "id"
-          in: "path"
-          required: true
-          schema:
-            type: "integer"
-            format: "int64"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CamundaUserWithPasswordRequest"
-        required: true
-      responses:
-        "200":
-          description: "OK"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CamundaUserResponse"
-        "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-  /users/search:
-    post:
-      tags:
-        - User
-      summary: "Get list of users"
-      operationId: "findAllUsers"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SearchQueryRequest"
-        required: true
-      responses:
-        "200":
-          description: "OK"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UserSearchResponse"
-        "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-  /groups:
-    post:
-      tags:
-        - Group
-      summary: "Create a group"
-      operationId: "createGroup"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CamundaGroupRequest"
-        required: true
-      responses:
-        "201":
-          description: "Created"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CamundaGroupResponse"
-        "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-  /groups/{id}:
-    delete:
-      tags:
-        - Group
-      summary: "Delete a group"
-      operationId: "deleteGroup"
-      parameters:
-        - name: "id"
-          in: "path"
-          required: true
-          schema:
-            type: "integer"
-            format: "int64"
-      responses:
-        "204":
-          description: "No Content"
-        "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-    get:
-      tags:
-        - Group
-      summary: "Retrieve details of a group"
-      operationId: "findGroupById"
-      parameters:
-        - name: "id"
-          in: "path"
-          required: true
-          schema:
-            type: "integer"
-            format: "int64"
-      responses:
-        "200":
-          description: "OK"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CamundaGroupResponse"
-        "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-    put:
-      tags:
-        - Group
-      summary: "Update a group"
-      operationId: "updateGroup"
-      parameters:
-        - name: "id"
-          in: "path"
-          required: true
-          schema:
-            type: "integer"
-            format: "int64"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CamundaGroupRequest"
-        required: true
-      responses:
-        "200":
-          description: "OK"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CamundaGroupResponse"
-        "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-  /groups/search:
-    post:
-      tags:
-        - Group
-      summary: "Get list of groups"
-      operationId: "findAllGroups"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SearchQueryRequest"
-        required: true
-      responses:
-        "200":
-          description: "OK"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GroupSearchResponse"
-        "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-  /groups/{id}/users:
-    post:
-      tags:
-        - User
-      summary: "Assign a user to a group"
-      operationId: "assignUserToGroup"
-      parameters:
-        - name: "id"
-          in: "path"
-          required: true
-          schema:
-            type: "integer"
-            format: "int64"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AssignUserToGroupRequest"
-        required: true
-      responses:
-        "204":
-          description: "No Content"
-        "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-  /groups/{id}/users/{userId}:
-    delete:
-      tags:
-        - User
-      summary: "Unassign a user from a group"
-      operationId: "removeUserFromGroup"
-      parameters:
-        - name: "id"
-          in: "path"
-          required: true
-          schema:
-            type: "integer"
-            format: "int64"
-        - name: "userId"
-          in: "path"
-          required: true
-          schema:
-            type: "integer"
-            format: "int64"
-      responses:
-        "204":
-          description: "No Content"
-        "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-  /groups/{id}/users/search:
-    post:
-      tags:
-        - User
-      summary: "Get list of users of a group"
-      operationId: "findAllUsersOfGroup"
-      parameters:
-        - name: "id"
-          in: "path"
-          required: true
-          schema:
-            type: "integer"
-            format: "int64"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SearchQueryRequest"
-        required: true
-      responses:
-        "200":
-          description: "OK"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UserSearchResponse"
-        "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-  /roles:
-    post:
-      tags:
-        - Role
-      summary: "Create a role"
-      operationId: "createRole"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RoleRequest"
-        required: true
-      responses:
-        "201":
-          description: "Created"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RoleResponse"
-        "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not Found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-  /roles/{id}:
-    delete:
-      tags:
-        - Role
-      summary: "Delete a role"
-      operationId: "deleteRole"
-      parameters:
-        - name: "id"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
-      responses:
-        "204":
-          description: "No Content"
-        "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not Found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-    get:
-      tags:
-        - Role
-      summary: "Retrieve details of a role"
-      operationId: "findRoleById"
-      parameters:
-        - name: "id"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
-      responses:
-        "200":
-          description: "OK"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RoleResponse"
-        "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not Found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-    put:
-      tags:
-        - Role
-      summary: "Update a role"
-      operationId: "updateRole"
-      parameters:
-        - name: "id"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RoleRequest"
-        required: true
-      responses:
-        "200":
-          description: "OK"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RoleResponse"
-        "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not Found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-  /roles/search:
-    post:
-      tags:
-        - Role
-      summary: "Get list of roles"
-      operationId: "findAllRoles"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SearchQueryRequest"
-        required: true
-      responses:
-        "200":
-          description: "OK"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RoleSearchResponse"
-        "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not Found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-components:
-  responses:
-    TopologyResponse:
-      description: Obtains the current topology of the cluster the gateway is part of.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/TopologyResponse"
+        - Decision Definition
+      summary: Decision definition search (experimental)
+      description: |
+        Search for decision definitions based on given criteria.
 
+        **Note**: This endpoint is experimental and not enabled on Camunda clusters
+        out of the box. It has to be enabled explicitly for a cluster.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionDefinitionSearchQueryRequest'
+      responses:
+        '200':
+          description: >
+            The Decision Definition Search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionDefinitionSearchQueryResponse"
+        '400':
+          description: >
+            The Decision Definition Search Query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
+components:
   schemas:
+    UserTaskSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      description: User task search query request.
+      type: object
+      properties:
+        filter:
+          $ref: "#/components/schemas/UserTaskFilterRequest"
+    UserTaskSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      description: User task search query response.
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserTaskItem"
+    UserTaskFilterRequest:
+      description: User task filter request.
+      type: object
+      properties:
+        key:
+          type: integer
+          format: int64
+        state:
+          type: string
+        assignee:
+          type: string
+        elementId:
+          type: string
+        candidateGroup:
+          type: string
+        candidateUser:
+          type: string
+        processDefinitionKey:
+          type: integer
+          format: int64
+        processInstanceKey:
+          type: integer
+          format: int64
+        tenantIds:
+          type: string
+        bpmnDefinitionId:
+          type: string
+    UserTaskItem:
+      type: object
+      properties:
+        key:
+          type: integer
+          format: int64
+        state:
+          type: string
+        assignee:
+          type: string
+        elementId:
+          type: string
+        elementInstanceKey:
+          type: integer
+          format: int64
+        candidateGroup:
+          type: array
+          items:
+            type: string
+        candidateUser:
+          type: array
+          items:
+            type: string
+        bpmnProcessId:
+          type: string
+        processDefinitionKey:
+          type: integer
+          format: int64
+        processInstanceKey:
+          type: integer
+          format: int64
+        formKey:
+          type: integer
+          format: int64
+        creationDate:
+          type: string
+          format: date-time
+        completionDate:
+          type: string
+          format: date-time
+        followUpDate:
+          type: string
+          format: date-time
+        dueDate:
+          type: string
+          format: date-time
+        tenantIds:
+          type: string
+        externalFormReference:
+          type: string
+        processDefinitionVersion:
+          type: integer
+          format: int32
+        customHeaders:
+          type: object
+          additionalProperties:
+            type: string
+    ProcessInstanceSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceFilterRequest"
+    ProcessInstanceFilterRequest:
+      type: object
+      properties:
+        key:
+          type: array
+          items:
+            type: integer
+            format: int64
+        variables:
+          type: array
+          items:
+            $ref: "#/components/schemas/VariableValueFilterRequest"
+    ProcessInstanceSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInstanceItem"
+    ProcessInstanceItem:
+      type: object
+      properties:
+        tenantId:
+          type: string
+        key:
+          type: integer
+          format: int64
+        processDefinitionKey:
+          type: integer
+          format: int64
+        processVersion:
+          type: integer
+          format: int32
+        bpmnProcessId:
+          type: string
+        parentKey:
+          type: integer
+          format: int64
+        parentFlowNodeInstanceKey:
+          type: integer
+          format: int64
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+    DecisionDefinitionSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          allOf:
+            - $ref: "#/components/schemas/DecisionDefinitionFilterRequest"
+    DecisionDefinitionFilterRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: integer
+          format: int64
+        decisionId:
+          type: string
+        name:
+          type: string
+        version:
+          type: integer
+          format: int32
+        decisionRequirementsId:
+          type: string
+        decisionRequirementsKey:
+          type: integer
+          format: int64
+        decisionRequirementsName:
+          type: string
+        decisionRequirementsVersion:
+          type: integer
+          format: int32
+        tenantId:
+          type: string
+    DecisionDefinitionSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionDefinitionItem"
+    DecisionDefinitionItem:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: integer
+          format: int64
+        decisionId:
+          type: string
+        name:
+          type: string
+        version:
+          type: integer
+          format: int32
+        decisionRequirementsId:
+          type: string
+        decisionRequirementsKey:
+          type: integer
+          format: int64
+        decisionRequirementsName:
+          type: string
+        decisionRequirementsVersion:
+          type: integer
+          format: int32
+        tenantId:
+          type: string
     TopologyResponse:
       description: The response of a topology request.
       type: object
@@ -1325,6 +994,7 @@ components:
         worker:
           description: the name of the worker activating the jobs, mostly used for logging purposes
           type: string
+          nullable: true
         timeout:
           description: >
             a job returned after this call will not be activated by another call until the
@@ -1340,6 +1010,7 @@ components:
             a list of variables to fetch as the job variables; if empty, all visible variables at
             the time of activation for the scope of the job will be returned
           type: array
+          nullable: true
           items:
             type: string
         requestTimeout:
@@ -1350,11 +1021,18 @@ components:
             immediately, even when no job is activated.
           type: integer
           format: int64
+          default: 0
+          nullable: true
         tenantIds:
           description: a list of IDs of tenants for which to activate jobs
           type: array
           items:
             type: string
+          nullable: true
+      required:
+        - type
+        - timeout
+        - maxJobsToActivate
     JobActivationResponse:
       description: The list of activated jobs
       type: object
@@ -1419,6 +1097,63 @@ components:
         tenantId:
           description: the id of the tenant that owns the job
           type: string
+    JobFailRequest:
+      type: object
+      properties:
+        retries:
+          description: >
+            The amount of retries the job should have left
+          type: integer
+          format: int32
+          default: 0
+        errorMessage:
+          description: >
+            An optional message describing why the job failed. This is particularly useful if a job
+            runs out of retries and an incident is raised, as this message can help explain why an
+            incident was raised.
+          type: string
+          nullable: true
+        retryBackOff:
+          description: >
+            The backoff timeout (in ms) for the next retry.
+          type: integer
+          format: int64
+          default: 0
+        variables:
+          additionalProperties: true
+          description: >
+            JSON object that will instantiate the variables at the local scope of the job's
+            associated task.
+          type: object
+          nullable: true
+    JobErrorRequest:
+      type: object
+      properties:
+        errorCode:
+          description: >
+            The error code that will be matched with an error catch event.
+          type: string
+        errorMessage:
+          description: >
+            An error message that provides additional context.
+          type: string
+          nullable: true
+        variables:
+          additionalProperties: true
+          description: >
+            JSON object that will instantiate the variables at the local scope of the error catch event that catches the thrown error.
+          type: object
+          nullable: true
+      required:
+        - errorCode
+    JobCompletionRequest:
+      type: object
+      properties:
+        variables:
+          additionalProperties: true
+          description: The variables to complete the job with.
+          type: object
+          nullable: true
     ProblemDetail:
       description: >
         A Problem detail object as described in [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457).
@@ -1506,26 +1241,6 @@ components:
           type: array
           items:
             type: object
-    ProcessInstanceSearchQueryRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
-      type: object
-      properties:
-        filter:
-          allOf:
-            - $ref: "#/components/schemas/ProcessInstanceFilterRequest"
-    ProcessInstanceFilterRequest:
-      type: object
-      properties:
-        key:
-          type: array
-          items:
-            type: integer
-            format: int64
-        variables:
-          type: array
-          items:
-            $ref: "#/components/schemas/VariableValueFilterRequest"
     VariableValueFilterRequest:
       type: object
       properties:
@@ -1541,128 +1256,6 @@ components:
           type: object
         lte:
           type: object
-    ProcessInstanceSearchQueryResponse:
-      allOf:
-        - $ref: "#/components/schemas/SearchQueryResponse"
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/ProcessInstanceItem"
-    ProcessInstanceItem:
-      type: object
-      properties:
-        tenantId:
-          type: string
-        key:
-          type: integer
-          format: int64
-        processDefinitionKey:
-          type: integer
-          format: int64
-        processVersion:
-          type: integer
-          format: int32
-        bpmnProcessId:
-          type: string
-        parentKey:
-          type: integer
-          format: int64
-        parentFlowNodeInstanceKey:
-          type: integer
-          format: int64
-        startDate:
-          type: string
-          format: date-time
-        endDate:
-          type: string
-          format: date-time
-    CamundaUserResponse:
-      type: "object"
-      properties:
-        id:
-          type: "integer"
-          format: "int64"
-        username:
-          type: "string"
-        name:
-          type: "string"
-        email:
-          type: "string"
-        enabled:
-          type: "boolean"
-    CamundaUserWithPasswordRequest:
-      allOf:
-        - $ref: '#/components/schemas/CamundaUserResponse'
-        - type: "object"
-          properties:
-            password:
-              type: "string"
-    UserSearchResponse:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/SearchQueryResponse"
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/CamundaUserResponse"
-    CamundaGroupRequest:
-      type: "object"
-      properties:
-        id:
-          type: "integer"
-          format: "int64"
-        name:
-          type: "string"
-    CamundaGroupResponse:
-      type: "object"
-      properties:
-        id:
-          type: "integer"
-          format: "int64"
-        name:
-          type: "string"
-    GroupSearchResponse:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/SearchQueryResponse"
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/CamundaGroupResponse"
-    AssignUserToGroupRequest:
-      type: "object"
-      properties:
-        userId:
-          type: "integer"
-          format: "int64"
-    RoleRequest:
-      type: object
-      properties:
-        name:
-          type: "string"
-        description:
-          type: "string"
-        permissions:
-          type: array
-          items:
-            type: "string"
-    RoleResponse:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/RoleRequest"
-    RoleSearchResponse:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/SearchQueryResponse"
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/RoleResponse"
   securitySchemes:
     bearerAuth:
       type: http

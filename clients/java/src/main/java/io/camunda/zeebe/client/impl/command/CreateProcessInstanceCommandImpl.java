@@ -31,6 +31,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest.Builder;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationStartInstruction;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
@@ -141,13 +142,11 @@ public final class CreateProcessInstanceCommandImpl
   public ZeebeFuture<ProcessInstanceEvent> send() {
     final CreateProcessInstanceRequest request = builder.build();
 
-    final RetriableClientFutureImpl<
-            ProcessInstanceEvent, GatewayOuterClass.CreateProcessInstanceResponse>
-        future =
-            new RetriableClientFutureImpl<>(
-                CreateProcessInstanceResponseImpl::new,
-                retryPredicate,
-                streamObserver -> send(request, streamObserver));
+    final RetriableClientFutureImpl<ProcessInstanceEvent, CreateProcessInstanceResponse> future =
+        new RetriableClientFutureImpl<>(
+            CreateProcessInstanceResponseImpl::new,
+            retryPredicate,
+            streamObserver -> send(request, streamObserver));
 
     send(request, future);
     return future;

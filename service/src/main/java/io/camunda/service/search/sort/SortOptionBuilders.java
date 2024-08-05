@@ -26,6 +26,14 @@ public final class SortOptionBuilders {
     return new VariableSort.Builder();
   }
 
+  public static DecisionDefinitionSort.Builder decisionDefinition() {
+    return new DecisionDefinitionSort.Builder();
+  }
+
+  public static DecisionRequirementsSort.Builder decisionRequirements() {
+    return new DecisionRequirementsSort.Builder();
+  }
+
   public static ProcessInstanceSort processInstance(
       final Function<ProcessInstanceSort.Builder, ObjectBuilder<ProcessInstanceSort>> fn) {
     return fn.apply(processInstance()).build();
@@ -39,5 +47,16 @@ public final class SortOptionBuilders {
   public static VariableSort variable(
       final Function<VariableSort.Builder, ObjectBuilder<VariableSort>> fn) {
     return fn.apply(variable()).build();
+  }
+
+  public static DecisionDefinitionSort decisionDefinition(
+      final Function<DecisionDefinitionSort.Builder, ObjectBuilder<DecisionDefinitionSort>> fn) {
+    return fn.apply(decisionDefinition()).build();
+  }
+
+  public static DecisionRequirementsSort decisionRequirements(
+      final Function<DecisionRequirementsSort.Builder, ObjectBuilder<DecisionRequirementsSort>>
+          fn) {
+    return fn.apply(decisionRequirements()).build();
   }
 }

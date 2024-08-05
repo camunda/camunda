@@ -15,22 +15,31 @@
  */
 package io.camunda.zeebe.client.impl;
 
+import static io.camunda.zeebe.client.ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES;
 import static io.camunda.zeebe.client.ClientProperties.CA_CERTIFICATE_PATH;
+import static io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_POLL_INTERVAL;
+import static io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_TIMEOUT;
+import static io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_NAME;
+import static io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
+import static io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID;
+import static io.camunda.zeebe.client.ClientProperties.GATEWAY_ADDRESS;
+import static io.camunda.zeebe.client.ClientProperties.GRPC_ADDRESS;
+import static io.camunda.zeebe.client.ClientProperties.JOB_WORKER_EXECUTION_THREADS;
+import static io.camunda.zeebe.client.ClientProperties.JOB_WORKER_MAX_JOBS_ACTIVE;
 import static io.camunda.zeebe.client.ClientProperties.KEEP_ALIVE;
 import static io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.zeebe.client.ClientProperties.MAX_METADATA_SIZE;
 import static io.camunda.zeebe.client.ClientProperties.OVERRIDE_AUTHORITY;
 import static io.camunda.zeebe.client.ClientProperties.PREFER_REST_OVER_GRPC;
+import static io.camunda.zeebe.client.ClientProperties.REST_ADDRESS;
 import static io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.zeebe.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
-import static io.camunda.zeebe.client.impl.BuilderUtils.appendProperty;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
 
-import io.camunda.zeebe.client.ClientProperties;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
@@ -51,17 +60,13 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 
-/**
- * @deprecated since 8.6 for removal with 8.8
- */
-@Deprecated
 public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
 
   public static final String PLAINTEXT_CONNECTION_VAR = "ZEEBE_INSECURE_CONNECTION";
   public static final String CA_CERTIFICATE_VAR = "ZEEBE_CA_CERTIFICATE_PATH";
   public static final String KEEP_ALIVE_VAR = "ZEEBE_KEEP_ALIVE";
   public static final String OVERRIDE_AUTHORITY_VAR = "ZEEBE_OVERRIDE_AUTHORITY";
-  public static final String ZEEBE_CLIENT_WORKER_STREAM_ENABLED =
+  public static final String CAMUNDA_CLIENT_WORKER_STREAM_ENABLED =
       "ZEEBE_CLIENT_WORKER_STREAM_ENABLED";
   public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
   public static final URI DEFAULT_GRPC_ADDRESS =
@@ -73,7 +78,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public static final String DEFAULT_TENANT_ID_VAR = "ZEEBE_DEFAULT_TENANT_ID";
   public static final String DEFAULT_JOB_WORKER_TENANT_IDS_VAR =
       "ZEEBE_DEFAULT_JOB_WORKER_TENANT_IDS";
-  public static final String DEFAULT_JOB_WORKER_NAME = "default";
+  public static final String DEFAULT_JOB_WORKER_NAME_VAR = "default";
   public static final String USE_DEFAULT_RETRY_POLICY_VAR = "ZEEBE_CLIENT_USE_DEFAULT_RETRY_POLICY";
   private static final String TENANT_ID_LIST_SEPARATOR = ",";
   private static final boolean DEFAULT_PREFER_REST_OVER_GRPC = false;
@@ -90,7 +95,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
       Collections.singletonList(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   private int jobWorkerMaxJobsActive = 32;
   private int numJobWorkerExecutionThreads = 1;
-  private String defaultJobWorkerName = DEFAULT_JOB_WORKER_NAME;
+  private String defaultJobWorkerName = DEFAULT_JOB_WORKER_NAME_VAR;
   private Duration defaultJobTimeout = Duration.ofMinutes(5);
   private Duration defaultJobPollInterval = Duration.ofMillis(100);
   private Duration defaultMessageTimeToLive = Duration.ofHours(1);
@@ -241,99 +246,105 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   @Override
   public ZeebeClientBuilder withProperties(final Properties properties) {
-    if (properties.containsKey(ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES)) {
-      applyEnvironmentVariableOverrides(
-          Boolean.parseBoolean(
-              properties.getProperty(ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES)));
-    }
-    if (properties.containsKey(ClientProperties.GRPC_ADDRESS)) {
-      final URI grpcAddr = getURIFromString(properties.getProperty(ClientProperties.GRPC_ADDRESS));
-      grpcAddress(grpcAddr);
-    }
-    if (properties.containsKey(ClientProperties.REST_ADDRESS)) {
-      final URI restAddr = getURIFromString(properties.getProperty(ClientProperties.REST_ADDRESS));
-      restAddress(restAddr);
-    }
-    if (properties.containsKey(ClientProperties.GATEWAY_ADDRESS)) {
-      gatewayAddress(properties.getProperty(ClientProperties.GATEWAY_ADDRESS));
-    }
-    if (properties.containsKey(PREFER_REST_OVER_GRPC)) {
-      preferRestOverGrpc(Boolean.parseBoolean(properties.getProperty(PREFER_REST_OVER_GRPC)));
-    }
-    if (properties.containsKey(ClientProperties.DEFAULT_TENANT_ID)) {
-      defaultTenantId(properties.getProperty(ClientProperties.DEFAULT_TENANT_ID));
-    }
-    if (properties.containsKey(ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS)) {
-      final String tenantIdsList =
-          properties.getProperty(ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS);
-      final List<String> tenantIds = Arrays.asList(tenantIdsList.split(TENANT_ID_LIST_SEPARATOR));
-      defaultJobWorkerTenantIds(tenantIds);
-    }
+    BuilderUtils.applyIfNotNull(
+        properties,
+        APPLY_ENVIRONMENT_VARIABLES_OVERRIDES,
+        value -> applyEnvironmentVariableOverrides(Boolean.parseBoolean(value)));
 
-    if (properties.containsKey(ClientProperties.JOB_WORKER_EXECUTION_THREADS)) {
-      numJobWorkerExecutionThreads(
-          Integer.parseInt(properties.getProperty(ClientProperties.JOB_WORKER_EXECUTION_THREADS)));
-    }
-    if (properties.containsKey(ClientProperties.JOB_WORKER_MAX_JOBS_ACTIVE)) {
-      defaultJobWorkerMaxJobsActive(
-          Integer.parseInt(properties.getProperty(ClientProperties.JOB_WORKER_MAX_JOBS_ACTIVE)));
-    }
-    if (properties.containsKey(ClientProperties.DEFAULT_JOB_WORKER_NAME)) {
-      defaultJobWorkerName(properties.getProperty(ClientProperties.DEFAULT_JOB_WORKER_NAME));
-    }
-    if (properties.containsKey(ClientProperties.DEFAULT_JOB_TIMEOUT)) {
-      defaultJobTimeout(
-          Duration.ofMillis(
-              Integer.parseInt(properties.getProperty(ClientProperties.DEFAULT_JOB_TIMEOUT))));
-    }
-    if (properties.containsKey(ClientProperties.DEFAULT_JOB_POLL_INTERVAL)) {
-      defaultJobPollInterval(
-          Duration.ofMillis(
-              Integer.parseInt(
-                  properties.getProperty(ClientProperties.DEFAULT_JOB_POLL_INTERVAL))));
-    }
-    if (properties.containsKey(DEFAULT_MESSAGE_TIME_TO_LIVE)) {
-      defaultMessageTimeToLive(
-          Duration.ofMillis(Long.parseLong(properties.getProperty(DEFAULT_MESSAGE_TIME_TO_LIVE))));
-    }
-    if (properties.containsKey(DEFAULT_REQUEST_TIMEOUT)) {
-      defaultRequestTimeout(
-          Duration.ofMillis(Long.parseLong(properties.getProperty(DEFAULT_REQUEST_TIMEOUT))));
-    }
-    if (properties.containsKey(USE_PLAINTEXT_CONNECTION)) {
-      /**
-       * The following condition is phrased in this particular way in order to be backwards
-       * compatible with older versions of the software. In older versions the content of the
-       * property was not interpreted. It was assumed to be true, whenever it was set. Because of
-       * that, code examples in this code base set the flag to an empty string. By phrasing the
-       * condition this way, the old code will still work with this new implementation. Only if
-       * somebody deliberately sets the flag to false, the behavior will change
-       */
-      if (!"false".equalsIgnoreCase(properties.getProperty(USE_PLAINTEXT_CONNECTION))) {
-        usePlaintext();
-      }
-    }
-    if (properties.containsKey(CA_CERTIFICATE_PATH)) {
-      caCertificatePath(properties.getProperty(CA_CERTIFICATE_PATH));
-    }
-    if (properties.containsKey(KEEP_ALIVE)) {
-      keepAlive(properties.getProperty(KEEP_ALIVE));
-    }
-    if (properties.containsKey(OVERRIDE_AUTHORITY)) {
-      overrideAuthority(properties.getProperty(OVERRIDE_AUTHORITY));
-    }
-    if (properties.containsKey(MAX_MESSAGE_SIZE)) {
-      maxMessageSize(DataSizeUtil.parse(properties.getProperty(MAX_MESSAGE_SIZE)));
-    }
-    if (properties.containsKey(MAX_METADATA_SIZE)) {
-      maxMetadataSize(DataSizeUtil.parse(properties.getProperty(MAX_METADATA_SIZE)));
-    }
-    if (properties.containsKey(STREAM_ENABLED)) {
-      defaultJobWorkerStreamEnabled(Boolean.parseBoolean(properties.getProperty(STREAM_ENABLED)));
-    }
-    if (properties.containsKey(USE_DEFAULT_RETRY_POLICY)) {
-      useDefaultRetryPolicy(Boolean.parseBoolean(properties.getProperty(USE_DEFAULT_RETRY_POLICY)));
-    }
+    BuilderUtils.applyIfNotNull(
+        properties, GRPC_ADDRESS, value -> grpcAddress(getURIFromString(value)));
+
+    BuilderUtils.applyIfNotNull(
+        properties, REST_ADDRESS, value -> restAddress(getURIFromString(value)));
+
+    BuilderUtils.applyIfNotNull(properties, GATEWAY_ADDRESS, this::gatewayAddress);
+
+    BuilderUtils.applyIfNotNull(
+        properties,
+        PREFER_REST_OVER_GRPC,
+        value -> preferRestOverGrpc(Boolean.parseBoolean(value)));
+
+    BuilderUtils.applyIfNotNull(properties, DEFAULT_TENANT_ID, this::defaultTenantId);
+
+    BuilderUtils.applyIfNotNull(
+        properties,
+        DEFAULT_JOB_WORKER_TENANT_IDS,
+        value -> {
+          final List<String> tenantIds = Arrays.asList(value.split(TENANT_ID_LIST_SEPARATOR));
+          defaultJobWorkerTenantIds(tenantIds);
+        });
+
+    BuilderUtils.applyIfNotNull(
+        properties,
+        JOB_WORKER_EXECUTION_THREADS,
+        value -> numJobWorkerExecutionThreads(Integer.parseInt(value)));
+
+    BuilderUtils.applyIfNotNull(
+        properties,
+        JOB_WORKER_MAX_JOBS_ACTIVE,
+        value -> defaultJobWorkerMaxJobsActive(Integer.parseInt(value)));
+
+    BuilderUtils.applyIfNotNull(properties, DEFAULT_JOB_WORKER_NAME, this::defaultJobWorkerName);
+
+    BuilderUtils.applyIfNotNull(
+        properties,
+        DEFAULT_JOB_TIMEOUT,
+        value -> defaultJobTimeout(Duration.ofMillis(Long.parseLong(value))));
+
+    BuilderUtils.applyIfNotNull(
+        properties,
+        DEFAULT_JOB_POLL_INTERVAL,
+        value -> defaultJobPollInterval(Duration.ofMillis(Long.parseLong(value))));
+
+    BuilderUtils.applyIfNotNull(
+        properties,
+        DEFAULT_MESSAGE_TIME_TO_LIVE,
+        value -> defaultMessageTimeToLive(Duration.ofMillis(Long.parseLong(value))));
+
+    BuilderUtils.applyIfNotNull(
+        properties,
+        DEFAULT_REQUEST_TIMEOUT,
+        value -> defaultRequestTimeout(Duration.ofSeconds(Long.parseLong(value))));
+
+    BuilderUtils.applyIfNotNull(
+        properties,
+        USE_PLAINTEXT_CONNECTION,
+        value -> {
+          /**
+           * The following condition is phrased in this particular way in order to be backwards
+           * compatible with older versions of the software. In older versions the content of the
+           * property was not interpreted. It was assumed to be true, whenever it was set. Because
+           * of that, code examples in this code base set the flag to an empty string. By phrasing
+           * the condition this way, the old code will still work with this new implementation. Only
+           * if somebody deliberately sets the flag to false, the behavior will change
+           */
+          if (!"false".equalsIgnoreCase(value)) {
+            usePlaintext();
+          }
+        });
+
+    BuilderUtils.applyIfNotNull(properties, CA_CERTIFICATE_PATH, this::caCertificatePath);
+
+    BuilderUtils.applyIfNotNull(properties, KEEP_ALIVE, this::keepAlive);
+
+    BuilderUtils.applyIfNotNull(properties, OVERRIDE_AUTHORITY, this::overrideAuthority);
+
+    BuilderUtils.applyIfNotNull(
+        properties, MAX_MESSAGE_SIZE, value -> maxMessageSize(DataSizeUtil.parse(value)));
+
+    BuilderUtils.applyIfNotNull(
+        properties, MAX_METADATA_SIZE, value -> maxMetadataSize(DataSizeUtil.parse(value)));
+
+    BuilderUtils.applyIfNotNull(
+        properties,
+        STREAM_ENABLED,
+        value -> defaultJobWorkerStreamEnabled(Boolean.parseBoolean(value)));
+
+    BuilderUtils.applyIfNotNull(
+        properties,
+        USE_DEFAULT_RETRY_POLICY,
+        value -> useDefaultRetryPolicy(Boolean.parseBoolean(value)));
+
     return this;
   }
 
@@ -522,91 +533,68 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   }
 
   private void applyOverrides() {
-    if (Environment.system().isDefined(PLAINTEXT_CONNECTION_VAR)) {
-      usePlaintextConnection = Environment.system().getBoolean(PLAINTEXT_CONNECTION_VAR);
-    }
+    BuilderUtils.applyIfNotNull(
+        PLAINTEXT_CONNECTION_VAR, value -> usePlaintextConnection = Boolean.parseBoolean(value));
 
-    if (Environment.system().isDefined(CA_CERTIFICATE_VAR)) {
-      caCertificatePath(Environment.system().get(CA_CERTIFICATE_VAR));
-    }
+    BuilderUtils.applyIfNotNull(CA_CERTIFICATE_VAR, this::caCertificatePath);
 
-    if (Environment.system().isDefined(KEEP_ALIVE_VAR)) {
-      keepAlive(Environment.system().get(KEEP_ALIVE_VAR));
-    }
+    BuilderUtils.applyIfNotNull(KEEP_ALIVE_VAR, this::keepAlive);
 
-    if (Environment.system().isDefined(OVERRIDE_AUTHORITY_VAR)) {
-      overrideAuthority(Environment.system().get(OVERRIDE_AUTHORITY_VAR));
-    }
+    BuilderUtils.applyIfNotNull(OVERRIDE_AUTHORITY_VAR, this::overrideAuthority);
 
     if (shouldUseDefaultCredentialsProvider()) {
       credentialsProvider = createDefaultCredentialsProvider();
     }
 
-    if (Environment.system().isDefined(MAX_MESSAGE_SIZE)) {
-      maxMessageSize(DataSizeUtil.parse(Environment.system().get(MAX_MESSAGE_SIZE)));
-    }
+    BuilderUtils.applyIfNotNull(GRPC_ADDRESS_VAR, value -> grpcAddress(getURIFromString(value)));
 
-    if (Environment.system().isDefined(MAX_METADATA_SIZE)) {
-      maxMetadataSize(DataSizeUtil.parse(Environment.system().get(MAX_METADATA_SIZE)));
-    }
+    BuilderUtils.applyIfNotNull(REST_ADDRESS_VAR, value -> restAddress(getURIFromString(value)));
 
-    if (Environment.system().isDefined(GRPC_ADDRESS_VAR)) {
-      final URI grpcAddr = getURIFromString(Environment.system().get(GRPC_ADDRESS_VAR));
-      grpcAddress(grpcAddr);
-    }
-
-    if (Environment.system().isDefined(REST_ADDRESS_VAR)) {
-      final URI restAddr = getURIFromString(Environment.system().get(REST_ADDRESS_VAR));
-      restAddress(restAddr);
-    }
-
-    if (Environment.system().isDefined(PREFER_REST_VAR)) {
-      preferRestOverGrpc(Environment.system().getBoolean(PREFER_REST_VAR));
-    }
+    BuilderUtils.applyIfNotNull(
+        PREFER_REST_VAR, value -> preferRestOverGrpc(Boolean.parseBoolean(value)));
 
     if (Environment.system().isDefined(DEFAULT_TENANT_ID_VAR)) {
       defaultTenantId(Environment.system().get(DEFAULT_TENANT_ID_VAR));
     }
+    BuilderUtils.applyIfNotNull(DEFAULT_TENANT_ID_VAR, this::defaultTenantId);
 
-    if (Environment.system().isDefined(DEFAULT_JOB_WORKER_TENANT_IDS_VAR)) {
-      final String tenantIdsList = Environment.system().get(DEFAULT_JOB_WORKER_TENANT_IDS_VAR);
-      final List<String> tenantIds = Arrays.asList(tenantIdsList.split(TENANT_ID_LIST_SEPARATOR));
-      defaultJobWorkerTenantIds(tenantIds);
-    }
+    BuilderUtils.applyIfNotNull(
+        DEFAULT_JOB_WORKER_TENANT_IDS_VAR,
+        value -> {
+          final List<String> tenantIds = Arrays.asList(value.split(TENANT_ID_LIST_SEPARATOR));
+          defaultJobWorkerTenantIds(tenantIds);
+        });
 
-    if (Environment.system().isDefined(ZEEBE_CLIENT_WORKER_STREAM_ENABLED)) {
-      defaultJobWorkerStreamEnabled(
-          Boolean.parseBoolean(Environment.system().get(ZEEBE_CLIENT_WORKER_STREAM_ENABLED)));
-    }
+    BuilderUtils.applyIfNotNull(
+        CAMUNDA_CLIENT_WORKER_STREAM_ENABLED,
+        value -> defaultJobWorkerStreamEnabled(Boolean.parseBoolean(value)));
 
-    if (Environment.system().isDefined(USE_DEFAULT_RETRY_POLICY_VAR)) {
-      useDefaultRetryPolicy(
-          Boolean.parseBoolean(Environment.system().get(USE_DEFAULT_RETRY_POLICY_VAR)));
-    }
+    BuilderUtils.applyIfNotNull(
+        USE_DEFAULT_RETRY_POLICY_VAR, value -> useDefaultRetryPolicy(Boolean.parseBoolean(value)));
   }
 
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder();
 
-    appendProperty(sb, "gatewayAddress", gatewayAddress);
-    appendProperty(sb, "grpcAddress", grpcAddress);
-    appendProperty(sb, "restAddress", restAddress);
-    appendProperty(sb, "defaultTenantId", defaultTenantId);
-    appendProperty(sb, "jobWorkerMaxJobsActive", jobWorkerMaxJobsActive);
-    appendProperty(sb, "numJobWorkerExecutionThreads", numJobWorkerExecutionThreads);
-    appendProperty(sb, "defaultJobWorkerName", defaultJobWorkerName);
-    appendProperty(sb, "defaultJobTimeout", defaultJobTimeout);
-    appendProperty(sb, "defaultJobPollInterval", defaultJobPollInterval);
-    appendProperty(sb, "defaultMessageTimeToLive", defaultMessageTimeToLive);
-    appendProperty(sb, "defaultRequestTimeout", defaultRequestTimeout);
-    appendProperty(sb, "overrideAuthority", overrideAuthority);
-    appendProperty(sb, "maxMessageSize", maxMessageSize);
-    appendProperty(sb, "maxMetadataSize", maxMetadataSize);
-    appendProperty(sb, "jobWorkerExecutor", jobWorkerExecutor);
-    appendProperty(sb, "ownsJobWorkerExecutor", ownsJobWorkerExecutor);
-    appendProperty(sb, "streamEnabled", streamEnabled);
-    appendProperty(sb, "preferRestOverGrpc", preferRestOverGrpc);
+    BuilderUtils.appendProperty(sb, "gatewayAddress", gatewayAddress);
+    BuilderUtils.appendProperty(sb, "grpcAddress", grpcAddress);
+    BuilderUtils.appendProperty(sb, "restAddress", restAddress);
+    BuilderUtils.appendProperty(sb, "defaultTenantId", defaultTenantId);
+    BuilderUtils.appendProperty(sb, "jobWorkerMaxJobsActive", jobWorkerMaxJobsActive);
+    BuilderUtils.appendProperty(sb, "numJobWorkerExecutionThreads", numJobWorkerExecutionThreads);
+    BuilderUtils.appendProperty(sb, "defaultJobWorkerName", defaultJobWorkerName);
+    BuilderUtils.appendProperty(sb, "defaultJobTimeout", defaultJobTimeout);
+    BuilderUtils.appendProperty(sb, "defaultJobPollInterval", defaultJobPollInterval);
+    BuilderUtils.appendProperty(sb, "defaultMessageTimeToLive", defaultMessageTimeToLive);
+    BuilderUtils.appendProperty(sb, "defaultRequestTimeout", defaultRequestTimeout);
+    BuilderUtils.appendProperty(sb, "overrideAuthority", overrideAuthority);
+    BuilderUtils.appendProperty(sb, "maxMessageSize", maxMessageSize);
+    BuilderUtils.appendProperty(sb, "maxMetadataSize", maxMetadataSize);
+    BuilderUtils.appendProperty(sb, "jobWorkerExecutor", jobWorkerExecutor);
+    BuilderUtils.appendProperty(sb, "ownsJobWorkerExecutor", ownsJobWorkerExecutor);
+    BuilderUtils.appendProperty(sb, "streamEnabled", streamEnabled);
+    BuilderUtils.appendProperty(sb, "preferRestOverGrpc", preferRestOverGrpc);
 
     return sb.toString();
   }

@@ -25,10 +25,6 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
-/**
- * @deprecated since 8.6 for removal with 8.8
- */
-@Deprecated
 @JsonIgnoreProperties(ignoreUnknown = true)
 public final class ZeebeClientCredentials {
 

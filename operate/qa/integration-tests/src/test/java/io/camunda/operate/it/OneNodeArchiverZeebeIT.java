@@ -254,7 +254,7 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
     pinZeebeTime(currentTime);
     final List<Long> ids = new ArrayList<>();
     for (int i = 0; i < count; i++) {
-      ids.add(ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"var\": 123}"));
+      ids.add(ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"var\": 123}"));
     }
     return ids;
   }

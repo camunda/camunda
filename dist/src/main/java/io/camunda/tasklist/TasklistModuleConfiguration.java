@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist;
 
-import graphql.kickstart.autoconfigure.annotations.GraphQLAnnotationsAutoConfiguration;
 import io.camunda.tasklist.archiver.security.ArchiverSecurityModuleConfiguration;
 import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
 import io.camunda.tasklist.webapp.security.WebappSecurityModuleConfiguration;
@@ -15,8 +14,6 @@ import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfigurat
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.gateway.Gateway;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
@@ -49,11 +46,6 @@ import org.springframework.context.annotation.Profile;
     // use fully qualified names as bean name, as we have classes with same names for different
     // versions of importer
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@EnableAutoConfiguration(
-    exclude = {
-      ElasticsearchClientAutoConfiguration.class,
-      GraphQLAnnotationsAutoConfiguration.class
-    })
 @Profile("tasklist")
 public class TasklistModuleConfiguration {
   // if present, then it will ensure

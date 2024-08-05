@@ -15,12 +15,49 @@
  */
 package io.camunda.zeebe.client.impl;
 
+import io.camunda.zeebe.client.impl.util.Environment;
+import java.util.Properties;
+import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 final class BuilderUtils {
+
+  private static final Logger LOG = LoggerFactory.getLogger(BuilderUtils.class);
 
   private BuilderUtils() {}
 
   static void appendProperty(
       final StringBuilder sb, final String propertyName, final Object value) {
     sb.append(propertyName).append(": ").append(value).append("\n");
+  }
+
+  static void applyIfNotNull(
+      final Properties properties, final String propertyName, final Consumer<String> action) {
+    final String value = getProperty(properties, propertyName);
+    if (value != null) {
+      action.accept(value);
+    }
+  }
+
+  static String getProperty(final Properties properties, final String propertyName) {
+    if (properties.containsKey(propertyName)) {
+      return properties.getProperty(propertyName);
+    }
+    return null;
+  }
+
+  static void applyIfNotNull(final String envName, final Consumer<String> action) {
+    final String value = getProperty(Environment.system(), envName);
+    if (value != null) {
+      action.accept(value);
+    }
+  }
+
+  static String getProperty(final Environment environment, final String envName) {
+    if (environment.isDefined(envName)) {
+      return environment.get(envName);
+    }
+    return null;
   }
 }

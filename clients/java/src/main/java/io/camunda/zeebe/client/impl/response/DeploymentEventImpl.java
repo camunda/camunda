@@ -35,7 +35,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   private static final String UNKNOWN_METADATA_WARN_MSG =
       "Expected metadata in deployment response, but encountered an unknown type of metadata."
           + " This might happen when you've updated your Zeebe cluster, but not your Zeebe client."
-          + " You may have to update the version of your camunda-client-java dependency to resolve the issue.";
+          + " You may have to update the version of your zeebe-client-java dependency to resolve the issue.";
 
   private final long key;
   private final String tenantId;

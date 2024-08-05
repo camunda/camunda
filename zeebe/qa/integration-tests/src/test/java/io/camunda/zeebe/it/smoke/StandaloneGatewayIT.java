@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.smoke;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneGateway;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -28,7 +28,7 @@ final class StandaloneGatewayIT {
   @TestZeebe(awaitReady = false, awaitCompleteTopology = false) // no brokers
   private final TestStandaloneGateway gateway = new TestStandaloneGateway();
 
-  @AutoCloseResource private CamundaClient client;
+  @AutoCloseResource private ZeebeClient client;
 
   @BeforeEach
   void beforeEach() {

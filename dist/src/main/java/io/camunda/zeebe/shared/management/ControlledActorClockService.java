@@ -17,7 +17,8 @@ import java.util.Optional;
  * An implementation of {@link ActorClockService} which wraps a mutable clock, allowing for
  * modification of the clock from the outside.
  *
- * <p>See {@link io.camunda.commons.actor.ActorClockConfiguration} on how to configure/wire it.
+ * <p>See {@link io.camunda.application.commons.actor.ActorClockConfiguration} on how to
+ * configure/wire it.
  */
 public final class ControlledActorClockService implements ActorClockService, MutableClock {
   private final ControlledActorClock clock;

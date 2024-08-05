@@ -42,7 +42,7 @@ public final class JobWorkerBuilderImpl
 
   public static final BackoffSupplier DEFAULT_BACKOFF_SUPPLIER =
       BackoffSupplier.newBackoffBuilder().build();
-  public static final Duration DEFAULT_STREAMING_TIMEOUT = Duration.ofHours(1);
+  public static final Duration DEFAULT_STREAMING_TIMEOUT = Duration.ofHours(8);
   private final JobClient jobClient;
   private final ScheduledExecutorService executorService;
   private final List<Closeable> closeables;

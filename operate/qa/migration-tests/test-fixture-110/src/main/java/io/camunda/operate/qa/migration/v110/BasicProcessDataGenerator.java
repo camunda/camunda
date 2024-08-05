@@ -11,7 +11,6 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-import io.camunda.client.CamundaClient;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
@@ -20,6 +19,7 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ThreadUtil;
 import io.camunda.operate.util.rest.StatefulRestTemplate;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
@@ -59,10 +59,10 @@ public class BasicProcessDataGenerator {
       DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
 
   /**
-   * CamundaClient must not be reused between different test fixtures, as this may be different
+   * ZeebeClient must not be reused between different test fixtures, as this may be different
    * versions of client in the future.
    */
-  private CamundaClient camundaClient;
+  private ZeebeClient zeebeClient;
 
   @Autowired private RestHighLevelClient esClient;
 
@@ -73,8 +73,8 @@ public class BasicProcessDataGenerator {
   private StatefulRestTemplate operateRestClient;
 
   private void init(final TestContext testContext) {
-    camundaClient =
-        CamundaClient.newClientBuilder()
+    zeebeClient =
+        ZeebeClient.newClientBuilder()
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
             .usePlaintext()
             .build();
@@ -133,9 +133,9 @@ public class BasicProcessDataGenerator {
   }
 
   private void closeClients() {
-    if (camundaClient != null) {
-      camundaClient.close();
-      camundaClient = null;
+    if (zeebeClient != null) {
+      zeebeClient.close();
+      zeebeClient = null;
     }
   }
 
@@ -215,12 +215,12 @@ public class BasicProcessDataGenerator {
   }
 
   private void createIncidents(final String jobType, final int numberOfIncidents) {
-    ZeebeTestUtil.failTask(camundaClient, jobType, "worker", numberOfIncidents);
+    ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", numberOfIncidents);
     LOGGER.info("{} incidents in {} created", numberOfIncidents, jobType);
   }
 
   private void completeTasks(final String jobType, final int count) {
-    ZeebeTestUtil.completeTask(camundaClient, jobType, "worker", "{\"varOut\": \"value2\"}", count);
+    ZeebeTestUtil.completeTask(zeebeClient, jobType, "worker", "{\"varOut\": \"value2\"}", count);
     LOGGER.info("{} tasks {} completed", count, jobType);
   }
 
@@ -228,8 +228,7 @@ public class BasicProcessDataGenerator {
     for (int i = 0; i < numberOfProcessInstances; i++) {
       final String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
       final long processInstanceKey =
-          ZeebeTestUtil.startProcessInstance(
-              camundaClient, bpmnProcessId, "{\"var1\": \"value1\"}");
+          ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, "{\"var1\": \"value1\"}");
       LOGGER.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
       processInstanceKeys.add(processInstanceKey);
     }
@@ -241,7 +240,7 @@ public class BasicProcessDataGenerator {
     final String bpmnProcessId = PROCESS_BPMN_PROCESS_ID;
     final String processDefinitionKey =
         ZeebeTestUtil.deployProcess(
-            camundaClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
+            zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
     LOGGER.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
   }
 

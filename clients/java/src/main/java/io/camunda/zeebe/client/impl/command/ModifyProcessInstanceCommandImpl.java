@@ -235,4 +235,10 @@ public final class ModifyProcessInstanceCommandImpl
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .modifyProcessInstance(request, streamObserver);
   }
+
+  @Override
+  public ModifyProcessInstanceCommandStep2 operationReference(final long operationReference) {
+    requestBuilder.setOperationReference(operationReference);
+    return this;
+  }
 }

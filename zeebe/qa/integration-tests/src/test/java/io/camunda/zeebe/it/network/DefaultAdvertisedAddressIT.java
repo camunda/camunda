@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.it.network;
 
-import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.zeebe.containers.cluster.ZeebeCluster;
@@ -49,7 +49,7 @@ final class DefaultAdvertisedAddressIT {
   void shouldFormClusterWithDefaultAdvertisedHost() {
     // given
     final var clientBuilder =
-        CamundaClient.newClientBuilder()
+        ZeebeClient.newClientBuilder()
             .usePlaintext()
             .restAddress(
                 URI.create("http://localhost:" + cluster.getAvailableGateway().getMappedPort(8080)))

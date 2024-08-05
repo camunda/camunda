@@ -8,7 +8,7 @@
 package io.camunda.zeebe.it.management;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
@@ -31,7 +31,7 @@ final class JobStreamEndpointIT {
       TestCluster.builder().withGatewaysCount(2).withEmbeddedGateway(false).build();
 
   private final TestGateway<?> gateway = CLUSTER.availableGateway();
-  @AutoCloseResource private final CamundaClient client = gateway.newClientBuilder().build();
+  @AutoCloseResource private final ZeebeClient client = gateway.newClientBuilder().build();
 
   @AfterEach
   void afterEach() {

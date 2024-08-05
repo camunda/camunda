@@ -839,7 +839,8 @@ public class ResourceDeletionTest {
             DecisionRecordValue::getDecisionKey,
             DecisionRecordValue::getDecisionRequirementsId,
             DecisionRecordValue::getDecisionRequirementsKey,
-            DecisionRecordValue::isDuplicate)
+            DecisionRecordValue::isDuplicate,
+            DecisionRecordValue::getDeploymentKey)
         .containsOnly(
             decisionCreatedRecord.getDecisionId(),
             decisionCreatedRecord.getDecisionName(),
@@ -847,7 +848,8 @@ public class ResourceDeletionTest {
             decisionCreatedRecord.getDecisionKey(),
             decisionCreatedRecord.getDecisionRequirementsId(),
             decisionCreatedRecord.getDecisionRequirementsKey(),
-            decisionCreatedRecord.isDuplicate());
+            decisionCreatedRecord.isDuplicate(),
+            decisionCreatedRecord.getDeploymentKey());
   }
 
   private void verifyProcessIdWithVersionIsDeleted(final String processId, final int version) {
@@ -872,13 +874,15 @@ public class ResourceDeletionTest {
             ProcessMetadataValue::getBpmnProcessId,
             ProcessMetadataValue::getResourceName,
             ProcessMetadataValue::getVersion,
-            ProcessMetadataValue::getProcessDefinitionKey)
+            ProcessMetadataValue::getProcessDefinitionKey,
+            ProcessMetadataValue::getDeploymentKey)
         .containsOnly(
             tuple(
                 processCreatedRecord.getBpmnProcessId(),
                 processCreatedRecord.getResourceName(),
                 processCreatedRecord.getVersion(),
-                processCreatedRecord.getProcessDefinitionKey()));
+                processCreatedRecord.getProcessDefinitionKey(),
+                processCreatedRecord.getDeploymentKey()));
   }
 
   private void verifyInstanceOfProcessWithIdAndVersionIsCompleted(
@@ -1056,12 +1060,14 @@ public class ResourceDeletionTest {
             Form::getFormKey,
             Form::getVersion,
             Form::getResourceName,
-            Form::getTenantId)
+            Form::getTenantId,
+            Form::getDeploymentKey)
         .containsOnly(
             formCreatedRecord.getFormId(),
             formCreatedRecord.getFormKey(),
             formCreatedRecord.getVersion(),
             formCreatedRecord.getResourceName(),
-            formCreatedRecord.getTenantId());
+            formCreatedRecord.getTenantId(),
+            formCreatedRecord.getDeploymentKey());
   }
 }

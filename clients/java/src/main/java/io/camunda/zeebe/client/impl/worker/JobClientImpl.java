@@ -30,22 +30,26 @@ import io.camunda.zeebe.client.impl.command.CompleteJobCommandImpl;
 import io.camunda.zeebe.client.impl.command.FailJobCommandImpl;
 import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.ThrowErrorCommandImpl;
+import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import java.util.function.Predicate;
 
 public final class JobClientImpl implements JobClient {
 
   private final GatewayStub asyncStub;
+  private final HttpClient httpClient;
   private final ZeebeClientConfiguration config;
   private final JsonMapper jsonMapper;
   private final Predicate<StatusCode> retryPredicate;
 
   public JobClientImpl(
       final GatewayStub asyncStub,
+      final HttpClient httpClient,
       final ZeebeClientConfiguration config,
       final JsonMapper jsonMapper,
       final Predicate<StatusCode> retryPredicate) {
     this.asyncStub = asyncStub;
+    this.httpClient = httpClient;
     this.config = config;
     this.jsonMapper = jsonMapper;
     this.retryPredicate = retryPredicate;
@@ -86,7 +90,7 @@ public final class JobClientImpl implements JobClient {
 
   @Override
   public ActivateJobsCommandStep1 newActivateJobsCommand() {
-    return new ActivateJobsCommandImpl(asyncStub, config, jsonMapper, retryPredicate);
+    return new ActivateJobsCommandImpl(asyncStub, httpClient, config, jsonMapper, retryPredicate);
   }
 
   @Override

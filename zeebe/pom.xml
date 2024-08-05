@@ -36,7 +36,6 @@
     <module>gateway</module>
     <module>gateway-grpc</module>
     <module>gateway-rest</module>
-    <module>clients/java</module>
     <module>exporter-api</module>
     <module>exporter-test</module>
     <module>protocol-asserts</module>

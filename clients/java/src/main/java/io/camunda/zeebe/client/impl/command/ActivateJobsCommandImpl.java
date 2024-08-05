@@ -25,78 +25,110 @@ import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobs
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.impl.RetriableStreamingFutureImpl;
+import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.ActivateJobsResponseImpl;
+import io.camunda.zeebe.client.protocol.rest.JobActivationRequest;
+import io.camunda.zeebe.client.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest.Builder;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class ActivateJobsCommandImpl
     implements ActivateJobsCommandStep1, ActivateJobsCommandStep2, ActivateJobsCommandStep3 {
 
   private static final Duration DEADLINE_OFFSET = Duration.ofSeconds(10);
   private final GatewayStub asyncStub;
+  private final HttpClient httpClient;
+  private final RequestConfig.Builder httpRequestConfig;
   private final JsonMapper jsonMapper;
   private final Predicate<StatusCode> retryPredicate;
-  private final Builder builder;
+  private final Builder grpcRequestObjectBuilder;
+  private final JobActivationRequest httpRequestObject;
   private Duration requestTimeout;
+  private boolean useRest;
 
   private final Set<String> defaultTenantIds;
   private final Set<String> customTenantIds;
 
   public ActivateJobsCommandImpl(
       final GatewayStub asyncStub,
+      final HttpClient httpClient,
       final ZeebeClientConfiguration config,
       final JsonMapper jsonMapper,
       final Predicate<StatusCode> retryPredicate) {
     this.asyncStub = asyncStub;
+    this.httpClient = httpClient;
+    httpRequestConfig = httpClient.newRequestConfig();
     this.jsonMapper = jsonMapper;
     this.retryPredicate = retryPredicate;
-    builder = ActivateJobsRequest.newBuilder();
+    grpcRequestObjectBuilder = ActivateJobsRequest.newBuilder();
+    httpRequestObject = new JobActivationRequest();
     requestTimeout(config.getDefaultRequestTimeout());
     timeout(config.getDefaultJobTimeout());
     workerName(config.getDefaultJobWorkerName());
+    useRest = config.preferRestOverGrpc();
     defaultTenantIds = new HashSet<>(config.getDefaultJobWorkerTenantIds());
     customTenantIds = new HashSet<>();
   }
 
   @Override
+  public ActivateJobsCommandStep1 useRest() {
+    useRest = true;
+    return this;
+  }
+
+  @Override
+  public ActivateJobsCommandStep1 useGrpc() {
+    useRest = false;
+    return this;
+  }
+
+  @Override
   public ActivateJobsCommandStep2 jobType(final String jobType) {
-    builder.setType(jobType);
+    grpcRequestObjectBuilder.setType(jobType);
+    httpRequestObject.setType(jobType);
     return this;
   }
 
   @Override
   public ActivateJobsCommandStep3 maxJobsToActivate(final int maxJobsToActivate) {
-    builder.setMaxJobsToActivate(maxJobsToActivate);
+    grpcRequestObjectBuilder.setMaxJobsToActivate(maxJobsToActivate);
+    httpRequestObject.setMaxJobsToActivate(maxJobsToActivate);
     return this;
   }
 
   @Override
   public ActivateJobsCommandStep3 timeout(final Duration timeout) {
-    builder.setTimeout(timeout.toMillis());
+    grpcRequestObjectBuilder.setTimeout(timeout.toMillis());
+    httpRequestObject.setTimeout(timeout.toMillis());
     return this;
   }
 
   @Override
   public ActivateJobsCommandStep3 workerName(final String workerName) {
     if (workerName != null) {
-      builder.setWorker(workerName);
+      grpcRequestObjectBuilder.setWorker(workerName);
+      httpRequestObject.setWorker(workerName);
     }
     return this;
   }
 
   @Override
   public ActivateJobsCommandStep3 fetchVariables(final List<String> fetchVariables) {
-    builder.addAllFetchVariable(fetchVariables);
+    grpcRequestObjectBuilder.addAllFetchVariable(fetchVariables);
+    httpRequestObject.fetchVariable(fetchVariables);
     return this;
   }
 
@@ -107,21 +139,47 @@ public final class ActivateJobsCommandImpl
 
   @Override
   public FinalCommandStep<ActivateJobsResponse> requestTimeout(final Duration requestTimeout) {
-    builder.setRequestTimeout(requestTimeout.toMillis());
+    grpcRequestObjectBuilder.setRequestTimeout(requestTimeout.toMillis());
+    httpRequestObject.setRequestTimeout(requestTimeout.toMillis());
     this.requestTimeout = requestTimeout;
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
   public ZeebeFuture<ActivateJobsResponse> send() {
-    builder.clearTenantIds();
+    grpcRequestObjectBuilder.clearTenantIds();
+    httpRequestObject.setTenantIds(new ArrayList<>());
     if (customTenantIds.isEmpty()) {
-      builder.addAllTenantIds(defaultTenantIds);
+      grpcRequestObjectBuilder.addAllTenantIds(defaultTenantIds);
+      httpRequestObject.setTenantIds(new ArrayList<>(defaultTenantIds));
     } else {
-      builder.addAllTenantIds(customTenantIds);
+      grpcRequestObjectBuilder.addAllTenantIds(customTenantIds);
+      httpRequestObject.setTenantIds(new ArrayList<>(customTenantIds));
     }
 
-    final ActivateJobsRequest request = builder.build();
+    if (useRest) {
+      return sendRestRequest();
+    } else {
+      return sendGrpcRequest();
+    }
+  }
+
+  private ZeebeFuture<ActivateJobsResponse> sendRestRequest() {
+    final HttpZeebeFuture<ActivateJobsResponse> result = new HttpZeebeFuture<>();
+    final ActivateJobsResponseImpl response = new ActivateJobsResponseImpl(jsonMapper);
+    httpClient.post(
+        "/jobs/activation",
+        jsonMapper.toJson(httpRequestObject),
+        httpRequestConfig.build(),
+        JobActivationResponse.class,
+        response::addResponse,
+        result);
+    return result;
+  }
+
+  private ZeebeFuture<ActivateJobsResponse> sendGrpcRequest() {
+    final ActivateJobsRequest request = grpcRequestObjectBuilder.build();
 
     final ActivateJobsResponseImpl response = new ActivateJobsResponseImpl(jsonMapper);
     final RetriableStreamingFutureImpl<ActivateJobsResponse, GatewayOuterClass.ActivateJobsResponse>
@@ -130,13 +188,13 @@ public final class ActivateJobsCommandImpl
                 response,
                 response::addResponse,
                 retryPredicate,
-                streamObserver -> send(request, streamObserver));
+                streamObserver -> sendGrpc(request, streamObserver));
 
-    send(request, future);
+    sendGrpc(request, future);
     return future;
   }
 
-  private void send(
+  private void sendGrpc(
       final ActivateJobsRequest request,
       final StreamObserver<GatewayOuterClass.ActivateJobsResponse> future) {
     asyncStub

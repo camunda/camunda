@@ -16,8 +16,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import com.graphql.spring.boot.test.GraphQLTestTemplate;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.MigrationPlanBuilderImpl;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -26,6 +24,8 @@ import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.oauth.IdentityJwt2AuthenticationTokenConverter;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
@@ -60,7 +60,7 @@ public class TasklistTester {
       "mutation {claimTask(taskId: \"%s\")" + TASK_RESULT_PATTERN + "}";
   private static final String VARIABLE_INPUT_PATTERN = "{name: \"%s\", value: \"%s\"}";
 
-  private final CamundaClient camundaClient;
+  private final ZeebeClient zeebeClient;
   private final DatabaseTestExtension databaseTestExtension;
   private JwtDecoder jwtDecoder;
   //
@@ -135,16 +135,16 @@ public class TasklistTester {
   //  private Long jobKey;
   //
   public TasklistTester(
-      final CamundaClient camundaClient, final DatabaseTestExtension elasticsearchTestRule) {
-    this.camundaClient = camundaClient;
+      final ZeebeClient zeebeClient, final DatabaseTestExtension elasticsearchTestRule) {
+    this.zeebeClient = zeebeClient;
     databaseTestExtension = elasticsearchTestRule;
   }
 
   public TasklistTester(
-      final CamundaClient camundaClient,
+      final ZeebeClient zeebeClient,
       final DatabaseTestExtension elasticsearchTestRule,
       final JwtDecoder jwtDecoder) {
-    this(camundaClient, elasticsearchTestRule);
+    this(zeebeClient, elasticsearchTestRule);
     this.jwtDecoder = jwtDecoder;
   }
 
@@ -161,7 +161,7 @@ public class TasklistTester {
             .userTask(flowNodeBpmnId)
             .endEvent()
             .done();
-    processDefinitionKey = ZeebeTestUtil.deployProcess(camundaClient, process, processId + ".bpmn");
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
     return this;
   }
 
@@ -181,7 +181,7 @@ public class TasklistTester {
             .zeebeUserTask()
             .endEvent("end")
             .done();
-    processDefinitionKey = ZeebeTestUtil.deployProcess(camundaClient, process, processId + ".bpmn");
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
     return this;
   }
 
@@ -194,20 +194,20 @@ public class TasklistTester {
             .zeebeUserTask()
             .endEvent()
             .done();
-    processDefinitionKey = ZeebeTestUtil.deployProcess(camundaClient, process, processId + ".bpmn");
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
     return this;
   }
 
   public TasklistTester createAndDeployProcess(final BpmnModelInstance process) {
     processDefinitionKey =
         ZeebeTestUtil.deployProcess(
-            camundaClient, process, process.getDefinitions().getId() + ".bpmn");
+            zeebeClient, process, process.getDefinitions().getId() + ".bpmn");
     return this;
   }
 
   public TasklistTester migrateProcessInstance(
       final String oldTaskMapping, final String newTaskMapping) {
-    camundaClient
+    zeebeClient
         .newMigrateProcessInstanceCommand(Long.valueOf(processInstanceId))
         .migrationPlan(
             new MigrationPlanBuilderImpl()
@@ -228,7 +228,7 @@ public class TasklistTester {
             .zeebeCandidateGroups(candidateGroup)
             .endEvent()
             .done();
-    processDefinitionKey = ZeebeTestUtil.deployProcess(camundaClient, process, processId + ".bpmn");
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
     return this;
   }
 
@@ -241,7 +241,7 @@ public class TasklistTester {
             .zeebeCandidateUsers(candidateUser)
             .endEvent()
             .done();
-    processDefinitionKey = ZeebeTestUtil.deployProcess(camundaClient, process, processId + ".bpmn");
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
     return this;
   }
 
@@ -254,7 +254,7 @@ public class TasklistTester {
             .zeebeAssignee(user)
             .endEvent()
             .done();
-    processDefinitionKey = ZeebeTestUtil.deployProcess(camundaClient, process, processId + ".bpmn");
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
     return this;
   }
 
@@ -267,7 +267,7 @@ public class TasklistTester {
             .endEvent()
             .done();
     processDefinitionKey =
-        ZeebeTestUtil.deployProcess(camundaClient, process, processId + ".bpmn", tenantId);
+        ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn", tenantId);
     return this;
   }
 
@@ -302,7 +302,7 @@ public class TasklistTester {
     }
 
     ZeebeTestUtil.failTaskWithRetries(
-        camundaClient,
+        zeebeClient,
         Protocol.USER_TASK_JOB_TYPE,
         TestUtil.createRandomString(10),
         numberOfTasks,
@@ -501,19 +501,19 @@ public class TasklistTester {
   }
 
   public TasklistTester deployProcess(final String... classpathResources) {
-    processDefinitionKey = ZeebeTestUtil.deployProcess(camundaClient, classpathResources);
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, classpathResources);
     return this;
   }
 
   public TasklistTester deployProcessForTenant(
       final String tenantId, final String... classpathResources) {
-    processDefinitionKey = ZeebeTestUtil.deployProcess(tenantId, camundaClient, classpathResources);
+    processDefinitionKey = ZeebeTestUtil.deployProcess(tenantId, zeebeClient, classpathResources);
     return this;
   }
 
   public TasklistTester deployProcess(
       final BpmnModelInstance processModel, final String resourceName) {
-    processDefinitionKey = ZeebeTestUtil.deployProcess(camundaClient, processModel, resourceName);
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, processModel, resourceName);
     return this;
   }
 
@@ -538,14 +538,14 @@ public class TasklistTester {
   }
 
   public TasklistTester startProcessInstance(final String bpmnProcessId, final String payload) {
-    processInstanceId = ZeebeTestUtil.startProcessInstance(camundaClient, bpmnProcessId, payload);
+    processInstanceId = ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, payload);
     return this;
   }
 
   public TasklistTester startProcessInstance(
       final String tenantId, final String bpmnProcessId, final String payload) {
     processInstanceId =
-        ZeebeTestUtil.startProcessInstance(tenantId, camundaClient, bpmnProcessId, payload);
+        ZeebeTestUtil.startProcessInstance(tenantId, zeebeClient, bpmnProcessId, payload);
     return this;
   }
 
@@ -732,7 +732,7 @@ public class TasklistTester {
                 flowNodeBpmnId, processDefinitionKey, TaskState.CREATED));
       }
     }
-    camundaClient.newUserTaskCompleteCommand(Long.valueOf(taskId)).variables(variables).send();
+    zeebeClient.newUserTaskCompleteCommand(Long.valueOf(taskId)).variables(variables).send();
     return taskIsCompleted(flowNodeBpmnId);
   }
 
@@ -754,17 +754,17 @@ public class TasklistTester {
 
   public TasklistTester completeUserTaskInZeebe() {
     ZeebeTestUtil.completeTask(
-        camundaClient, Protocol.USER_TASK_JOB_TYPE, TestUtil.createRandomString(10), null);
+        zeebeClient, Protocol.USER_TASK_JOB_TYPE, TestUtil.createRandomString(10), null);
     return this;
   }
 
   public TasklistTester cancelProcessInstance() {
-    ZeebeTestUtil.cancelProcessInstance(camundaClient, Long.parseLong(processInstanceId));
+    ZeebeTestUtil.cancelProcessInstance(zeebeClient, Long.parseLong(processInstanceId));
     return this;
   }
 
   public TasklistTester deleteResource(final String resourceKey) {
-    ZeebeTestUtil.deleteResource(camundaClient, Long.valueOf(resourceKey));
+    ZeebeTestUtil.deleteResource(zeebeClient, Long.valueOf(resourceKey));
     return this;
   }
 

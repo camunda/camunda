@@ -41,7 +41,7 @@ const TenantField: React.FC<Props> = observer(({onChange}) => {
             itemToString={(item: string) => {
               return item === 'all'
                 ? 'All tenants'
-                : tenantsById?.[item] ?? item;
+                : (tenantsById?.[item] ?? item);
             }}
             selectedItem={items.includes(input.value) ? input.value : ''}
             size="sm"

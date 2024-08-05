@@ -9,10 +9,10 @@ package io.camunda.zeebe.it.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.response.StreamJobsResponse;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.response.StreamJobsResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
@@ -57,7 +57,7 @@ final class StreamJobsTest {
   private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker().withRecordingExporter(true);
 
-  @AutoCloseResource private final CamundaClient client = ZEEBE.newClientBuilder().build();
+  @AutoCloseResource private final ZeebeClient client = ZEEBE.newClientBuilder().build();
 
   @Test
   void shouldStreamJobs() {
@@ -272,7 +272,7 @@ final class StreamJobsTest {
     private final Map<String, Object> payload =
         Map.of("foo", "bar".repeat(TransportState.DEFAULT_ONREADY_THRESHOLD));
 
-    private CamundaFuture<StreamJobsResponse> stream;
+    private ZeebeFuture<StreamJobsResponse> stream;
 
     @BeforeEach
     void beforeEach() {

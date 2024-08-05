@@ -42,20 +42,20 @@
     },
     {
       "matchManagers": ["maven"],
-      "matchPackagePrefixes": ["org.opensearch.client", "org.elasticsearch", "co.elastic"],
+      "matchPackageNames": ["org.opensearch.client{/,}**", "org.elasticsearch{/,}**", "co.elastic{/,}**"],
       "matchUpdateTypes": ["minor", "major"],
       "enabled": false
     },
     {
       "description": "Skip lucene major updates to avoid breaking changes.",
       "matchManagers": ["maven"],
-      "matchPackagePrefixes": ["org.apache.lucene"],
+      "matchPackageNames": ["org.apache.lucene{/,}**"],
       "matchUpdateTypes": ["major"],
       "enabled": false
     },
     {
       "matchManagers": ["maven"],
-      "matchPackagePrefixes": ["com.graphql-java"],
+      "matchPackageNames": ["com.graphql-java{/,}**"],
       "matchUpdateTypes": ["major"],
       "enabled": false
     },
@@ -68,25 +68,19 @@
     },
     {
       "matchManagers": ["maven"],
-      "matchPackagePrefixes": ["org.jacoco"],
+      "matchPackageNames": ["org.jacoco{/,}**"],
       "allowedVersions": "!/0.8.9/"
-    },
-    {
-      "description": "Do not update Netty as it is incompatible with grpc-java < 1.65; this can be removed after that",
-      "matchManagers": ["maven"],
-      "matchPackagePrefixes": ["io.netty"],
-      "allowedVersions": "<=4.1.110.Final"
     },
     {
       "description" : "Exclude SNAPSHOT versions, renovate may suggest them for pre-release values.",
       "matchManagers": ["maven"],
-      "matchPackagePatterns": [".*"],
+      "matchPackageNames": ["*"],
       "allowedVersions": "!/-SNAPSHOT$/"
     },
     {
       "description" : "Exclude internal Maven modules and Maven dependencies lacking metadata.",
       "matchManagers": ["maven"],
-      "matchPackagePatterns": [
+      "matchPackageNames": [
         "io.camunda:operate-parent",
         "io.camunda:operate-qa",
         "io.camunda:operate-qa-migration-tests-parent",
@@ -100,7 +94,7 @@
       "description": "Exclude frontend deps until migration is done in Operate (see issues #17736, #17844, #18851)",
       "matchManagers": ["npm", "nvm"],
       "matchFileNames": ["operate/**"],
-      "matchPackagePatterns": [
+      "matchPackageNames": [
         "react-router-dom",
         "msw",
         "@carbon/react"
@@ -117,7 +111,7 @@
       "additionalBranchPrefix": "fe-"
     },
     {
-      "matchPackagePrefixes": ["@types/"],
+      "matchPackageNames": ["@types/{/,}**"],
       "groupName": "definitelyTyped"
     },
     {
@@ -130,7 +124,7 @@
     },
     {
       "matchManagers": ["npm", "nvm"],
-      "matchPackagePatterns": ["*"],
+      "matchPackageNames": ["*"],
       "matchUpdateTypes": ["patch"],
       "groupName": "all non-major dependencies",
       "groupSlug": "all-minor-patch"
@@ -152,7 +146,7 @@
     },
     {
       "description": "Automerge all updates with green CI.",
-      "matchPackagePatterns": ["*"],
+      "matchPackageNames": ["*"],
       "automerge": true,
       "addLabels": ["automerge"]
     }

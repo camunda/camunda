@@ -11,8 +11,8 @@ import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;

@@ -64,8 +64,8 @@ public class FileBasedSnapshotStoreTest {
     final var store = new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of());
 
     // then
-    assertThat(root.resolve(FileBasedSnapshotStore.SNAPSHOTS_DIRECTORY)).exists().isDirectory();
-    assertThat(root.resolve(FileBasedSnapshotStore.PENDING_DIRECTORY)).exists().isDirectory();
+    assertThat(root.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_DIRECTORY)).exists().isDirectory();
+    assertThat(root.resolve(FileBasedSnapshotStoreImpl.PENDING_DIRECTORY)).exists().isDirectory();
     assertThat(store.getLatestSnapshot()).isEmpty();
   }
 

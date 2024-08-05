@@ -78,7 +78,7 @@ public class OperateApiClient {
 
   private static void verifyStatusCode(final ClassicHttpResponse response) {
     if (response.getCode() == 404) {
-      throw new CamundaClientNotFoundException(
+      throw new ZeebeClientNotFoundException(
           String.format(
               "Failed send request. Object not found. [code: %d, message: %s]",
               response.getCode(), getReponseAsString(response)));

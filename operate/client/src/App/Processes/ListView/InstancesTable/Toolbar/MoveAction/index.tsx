@@ -42,7 +42,7 @@ const MoveAction: React.FC = observer(() => {
   const {hasSelectedRunningInstances} = processInstancesSelectionStore;
 
   const businessObject: BusinessObject | null = flowNodeId
-    ? processXmlStore.getFlowNode(flowNodeId) ?? null
+    ? (processXmlStore.getFlowNode(flowNodeId) ?? null)
     : null;
 
   const isTypeSupported = (businessObject: BusinessObject) => {

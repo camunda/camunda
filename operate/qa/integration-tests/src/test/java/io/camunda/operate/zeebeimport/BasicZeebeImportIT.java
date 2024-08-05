@@ -79,9 +79,9 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
     // having
     final String processId = "demoProcess";
     final Long processDefinitionKey =
-        ZeebeTestUtil.deployProcess(camundaClient, null, "demoProcess_v_1.bpmn");
+        ZeebeTestUtil.deployProcess(zeebeClient, null, "demoProcess_v_1.bpmn");
     final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     // when
     // 1st load process instance index, then deployment
@@ -119,7 +119,7 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
     final Long processDefinitionKey = deployProcess(model, "emptyNameProcess.bpmn");
 
     final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
 
@@ -366,7 +366,7 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
     final String processId = "demoProcess";
     deployProcess("demoProcess_v_1.bpmn");
     final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     // create an incident
     ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
 
@@ -417,7 +417,7 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
             .done();
     deployProcess(modelInstance, "demoProcess_v_1.bpmn");
     final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     // create an incident
     final Long jobKey =
@@ -426,7 +426,7 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
     final long incidentKey = getOnlyIncidentKey(processInstanceKey);
 
     // when update retries
-    ZeebeTestUtil.resolveIncident(camundaClient, jobKey, incidentKey);
+    ZeebeTestUtil.resolveIncident(zeebeClient, jobKey, incidentKey);
     ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), "{}");
 
     processImportTypeAndWait(
@@ -475,7 +475,7 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
             .done();
     deployProcess(modelInstance, "demoProcess_v_1.bpmn");
     final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"a\": \"b\"}");
+        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     // create an incident
     final Long jobKey =
@@ -484,7 +484,7 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
     final long incidentKey = getOnlyIncidentKey(processInstanceKey);
 
     // when update retries
-    ZeebeTestUtil.resolveIncident(camundaClient, jobKey, incidentKey);
+    ZeebeTestUtil.resolveIncident(zeebeClient, jobKey, incidentKey);
 
     ZeebeTestUtil.cancelProcessInstance(getClient(), processInstanceKey);
 
@@ -572,7 +572,7 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
   public void testPartitionIds() {
     final List<Integer> operatePartitions = partitionHolder.getPartitionIds();
     final int zeebePartitionsCount =
-        camundaClient.newTopologyRequest().send().join().getPartitionsCount();
+        zeebeClient.newTopologyRequest().send().join().getPartitionsCount();
     assertThat(operatePartitions).hasSize(zeebePartitionsCount);
     assertThat(operatePartitions).allMatch(id -> id <= zeebePartitionsCount && id >= 1);
   }

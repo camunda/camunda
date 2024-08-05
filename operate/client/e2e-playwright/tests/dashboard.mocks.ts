@@ -6,14 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  deployProcess,
-  createInstances,
-  createSingleInstance,
-} from '../setup-utils';
+import {zeebeGrpcApi} from '../api/zeebe-grpc';
+
+const {deployProcesses, createInstances, createSingleInstance} = zeebeGrpcApi;
 
 const setup = async () => {
-  await deployProcess([
+  await deployProcesses([
     'withoutInstancesProcess_v_1.bpmn',
     'withoutIncidentsProcess_v_1.bpmn',
     'onlyIncidentsProcess_v_1.bpmn',
@@ -21,7 +19,7 @@ const setup = async () => {
     'processWithAnIncident.bpmn',
   ]);
 
-  await deployProcess([
+  await deployProcesses([
     'withoutInstancesProcess_v_2.bpmn',
     'withoutIncidentsProcess_v_2.bpmn',
     'onlyIncidentsProcess_v_2.bpmn',

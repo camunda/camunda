@@ -333,7 +333,9 @@ public class FileBasedReceivedSnapshotTest {
         .describedAs("Metadata file is persisted in snapshot path")
         .isDirectoryContaining(
             name ->
-                name.getFileName().toString().equals(FileBasedSnapshotStore.METADATA_FILE_NAME));
+                name.getFileName()
+                    .toString()
+                    .equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME));
   }
 
   @Test

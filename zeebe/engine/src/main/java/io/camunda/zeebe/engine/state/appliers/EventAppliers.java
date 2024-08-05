@@ -108,7 +108,8 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerProcessAppliers(final MutableProcessingState state) {
-    register(ProcessIntent.CREATED, new ProcessCreatedApplier(state));
+    register(ProcessIntent.CREATED, 1, new ProcessCreatedV1Applier(state));
+    register(ProcessIntent.CREATED, 2, new ProcessCreatedV2Applier(state));
     register(ProcessIntent.DELETING, new ProcessDeletingApplier(state));
     register(ProcessIntent.DELETED, new ProcessDeletedApplier(state));
   }
@@ -323,7 +324,8 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerDecisionAppliers(final MutableProcessingState state) {
-    register(DecisionIntent.CREATED, new DecisionCreatedApplier(state.getDecisionState()));
+    register(DecisionIntent.CREATED, 1, new DecisionCreatedV1Applier(state.getDecisionState()));
+    register(DecisionIntent.CREATED, 2, new DecisionCreatedV2Applier(state.getDecisionState()));
     register(DecisionIntent.DELETED, new DecisionDeletedApplier(state.getDecisionState()));
   }
 
@@ -342,7 +344,8 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerFormAppliers(final MutableProcessingState state) {
-    register(FormIntent.CREATED, new FormCreatedApplier(state.getFormState()));
+    register(FormIntent.CREATED, 1, new FormCreatedV1Applier(state.getFormState()));
+    register(FormIntent.CREATED, 2, new FormCreatedV2Applier(state.getFormState()));
     register(FormIntent.DELETED, new FormDeletedApplier(state.getFormState()));
   }
 

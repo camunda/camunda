@@ -38,7 +38,7 @@ You can extend an existing controller if there is one for your resource, e.g. th
 
 1. (optional) Generate the data models locally before implementing controllers by running `mvn clean install -Dquickly` on the `zeebe/gateway-rest` module.
 2. Consider the existing controllers for best practices around structuring your controller.
-3. The controllers are Spring `RestController`s, marked as such by adding the appropriate Camunda annotation (refer to the other controllers).
+3. The controllers are Spring `RestController`s, marked as such by adding the appropriate Camunda annotation (refer to the other controllers). There is a separate Camunda annotation for Query endpoint controllers as used by the `ProcessInstanceQueryController`.
 4. Controllers should only take care of
    1. Mapping and potentially validating user input.
    2. Invoking the respective `Services` method to execute the desired action, e.g. `UserTaskServices::completeUserTask´ or `UserTaskServices::search`.
@@ -67,7 +67,7 @@ Implement or extend the respective `Services` your controller invokes in the `se
 
 Extend the Camunda Client with the new command you added to the REST API.
 
-1. In the [CamundaClient](../clients/java/src/main/java/io/camunda/client/CamundaClient.java), add a new command method for your purpose.
+1. In the [ZeebeClient](../clients/java/src/main/java/io/camunda/client/ZeebeClient.java), add a new command method for your purpose.
 2. If you provide new search capabilities for a resource, implement the `TypedSearchQueryRequest` for your resource. This is similar to the interface you provided for the REST gateway part.
 3. If you provide new Zeebe broker commands, consider providing multiple steps guiding the user from required input to optional attributes step by step. The command chain ends in a `FinalCommandStep`.
 4. Implement the command chain or query interface accordingly, like the `ProcessInstanceQueryImpl` or `CompleteUserTaskCommandImpl` do.

@@ -148,7 +148,7 @@ public final class OAuthCredentialsCache {
     return this;
   }
 
-  public int size() {
+  public synchronized int size() {
     return audiences.get().size();
   }
 

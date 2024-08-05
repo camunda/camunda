@@ -27,6 +27,13 @@ public interface MutableFormState extends FormState {
   void storeFormInFormByIdAndVersionColumnFamily(FormRecord record);
 
   /**
+   * Put the given form in FORM_KEY_BY_FORM_ID_AND_DEPLOYMENT_KEY column family
+   *
+   * @param record the record of the form
+   */
+  void storeFormInFormKeyByFormIdAndDeploymentKeyColumnFamily(FormRecord record);
+
+  /**
    * Update the latest version of the form if it is newer.
    *
    * @param record the record of the form
@@ -53,4 +60,11 @@ public interface MutableFormState extends FormState {
    * @param record the record of the form that is deleted
    */
   void deleteFormInFormVersionColumnFamily(FormRecord record);
+
+  /**
+   * Deletes a form from FORM_KEY_BY_FORM_ID_AND_DEPLOYMENT_KEY column family
+   *
+   * @param record the record of the form that is deleted
+   */
+  void deleteFormInFormKeyByFormIdAndDeploymentKeyColumnFamily(FormRecord record);
 }

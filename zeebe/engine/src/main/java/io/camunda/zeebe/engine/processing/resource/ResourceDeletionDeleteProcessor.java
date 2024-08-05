@@ -200,7 +200,8 @@ public class ResourceDeletionDeleteProcessor
             .setDecisionRequirementsId(
                 BufferUtil.bufferAsString(persistedDecision.getDecisionRequirementsId()))
             .setDecisionRequirementsKey(persistedDecision.getDecisionRequirementsKey())
-            .setTenantId(persistedDecision.getTenantId());
+            .setTenantId(persistedDecision.getTenantId())
+            .setDeploymentKey(persistedDecision.getDeploymentKey());
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), DecisionIntent.DELETED, decisionRecord);
   }
 
@@ -214,7 +215,8 @@ public class ResourceDeletionDeleteProcessor
             .setVersion(process.getVersion())
             .setKey(process.getKey())
             .setResourceName(process.getResourceName())
-            .setTenantId(process.getTenantId());
+            .setTenantId(process.getTenantId())
+            .setDeploymentKey(process.getDeploymentKey());
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETING, processRecord);
 
     final String processId = processRecord.getBpmnProcessId();
@@ -301,7 +303,8 @@ public class ResourceDeletionDeleteProcessor
             .setResourceName(persistedForm.getResourceName())
             .setResource(persistedForm.getResource())
             .setChecksum(persistedForm.getChecksum())
-            .setVersion(persistedForm.getVersion());
+            .setVersion(persistedForm.getVersion())
+            .setDeploymentKey(persistedForm.getDeploymentKey());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), FormIntent.DELETED, form);
   }

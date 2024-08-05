@@ -21,8 +21,8 @@ import org.slf4j.LoggerFactory;
 public final class Loggers {
 
   public static final Logger JOB_POLLER_LOGGER =
-      LoggerFactory.getLogger("io.camunda.zeebe.client.job.poller");
+      LoggerFactory.getLogger("io.camunda.client.job.poller");
   public static final Logger JOB_WORKER_LOGGER =
-      LoggerFactory.getLogger("io.camunda.zeebe.client.job.worker");
-  public static final Logger LOGGER = LoggerFactory.getLogger("io.camunda.zeebe.client");
+      LoggerFactory.getLogger("io.camunda.client.job.worker");
+  public static final Logger LOGGER = LoggerFactory.getLogger("io.camunda.client");
 }

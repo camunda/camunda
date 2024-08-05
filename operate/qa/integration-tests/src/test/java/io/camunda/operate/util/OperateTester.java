@@ -22,7 +22,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.CamundaClient;
 import io.camunda.operate.archiver.ArchiveBatch;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.entities.*;
@@ -49,6 +48,7 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.security.oauth2.IdentityJwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
@@ -83,7 +83,7 @@ public class OperateTester {
   @Autowired protected IncidentReader incidentReader;
   @Autowired protected ListViewReader listViewReader;
   @Autowired protected FlowNodeInstanceReader flowNodeInstanceReader;
-  private final CamundaClient camundaClient;
+  private final ZeebeClient zeebeClient;
   private final MockMvcTestRule mockMvcTestRule;
   private final SearchTestRule searchTestRule;
   @Autowired private BeanFactory beanFactory;
@@ -210,20 +210,20 @@ public class OperateTester {
   private List<String> processDefinitions;
 
   public OperateTester(
-      final CamundaClient camundaClient,
+      final ZeebeClient zeebeClient,
       final MockMvcTestRule mockMvcTestRule,
       final SearchTestRule searchTestRule) {
-    this.camundaClient = camundaClient;
+    this.zeebeClient = zeebeClient;
     this.mockMvcTestRule = mockMvcTestRule;
     this.searchTestRule = searchTestRule;
   }
 
   public OperateTester(
-      final CamundaClient camundaClient,
+      final ZeebeClient zeebeClient,
       final MockMvcTestRule mockMvcTestRule,
       final SearchTestRule searchTestRule,
       final JwtDecoder jwtDecoder) {
-    this(camundaClient, mockMvcTestRule, searchTestRule);
+    this(zeebeClient, mockMvcTestRule, searchTestRule);
     this.jwtDecoder = jwtDecoder;
   }
 
@@ -253,27 +253,27 @@ public class OperateTester {
             .endEvent()
             .done();
     processDefinitionKey =
-        ZeebeTestUtil.deployProcess(camundaClient, null, process, processId + ".bpmn");
+        ZeebeTestUtil.deployProcess(zeebeClient, null, process, processId + ".bpmn");
     return this;
   }
 
   public OperateTester deployProcess(final String... classpathResources) {
-    Validate.notNull(camundaClient, "CamundaClient should be set.");
+    Validate.notNull(zeebeClient, "ZeebeClient should be set.");
     LOGGER.debug("Deploy process(es) {}", List.of(classpathResources));
-    processDefinitionKey = ZeebeTestUtil.deployProcess(camundaClient, null, classpathResources);
+    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, null, classpathResources);
     return this;
   }
 
   public OperateTester deployDecision(final String... classpathResources) {
-    Validate.notNull(camundaClient, "CamundaClient should be set.");
-    ZeebeTestUtil.deployDecision(camundaClient, null, classpathResources);
+    Validate.notNull(zeebeClient, "ZeebeClient should be set.");
+    ZeebeTestUtil.deployDecision(zeebeClient, null, classpathResources);
     return this;
   }
 
   public OperateTester deployProcess(
       final BpmnModelInstance processModel, final String resourceName) {
     processDefinitionKey =
-        ZeebeTestUtil.deployProcess(camundaClient, null, processModel, resourceName);
+        ZeebeTestUtil.deployProcess(zeebeClient, null, processModel, resourceName);
     return this;
   }
 
@@ -325,7 +325,7 @@ public class OperateTester {
         tenantId);
     processInstanceKey =
         ZeebeTestUtil.startProcessInstance(
-            false, camundaClient, tenantId, bpmnProcessId, processVersion, payload);
+            false, zeebeClient, tenantId, bpmnProcessId, processVersion, payload);
     return this;
   }
 
@@ -334,7 +334,7 @@ public class OperateTester {
     try {
       processInstanceKey =
           ZeebeTestUtil.startProcessInstance(
-              camundaClient, bpmnProcessId, objectMapper.writeValueAsString(nameValuePairs));
+              zeebeClient, bpmnProcessId, objectMapper.writeValueAsString(nameValuePairs));
     } catch (final JsonProcessingException e) {
       throw new OperateRuntimeException(e);
     }
@@ -372,20 +372,20 @@ public class OperateTester {
   public OperateTester failTask(final String taskName, final String errorMessage) {
     jobKey =
         ZeebeTestUtil.failTask(
-            camundaClient, taskName, UUID.randomUUID().toString(), 3, errorMessage);
+            zeebeClient, taskName, UUID.randomUUID().toString(), 3, errorMessage);
     return this;
   }
 
   public OperateTester throwError(
       final String taskName, final String errorCode, final String errorMessage) {
     ZeebeTestUtil.throwErrorInTask(
-        camundaClient, taskName, UUID.randomUUID().toString(), 1, errorCode, errorMessage);
+        zeebeClient, taskName, UUID.randomUUID().toString(), 1, errorCode, errorMessage);
     return this;
   }
 
   public OperateTester resolveIncident() {
-    camundaClient.newUpdateRetriesCommand(jobKey).retries(3).send().join();
-    camundaClient
+    zeebeClient.newUpdateRetriesCommand(jobKey).retries(3).send().join();
+    zeebeClient
         .newResolveIncidentCommand(
             Long.valueOf(
                 getIncidents().stream()
@@ -399,8 +399,8 @@ public class OperateTester {
   }
 
   public OperateTester resolveIncident(final long jobKey, final long incidentKey) {
-    camundaClient.newUpdateRetriesCommand(jobKey).retries(3).send().join();
-    camundaClient.newResolveIncidentCommand(incidentKey).send().join();
+    zeebeClient.newUpdateRetriesCommand(jobKey).retries(3).send().join();
+    zeebeClient.newResolveIncidentCommand(incidentKey).send().join();
     return this;
   }
 
@@ -505,7 +505,7 @@ public class OperateTester {
   }
 
   public OperateTester activateJob(final String type) {
-    camundaClient.newActivateJobsCommand().jobType(type).maxJobsToActivate(1).send();
+    zeebeClient.newActivateJobsCommand().jobType(type).maxJobsToActivate(1).send();
     return this;
   }
 
@@ -519,7 +519,7 @@ public class OperateTester {
 
   public OperateTester completeTask(
       final String activityId, final String jobKey, final String payload) {
-    ZeebeTestUtil.completeTask(camundaClient, jobKey, TestUtil.createRandomString(10), payload);
+    ZeebeTestUtil.completeTask(zeebeClient, jobKey, TestUtil.createRandomString(10), payload);
     return flowNodeIsCompleted(activityId);
   }
 
@@ -611,7 +611,7 @@ public class OperateTester {
 
   public OperateTester activateFlowNode(
       final String flowNodeId, final Long ancestorElementInstanceKey) {
-    camundaClient
+    zeebeClient
         .newModifyProcessInstanceCommand(processInstanceKey)
         .activateElement(flowNodeId, ancestorElementInstanceKey)
         .send()
@@ -625,7 +625,7 @@ public class OperateTester {
         .map(flowNode -> flowNode.getKey())
         .forEach(
             key ->
-                camundaClient
+                zeebeClient
                     .newModifyProcessInstanceCommand(processInstanceKey)
                     .terminateElement(key)
                     .send()
@@ -634,7 +634,7 @@ public class OperateTester {
   }
 
   public OperateTester cancelFlowNodeInstance(final Long flowNodeInstanceId) {
-    camundaClient
+    zeebeClient
         .newModifyProcessInstanceCommand(processInstanceKey)
         .terminateElement(flowNodeInstanceId)
         .send()
@@ -866,7 +866,7 @@ public class OperateTester {
 
   public void cancelFlowNodeByInstanceKey(
       final Long processInstanceKey, final Long flowNodeInstanceKey) {
-    camundaClient
+    zeebeClient
         .newModifyProcessInstanceCommand(processInstanceKey)
         .terminateElement(flowNodeInstanceKey)
         .send()
@@ -874,7 +874,7 @@ public class OperateTester {
   }
 
   public OperateTester activateFlowNode(final String flowNodeId) {
-    camundaClient
+    zeebeClient
         .newModifyProcessInstanceCommand(processInstanceKey)
         .activateElement(flowNodeId)
         .send()
@@ -884,7 +884,7 @@ public class OperateTester {
 
   public void moveFlowNodeFromTo(
       final Long sourceFlowNodeInstanceKey, final String targetFlowNodeId) {
-    camundaClient
+    zeebeClient
         .newModifyProcessInstanceCommand(processInstanceKey)
         .activateElement(targetFlowNodeId)
         .and()
@@ -897,7 +897,7 @@ public class OperateTester {
       final Long sourceFlowNodeInstanceKey,
       final String targetFlowNodeId,
       final Long ancestorElementInstanceKey) {
-    camundaClient
+    zeebeClient
         .newModifyProcessInstanceCommand(processInstanceKey)
         .activateElement(targetFlowNodeId, ancestorElementInstanceKey)
         .and()
@@ -911,7 +911,7 @@ public class OperateTester {
       final String correlationKey,
       final String payload,
       final int count) {
-    ZeebeTestUtil.sendMessages(camundaClient, messageName, payload, count, correlationKey);
+    ZeebeTestUtil.sendMessages(zeebeClient, messageName, payload, count, correlationKey);
     return this;
   }
 

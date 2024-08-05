@@ -9,14 +9,17 @@ package io.camunda.operate.util;
 
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.*;
-import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
-import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
-import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.response.DeploymentEvent;
-import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.worker.JobClient;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
+import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
+import io.camunda.zeebe.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -40,13 +43,13 @@ public abstract class ZeebeTestUtil {
    * @return process id
    */
   public static Long deployProcess(
-      final CamundaClient client, final String tenantId, final String... classpathResources) {
+      final ZeebeClient client, final String tenantId, final String... classpathResources) {
     return deployProcess(false, client, tenantId, classpathResources);
   }
 
   public static Long deployProcess(
       final boolean ignoreException,
-      final CamundaClient client,
+      final ZeebeClient client,
       final String tenantId,
       final String... classpathResources) {
     try {
@@ -83,7 +86,7 @@ public abstract class ZeebeTestUtil {
   }
 
   public static void deployDecision(
-      final CamundaClient client, final String tenantId, final String... classpathResources) {
+      final ZeebeClient client, final String tenantId, final String... classpathResources) {
     if (classpathResources.length == 0) {
       return;
     }
@@ -112,7 +115,7 @@ public abstract class ZeebeTestUtil {
    * @return process id
    */
   public static Long deployProcess(
-      final CamundaClient client,
+      final ZeebeClient client,
       final String tenantId,
       final BpmnModelInstance processModel,
       final String resourceName) {
@@ -127,7 +130,7 @@ public abstract class ZeebeTestUtil {
   }
 
   public static long startProcessInstance(
-      final CamundaClient client, final String bpmnProcessId, final String payload) {
+      final ZeebeClient client, final String bpmnProcessId, final String payload) {
     return startProcessInstance(client, null, bpmnProcessId, payload);
   }
 
@@ -138,7 +141,7 @@ public abstract class ZeebeTestUtil {
    * @return process instance id
    */
   public static long startProcessInstance(
-      final CamundaClient client,
+      final ZeebeClient client,
       final String tenantId,
       final String bpmnProcessId,
       final String payload) {
@@ -147,7 +150,7 @@ public abstract class ZeebeTestUtil {
 
   public static long startProcessInstance(
       final boolean ignoreException,
-      final CamundaClient client,
+      final ZeebeClient client,
       final String tenantId,
       final String bpmnProcessId,
       final String payload) {
@@ -156,7 +159,7 @@ public abstract class ZeebeTestUtil {
 
   public static long startProcessInstance(
       final boolean ignoreException,
-      final CamundaClient client,
+      final ZeebeClient client,
       final String tenantId,
       final String bpmnProcessId,
       final Integer processVersion,
@@ -198,7 +201,7 @@ public abstract class ZeebeTestUtil {
   }
 
   public static void cancelProcessInstance(
-      final boolean ignoreException, final CamundaClient client, final long processInstanceKey) {
+      final boolean ignoreException, final ZeebeClient client, final long processInstanceKey) {
     try {
       client.newCancelInstanceCommand(processInstanceKey).send().join();
     } catch (final Exception e) {
@@ -211,12 +214,12 @@ public abstract class ZeebeTestUtil {
   }
 
   public static void cancelProcessInstance(
-      final CamundaClient client, final long processInstanceKey) {
+      final ZeebeClient client, final long processInstanceKey) {
     cancelProcessInstance(false, client, processInstanceKey);
   }
 
   public static void completeTask(
-      final CamundaClient client,
+      final ZeebeClient client,
       final String jobType,
       final String workerName,
       final String payload) {
@@ -224,7 +227,7 @@ public abstract class ZeebeTestUtil {
   }
 
   public static void completeTask(
-      final CamundaClient client,
+      final ZeebeClient client,
       final String jobType,
       final String workerName,
       final String payload,
@@ -244,7 +247,7 @@ public abstract class ZeebeTestUtil {
   }
 
   public static Long failTask(
-      final CamundaClient client,
+      final ZeebeClient client,
       final String jobType,
       final String workerName,
       final int numberOfFailures,
@@ -266,7 +269,7 @@ public abstract class ZeebeTestUtil {
   }
 
   public static Long failTaskWithRetriesLeft(
-      final CamundaClient client,
+      final ZeebeClient client,
       final String jobType,
       final String workerName,
       final int numberOfRetriesLeft,
@@ -288,7 +291,7 @@ public abstract class ZeebeTestUtil {
   }
 
   public static Long throwErrorInTask(
-      final CamundaClient client,
+      final ZeebeClient client,
       final String jobType,
       final String workerName,
       final int numberOfFailures,
@@ -311,7 +314,7 @@ public abstract class ZeebeTestUtil {
   }
 
   private static List<Long> handleTasks(
-      final CamundaClient client,
+      final ZeebeClient client,
       final String jobType,
       final String workerName,
       final int jobCount,
@@ -337,18 +340,18 @@ public abstract class ZeebeTestUtil {
   }
 
   public static void resolveIncident(
-      final CamundaClient client, final Long jobKey, final Long incidentKey) {
+      final ZeebeClient client, final Long jobKey, final Long incidentKey) {
     client.newUpdateRetriesCommand(jobKey).retries(3).send().join();
     client.newResolveIncidentCommand(incidentKey).send().join();
   }
 
   public static void updateVariables(
-      final CamundaClient client, final Long scopeKey, final String newPayload) {
+      final ZeebeClient client, final Long scopeKey, final String newPayload) {
     client.newSetVariablesCommand(scopeKey).variables(newPayload).local(true).send().join();
   }
 
   public static void sendMessages(
-      final CamundaClient client,
+      final ZeebeClient client,
       final String messageName,
       final String payload,
       final int count,
@@ -367,7 +370,7 @@ public abstract class ZeebeTestUtil {
   }
 
   public static void sendSignal(
-      final CamundaClient client, final String signalName, final String payload, final int count) {
+      final ZeebeClient client, final String signalName, final String payload, final int count) {
     for (int i = 0; i < count; i++) {
       client.newBroadcastSignalCommand().signalName(signalName).variables(payload).send().join();
     }

@@ -15,14 +15,13 @@
  */
 package io.camunda.zeebe.client;
 
+import io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2;
+import io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3;
+import io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3.ZeebeClientCloudBuilderStep4;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 
-/**
- * @deprecated since 8.6 for removal with 8.8
- */
-@Deprecated
 public final class ClientProperties {
 
   /**
@@ -80,7 +79,7 @@ public final class ClientProperties {
   public static final String DEFAULT_JOB_WORKER_NAME = "zeebe.client.worker.name";
 
   /**
-   * @see ZeebeClientBuilder#defaultJobTimeout(java.time.Duration)
+   * @see ZeebeClientBuilder#defaultJobTimeout(Duration)
    */
   public static final String DEFAULT_JOB_TIMEOUT = "zeebe.client.job.timeout";
 
@@ -90,7 +89,7 @@ public final class ClientProperties {
   public static final String DEFAULT_JOB_POLL_INTERVAL = "zeebe.client.job.pollinterval";
 
   /**
-   * @see ZeebeClientBuilder#defaultMessageTimeToLive(java.time.Duration)
+   * @see ZeebeClientBuilder#defaultMessageTimeToLive(Duration)
    */
   public static final String DEFAULT_MESSAGE_TIME_TO_LIVE = "zeebe.client.message.timeToLive";
 
@@ -130,25 +129,22 @@ public final class ClientProperties {
   public static final String MAX_METADATA_SIZE = "zeebe.client.maxMetadataSize";
 
   /**
-   * @see ZeebeClientCloudBuilderStep1#withClusterId(java.lang.String)
+   * @see ZeebeClientCloudBuilderStep1#withClusterId(String)
    */
   public static final String CLOUD_CLUSTER_ID = "zeebe.client.cloud.clusterId";
 
   /**
-   * @see ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2#withClientId(java.lang.String)
+   * @see ZeebeClientCloudBuilderStep2#withClientId(String)
    */
   public static final String CLOUD_CLIENT_ID = "zeebe.client.cloud.clientId";
 
   /**
-   * @see
-   *     ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3#withClientSecret(
-   *     java.lang.String)
+   * @see ZeebeClientCloudBuilderStep3#withClientSecret( String)
    */
   public static final String CLOUD_CLIENT_SECRET = "zeebe.client.cloud.secret";
 
   /**
-   * @see
-   *     io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3.ZeebeClientCloudBuilderStep4#withRegion(String)
+   * @see ZeebeClientCloudBuilderStep4#withRegion(String)
    */
   public static final String CLOUD_REGION = "zeebe.client.cloud.region";
 

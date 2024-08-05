@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
@@ -19,27 +19,27 @@ import org.springframework.stereotype.Component;
 @Component
 public class ModifyProcessZeebeWrapper {
 
-  private CamundaClient camundaClient;
+  private ZeebeClient zeebeClient;
 
-  public ModifyProcessZeebeWrapper(final CamundaClient camundaClient) {
-    this.camundaClient = camundaClient;
+  public ModifyProcessZeebeWrapper(final ZeebeClient zeebeClient) {
+    this.zeebeClient = zeebeClient;
   }
 
-  public CamundaClient getCamundaClient() {
-    return camundaClient;
+  public ZeebeClient getZeebeClient() {
+    return zeebeClient;
   }
 
-  public void setCamundaClient(final CamundaClient camundaClient) {
-    this.camundaClient = camundaClient;
+  public void setZeebeClient(final ZeebeClient zeebeClient) {
+    this.zeebeClient = zeebeClient;
   }
 
   public ModifyProcessInstanceCommandStep1 newModifyProcessInstanceCommand(
       final Long processInstanceKey) {
-    return camundaClient.newModifyProcessInstanceCommand(processInstanceKey);
+    return zeebeClient.newModifyProcessInstanceCommand(processInstanceKey);
   }
 
   public void setVariablesInZeebe(final Long scopeKey, final Map<String, Object> variables) {
-    camundaClient.newSetVariablesCommand(scopeKey).variables(variables).local(true).send().join();
+    zeebeClient.newSetVariablesCommand(scopeKey).variables(variables).local(true).send().join();
   }
 
   public void sendModificationsToZeebe(
