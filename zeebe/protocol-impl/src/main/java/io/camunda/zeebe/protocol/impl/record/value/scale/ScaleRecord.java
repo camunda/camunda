@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.scale;
 
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -32,6 +33,10 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
   // TODO: field for new partition id, to avoid re-calculating it.
 
   // ScaleRelocateMessageSubscriptionApply
+  private final LongProperty messageSubscriptionKeyProp =
+      new LongProperty("messageSubscriptionKey", -1);
+  private final BooleanProperty messageSubscriptionCorrelatingProp =
+      new BooleanProperty("messageSubscriptionCorrelating", false);
   private final ObjectProperty<MessageSubscriptionRecord> messageSubscriptionRecord =
       new ObjectProperty<>("messageSubscriptionRecord", new MessageSubscriptionRecord());
 
@@ -82,6 +87,22 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
 
   public void setMessageSubscriptionRecord(final MessageSubscriptionRecord record) {
     messageSubscriptionRecord.getValue().wrap(record);
+  }
+
+  public long getMessageSubscriptionKey() {
+    return messageSubscriptionKeyProp.getValue();
+  }
+
+  public void setMessageSubscriptionKey(final long key) {
+    messageSubscriptionKeyProp.setValue(key);
+  }
+
+  public boolean isMessageSubscriptionCorrelating() {
+    return messageSubscriptionCorrelatingProp.getValue();
+  }
+
+  public void setMessageSubscriptionCorrelating(final boolean correlating) {
+    messageSubscriptionCorrelatingProp.setValue(correlating);
   }
 
   public MessageRecord getMessageRecord() {

@@ -65,6 +65,8 @@ public class ScaleRelocateMessageSubscriptionStartProcessor
 
           final var scaleRecord = new ScaleRecord();
           scaleRecord.setMessageSubscriptionRecord(messageSubscription);
+          scaleRecord.setMessageSubscriptionKey(subscription.getKey());
+          scaleRecord.setMessageSubscriptionCorrelating(subscription.isCorrelating());
 
           commandDistributionBehavior.distributeCommand(
               distributionKey,

@@ -44,8 +44,13 @@ public class ScaleRelocateMessageSubscriptionApplyProcessor
       rejectionWriter.appendRejection(
           record, RejectionType.INVALID_STATE, "Already relocated subscription");
     } else {
+      final long messageSubscriptionKey = record.getValue().getMessageSubscriptionKey();
       stateWriter.appendFollowUpEvent(
-          record.getKey(), MessageSubscriptionIntent.CREATED, subscriptionRecord);
+          messageSubscriptionKey, MessageSubscriptionIntent.CREATED, subscriptionRecord);
+      if (record.getValue().isMessageSubscriptionCorrelating()) {
+        stateWriter.appendFollowUpEvent(
+            messageSubscriptionKey, MessageSubscriptionIntent.CORRELATING, subscriptionRecord);
+      }
     }
 
     // TODO: Do we need distribution key here? Or is it set on the record?
