@@ -59,7 +59,8 @@ public interface Intent {
           UserTaskIntent.class,
           ProcessInstanceMigrationIntent.class,
           CompensationSubscriptionIntent.class,
-          MessageCorrelationIntent.class);
+          MessageCorrelationIntent.class,
+          ClockControlIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -145,6 +146,8 @@ public interface Intent {
         return CompensationSubscriptionIntent.from(intent);
       case MESSAGE_CORRELATION:
         return MessageCorrelationIntent.from(intent);
+      case CLOCK_CONTROL:
+        return ClockControlIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

@@ -336,6 +336,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.messageCorrelation) {
         createValueIndexTemplate(ValueType.MESSAGE_CORRELATION);
       }
+      if (index.clockControl) {
+        createValueIndexTemplate(ValueType.CLOCK_CONTROL);
+      }
     }
 
     indexTemplatesCreated = true;

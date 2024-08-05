@@ -854,6 +854,7 @@
         #     userTask: true
         #     variable: true
         #     variableDocument: true
+        #     clockControl: false
         #
         #   retention:
         #     enabled: false
