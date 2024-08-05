@@ -123,6 +123,8 @@ if [ "$1" = "start" ] ; then
     shift
   done
 
+  mkdir -p "$PARENTDIR/log"
+
   # limit the java heapspace used by ElasticSearch to 1GB
   export ES_JAVA_OPTS="-Xms1g -Xmx1g"
 
