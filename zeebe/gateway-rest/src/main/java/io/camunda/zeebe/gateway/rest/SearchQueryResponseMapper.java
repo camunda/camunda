@@ -16,8 +16,8 @@ import io.camunda.service.entities.UserTaskEntity;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsItem;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
@@ -53,10 +53,10 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static DecisionRequirementSearchQueryResponse toDecisionRequirementSearchQueryResponse(
+  public static DecisionRequirementsSearchQueryResponse toDecisionRequirementsSearchQueryResponse(
       final SearchQueryResult<DecisionRequirementsEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return new DecisionRequirementSearchQueryResponse()
+    return new DecisionRequirementsSearchQueryResponse()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -124,7 +124,8 @@ public final class SearchQueryResponseMapper {
         .decisionRequirementsVersion(d.decisionRequirementsVersion());
   }
 
-  private static DecisionRequirementsItem toDecisionRequirements(final DecisionRequirementsEntity d) {
+  private static DecisionRequirementsItem toDecisionRequirements(
+      final DecisionRequirementsEntity d) {
     return new DecisionRequirementsItem()
         .tenantId(d.tenantId())
         .decisionRequirementsKey(d.key())

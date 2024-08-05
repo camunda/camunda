@@ -13,7 +13,6 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOW
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_ORDER;
 
 import io.camunda.service.search.filter.DecisionDefinitionFilter;
-import io.camunda.service.search.filter.DecisionRequirementFilter;
 import io.camunda.service.search.filter.DecisionRequirementsFilter;
 import io.camunda.service.search.filter.FilterBase;
 import io.camunda.service.search.filter.FilterBuilders;
@@ -22,13 +21,12 @@ import io.camunda.service.search.filter.UserTaskFilter;
 import io.camunda.service.search.filter.VariableValueFilter;
 import io.camunda.service.search.page.SearchQueryPage;
 import io.camunda.service.search.query.DecisionDefinitionQuery;
-import io.camunda.service.search.query.DecisionRequirementQuery;
+import io.camunda.service.search.query.DecisionRequirementsQuery;
 import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.TypedSearchQueryBuilder;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.service.search.sort.DecisionDefinitionSort;
-import io.camunda.service.search.sort.DecisionRequirementSort;
 import io.camunda.service.search.sort.DecisionRequirementsSort;
 import io.camunda.service.search.sort.ProcessInstanceSort;
 import io.camunda.service.search.sort.SortOption;
@@ -37,8 +35,8 @@ import io.camunda.service.search.sort.UserTaskSort;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementFilterRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
@@ -88,20 +86,20 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::decisionDefinitionSearchQuery);
   }
 
-  public static Either<ProblemDetail, DecisionRequirementQuery> toDecisionRequirementQuery(
-      final DecisionRequirementSearchQueryRequest request) {
+  public static Either<ProblemDetail, DecisionRequirementsQuery> toDecisionRequirementsQuery(
+      final DecisionRequirementsSearchQueryRequest request) {
     if (request == null) {
-      return Either.right(SearchQueryBuilders.decisionRequirementSearchQuery().build());
+      return Either.right(SearchQueryBuilders.decisionRequirementsSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
             request.getSort(),
-            SortOptionBuilders::decisionRequirement,
-            SearchQueryRequestMapper::applyDecisionRequirementSortField);
-    final var filter = toDecisionRequirementFilter(request.getFilter());
+            SortOptionBuilders::decisionRequirements,
+            SearchQueryRequestMapper::applyDecisionRequirementsSortField);
+    final var filter = toDecisionRequirementsFilter(request.getFilter());
     return buildSearchQuery(
-        filter, sort, page, SearchQueryBuilders::decisionRequirementSearchQuery);
+        filter, sort, page, SearchQueryBuilders::decisionRequirementsSearchQuery);
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
@@ -177,8 +175,8 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static DecisionRequirementsFilter toDecisionRequirementFilter(
-      final DecisionRequirementFilterRequest filter) {
+  private static DecisionRequirementsFilter toDecisionRequirementsFilter(
+      final DecisionRequirementsFilterRequest filter) {
     final var builder = FilterBuilders.decisionRequirements();
 
     if (filter != null) {
@@ -298,17 +296,17 @@ public final class SearchQueryRequestMapper {
     return validationErrors;
   }
 
-  private static List<String> applyDecisionRequirementSortField(
+  private static List<String> applyDecisionRequirementsSortField(
       final String field, final DecisionRequirementsSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "key" -> builder.decisionRequirementsKey();
-        case "name" -> builder.dmnDecisionRequirementsName();
+        case "decisionRequirementsKey" -> builder.decisionRequirementsKey();
+        case "dmnDecisionRequirementsName" -> builder.dmnDecisionRequirementsName();
         case "version" -> builder.version();
-        case "decisionRequirementsId" -> builder.dm;
+        case "dmnDecisionRequirementsId" -> builder.dmnDecisionRequirementsId();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

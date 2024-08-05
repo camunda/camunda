@@ -428,7 +428,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DecisionRequirementSearchQueryRequest'
+              $ref: '#/components/schemas/DecisionRequirementsSearchQueryRequest'
       responses:
         '200':
           description: >
@@ -436,7 +436,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DecisionRequirementSearchQueryResponse"
+                $ref: "#/components/schemas/DecisionRequirementsSearchQueryResponse"
         '400':
           description: >
             The Decision Requirement Search Query failed.
@@ -2179,15 +2179,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RoleResponse"
-    DecisionRequirementSearchQueryRequest:
+    DecisionRequirementsSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
       properties:
         filter:
           allOf:
-            - $ref: "#/components/schemas/DecisionRequirementFilterRequest"
-    DecisionRequirementFilterRequest:
+            - $ref: "#/components/schemas/DecisionRequirementsFilterRequest"
+    DecisionRequirementsFilterRequest:
       type: object
       properties:
         decisionRequirementsKey:
@@ -2202,7 +2202,7 @@ components:
           type: string
         tenantId:
           type: string
-    DecisionRequirementSearchQueryResponse:
+    DecisionRequirementsSearchQueryResponse:
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
       type: object

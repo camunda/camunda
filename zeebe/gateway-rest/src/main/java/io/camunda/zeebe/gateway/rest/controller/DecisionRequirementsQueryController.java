@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.service.DecisionRequirementServices;
-import io.camunda.service.search.query.DecisionRequirementQuery;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementSearchQueryRequest;
+import io.camunda.service.DecisionRequirementsServices;
+import io.camunda.service.search.query.DecisionRequirementsQuery;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
@@ -25,28 +25,28 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestQueryController
 @RequestMapping("/v2/decision-requirements")
-public class DecisionRequirementQueryController {
+public class DecisionRequirementsQueryController {
 
-  @Autowired private DecisionRequirementServices decisionRequirementServices;
+  @Autowired private DecisionRequirementsServices decisionRequirementServices;
 
   @PostMapping(
       path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Object> searchUserTasks(
-      @RequestBody(required = false) final DecisionRequirementSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toDecisionRequirementQuery(query)
+      @RequestBody(required = false) final DecisionRequirementsSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toDecisionRequirementsQuery(query)
         .fold(this::search, RestErrorMapper::mapProblemToResponse);
   }
 
-  private ResponseEntity<Object> search(final DecisionRequirementQuery query) {
+  private ResponseEntity<Object> search(final DecisionRequirementsQuery query) {
     try {
       final var result =
           decisionRequirementServices
               .withAuthentication(RequestMapper.getAuthentication())
               .search(query);
       return ResponseEntity.ok(
-          SearchQueryResponseMapper.toDecisionRequirementSearchQueryResponse(result));
+          SearchQueryResponseMapper.toDecisionRequirementsSearchQueryResponse(result));
     } catch (final ValidationException e) {
       final var problemDetail =
           RestErrorMapper.createProblemDetail(
