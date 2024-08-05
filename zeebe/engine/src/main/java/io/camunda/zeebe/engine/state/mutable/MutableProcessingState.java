@@ -34,6 +34,9 @@ public interface MutableProcessingState extends ProcessingState {
   MutableProcessMessageSubscriptionState getProcessMessageSubscriptionState();
 
   @Override
+  MutableMessageCorrelationState getMessageCorrelationState();
+
+  @Override
   MutableIncidentState getIncidentState();
 
   @Override
