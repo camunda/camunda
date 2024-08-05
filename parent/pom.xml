@@ -35,7 +35,7 @@
     <maven-profiler-report-directory>${project.build.directory}/profiler</maven-profiler-report-directory>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>1.21.2</version.agrona>
+    <version.agrona>1.22.0</version.agrona>
     <version.assertj>3.26.3</version.assertj>
     <version.awaitility>4.2.1</version.awaitility>
     <version.bouncycastle>1.78.1</version.bouncycastle>
@@ -81,7 +81,7 @@
     <version.protobuf-common>2.42.0</version.protobuf-common>
     <version.micrometer>1.13.2</version.micrometer>
     <version.rocksdbjni>9.4.0</version.rocksdbjni>
-    <version.sbe>1.31.1</version.sbe>
+    <version.sbe>1.32.0</version.sbe>
     <version.scala>2.13.14</version.scala>
     <version.slf4j>2.0.13</version.slf4j>
     <version.snakeyaml>2.2</version.snakeyaml>
@@ -123,14 +123,14 @@
     <version.feign>13.3</version.feign>
     <version.google-sdk>26.43.0</version.google-sdk>
     <version.azure-sdk>1.2.26</version.azure-sdk>
-    <version.awssdk>2.26.27</version.awssdk>
+    <version.awssdk>2.26.29</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.17.2</version.jackson-annotations>
     <version.swagger-annotations>2.2.22</version.swagger-annotations>
-    <version.checker-qual>3.45.0</version.checker-qual>
+    <version.checker-qual>3.46.0</version.checker-qual>
     <version.java-jwt>4.4.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.3</version.postgresql>

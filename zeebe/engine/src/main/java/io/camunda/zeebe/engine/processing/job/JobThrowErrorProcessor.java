@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
@@ -48,6 +49,9 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
   public static final String NO_JOB_FOUND_MESSAGE =
       "Expected to cancel job with key '%d', but no such job was found";
+
+  public static final String ERROR_REJECTION_MESSAGE =
+      "Cannot throw BPMN error from %s job with key '%d', type '%s' and processInstanceKey '%d'";
 
   private final IncidentRecord incidentEvent = new IncidentRecord();
   private Either<Failure, CatchEventTuple> foundCatchEvent;
@@ -113,6 +117,18 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     final JobRecord job = jobState.getJob(jobKey, command.getAuthorizations());
     if (job == null) {
       commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, jobKey));
+      return;
+    }
+
+    // Check if the job is of kind EXECUTION_LISTENER. Execution Listener jobs should not throw
+    // BPMN errors because the element is not in an ACTIVATED state.
+    final var jobKind = job.getJobKind();
+    if (jobKind == JobKind.EXECUTION_LISTENER) {
+      final long processInstanceKey = job.getProcessInstanceKey();
+      commandControl.reject(
+          RejectionType.INVALID_STATE,
+          String.format(
+              ERROR_REJECTION_MESSAGE, jobKind, jobKey, job.getType(), processInstanceKey));
       return;
     }
 
