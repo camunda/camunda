@@ -94,15 +94,12 @@ public final class SearchQueryResponseMapper {
   private static DecisionDefinitionItem toDecisionDefinition(final DecisionDefinitionEntity d) {
     return new DecisionDefinitionItem()
         .tenantId(d.tenantId())
-        .key(d.key())
-        .id(d.id())
-        .name(d.name())
+        .decisionKey(d.key())
+        .dmnDecisionName(d.name())
         .version(d.version())
-        .decisionId(d.decisionId())
+        .dmnDecisionId(d.decisionId())
         .decisionRequirementsKey(d.decisionRequirementsKey())
-        .decisionRequirementsId(d.decisionRequirementsId())
-        .decisionRequirementsName(d.decisionRequirementsName())
-        .decisionRequirementsVersion(d.decisionRequirementsVersion());
+        .dmnDecisionRequirementsId(d.decisionRequirementsId());
   }
 
   private static List<UserTaskItem> toUserTasks(final List<UserTaskEntity> tasks) {

@@ -26,17 +26,17 @@ public record DecisionDefinitionSort(List<FieldSorting> orderings) implements So
   public static final class Builder extends SortOption.AbstractBuilder<Builder>
       implements ObjectBuilder<DecisionDefinitionSort> {
 
-    public Builder id() {
-      currentOrdering = new FieldSorting("id", null);
+    public Builder decisionKey() {
+      currentOrdering = new FieldSorting("key", null);
       return this;
     }
 
-    public Builder decisionId() {
+    public Builder dmnDecisionId() {
       currentOrdering = new FieldSorting("decisionId", null);
       return this;
     }
 
-    public Builder name() {
+    public Builder dmnDecisionName() {
       currentOrdering = new FieldSorting("name", null);
       return this;
     }
@@ -46,23 +46,13 @@ public record DecisionDefinitionSort(List<FieldSorting> orderings) implements So
       return this;
     }
 
-    public Builder decisionRequirementsId() {
+    public Builder dmnDecisionRequirementsId() {
       currentOrdering = new FieldSorting("decisionRequirementsId", null);
       return this;
     }
 
     public Builder decisionRequirementsKey() {
       currentOrdering = new FieldSorting("decisionRequirementsKey", null);
-      return this;
-    }
-
-    public Builder decisionRequirementsName() {
-      currentOrdering = new FieldSorting("decisionRequirementsName", null);
-      return this;
-    }
-
-    public Builder decisionRequirementsVersion() {
-      currentOrdering = new FieldSorting("decisionRequirementsVersion", null);
       return this;
     }
 

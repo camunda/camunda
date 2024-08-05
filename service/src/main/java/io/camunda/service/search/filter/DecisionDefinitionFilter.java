@@ -8,7 +8,7 @@
 package io.camunda.service.search.filter;
 
 import static io.camunda.util.CollectionUtil.addValuesToList;
-import static io.camunda.util.CollectionUtil.collectValues;
+import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
@@ -16,65 +16,50 @@ import java.util.List;
 import java.util.Objects;
 
 public record DecisionDefinitionFilter(
-    List<String> ids,
-    List<Long> keys,
-    List<String> decisionIds,
-    List<String> names,
+    List<Long> decisionKeys,
+    List<String> dmnDecisionIds,
+    List<String> dmnDecisionNames,
     List<Integer> versions,
-    List<String> decisionRequirementsIds,
+    List<String> dmnDecisionRequirementsIds,
     List<Long> decisionRequirementsKeys,
-    List<String> decisionRequirementsNames,
-    List<Integer> decisionRequirementsVersions,
     List<String> tenantIds)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<DecisionDefinitionFilter> {
 
-    private List<String> ids;
-    private List<Long> keys;
-    private List<String> decisionIds;
-    private List<String> names;
+    private List<Long> decisionKeys;
+    private List<String> dmnDecisionIds;
+    private List<String> dmnDecisionNames;
     private List<Integer> versions;
-    private List<String> decisionRequirementsIds;
+    private List<String> dmnDecisionRequirementsIds;
     private List<Long> decisionRequirementsKeys;
-    private List<String> decisionRequirementsNames;
-    private List<Integer> decisionRequirementsVersions;
     private List<String> tenantIds;
 
-    public Builder ids(final List<String> values) {
-      this.ids = addValuesToList(this.ids, values);
+    public Builder decisionKeys(final List<Long> values) {
+      this.decisionKeys = addValuesToList(this.decisionKeys, values);
       return this;
     }
 
-    public Builder ids(final String value, final String... values) {
-      return ids(collectValues(value, values));
+    public Builder decisionKeys(final Long... values) {
+      return decisionKeys(collectValuesAsList(values));
     }
 
-    public Builder keys(final List<Long> values) {
-      this.keys = addValuesToList(this.keys, values);
+    public Builder dmnDecisionIds(final List<String> values) {
+      this.dmnDecisionIds = addValuesToList(this.dmnDecisionIds, values);
       return this;
     }
 
-    public Builder keys(final Long value, final Long... values) {
-      return keys(collectValues(value, values));
+    public Builder dmnDecisionIds(final String... values) {
+      return dmnDecisionIds(collectValuesAsList(values));
     }
 
-    public Builder decisionIds(final List<String> values) {
-      this.decisionIds = addValuesToList(this.decisionIds, values);
+    public Builder dmnDecisionNames(final List<String> values) {
+      this.dmnDecisionNames = addValuesToList(this.dmnDecisionNames, values);
       return this;
     }
 
-    public Builder decisionIds(final String value, final String... values) {
-      return decisionIds(collectValues(value, values));
-    }
-
-    public Builder names(final List<String> values) {
-      this.names = addValuesToList(this.names, values);
-      return this;
-    }
-
-    public Builder names(final String value, final String... values) {
-      return names(collectValues(value, values));
+    public Builder dmnDecisionNames(final String... values) {
+      return dmnDecisionNames(collectValuesAsList(values));
     }
 
     public Builder versions(final List<Integer> values) {
@@ -82,17 +67,17 @@ public record DecisionDefinitionFilter(
       return this;
     }
 
-    public Builder versions(final Integer value, final Integer... values) {
-      return versions(collectValues(value, values));
+    public Builder versions(final Integer... values) {
+      return versions(collectValuesAsList(values));
     }
 
-    public Builder decisionRequirementsIds(final List<String> values) {
-      this.decisionRequirementsIds = addValuesToList(this.decisionRequirementsIds, values);
+    public Builder dmnDecisionRequirementsIds(final List<String> values) {
+      this.dmnDecisionRequirementsIds = addValuesToList(this.dmnDecisionRequirementsIds, values);
       return this;
     }
 
-    public Builder decisionRequirementsIds(final String value, final String... values) {
-      return decisionRequirementsIds(collectValues(value, values));
+    public Builder dmnDecisionRequirementsIds(final String... values) {
+      return dmnDecisionRequirementsIds(collectValuesAsList(values));
     }
 
     public Builder decisionRequirementsKeys(final List<Long> values) {
@@ -100,27 +85,8 @@ public record DecisionDefinitionFilter(
       return this;
     }
 
-    public Builder decisionRequirementsKeys(final Long value, final Long... values) {
-      return decisionRequirementsKeys(collectValues(value, values));
-    }
-
-    public Builder decisionRequirementsNames(final List<String> values) {
-      this.decisionRequirementsNames = addValuesToList(this.decisionRequirementsNames, values);
-      return this;
-    }
-
-    public Builder decisionRequirementsNames(final String value, final String... values) {
-      return decisionRequirementsNames(collectValues(value, values));
-    }
-
-    public Builder decisionRequirementsVersions(final List<Integer> values) {
-      this.decisionRequirementsVersions =
-          addValuesToList(this.decisionRequirementsVersions, values);
-      return this;
-    }
-
-    public Builder decisionRequirementsVersions(final Integer value, final Integer... values) {
-      return decisionRequirementsVersions(collectValues(value, values));
+    public Builder decisionRequirementsKeys(final Long... values) {
+      return decisionRequirementsKeys(collectValuesAsList(values));
     }
 
     public Builder tenantIds(final List<String> values) {
@@ -128,22 +94,19 @@ public record DecisionDefinitionFilter(
       return this;
     }
 
-    public Builder tenantIds(final String value, final String... values) {
-      return tenantIds(collectValues(value, values));
+    public Builder tenantIds(final String... values) {
+      return tenantIds(collectValuesAsList(values));
     }
 
     @Override
     public DecisionDefinitionFilter build() {
       return new DecisionDefinitionFilter(
-          Objects.requireNonNullElse(ids, Collections.emptyList()),
-          Objects.requireNonNullElse(keys, Collections.emptyList()),
-          Objects.requireNonNullElse(decisionIds, Collections.emptyList()),
-          Objects.requireNonNullElse(names, Collections.emptyList()),
+          Objects.requireNonNullElse(decisionKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(dmnDecisionIds, Collections.emptyList()),
+          Objects.requireNonNullElse(dmnDecisionNames, Collections.emptyList()),
           Objects.requireNonNullElse(versions, Collections.emptyList()),
-          Objects.requireNonNullElse(decisionRequirementsIds, Collections.emptyList()),
+          Objects.requireNonNullElse(dmnDecisionRequirementsIds, Collections.emptyList()),
           Objects.requireNonNullElse(decisionRequirementsKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(decisionRequirementsNames, Collections.emptyList()),
-          Objects.requireNonNullElse(decisionRequirementsVersions, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
     }
   }
