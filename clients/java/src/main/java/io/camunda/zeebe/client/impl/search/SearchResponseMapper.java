@@ -15,14 +15,17 @@
  */
 package io.camunda.zeebe.client.impl.search;
 
+import io.camunda.zeebe.client.api.search.response.DecisionRequirements;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.api.search.response.SearchResponsePage;
 import io.camunda.zeebe.client.api.search.response.UserTask;
+import io.camunda.zeebe.client.impl.search.response.DecisionRequirementImpl;
 import io.camunda.zeebe.client.impl.search.response.ProcessInstanceImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchQueryResponseImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchResponsePageImpl;
 import io.camunda.zeebe.client.impl.search.response.UserTaskImpl;
+import io.camunda.zeebe.client.protocol.rest.DecisionRequirementSearchQueryResponse;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.client.protocol.rest.SearchQueryPageResponse;
 import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryResponse;
@@ -77,5 +80,23 @@ public final class SearchResponseMapper {
         pageResponse.getTotalItems(),
         pageResponse.getFirstSortValues(),
         pageResponse.getLastSortValues());
+  }
+
+  public static SearchQueryResponse<DecisionRequirements> toDecisionRequirementSearchResponse(
+      final DecisionRequirementSearchQueryResponse response) {
+    final SearchQueryPageResponse pageResponse = response.getPage();
+    final SearchResponsePage page = toSearchResponsePage(pageResponse);
+
+    final List<DecisionRequirements> instances =
+        Optional.ofNullable(response.getItems())
+            .map(
+                (i) ->
+                    i.stream()
+                        .map(DecisionRequirementImpl::new)
+                        .map((p) -> (DecisionRequirements) p)
+                        .collect(Collectors.toList()))
+            .orElse(Collections.emptyList());
+
+    return new SearchQueryResponseImpl<>(instances, page);
   }
 }
