@@ -605,13 +605,14 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *   .page((p) -> p.limit(100))
    *   .send();
    *   </pre>
-   *   <p><strong>Experimental: This method is under development, and as such using it may have no
-   *   effect on the client builder when called. The respective API on compatible clusters is not
-   *   enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   *   warning is removed, anything described below may not yet have taken effect, and the interface
-   *   and its description are subject to change.</strong>
    *
-   *   @return a builder for the decision requirements query
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @return a builder for the decision requirements query
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20704")
   DecisionRequirementsQuery newDecisionRequirementsQuery();

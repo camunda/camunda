@@ -30,9 +30,9 @@
  */
 package io.camunda.zeebe.client.api.search;
 
-
 import io.camunda.zeebe.client.api.search.response.DecisionRequirements;
 
 public interface DecisionRequirementsQuery
-    extends TypedSearchQueryRequest<DecisionRequirementsFilter, DecisionRequirementsSort, DecisionRequirementsQuery>,
+    extends TypedSearchQueryRequest<
+            DecisionRequirementsFilter, DecisionRequirementsSort, DecisionRequirementsQuery>,
         FinalSearchQueryStep<DecisionRequirements> {}

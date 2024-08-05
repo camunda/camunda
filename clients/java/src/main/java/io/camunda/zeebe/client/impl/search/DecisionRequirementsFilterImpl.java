@@ -18,7 +18,8 @@ package io.camunda.zeebe.client.impl.search;
 import io.camunda.zeebe.client.api.search.DecisionRequirementsFilter;
 import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilterRequest;
 
-public class DecisionRequirementsFilterImpl extends TypedSearchRequestPropertyProvider<DecisionRequirementsFilterRequest>
+public class DecisionRequirementsFilterImpl
+    extends TypedSearchRequestPropertyProvider<DecisionRequirementsFilterRequest>
     implements DecisionRequirementsFilter {
 
   private final DecisionRequirementsFilterRequest filter;
@@ -60,7 +61,6 @@ public class DecisionRequirementsFilterImpl extends TypedSearchRequestPropertyPr
     filter.setTenantId(tenantId);
     return this;
   }
-
 
   @Override
   protected DecisionRequirementsFilterRequest getSearchRequestProperty() {

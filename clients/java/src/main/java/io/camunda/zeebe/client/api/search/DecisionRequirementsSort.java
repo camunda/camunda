@@ -47,6 +47,4 @@ public interface DecisionRequirementsSort extends SearchRequestSort<DecisionRequ
 
   /** Sort by resource name. */
   DecisionRequirementsSort tenantId();
-
-
 }

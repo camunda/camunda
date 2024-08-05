@@ -17,8 +17,8 @@ package io.camunda.zeebe.client.impl.search;
 
 import io.camunda.zeebe.client.api.search.DecisionRequirementsSort;
 
-public class DecisionRequirementsSortImpl extends SearchQuerySortBase<DecisionRequirementsSort> implements
-    DecisionRequirementsSort {
+public class DecisionRequirementsSortImpl extends SearchQuerySortBase<DecisionRequirementsSort>
+    implements DecisionRequirementsSort {
 
   @Override
   protected DecisionRequirementsSort self() {

@@ -23,137 +23,157 @@ import org.junit.jupiter.api.Test;
 
 public class SearchDecisionRequirementsTest extends ClientRestTest {
 
-    @Test
-    void shouldSearchDecisionRequirements() {
-      // when
-      client.newDecisionRequirementsQuery().send().join();
+  @Test
+  void shouldSearchDecisionRequirements() {
+    // when
+    client.newDecisionRequirementsQuery().send().join();
 
-      // then
-      final DecisionRequirementsSearchQueryRequest request =
-          gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-      assertThat(request.getFilter()).isNull();
-    }
+    // then
+    final DecisionRequirementsSearchQueryRequest request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
+    assertThat(request.getFilter()).isNull();
+  }
 
-    @Test
-    void shouldSearchDecisionRequirementsByVersion() {
-      // when
-      client.newDecisionRequirementsQuery().filter(f -> f.version(1)).send().join();
+  @Test
+  void shouldSearchDecisionRequirementsByVersion() {
+    // when
+    client.newDecisionRequirementsQuery().filter(f -> f.version(1)).send().join();
 
-      // then
-      final DecisionRequirementsSearchQueryRequest request =
-          gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-      assertThat(request.getFilter().getVersion()).isEqualTo(1);
-    }
+    // then
+    final DecisionRequirementsSearchQueryRequest request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
+    assertThat(request.getFilter().getVersion()).isEqualTo(1);
+  }
 
-    @Test
-    void shouldSearchDecisionRequirementsByKey() {
-      // when
-      client.newDecisionRequirementsQuery().filter(f -> f.decisionRequirementsKey(0L)).send().join();
+  @Test
+  void shouldSearchDecisionRequirementsByKey() {
+    // when
+    client.newDecisionRequirementsQuery().filter(f -> f.decisionRequirementsKey(0L)).send().join();
 
-      // then
-      final DecisionRequirementsSearchQueryRequest request =
-          gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-      assertThat(request.getFilter().getDecisionRequirementsKey()).isEqualTo(0L);
-    }
+    // then
+    final DecisionRequirementsSearchQueryRequest request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
+    assertThat(request.getFilter().getDecisionRequirementsKey()).isEqualTo(0L);
+  }
 
-    @Test
-    void shouldSearchDecisionRequirementsByResourceName() {
-      // when
-      client.newDecisionRequirementsQuery().filter(f -> f.dmnDecisionRequirementsName("resourceName")).send().join();
+  @Test
+  void shouldSearchDecisionRequirementsByResourceName() {
+    // when
+    client
+        .newDecisionRequirementsQuery()
+        .filter(f -> f.dmnDecisionRequirementsName("resourceName"))
+        .send()
+        .join();
 
-      // then
-      final DecisionRequirementsSearchQueryRequest request =
-          gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-      assertThat(request.getFilter().getDmnDecisionRequirementsName()).isEqualTo("resourceName");
-    }
+    // then
+    final DecisionRequirementsSearchQueryRequest request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
+    assertThat(request.getFilter().getDmnDecisionRequirementsName()).isEqualTo("resourceName");
+  }
 
-    @Test
-    void shouldSearchDecisionRequirementsByResourceNameAndVersion() {
-      // when
-      client
-          .newDecisionRequirementsQuery()
-          .filter(f -> f.dmnDecisionRequirementsName("resourceName").version(1))
-          .send()
-          .join();
+  @Test
+  void shouldSearchDecisionRequirementsByResourceNameAndVersion() {
+    // when
+    client
+        .newDecisionRequirementsQuery()
+        .filter(f -> f.dmnDecisionRequirementsName("resourceName").version(1))
+        .send()
+        .join();
 
-      // then
-      final DecisionRequirementsSearchQueryRequest request =
-          gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-      assertThat(request.getFilter().getDmnDecisionRequirementsName()).isEqualTo("resourceName");
-      assertThat(request.getFilter().getVersion()).isEqualTo(1);
-    }
+    // then
+    final DecisionRequirementsSearchQueryRequest request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
+    assertThat(request.getFilter().getDmnDecisionRequirementsName()).isEqualTo("resourceName");
+    assertThat(request.getFilter().getVersion()).isEqualTo(1);
+  }
 
-    //Test sorting
-    @Test
-    void shouldSortDecisionRequirementsByKey() {
-      // when
-      client.newDecisionRequirementsQuery().sort(s -> s.decisionRequirementsKey().desc()).send().join();
+  // Test sorting
+  @Test
+  void shouldSortDecisionRequirementsByKey() {
+    // when
+    client
+        .newDecisionRequirementsQuery()
+        .sort(s -> s.decisionRequirementsKey().desc())
+        .send()
+        .join();
 
-      // then
-      final DecisionRequirementsSearchQueryRequest request =
-          gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-      assertThat(request.getSort().get(0).getField()).isEqualTo("key");
-      assertThat(request.getSort().get(0).getOrder()).isEqualTo("desc");
-    }
+    // then
+    final DecisionRequirementsSearchQueryRequest request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
+    assertThat(request.getSort().get(0).getField()).isEqualTo("key");
+    assertThat(request.getSort().get(0).getOrder()).isEqualTo("desc");
+  }
 
-    @Test
-    void shouldSortDecisionRequirementsByVersion() {
-      // when
-      client.newDecisionRequirementsQuery().sort(s -> s.version().asc()).send().join();
+  @Test
+  void shouldSortDecisionRequirementsByVersion() {
+    // when
+    client.newDecisionRequirementsQuery().sort(s -> s.version().asc()).send().join();
 
-      // then
-      final DecisionRequirementsSearchQueryRequest request =
-          gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-      assertThat(request.getSort().get(0).getField()).isEqualTo("version");
-      assertThat(request.getSort().get(0).getOrder()).isEqualTo("asc");
-    }
+    // then
+    final DecisionRequirementsSearchQueryRequest request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
+    assertThat(request.getSort().get(0).getField()).isEqualTo("version");
+    assertThat(request.getSort().get(0).getOrder()).isEqualTo("asc");
+  }
 
-    @Test
-    void shouldSortDecisionRequirementsByName() {
-      // when
-      client.newDecisionRequirementsQuery().sort(s -> s.dmnDecisionRequirementsName().asc()).send().join();
+  @Test
+  void shouldSortDecisionRequirementsByName() {
+    // when
+    client
+        .newDecisionRequirementsQuery()
+        .sort(s -> s.dmnDecisionRequirementsName().asc())
+        .send()
+        .join();
 
-      // then
-      final DecisionRequirementsSearchQueryRequest request =
-          gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-      assertThat(request.getSort().get(0).getField()).isEqualTo("name");
-      assertThat(request.getSort().get(0).getOrder()).isEqualTo("asc");
-    }
+    // then
+    final DecisionRequirementsSearchQueryRequest request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
+    assertThat(request.getSort().get(0).getField()).isEqualTo("name");
+    assertThat(request.getSort().get(0).getOrder()).isEqualTo("asc");
+  }
 
-    @Test
-    void shouldSortDecisionRequirementsByResourceNameAndVersion() {
-      // when
-      client.newDecisionRequirementsQuery().sort(s -> s.dmnDecisionRequirementsName().asc().version().desc()).send().join();
+  @Test
+  void shouldSortDecisionRequirementsByResourceNameAndVersion() {
+    // when
+    client
+        .newDecisionRequirementsQuery()
+        .sort(s -> s.dmnDecisionRequirementsName().asc().version().desc())
+        .send()
+        .join();
 
-      // then
-      final DecisionRequirementsSearchQueryRequest request =
-          gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-      assertThat(request.getSort().get(0).getField()).isEqualTo("name");
-      assertThat(request.getSort().get(0).getOrder()).isEqualTo("asc");
-      assertThat(request.getSort().get(1).getField()).isEqualTo("version");
-      assertThat(request.getSort().get(1).getOrder()).isEqualTo("desc");
-    }
+    // then
+    final DecisionRequirementsSearchQueryRequest request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
+    assertThat(request.getSort().get(0).getField()).isEqualTo("name");
+    assertThat(request.getSort().get(0).getOrder()).isEqualTo("asc");
+    assertThat(request.getSort().get(1).getField()).isEqualTo("version");
+    assertThat(request.getSort().get(1).getOrder()).isEqualTo("desc");
+  }
 
-    @Test
-    void shouldSortDecisionRequirementsByDecisionRequirementsId(){
-      // when
-      client.newDecisionRequirementsQuery().sort(s -> s.dmnDecisionRequirementsId().asc()).send().join();
+  @Test
+  void shouldSortDecisionRequirementsByDecisionRequirementsId() {
+    // when
+    client
+        .newDecisionRequirementsQuery()
+        .sort(s -> s.dmnDecisionRequirementsId().asc())
+        .send()
+        .join();
 
-      // then
-      final DecisionRequirementsSearchQueryRequest request =
-          gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-      assertThat(request.getSort().get(0).getField()).isEqualTo("decisionRequirementsId");
-      assertThat(request.getSort().get(0).getOrder()).isEqualTo("asc");
-    }
+    // then
+    final DecisionRequirementsSearchQueryRequest request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
+    assertThat(request.getSort().get(0).getField()).isEqualTo("decisionRequirementsId");
+    assertThat(request.getSort().get(0).getOrder()).isEqualTo("asc");
+  }
 
-    @Test
-    void shouldSortDecisionRequirementsByTenantId(){
-      // when
-      client.newDecisionRequirementsQuery().sort(s -> s.tenantId().desc()).send().join();
+  @Test
+  void shouldSortDecisionRequirementsByTenantId() {
+    // when
+    client.newDecisionRequirementsQuery().sort(s -> s.tenantId().desc()).send().join();
 
-      // then
-      final DecisionRequirementsSearchQueryRequest request =
-          gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
-      assertThat(request.getSort().get(0).getField()).isEqualTo("tenantId");
-    }
+    // then
+    final DecisionRequirementsSearchQueryRequest request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
+    assertThat(request.getSort().get(0).getField()).isEqualTo("tenantId");
+  }
 }

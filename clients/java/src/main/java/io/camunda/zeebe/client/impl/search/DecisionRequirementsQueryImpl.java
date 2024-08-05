@@ -30,11 +30,8 @@
  */
 package io.camunda.zeebe.client.impl.search;
 
-import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.decisionRequirementsFilter;
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.decisionRequirementsSort;
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.searchRequestPage;
-import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.userTaskFilter;
-import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.userTaskSort;
 
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.search.DecisionRequirementsFilter;
@@ -79,7 +76,8 @@ public class DecisionRequirementsQueryImpl
 
   @Override
   public HttpZeebeFuture<SearchQueryResponse<DecisionRequirements>> send() {
-    final HttpZeebeFuture<SearchQueryResponse<DecisionRequirements>> result = new HttpZeebeFuture<>();
+    final HttpZeebeFuture<SearchQueryResponse<DecisionRequirements>> result =
+        new HttpZeebeFuture<>();
     httpClient.post(
         "/decision-requirements/search",
         jsonMapper.toJson(request),
