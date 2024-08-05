@@ -1373,6 +1373,45 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+
+  /incidents/{incidentKey}/resolution:
+    post:
+      tags:
+        - Incident
+      summary: Resolves a given incident.
+      description: |
+        Marks the incident as resolved; most likely a call to Update job will be necessary
+        to reset the job’s retries, followed by this call.
+      parameters:
+        - name: incidentKey
+          in: path
+          required: true
+          description: Key of the incident to resolve.
+          schema:
+            type: integer
+            format: "int64"
+      responses:
+        '204':
+          description: The incident is marked as resolved.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The incident with the incidentKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
 components:
   responses:
     TopologyResponse:

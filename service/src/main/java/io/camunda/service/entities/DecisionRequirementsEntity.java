@@ -10,10 +10,9 @@ package io.camunda.service.entities;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record DecisionRequirementEntity(
+public record DecisionRequirementsEntity(
     String tenantId,
     Long key,
-    String id,
     String decisionRequirementsId,
     String name,
     Integer version,
