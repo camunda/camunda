@@ -1,6 +1,7 @@
 name: Slack notification for critical issue
 on:
   issues:
+  pull_request:
     types:
       - labeled
 
@@ -8,32 +9,55 @@ jobs:
   slack-notify:
     name: Send slack notification if issue is labeled as critical
     runs-on: ubuntu-latest
-    if: ${{ github.event.label.name == 'severity/critical' }}
     steps:
+      - id: label-check
+        name: Check if issue has component/* labels but not component/zeebe
+        run: |
+          echo "Debug: List of all labels:"
+          echo "${{ github.event.pull_request.labels.*.name }}"
+          echo "${{ github.event.issue.labels }}"
+
+          labels=$(echo "${{ github.event.pull_request.labels.*.name }}" | tr ' ' '\n' | grep '^component/' || true)
+          echo "Debug: component/* labels found:"
+          echo "$labels"
+
+          if [[ -n "$labels" ]]; then
+            if ! echo "$labels" | grep -q "component/zeebe"; then
+              echo "component/zeebe label not found among component/* labels."
+              echo "skip=true" >> $GITHUB_ENV
+            else
+              echo "component/zeebe label is present."
+            fi
+          else
+            echo "No component/* labels found."
+          fi
       - id: slack-notify
         name: Send slack notification
-        uses: slackapi/slack-github-action@v1.26.0
-        with:
-          # For posting a rich message using Block Kit
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":alarm: New critical issue! :alarm:"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Please check the issue: ${{ github.event.issue.html_url }}\n \\cc @zeebe-process-automation-team @zeebe-distributed-platform-team "
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        if: ${{ github.event.label.name == 'severity/critical' && env.skip != 'true' }}
+        run: |
+          echo "TRUE"
+#        uses: slackapi/slack-github-action@v1.26.0
+#        with:
+#          # For posting a rich message using Block Kit
+#          payload: |
+#            {
+#              "blocks": [
+#                {
+#                  "type": "section",
+#                  "text": {
+#                    "type": "mrkdwn",
+#                    "text": ":alarm: New critical issue! :alarm:"
+#                  }
+#                },
+#                {
+#                  "type": "section",
+#                  "text": {
+#                    "type": "mrkdwn",
+#                    "text": "Please check the issue: ${{ github.event.issue.html_url }}\n \\cc @zeebe-process-automation-team @zeebe-distributed-platform-team "
+#                  }
+#                }
+#              ]
+#            }
+#        env:
+#          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+#          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
