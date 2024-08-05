@@ -68,7 +68,12 @@ public final class MessageCorrelationCorrelateProcessor
 
   @Override
   public void processRecord(final TypedRecord<MessageCorrelationRecord> command) {
+    final var messageCorrelationRecord = command.getValue();
     final long messageKey = keyGenerator.nextKey();
+    messageCorrelationRecord
+        .setMessageKey(messageKey)
+        .setRequestId(command.getRequestId())
+        .setRequestStreamId(command.getRequestStreamId());
 
     final var messageRecord =
         new MessageRecord()
@@ -78,6 +83,9 @@ public final class MessageCorrelationCorrelateProcessor
             .setTenantId(command.getValue().getTenantId())
             .setTimeToLive(-1L);
     stateWriter.appendFollowUpEvent(messageKey, MessageIntent.PUBLISHED, messageRecord);
+
+    stateWriter.appendFollowUpEvent(
+        messageKey, MessageCorrelationIntent.CORRELATING, messageCorrelationRecord);
 
     final var correlatingSubscriptions = new Subscriptions();
     correlateToMessageStartEventSubscriptions(command, messageKey, correlatingSubscriptions);
