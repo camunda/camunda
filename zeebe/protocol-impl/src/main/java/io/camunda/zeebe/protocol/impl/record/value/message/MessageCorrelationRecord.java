@@ -29,11 +29,11 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
 
   private final LongProperty messageKey = new LongProperty("messageKey", -1L);
   private final LongProperty requestIdProp = new LongProperty("requestId", -1L);
   private final IntegerProperty requestStreamIdProp = new IntegerProperty("requestStreamId", -1);
+  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
 
   public MessageCorrelationRecord() {
     super(7);
@@ -41,10 +41,10 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
         .declareProperty(correlationKeyProp)
         .declareProperty(variablesProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(processInstanceKeyProp)
         .declareProperty(messageKey)
         .declareProperty(requestIdProp)
-        .declareProperty(requestStreamIdProp);
+        .declareProperty(requestStreamIdProp)
+        .declareProperty(processInstanceKeyProp);
   }
 
   public void wrap(final MessageCorrelationRecord record) {
