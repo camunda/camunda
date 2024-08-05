@@ -179,6 +179,10 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         {
             "sort": [
                 {
+                    "field": "decisionKey",
+                    "order": "asc"
+                },
+                {
                     "field": "dmnDecisionName",
                     "order": "desc"
                 },
@@ -220,6 +224,8 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
             new DecisionDefinitionQuery.Builder()
                 .sort(
                     new DecisionDefinitionSort.Builder()
+                        .decisionKey()
+                        .asc()
                         .dmnDecisionName()
                         .desc()
                         .version()

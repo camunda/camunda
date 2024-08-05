@@ -38,6 +38,7 @@ public class DecisionDefinitionSortTest {
 
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
+        new TestArguments("key", SortOrder.ASC, s -> s.decisionKey().asc()),
         new TestArguments("decisionId", SortOrder.ASC, s -> s.dmnDecisionId().asc()),
         new TestArguments("name", SortOrder.DESC, s -> s.dmnDecisionName().desc()),
         new TestArguments(

@@ -214,6 +214,7 @@ public final class SearchQueryRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
+        case "decisionKey" -> builder.decisionKey();
         case "dmnDecisionId" -> builder.dmnDecisionId();
         case "dmnDecisionName" -> builder.dmnDecisionName();
         case "version" -> builder.version();
