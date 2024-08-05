@@ -24,7 +24,6 @@ import {
   isAlertCompatibleReport,
 } from 'services';
 import {withErrorHandling} from 'HOC';
-import {getWebhooks} from 'config';
 
 import CopyAlertModal from './modals/CopyAlertModal';
 import {removeAlerts} from './service';
@@ -41,13 +40,11 @@ export default withErrorHandling(
       copying: null,
       reports: null,
       alerts: null,
-      webhooks: null,
       loading: false,
     };
 
     componentDidMount() {
       this.loadData();
-      this.loadWebhooks();
     }
 
     componentDidUpdate(prevProps) {
@@ -85,10 +82,6 @@ export default withErrorHandling(
       );
     };
 
-    loadWebhooks = () => {
-      this.props.mightFail(getWebhooks(), (webhooks) => this.setState({webhooks}), showError);
-    };
-
     openAddAlertModal = () => this.setState({editing: {}});
     openEditAlertModal = (editing) => this.setState({editing});
 
@@ -123,7 +116,7 @@ export default withErrorHandling(
     closeCopyAlertModal = () => this.setState({copying: null});
 
     render() {
-      const {deleting, editing, copying, alerts, reports, webhooks, loading} = this.state;
+      const {deleting, editing, copying, alerts, reports, loading} = this.state;
       const {readOnly} = this.props;
 
       const isLoading = alerts === null || reports === null;
@@ -171,8 +164,8 @@ export default withErrorHandling(
             rows={
               !isLoading &&
               this.state.alerts.map((alert) => {
-                const {id, name, webhook, emails, reportId, threshold, thresholdOperator} = alert;
-                const inactive = webhook && emails?.length === 0 && !webhooks?.includes(webhook);
+                const {id, name, emails, reportId, threshold, thresholdOperator} = alert;
+                const inactive = emails?.length === 0;
 
                 return {
                   id,
@@ -183,7 +176,7 @@ export default withErrorHandling(
                   meta: [
                     reports.find((report) => report.id === reportId).name,
                     this.formatDescription(reportId, thresholdOperator, threshold),
-                    emails?.join(', ') || webhook,
+                    emails?.join(', '),
                   ],
                   warning: inactive && t('alert.inactiveStatus'),
                   actions: !readOnly && [
@@ -218,7 +211,6 @@ export default withErrorHandling(
             <AlertModal
               initialAlert={editing}
               reports={reports}
-              webhooks={webhooks}
               onClose={this.closeEditAlertModal}
               onConfirm={(alert) => {
                 if (editing.id) {

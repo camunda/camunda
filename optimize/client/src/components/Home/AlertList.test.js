@@ -13,7 +13,6 @@ import {EntityList, AlertModal} from 'components';
 import {loadReports, loadAlerts, addAlert} from 'services';
 
 import AlertListWithErrorHandling from './AlertList';
-import {getWebhooks} from 'config';
 import CopyAlertModal from './modals/CopyAlertModal';
 
 const AlertList = AlertListWithErrorHandling.WrappedComponent;
@@ -51,7 +50,6 @@ jest.mock('services', () => {
         lastModifier: 'Admin',
         lastModified: '2017-11-11T11:11:11.1111+0200',
         reportId: '2',
-        webhook: null,
       },
     ]),
     addAlert: jest.fn(),
@@ -59,8 +57,6 @@ jest.mock('services', () => {
     removeAlert: jest.fn(),
   };
 });
-
-jest.mock('config', () => ({getWebhooks: jest.fn().mockReturnValue(['webhook1', 'webhook2'])}));
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
@@ -70,12 +66,6 @@ it('should load existing reports', () => {
   shallow(<AlertList {...props} />);
 
   expect(loadReports).toHaveBeenCalled();
-});
-
-it('should load existing webhooks', () => {
-  shallow(<AlertList {...props} />);
-
-  expect(getWebhooks).toHaveBeenCalled();
 });
 
 it('should only save single number reports', async () => {
@@ -195,7 +185,6 @@ it('should Alert to Deleter', async () => {
     lastModifier: 'Admin',
     lastModified: '2017-11-11T11:11:11.1111+0200',
     reportId: '2',
-    webhook: null,
   });
 });
 
@@ -212,7 +201,6 @@ it('should open a modal when editing an alert', async () => {
     lastModifier: 'Admin',
     lastModified: '2017-11-11T11:11:11.1111+0200',
     reportId: '2',
-    webhook: null,
   });
 });
 
@@ -230,24 +218,5 @@ it('should invoke addAlert when copying an alert', async () => {
     lastModifier: 'Admin',
     lastModified: '2017-11-11T11:11:11.1111+0200',
     reportId: '2',
-    webhook: null,
   });
-});
-
-it('should show warning if alert is inactive due to missing webhoook', () => {
-  getWebhooks.mockReturnValueOnce(['webhook1']);
-  loadAlerts.mockReturnValueOnce([
-    {
-      id: 'alertID',
-      emails: [],
-      name: 'Some Alert',
-      lastModifier: 'Admin',
-      lastModified: '2017-11-11T11:11:11.1111+0200',
-      reportId: '2',
-      webhook: 'nonExistingWebhook',
-    },
-  ]);
-  const node = shallow(<AlertList {...props} />);
-
-  expect(node.find(EntityList).prop('rows')[0].warning).toBe('Alert inactive');
 });
