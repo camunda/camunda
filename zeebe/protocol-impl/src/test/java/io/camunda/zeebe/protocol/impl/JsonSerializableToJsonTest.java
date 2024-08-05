@@ -2206,7 +2206,8 @@ final class JsonSerializableToJsonTest {
                     .setProcessDefinitionVersion(12)
                     .setProcessInstanceKey(1234)
                     .setElementId("activity")
-                    .setElementInstanceKey(5678),
+                    .setElementInstanceKey(5678)
+                    .setPriority(80),
         """
       {
         "bpmnProcessId": "test-process",
@@ -2232,7 +2233,8 @@ final class JsonSerializableToJsonTest {
         "action": "complete",
         "formKey": 456,
         "userTaskKey": 123,
-        "tenantId": "<default>"
+        "tenantId": "<default>",
+        "priority": 80
       }
       """
       },
@@ -2264,7 +2266,8 @@ final class JsonSerializableToJsonTest {
         "action": "",
         "formKey": -1,
         "userTaskKey": -1,
-        "tenantId": "<default>"
+        "tenantId": "<default>",
+        "priority": 50
       }
       """
       },
@@ -2301,7 +2304,8 @@ final class JsonSerializableToJsonTest {
         "action": "",
         "formKey": -1,
         "userTaskKey": -1,
-        "tenantId": "<default>"
+        "tenantId": "<default>",
+        "priority": 50
       }
       """
       },
