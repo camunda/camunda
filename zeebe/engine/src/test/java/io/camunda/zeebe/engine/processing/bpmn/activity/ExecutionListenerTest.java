@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
+import static io.camunda.zeebe.engine.processing.job.JobThrowErrorProcessor.ERROR_REJECTION_MESSAGE;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
 import static java.util.Map.entry;
@@ -18,6 +19,8 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -309,48 +312,52 @@ public class ExecutionListenerTest {
         processInstanceKey, VariableIntent.CREATED, "mergedVars", "\"aValue+bValueUpdated\"");
   }
 
-  @Test
-  public void shouldCreateUnhandledErrorEventIncidentAfterThrowingErrorFromExecutionListenerJob() {
-    // given
-    final BpmnModelInstance modelInstance =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .serviceTask(
-                "task",
-                t ->
-                    t.zeebeJobType(SERVICE_TASK_TYPE)
-                        .zeebeStartExecutionListener(START_EL_TYPE)
-                        .zeebeEndExecutionListener(END_EL_TYPE))
-            .boundaryEvent("errorBoundary", b -> b.error("err"))
-            .endEvent()
-            .done();
+  // task related tests: end
 
-    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+  @Test
+  public void shouldRejectErrorThrowingFromExecutionListenerJob() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    "service_task",
+                    t ->
+                        t.zeebeJobType(SERVICE_TASK_TYPE)
+                            .zeebeStartExecutionListener(START_EL_TYPE))
+                .boundaryEvent("error_boundary", b -> b.error("err"))
+                .endEvent("error_end")
+                .moveToActivity("service_task")
+                .endEvent("main_end")
+                .done())
+        .deploy();
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    // when
-    ENGINE
-        .job()
-        .ofInstance(processInstanceKey)
-        .withType(START_EL_TYPE)
-        .withErrorCode("err")
-        .throwError();
+    // when: attempt to throw a BPMN error from the start execution listener job
+    final Record<JobRecordValue> error =
+        ENGINE
+            .job()
+            .ofInstance(processInstanceKey)
+            .withType(START_EL_TYPE)
+            .withErrorCode("err")
+            .throwError();
 
-    // then
-    final Record<IncidentRecordValue> incident =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-
-    Assertions.assertThat(incident.getValue())
-        .hasProcessInstanceKey(processInstanceKey)
-        .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
-        .hasErrorMessage(
-            "Expected to throw an error event with the code 'err', but it was not caught. No error events are available in the scope.");
+    // then: verify the rejection of the BPMN error
+    final String expectedRejectionReason =
+        String.format(
+            ERROR_REJECTION_MESSAGE,
+            JobKind.EXECUTION_LISTENER,
+            error.getKey(),
+            START_EL_TYPE,
+            processInstanceKey);
+    assertThat(jobRecords().withRecordType(RecordType.COMMAND_REJECTION).getFirst())
+        .extracting(
+            r -> r.getValue().getType(), Record::getRejectionType, Record::getRejectionReason)
+        .containsExactly(START_EL_TYPE, RejectionType.INVALID_STATE, expectedRejectionReason);
   }
-
-  // task related tests: end
 
   // process related tests: start
   @Test

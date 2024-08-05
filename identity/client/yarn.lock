@@ -1104,12 +1104,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:20.14.13":
-  version: 20.14.13
-  resolution: "@types/node@npm:20.14.13"
+"@types/node@npm:20.14.14":
+  version: 20.14.14
+  resolution: "@types/node@npm:20.14.14"
   dependencies:
     undici-types: "npm:~5.26.4"
-  checksum: 10c0/10bb3ece675308742301c652ab8c6cb88b1ebddebed22316103c58f94fe7eff131edd5f679e487c19077fadb6b5e6b1ad9a60a2cee2869aa1f20452b9761d570
+  checksum: 10c0/4fc8d368df2b6f5497698327b30db68d7d20e32221ce7d057fb15cbd5834685b2fde0440609e4cb2204e5d305b928f008faf41b950a425f3fd55b60cb1b997cf
   languageName: node
   linkType: hard
 
@@ -2502,7 +2502,7 @@ __metadata:
     "@camunda/camunda-composite-components": "npm:0.8.1"
     "@carbon/react": "npm:1.63.0"
     "@types/event-source-polyfill": "npm:1.0.5"
-    "@types/node": "npm:20.14.13"
+    "@types/node": "npm:20.14.14"
     "@types/react": "npm:18.3.3"
     "@types/react-dom": "npm:18.3.0"
     "@types/react-transition-group": "npm:4.4.10"

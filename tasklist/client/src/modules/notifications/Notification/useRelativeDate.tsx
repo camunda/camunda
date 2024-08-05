@@ -13,10 +13,11 @@ import {
 } from 'date-fns';
 import {formatDate} from 'modules/utils/formatDate';
 import {useEffect, useState} from 'react';
+import {t} from 'i18next';
 
 function getRelativeDate(date: number): string {
   if (differenceInSeconds(Date.now(), date) <= 10) {
-    return 'Just now';
+    return t('relativeDateJustNow');
   }
 
   if (differenceInHours(date, Date.now()) > 0) {

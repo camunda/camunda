@@ -8,6 +8,8 @@
 
 import React, {useMemo} from 'react';
 import {NavLink, useLocation} from 'react-router-dom';
+import {t} from 'i18next';
+import {useTranslation} from 'react-i18next';
 import {isBefore} from 'date-fns';
 import {Stack} from '@carbon/react';
 import {
@@ -58,12 +60,12 @@ function getNavLinkLabel({
   const isAssignedToCurrentUser = assigneeId === currentUserId;
   if (isAssigned) {
     if (isAssignedToCurrentUser) {
-      return `Task assigned to me: ${name}`;
+      return t('availableTasksNavLinkAssignedToMe', {name});
     } else {
-      return `Assigned task: ${name}`;
+      return t('availableTasksNavLinkAssignedTask', {name});
     }
   } else {
-    return `Unassigned task: ${name}`;
+    return t('availableTasksNavLinkUnassignedTask', {name});
   }
 }
 
@@ -123,11 +125,9 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
     const location = useLocation();
     const isActive = useIsCurrentTaskOpen(taskId);
     const {filter, sortBy} = useTaskFilters();
-    const creationDate = useMemo(
-      () => formatISODateTime(creationDateString),
-      [creationDateString],
-    );
+    const {t} = useTranslation();
 
+    const creationDate = formatISODateTime(creationDateString);
     const completionDate = formatISODate(completionDateString);
     const dueDate = formatISODate(dueDateString);
     const followUpDate = formatISODate(followUpDateString);
@@ -207,16 +207,16 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
               {creationDate ? (
                 <DateLabel
                   date={creationDate}
-                  relativeLabel="Created"
-                  absoluteLabel="Created on"
+                  relativeLabel={t('availableTasksCreatedRelativeLabel')}
+                  absoluteLabel={t('availableTasksCreatedAbsoluteLabel')}
                   icon={<Calendar className={styles.inlineIcon} />}
                 />
               ) : null}
               {secondaryDate.followUpDate !== undefined ? (
                 <DateLabel
                   date={secondaryDate.followUpDate}
-                  relativeLabel="Follow-up"
-                  absoluteLabel="Follow-up on"
+                  relativeLabel={t('availableTasksFollowUpRelativeLabel')}
+                  absoluteLabel={t('availableTasksFollowUpAbsoluteLabel')}
                   icon={
                     <Notification className={styles.inlineIcon} color="blue" />
                   }
@@ -226,8 +226,8 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
               {secondaryDate.overDueDate !== undefined ? (
                 <DateLabel
                   date={secondaryDate.overDueDate}
-                  relativeLabel="Overdue"
-                  absoluteLabel="Overdue"
+                  relativeLabel={t('availableTasksOverdueRelativeLabel')}
+                  absoluteLabel={t('availableTasksOverdueAbsoluteLabel')}
                   icon={<Warning className={styles.inlineIcon} color="red" />}
                   align="top-right"
                 />
@@ -235,16 +235,16 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
               {secondaryDate.dueDate !== undefined ? (
                 <DateLabel
                   date={secondaryDate.dueDate}
-                  relativeLabel="Due"
-                  absoluteLabel="Due on"
+                  relativeLabel={t('availableTasksDueRelativeLabel')}
+                  absoluteLabel={t('availableTasksDueAbsoluteLabel')}
                   align="top-right"
                 />
               ) : null}
               {secondaryDate.completionDate !== undefined ? (
                 <DateLabel
                   date={secondaryDate.completionDate}
-                  relativeLabel="Completed"
-                  absoluteLabel="Completed on"
+                  relativeLabel={t('availableTasksCompletedRelativeLabel')}
+                  absoluteLabel={t('availableTasksCompletedAbsoluteLabel')}
                   icon={
                     <CheckmarkFilled
                       className={styles.inlineIcon}
