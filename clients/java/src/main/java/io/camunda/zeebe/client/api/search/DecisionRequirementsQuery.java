@@ -30,26 +30,9 @@
  */
 package io.camunda.zeebe.client.api.search;
 
-import io.camunda.zeebe.client.api.search.TypedSearchQueryRequest.SearchRequestSort;
 
-public interface DecisionRequirementSort extends SearchRequestSort<DecisionRequirementSort> {
-  /** Sort by decision requirement key. */
-  DecisionRequirementSort key();
+import io.camunda.zeebe.client.api.search.response.DecisionRequirements;
 
-  /** Sort by id. */
-  DecisionRequirementSort id();
-
-  /** Sort by decision requirement name. */
-  DecisionRequirementSort name();
-
-  /** Sort by decision requirement version. */
-  DecisionRequirementSort version();
-
-  /** Sort by decision requirements id. */
-  DecisionRequirementSort decisionRequirementsId();
-
-  /** Sort by resource name. */
-  DecisionRequirementSort tenantId();
-
-
-}
+public interface DecisionRequirementsQuery
+    extends TypedSearchQueryRequest<DecisionRequirementsFilter, DecisionRequirementsSort, DecisionRequirementsQuery>,
+        FinalSearchQueryStep<DecisionRequirements> {}

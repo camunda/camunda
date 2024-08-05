@@ -30,48 +30,42 @@
  */
 package io.camunda.zeebe.client.impl.search;
 
-import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.decisionRequirementFilter;
-import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.decisionRequirementSort;
+import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.decisionRequirementsFilter;
+import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.decisionRequirementsSort;
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.searchRequestPage;
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.userTaskFilter;
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.userTaskSort;
 
 import io.camunda.zeebe.client.api.JsonMapper;
-import io.camunda.zeebe.client.api.search.DecisionRequirementFilter;
-import io.camunda.zeebe.client.api.search.DecisionRequirementQuery;
-import io.camunda.zeebe.client.api.search.DecisionRequirementSort;
+import io.camunda.zeebe.client.api.search.DecisionRequirementsFilter;
+import io.camunda.zeebe.client.api.search.DecisionRequirementsQuery;
+import io.camunda.zeebe.client.api.search.DecisionRequirementsSort;
 import io.camunda.zeebe.client.api.search.FinalSearchQueryStep;
+import io.camunda.zeebe.client.api.search.SearchRequestBuilders;
 import io.camunda.zeebe.client.api.search.SearchRequestPage;
-import io.camunda.zeebe.client.api.search.UserTaskFilter;
-import io.camunda.zeebe.client.api.search.UserTaskQuery;
-import io.camunda.zeebe.client.api.search.UserTaskSort;
 import io.camunda.zeebe.client.api.search.response.DecisionRequirements;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
-import io.camunda.zeebe.client.api.search.response.UserTask;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
-import io.camunda.zeebe.client.protocol.rest.DecisionRequirementFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.DecisionRequirementSearchQueryRequest;
-import io.camunda.zeebe.client.protocol.rest.DecisionRequirementSearchQueryResponse;
-import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryRequest;
-import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryResponse;
+import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilterRequest;
+import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsSearchQueryRequest;
+import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsSearchQueryResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class DecisionRequirementQueryImpl
-    extends TypedSearchRequestPropertyProvider<DecisionRequirementSearchQueryRequest>
-    implements DecisionRequirementQuery {
+public class DecisionRequirementsQueryImpl
+    extends TypedSearchRequestPropertyProvider<DecisionRequirementsSearchQueryRequest>
+    implements DecisionRequirementsQuery {
 
-  private final DecisionRequirementSearchQueryRequest request;
+  private final DecisionRequirementsSearchQueryRequest request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public DecisionRequirementQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
-    request = new DecisionRequirementSearchQueryRequest();
+  public DecisionRequirementsQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+    request = new DecisionRequirementsSearchQueryRequest();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -90,50 +84,50 @@ public class DecisionRequirementQueryImpl
         "/decision-requirements/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        DecisionRequirementSearchQueryResponse.class,
-        SearchResponseMapper::toDecisionRequirementSearchResponse,
+        DecisionRequirementsSearchQueryResponse.class,
+        SearchResponseMapper::toDecisionRequirementsSearchResponse,
         result);
     return result;
   }
 
   @Override
-  public DecisionRequirementQuery filter(final DecisionRequirementFilter value) {
-    final DecisionRequirementFilterRequest filter = provideSearchRequestProperty(value);
+  public DecisionRequirementsQuery filter(final DecisionRequirementsFilter value) {
+    final DecisionRequirementsFilterRequest filter = provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
 
   @Override
-  public DecisionRequirementQuery filter(final Consumer<DecisionRequirementFilter> fn) {
-    return filter(decisionRequirementFilter(fn));
+  public DecisionRequirementsQuery filter(final Consumer<DecisionRequirementsFilter> fn) {
+    return filter(SearchRequestBuilders.decisionRequirementsFilter(fn));
   }
 
   @Override
-  public DecisionRequirementQuery sort(final DecisionRequirementSort value) {
-    final DecisionRequirementSortImpl sorting = (DecisionRequirementSortImpl) value;
+  public DecisionRequirementsQuery sort(final DecisionRequirementsSort value) {
+    final DecisionRequirementsSortImpl sorting = (DecisionRequirementsSortImpl) value;
     request.setSort(sorting.getSearchRequestProperty());
     return this;
   }
 
   @Override
-  public DecisionRequirementQuery sort(final Consumer<DecisionRequirementSort> fn) {
-    return sort(decisionRequirementSort(fn));
+  public DecisionRequirementsQuery sort(final Consumer<DecisionRequirementsSort> fn) {
+    return sort(decisionRequirementsSort(fn));
   }
 
   @Override
-  public DecisionRequirementQuery page(final SearchRequestPage value) {
+  public DecisionRequirementsQuery page(final SearchRequestPage value) {
     final SearchRequestPageImpl page = (SearchRequestPageImpl) value;
     request.setPage(page.getSearchRequestProperty());
     return this;
   }
 
   @Override
-  public DecisionRequirementQuery page(final Consumer<SearchRequestPage> fn) {
+  public DecisionRequirementsQuery page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
   }
 
   @Override
-  protected DecisionRequirementSearchQueryRequest getSearchRequestProperty() {
+  protected DecisionRequirementsSearchQueryRequest getSearchRequestProperty() {
     return request;
   }
 }

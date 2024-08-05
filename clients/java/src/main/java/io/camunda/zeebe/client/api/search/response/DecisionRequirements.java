@@ -21,12 +21,12 @@ public interface DecisionRequirements {
    * @return the dmn decision requirements ID, as parsed during deployment; together with the
    *     versions forms a unique identifier for a specific decision
    */
-  String getDecisionRequirementsId();
+  String getDmnDecisionRequirementsId();
 
   /**
    * @return the dmn name of the decision requirements, as parsed during deployment
    */
-  String getName();
+  String getDmnDecisionRequirementsName();
 
   /**
    * @return the assigned decision requirements version
@@ -37,13 +37,7 @@ public interface DecisionRequirements {
    * @return the assigned decision requirements key, which acts as a unique identifier for this
    *     decision requirements
    */
-  long getKey();
-
-  /**
-   * @return the assigned decision requirements key, which acts as a unique identifier for this
-   *     decision requirements
-   */
-  String getId();
+  long getDecisionRequirementsKey();
 
   /**
    * @return the resource name (i.e. filename) from which this decision requirements was parsed

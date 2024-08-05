@@ -15,42 +15,38 @@
  */
 package io.camunda.zeebe.client.impl.search;
 
-import io.camunda.zeebe.client.api.search.DecisionRequirementSort;
+import io.camunda.zeebe.client.api.search.DecisionRequirementsSort;
 
-public class DecisionRequirementSortImpl extends SearchQuerySortBase<DecisionRequirementSort> implements DecisionRequirementSort {
+public class DecisionRequirementsSortImpl extends SearchQuerySortBase<DecisionRequirementsSort> implements
+    DecisionRequirementsSort {
 
   @Override
-  protected DecisionRequirementSort self() {
+  protected DecisionRequirementsSort self() {
     return this;
   }
 
   @Override
-  public DecisionRequirementSort key() {
+  public DecisionRequirementsSort decisionRequirementsKey() {
     return field("key");
   }
 
   @Override
-  public DecisionRequirementSort id() {
-    return field("id");
-  }
-
-  @Override
-  public DecisionRequirementSort name() {
+  public DecisionRequirementsSort dmnDecisionRequirementsName() {
     return field("name");
   }
 
   @Override
-  public DecisionRequirementSort version() {
+  public DecisionRequirementsSort version() {
     return field("version");
   }
 
   @Override
-  public DecisionRequirementSort decisionRequirementsId() {
+  public DecisionRequirementsSort dmnDecisionRequirementsId() {
     return field("decisionRequirementsId");
   }
 
   @Override
-  public DecisionRequirementSort tenantId() {
+  public DecisionRequirementsSort tenantId() {
     return field("tenantId");
   }
 }

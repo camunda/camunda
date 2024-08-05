@@ -18,7 +18,7 @@ package io.camunda.zeebe.client.api.search;
 import io.camunda.zeebe.client.api.search.TypedSearchQueryRequest.SearchRequestFilter;
 
 /** Interface for defining Decision Requirmeent in search queries. */
-public interface DecisionRequirementFilter extends SearchRequestFilter {
+public interface DecisionRequirementsFilter extends SearchRequestFilter {
 
   /**
    * Filters Decision Requirement by the specified key.
@@ -26,15 +26,7 @@ public interface DecisionRequirementFilter extends SearchRequestFilter {
    * @param value the key of the decision requirement
    * @return the updated filter
    */
-  DecisionRequirementFilter key(final Long value);
-
-  /**
-   * Filters Decision Requirement by the specified key.
-   *
-   * @param id the key of the decision requirement
-   * @return the updated filter
-   */
-  DecisionRequirementFilter id(final String id);
+  DecisionRequirementsFilter decisionRequirementsKey(final Long value);
 
   /**
    * Filters Decision Requirement by the specified name.
@@ -42,7 +34,7 @@ public interface DecisionRequirementFilter extends SearchRequestFilter {
    * @param name the name of the decision requirement
    * @return the updated filter
    */
-  DecisionRequirementFilter name(final String name);
+  DecisionRequirementsFilter dmnDecisionRequirementsName(final String name);
 
   /**
    * Filters Decision Requirement by the specified version.
@@ -50,7 +42,7 @@ public interface DecisionRequirementFilter extends SearchRequestFilter {
    * @param version the version of the decision requirement
    * @return the updated filter
    */
-  DecisionRequirementFilter version(final Integer version);
+  DecisionRequirementsFilter version(final Integer version);
 
   /**
    * Filters Decision Requirement by the specified decision requirements ID.
@@ -58,7 +50,7 @@ public interface DecisionRequirementFilter extends SearchRequestFilter {
    * @param decisionRequirementsId the decision requirements ID of the decision requirement
    * @return the updated filter
    */
-  DecisionRequirementFilter decisionRequirementsId(final String decisionRequirementsId);
+  DecisionRequirementsFilter dmnDecisionRequirementsId(final String decisionRequirementsId);
 
   /**
    * Filters Decision Requirement by the specified tenant ID.
@@ -66,5 +58,5 @@ public interface DecisionRequirementFilter extends SearchRequestFilter {
    * @param tenantId the tenant ID of the decision requirement
    * @return the updated filter
    */
-  DecisionRequirementFilter tenantId(final String tenantId);
+  DecisionRequirementsFilter tenantId(final String tenantId);
 }

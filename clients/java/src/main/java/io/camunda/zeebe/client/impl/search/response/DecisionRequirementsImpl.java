@@ -15,40 +15,34 @@
  */
 package io.camunda.zeebe.client.impl.search.response;
 
-import io.camunda.zeebe.client.api.search.response.DecisionRequirements;
-import io.camunda.zeebe.client.api.search.response.UserTask;
-import io.camunda.zeebe.client.protocol.rest.DecisionRequirementItem;
-import io.camunda.zeebe.client.protocol.rest.UserTaskItem;
-import java.util.List;
-import java.util.Map;
+import io.camunda.zeebe.client.api.response.DecisionRequirements;
+import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsItem;
 
-public class DecisionRequirementImpl implements DecisionRequirements {
-  private final Long key;
-  private final String id;
+public class DecisionRequirementsImpl implements DecisionRequirements {
+  private final Long decisionRequirementsKey;
   private final String resourceName;
   private final String tenantId;
-  private final String decisionRequirementsId;
-  private final String name;
+  private final String dmnDecisionRequirementsId;
+  private final String dmnDecisionRequirementsName;
   private final int version;
 
-  public DecisionRequirementImpl(final DecisionRequirementItem item) {
-    key = item.getKey();
-    id = item.getId();
+  public DecisionRequirementsImpl(final DecisionRequirementsItem item) {
+    decisionRequirementsKey = item.getDecisionRequirementsKey();
     resourceName = item.getResourceName();
     tenantId = item.getTenantId();
-    decisionRequirementsId = item.getDecisionRequirementsId();
-    name = item.getName();
+    dmnDecisionRequirementsId = item.getDmnDecisionRequirementsId();
+    dmnDecisionRequirementsName = item.getDmnDecisionRequirementsName();
     version = item.getVersion();
   }
 
   @Override
-  public String getDecisionRequirementsId() {
-    return decisionRequirementsId;
+  public String getDmnDecisionRequirementsId() {
+    return dmnDecisionRequirementsId;
   }
 
   @Override
-  public String getName() {
-    return name;
+  public String getDmnDecisionRequirementsName() {
+    return dmnDecisionRequirementsName;
   }
 
   @Override
@@ -57,13 +51,8 @@ public class DecisionRequirementImpl implements DecisionRequirements {
   }
 
   @Override
-  public long getKey() {
-    return key;
-  }
-
-  @Override
-  public String getId() {
-    return id;
+  public long getDecisionRequirementsKey() {
+    return decisionRequirementsKey;
   }
 
   @Override
