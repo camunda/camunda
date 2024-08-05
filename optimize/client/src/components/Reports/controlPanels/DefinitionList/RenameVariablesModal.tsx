@@ -160,7 +160,7 @@ export default function RenameVariablesModal({
           loading={!variables}
           noData={
             !!variables?.length && filteredVariables.length === 0 ? (
-              <NoDataNotice title={t('events.table.noResults')} />
+              <NoDataNotice title={t('common.notFound')} />
             ) : undefined
           }
           allowLocalSorting

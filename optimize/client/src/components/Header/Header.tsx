@@ -23,7 +23,7 @@ import {t} from 'translation';
 import {track} from 'tracking';
 import {useDocs, useErrorHandling, useUiConfig} from 'hooks';
 
-import {isEventBasedProcessEnabled, getUserToken} from './service';
+import {getUserToken} from './service';
 import useUserMenu from './useUserMenu';
 
 import './Header.scss';
@@ -31,7 +31,6 @@ import './Header.scss';
 const orderedApps = ['console', 'modeler', 'tasklist', 'operate', 'optimize'];
 
 export default function Header({noActions}: {noActions?: boolean}) {
-  const [showEventBased, setShowEventBased] = useState(false);
   const [userToken, setUserToken] = useState<string | null>(null);
   const location = useLocation();
   const {mightFail} = useErrorHandling();
@@ -47,15 +46,8 @@ export default function Header({noActions}: {noActions?: boolean}) {
   } = useUiConfig();
 
   useEffect(() => {
-    mightFail(
-      Promise.all([isEventBasedProcessEnabled(), getUserToken()]),
-      ([enabled, userToken]) => {
-        setShowEventBased(enabled && optimizeProfile === 'platform');
-        setUserToken(userToken);
-      },
-      showError
-    );
-  }, [mightFail, optimizeProfile]);
+    mightFail(getUserToken(), setUserToken, showError);
+  }, [mightFail]);
 
   const props: C3NavigationProps = {
     app: createAppProps(location),
@@ -64,12 +56,7 @@ export default function Header({noActions}: {noActions?: boolean}) {
   };
 
   if (!noActions) {
-    props.navbar = createNavBarProps(
-      showEventBased,
-      enterpriseMode,
-      location.pathname,
-      optimizeDatabase
-    );
+    props.navbar = createNavBarProps(enterpriseMode, location.pathname, optimizeDatabase);
     props.infoSideBar = createInfoSideBarProps(getBaseDocsUrl(), enterpriseMode);
     props.userSideBar = userSideBar;
   }
@@ -139,7 +126,6 @@ function createWebappLinks(webappLinks: Record<string, string> | null): C3Naviga
 }
 
 function createNavBarProps(
-  showEventBased: boolean,
   enterpriseMode: boolean,
   pathname: string,
   optimizeDatabase?: string
@@ -184,24 +170,6 @@ function createNavBarProps(
       isCurrentPage: isCurrentPage(['/analysis/', '/analysis/*'], pathname),
     },
   ];
-
-  if (showEventBased) {
-    elements.push({
-      key: 'events',
-      label: t('navigation.events').toString(),
-      routeProps: {
-        as: NavItem,
-        name: t('navigation.events'),
-        linksTo: '/events/processes/',
-        active: ['/events/processes/', '/events/ingested/', '/events/processes/*'],
-        breadcrumbsEntities: [{entity: 'eventBasedProcess', entityUrl: 'events/processes'}],
-      },
-      isCurrentPage: isCurrentPage(
-        ['/events/processes/', '/events/ingested/', '/events/processes/*'],
-        pathname
-      ),
-    });
-  }
 
   const tags: C3NavigationProps['navbar']['tags'] = [];
   if (!enterpriseMode) {
