@@ -214,10 +214,10 @@ public final class SearchQueryRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "dmnDecisionId" -> builder.decisionId();
-        case "dmnDecisionName" -> builder.name();
+        case "dmnDecisionId" -> builder.dmnDecisionId();
+        case "dmnDecisionName" -> builder.dmnDecisionName();
         case "version" -> builder.version();
-        case "dmnDecisionRequirementsId" -> builder.decisionRequirementsId();
+        case "dmnDecisionRequirementsId" -> builder.dmnDecisionRequirementsId();
         case "decisionRequirementsKey" -> builder.decisionRequirementsKey();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
