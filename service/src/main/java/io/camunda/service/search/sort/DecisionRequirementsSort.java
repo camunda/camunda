@@ -26,12 +26,7 @@ public record DecisionRequirementsSort(List<FieldSorting> orderings) implements 
   public static final class Builder extends AbstractBuilder<Builder>
       implements ObjectBuilder<DecisionRequirementsSort> {
 
-    public Builder decisionRequirementsId() {
-      currentOrdering = new FieldSorting("decisionRequirementsId", null);
-      return this;
-    }
-
-    public Builder name() {
+    public Builder dmnDecisionRequirementsName() {
       currentOrdering = new FieldSorting("name", null);
       return this;
     }
@@ -41,7 +36,7 @@ public record DecisionRequirementsSort(List<FieldSorting> orderings) implements 
       return this;
     }
 
-    public DecisionRequirementsSort.Builder key() {
+    public DecisionRequirementsSort.Builder decisionRequirementsKey() {
       currentOrdering = new FieldSorting("key", null);
       return this;
     }

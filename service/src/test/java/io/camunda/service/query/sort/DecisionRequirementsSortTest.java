@@ -38,13 +38,11 @@ public class DecisionRequirementsSortTest {
 
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
-        new TestArguments("name", SortOrder.DESC, s -> s.name().desc()),
-        new TestArguments(
-            "decisionRequirementsId", SortOrder.DESC, s -> s.decisionRequirementsId().desc()),
-        new TestArguments("key", SortOrder.DESC, s -> s.key().desc()),
+        new TestArguments("name", SortOrder.DESC, s -> s.dmnDecisionRequirementsName().desc()),
+        new TestArguments("key", SortOrder.DESC, s -> s.decisionRequirementsKey().desc()),
         new TestArguments("tenantId", SortOrder.ASC, s -> s.tenantId().asc()),
         new TestArguments("version", SortOrder.ASC, s -> s.version().asc()),
-        new TestArguments("name", SortOrder.ASC, s -> s.name().asc()));
+        new TestArguments("name", SortOrder.ASC, s -> s.dmnDecisionRequirementsName().asc()));
   }
 
   @ParameterizedTest
