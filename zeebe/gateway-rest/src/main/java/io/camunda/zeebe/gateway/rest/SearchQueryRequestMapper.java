@@ -14,6 +14,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOW
 
 import io.camunda.service.search.filter.DecisionDefinitionFilter;
 import io.camunda.service.search.filter.DecisionRequirementFilter;
+import io.camunda.service.search.filter.DecisionRequirementsFilter;
 import io.camunda.service.search.filter.FilterBase;
 import io.camunda.service.search.filter.FilterBuilders;
 import io.camunda.service.search.filter.ProcessInstanceFilter;
@@ -28,6 +29,7 @@ import io.camunda.service.search.query.TypedSearchQueryBuilder;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.service.search.sort.DecisionDefinitionSort;
 import io.camunda.service.search.sort.DecisionRequirementSort;
+import io.camunda.service.search.sort.DecisionRequirementsSort;
 import io.camunda.service.search.sort.ProcessInstanceSort;
 import io.camunda.service.search.sort.SortOption;
 import io.camunda.service.search.sort.SortOptionBuilders;
@@ -175,25 +177,22 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static DecisionRequirementFilter toDecisionRequirementFilter(
+  private static DecisionRequirementsFilter toDecisionRequirementFilter(
       final DecisionRequirementFilterRequest filter) {
-    final var builder = FilterBuilders.decisionRequirement();
+    final var builder = FilterBuilders.decisionRequirements();
 
     if (filter != null) {
-      if (filter.getKey() != null) {
-        builder.keys(filter.getKey());
+      if (filter.getDecisionRequirementsKey() != null) {
+        builder.decisionRequirementsKeys(filter.getDecisionRequirementsKey());
       }
-      if (filter.getId() != null) {
-        builder.ids(filter.getId());
-      }
-      if (filter.getName() != null) {
-        builder.names(filter.getName());
+      if (filter.getDmnDecisionRequirementsName() != null) {
+        builder.dmnDecisionRequirementsNames(filter.getDmnDecisionRequirementsName());
       }
       if (filter.getVersion() != null) {
         builder.versions(filter.getVersion());
       }
-      if (filter.getDecisionRequirementsId() != null) {
-        builder.decisionRequirementsIds(filter.getDecisionRequirementsId());
+      if (filter.getDmnDecisionRequirementsId() != null) {
+        builder.dmnDecisionRequirementsIds(filter.getDmnDecisionRequirementsId());
       }
       if (filter.getTenantId() != null) {
         builder.tenantIds(filter.getTenantId());
@@ -300,17 +299,16 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyDecisionRequirementSortField(
-      final String field, final DecisionRequirementSort.Builder builder) {
+      final String field, final DecisionRequirementsSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "id" -> builder.id();
         case "key" -> builder.decisionRequirementsKey();
-        case "name" -> builder.name();
+        case "name" -> builder.dmnDecisionRequirementsName();
         case "version" -> builder.version();
-        case "decisionRequirementsId" -> builder.decisionRequirementsId();
+        case "decisionRequirementsId" -> builder.dm;
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

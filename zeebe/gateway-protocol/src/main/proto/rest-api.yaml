@@ -2190,17 +2190,15 @@ components:
     DecisionRequirementFilterRequest:
       type: object
       properties:
-        id:
-          type: string
-        key:
+        decisionRequirementsKey:
           type: integer
           format: int64
-        name:
+        dmnDecisionRequirementsName:
           type: string
         version:
           type: integer
           format: int32
-        decisionRequirementsId:
+        dmnDecisionRequirementsId:
           type: string
         tenantId:
           type: string
@@ -2212,21 +2210,19 @@ components:
         items:
           type: array
           items:
-            $ref: "#/components/schemas/DecisionRequirementItem"
-    DecisionRequirementItem:
+            $ref: "#/components/schemas/DecisionRequirementsItem"
+    DecisionRequirementsItem:
       type: object
       properties:
-        id:
-          type: string
-        key:
+        decisionRequirementsKey:
           type: integer
           format: int64
-        name:
+        dmnDecisionRequirementsName:
           type: string
         version:
           type: integer
           format: int32
-        decisionRequirementsId:
+        dmnDecisionRequirementsId:
           type: string
         resourceName:
           type: string

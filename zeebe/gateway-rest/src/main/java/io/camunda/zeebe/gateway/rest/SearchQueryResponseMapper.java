@@ -10,14 +10,14 @@ package io.camunda.zeebe.gateway.rest;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.service.entities.DecisionDefinitionEntity;
-import io.camunda.service.entities.DecisionRequirementEntity;
+import io.camunda.service.entities.DecisionRequirementsEntity;
 import io.camunda.service.entities.ProcessInstanceEntity;
 import io.camunda.service.entities.UserTaskEntity;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
@@ -54,7 +54,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static DecisionRequirementSearchQueryResponse toDecisionRequirementSearchQueryResponse(
-      final SearchQueryResult<DecisionRequirementEntity> result) {
+      final SearchQueryResult<DecisionRequirementsEntity> result) {
     final var page = toSearchQueryPageResponse(result);
     return new DecisionRequirementSearchQueryResponse()
         .page(page)
@@ -105,8 +105,8 @@ public final class SearchQueryResponseMapper {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionDefinition).toList();
   }
 
-  private static List<DecisionRequirementItem> toDecisionRequirements(
-      final List<DecisionRequirementEntity> instances) {
+  private static List<DecisionRequirementsItem> toDecisionRequirements(
+      final List<DecisionRequirementsEntity> instances) {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionRequirements).toList();
   }
 
@@ -124,15 +124,14 @@ public final class SearchQueryResponseMapper {
         .decisionRequirementsVersion(d.decisionRequirementsVersion());
   }
 
-  private static DecisionRequirementItem toDecisionRequirements(final DecisionRequirementEntity d) {
-    return new DecisionRequirementItem()
+  private static DecisionRequirementsItem toDecisionRequirements(final DecisionRequirementsEntity d) {
+    return new DecisionRequirementsItem()
         .tenantId(d.tenantId())
-        .key(d.key())
-        .id(d.id())
-        .name(d.name())
+        .decisionRequirementsKey(d.key())
+        .dmnDecisionRequirementsName(d.name())
         .version(d.version())
         .resourceName(d.resourceName())
-        .decisionRequirementsId(d.decisionRequirementsId());
+        .dmnDecisionRequirementsId(d.decisionRequirementsId());
   }
 
   private static List<UserTaskItem> toUserTasks(final List<UserTaskEntity> tasks) {
