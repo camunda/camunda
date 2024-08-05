@@ -3,6 +3,7 @@ name: Optimize Java code scan
 on:
   push:
     branches:
+      - "merge-optimize-in--fix-codeql"
       - "merge-optimize-in"
   pull_request:
     branches:
