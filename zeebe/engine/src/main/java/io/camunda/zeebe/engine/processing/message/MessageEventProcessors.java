@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -42,6 +43,8 @@ public final class MessageEventProcessors {
       final CommandDistributionBehavior commandDistributionBehavior) {
 
     final MutableMessageState messageState = processingState.getMessageState();
+    final MutableMessageCorrelationState messageCorrelationState =
+        processingState.getMessageCorrelationState();
     final MutableMessageSubscriptionState subscriptionState =
         processingState.getMessageSubscriptionState();
     final MutableMessageStartEventSubscriptionState startEventSubscriptionState =
@@ -88,6 +91,7 @@ public final class MessageEventProcessors {
             new MessageSubscriptionCorrelateProcessor(
                 processingState.getPartitionId(),
                 messageState,
+                messageCorrelationState,
                 subscriptionState,
                 subscriptionCommandSender,
                 writers))
