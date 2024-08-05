@@ -2,7 +2,6 @@
 
 # set constants
 CAMUNDA_VERSION="8.6.0-alpha3"
-CAMUNDA_CONNECTORS_VERSION="8.6.0-alpha3"
 ELASTICSEARCH_VERSION="8.13.4"
 EXPECTED_JAVA_VERSION=21
 
@@ -123,24 +122,6 @@ if [ "$1" = "start" ] ; then
     esac
     shift
   done
-
-
-  # Retrieve elasticsearch
-  mkdir -p "$PARENTDIR/log"
-  if [ ! -d "elasticsearch-$ELASTICSEARCH_VERSION" ]; then
-    wget "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELASTICSEARCH_VERSION}-${PLATFORM}-${architecture}.tar.gz"
-    tar -xzvf elasticsearch-${ELASTICSEARCH_VERSION}-${PLATFORM}-${architecture}.tar.gz
-  fi
-
-  if [ ! -d "camunda-zeebe-$CAMUNDA_VERSION" ]; then
-    wget "https://github.com/camunda/camunda/releases/download/$CAMUNDA_VERSION/camunda-zeebe-$CAMUNDA_VERSION.tar.gz"
-    tar -xzvf camunda-zeebe-$CAMUNDA_VERSION.tar.gz
-  fi
-
-  connectorsFileName="connector-runtime-bundle-$CAMUNDA_CONNECTORS_VERSION-with-dependencies.jar"
-  if [ ! -f "$connectorsFileName" ]; then
-    wget "https://repo1.maven.org/maven2/io/camunda/connector/connector-runtime-bundle/$CAMUNDA_CONNECTORS_VERSION/$connectorsFileName"
-  fi
 
   # limit the java heapspace used by ElasticSearch to 1GB
   export ES_JAVA_OPTS="-Xms1g -Xmx1g"
