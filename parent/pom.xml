@@ -50,7 +50,7 @@
     <version.commons-text>1.12.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.4.0</version.docker-java-api>
-    <version.elasticsearch>8.9.2</version.elasticsearch>
+    <version.elasticsearch>8.13.4</version.elasticsearch>
     <version.error-prone>2.29.2</version.error-prone>
     <version.grpc>1.65.1</version.grpc>
     <version.gson>2.11.0</version.gson>
@@ -74,7 +74,7 @@
     <version.msgpack>0.9.8</version.msgpack>
     <version.netty>4.1.112.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
-    <version.opensearch>2.8.0</version.opensearch>
+    <version.opensearch>2.9.0</version.opensearch>
     <version.opensearch.testcontainers>2.1.0</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.25.4</version.protobuf>
