@@ -34,7 +34,7 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.filter.AuthenticationTransformer;
 import io.camunda.service.transformers.filter.DateValueFilterTransformer;
 import io.camunda.service.transformers.filter.DecisionDefinitionFilterTransformer;
-import io.camunda.service.transformers.filter.DecisionRequirementFilterTransformer;
+import io.camunda.service.transformers.filter.DecisionRequirementsFilterTransformer;
 import io.camunda.service.transformers.filter.FilterTransformer;
 import io.camunda.service.transformers.filter.ProcessInstanceFilterTransformer;
 import io.camunda.service.transformers.filter.UserTaskFilterTransformer;
@@ -110,6 +110,6 @@ public final class ServiceTransformers {
         VariableFilter.class,
         new VariableFilterTransformer(mappers, new VariableValueFilterTransformer()));
     mappers.put(DecisionDefinitionFilter.class, new DecisionDefinitionFilterTransformer());
-    mappers.put(DecisionRequirementsFilter.class, new DecisionRequirementFilterTransformer());
+    mappers.put(DecisionRequirementsFilter.class, new DecisionRequirementsFilterTransformer());
   }
 }

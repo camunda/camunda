@@ -13,7 +13,7 @@ import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.sort.SearchSortOptions;
 import io.camunda.search.clients.sort.SortOrder;
 import io.camunda.service.DecisionRequirementsServices;
-import io.camunda.service.query.filter.DecisionDefinitionSearchQueryStub;
+import io.camunda.service.query.filter.DecisionRequirementsSearchQueryStub;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.sort.DecisionRequirementsSort;
 import io.camunda.service.util.StubbedCamundaSearchClient;
@@ -32,12 +32,14 @@ public class DecisionRequirementsSortTest {
   @BeforeEach
   public void before() {
     client = new StubbedCamundaSearchClient();
-    new DecisionDefinitionSearchQueryStub().registerWith(client);
+    new DecisionRequirementsSearchQueryStub().registerWith(client);
     services = new DecisionRequirementsServices(null, client);
   }
 
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
+        new TestArguments(
+            "decisionRequirementsId", SortOrder.ASC, s -> s.dmnDecisionRequirementsId().asc()),
         new TestArguments("name", SortOrder.DESC, s -> s.dmnDecisionRequirementsName().desc()),
         new TestArguments("key", SortOrder.DESC, s -> s.decisionRequirementsKey().desc()),
         new TestArguments("tenantId", SortOrder.ASC, s -> s.tenantId().asc()),

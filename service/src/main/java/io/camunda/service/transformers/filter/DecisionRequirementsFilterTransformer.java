@@ -16,7 +16,7 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.service.search.filter.DecisionRequirementsFilter;
 import java.util.List;
 
-public final class DecisionRequirementFilterTransformer
+public final class DecisionRequirementsFilterTransformer
     implements FilterTransformer<DecisionRequirementsFilter> {
 
   @Override

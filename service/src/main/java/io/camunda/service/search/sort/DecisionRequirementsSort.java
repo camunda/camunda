@@ -46,6 +46,11 @@ public record DecisionRequirementsSort(List<FieldSorting> orderings) implements 
       return this;
     }
 
+    public Builder dmnDecisionRequirementsId() {
+      currentOrdering = new FieldSorting("decisionRequirementsId", null);
+      return this;
+    }
+
     @Override
     protected Builder self() {
       return this;
