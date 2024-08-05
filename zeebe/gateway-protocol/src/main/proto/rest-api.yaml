@@ -541,29 +541,6 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-  /decision-requirements/search:
-    post:
-      tags:
-        - Decision Requirement
-      summary: Decision Requirement Search Query
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DecisionRequirementsSearchQueryRequest'
-      responses:
-        '200':
-          description: >
-            The Decision Requirement Search successful response.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/DecisionRequirementsSearchQueryResponse"
-        '400':
-          description: >
-            The Decision Requirement Search Query failed.
-            More details are provided in the response body.
         '500':
           description: >
             An internal error occurred while processing the request.
@@ -610,6 +587,29 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /decision-requirements/search:
+    post:
+      tags:
+        - Decision Requirement
+      summary: Decision Requirement Search Query
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionRequirementsSearchQueryRequest'
+      responses:
+        '200':
+          description: >
+            The Decision Requirement Search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionRequirementsSearchQueryResponse"
+        '400':
+          description: >
+            The Decision Requirement Search Query failed.
+            More details are provided in the response body.
 
 components:
   schemas:
@@ -1279,199 +1279,6 @@ components:
           type: object
         lte:
           type: object
-    ProcessInstanceSearchQueryResponse:
-      allOf:
-        - $ref: "#/components/schemas/SearchQueryResponse"
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/ProcessInstanceItem"
-    ProcessInstanceItem:
-      type: object
-      properties:
-        tenantId:
-          type: string
-        key:
-          type: integer
-          format: int64
-        processDefinitionKey:
-          type: integer
-          format: int64
-        processVersion:
-          type: integer
-          format: int32
-        bpmnProcessId:
-          type: string
-        parentKey:
-          type: integer
-          format: int64
-        parentFlowNodeInstanceKey:
-          type: integer
-          format: int64
-        startDate:
-          type: string
-          format: date-time
-        endDate:
-          type: string
-          format: date-time
-    DecisionDefinitionSearchQueryRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
-      type: object
-      properties:
-        filter:
-          allOf:
-            - $ref: "#/components/schemas/DecisionDefinitionFilterRequest"
-    DecisionDefinitionFilterRequest:
-      type: object
-      properties:
-        id:
-          type: string
-        key:
-          type: integer
-          format: int64
-        decisionId:
-          type: string
-        name:
-          type: string
-        version:
-          type: integer
-          format: int32
-        decisionRequirementsId:
-          type: string
-        decisionRequirementsKey:
-          type: integer
-          format: int64
-        decisionRequirementsName:
-          type: string
-        decisionRequirementsVersion:
-          type: integer
-          format: int32
-        tenantId:
-          type: string
-    DecisionDefinitionSearchQueryResponse:
-      allOf:
-        - $ref: "#/components/schemas/SearchQueryResponse"
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/DecisionDefinitionItem"
-    DecisionDefinitionItem:
-      type: object
-      properties:
-        id:
-          type: string
-        key:
-          type: integer
-          format: int64
-        decisionId:
-          type: string
-        name:
-          type: string
-        version:
-          type: integer
-          format: int32
-        decisionRequirementsId:
-          type: string
-        decisionRequirementsKey:
-          type: integer
-          format: int64
-        decisionRequirementsName:
-          type: string
-        decisionRequirementsVersion:
-          type: integer
-          format: int32
-        tenantId:
-          type: string
-    CamundaUserResponse:
-      type: "object"
-      properties:
-        id:
-          type: "integer"
-          format: "int64"
-        username:
-          type: "string"
-        name:
-          type: "string"
-        email:
-          type: "string"
-        enabled:
-          type: "boolean"
-    CamundaUserWithPasswordRequest:
-      allOf:
-        - $ref: '#/components/schemas/CamundaUserResponse'
-        - type: "object"
-          properties:
-            password:
-              type: "string"
-    UserSearchResponse:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/SearchQueryResponse"
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/CamundaUserResponse"
-    CamundaGroupRequest:
-      type: "object"
-      properties:
-        id:
-          type: "integer"
-          format: "int64"
-        name:
-          type: "string"
-    CamundaGroupResponse:
-      type: "object"
-      properties:
-        id:
-          type: "integer"
-          format: "int64"
-        name:
-          type: "string"
-    GroupSearchResponse:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/SearchQueryResponse"
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/CamundaGroupResponse"
-    AssignUserToGroupRequest:
-      type: "object"
-      properties:
-        userId:
-          type: "integer"
-          format: "int64"
-    RoleRequest:
-      type: object
-      properties:
-        name:
-          type: "string"
-        description:
-          type: "string"
-        permissions:
-          type: array
-          items:
-            type: "string"
-    RoleResponse:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/RoleRequest"
-    RoleSearchResponse:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/SearchQueryResponse"
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/RoleResponse"
     DecisionRequirementsSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"

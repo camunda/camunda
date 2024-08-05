@@ -126,12 +126,12 @@ public final class FlowControl implements AppendListener {
         // Internal commands are always accepted for incident response and maintenance.
         return Either.right(new InFlightEntry(metrics, batchMetadata, null));
       }
-      /*case UserCommand(final var intent) -> {
+      case UserCommand(final var intent) -> {
         requestListener = processingLimiter.acquire(intent).orElse(null);
         if (requestListener == null) {
           return Either.left(Rejection.RequestLimitExhausted);
         }
-      }*/
+      }
       default -> requestListener = null;
     }
 
