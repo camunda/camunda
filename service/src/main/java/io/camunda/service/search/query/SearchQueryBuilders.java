@@ -50,13 +50,13 @@ public final class SearchQueryBuilders {
     return fn.apply(decisionDefinitionSearchQuery()).build();
   }
 
-  public static DecisionRequirementQuery.Builder decisionRequirementSearchQuery() {
-    return new DecisionRequirementQuery.Builder();
+  public static DecisionRequirementsQuery.Builder decisionRequirementsSearchQuery() {
+    return new DecisionRequirementsQuery.Builder();
   }
 
-  public static DecisionRequirementQuery decisionRequirementSearchQuery(
-      final Function<DecisionRequirementQuery.Builder, ObjectBuilder<DecisionRequirementQuery>>
+  public static DecisionRequirementsQuery decisionRequirementsSearchQuery(
+      final Function<DecisionRequirementsQuery.Builder, ObjectBuilder<DecisionRequirementsQuery>>
           fn) {
-    return fn.apply(decisionRequirementSearchQuery()).build();
+    return fn.apply(decisionRequirementsSearchQuery()).build();
   }
 }

@@ -7,7 +7,8 @@
  */
 
 import {useEffect, useState} from 'react';
-import {useTranslation} from 'react-i18next';
+import {useTranslation, Trans} from 'react-i18next';
+import {t} from 'i18next';
 import {observer} from 'mobx-react-lite';
 import {Link as RouterLink, matchPath, useLocation} from 'react-router-dom';
 import {
@@ -32,7 +33,7 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
   const BASE_INFO_SIDEBAR_ITEMS = [
     {
       key: 'docs',
-      label: 'Documentation',
+      label: t('headerSidebarDocumentationLink'),
       onClick: () => {
         tracking.track({
           eventName: 'info-bar',
@@ -44,7 +45,7 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
     },
     {
       key: 'academy',
-      label: 'Camunda Academy',
+      label: t('headerSidebarCamundaAcademyLink'),
       onClick: () => {
         tracking.track({
           eventName: 'info-bar',
@@ -57,7 +58,7 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
   ];
   const FEEDBACK_AND_SUPPORT_ITEM = {
     key: 'feedbackAndSupport',
-    label: 'Feedback and Support',
+    label: t('headerSidebarFeedbackAndSupportLink'),
     onClick: () => {
       tracking.track({
         eventName: 'info-bar',
@@ -69,7 +70,7 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
   } as const;
   const COMMUNITY_FORUM_ITEM = {
     key: 'communityForum',
-    label: 'Community Forum',
+    label: t('headerSidebarCommunityForumLink'),
     onClick: () => {
       tracking.track({
         eventName: 'info-bar',
@@ -102,6 +103,8 @@ const Header: React.FC = observer(() => {
     salesPlanType: null,
   };
 
+  const {t} = useTranslation();
+
   useEffect(() => {
     if (currentUser) {
       tracking.identifyUser(currentUser);
@@ -112,7 +115,7 @@ const Header: React.FC = observer(() => {
     <C3Navigation
       notificationSideBar={IS_SAAS ? {} : undefined}
       appBar={{
-        ariaLabel: 'App Panel',
+        ariaLabel: t('headerAppBarLabel'),
         isOpen: false,
         elementClicked: (app: string) => {
           tracking.track({
@@ -141,7 +144,7 @@ const Header: React.FC = observer(() => {
           {
             isCurrentPage: !isProcessesPage,
             key: 'tasks',
-            label: 'Tasks',
+            label: t('headerNavItemTasks'),
             routeProps: {
               to: pages.initial,
               onClick: () => {
@@ -155,7 +158,7 @@ const Header: React.FC = observer(() => {
           {
             isCurrentPage: isProcessesPage,
             key: 'processes',
-            label: 'Processes',
+            label: t('headerNavItemProcesses'),
             routeProps: {
               to: pages.processes({
                 tenantId: getStateLocally('tenantId') ?? undefined,
@@ -175,51 +178,53 @@ const Header: React.FC = observer(() => {
             : [
                 {
                   key: 'non-production-license',
-                  label: 'Non-Production License',
+                  label: t('headerNonProductionLicenseLabel'),
                   color: 'cool-gray',
                   tooltip: {
                     content: (
                       <div>
-                        Non-Production License. If you would like information on
-                        production usage, please refer to our{' '}
-                        <Link
-                          className={styles.inlineLink}
-                          href="https://legal.camunda.com/#self-managed-non-production-terms"
-                          target="_blank"
-                          inline
-                        >
-                          terms & conditions page
-                        </Link>{' '}
-                        or{' '}
-                        <Link
-                          className={styles.inlineLink}
-                          href="https://camunda.com/contact/"
-                          target="_blank"
-                          inline
-                        >
-                          contact sales
-                        </Link>
-                        .
+                        <Trans i18nKey="headerNonProductionLicenseText">
+                          Non-Production License. If you would like information
+                          on production usage, please refer to our{' '}
+                          <Link
+                            className={styles.inlineLink}
+                            href="https://legal.camunda.com/#self-managed-non-production-terms"
+                            target="_blank"
+                            inline
+                          >
+                            terms & conditions page
+                          </Link>{' '}
+                          or{' '}
+                          <Link
+                            className={styles.inlineLink}
+                            href="https://camunda.com/contact/"
+                            target="_blank"
+                            inline
+                          >
+                            contact sales
+                          </Link>
+                          .
+                        </Trans>
                       </div>
                     ),
-                    buttonLabel: 'Non-Production License',
+                    buttonLabel: t('headerNonProductionLicenseLabel'),
                   },
                 },
               ],
       }}
       infoSideBar={{
         isOpen: false,
-        ariaLabel: 'Info',
+        ariaLabel: t('headerInfoLabel'),
         elements: getInfoSidebarItems(
           ['paid-cc', 'enterprise'].includes(salesPlanType!),
         ),
       }}
       userSideBar={{
-        ariaLabel: 'Settings',
+        ariaLabel: t('headerSettingsLabel'),
         version: import.meta.env.VITE_VERSION,
         customElements: {
           profile: {
-            label: 'Profile',
+            label: t('headerProfileLabel'),
             user: {
               name: displayName ?? '',
               email: '',
@@ -239,7 +244,7 @@ const Header: React.FC = observer(() => {
             : [
                 {
                   key: 'cookie',
-                  label: 'Cookie preferences',
+                  label: t('headerCookiePreferencesLabel'),
                   onClick: () => {
                     tracking.track({
                       eventName: 'user-side-bar',
@@ -254,7 +259,7 @@ const Header: React.FC = observer(() => {
               ]),
           {
             key: 'terms',
-            label: 'Terms of use',
+            label: t('headerTermsOfUseLabel'),
             onClick: () => {
               tracking.track({
                 eventName: 'user-side-bar',
@@ -269,7 +274,7 @@ const Header: React.FC = observer(() => {
           },
           {
             key: 'privacy',
-            label: 'Privacy policy',
+            label: t('headerPrivacyPolicyLabel'),
             onClick: () => {
               tracking.track({
                 eventName: 'user-side-bar',
@@ -281,7 +286,7 @@ const Header: React.FC = observer(() => {
           },
           {
             key: 'imprint',
-            label: 'Imprint',
+            label: t('headerImprintLabel'),
             onClick: () => {
               tracking.track({
                 eventName: 'user-side-bar',
@@ -296,7 +301,7 @@ const Header: React.FC = observer(() => {
           ? [
               {
                 key: 'logout',
-                label: 'Log out',
+                label: t('headerLogOutLabel'),
                 renderIcon: ArrowRight,
                 kind: 'ghost',
                 onClick: authenticationStore.handleLogout,
@@ -332,8 +337,8 @@ const LanguageSelector: React.FC = observer(() => {
       <div className={styles.languageDropdownPadding}>
         <Dropdown
           id="language-dropdown"
-          label={t('chooseLanguage')}
-          titleText={t('language')}
+          label={t('languageSelectorLabel')}
+          titleText={t('languageSelectorTitle')}
           items={languageItems}
           itemToString={(item) => (item ? item.label : '')}
           onChange={handleLanguageChange}

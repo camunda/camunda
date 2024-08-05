@@ -10,7 +10,8 @@ package io.camunda.application.commons.service;
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.CamundaServices;
 import io.camunda.service.DecisionDefinitionServices;
-import io.camunda.service.DecisionRequirementServices;
+import io.camunda.service.DecisionRequirementsServices;
+import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.UserTaskServices;
@@ -65,8 +66,13 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
-  public DecisionRequirementServices decisionRequirementServices(
+  public DecisionRequirementsServices decisionRequirementsServices(
       final CamundaServices camundaServices) {
-    return camundaServices.decisionRequirementServices();
+    return camundaServices.decisionRequirementsServices();
+  }
+
+  @Bean
+  public IncidentServices incidentServices(final CamundaServices camundaServices) {
+    return camundaServices.incidentServices();
   }
 }

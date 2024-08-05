@@ -12,13 +12,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.service.DecisionRequirementServices;
-import io.camunda.service.entities.DecisionRequirementEntity;
-import io.camunda.service.search.filter.DecisionRequirementFilter;
-import io.camunda.service.search.query.DecisionRequirementQuery;
+import io.camunda.service.DecisionRequirementsServices;
+import io.camunda.service.entities.DecisionRequirementsEntity;
+import io.camunda.service.search.filter.DecisionRequirementsFilter;
+import io.camunda.service.search.query.DecisionRequirementsQuery;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.SearchQueryResult.Builder;
-import io.camunda.service.search.sort.DecisionRequirementSort;
+import io.camunda.service.search.sort.DecisionRequirementsSort;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
@@ -29,9 +29,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
 @WebMvcTest(
-    value = DecisionRequirementQueryController.class,
+    value = DecisionRequirementsQueryController.class,
     properties = "camunda.rest.query.enabled=true")
-public class DecisionRequirementQueryControllerTest extends RestControllerTest {
+public class DecisionRequirementsQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
       """
@@ -39,11 +39,10 @@ public class DecisionRequirementQueryControllerTest extends RestControllerTest {
           "items": [
               {
                   "tenantId": "t",
-                  "key": 0,
-                  "id": "id",
-                  "name": "name",
+                  "decisionRequirementsKey": 0,
+                  "dmnDecisionRequirementsName": "name",
                   "version": 1,
-                  "decisionRequirementsId": "drId",
+                  "dmnDecisionRequirementsId": "id",
                   "resourceName": "rN"
               }
           ],
@@ -56,27 +55,27 @@ public class DecisionRequirementQueryControllerTest extends RestControllerTest {
           }
       }""";
 
-  static final SearchQueryResult<DecisionRequirementEntity> SEARCH_QUERY_RESULT =
-      new Builder<DecisionRequirementEntity>()
+  static final SearchQueryResult<DecisionRequirementsEntity> SEARCH_QUERY_RESULT =
+      new Builder<DecisionRequirementsEntity>()
           .total(1L)
-          .items(List.of(new DecisionRequirementEntity("t", 0L, "id", "drId", "name", 1, "rN")))
+          .items(List.of(new DecisionRequirementsEntity("t", 0L, "id", "name", 1, "rN")))
           .sortValues(new Object[] {"v"})
           .build();
 
   static final String DECISION_REQUIREMENTS_SEARCH_URL = "/v2/decision-requirements/search";
 
-  @MockBean DecisionRequirementServices decisionRequirementServices;
+  @MockBean DecisionRequirementsServices decisionRequirementsServices;
 
   @BeforeEach
   void setupServices() {
-    when(decisionRequirementServices.withAuthentication(any(Authentication.class)))
-        .thenReturn(decisionRequirementServices);
+    when(decisionRequirementsServices.withAuthentication(any(Authentication.class)))
+        .thenReturn(decisionRequirementsServices);
   }
 
   @Test
-  void shouldSearchDecisionRequirementWithEmptyBody() {
+  void shouldSearchDecisionRequirementsWithEmptyBody() {
     // given
-    when(decisionRequirementServices.search(any(DecisionRequirementQuery.class)))
+    when(decisionRequirementsServices.search(any(DecisionRequirementsQuery.class)))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     webClient
@@ -90,13 +89,13 @@ public class DecisionRequirementQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE);
 
-    verify(decisionRequirementServices).search(new DecisionRequirementQuery.Builder().build());
+    verify(decisionRequirementsServices).search(new DecisionRequirementsQuery.Builder().build());
   }
 
   @Test
-  void shouldSearchDecisionRequirementWithEmptyQuery() {
+  void shouldSearchDecisionRequirementsWithEmptyQuery() {
     // given
-    when(decisionRequirementServices.search(any(DecisionRequirementQuery.class)))
+    when(decisionRequirementsServices.search(any(DecisionRequirementsQuery.class)))
         .thenReturn(SEARCH_QUERY_RESULT);
     final String request = "{}";
     // when / then
@@ -114,24 +113,23 @@ public class DecisionRequirementQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE);
 
-    verify(decisionRequirementServices).search(new DecisionRequirementQuery.Builder().build());
+    verify(decisionRequirementsServices).search(new DecisionRequirementsQuery.Builder().build());
   }
 
   @Test
-  void shouldSearchDecisionRequirementWithAllFilters() {
+  void shouldSearchDecisionRequirementsWithAllFilters() {
     // given
-    when(decisionRequirementServices.search(any(DecisionRequirementQuery.class)))
+    when(decisionRequirementsServices.search(any(DecisionRequirementsQuery.class)))
         .thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
         {
           "filter":{
             "tenantId": "t",
-            "key": 0,
-            "id": "id",
-            "name": "name",
+            "decisionRequirementsKey": 0,
+            "dmnDecisionRequirementsName": "name",
             "version": 1,
-            "decisionRequirementsId": "drId"
+            "dmnDecisionRequirementsId": "drId"
           }
         }""";
 
@@ -150,44 +148,35 @@ public class DecisionRequirementQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE);
 
-    verify(decisionRequirementServices)
+    verify(decisionRequirementsServices)
         .search(
-            new DecisionRequirementQuery.Builder()
+            new DecisionRequirementsQuery.Builder()
                 .filter(
-                    new DecisionRequirementFilter.Builder()
+                    new DecisionRequirementsFilter.Builder()
                         .tenantIds("t")
-                        .keys(0L)
-                        .ids("id")
-                        .names("name")
+                        .decisionRequirementsKeys(0L)
+                        .dmnDecisionRequirementsNames("name")
                         .versions(1)
-                        .decisionRequirementsIds("drId")
+                        .dmnDecisionRequirementsIds("drId")
                         .build())
                 .build());
   }
 
   @Test
-  void shouldSearchDecisionRequirementWithSorting() {
+  void shouldSearchDecisionRequirementsWithSorting() {
     // given
-    when(decisionRequirementServices.search(any(DecisionRequirementQuery.class)))
+    when(decisionRequirementsServices.search(any(DecisionRequirementsQuery.class)))
         .thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
         {
             "sort": [
                 {
-                    "field": "id",
-                    "order": "desc"
-                },
-                {
                     "field": "version",
                     "order": "asc"
                 },
                 {
-                    "field": "name",
-                    "order": "asc"
-                },
-                {
-                    "field": "decisionRequirementsId",
+                    "field": "dmnDecisionRequirementsName",
                     "order": "asc"
                 },
                 {
@@ -195,7 +184,11 @@ public class DecisionRequirementQueryControllerTest extends RestControllerTest {
                     "order": "desc"
                 },
                 {
-                    "field": "key",
+                    "field": "decisionRequirementsKey",
+                    "order": "asc"
+                },
+                {
+                    "field": "dmnDecisionRequirementsId",
                     "order": "asc"
                 }
             ]
@@ -215,29 +208,27 @@ public class DecisionRequirementQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE);
 
-    verify(decisionRequirementServices)
+    verify(decisionRequirementsServices)
         .search(
-            new DecisionRequirementQuery.Builder()
+            new DecisionRequirementsQuery.Builder()
                 .sort(
-                    new DecisionRequirementSort.Builder()
-                        .id()
-                        .desc()
+                    new DecisionRequirementsSort.Builder()
                         .version()
                         .asc()
-                        .name()
-                        .asc()
-                        .decisionRequirementsId()
+                        .dmnDecisionRequirementsName()
                         .asc()
                         .tenantId()
                         .desc()
                         .decisionRequirementsKey()
+                        .asc()
+                        .dmnDecisionRequirementsId()
                         .asc()
                         .build())
                 .build());
   }
 
   @Test
-  void shouldInvalidateDecisionRequirementSearchQueryWithBadSortField() {
+  void shouldInvalidateDecisionRequirementsSearchQueryWithBadSortField() {
     // given
     final var request =
         """
@@ -275,6 +266,6 @@ public class DecisionRequirementQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse);
 
-    verify(decisionRequirementServices, never()).search(any(DecisionRequirementQuery.class));
+    verify(decisionRequirementsServices, never()).search(any(DecisionRequirementsQuery.class));
   }
 }
