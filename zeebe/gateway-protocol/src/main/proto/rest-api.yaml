@@ -590,8 +590,8 @@ paths:
   /decision-requirements/search:
     post:
       tags:
-        - Decision Requirement
-      summary: Decision Requirement Search Query
+        - Decision Requirements
+      summary: Decision Requirements Search Query
       requestBody:
         required: false
         content:
@@ -601,14 +601,14 @@ paths:
       responses:
         '200':
           description: >
-            The Decision Requirement Search successful response.
+            The Decision Requirements Search successful response.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/DecisionRequirementsSearchQueryResponse"
         '400':
           description: >
-            The Decision Requirement Search Query failed.
+            The Decision Requirements Search Query failed.
             More details are provided in the response body.
 
 components:

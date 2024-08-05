@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/decision-requirements")
 public class DecisionRequirementsQueryController {
 
-  @Autowired private DecisionRequirementsServices decisionRequirementServices;
+  @Autowired private DecisionRequirementsServices decisionRequirementsServices;
 
   @PostMapping(
       path = "/search",
@@ -42,7 +42,7 @@ public class DecisionRequirementsQueryController {
   private ResponseEntity<Object> search(final DecisionRequirementsQuery query) {
     try {
       final var result =
-          decisionRequirementServices
+          decisionRequirementsServices
               .withAuthentication(RequestMapper.getAuthentication())
               .search(query);
       return ResponseEntity.ok(

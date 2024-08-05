@@ -48,6 +48,7 @@ import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.springframework.http.ProblemDetail;
@@ -179,23 +180,18 @@ public final class SearchQueryRequestMapper {
       final DecisionRequirementsFilterRequest filter) {
     final var builder = FilterBuilders.decisionRequirements();
 
-    if (filter != null) {
-      if (filter.getDecisionRequirementsKey() != null) {
-        builder.decisionRequirementsKeys(filter.getDecisionRequirementsKey());
-      }
-      if (filter.getDmnDecisionRequirementsName() != null) {
-        builder.dmnDecisionRequirementsNames(filter.getDmnDecisionRequirementsName());
-      }
-      if (filter.getVersion() != null) {
-        builder.versions(filter.getVersion());
-      }
-      if (filter.getDmnDecisionRequirementsId() != null) {
-        builder.dmnDecisionRequirementsIds(filter.getDmnDecisionRequirementsId());
-      }
-      if (filter.getTenantId() != null) {
-        builder.tenantIds(filter.getTenantId());
-      }
-    }
+    Optional.ofNullable(filter)
+        .ifPresent(
+            f -> {
+              Optional.ofNullable(f.getDecisionRequirementsKey())
+                  .ifPresent(builder::decisionRequirementsKeys);
+              Optional.ofNullable(f.getDmnDecisionRequirementsName())
+                  .ifPresent(builder::dmnDecisionRequirementsNames);
+              Optional.ofNullable(f.getVersion()).ifPresent(builder::versions);
+              Optional.ofNullable(f.getDmnDecisionRequirementsId())
+                  .ifPresent(builder::dmnDecisionRequirementsIds);
+              Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
+            });
 
     return builder.build();
   }
