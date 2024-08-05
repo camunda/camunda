@@ -12,8 +12,10 @@ import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
@@ -178,6 +180,32 @@ public final class ExporterDirectorTest {
         .untilAsserted(() -> assertThat(tailingExporter.getExportedRecords()).hasSize(2));
     assertThat(state.getPosition(EXPORTER_ID_1)).isEqualTo(skippedRecordPosition);
     assertThat(state.getPosition(EXPORTER_ID_2)).isEqualTo(-1L);
+  }
+
+  @Test
+  public void shouldRetryOpenCallIfFails() throws Exception {
+    startExporterWithFaultyOpenCall();
+
+    rule.closeExporterDirector();
+  }
+
+  @Test
+  public void shouldExportAfterOpenRetried() throws Exception {
+    final var exporter = startExporterWithFaultyOpenCall();
+
+    //    export
+    final var eventPosition1 = writeEvent();
+    final var eventPosition2 = writeEvent();
+
+    //    verify export
+    Awaitility.await("Exporter has exported all records")
+        .untilAsserted(
+            () ->
+                assertThat(exporter.getExportedRecords())
+                    .extracting(Record::getPosition)
+                    .containsExactly(eventPosition1, eventPosition2));
+
+    rule.closeExporterDirector();
   }
 
   @Test
@@ -708,5 +736,28 @@ public final class ExporterDirectorTest {
                 return valueTypes.contains(valueType);
               }
             });
+  }
+
+  private ControlledTestExporter startExporterWithFaultyOpenCall() {
+    // given
+    final ControlledTestExporter exporter = spy(new ControlledTestExporter());
+
+    doThrow(new RuntimeException("open failed")).doCallRealMethod().when(exporter).open(any());
+
+    final ExporterDescriptor descriptor =
+        spy(
+            new ExporterDescriptor(
+                "exporter-failing", exporter.getClass(), Collections.singletonMap("x", 1)));
+    doAnswer(c -> exporter).when(descriptor).newInstance();
+
+    // when
+    startExporterDirector(List.of(descriptor));
+
+    // then
+    Awaitility.await("exporter open has been retried")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> verify(exporter, times(2)).open(any()));
+
+    return exporter;
   }
 }
