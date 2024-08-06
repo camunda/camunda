@@ -11,6 +11,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse.Error;
+<<<<<<< HEAD:exporters/opensearch-exporter/src/main/java/io/camunda/zeebe/exporter/opensearch/OpensearchClient.java
+=======
+import io.camunda.zeebe.exporter.opensearch.dto.DeleteStateManagementPolicyResponse;
+import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
+import io.camunda.zeebe.exporter.opensearch.dto.IndexPolicyResponse;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.IsmTemplate;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Action;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.DeleteAction;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition.Conditions;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyResponse;
+>>>>>>> 4a806a6a (fix: pass empty object as delete action to OS):zeebe/exporters/opensearch-exporter/src/main/java/io/camunda/zeebe/exporter/opensearch/OpensearchClient.java
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
@@ -200,6 +215,103 @@ class OpensearchClient implements AutoCloseable {
     }
   }
 
+<<<<<<< HEAD:exporters/opensearch-exporter/src/main/java/io/camunda/zeebe/exporter/opensearch/OpensearchClient.java
+=======
+  Optional<GetIndexStateManagementPolicyResponse> getIndexStateManagementPolicy() {
+    try {
+      final var request =
+          new Request("GET", "/_plugins/_ism/policies/" + configuration.retention.getPolicyName());
+      return Optional.of(sendRequest(request, GetIndexStateManagementPolicyResponse.class));
+    } catch (final IOException e) {
+      return Optional.empty();
+    }
+  }
+
+  public boolean createIndexStateManagementPolicy() {
+    return putIndexStateManagementPolicy(Collections.emptyMap());
+  }
+
+  public boolean updateIndexStateManagementPolicy(final Integer seqNo, final Integer primaryTerm) {
+    final var queryParameters =
+        Map.of("if_seq_no", seqNo.toString(), "if_primary_term", primaryTerm.toString());
+    return putIndexStateManagementPolicy(queryParameters);
+  }
+
+  public boolean deleteIndexStateManagementPolicy() {
+    try {
+      final var request =
+          new Request(
+              "DELETE", "/_plugins/_ism/policies/" + configuration.retention.getPolicyName());
+
+      final var response = sendRequest(request, DeleteStateManagementPolicyResponse.class);
+      return response.result().equals(DeleteStateManagementPolicyResponse.DELETED);
+    } catch (final IOException e) {
+      throw new OpensearchExporterException("Failed to delete index state management policy", e);
+    }
+  }
+
+  private boolean putIndexStateManagementPolicy(final Map<String, String> queryParameters) {
+    try {
+      final var request =
+          new Request("PUT", "/_plugins/_ism/policies/" + configuration.retention.getPolicyName());
+
+      queryParameters.forEach(request::addParameter);
+
+      final var requestEntity = createPutIndexManagementPolicyRequest();
+      request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
+
+      final var response = sendRequest(request, PutIndexStateManagementPolicyResponse.class);
+      return response.policy() != null;
+    } catch (final IOException e) {
+      throw new OpensearchExporterException("Failed to put index state management policy", e);
+    }
+  }
+
+  public boolean bulkAddISMPolicyToAllZeebeIndices() {
+    try {
+      final var request =
+          new Request("POST", "/_plugins/_ism/add/" + configuration.index.prefix + "*");
+      final var requestEntity = new AddPolicyRequest(configuration.retention.getPolicyName());
+      request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
+      final var response = sendRequest(request, IndexPolicyResponse.class);
+      return !response.failures();
+    } catch (final IOException e) {
+      throw new OpensearchExporterException("Failed to add policy to indices", e);
+    }
+  }
+
+  public boolean bulkRemoveISMPolicyToAllZeebeIndices() {
+    try {
+      final var request =
+          new Request("POST", "/_plugins/_ism/remove/" + configuration.index.prefix + "*");
+      final var response = sendRequest(request, IndexPolicyResponse.class);
+      return !response.failures();
+    } catch (final IOException e) {
+      throw new OpensearchExporterException("Failed to remove policy from indices", e);
+    }
+  }
+
+  private PutIndexStateManagementPolicyRequest createPutIndexManagementPolicyRequest() {
+    final var initialState =
+        new State(
+            ISM_INITIAL_STATE,
+            Collections.emptyList(),
+            List.of(
+                new Transition(
+                    ISM_DELETE_STATE, new Conditions(configuration.retention.getMinimumAge()))));
+    final var deleteState =
+        new State(
+            ISM_DELETE_STATE, List.of(new Action(new DeleteAction())), Collections.emptyList());
+    final var policy =
+        new Policy(
+            configuration.retention.getPolicyDescription(),
+            ISM_INITIAL_STATE,
+            List.of(initialState, deleteState),
+            new IsmTemplate(List.of(configuration.index.prefix + "*"), 1));
+    return new PutIndexStateManagementPolicyRequest(policy);
+  }
+
+>>>>>>> 4a806a6a (fix: pass empty object as delete action to OS):zeebe/exporters/opensearch-exporter/src/main/java/io/camunda/zeebe/exporter/opensearch/OpensearchClient.java
   private <T> T sendRequest(final Request request, final Class<T> responseType) throws IOException {
     final var response = client.performRequest(request);
     // buffer the complete response in memory before parsing it; this will give us a better error
