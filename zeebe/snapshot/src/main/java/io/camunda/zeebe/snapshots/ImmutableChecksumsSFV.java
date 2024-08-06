@@ -28,4 +28,12 @@ public interface ImmutableChecksumsSFV {
    * @return the map containing the individual file checksums
    */
   SortedMap<String, Long> getChecksums();
+
+  /**
+   * Returns if all file checksums match exactly.
+   *
+   * @param o The other checksum
+   * @return boolean denoting match
+   */
+  boolean sameChecksums(ImmutableChecksumsSFV o);
 }

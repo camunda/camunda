@@ -10,6 +10,7 @@ package io.camunda.zeebe.snapshots.impl;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
@@ -34,7 +35,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
 
   private final Path directory;
   private final Path checksumFile;
-  private final MutableChecksumsSFV checksums;
+  private final ImmutableChecksumsSFV checksums;
   private final FileBasedSnapshotId snapshotId;
   private final SnapshotMetadata metadata;
   private final Consumer<FileBasedSnapshot> onSnapshotDeleted;
@@ -114,7 +115,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   }
 
   @Override
-  public MutableChecksumsSFV getChecksums() {
+  public ImmutableChecksumsSFV getChecksums() {
     return checksums;
   }
 
