@@ -109,4 +109,26 @@ public class MessageCorrelationStateTest {
     assertThat(exception)
         .hasMessage("Key DbLong{1} in ColumnFamily MESSAGE_CORRELATION does not exist");
   }
+
+  @Test
+  void shouldThrowNpeWhenGettingNonExistingKey() {
+    // when - then
+    Assertions.assertThrows(NullPointerException.class, () -> state.getRequestData(1));
+  }
+
+  @Test
+  void shouldGetCopyOfRequestData() {
+    // given
+    final var key1 = 1L;
+    final var key2 = 2L;
+    state.putMessageCorrelation(key1, 1L, 1);
+    state.putMessageCorrelation(key2, 1L, 1);
+
+    // when
+    final var requestData1 = state.getRequestData(key1);
+    final var requestData2 = state.getRequestData(key2);
+
+    // then
+    assertThat(requestData1).isNotSameAs(requestData2);
+  }
 }
