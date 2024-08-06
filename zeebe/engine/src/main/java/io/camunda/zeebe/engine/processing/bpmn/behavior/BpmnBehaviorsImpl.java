@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -47,6 +48,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnSignalBehavior signalBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
+  private final JobUpdateBehaviour jobUpdateBehaviour;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -176,6 +178,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     compensationSubscriptionBehaviour =
         new BpmnCompensationSubscriptionBehaviour(
             processingState.getKeyGenerator(), processingState, writers, stateBehavior);
+
+    jobUpdateBehaviour = new JobUpdateBehaviour(processingState.getJobState(), writers);
   }
 
   @Override
@@ -276,5 +280,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour() {
     return compensationSubscriptionBehaviour;
+  }
+
+  @Override
+  public JobUpdateBehaviour jobUpdateBehaviour() {
+    return jobUpdateBehaviour;
   }
 }
