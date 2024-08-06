@@ -128,7 +128,7 @@ paths:
     post:
       tags:
         - Job
-      summary: Error job
+      summary: Report error for job
       description: |
         Reports a business error (i.e. non-technical) that occurs while processing a job.
       parameters:
@@ -234,7 +234,7 @@ paths:
     post:
       tags:
         - Incident
-      summary: Resolves a given incident.
+      summary: Resolve incident
       description: >
         Marks the incident as resolved; most likely a call to Update job will be necessary
         to reset the job’s retries, followed by this call.
@@ -271,7 +271,7 @@ paths:
     post:
       tags:
         - User task
-      summary: Complete a user task
+      summary: Complete user task
       description: Completes a user task with the given key.
       parameters:
         - name: userTaskKey
@@ -324,7 +324,7 @@ paths:
     post:
       tags:
         - User task
-      summary: Assign a user task
+      summary: Assign user task
       description: Assigns a user task with the given key to the given assignee.
       parameters:
         - name: userTaskKey
@@ -376,7 +376,7 @@ paths:
     patch:
       tags:
         - User task
-      summary: Update a user task
+      summary: Update user task
       description: Update a user task with the given key.
       parameters:
         - name: userTaskKey
@@ -428,7 +428,7 @@ paths:
     delete:
       tags:
         - User task
-      summary: Unassign a user task
+      summary: Unassign user task
       description: Removes the assignee of a task with the given key.
       parameters:
         - name: userTaskKey
@@ -474,7 +474,7 @@ paths:
     post:
       tags:
         - User task
-      summary: User task search (experimental)
+      summary: Query user tasks (experimental)
       description: |
         Search for user tasks based on given criteria.
 
@@ -485,7 +485,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserTaskSearchQueryRequest'
+              $ref: "#/components/schemas/UserTaskSearchQueryRequest"
       responses:
         '200':
           description: >
@@ -513,7 +513,7 @@ paths:
     post:
       tags:
         - Process Instance
-      summary: Process instance search (experimental)
+      summary: Query process instances (experimental)
       description: |
         Search for process instances based on given criteria.
 
@@ -524,7 +524,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ProcessInstanceSearchQueryRequest'
+              $ref: "#/components/schemas/ProcessInstanceSearchQueryRequest"
       responses:
         '200':
           description: >
@@ -552,7 +552,7 @@ paths:
     post:
       tags:
         - Decision Definition
-      summary: Decision definition search (experimental)
+      summary: Query decision definitions (experimental)
       description: |
         Search for decision definitions based on given criteria.
 
@@ -563,7 +563,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DecisionDefinitionSearchQueryRequest'
+              $ref: "#/components/schemas/DecisionDefinitionSearchQueryRequest"
       responses:
         '200':
           description: >
