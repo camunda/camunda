@@ -591,13 +591,13 @@ paths:
     post:
       tags:
         - Decision Requirements
-      summary: Decision Requirements Search Query
+      summary: Query decision requirements (experimental)
       requestBody:
         required: false
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DecisionRequirementsSearchQueryRequest'
+              $ref: "#/components/schemas/DecisionRequirementsSearchQueryRequest"
       responses:
         '200':
           description: >
