@@ -758,7 +758,8 @@ public class TaskStoreOpenSearch implements TaskStore {
                             .order(sortOrder)
                             .type(ScriptSortType.String)));
         searchRequestBuilder.sort(
-            mapNullInSort(TaskTemplate.PRIORITY, "50", sortOrder, ScriptSortType.Number));
+            mapNullInSort(
+                TaskTemplate.PRIORITY, DEFAULT_PRIORITY, sortOrder, ScriptSortType.Number));
       }
 
     } else {

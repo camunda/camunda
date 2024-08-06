@@ -625,7 +625,8 @@ public class TaskStoreElasticSearch implements TaskStore {
                 .order(sortOrder);
         searchSourceBuilder.sort(sortBuilder);
         searchSourceBuilder.sort(
-            mapNullInSort(TaskTemplate.PRIORITY, "50", sortOrder, ScriptSortType.NUMBER));
+            mapNullInSort(
+                TaskTemplate.PRIORITY, DEFAULT_PRIORITY, sortOrder, ScriptSortType.NUMBER));
       }
     } else {
       final String sort1Field;

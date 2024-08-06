@@ -16,6 +16,7 @@ import java.util.Map;
 
 public interface TaskStore {
   String DEFAULT_SORT_FIELD = TaskTemplate.CREATION_TIME;
+  String DEFAULT_PRIORITY = "50";
 
   TaskEntity getTask(final String id);
 
