@@ -5,13 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.bpmn.activity;
+package io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution;
 
-import static io.camunda.zeebe.engine.processing.bpmn.activity.ExecutionListenerTest.END_EL_TYPE;
-import static io.camunda.zeebe.engine.processing.bpmn.activity.ExecutionListenerTest.PROCESS_ID;
-import static io.camunda.zeebe.engine.processing.bpmn.activity.ExecutionListenerTest.SERVICE_TASK_TYPE;
-import static io.camunda.zeebe.engine.processing.bpmn.activity.ExecutionListenerTest.START_EL_TYPE;
-import static io.camunda.zeebe.engine.processing.bpmn.activity.ExecutionListenerTest.createProcessInstance;
+import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.END_EL_TYPE;
+import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.PROCESS_ID;
+import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.SERVICE_TASK_TYPE;
+import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.START_EL_TYPE;
+import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.createProcessInstance;
+import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -168,6 +169,47 @@ public class ExecutionListenerBoundaryEventElementTest {
                   BpmnElementType.END_EVENT,
                   ProcessInstanceIntent.ELEMENT_COMPLETED),
               tuple(PROCESS_ID, BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+    }
+
+    @Test
+    public void shouldAllowSubsequentElementToAccessVariableProducedByBoundaryEndListenerJob() {
+      // given: deploy process with boundary event having end EL and service task following it
+      final var modelInstance =
+          scenario
+              .processBuilder
+              .apply(Bpmn.createExecutableProcess(PROCESS_ID).startEvent())
+              .boundaryEvent(scenario.name, b -> scenario.boundaryEventBuilderFunction.apply(b))
+              .zeebeEndExecutionListener(END_EL_TYPE)
+              .serviceTask(
+                  "subsequent_service_task", tb -> tb.zeebeJobType("subsequent_service_task"))
+              .endEvent("boundary_end")
+              .moveToActivity(BOUNDARY_OWNER_ID)
+              .endEvent("main_end")
+              .done();
+
+      final long processInstanceKey = createProcessInstance(ENGINE, modelInstance);
+
+      // trigger boundary event
+      scenario.triggerEvent.accept(processInstanceKey);
+
+      // when: complete the end EL job with a variable 'end_el_var'
+      ENGINE
+          .job()
+          .ofInstance(processInstanceKey)
+          .withType(END_EL_TYPE)
+          .withVariable("end_el_var", "baz")
+          .complete();
+
+      // then: assert the variable 'end_el_var' is accessible by the subsequent service task element
+      final var subsequentServiceTaskJob =
+          ENGINE.jobs().withType("subsequent_service_task").activate().getValue().getJobs().stream()
+              .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
+              .findFirst();
+
+      assertThat(subsequentServiceTaskJob)
+          .hasValueSatisfying(
+              job -> assertThat(job.getVariables()).contains(entry("end_el_var", "baz")));
+      ENGINE.job().ofInstance(processInstanceKey).withType("subsequent_service_task").complete();
     }
 
     @Test
