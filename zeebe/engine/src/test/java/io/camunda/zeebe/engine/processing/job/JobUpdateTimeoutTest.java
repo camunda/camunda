@@ -91,8 +91,7 @@ public class JobUpdateTimeoutTest {
     Assertions.assertThat(jobRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to update job deadline with key '%d', but no such job was found"
-                .formatted(jobKey));
+            "Expected to update job with key '%d', but no such job was found".formatted(jobKey));
   }
 
   @Test

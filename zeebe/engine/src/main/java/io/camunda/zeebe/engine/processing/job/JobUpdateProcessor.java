@@ -22,19 +22,6 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
 
   @Override
   public void processRecord(final TypedRecord<JobRecord> command) {
-    final long jobKey = command.getKey();
-
-    final var jobRecord = jobUpdateBehaviour.getJobOrAppendRejection(jobKey, command);
-    if (jobRecord == null) {
-      return;
-    }
-    final var updatedRetries = jobUpdateBehaviour.updateJobRetries(jobKey, jobRecord, command);
-    final var updatedTimeout = jobUpdateBehaviour.updateJobTimeout(jobKey, jobRecord, command);
-    // if retries or timeout are updated the command is rejected
-    if (updatedRetries || updatedTimeout) {
-      jobUpdateBehaviour.completeJobUpdate(jobKey, jobRecord, command);
-    } else {
-      jobUpdateBehaviour.rejectJobUpdate(command);
-    }
+    jobUpdateBehaviour.completeJobUpdate(command);
   }
 }

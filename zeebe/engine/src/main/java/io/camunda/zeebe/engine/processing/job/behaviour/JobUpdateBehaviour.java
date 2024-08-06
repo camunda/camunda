@@ -21,16 +21,12 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 public class JobUpdateBehaviour {
 
   public static final String NO_JOB_FOUND_MESSAGE =
-      "Expected to update retries for job with key '%d', but no such job was found";
-  public static final String NO_JOB_FOUND_MESSAGE_DEADLINE =
-      "Expected to update job deadline with key '%d', but no such job was found";
+      "Expected to update job with key '%d', but no such job was found";
   public static final String NO_DEADLINE_FOUND_MESSAGE =
       "Expected to update the timeout of job with key '%d', but it is not active";
   private static final String NEGATIVE_RETRIES_MESSAGE =
       "Expected to update retries for job with key '%d' with a positive amount of retries, "
           + "but the amount given was '%d'";
-  private static final String ERROR_MESSAGE_AT_LEAST_ONE_FIELD =
-      "At least one field between retries or timeout is required";
 
   private final JobState jobState;
   private final StateWriter stateWriter;
@@ -44,7 +40,7 @@ public class JobUpdateBehaviour {
     rejectionWriter = writers.rejection();
   }
 
-  public JobRecord getJobOrAppendRejection(
+  private JobRecord getJobOrAppendRejection(
       final long jobKey, final TypedRecord<JobRecord> command) {
     final var job = jobState.getJob(jobKey, command.getAuthorizations());
 
@@ -58,7 +54,7 @@ public class JobUpdateBehaviour {
     return null;
   }
 
-  public boolean updateJobRetries(
+  private void updateJobRetries(
       final long jobKey, final JobRecord jobRecord, final TypedRecord<JobRecord> command) {
     final int retries = command.getValue().getRetries();
     if (retries < 1) {
@@ -70,12 +66,11 @@ public class JobUpdateBehaviour {
           command,
           RejectionType.INVALID_ARGUMENT,
           String.format(NEGATIVE_RETRIES_MESSAGE, jobKey, retries));
-      return false;
+      return;
     }
     // update retries for response sent to client
     jobRecord.setRetries(retries);
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.RETRIES_UPDATED, jobRecord);
-    return true;
   }
 
   public void writeUpdateJobRetriesResponse(
@@ -83,7 +78,7 @@ public class JobUpdateBehaviour {
     responseWriter.writeEventOnCommand(jobKey, JobIntent.RETRIES_UPDATED, jobRecord, command);
   }
 
-  public boolean updateJobTimeout(
+  private void updateJobTimeout(
       final long jobKey, final JobRecord jobRecord, final TypedRecord<JobRecord> command) {
     final long oldDeadline = jobRecord.getDeadline();
 
@@ -92,30 +87,55 @@ public class JobUpdateBehaviour {
           command, RejectionType.INVALID_STATE, NO_DEADLINE_FOUND_MESSAGE.formatted(jobKey));
       responseWriter.writeRejectionOnCommand(
           command, RejectionType.INVALID_STATE, NO_DEADLINE_FOUND_MESSAGE.formatted(jobKey));
-      return false;
+      return;
     }
     final long timeout = command.getValue().getTimeout();
     final long newDeadline = ActorClock.currentTimeMillis() + timeout;
     jobRecord.setDeadline(newDeadline);
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMEOUT_UPDATED, jobRecord);
-    return true;
   }
 
-  public void writeUpdateJobTimeoutResponse(
+  private void writeUpdateJobTimeoutResponse(
       final long jobKey, final JobRecord jobRecord, final TypedRecord<JobRecord> command) {
     responseWriter.writeEventOnCommand(jobKey, JobIntent.TIMEOUT_UPDATED, jobRecord, command);
   }
 
-  public void completeJobUpdate(
-      final long jobKey, final JobRecord jobRecord, final TypedRecord<JobRecord> command) {
+  public void completeJobUpdate(final TypedRecord<JobRecord> command) {
+    final long jobKey = command.getKey();
+    final var jobRecord = getJobOrAppendRejection(jobKey, command);
+    if (jobRecord == null) {
+      return;
+    }
+    // update retries
+    updateJobRetries(jobKey, jobRecord, command);
+    // update timeout
+    final long timeout = command.getValue().getTimeout();
+    if (timeout > -1L) {
+      updateJobTimeout(jobKey, jobRecord, command);
+    }
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.UPDATED, jobRecord);
     responseWriter.writeEventOnCommand(jobKey, JobIntent.UPDATED, jobRecord, command);
   }
 
-  public void rejectJobUpdate(final TypedRecord<JobRecord> command) {
-    rejectionWriter.appendRejection(
-        command, RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_AT_LEAST_ONE_FIELD);
-    responseWriter.writeRejectionOnCommand(
-        command, RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_AT_LEAST_ONE_FIELD);
+  public void completeJobUpdateRetries(final TypedRecord<JobRecord> command) {
+    final long jobKey = command.getKey();
+
+    final var jobRecord = getJobOrAppendRejection(jobKey, command);
+    if (jobRecord == null) {
+      return;
+    }
+    updateJobRetries(jobKey, jobRecord, command);
+    writeUpdateJobRetriesResponse(jobKey, jobRecord, command);
+  }
+
+  public void completeJobUpdateTimeout(final TypedRecord<JobRecord> command) {
+    final long jobKey = command.getKey();
+
+    final var jobRecord = getJobOrAppendRejection(jobKey, command);
+    if (jobRecord == null) {
+      return;
+    }
+    updateJobTimeout(jobKey, jobRecord, command);
+    writeUpdateJobTimeoutResponse(jobKey, jobRecord, command);
   }
 }

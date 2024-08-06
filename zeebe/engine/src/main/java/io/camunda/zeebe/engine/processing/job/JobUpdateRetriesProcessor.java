@@ -22,13 +22,6 @@ public final class JobUpdateRetriesProcessor implements TypedRecordProcessor<Job
 
   @Override
   public void processRecord(final TypedRecord<JobRecord> command) {
-    final long jobKey = command.getKey();
-
-    final var jobRecord = jobUpdateBehaviour.getJobOrAppendRejection(jobKey, command);
-    if (jobRecord == null) {
-      return;
-    }
-    jobUpdateBehaviour.updateJobRetries(jobKey, jobRecord, command);
-    jobUpdateBehaviour.writeUpdateJobRetriesResponse(jobKey, jobRecord, command);
+    jobUpdateBehaviour.completeJobUpdateRetries(command);
   }
 }
