@@ -48,7 +48,7 @@ public class DbMessageCorrelationState implements MutableMessageCorrelationState
   @Override
   public RequestData getRequestData(final long messageKey) {
     this.messageKey.wrapLong(messageKey);
-    return messageCorrelationColumnFamily.get(this.messageKey);
+    return messageCorrelationColumnFamily.get(this.messageKey).copy();
   }
 
   @Override

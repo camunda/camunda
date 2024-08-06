@@ -22,6 +22,13 @@ public class RequestData extends UnpackedObject implements DbValue {
     declareProperty(requestIdProp).declareProperty(requestStreamIdProp);
   }
 
+  public RequestData copy() {
+    final var copy = new RequestData();
+    copy.setRequestIdProp(getRequestId());
+    copy.setRequestStreamIdProp(getRequestStreamId());
+    return copy;
+  }
+
   public Long getRequestId() {
     return requestIdProp.getValue();
   }
