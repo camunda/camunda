@@ -26,6 +26,10 @@ public final class FilterBuilders {
     return new DecisionDefinitionFilter.Builder();
   }
 
+  public static DecisionRequirementsFilter.Builder decisionRequirements() {
+    return new DecisionRequirementsFilter.Builder();
+  }
+
   public static ProcessInstanceFilter processInstance(
       final Function<ProcessInstanceFilter.Builder, ObjectBuilder<ProcessInstanceFilter>> fn) {
     return fn.apply(processInstance()).build();
@@ -40,6 +44,12 @@ public final class FilterBuilders {
       final Function<DecisionDefinitionFilter.Builder, ObjectBuilder<DecisionDefinitionFilter>>
           fn) {
     return fn.apply(decisionDefinition()).build();
+  }
+
+  public static DecisionRequirementsFilter decisionRequirements(
+      final Function<DecisionRequirementsFilter.Builder, ObjectBuilder<DecisionRequirementsFilter>>
+          fn) {
+    return fn.apply(decisionRequirements()).build();
   }
 
   public static VariableFilter.Builder variable() {

@@ -17,6 +17,8 @@ import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapp
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
@@ -50,6 +52,7 @@ final class ElasticsearchClientIT {
   private final TemplateReader templateReader = new TemplateReader(config);
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
   private final BulkIndexRequest bulkRequest = new BulkIndexRequest();
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   private TestClient testClient;
   private ElasticsearchClient client;
@@ -68,7 +71,8 @@ final class ElasticsearchClientIT {
             RestClientFactory.of(config),
             indexRouter,
             templateReader,
-            new ElasticsearchMetrics(PARTITION_ID));
+            null,
+            new SimpleMeterRegistry());
   }
 
   @AfterEach
@@ -156,7 +160,7 @@ final class ElasticsearchClientIT {
 
     // when
     // force recreating the client
-    final var authenticatedClient = new ElasticsearchClient(config, bulkRequest);
+    final var authenticatedClient = new ElasticsearchClient(config, meterRegistry);
     authenticatedClient.putComponentTemplate();
 
     // then

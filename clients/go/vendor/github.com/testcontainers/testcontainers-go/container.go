@@ -209,6 +209,7 @@ func (c *ContainerRequest) Validate() error {
 }
 
 // GetContext retrieve the build context for the request
+// Must be closed when no longer needed.
 func (c *ContainerRequest) GetContext() (io.Reader, error) {
 	var includes []string = []string{"."}
 
@@ -356,12 +357,6 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 	buildOptions.BuildArgs = c.GetBuildArgs()
 	buildOptions.Dockerfile = c.GetDockerfile()
 
-	buildContext, err := c.GetContext()
-	if err != nil {
-		return buildOptions, err
-	}
-	buildOptions.Context = buildContext
-
 	// Make sure the auth configs from the Dockerfile are set right after the user-defined build options.
 	authsFromDockerfile := getAuthConfigsFromDockerfile(c)
 
@@ -375,12 +370,37 @@ func (c *ContainerRequest) BuildOptions() (types.ImageBuildOptions, error) {
 
 	// make sure the first tag is the one defined in the ContainerRequest
 	tag := fmt.Sprintf("%s:%s", c.GetRepo(), c.GetTag())
+
+	// apply substitutors to the built image
+	for _, is := range c.ImageSubstitutors {
+		modifiedTag, err := is.Substitute(tag)
+		if err != nil {
+			return buildOptions, fmt.Errorf("failed to substitute image %s with %s: %w", tag, is.Description(), err)
+		}
+
+		if modifiedTag != tag {
+			Logger.Printf("✍🏼 Replacing image with %s. From: %s to %s\n", is.Description(), tag, modifiedTag)
+			tag = modifiedTag
+		}
+	}
+
 	if len(buildOptions.Tags) > 0 {
 		// prepend the tag
 		buildOptions.Tags = append([]string{tag}, buildOptions.Tags...)
 	} else {
 		buildOptions.Tags = []string{tag}
 	}
+
+	if !c.ShouldKeepBuiltImage() {
+		buildOptions.Labels = core.DefaultLabels(core.SessionID())
+	}
+
+	// Do this as late as possible to ensure we don't leak the context on error/panic.
+	buildContext, err := c.GetContext()
+	if err != nil {
+		return buildOptions, err
+	}
+	buildOptions.Context = buildContext
 
 	return buildOptions, nil
 }

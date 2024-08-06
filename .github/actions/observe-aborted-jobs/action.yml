@@ -1,0 +1,44 @@
+# This action expects the code to have been checked out beforehand, e.g. via actions/checkout@v4
+#
+# This action expects certain secrets to be provided:
+#   - VAULT_ADDR
+#   - VAULT_ROLE_ID
+#   - VAULT_SECRET_ID
+---
+name: Observe Aborted Jobs
+description: Checks failed jobs of a GHA workflow for runner problems and submits https://confluence.camunda.com/display/HAN/CI+Analytics data on their behalf
+
+inputs:
+  secret_vault_address:
+    description: 'Secret vault url'
+    required: false
+  secret_vault_roleId:
+    description: 'Secret vault roleId'
+    required: false
+  secret_vault_secretId:
+    description: 'Secret vault ID'
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Import Secrets
+      id: secrets
+      uses: hashicorp/vault-action@v3.0.0
+      if: |
+        inputs.secret_vault_address != ''
+        && inputs.secret_vault_roleId != ''
+        && inputs.secret_vault_secretId != ''
+      with:
+        url: ${{ inputs.secret_vault_address }}
+        method: approle
+        roleId: ${{ inputs.secret_vault_roleId }}
+        secretId: ${{ inputs.secret_vault_secretId }}
+        exportEnv: false # we rely on step outputs, no need for environment variables
+        secrets: |
+          secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
+
+    - uses: camunda/infra-global-github-actions/submit-aborted-gha-status@main
+      if: ${{ always() && steps.secrets.outputs.gcloud_sa_key != '' }}
+      with:
+        gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"

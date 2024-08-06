@@ -11,6 +11,7 @@ import (
 	"github.com/docker/docker/api/types/system"
 	"github.com/docker/docker/client"
 
+	"github.com/testcontainers/testcontainers-go/internal"
 	"github.com/testcontainers/testcontainers-go/internal/core"
 )
 
@@ -31,7 +32,7 @@ var (
 var _ client.SystemAPIClient = &DockerClient{}
 
 // Events returns a channel to listen to events that happen to the docker daemon.
-func (c *DockerClient) Events(ctx context.Context, options types.EventsOptions) (<-chan events.Message, <-chan error) {
+func (c *DockerClient) Events(ctx context.Context, options events.ListOptions) (<-chan events.Message, <-chan error) {
 	return c.Client.Events(ctx, options)
 }
 
@@ -57,6 +58,7 @@ func (c *DockerClient) Info(ctx context.Context) (system.Info, error) {
   API Version: %v
   Operating System: %v
   Total Memory: %v MB
+  Testcontainers for Go Version: v%s
   Resolved Docker Host: %s
   Resolved Docker Socket Path: %s
   Test SessionID: %s
@@ -66,6 +68,7 @@ func (c *DockerClient) Info(ctx context.Context) (system.Info, error) {
 	Logger.Printf(infoMessage, packagePath,
 		dockerInfo.ServerVersion, c.Client.ClientVersion(),
 		dockerInfo.OperatingSystem, dockerInfo.MemTotal/1024/1024,
+		internal.Version,
 		core.ExtractDockerHost(ctx),
 		core.ExtractDockerSocket(ctx),
 		core.SessionID(),

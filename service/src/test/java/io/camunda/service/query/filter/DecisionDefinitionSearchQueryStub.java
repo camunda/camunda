@@ -22,7 +22,7 @@ public class DecisionDefinitionSearchQueryStub implements RequestStub<DecisionDe
       throws Exception {
 
     final var decisionDefinition =
-        new DecisionDefinitionEntity("t", 123L, "id", "dId", "name", 1, "drId", 2L, "drName", 3);
+        new DecisionDefinitionEntity("t", 123L, "dId", "name", 1, "drId", 2L);
 
     final SearchQueryHit<DecisionDefinitionEntity> hit =
         new SearchQueryHit.Builder<DecisionDefinitionEntity>()

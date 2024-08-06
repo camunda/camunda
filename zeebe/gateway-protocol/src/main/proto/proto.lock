@@ -1108,6 +1108,34 @@
             "name": "UpdateJobTimeoutResponse"
           },
           {
+            "name": "UpdateJobRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "jobKey",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "retries",
+                "type": "int32"
+              },
+              {
+                "id": 3,
+                "name": "timeout",
+                "type": "int64"
+              },
+              {
+                "id": 4,
+                "name": "operationReference",
+                "type": "uint64"
+              }
+            ]
+          },
+          {
+            "name": "UpdateJobResponse"
+          },
+          {
             "name": "SetVariablesRequest",
             "fields": [
               {
@@ -1436,6 +1464,11 @@
                 "name": "UpdateJobTimeout",
                 "in_type": "UpdateJobTimeoutRequest",
                 "out_type": "UpdateJobTimeoutResponse"
+              },
+              {
+                "name": "UpdateJob",
+                "in_type": "UpdateJobRequest",
+                "out_type": "UpdateJobResponse"
               },
               {
                 "name": "DeleteResource",

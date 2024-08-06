@@ -84,6 +84,8 @@ public final class JobEventProcessors {
             JobIntent.UPDATE_TIMEOUT,
             new JobUpdateTimeoutProcessor(processingState, writers))
         .onCommand(
+            ValueType.JOB, JobIntent.UPDATE, new JobUpdateProcessor(processingState, writers))
+        .onCommand(
             ValueType.JOB, JobIntent.CANCEL, new JobCancelProcessor(processingState, jobMetrics))
         .onCommand(
             ValueType.JOB,

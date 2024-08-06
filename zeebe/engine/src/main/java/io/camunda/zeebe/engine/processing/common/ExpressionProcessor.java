@@ -302,6 +302,23 @@ public final class ExpressionProcessor {
         .map(this::toStringFromStringOrNumber);
   }
 
+  /**
+   * Evaluates the given expression and returns the result as int. If the evaluation fails or the
+   * result is not a number then a failure is returned.
+   *
+   * @param expression the expression to evaluate
+   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
+   *     empty variable context)
+   * @return either the evaluation result as int, or a failure
+   */
+  public Either<Failure, Integer> evaluateIntegerExpression(
+      final Expression expression, final long scopeKey) {
+    return evaluateExpressionAsEither(expression, scopeKey)
+        .flatMap(result -> typeCheck(result, ResultType.NUMBER, scopeKey))
+        .map(EvaluationResult::getNumber)
+        .map(Number::intValue);
+  }
+
   private Either<Failure, EvaluationResult> typeCheckCorrelationKey(
       final long scopeKey,
       final Set<ResultType> expectedTypes,

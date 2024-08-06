@@ -226,7 +226,7 @@ public class OpenSearchTestExtension
           waitingRound,
           finishedTime);
     } else {
-      LOGGER.debug(
+      LOGGER.error(
           "Condition {} was not met after {} rounds ({} ms).",
           testCheck.getName(),
           waitingRound,
