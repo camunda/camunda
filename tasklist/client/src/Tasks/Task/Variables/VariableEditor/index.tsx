@@ -38,6 +38,7 @@ import {
 } from '../validators';
 import styles from './styles.module.scss';
 import cn from 'classnames';
+import {useTranslation} from 'react-i18next';
 
 type Props = {
   containerRef: RefObject<HTMLElement | null>;
@@ -48,27 +49,6 @@ type Props = {
   onEdit: (id: string) => void;
 };
 
-const CODE_EDITOR_BUTTON_TOOLTIP_LABEL = 'Open JSON code editor';
-
-function variableIndexToOrdinal(numberValue: number): string {
-  const realOrderIndex = (numberValue + 1).toString();
-
-  if (['11', '12', '13'].includes(realOrderIndex.slice(-2))) {
-    return `${realOrderIndex}th`;
-  }
-
-  switch (realOrderIndex.slice(-1)) {
-    case '1':
-      return `${realOrderIndex}st`;
-    case '2':
-      return `${realOrderIndex}nd`;
-    case '3':
-      return `${realOrderIndex}rd`;
-    default:
-      return `${realOrderIndex}th`;
-  }
-}
-
 const VariableEditor: React.FC<Props> = ({
   containerRef,
   variables,
@@ -78,16 +58,17 @@ const VariableEditor: React.FC<Props> = ({
   onEdit,
 }) => {
   const {dirtyFields} = useFormState<FormValues, Partial<FormValues>>();
+  const {t} = useTranslation();
 
   return (
     <StructuredListWrapper className={styles.list} isCondensed>
       <StructuredListHead>
         <StructuredListRow head>
           <StructuredListCell className={styles.listCell} head>
-            Name
+            {t('variableEditorVariableNameHeader')}
           </StructuredListCell>
           <StructuredListCell className={styles.listCell} head>
-            Value
+            {t('variableEditorVariableValueHeader')}
           </StructuredListCell>
           <StructuredListCell className={styles.listCell} head />
         </StructuredListRow>
@@ -155,8 +136,8 @@ const VariableEditor: React.FC<Props> = ({
                         }}
                         isActive={meta.active}
                         type="text"
-                        labelText={`${variable.name} value`}
-                        placeholder={`${variable.name} value`}
+                        labelText={`${variable.name} ${t('tofix_taskVariablesNamedValueLabel')}`}
+                        placeholder={`${variable.name} ${t('tofix_taskVariablesNamedValueLabel')}`}
                         hideLabel
                       />
                     )}
@@ -167,7 +148,7 @@ const VariableEditor: React.FC<Props> = ({
                 >
                   <div className={cn(styles.iconButtons, styles.extraPadding)}>
                     <IconButton
-                      label={CODE_EDITOR_BUTTON_TOOLTIP_LABEL}
+                      label={t('variableEditorOpenJsonLabel')}
                       onClick={() => {
                         if (variable.isValueTruncated) {
                           fetchFullVariable(variable.id);
@@ -206,7 +187,6 @@ const VariableEditor: React.FC<Props> = ({
                     variable,
                     'value',
                   );
-                  const ordinal = variableIndexToOrdinal(index);
 
                   return (
                     <StructuredListRow key={variable}>
@@ -232,9 +212,12 @@ const VariableEditor: React.FC<Props> = ({
                               invalid={meta.error !== undefined}
                               invalidText={meta.error}
                               type="text"
-                              labelText={`${ordinal} variable name`}
+                              labelText={t('variableEditorVariableNameLabel', {
+                                count: index + 1,
+                                ordinal: true,
+                              })}
                               hideLabel
-                              placeholder="Name"
+                              placeholder={t('variableEditorNamePlaceholder')}
                               autoFocus
                             />
                           )}
@@ -256,11 +239,14 @@ const VariableEditor: React.FC<Props> = ({
                               {...input}
                               id={input.name}
                               type="text"
-                              labelText={`${ordinal} variable value`}
+                              labelText={t('variableEditorVariableValueLabel', {
+                                count: index + 1,
+                                ordinal: true,
+                              })}
                               hideLabel
                               invalid={meta.error !== undefined}
                               invalidText={meta.error}
-                              placeholder="Value"
+                              placeholder={t('taskVariablesValueLabel')}
                             />
                           )}
                         </DelayedErrorField>
@@ -270,7 +256,7 @@ const VariableEditor: React.FC<Props> = ({
                       >
                         <div className={styles.iconButtons}>
                           <IconButton
-                            label={CODE_EDITOR_BUTTON_TOOLTIP_LABEL}
+                            label={t('variableEditorOpenJsonLabel')}
                             onClick={() => {
                               onEdit(valueFieldName);
                             }}
@@ -282,7 +268,10 @@ const VariableEditor: React.FC<Props> = ({
                             <Popup />
                           </IconButton>
                           <IconButton
-                            label={`Remove ${ordinal} new variable`}
+                            label={t('taskVariablesRemoveVariable', {
+                              count: index + 1,
+                              ordinal: true,
+                            })}
                             onClick={() => {
                               fields.remove(index);
                             }}

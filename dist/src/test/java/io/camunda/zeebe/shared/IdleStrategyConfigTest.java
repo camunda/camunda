@@ -9,8 +9,8 @@ package io.camunda.zeebe.shared;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.commons.actor.ActorIdleStrategyConfiguration;
-import io.camunda.commons.actor.ActorIdleStrategyConfiguration.IdleStrategyProperties;
+import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration;
+import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategyProperties;
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;

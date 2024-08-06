@@ -1,13 +1,19 @@
 name: Camunda Platform Release Dry Run from main
 on:
-  workflow_dispatch: { }
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Specifies the branch, for which the Release Dry Run should be executed'
+        default: 'main'
+        required: false
+        type: string
   schedule:
     # Runs at 01:00 every week day; see this link for more: https://crontab.guru/#0_1_*_*_1-5
     - cron: '0 1 * * 1-5'
 
 jobs:
   dry-run-release:
-    name: "${{ matrix.version }} from main"
+    name: "${{ matrix.version }} from ${{ inputs.branch || 'main' }}"
     uses: ./.github/workflows/camunda-platform-release.yml
     secrets: inherit
     strategy:
@@ -20,7 +26,7 @@ jobs:
           - version: 0.8.2-alpha1
             latest: false
     with:
-      releaseBranch: main
+      releaseBranch: ${{ inputs.branch || 'main' }}
       releaseVersion: ${{ matrix.version }}
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: ${{ matrix.latest }}
@@ -29,7 +35,7 @@ jobs:
     name: Send slack notification
     runs-on: ubuntu-latest
     needs: [ dry-run-release ]
-    if: ${{ always() }}
+    if: ${{ github.event_name == 'schedule' }}
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

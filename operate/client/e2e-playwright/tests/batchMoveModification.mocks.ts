@@ -6,17 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {deployProcess, createInstances} from '../setup-utils';
+import {zeebeGrpcApi} from '../api/zeebe-grpc';
+
+const {deployProcesses, createInstances} = zeebeGrpcApi;
 
 const setup = async () => {
-  const deployProcessResponse = await deployProcess(['orderProcess_v_1.bpmn']);
+  const deployProcessResponse = await deployProcesses([
+    'orderProcess_v_1.bpmn',
+  ]);
 
-  if (deployProcessResponse.processes[0] === undefined) {
+  if (deployProcessResponse.deployments[0]?.process === undefined) {
     throw new Error('Error deploying process');
   }
 
   const {version, processDefinitionKey, bpmnProcessId} =
-    deployProcessResponse.processes[0];
+    deployProcessResponse.deployments[0].process;
 
   return {
     processInstances: await createInstances('orderProcess', version, 10),

@@ -22,7 +22,6 @@ import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.util.StubbedBrokerClient;
 import io.camunda.service.util.StubbedCamundaSearchClient;
-import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -80,7 +79,7 @@ public class UserTaskFilterTest {
   @Test
   public void shouldApplySortConditionByCreationDate() {
     // given
-    final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.userTaskState("CREATED"));
+    final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.states("CREATED"));
     final var searchQuery =
         SearchQueryBuilders.userTaskSearchQuery(
             (q) -> q.filter(userTaskStateFilter).sort((s) -> s.creationDate().asc()));
@@ -110,7 +109,7 @@ public class UserTaskFilterTest {
   @Test
   public void shouldApplySortConditionByCompletionDate() {
     // given
-    final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.userTaskState("CREATED"));
+    final var userTaskStateFilter = FilterBuilders.userTask((f) -> f.states("CREATED"));
     final var searchQuery =
         SearchQueryBuilders.userTaskSearchQuery(
             (q) -> q.filter(userTaskStateFilter).sort((s) -> s.completionDate().desc()));
@@ -140,7 +139,7 @@ public class UserTaskFilterTest {
   @Test
   public void shouldQueryByUserTaskKey() {
     // given
-    final var userTaskFilter = FilterBuilders.userTask((f) -> f.userTaskKeys(4503599627370497L));
+    final var userTaskFilter = FilterBuilders.userTask((f) -> f.keys(4503599627370497L));
     final var searchQuery =
         SearchQueryBuilders.userTaskSearchQuery((q) -> q.filter(userTaskFilter));
 
@@ -168,7 +167,7 @@ public class UserTaskFilterTest {
   @Test
   public void shouldQueryByTaskState() {
     // given
-    final var taskStateFilter = FilterBuilders.userTask((f) -> f.userTaskState("CREATED"));
+    final var taskStateFilter = FilterBuilders.userTask((f) -> f.states("CREATED"));
     final var searchQuery =
         SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(taskStateFilter));
 
@@ -280,7 +279,7 @@ public class UserTaskFilterTest {
   public void shouldQueryByProcessDefinitionKey() {
     // given
     final var processDefinitionKeyFilter =
-        FilterBuilders.userTask((f) -> f.processDefinitionKeys("processDef1"));
+        FilterBuilders.userTask((f) -> f.processDefinitionKeys(123L));
     final var searchQuery =
         SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(processDefinitionKeyFilter));
 
@@ -300,7 +299,7 @@ public class UserTaskFilterTest {
                       SearchTermQuery.class,
                       (term) -> {
                         assertThat(term.field()).isEqualTo("processDefinitionId");
-                        assertThat(term.value().stringValue()).isEqualTo("processDef1");
+                        assertThat(term.value().longValue()).isEqualTo(123L);
                       });
             });
   }
@@ -308,7 +307,8 @@ public class UserTaskFilterTest {
   @Test
   public void shouldQueryByBpmnProcessId() {
     // given
-    final var bpmnProcessIdFilter = FilterBuilders.userTask((f) -> f.processNames("bpmnProcess1"));
+    final var bpmnProcessIdFilter =
+        FilterBuilders.userTask((f) -> f.bpmnProcessIds("bpmnProcess1"));
     final var searchQuery =
         SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(bpmnProcessIdFilter));
 
@@ -389,49 +389,5 @@ public class UserTaskFilterTest {
                         assertThat(term.value().stringValue()).isEqualTo("candidateGroup1");
                       });
             });
-  }
-
-  @Test
-  public void shouldQueryByStartAndEndDate() {
-    // given
-    final var startDateFilter =
-        FilterBuilders.dateValue((d) -> d.after(OffsetDateTime.now()).before(OffsetDateTime.now()));
-    final var endDateFilter =
-        FilterBuilders.dateValue((d) -> d.after(OffsetDateTime.now()).before(OffsetDateTime.now()));
-    final var searchQuery =
-        SearchQueryBuilders.userTaskSearchQuery(
-            (b) -> b.filter((f) -> f.creationDate(startDateFilter).completionDate(endDateFilter)));
-
-    // when
-    services.search(searchQuery);
-
-    // then
-    final var searchRequest = client.getSingleSearchRequest();
-
-    final var queryVariant = searchRequest.query().queryOption();
-    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
-    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(3);
-  }
-
-  @Test
-  public void shouldQueryByDueDateAndFollowUpDate() {
-    // given
-    final var duedDateFilter =
-        FilterBuilders.dateValue((d) -> d.after(OffsetDateTime.now()).before(OffsetDateTime.now()));
-    final var followUpDateFilter =
-        FilterBuilders.dateValue((d) -> d.after(OffsetDateTime.now()).before(OffsetDateTime.now()));
-    final var searchQuery =
-        SearchQueryBuilders.userTaskSearchQuery(
-            (b) -> b.filter((f) -> f.dueDate(duedDateFilter).followUpDate(followUpDateFilter)));
-
-    // when
-    services.search(searchQuery);
-
-    // then
-    final var searchRequest = client.getSingleSearchRequest();
-    final var queryVariant = searchRequest.query().queryOption();
-
-    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
-    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(3);
   }
 }

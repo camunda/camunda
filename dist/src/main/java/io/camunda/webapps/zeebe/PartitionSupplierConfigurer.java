@@ -17,6 +17,7 @@ import io.camunda.zeebe.util.Either;
 public class PartitionSupplierConfigurer {
 
   private final Broker broker;
+
   private final Gateway gateway;
   private final ZeebeClient zeebeClient;
 

@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -104,6 +105,19 @@ public final class MessageEventProcessors {
             MessageSubscriptionIntent.REJECT,
             new MessageSubscriptionRejectProcessor(
                 messageState, subscriptionState, subscriptionCommandSender, writers))
+        .onCommand(
+            ValueType.MESSAGE_CORRELATION,
+            MessageCorrelationIntent.CORRELATE,
+            new MessageCorrelationProcessor(
+                writers,
+                keyGenerator,
+                eventScopeInstanceState,
+                processState,
+                bpmnBehaviors,
+                startEventSubscriptionState,
+                messageState,
+                subscriptionState,
+                subscriptionCommandSender))
         .withListener(
             new MessageObserver(
                 scheduledTaskStateFactory,

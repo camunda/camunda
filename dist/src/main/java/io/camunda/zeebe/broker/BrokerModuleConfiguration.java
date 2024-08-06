@@ -8,18 +8,18 @@
 package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
-import io.camunda.commons.configuration.BrokerBasedConfiguration;
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -36,13 +36,6 @@ import org.springframework.context.annotation.Profile;
       "io.camunda.zeebe.shared",
       "io.camunda.authentication"
     })
-@ConfigurationPropertiesScan(
-    basePackages = {
-      "io.camunda.zeebe.broker",
-      "io.camunda.zeebe.shared",
-      "io.camunda.authentication"
-    })
-@EnableAutoConfiguration
 @Profile("broker")
 public class BrokerModuleConfiguration implements CloseableSilently {
   private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
@@ -54,6 +47,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
   private final BrokerShutdownHelper shutdownHelper;
+  private final MeterRegistry meterRegistry;
 
   private Broker broker;
 
@@ -65,7 +59,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final ActorScheduler actorScheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
-      final BrokerShutdownHelper shutdownHelper) {
+      final BrokerShutdownHelper shutdownHelper,
+      final PrometheusMeterRegistry meterRegistry) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
@@ -73,6 +68,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.cluster = cluster;
     this.brokerClient = brokerClient;
     this.shutdownHelper = shutdownHelper;
+    this.meterRegistry = meterRegistry;
   }
 
   @Bean(destroyMethod = "close")
@@ -84,8 +80,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             identityConfiguration,
             actorScheduler,
             cluster,
-            brokerClient);
-
+            brokerClient,
+            meterRegistry);
     springBrokerBridge.registerShutdownHelper(
         errorCode -> shutdownHelper.initiateShutdown(errorCode));
     broker = new Broker(systemContext, springBrokerBridge);

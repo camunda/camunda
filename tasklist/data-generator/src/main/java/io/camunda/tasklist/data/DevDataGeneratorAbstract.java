@@ -43,9 +43,7 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
   @Autowired protected UserIndex userIndex;
   protected PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-  @Autowired
-  @Qualifier("tasklistZeebeClient")
-  private ZeebeClient zeebeClient;
+  @Autowired private ZeebeClient zeebeClient;
 
   @Autowired private FormIndex formIndex;
 

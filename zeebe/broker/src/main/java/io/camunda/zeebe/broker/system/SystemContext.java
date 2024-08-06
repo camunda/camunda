@@ -29,6 +29,9 @@ import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.util.VisibleForTesting;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,6 +57,7 @@ public final class SystemContext {
   private final ActorScheduler scheduler;
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
+  private final MeterRegistry meterRegistry;
 
   public SystemContext(
       final Duration shutdownTimeout,
@@ -61,22 +65,32 @@ public final class SystemContext {
       final IdentityConfiguration identityConfiguration,
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
-      final BrokerClient brokerClient) {
+      final BrokerClient brokerClient,
+      final MeterRegistry meterRegistry) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.identityConfiguration = identityConfiguration;
     this.scheduler = scheduler;
     this.cluster = cluster;
     this.brokerClient = brokerClient;
+    this.meterRegistry = meterRegistry;
     initSystemContext();
   }
 
+  @VisibleForTesting
   public SystemContext(
       final BrokerCfg brokerCfg,
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient) {
-    this(DEFAULT_SHUTDOWN_TIMEOUT, brokerCfg, null, scheduler, cluster, brokerClient);
+    this(
+        DEFAULT_SHUTDOWN_TIMEOUT,
+        brokerCfg,
+        null,
+        scheduler,
+        cluster,
+        brokerClient,
+        new SimpleMeterRegistry());
   }
 
   private void initSystemContext() {
@@ -287,5 +301,9 @@ public final class SystemContext {
 
   public Duration getShutdownTimeout() {
     return shutdownTimeout;
+  }
+
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
   }
 }

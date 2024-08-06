@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,7 +29,8 @@ public class PersistedSnapshotStoreTest {
     final var partitionId = 1;
     final var root = temporaryFolder.getRoot();
 
-    final var snapshotStore = new FileBasedSnapshotStore(partitionId, root.toPath());
+    final var snapshotStore =
+        new FileBasedSnapshotStore(0, partitionId, root.toPath(), snapshotPath -> Map.of());
     scheduler.submitActor(snapshotStore).join();
     persistedSnapshotStore = snapshotStore;
   }

@@ -35,6 +35,8 @@ public class ContainerRuntimeEnvs {
   public static final String OPERATE_ENV_ELASTICSEARCH_URL = "CAMUNDA_OPERATE_ELASTICSEARCH_URL";
   public static final String OPERATE_ENV_ZEEBEELASTICSEARCH_URL =
       "CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL";
+  public static final String CAMUNDA_OPERATE_IMPORTER_READERBACKOFF =
+      "CAMUNDA_OPERATE_IMPORTER_READERBACKOFF";
 
   // Tasklist
   public static final String TASKLIST_ENV_ZEEBE_GATEWAYADDRESS =

@@ -15,10 +15,8 @@
  */
 package io.camunda.process.test.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import org.junit.jupiter.api.Test;
@@ -29,7 +27,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 @CamundaSpringProcessTest
 public class CamundaSpringProcessTestListenerIT {
 
-  @Autowired private ZeebeClient zeebeClient;
+  @Autowired private ZeebeClient client;
 
   @Test
   void shouldCreateProcessInstance() {
@@ -37,23 +35,24 @@ public class CamundaSpringProcessTestListenerIT {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
             .startEvent()
+            .name("start")
+            .userTask()
+            .name("task")
             .endEvent()
+            .name("end")
             .zeebeOutputExpression("\"ok\"", "result")
             .done();
 
-    zeebeClient.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+    client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
 
     // when
-    final ProcessInstanceResult processInstanceResult =
-        zeebeClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId("process")
-            .latestVersion()
-            .withResult()
-            .send()
-            .join();
+    final ProcessInstanceEvent processInstance =
+        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
     // then
-    assertThat(processInstanceResult.getVariablesAsMap()).containsEntry("result", "ok");
+    CamundaAssert.assertThat(processInstance)
+        .isActive()
+        .hasCompletedElements("start")
+        .hasActiveElements("task");
   }
 }

@@ -96,7 +96,7 @@ public class ProcessServiceTest {
     assertThat(response.getId()).isEqualTo(processInstanceEvent.getProcessInstanceKey());
   }
 
-  private ProcessInstanceEvent mockZeebeCreateProcessInstance(String processDefinitionKey) {
+  private ProcessInstanceEvent mockZeebeCreateProcessInstance(final String processDefinitionKey) {
     final ProcessInstanceEvent processInstanceEvent = mock(ProcessInstanceEvent.class);
     when(processInstanceEvent.getProcessInstanceKey()).thenReturn(123456L);
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 step3 =
@@ -113,7 +113,8 @@ public class ProcessServiceTest {
     return processInstanceEvent;
   }
 
-  private ProcessInstanceEvent mockZeebeCreateProcessInstanceNotFound(String processDefinitionKey) {
+  private ProcessInstanceEvent mockZeebeCreateProcessInstanceNotFound(
+      final String processDefinitionKey) {
     final ProcessInstanceEvent processInstanceEvent = mock(ProcessInstanceEvent.class);
     when(processInstanceEvent.getProcessInstanceKey()).thenReturn(123456L);
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 step3 =

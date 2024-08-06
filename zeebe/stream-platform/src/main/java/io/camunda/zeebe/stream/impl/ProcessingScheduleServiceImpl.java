@@ -33,7 +33,7 @@ public class ProcessingScheduleServiceImpl
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
   private final Supplier<StreamProcessor.Phase> streamProcessorPhaseSupplier;
   private final BooleanSupplier abortCondition;
-  private final Supplier<ActorFuture<LogStreamWriter>> writerAsyncSupplier;
+  private final Supplier<LogStreamWriter> writerSupplier;
   private final StageableScheduledCommandCache commandCache;
   private LogStreamWriter logStreamWriter;
   private ActorControl actorControl;
@@ -43,11 +43,11 @@ public class ProcessingScheduleServiceImpl
   public ProcessingScheduleServiceImpl(
       final Supplier<Phase> streamProcessorPhaseSupplier,
       final BooleanSupplier abortCondition,
-      final Supplier<ActorFuture<LogStreamWriter>> writerAsyncSupplier,
+      final Supplier<LogStreamWriter> writerSupplier,
       final StageableScheduledCommandCache commandCache) {
     this.streamProcessorPhaseSupplier = streamProcessorPhaseSupplier;
     this.abortCondition = abortCondition;
-    this.writerAsyncSupplier = writerAsyncSupplier;
+    this.writerSupplier = writerSupplier;
     this.commandCache = commandCache;
   }
 
@@ -97,18 +97,10 @@ public class ProcessingScheduleServiceImpl
 
     openFuture = new CompletableActorFuture<>();
     writeRetryStrategy = new AbortableRetryStrategy(control);
-    final var writerFuture = writerAsyncSupplier.get();
-    control.runOnCompletion(
-        writerFuture,
-        (writer, failure) -> {
-          if (failure == null) {
-            logStreamWriter = writer;
-            actorControl = control;
-            openFuture.complete(null);
-          } else {
-            openFuture.completeExceptionally(failure);
-          }
-        });
+
+    logStreamWriter = writerSupplier.get();
+    actorControl = control;
+    openFuture.complete(null);
     return openFuture;
   }
 

@@ -13,7 +13,6 @@ import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
-import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -150,8 +149,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   @Override
   protected void onActorStarting() {
-    actor.runOnCompletionBlockingCurrentPhase(
-        logStream.newLogStreamReader(), this::onRetrievingReader);
+    final var reader = logStream.newLogStreamReader();
+    logStreamReader = reader;
+    streamProcessorContext.logStreamReader(reader);
   }
 
   @Override
@@ -306,29 +306,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             });
   }
 
-  private void onRetrievingWriter(
-      final LogStreamWriter writer,
-      final Throwable errorOnReceivingWriter,
-      final LastProcessingPositions lastProcessingPositions) {
-
-    if (errorOnReceivingWriter == null) {
-      streamProcessorContext.logStreamWriter(writer);
-
-      streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
-      metrics.setStreamProcessorProcessing();
-
-      chainSteps(
-          0,
-          new Step[] {
-            () -> processorActorService.open(actor),
-            () -> actorSchedulingService.submitActor(asyncActor)
-          },
-          () -> startProcessing(lastProcessingPositions));
-    } else {
-      onFailure(errorOnReceivingWriter);
-    }
-  }
-
   private void startProcessing(final LastProcessingPositions lastProcessingPositions) {
     processingStateMachine =
         new ProcessingStateMachine(
@@ -344,17 +321,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     processingStateMachine.startProcessing(lastProcessingPositions);
     if (!shouldProcess) {
       setStateToPausedAndNotifyListeners();
-    }
-  }
-
-  private void onRetrievingReader(
-      final LogStreamReader reader, final Throwable errorOnReceivingReader) {
-    if (errorOnReceivingReader == null) {
-      logStreamReader = reader;
-      streamProcessorContext.logStreamReader(reader);
-    } else {
-      LOG.error("Unexpected error on retrieving reader from log stream.", errorOnReceivingReader);
-      actor.close();
     }
   }
 
@@ -413,12 +379,18 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void onRecovered(final LastProcessingPositions lastProcessingPositions) {
-    logStream
-        .newLogStreamWriter()
-        .onComplete(
-            (logStreamWriter, errorOnReceivingWriter) ->
-                onRetrievingWriter(
-                    logStreamWriter, errorOnReceivingWriter, lastProcessingPositions));
+    final var writer = logStream.newLogStreamWriter();
+    streamProcessorContext.logStreamWriter(writer);
+    streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
+    metrics.setStreamProcessorProcessing();
+
+    chainSteps(
+        0,
+        new Step[] {
+          () -> processorActorService.open(actor),
+          () -> actorSchedulingService.submitActor(asyncActor)
+        },
+        () -> startProcessing(lastProcessingPositions));
   }
 
   private void onFailure(final Throwable throwable) {

@@ -28,6 +28,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest.Builder;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.Arrays;
@@ -75,8 +76,7 @@ public final class CreateProcessInstanceWithResultCommandImpl
             .setRequestTimeout(requestTimeout.toMillis())
             .build();
 
-    final RetriableClientFutureImpl<
-            ProcessInstanceResult, GatewayOuterClass.CreateProcessInstanceWithResultResponse>
+    final RetriableClientFutureImpl<ProcessInstanceResult, CreateProcessInstanceWithResultResponse>
         future =
             new RetriableClientFutureImpl<>(
                 response -> new CreateProcessInstanceWithResultResponseImpl(jsonMapper, response),

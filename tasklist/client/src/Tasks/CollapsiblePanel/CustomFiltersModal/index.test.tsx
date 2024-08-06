@@ -381,20 +381,20 @@ describe('<CustomFiltersModal />', () => {
     const dueDateGroup = within(dialog).getByRole('group', {name: /due date/i});
     expect(
       within(dueDateGroup).getByRole('textbox', {name: /from/i}),
-    ).toHaveValue('01/01/22');
+    ).toHaveValue('01/01/2022');
     expect(
       within(dueDateGroup).getByRole('textbox', {name: /to/i}),
-    ).toHaveValue('01/01/22');
+    ).toHaveValue('01/01/2022');
 
     const followUpDateGroup = within(dialog).getByRole('group', {
       name: /due date/i,
     });
     expect(
       within(followUpDateGroup).getByRole('textbox', {name: /from/i}),
-    ).toHaveValue('01/01/22');
+    ).toHaveValue('01/01/2022');
     expect(
       within(followUpDateGroup).getByRole('textbox', {name: /to/i}),
-    ).toHaveValue('01/01/22');
+    ).toHaveValue('01/01/2022');
 
     expect(within(dialog).getByRole('textbox', {name: /task id/i})).toHaveValue(
       'task-0',
@@ -460,22 +460,22 @@ describe('<CustomFiltersModal />', () => {
     const dueDateGroup = within(dialog).getByRole('group', {name: /due date/i});
     await user.type(
       within(dueDateGroup).getByRole('textbox', {name: /from/i}),
-      '01/01/22',
+      '01/01/2022',
     );
     await user.type(
       within(dueDateGroup).getByRole('textbox', {name: /to/i}),
-      '01/01/22',
+      '01/01/2022',
     );
     const followUpDateGroup = within(dialog).getByRole('group', {
       name: /follow up date/i,
     });
     await user.type(
       within(followUpDateGroup).getByRole('textbox', {name: /from/i}),
-      '01/01/22',
+      '01/01/2022',
     );
     await user.type(
       within(followUpDateGroup).getByRole('textbox', {name: /to/i}),
-      '01/01/22',
+      '01/01/2022',
     );
     await user.type(
       within(dialog).getByRole('textbox', {name: /task id/i}),

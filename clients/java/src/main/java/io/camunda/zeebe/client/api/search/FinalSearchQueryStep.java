@@ -21,5 +21,6 @@ import java.time.Duration;
 
 public interface FinalSearchQueryStep<T> extends FinalCommandStep<SearchQueryResponse<T>> {
 
+  @Override
   FinalSearchQueryStep<T> requestTimeout(Duration requestTimeout);
 }

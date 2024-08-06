@@ -6,20 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {t} from 'i18next';
+
 function getCompleteTaskErrorMessage(code: string) {
   if (code === 'Task is not assigned') {
-    return 'Task is not assigned';
+    return t('taskNotCompletedNotAssigned');
   }
 
   if (code.includes('Task is not assigned to')) {
-    return 'Task assigned to another user';
+    return t('taskNotCompletedAssignedToOther');
   }
 
   if (code === 'Task is not active') {
     return undefined;
   }
 
-  return 'Service is not reachable';
+  return t('taskNotCompletedNotReachable');
 }
 
 export {getCompleteTaskErrorMessage};

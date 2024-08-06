@@ -300,6 +300,9 @@ public class OpensearchExporter implements Exporter {
       if (index.compensationSubscription) {
         createValueIndexTemplate(ValueType.COMPENSATION_SUBSCRIPTION);
       }
+      if (index.messageCorrelation) {
+        createValueIndexTemplate(ValueType.MESSAGE_CORRELATION);
+      }
     }
 
     indexTemplatesCreated = true;

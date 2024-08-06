@@ -11,7 +11,6 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.util.Either;
 
 public class StandalonePartitionSupplier implements PartitionSupplier {
-
   private final ZeebeClient zeebeClient;
 
   public StandalonePartitionSupplier(final ZeebeClient zeebeClient) {

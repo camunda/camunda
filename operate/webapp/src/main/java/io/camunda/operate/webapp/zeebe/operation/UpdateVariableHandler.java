@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 public class UpdateVariableHandler extends AbstractOperationHandler implements OperationHandler {
 
   @Override
-  public void handleWithException(OperationEntity operation) throws Exception {
+  public void handleWithException(final OperationEntity operation) throws Exception {
     final String updateVariableJson =
         mergeVariableJson(operation.getVariableName(), operation.getVariableValue());
     final SetVariablesResponse response =
@@ -39,7 +39,7 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
     return Set.of(UPDATE_VARIABLE, ADD_VARIABLE);
   }
 
-  private String mergeVariableJson(String variableName, String variableValue) {
+  private String mergeVariableJson(final String variableName, final String variableValue) {
     return String.format("{\"%s\":%s}", variableName, variableValue);
   }
 }

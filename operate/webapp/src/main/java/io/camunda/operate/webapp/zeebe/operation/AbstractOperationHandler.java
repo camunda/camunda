@@ -40,10 +40,10 @@ public abstract class AbstractOperationHandler implements OperationHandler {
   @Autowired private OperationsManager operationsManager;
 
   @Override
-  public void handle(OperationEntity operation) {
+  public void handle(final OperationEntity operation) {
     try {
       handleWithException(operation);
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       if (isExceptionRetriable(ex)) {
         // leave the operation locked -> when it expires, operation will be retried
         LOGGER.error(
@@ -55,7 +55,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
         try {
           failOperation(
               operation, String.format("Unable to process operation: %s", ex.getMessage()));
-        } catch (PersistenceException e) {
+        } catch (final PersistenceException e) {
           // noop
         }
         LOGGER.error(
@@ -68,16 +68,17 @@ public abstract class AbstractOperationHandler implements OperationHandler {
   }
 
   // Needed for tests
+  @Override
   public void setZeebeClient(final ZeebeClient zeebeClient) {
     this.zeebeClient = zeebeClient;
   }
 
-  private boolean isExceptionRetriable(Exception ex) {
+  private boolean isExceptionRetriable(final Exception ex) {
     final StatusRuntimeException cause = extractStatusRuntimeException(ex);
     return cause != null && RETRY_STATUSES.contains(cause.getStatus().getCode());
   }
 
-  private StatusRuntimeException extractStatusRuntimeException(Throwable ex) {
+  private StatusRuntimeException extractStatusRuntimeException(final Throwable ex) {
     if (ex.getCause() != null) {
       if (ex.getCause() instanceof StatusRuntimeException) {
         return (StatusRuntimeException) ex.getCause();
@@ -98,11 +99,11 @@ public abstract class AbstractOperationHandler implements OperationHandler {
         operation.getType().name());
   }
 
-  protected boolean canForceFailOperation(OperationEntity operation) {
+  protected boolean canForceFailOperation(final OperationEntity operation) {
     return false;
   }
 
-  protected void failOperation(OperationEntity operation, String errorMsg)
+  protected void failOperation(final OperationEntity operation, final String errorMsg)
       throws PersistenceException {
     if (isLocked(operation) || canForceFailOperation(operation)) {
       operation.setState(OperationState.FAILED);
@@ -119,17 +120,17 @@ public abstract class AbstractOperationHandler implements OperationHandler {
     recordCommandMetric(operation);
   }
 
-  private boolean isLocked(OperationEntity operation) {
+  private boolean isLocked(final OperationEntity operation) {
     return operation.getState().equals(OperationState.LOCKED)
         && operation.getLockOwner().equals(operateProperties.getOperationExecutor().getWorkerId())
         && getTypes().contains(operation.getType());
   }
 
-  protected void markAsSent(OperationEntity operation) throws PersistenceException {
-    this.markAsSent(operation, null);
+  protected void markAsSent(final OperationEntity operation) throws PersistenceException {
+    markAsSent(operation, null);
   }
 
-  protected void markAsSent(OperationEntity operation, Long zeebeCommandKey)
+  protected void markAsSent(final OperationEntity operation, final Long zeebeCommandKey)
       throws PersistenceException {
     if (isLocked(operation)) {
       operation.setState(OperationState.SENT);

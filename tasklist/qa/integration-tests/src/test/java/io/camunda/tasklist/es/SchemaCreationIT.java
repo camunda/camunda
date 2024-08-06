@@ -11,6 +11,7 @@ import static io.camunda.tasklist.util.CollectionUtil.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.indices.MigrationRepositoryIndex;
@@ -19,7 +20,6 @@ import io.camunda.tasklist.schema.migration.ProcessorStep;
 import io.camunda.tasklist.util.DatabaseTestExtension;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
-import io.camunda.tasklist.util.TestUtil;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;

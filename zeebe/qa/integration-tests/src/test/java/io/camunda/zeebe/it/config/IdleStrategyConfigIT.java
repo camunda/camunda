@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
+import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneGateway;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;

@@ -20,7 +20,6 @@ import io.camunda.zeebe.client.api.response.PartitionBrokerRole;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.protocol.rest.Partition.HealthEnum;
 import io.camunda.zeebe.client.protocol.rest.Partition.RoleEnum;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import java.util.Arrays;
 import java.util.Objects;
@@ -31,7 +30,7 @@ public class PartitionInfoImpl implements PartitionInfo {
   private final PartitionBrokerRole role;
   private final PartitionBrokerHealth partitionBrokerHealth;
 
-  public PartitionInfoImpl(final GatewayOuterClass.Partition partition) {
+  public PartitionInfoImpl(final Partition partition) {
     partitionId = partition.getPartitionId();
 
     if (partition.getRole() == Partition.PartitionBrokerRole.LEADER) {
@@ -116,18 +115,6 @@ public class PartitionInfoImpl implements PartitionInfo {
   }
 
   @Override
-  public String toString() {
-    return "PartitionInfoImpl{"
-        + "partitionId="
-        + partitionId
-        + ", role="
-        + role
-        + ", health="
-        + partitionBrokerHealth
-        + '}';
-  }
-
-  @Override
   public int hashCode() {
     return Objects.hash(partitionId, role, partitionBrokerHealth);
   }
@@ -146,5 +133,17 @@ public class PartitionInfoImpl implements PartitionInfo {
     return partitionId == that.partitionId
         && role == that.role
         && partitionBrokerHealth == that.partitionBrokerHealth;
+  }
+
+  @Override
+  public String toString() {
+    return "PartitionInfoImpl{"
+        + "partitionId="
+        + partitionId
+        + ", role="
+        + role
+        + ", health="
+        + partitionBrokerHealth
+        + '}';
   }
 }

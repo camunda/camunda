@@ -29,7 +29,7 @@ public abstract class ZeebeContainerManager {
   protected ZeebeClient client;
 
   public ZeebeContainerManager(
-      OperateProperties operateProperties, TestContainerUtil testContainerUtil) {
+      final OperateProperties operateProperties, final TestContainerUtil testContainerUtil) {
     this.operateProperties = operateProperties;
     this.testContainerUtil = testContainerUtil;
   }
@@ -39,7 +39,7 @@ public abstract class ZeebeContainerManager {
   }
 
   public void startContainer() {
-    this.prefix = TestUtil.createRandomString(10);
+    prefix = TestUtil.createRandomString(10);
     updatePrefix();
 
     // Start zeebe
@@ -62,9 +62,9 @@ public abstract class ZeebeContainerManager {
     while (topology == null) {
       try {
         topology = client.newTopologyRequest().send().join();
-      } catch (ClientException ex) {
+      } catch (final ClientException ex) {
         ex.printStackTrace();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         e.printStackTrace();
         break;
         // exit

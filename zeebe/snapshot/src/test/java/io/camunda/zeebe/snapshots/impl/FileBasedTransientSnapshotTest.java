@@ -321,7 +321,7 @@ public class FileBasedTransientSnapshotTest {
             SnapshotMetadata::exportedPosition,
             SnapshotMetadata::lastFollowupEventPosition,
             SnapshotMetadata::version)
-        .containsExactly(3L, 4L, 100L, FileBasedSnapshotStore.VERSION);
+        .containsExactly(3L, 4L, 100L, FileBasedSnapshotStoreImpl.VERSION);
   }
 
   @Test
@@ -339,7 +339,9 @@ public class FileBasedTransientSnapshotTest {
         .describedAs("Metadata file is persisted in snapshot path")
         .isDirectoryContaining(
             path ->
-                path.getFileName().toString().equals(FileBasedSnapshotStore.METADATA_FILE_NAME));
+                path.getFileName()
+                    .toString()
+                    .equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME));
   }
 
   private boolean writeSnapshot(final Path path) {
@@ -358,7 +360,7 @@ public class FileBasedTransientSnapshotTest {
   }
 
   private FileBasedSnapshotStore createStore(final Path root) throws IOException {
-    final var store = new FileBasedSnapshotStore(1, root);
+    final var store = new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of());
     scheduler.submitActor(store);
     return store;
   }

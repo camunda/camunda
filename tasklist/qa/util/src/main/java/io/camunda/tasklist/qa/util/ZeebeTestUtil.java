@@ -13,7 +13,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
+import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.worker.JobWorker;
@@ -27,22 +27,19 @@ public abstract class ZeebeTestUtil {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ZeebeTestUtil.class);
 
-  private static Random random = new Random();
+  private static final Random RANDOM = new Random();
 
   public static String deployProcess(
-      ZeebeClient client, BpmnModelInstance processModel, String resourceName) {
-    final DeployProcessCommandStep1 deployProcessCommandStep1 =
-        client.newDeployCommand().addProcessModel(processModel, resourceName);
-    final DeploymentEvent deploymentEvent =
-        ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
-            .send()
-            .join();
+      final ZeebeClient client, final BpmnModelInstance processModel, final String resourceName) {
+    final DeployResourceCommandStep2 deployProcessCommandStep1 =
+        client.newDeployResourceCommand().addProcessModel(processModel, resourceName);
+    final DeploymentEvent deploymentEvent = deployProcessCommandStep1.send().join();
     LOGGER.debug("Deployment of resource [{}] was performed", resourceName);
     return String.valueOf(deploymentEvent.getProcesses().get(0).getProcessDefinitionKey());
   }
 
   public static ZeebeFuture<ProcessInstanceEvent> startProcessInstanceAsync(
-      ZeebeClient client, String bpmnProcessId, String payload) {
+      final ZeebeClient client, final String bpmnProcessId, final String payload) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
         createProcessInstanceCommandStep3 =
             client.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
@@ -53,7 +50,7 @@ public abstract class ZeebeTestUtil {
   }
 
   public static long startProcessInstance(
-      ZeebeClient client, String bpmnProcessId, String payload) {
+      final ZeebeClient client, final String bpmnProcessId, final String payload) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
         createProcessInstanceCommandStep3 =
             client.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
@@ -67,7 +64,11 @@ public abstract class ZeebeTestUtil {
   }
 
   public static void completeTask(
-      ZeebeClient client, String jobType, String workerName, String payload, int count) {
+      final ZeebeClient client,
+      final String jobType,
+      final String workerName,
+      final String payload,
+      final int count) {
     final int[] countCompleted = {0};
     final JobWorker jobWorker =
         client
@@ -100,16 +101,19 @@ public abstract class ZeebeTestUtil {
   }
 
   public static void failTask(
-      ZeebeClient client, String jobType, String workerName, int incidentCount) {
+      final ZeebeClient client,
+      final String jobType,
+      final String workerName,
+      final int incidentCount) {
     failTask(client, jobType, workerName, null, incidentCount);
   }
 
   public static void failTask(
-      ZeebeClient client,
-      String jobType,
-      String workerName,
-      String errorMessage,
-      int incidentCount) {
+      final ZeebeClient client,
+      final String jobType,
+      final String workerName,
+      final String errorMessage,
+      final int incidentCount) {
     final int[] countFailed = {0};
     final JobWorker jobWorker =
         client
@@ -118,7 +122,7 @@ public abstract class ZeebeTestUtil {
             .handler(
                 (jobClient, activatedJob) -> {
                   final String error =
-                      errorMessage == null ? "Error " + random.nextInt(50) : errorMessage;
+                      errorMessage == null ? "Error " + RANDOM.nextInt(50) : errorMessage;
                   if (countFailed[0] < incidentCount) {
                     client
                         .newFailCommand(activatedJob.getKey())

@@ -71,9 +71,8 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   @Autowired public BeanFactory beanFactory;
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
 
-  @MockBean
-  protected ZeebeClient
-      mockedZeebeClient; // we don't want to create ZeebeClient, we will rather use the one from
+  // we don't want to create ZeebeClient, we will rather use the one from
+  @MockBean protected ZeebeClient mockedZeebeClient;
 
   protected ZeebeClient zeebeClient;
   @Autowired protected PartitionHolder partitionHolder;

@@ -34,12 +34,12 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
-  public ZeebeClient createZeebeClient() {
-    return createZeebeClient(builder -> {});
+  public ZeebeClient createClient() {
+    return createClient(builder -> {});
   }
 
   @Override
-  public ZeebeClient createZeebeClient(final Consumer<ZeebeClientBuilder> modifier) {
+  public ZeebeClient createClient(final Consumer<ZeebeClientBuilder> modifier) {
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder()
             .usePlaintext()

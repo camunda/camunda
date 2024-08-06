@@ -233,10 +233,10 @@ class TaskServiceTest {
   @ParameterizedTest
   @MethodSource("getTasksTestData")
   void getTasksWhenMoreThanOneSearchQueryProvided(
-      String[] searchBefore,
-      String[] searchBeforeOrEqual,
-      String[] searchAfter,
-      String[] searchAfterOrEqual) {
+      final String[] searchBefore,
+      final String[] searchBeforeOrEqual,
+      final String[] searchAfter,
+      final String[] searchAfterOrEqual) {
     // Given
     final var taskQuery =
         new TaskQueryDTO()
@@ -286,11 +286,11 @@ class TaskServiceTest {
   @ParameterizedTest
   @MethodSource("assignTaskTestData")
   void assignTask(
-      Boolean providedAllowOverrideAssignment,
-      boolean expectedAllowOverrideAssignment,
-      String providedAssignee,
-      UserDTO user,
-      String expectedAssignee) {
+      final Boolean providedAllowOverrideAssignment,
+      final boolean expectedAllowOverrideAssignment,
+      final String providedAssignee,
+      final UserDTO user,
+      final String expectedAssignee) {
 
     // Given
     final var taskId = "123";
@@ -547,11 +547,11 @@ class TaskServiceTest {
   @ParameterizedTest
   @MethodSource("assignTaskTestData")
   void assignZeebeUserTask(
-      Boolean providedAllowOverrideAssignment,
-      boolean expectedAllowOverrideAssignment,
-      String providedAssignee,
-      UserDTO user,
-      String expectedAssignee) {
+      final Boolean providedAllowOverrideAssignment,
+      final boolean expectedAllowOverrideAssignment,
+      final String providedAssignee,
+      final UserDTO user,
+      final String expectedAssignee) {
     // Given
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);

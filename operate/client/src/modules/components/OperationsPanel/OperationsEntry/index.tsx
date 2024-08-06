@@ -64,6 +64,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
   const {fakeProgressPercentage, isComplete} = useLoadingProgress({
     totalCount: operationsTotalCount,
     finishedCount: operationsFinishedCount,
+    isFinished: endDate !== null,
   });
 
   const label = TYPE_LABELS[type];

@@ -111,7 +111,7 @@ public interface ZeebeClientConfiguration {
   List<ClientInterceptor> getInterceptors();
 
   /**
-   * @see ZeebeClientBuilder#withJsonMapper(io.camunda.zeebe.client.api.JsonMapper)
+   * @see ZeebeClientBuilder#withJsonMapper(JsonMapper)
    */
   JsonMapper getJsonMapper();
 

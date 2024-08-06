@@ -56,8 +56,8 @@ public class DataGenerator {
   @Qualifier("dataGeneratorThreadPoolExecutor")
   private ThreadPoolTaskExecutor dataGeneratorTaskExecutor;
 
-  private Set<String> bpmnProcessIds = new HashSet<>();
-  private Random random = new Random();
+  private final Set<String> bpmnProcessIds = new HashSet<>();
+  private final Random random = new Random();
 
   public void createData() {
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
@@ -79,13 +79,13 @@ public class DataGenerator {
             + " s");
   }
 
-  private void createIncidents(String jobType) {
+  private void createIncidents(final String jobType) {
     final int incidentCount = dataGeneratorProperties.getIncidentCount();
     ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", incidentCount);
     LOGGER.info("{} incidents created", dataGeneratorProperties.getIncidentCount());
   }
 
-  private void completeAllTasks(String jobType) {
+  private void completeAllTasks(final String jobType) {
     completeTasks(
         jobType,
         dataGeneratorProperties.getProcessInstanceCount()
@@ -96,7 +96,7 @@ public class DataGenerator {
             + dataGeneratorProperties.getCallActivityProcessInstanceCount());
   }
 
-  private void completeTasks(String jobType, int count) {
+  private void completeTasks(final String jobType, final int count) {
     ZeebeTestUtil.completeTask(
         zeebeClient, jobType, "data-generator", "{\"varOut\": \"value2\"}", count);
   }
@@ -112,13 +112,13 @@ public class DataGenerator {
     stopWaitingForResponses(responseChecker);
   }
 
-  private ResponseChecker startWaitingForResponses(BlockingQueue<Future> requestFutures) {
+  private ResponseChecker startWaitingForResponses(final BlockingQueue<Future> requestFutures) {
     final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
     responseChecker.start();
     return responseChecker;
   }
 
-  private void stopWaitingForResponses(ResponseChecker responseChecker) {
+  private void stopWaitingForResponses(final ResponseChecker responseChecker) {
     // wait till all instances started
     final int allProcessInstancesCount =
         dataGeneratorProperties.getProcessInstanceCount()
@@ -131,7 +131,7 @@ public class DataGenerator {
   }
 
   private List<InstancesStarter> sendStartProcessInstanceCommands(
-      BlockingQueue<Future> requestFutures) {
+      final BlockingQueue<Future> requestFutures) {
     // separately start one instance with multi-instance subprocess
     startBigProcessInstance();
 
@@ -187,11 +187,11 @@ public class DataGenerator {
     LOGGER.info("{} processes deployed", dataGeneratorProperties.getProcessCount() + 3);
   }
 
-  private String getBpmnProcessId(int i) {
+  private String getBpmnProcessId(final int i) {
     return "process" + i;
   }
 
-  private BpmnModelInstance createModel(String bpmnProcessId) {
+  private BpmnModelInstance createModel(final String bpmnProcessId) {
     return Bpmn.createExecutableProcess(bpmnProcessId)
         .startEvent("start")
         .subProcess()
@@ -238,7 +238,7 @@ public class DataGenerator {
 
     private int responseCount = 0;
 
-    public ResponseChecker(BlockingQueue<Future> futures) {
+    public ResponseChecker(final BlockingQueue<Future> futures) {
       this.futures = futures;
     }
 
@@ -247,10 +247,10 @@ public class DataGenerator {
       while (!shuttingDown) {
         try {
           futures.take().get();
-        } catch (ExecutionException e) {
+        } catch (final ExecutionException e) {
           LOGGER.warn("Request failed", e);
           // we still count this as a response
-        } catch (InterruptedException ex) {
+        } catch (final InterruptedException ex) {
           Thread.currentThread().interrupt();
         }
         responseCount++;
@@ -276,13 +276,13 @@ public class DataGenerator {
 
     private boolean shuttingDown = false;
 
-    private AtomicInteger countSimpleProcess;
-    private AtomicInteger countCallActivityProcess;
+    private final AtomicInteger countSimpleProcess;
+    private final AtomicInteger countCallActivityProcess;
 
     public InstancesStarter(
-        BlockingQueue<Future> futures,
-        AtomicInteger countSimpleProcess,
-        AtomicInteger countCallActivityProcess) {
+        final BlockingQueue<Future> futures,
+        final AtomicInteger countSimpleProcess,
+        final AtomicInteger countCallActivityProcess) {
       this.futures = futures;
       this.countSimpleProcess = countSimpleProcess;
       this.countCallActivityProcess = countCallActivityProcess;
@@ -307,7 +307,7 @@ public class DataGenerator {
           }
           futures.put(
               ZeebeTestUtil.startProcessInstanceAsync(zeebeClient, getRandomBpmnProcessId(), vars));
-        } catch (InterruptedException e) {
+        } catch (final InterruptedException e) {
           Thread.currentThread().interrupt();
         }
         localCount++;
@@ -323,7 +323,7 @@ public class DataGenerator {
           final String vars = "{\"var1\": \"value1\"}";
           futures.put(
               ZeebeTestUtil.startProcessInstanceAsync(zeebeClient, PARENT_PROCESS_ID, vars));
-        } catch (InterruptedException e) {
+        } catch (final InterruptedException e) {
           Thread.currentThread().interrupt();
         }
         localCount++;

@@ -260,7 +260,7 @@ public class FileBasedReceivedSnapshotTest {
           .hasMessageContaining(
               "Expected to have checksum "
                   + 0xCAFEL
-                  + " for snapshot chunk file1 (1-0-1-0), but calculated 3806033162");
+                  + " for snapshot chunk file1 (1-0-1-0-0), but calculated 3806033162");
     }
   }
 
@@ -333,7 +333,9 @@ public class FileBasedReceivedSnapshotTest {
         .describedAs("Metadata file is persisted in snapshot path")
         .isDirectoryContaining(
             name ->
-                name.getFileName().toString().equals(FileBasedSnapshotStore.METADATA_FILE_NAME));
+                name.getFileName()
+                    .toString()
+                    .equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME));
   }
 
   @Test
@@ -407,7 +409,7 @@ public class FileBasedReceivedSnapshotTest {
   }
 
   private FileBasedSnapshotStore createStore(final Path root) {
-    final var store = new FileBasedSnapshotStore(PARTITION_ID, root);
+    final var store = new FileBasedSnapshotStore(0, PARTITION_ID, root, snapshotPath -> Map.of());
     scheduler.submitActor(store);
 
     return store;

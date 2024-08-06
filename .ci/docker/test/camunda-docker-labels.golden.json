@@ -7,7 +7,7 @@
   "io.openshift.wants": "elasticsearch",
   "org.opencontainers.image.authors": "community@camunda.com",
   "org.opencontainers.image.base.digest": $DIGEST,
-  "org.opencontainers.image.base.name": "docker.io/library/ubuntu:jammy",
+  "org.opencontainers.image.base.name": $BASE_IMAGE,
   "org.opencontainers.image.created": $DATE,
   "org.opencontainers.image.description": "Camunda platform: the universal process orchestrator",
   "org.opencontainers.image.documentation": "https://docs.camunda.io/docs/self-managed/about-self-managed/",

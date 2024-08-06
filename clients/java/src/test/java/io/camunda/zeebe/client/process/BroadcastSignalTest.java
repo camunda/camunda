@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.process;
 
-import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
@@ -24,11 +23,13 @@ import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.BroadcastSignalResponse;
 import io.camunda.zeebe.client.util.ClientTest;
+import io.camunda.zeebe.client.util.JsonUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
 import java.io.ByteArrayInputStream;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
 public final class BroadcastSignalTest extends ClientTest {
@@ -64,7 +65,8 @@ public final class BroadcastSignalTest extends ClientTest {
 
     // then
     final BroadcastSignalRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getVariables())).contains(entry("foo", "bar"));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .contains(entry("foo", "bar"));
   }
 
   @Test
@@ -84,7 +86,8 @@ public final class BroadcastSignalTest extends ClientTest {
 
     // then
     final BroadcastSignalRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getVariables())).contains(entry("foo", "bar"));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .contains(entry("foo", "bar"));
   }
 
   @Test
@@ -98,7 +101,8 @@ public final class BroadcastSignalTest extends ClientTest {
 
     // then
     final BroadcastSignalRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getVariables())).contains(entry("foo", "bar"));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .contains(entry("foo", "bar"));
   }
 
   @Test
@@ -108,7 +112,8 @@ public final class BroadcastSignalTest extends ClientTest {
 
     // then
     final BroadcastSignalRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getVariables())).contains(entry("foo", "bar"));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .contains(entry("foo", "bar"));
   }
 
   @Test
@@ -120,7 +125,8 @@ public final class BroadcastSignalTest extends ClientTest {
 
     // then
     final BroadcastSignalRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getVariables())).containsOnly(entry(key, value));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .containsOnly(entry(key, value));
   }
 
   @Test

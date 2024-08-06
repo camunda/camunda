@@ -21,17 +21,17 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.cluster.messaging.impl.NettyUnicastService;
 import io.atomix.utils.Version;
-import io.camunda.commons.actor.ActorClockConfiguration;
-import io.camunda.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
-import io.camunda.commons.actor.ActorSchedulerConfiguration;
-import io.camunda.commons.broker.client.BrokerClientConfiguration;
-import io.camunda.commons.clustering.AtomixClusterConfiguration;
-import io.camunda.commons.clustering.DynamicClusterServices;
-import io.camunda.commons.configuration.BrokerBasedConfiguration;
-import io.camunda.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
-import io.camunda.commons.configuration.GatewayBasedConfiguration;
-import io.camunda.commons.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
-import io.camunda.commons.configuration.WorkingDirectoryConfiguration;
+import io.camunda.application.commons.actor.ActorClockConfiguration;
+import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
+import io.camunda.application.commons.actor.ActorSchedulerConfiguration;
+import io.camunda.application.commons.broker.client.BrokerClientConfiguration;
+import io.camunda.application.commons.clustering.AtomixClusterConfiguration;
+import io.camunda.application.commons.clustering.DynamicClusterServices;
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
+import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
+import io.camunda.application.commons.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
+import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -70,6 +70,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.util.NetUtil;
 import java.io.File;
 import java.io.IOException;
@@ -366,7 +367,8 @@ public class ClusteringRule extends ExternalResource {
             null,
             scheduler,
             atomixCluster,
-            brokerClient);
+            brokerClient,
+            new SimpleMeterRegistry());
     systemContexts.put(nodeId, systemContext);
 
     final Broker broker =

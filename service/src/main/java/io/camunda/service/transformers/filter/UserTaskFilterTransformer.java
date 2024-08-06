@@ -13,13 +13,11 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.service.search.filter.DateValueFilter;
 import io.camunda.service.search.filter.UserTaskFilter;
-import io.camunda.service.search.filter.VariableValueFilter;
 import io.camunda.service.transformers.ServiceTransformers;
-import io.camunda.service.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilter> {
 
@@ -31,23 +29,19 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
   @Override
   public SearchQuery toSearchQuery(final UserTaskFilter filter) {
-    final var userTaskKeysQuery = getUserTaskKeysQuery(filter.userTaskKeys());
-
-    final var creationDateQuery = getDateFilter(filter.creationDateFilter(), "creationTime");
-    final var completionTimeQuery = getDateFilter(filter.completionDateFilter(), "completionTime");
-    final var dueDateQuery = getDateFilter(filter.dueDateFilter(), "dueDate");
-    final var followUpDateQuery = getDateFilter(filter.followUpDateFilter(), "followUpDate");
+    final var userTaskKeysQuery = getUserTaskKeysQuery(filter.keys());
 
     final var processInstanceKeysQuery = getProcessInstanceKeysQuery(filter.processInstanceKeys());
     final var processDefinitionKeyQuery =
         getProcessDefinitionKeyQuery(filter.processDefinitionKeys());
-    final var bpmnProcessIdQuery = getBpmnProcessIdQuery(filter.processNames());
+    final var bpmnProcessDefinitionIdQuery = getBpmnProcessIdQuery(filter.bpmnProcessIds());
+    final var elementIdQuery = getElementIdQuery(filter.elementIds());
 
     final var candidateUsersQuery = getCandidateUsersQuery(filter.candidateUsers());
     final var candidateGroupsQuery = getCandidateGroupsQuery(filter.candidateGroups());
 
     final var assigneesQuery = getAssigneesQuery(filter.assignees());
-    final var stateQuery = getStateQuery(filter.userTaskState());
+    final var stateQuery = getStateQuery(filter.states());
     final var tenantQuery = getTenantQuery(filter.tenantIds());
 
     // Temporary internal condition - in order to bring only Zeebe User Tasks from Tasklist Indices
@@ -55,47 +49,34 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
     return and(
         userTaskKeysQuery,
-        bpmnProcessIdQuery,
+        bpmnProcessDefinitionIdQuery,
         candidateUsersQuery,
         candidateGroupsQuery,
         assigneesQuery,
         stateQuery,
-        creationDateQuery,
-        completionTimeQuery,
-        dueDateQuery,
-        followUpDateQuery,
         processInstanceKeysQuery,
         processDefinitionKeyQuery,
         tenantQuery,
-        userTaksImplementationQuery);
+        userTaksImplementationQuery,
+        elementIdQuery);
   }
 
   @Override
   public List<String> toIndices(final UserTaskFilter filter) {
-    final var completed = filter.completed();
-    final var canceled = filter.canceled();
-
-    if (completed || canceled) {
-      return Arrays.asList("tasklist-task-8.5.0_alias");
-    } else {
-      return Arrays.asList("tasklist-task-8.5.0_");
+    if (filter != null && filter.states() != null && !filter.states().isEmpty()) {
+      if (Objects.equals(filter.states().getFirst(), "CREATED") && filter.states().size() == 1) {
+        return Arrays.asList("tasklist-task-8.5.0_"); // Not necessary to visit alias in this case
+      }
     }
-  }
-
-  private SearchQuery getDateFilter(final DateValueFilter filter, final String field) {
-    if (filter != null) {
-      final var transformer = getDateValueFilterTransformer();
-      return transformer.apply(new DateFieldFilter(field, filter));
-    }
-    return null;
+    return Arrays.asList("tasklist-task-8.5.0_alias");
   }
 
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
     return longTerms("processInstanceId", processInstanceKeys);
   }
 
-  private SearchQuery getProcessDefinitionKeyQuery(final List<String> processDefinitionIds) {
-    return stringTerms("processDefinitionId", processDefinitionIds);
+  private SearchQuery getProcessDefinitionKeyQuery(final List<Long> processDefinitionIds) {
+    return longTerms("processDefinitionId", processDefinitionIds);
   }
 
   private SearchQuery getUserTaskKeysQuery(final List<Long> userTaskKeys) {
@@ -130,11 +111,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     return stringTerms("bpmnProcessId", bpmnProcessId);
   }
 
-  private FilterTransformer<VariableValueFilter> getVariableValueFilterTransformer() {
-    return transformers.getFilterTransformer(VariableValueFilter.class);
-  }
-
-  private FilterTransformer<DateFieldFilter> getDateValueFilterTransformer() {
-    return transformers.getFilterTransformer(DateValueFilter.class);
+  private SearchQuery getElementIdQuery(final List<String> taskDefinitionId) {
+    return stringTerms("flowNodeBpmnId", taskDefinitionId);
   }
 }

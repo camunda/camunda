@@ -29,7 +29,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 public abstract class AbstractIncidentPostImportAction implements PostImportAction {
-  public static final long BACKOFF = 2000L;
+  public static final long BACKOFF = 5000L;
+  public static final long DELAY_BETWEEN_TWO_RUNS = 3000L;
   private static final Logger LOGGER =
       LoggerFactory.getLogger(AbstractIncidentPostImportAction.class);
   protected int partitionId;
@@ -67,7 +68,7 @@ public abstract class AbstractIncidentPostImportAction implements PostImportActi
     if (operateProperties.getImporter().isPostImportEnabled()) {
       try {
         if (performOneRound()) {
-          postImportScheduler.submit(this);
+          postImportScheduler.schedule(this, Instant.now().plus(DELAY_BETWEEN_TWO_RUNS, MILLIS));
         } else {
           postImportScheduler.schedule(this, Instant.now().plus(BACKOFF, MILLIS));
         }

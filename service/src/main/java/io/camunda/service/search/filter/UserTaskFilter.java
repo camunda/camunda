@@ -8,84 +8,67 @@
 package io.camunda.service.search.filter;
 
 import static io.camunda.util.CollectionUtil.addValuesToList;
-import static io.camunda.util.CollectionUtil.collectValues;
+import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 
 public final record UserTaskFilter(
-    List<Long> userTaskKeys,
-    List<String> userTaskDefinitionIds,
-    List<String> processNames,
+    List<Long> keys,
+    List<String> elementIds,
+    List<String> bpmnProcessIds,
     List<String> assignees,
-    List<String> userTaskState,
+    List<String> states,
     List<Long> processInstanceKeys,
-    List<String> processDefinitionKeys,
+    List<Long> processDefinitionKeys,
     List<String> candidateUsers,
     List<String> candidateGroups,
-    boolean created,
-    boolean completed,
-    boolean canceled,
-    DateValueFilter creationDateFilter,
-    DateValueFilter completionDateFilter,
-    DateValueFilter dueDateFilter,
-    DateValueFilter followUpDateFilter,
-    List<VariableValueFilter> variableFilters,
     List<String> tenantIds)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<UserTaskFilter> {
-    private List<Long> userTaskKeys;
-    private List<String> userTaskDefinitionIds;
-    private List<String> processNames;
+    private List<Long> keys;
+    private List<String> elementIds;
+    private List<String> bpmnProcessIds;
     private List<String> assignees;
-    private List<String> userTaskState;
+    private List<String> states;
     private List<Long> processInstanceKeys;
-    private List<String> processDefinitionKeys;
+    private List<Long> processDefinitionKeys;
     private List<String> candidateUsers;
     private List<String> candidateGroups;
-    private boolean created;
-    private boolean completed;
-    private boolean canceled;
-    private DateValueFilter creationDateFilter;
-    private DateValueFilter completionDateFilter;
-    private DateValueFilter dueDateFilter;
-    private DateValueFilter followUpDateFilter;
-    private List<VariableValueFilter> variableFilters;
     private List<String> tenantIds;
 
-    public Builder userTaskKeys(final Long value, final Long... values) {
-      return userTaskKeys(collectValues(value, values));
+    public Builder keys(final Long... values) {
+      return keys(collectValuesAsList(values));
     }
 
-    public Builder userTaskKeys(final List<Long> values) {
-      userTaskKeys = addValuesToList(userTaskKeys, values);
+    public Builder keys(final List<Long> values) {
+      keys = addValuesToList(keys, values);
       return this;
     }
 
-    public Builder userTaskDefinitionIds(final String value, final String... values) {
-      return userTaskDefinitionIds(collectValues(value, values));
+    public Builder elementIds(final String... values) {
+      return elementIds(collectValuesAsList(values));
     }
 
-    public Builder userTaskDefinitionIds(final List<String> values) {
-      userTaskDefinitionIds = addValuesToList(userTaskDefinitionIds, values);
+    public Builder elementIds(final List<String> values) {
+      elementIds = addValuesToList(elementIds, values);
       return this;
     }
 
-    public Builder processNames(final String value, final String... values) {
-      return processNames(collectValues(value, values));
+    public Builder bpmnProcessIds(final String... values) {
+      return bpmnProcessIds(collectValuesAsList(values));
     }
 
-    public Builder processNames(final List<String> values) {
-      processNames = addValuesToList(processNames, values);
+    public Builder bpmnProcessIds(final List<String> values) {
+      bpmnProcessIds = addValuesToList(bpmnProcessIds, values);
       return this;
     }
 
-    public Builder assignees(final String value, final String... values) {
-      return assignees(collectValues(value, values));
+    public Builder assignees(final String... values) {
+      return assignees((collectValuesAsList(values)));
     }
 
     public Builder assignees(final List<String> values) {
@@ -93,71 +76,17 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder userTaskState(final String value, final String... values) {
-      return userTaskState(collectValues(value, values));
+    public Builder states(final String... values) {
+      return states(collectValuesAsList(values));
     }
 
-    public Builder userTaskState(final List<String> values) {
-      userTaskState = addValuesToList(userTaskState, values);
+    public Builder states(final List<String> values) {
+      states = addValuesToList(states, values);
       return this;
     }
 
-    public Builder creationDate(final DateValueFilter value) {
-      creationDateFilter = value;
-      return this;
-    }
-
-    public Builder creationDate(
-        final Function<DateValueFilter.Builder, ObjectBuilder<DateValueFilter>> fn) {
-      return creationDate(FilterBuilders.dateValue(fn));
-    }
-
-    public Builder completionDate(final DateValueFilter value) {
-      completionDateFilter = value;
-      return this;
-    }
-
-    public Builder completionDate(
-        final Function<DateValueFilter.Builder, ObjectBuilder<DateValueFilter>> fn) {
-      return completionDate(FilterBuilders.dateValue(fn));
-    }
-
-    public Builder dueDate(final DateValueFilter value) {
-      dueDateFilter = value;
-      return this;
-    }
-
-    public Builder dueDate(
-        final Function<DateValueFilter.Builder, ObjectBuilder<DateValueFilter>> fn) {
-      return dueDate(FilterBuilders.dateValue(fn));
-    }
-
-    public Builder followUpDate(final DateValueFilter value) {
-      followUpDateFilter = value;
-      return this;
-    }
-
-    public Builder followUpDate(
-        final Function<DateValueFilter.Builder, ObjectBuilder<DateValueFilter>> fn) {
-      return followUpDate(FilterBuilders.dateValue(fn));
-    }
-
-    public Builder variable(final List<VariableValueFilter> values) {
-      variableFilters = addValuesToList(variableFilters, values);
-      return this;
-    }
-
-    public Builder variable(final VariableValueFilter value, final VariableValueFilter... values) {
-      return variable(collectValues(value, values));
-    }
-
-    public Builder variable(
-        final Function<VariableValueFilter.Builder, ObjectBuilder<VariableValueFilter>> fn) {
-      return variable(FilterBuilders.variableValue(fn));
-    }
-
-    public Builder processInstanceKeys(final Long value, final Long... values) {
-      return processInstanceKeys(collectValues(value, values));
+    public Builder processInstanceKeys(final Long... values) {
+      return processInstanceKeys(collectValuesAsList(values));
     }
 
     public Builder processInstanceKeys(final List<Long> values) {
@@ -165,17 +94,17 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder processDefinitionKeys(final String value, final String... values) {
-      return processDefinitionKeys(collectValues(value, values));
+    public Builder processDefinitionKeys(final Long... values) {
+      return processDefinitionKeys(collectValuesAsList(values));
     }
 
-    public Builder processDefinitionKeys(final List<String> values) {
+    public Builder processDefinitionKeys(final List<Long> values) {
       processDefinitionKeys = addValuesToList(processDefinitionKeys, values);
       return this;
     }
 
-    public Builder candidateUsers(final String value, final String... values) {
-      return candidateUsers(collectValues(value, values));
+    public Builder candidateUsers(final String... values) {
+      return candidateUsers(collectValuesAsList(values));
     }
 
     public Builder candidateUsers(final List<String> values) {
@@ -183,8 +112,8 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder candidateGroups(final String value, final String... values) {
-      return candidateGroups(collectValues(value, values));
+    public Builder candidateGroups(final String... values) {
+      return candidateGroups(collectValuesAsList(values));
     }
 
     public Builder candidateGroups(final List<String> values) {
@@ -192,8 +121,8 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder tenantIds(final String value, final String... values) {
-      return tenantIds(collectValues(value, values));
+    public Builder tenantIds(final String... values) {
+      return tenantIds(collectValuesAsList(values));
     }
 
     public Builder tenantIds(final List<String> values) {
@@ -201,41 +130,18 @@ public final record UserTaskFilter(
       return this;
     }
 
-    public Builder created() {
-      created = true;
-      return this;
-    }
-
-    public Builder completed() {
-      completed = true;
-      return this;
-    }
-
-    public Builder canceled() {
-      canceled = true;
-      return this;
-    }
-
     @Override
     public UserTaskFilter build() {
       return new UserTaskFilter(
-          Objects.requireNonNullElse(userTaskKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(userTaskDefinitionIds, Collections.emptyList()),
-          Objects.requireNonNullElse(processNames, Collections.emptyList()),
+          Objects.requireNonNullElse(keys, Collections.emptyList()),
+          Objects.requireNonNullElse(elementIds, Collections.emptyList()),
+          Objects.requireNonNullElse(bpmnProcessIds, Collections.emptyList()),
           Objects.requireNonNullElse(assignees, Collections.emptyList()),
-          Objects.requireNonNullElse(userTaskState, Collections.emptyList()),
+          Objects.requireNonNullElse(states, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(candidateUsers, Collections.emptyList()),
           Objects.requireNonNullElse(candidateGroups, Collections.emptyList()),
-          created,
-          completed,
-          canceled,
-          creationDateFilter,
-          completionDateFilter,
-          dueDateFilter,
-          followUpDateFilter,
-          Objects.requireNonNullElse(variableFilters, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
     }
   }

@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.StringUtil.limitString;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
+import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer.CatchEventTupl
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -30,6 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
@@ -47,6 +50,9 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   public static final String NO_JOB_FOUND_MESSAGE =
       "Expected to cancel job with key '%d', but no such job was found";
 
+  public static final String ERROR_REJECTION_MESSAGE =
+      "Cannot throw BPMN error from %s job with key '%d', type '%s' and processInstanceKey '%d'";
+
   private final IncidentRecord incidentEvent = new IncidentRecord();
   private Either<Failure, CatchEventTuple> foundCatchEvent;
 
@@ -58,6 +64,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   private final EventScopeInstanceState eventScopeInstanceState;
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
   private final JobMetrics jobMetrics;
+  private final ProcessState processState;
 
   public JobThrowErrorProcessor(
       final ProcessingState state,
@@ -67,6 +74,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     this.keyGenerator = keyGenerator;
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
+    processState = state.getProcessState();
     eventScopeInstanceState = state.getEventScopeInstanceState();
 
     defaultProcessor =
@@ -112,6 +120,18 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       return;
     }
 
+    // Check if the job is of kind EXECUTION_LISTENER. Execution Listener jobs should not throw
+    // BPMN errors because the element is not in an ACTIVATED state.
+    final var jobKind = job.getJobKind();
+    if (jobKind == JobKind.EXECUTION_LISTENER) {
+      final long processInstanceKey = job.getProcessInstanceKey();
+      commandControl.reject(
+          RejectionType.INVALID_STATE,
+          String.format(
+              ERROR_REJECTION_MESSAGE, jobKind, jobKey, job.getType(), processInstanceKey));
+      return;
+    }
+
     job.setErrorCode(command.getValue().getErrorCodeBuffer());
     job.setErrorMessage(
         limitString(command.getValue().getErrorMessage(), DEFAULT_MAX_ERROR_MESSAGE_SIZE));
@@ -153,6 +173,13 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   private void raiseIncident(
       final long key, final JobRecord job, final StateWriter stateWriter, final Failure failure) {
 
+    final var treePathProperties =
+        new ElementTreePathBuilder()
+            .withElementInstanceState(elementInstanceState)
+            .withProcessState(processState)
+            .withElementInstanceKey(job.getElementInstanceKey())
+            .build();
+
     incidentEvent.reset();
     incidentEvent
         .setErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
@@ -164,7 +191,10 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
         .setElementInstanceKey(job.getElementInstanceKey())
         .setTenantId(job.getTenantId())
         .setJobKey(key)
-        .setVariableScopeKey(job.getElementInstanceKey());
+        .setVariableScopeKey(job.getElementInstanceKey())
+        .setElementInstancePath(treePathProperties.elementInstancePath())
+        .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
+        .setCallingElementPath(treePathProperties.callingElementPath());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
   }

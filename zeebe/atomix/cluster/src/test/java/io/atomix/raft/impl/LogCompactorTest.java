@@ -96,8 +96,8 @@ final class LogCompactorTest {
   void shouldCompactBasedOnOldestSnapshot() {
     // given
     final var store = new TestSnapshotStore(new AtomicReference<>());
-    InMemorySnapshot.newPersistedSnapshot(10L, 1, 30, store).reserve();
-    InMemorySnapshot.newPersistedSnapshot(30L, 1, 30, store);
+    InMemorySnapshot.newPersistedSnapshot(0, 10L, 1, 30, store).reserve();
+    InMemorySnapshot.newPersistedSnapshot(0, 30L, 1, 30, store);
 
     // when
     compactor.compactFromSnapshots(store);

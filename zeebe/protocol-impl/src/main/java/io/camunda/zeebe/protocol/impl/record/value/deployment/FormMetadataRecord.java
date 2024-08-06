@@ -31,16 +31,18 @@ public class FormMetadataRecord extends UnifiedRecordValue implements FormMetada
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
 
   public FormMetadataRecord() {
-    super(7);
+    super(8);
     declareProperty(formIdProp)
         .declareProperty(versionProp)
         .declareProperty(formKeyProp)
         .declareProperty(resourceNameProp)
         .declareProperty(checksumProp)
         .declareProperty(isDuplicateProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(deploymentKeyProp);
   }
 
   @Override
@@ -98,8 +100,18 @@ public class FormMetadataRecord extends UnifiedRecordValue implements FormMetada
     return isDuplicateProp.getValue();
   }
 
-  public FormMetadataRecord markAsDuplicate() {
-    isDuplicateProp.setValue(true);
+  public FormMetadataRecord setDuplicate(final boolean isDuplicate) {
+    isDuplicateProp.setValue(isDuplicate);
+    return this;
+  }
+
+  @Override
+  public long getDeploymentKey() {
+    return deploymentKeyProp.getValue();
+  }
+
+  public FormMetadataRecord setDeploymentKey(final long deploymentKey) {
+    deploymentKeyProp.setValue(deploymentKey);
     return this;
   }
 

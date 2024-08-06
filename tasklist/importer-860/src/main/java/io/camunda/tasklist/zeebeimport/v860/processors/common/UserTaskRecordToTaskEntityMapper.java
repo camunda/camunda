@@ -62,6 +62,7 @@ public class UserTaskRecordToTaskEntityMapper {
 
     final UserTaskRecordValue recordValue = record.getValue();
     final String processDefinitionId = String.valueOf(recordValue.getProcessDefinitionKey());
+
     final TaskEntity entity =
         new TaskEntity()
             .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
@@ -73,7 +74,10 @@ public class UserTaskRecordToTaskEntityMapper {
             .setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()))
             .setBpmnProcessId(recordValue.getBpmnProcessId())
             .setProcessDefinitionId(processDefinitionId)
-            .setTenantId(recordValue.getTenantId());
+            .setTenantId(recordValue.getTenantId())
+            .setExternalFormReference(recordValue.getExternalFormReference())
+            .setCustomHeaders(recordValue.getCustomHeaders())
+            .setProcessDefinitionVersion(recordValue.getProcessDefinitionVersion());
 
     switch (intent) {
       case CANCELED ->

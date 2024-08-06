@@ -7,7 +7,7 @@
  */
 package io.camunda.qa.util.cluster;
 
-import io.camunda.commons.CommonsModuleConfiguration;
+import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 
 public abstract class TestCamundaApplication<T extends TestCamundaApplication<T>>

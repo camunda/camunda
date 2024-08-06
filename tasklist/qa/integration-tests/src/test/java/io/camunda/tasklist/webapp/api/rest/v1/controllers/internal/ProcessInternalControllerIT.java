@@ -61,7 +61,7 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
   private MockMvcHelper mockMvcHelper;
 
   @DynamicPropertySource
-  static void registerProperties(DynamicPropertyRegistry registry) {
+  static void registerProperties(final DynamicPropertyRegistry registry) {
     registry.add("camunda.tasklist.cloud.clusterId", () -> "449ac2ad-d3c6-4c73-9c68-7752e39ae616");
     registry.add("camunda.tasklist.client.clusterId", () -> "449ac2ad-d3c6-4c73-9c68-7752e39ae616");
     registry.add("camunda.tasklist.featureFlag.processPublicEndpoints", () -> true);

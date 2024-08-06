@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
+import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE_CORRELATION;
+
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import java.util.Arrays;
@@ -56,7 +58,8 @@ public interface Intent {
           FormIntent.class,
           UserTaskIntent.class,
           ProcessInstanceMigrationIntent.class,
-          CompensationSubscriptionIntent.class);
+          CompensationSubscriptionIntent.class,
+          MessageCorrelationIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -140,6 +143,8 @@ public interface Intent {
         return ProcessInstanceMigrationIntent.from(intent);
       case COMPENSATION_SUBSCRIPTION:
         return CompensationSubscriptionIntent.from(intent);
+      case MESSAGE_CORRELATION:
+        return MessageCorrelationIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -215,6 +220,8 @@ public interface Intent {
         return ProcessInstanceMigrationIntent.valueOf(intent);
       case COMPENSATION_SUBSCRIPTION:
         return CompensationSubscriptionIntent.valueOf(intent);
+      case MESSAGE_CORRELATION:
+        return MessageCorrelationIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

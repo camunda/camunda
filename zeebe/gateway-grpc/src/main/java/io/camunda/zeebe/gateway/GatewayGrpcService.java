@@ -47,6 +47,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
@@ -204,6 +206,13 @@ public class GatewayGrpcService extends GatewayImplBase {
       final UpdateJobTimeoutRequest request,
       final StreamObserver<UpdateJobTimeoutResponse> responseObserver) {
     endpointManager.updateJobTimeout(
+        request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
+  }
+
+  @Override
+  public void updateJob(
+      final UpdateJobRequest request, final StreamObserver<UpdateJobResponse> responseObserver) {
+    endpointManager.updateJob(
         request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
   }
 

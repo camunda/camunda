@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
+import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.MessageData;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -26,7 +27,6 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
-import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
@@ -36,14 +36,9 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       "Expected to publish a new message with id '%s', but a message with that id was already published";
 
   private final MessageState messageState;
-  private final MessageSubscriptionState subscriptionState;
-  private final MessageStartEventSubscriptionState startEventSubscriptionState;
-  private final SubscriptionCommandSender commandSender;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
-
-  private final EventHandle eventHandle;
-  private final Subscriptions correlatingSubscriptions = new Subscriptions();
+  private final MessageCorrelateBehavior correlateBehavior;
 
   private MessageRecord messageRecord;
   private long messageKey;
@@ -62,14 +57,11 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final EventTriggerBehavior eventTriggerBehavior,
       final BpmnStateBehavior stateBehavior) {
     this.messageState = messageState;
-    this.subscriptionState = subscriptionState;
-    this.startEventSubscriptionState = startEventSubscriptionState;
-    this.commandSender = commandSender;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
-    eventHandle =
+    final var eventHandle =
         new EventHandle(
             keyGenerator,
             eventScopeInstanceState,
@@ -77,13 +69,19 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
             processState,
             eventTriggerBehavior,
             stateBehavior);
+    correlateBehavior =
+        new MessageCorrelateBehavior(
+            startEventSubscriptionState,
+            messageState,
+            eventHandle,
+            stateWriter,
+            subscriptionState,
+            commandSender);
   }
 
   @Override
   public void processRecord(final TypedRecord<MessageRecord> command) {
     messageRecord = command.getValue();
-
-    correlatingSubscriptions.clear();
 
     if (messageRecord.hasMessageId()
         && messageState.exist(
@@ -116,8 +114,6 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     correlateToSubscriptions(messageKey, messageRecord);
     correlateToMessageStartEvents(messageRecord);
 
-    sendCorrelateCommand();
-
     if (messageRecord.getTimeToLive() <= 0L) {
       // avoid that the message can be correlated again by writing the EXPIRED event as a follow-up
       stateWriter.appendFollowUpEvent(messageKey, MessageIntent.EXPIRED, messageRecord);
@@ -125,71 +121,22 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   }
 
   private void correlateToSubscriptions(final long messageKey, final MessageRecord message) {
-    subscriptionState.visitSubscriptions(
-        message.getTenantId(),
-        message.getNameBuffer(),
-        message.getCorrelationKeyBuffer(),
-        subscription -> {
-
-          // correlate the message only once per process
-          if (!subscription.isCorrelating()
-              && !correlatingSubscriptions.contains(
-                  subscription.getRecord().getBpmnProcessIdBuffer())) {
-
-            final var correlatingSubscription =
-                subscription
-                    .getRecord()
-                    .setMessageKey(messageKey)
-                    .setVariables(message.getVariablesBuffer());
-
-            stateWriter.appendFollowUpEvent(
-                subscription.getKey(),
-                MessageSubscriptionIntent.CORRELATING,
-                correlatingSubscription);
-
-            correlatingSubscriptions.add(correlatingSubscription);
-          }
-
-          return true;
-        });
+    correlateBehavior.correlateToMessageEvents(
+        new MessageData(
+            messageKey,
+            message.getNameBuffer(),
+            message.getCorrelationKeyBuffer(),
+            message.getVariablesBuffer(),
+            message.getTenantId()));
   }
 
   private void correlateToMessageStartEvents(final MessageRecord messageRecord) {
-
-    startEventSubscriptionState.visitSubscriptionsByMessageName(
-        messageRecord.getTenantId(),
-        messageRecord.getNameBuffer(),
-        subscription -> {
-          final var subscriptionRecord = subscription.getRecord();
-          final var bpmnProcessIdBuffer = subscriptionRecord.getBpmnProcessIdBuffer();
-          final var correlationKeyBuffer = messageRecord.getCorrelationKeyBuffer();
-
-          // create only one instance of a process per correlation key
-          // - allow multiple instance if correlation key is empty
-          if (!correlatingSubscriptions.contains(bpmnProcessIdBuffer)
-              && (correlationKeyBuffer.capacity() == 0
-                  || !messageState.existActiveProcessInstance(
-                      messageRecord.getTenantId(), bpmnProcessIdBuffer, correlationKeyBuffer))) {
-
-            correlatingSubscriptions.add(subscriptionRecord);
-
-            eventHandle.triggerMessageStartEvent(
-                subscription.getKey(), subscriptionRecord, messageKey, messageRecord);
-          }
-        });
-  }
-
-  private boolean sendCorrelateCommand() {
-    return correlatingSubscriptions.visitSubscriptions(
-        subscription ->
-            commandSender.correlateProcessMessageSubscription(
-                subscription.getProcessInstanceKey(),
-                subscription.getElementInstanceKey(),
-                subscription.getBpmnProcessId(),
-                messageRecord.getNameBuffer(),
-                messageKey,
-                messageRecord.getVariablesBuffer(),
-                messageRecord.getCorrelationKeyBuffer(),
-                messageRecord.getTenantId()));
+    correlateBehavior.correlateToMessageStartEvents(
+        new MessageData(
+            messageKey,
+            messageRecord.getNameBuffer(),
+            messageRecord.getCorrelationKeyBuffer(),
+            messageRecord.getVariablesBuffer(),
+            messageRecord.getTenantId()));
   }
 }

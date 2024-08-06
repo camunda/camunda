@@ -30,16 +30,18 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
       new EnumProperty<>("state", PersistedProcessState.class, PersistedProcessState.ACTIVE);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1L);
 
   public PersistedProcess() {
-    super(7);
+    super(8);
     declareProperty(versionProp)
         .declareProperty(keyProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(resourceNameProp)
         .declareProperty(resourceProp)
         .declareProperty(stateProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(deploymentKeyProp);
   }
 
   public void wrap(final ProcessRecord processRecord, final long processDefinitionKey) {
@@ -50,6 +52,7 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
     versionProp.setValue(processRecord.getVersion());
     keyProp.setValue(processDefinitionKey);
     tenantIdProp.setValue(processRecord.getTenantId());
+    deploymentKeyProp.setValue(processRecord.getDeploymentKey());
   }
 
   public int getVersion() {
@@ -88,6 +91,10 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
   public PersistedProcess setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
     return this;
+  }
+
+  public long getDeploymentKey() {
+    return deploymentKeyProp.getValue();
   }
 
   public enum PersistedProcessState {

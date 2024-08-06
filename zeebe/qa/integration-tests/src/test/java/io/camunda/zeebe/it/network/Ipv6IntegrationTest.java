@@ -86,7 +86,7 @@ final class Ipv6IntegrationTest {
     cluster.start();
 
     // when
-    try (final var client = cluster.newClientBuilder().build()) {
+    try (final var client = cluster.newClientBuilder().build(); ) {
       final Topology topology = client.newTopologyRequest().send().join(5, TimeUnit.SECONDS);
       // then - can find each other
       TopologyAssert.assertThat(topology).isComplete(1, 1, 1);

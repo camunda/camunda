@@ -9,6 +9,7 @@
 import {IconButton} from '@carbon/react';
 import {Add, CenterCircle, Subtract} from '@carbon/react/icons';
 import styles from './styles.module.scss';
+import {useTranslation} from 'react-i18next';
 
 type Props = {
   handleZoomReset: () => void;
@@ -21,6 +22,8 @@ const DiagramControls: React.FC<Props> = ({
   handleZoomIn,
   handleZoomOut,
 }) => {
+  const {t} = useTranslation();
+
   return (
     <div className={styles.container}>
       <IconButton
@@ -28,8 +31,8 @@ const DiagramControls: React.FC<Props> = ({
         size="sm"
         kind="tertiary"
         align="left"
-        label="Reset diagram zoom"
-        aria-label="Reset diagram zoom"
+        label={t('taskDetailsResetDiagramZoom')}
+        aria-label={t('taskDetailsResetDiagramZoom')}
         onClick={handleZoomReset}
       >
         <CenterCircle />
@@ -39,8 +42,8 @@ const DiagramControls: React.FC<Props> = ({
         size="sm"
         kind="tertiary"
         align="left"
-        label="Zoom in diagram"
-        aria-label="Zoom in diagram"
+        label={t('taskDetailsZoomInDiagram')}
+        aria-label={t('taskDetailsZoomInDiagram')}
         onClick={handleZoomIn}
       >
         <Add />
@@ -50,8 +53,8 @@ const DiagramControls: React.FC<Props> = ({
         size="sm"
         kind="tertiary"
         align="left"
-        label="Zoom out diagram"
-        aria-label="Zoom out diagram"
+        label={t('taskDetailsZoomOutDiagram')}
+        aria-label={t('taskDetailsZoomOutDiagram')}
         onClick={handleZoomOut}
       >
         <Subtract />

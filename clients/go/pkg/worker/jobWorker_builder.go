@@ -86,6 +86,8 @@ type JobWorkerBuilderStep3 interface {
 	PollThreshold(float64) JobWorkerBuilderStep3
 	// FetchVariables Set list of variable names which should be fetched on job activation
 	FetchVariables(...string) JobWorkerBuilderStep3
+	// a list of IDs of tenants for which to activate jobs
+	TenantIds(...string) JobWorkerBuilderStep3
 	// Metrics Set implementation for metrics reporting
 	Metrics(metrics JobWorkerMetrics) JobWorkerBuilderStep3
 	// BackoffSupplier Set the backoffSupplier to back off polling on errors
@@ -158,6 +160,11 @@ func (builder *JobWorkerBuilder) PollThreshold(pollThreshold float64) JobWorkerB
 
 func (builder *JobWorkerBuilder) FetchVariables(fetchVariables ...string) JobWorkerBuilderStep3 {
 	builder.request.FetchVariable = fetchVariables
+	return builder
+}
+
+func (builder *JobWorkerBuilder) TenantIds(tenantIds ...string) JobWorkerBuilderStep3 {
+	builder.request.TenantIds = tenantIds
 	return builder
 }
 
@@ -264,6 +271,7 @@ func NewJobWorkerBuilder(gatewayClient pb.GatewayClient, jobClient JobClient, re
 			Timeout:        commands.DefaultJobTimeoutInMs,
 			Worker:         commands.DefaultJobWorkerName,
 			RequestTimeout: DefaultRequestTimeout.Milliseconds(),
+			TenantIds:      []string{commands.DefaultJobTenantID},
 		},
 		requestTimeout:  DefaultRequestTimeout + RequestTimeoutOffset,
 		shouldRetry:     retryPred,

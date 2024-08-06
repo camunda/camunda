@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import io.camunda.tasklist.webapp.service.TaskService;
@@ -40,7 +41,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.test.util.ReflectionTestUtils;
 
 public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIntegrationTest {
-  public static final Boolean IS_ELASTIC = !TasklistPropertiesUtil.isOpenSearchDatabase();
+  public static final Boolean IS_ELASTIC = TestUtil.isElasticSearch();
 
   @Autowired public BeanFactory beanFactory;
 

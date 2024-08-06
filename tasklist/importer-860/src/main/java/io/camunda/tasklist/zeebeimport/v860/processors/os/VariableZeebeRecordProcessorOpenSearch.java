@@ -57,6 +57,7 @@ public class VariableZeebeRecordProcessorOpenSearch {
     entity.setScopeFlowNodeId(String.valueOf(recordValue.getScopeKey()));
     entity.setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()));
     entity.setName(recordValue.getName());
+    entity.setTenantId(recordValue.getTenantId());
     if (recordValue.getValue().length()
         > tasklistProperties.getImporter().getVariableSizeThreshold()) {
       // store preview

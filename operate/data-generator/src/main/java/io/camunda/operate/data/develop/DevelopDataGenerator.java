@@ -50,6 +50,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   @Autowired private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
   private StatefulRestTemplate restTemplate;
 
+  @Override
   protected void startGeneratingData() {
     restTemplate = statefulRestTemplateFactory.apply(OPERATE_HOST, OPERATE_PORT);
     super.startGeneratingData();

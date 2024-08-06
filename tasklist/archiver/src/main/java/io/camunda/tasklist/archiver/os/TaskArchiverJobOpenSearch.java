@@ -22,6 +22,7 @@ import io.micrometer.core.instrument.Timer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -194,7 +195,9 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
                     d.field(TaskTemplate.COMPLETION_TIME)
                         .calendarInterval(
                             CalendarInterval.valueOf(
-                                tasklistProperties.getArchiver().getRolloverInterval()))
+                                Optional.ofNullable(
+                                        tasklistProperties.getArchiver().getRolloverInterval())
+                                    .orElse("Day")))
                         .format(tasklistProperties.getArchiver().getElsRolloverDateFormat())
                         .keyed(true))
             .aggregations(

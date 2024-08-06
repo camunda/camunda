@@ -111,7 +111,7 @@ public final class FileBasedSnapshotTest {
 
   private FileBasedSnapshot createSnapshot(final Path snapshotPath, final Path checksumPath)
       throws IOException {
-    final var metadata = new FileBasedSnapshotId(1L, 1L, 1L, 1L);
+    final var metadata = new FileBasedSnapshotId(1L, 1L, 1L, 1L, 0);
 
     FileUtil.ensureDirectoryExists(snapshotPath);
     for (final var entry : SNAPSHOT_FILE_CONTENTS.entrySet()) {

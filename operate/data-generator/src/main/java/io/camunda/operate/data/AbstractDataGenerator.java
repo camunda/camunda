@@ -52,7 +52,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
     LOGGER.debug("INIT: Generate demo data...");
     try {
       createZeebeDataAsync(false);
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       LOGGER.debug("Demo data could not be generated. Cause: {}", ex.getMessage());
       LOGGER.error("Error occurred when generating demo data.", ex);
     }

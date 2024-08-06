@@ -7,7 +7,6 @@
  */
 package io.camunda.service.search.sort;
 
-import io.camunda.search.clients.sort.SortOrder;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
@@ -40,14 +39,6 @@ public final record ProcessInstanceSort(List<FieldSorting> orderings) implements
     public Builder endDate() {
       currentOrdering = new FieldSorting("endDate", null);
       return this;
-    }
-
-    public Builder asc() {
-      return addOrdering(SortOrder.ASC);
-    }
-
-    public Builder desc() {
-      return addOrdering(SortOrder.DESC);
     }
 
     @Override

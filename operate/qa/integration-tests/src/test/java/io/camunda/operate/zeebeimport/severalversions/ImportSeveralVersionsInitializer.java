@@ -23,6 +23,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.containers.ZeebeContainer;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Random;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +44,7 @@ public class ImportSeveralVersionsInitializer
 
   private ZeebeContainer zeebeContainer;
 
-  private Random random = new Random();
+  private final Random random = new Random();
 
   private ZeebeClient client;
 
@@ -54,7 +55,8 @@ public class ImportSeveralVersionsInitializer
 
   @Autowired private TestContainerUtil testContainerUtil;
 
-  public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
+  @Override
+  public void initialize(final ConfigurableApplicationContext configurableApplicationContext) {
 
     tmpFolder = createTemporaryFolder();
 
@@ -91,7 +93,7 @@ public class ImportSeveralVersionsInitializer
       createdFolder.delete();
       createdFolder.mkdir();
       return createdFolder;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -101,13 +103,13 @@ public class ImportSeveralVersionsInitializer
     final String[] zeebeVersions =
         ContainerVersionsUtil.readProperty(ZEEBE_VERSIONS_PROPERTY_NAME).split(VERSIONS_DELIMITER);
 
-    for (String version : zeebeVersions) {
+    for (final String version : zeebeVersions) {
       closeClient();
       testContainerUtil.stopZeebe(tmpFolder);
       zeebeContainer = testContainerUtil.startZeebe(tmpFolder.getPath(), version, ZEEBE_PREFIX, 1);
       client =
           ZeebeClient.newClientBuilder()
-              .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
+              .grpcAddress(URI.create(zeebeContainer.getExternalGatewayAddress()))
               .usePlaintext()
               .build();
       generateDataForCurrentVersion();
@@ -141,9 +143,9 @@ public class ImportSeveralVersionsInitializer
                 testContainerUtil.getEsClient(),
                 getZeebeAliasName("process-instance"),
                 "value.processInstanceKey");
-      } catch (IOException e) {
+      } catch (final IOException e) {
         fail("Unable to check for exported data", e);
-      } catch (ElasticsearchStatusException ex) {
+      } catch (final ElasticsearchStatusException ex) {
         // try again
       }
       attempts++;
@@ -193,7 +195,7 @@ public class ImportSeveralVersionsInitializer
         .done();
   }
 
-  private String getZeebeAliasName(String name) {
+  private String getZeebeAliasName(final String name) {
     return String.format(ZEEBE_PREFIX + "-" + name);
   }
 }

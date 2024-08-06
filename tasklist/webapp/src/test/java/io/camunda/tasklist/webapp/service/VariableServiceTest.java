@@ -141,7 +141,7 @@ class VariableServiceTest {
   }
 
   private void mockReturnOriginalVariables(
-      List<VariableEntity> originalVariables, String... varNames) {
+      final List<VariableEntity> originalVariables, final String... varNames) {
     final FlowNodeInstanceEntity flowNodeInstance = mock(FlowNodeInstanceEntity.class);
     when(variableStore.getFlowNodeInstances(any())).thenReturn(List.of(flowNodeInstance));
     when(variableStore.getVariablesByFlowNodeInstanceIds(
@@ -167,7 +167,7 @@ class VariableServiceTest {
   @ParameterizedTest
   @MethodSource("persistDraftTaskVariablesInvalidInputTestData")
   void persistDraftTaskVariablesWhenInvalidInputShouldThrowException(
-      VariableInputDTO variableInput, String errorMessage) {
+      final VariableInputDTO variableInput, final String errorMessage) {
     final String taskId = "taskID_123";
     final List<VariableInputDTO> draftTaskVariables = List.of(variableInput);
     final TaskEntity task = mock(TaskEntity.class);
@@ -593,11 +593,11 @@ class VariableServiceTest {
   }
 
   private static VariableEntity createVariableEntity(
-      String flowNodeInstanceId,
-      String name,
-      String value,
-      int variableSizeThreshold,
-      String tenantId) {
+      final String flowNodeInstanceId,
+      final String name,
+      final String value,
+      final int variableSizeThreshold,
+      final String tenantId) {
     final VariableEntity entity =
         new VariableEntity()
             .setId(VariableEntity.getIdBy(flowNodeInstanceId, name))
@@ -617,7 +617,10 @@ class VariableServiceTest {
   }
 
   private static VariableEntity createVariableEntity(
-      String flowNodeInstanceId, String name, String value, int variableSizeThreshold) {
+      final String flowNodeInstanceId,
+      final String name,
+      final String value,
+      final int variableSizeThreshold) {
     return createVariableEntity(
         flowNodeInstanceId, name, value, variableSizeThreshold, DEFAULT_TENANT_IDENTIFIER);
   }

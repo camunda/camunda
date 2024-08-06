@@ -32,6 +32,9 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.VisibleForTesting;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,6 +55,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final List<PartitionListener> partitionListeners = new ArrayList<>();
   private final List<PartitionRaftListener> partitionRaftListeners = new ArrayList<>();
   private final Duration shutdownTimeout;
+  private final MeterRegistry meterRegistry;
 
   private ConcurrencyControl concurrencyControl;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
@@ -77,7 +81,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final ClusterServicesImpl clusterServices,
       final BrokerClient brokerClient,
       final List<PartitionListener> additionalPartitionListeners,
-      final Duration shutdownTimeout) {
+      final Duration shutdownTimeout,
+      final MeterRegistry meterRegistry) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
@@ -89,9 +94,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.identityConfiguration = identityConfiguration;
     this.brokerClient = brokerClient;
     this.shutdownTimeout = shutdownTimeout;
+    this.meterRegistry = requireNonNull(meterRegistry);
     partitionListeners.addAll(additionalPartitionListeners);
   }
 
+  @VisibleForTesting
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
       final BrokerCfg configuration,
@@ -115,7 +122,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
         clusterServices,
         brokerClient,
         additionalPartitionListeners,
-        shutdownTimeout);
+        shutdownTimeout,
+        new SimpleMeterRegistry());
   }
 
   @Override
@@ -321,5 +329,10 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public void setRequestIdGenerator(final SnowflakeIdGenerator requestIdGenerator) {
     this.requestIdGenerator = requestIdGenerator;
+  }
+
+  @Override
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
   }
 }

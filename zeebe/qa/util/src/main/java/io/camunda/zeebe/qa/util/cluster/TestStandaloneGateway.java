@@ -9,8 +9,8 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
-import io.camunda.commons.CommonsModuleConfiguration;
-import io.camunda.commons.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
+import io.camunda.application.commons.CommonsModuleConfiguration;
+import io.camunda.application.commons.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.test.util.socket.SocketUtil;

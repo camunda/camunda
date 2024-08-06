@@ -93,22 +93,10 @@ public final class CommandApiServiceImpl extends Actor
           queryHandler.addPartition(partitionId, queryService);
           serverTransport.subscribe(partitionId, RequestType.QUERY, queryHandler);
 
-          logStream
-              .newLogStreamWriter()
-              .onComplete(
-                  (recordWriter, error) -> {
-                    if (error == null) {
-                      commandHandler.addPartition(partitionId, recordWriter);
-                      serverTransport.subscribe(partitionId, RequestType.COMMAND, commandHandler);
-                      future.complete(null);
-                    } else {
-                      Loggers.SYSTEM_LOGGER.error(
-                          "Error on retrieving write buffer from log stream {}",
-                          partitionId,
-                          error);
-                      future.completeExceptionally(error);
-                    }
-                  });
+          final var logStreamWriter = logStream.newLogStreamWriter();
+          commandHandler.addPartition(partitionId, logStreamWriter);
+          serverTransport.subscribe(partitionId, RequestType.COMMAND, commandHandler);
+          future.complete(null);
         });
     return future;
   }

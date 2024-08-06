@@ -27,7 +27,8 @@ import org.springframework.test.context.TestExecutionListeners.MergeMode;
 
 /**
  * Marks a class as a process test and adds the Spring test execution listener {@link
- * CamundaProcessTestExecutionListener}.
+ * CamundaProcessTestExecutionListener}. Use {@link CamundaAssert} to verify the expected result of
+ * a test.
  *
  * <p>Example usage:
  *
@@ -36,24 +37,25 @@ import org.springframework.test.context.TestExecutionListeners.MergeMode;
  * public class MyProcessTest {
  *
  *   &#064;Autowired
- *   private ZeebeClient zeebeClient;
+ *   private ZeebeClient client;
  *
  *   &#064;Test
  *   void shouldWork() {
  *     // given
- *     final long processInstanceKey =
- *         zeebeClient
+ *     final ProcessInstanceEvent processInstance =
+ *         client
  *             .newCreateInstanceCommand()
  *             .bpmnProcessId("process")
  *             .latestVersion()
  *             .send()
- *             .join()
- *             .getProcessInstanceKey();
+ *             .join();
  *
  *     // when
  *
  *     // then
- *
+ *     CamundaAssert.assertThat(processInstance)
+ *         .isCompleted()
+ *         .hasCompletedElements("A", "B");
  *   }
  * }
  * </pre>

@@ -9,16 +9,12 @@ package io.camunda.zeebe.it.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import io.camunda.zeebe.client.ZeebeClient;
+import com.fasterxml.jackson.databind.node.NullNode;
 import io.camunda.zeebe.qa.util.actuator.FlowControlActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import java.util.Map;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -34,105 +30,115 @@ final class FlowControlEndpointIT {
           .withEmbeddedGateway(true)
           .build();
 
-  @AutoCloseResource private final ZeebeClient client = CLUSTER.newClientBuilder().build();
-
-  @BeforeEach
-  void beforeEach() {
-    final var client = CLUSTER.newClientBuilder().build();
-  }
-
   @Test
   void shouldSetFLowControl() {
     // given
-    getActuator()
-        .setFlowControlConfiguration(
-            "{\n"
-                + " \"write\": { \n"
-                + "     \"rampUp\": 0,"
-                + "     \"enabled\": true,"
-                + "     \"limit\": 999"
-                + "  },"
-                + "  \"request\": {\n"
-                + "    \"useWindowed\": false,\n"
-                + "    \"algorithm\": \"VEGAS\",\n"
-                + "    \"vegas\": {\n"
-                + "      \"alpha\": 3,\n"
-                + "      \"beta\": 6,\n"
-                + "      \"initialLimit\": 50\n"
-                + "    }\n"
-                + "  }\n"
-                + "}");
-    final Map<Integer, JsonNode> flowControlConfiguration =
-        getActuator().getFlowControlConfiguration();
+    final var actuator = FlowControlActuator.of(CLUSTER.availableGateway());
+    actuator.setFlowControlConfiguration(
+        // language=JSON
+        """
+        {
+         "write": {
+           "rampUp": 0,
+           "enabled": true,
+           "limit": 999
+          },
+          "request": {
+            "useWindowed": false,
+            "algorithm": "VEGAS",
+            "vegas": {
+              "alpha": 3,
+              "beta": 6,
+              "initialLimit": 50
+            }
+          }
+        }""");
+    final var flowControlConfiguration = actuator.getFlowControlConfiguration();
 
     // then
-    assertThat(flowControlConfiguration.get(1).toString())
-        .contains(
-            "\"requestLimiter\":{\"limit\":50,\"estimatedLimit\":50.0,\"rtt_noload\":0,\"maxLimit\":1000,\"smoothing\":1.0}",
-            "\"writeRateLimit\":{\"enabled\":true,\"limit\":999,\"rampUp\":0.0}");
-  }
+    final var requestLimiter = flowControlConfiguration.get(1).get("requestLimiter");
+    assertThat(requestLimiter.get("limit").asInt()).isEqualTo(50);
+    assertThat(requestLimiter.get("estimatedLimit").asDouble()).isEqualTo(50.0);
+    assertThat(requestLimiter.get("rtt_noload").asInt()).isEqualTo(0);
+    assertThat(requestLimiter.get("maxLimit").asInt()).isEqualTo(1000);
+    assertThat(requestLimiter.get("smoothing").asDouble()).isEqualTo(1.0);
 
-  private FlowControlActuator getActuator() {
-    return FlowControlActuator.of(CLUSTER.availableGateway());
+    final var writeRateLimit = flowControlConfiguration.get(1).get("writeRateLimit");
+    assertThat(writeRateLimit.get("enabled").asBoolean()).isTrue();
+    assertThat(writeRateLimit.get("limit").asInt()).isEqualTo(999);
+    assertThat(writeRateLimit.get("rampUp").asDouble()).isEqualTo(0.0);
   }
 
   @Test
   void canConfigureJustOneOfTheLimits() {
     // given
+    final var actuator = FlowControlActuator.of(CLUSTER.availableGateway());
     // to configure just one of the limits, we have to set the others to null
-    getActuator()
-        .setFlowControlConfiguration(
-            "{ "
-                + "  \"request\": null, "
-                + "  \"write\": { \n"
-                + "     \"rampUp\": 0,"
-                + "     \"enabled\": true,"
-                + "     \"limit\": 5000"
-                + "  }"
-                + "}");
-    getActuator()
-        .setFlowControlConfiguration(
-            "{ "
-                + "  \"write\": null, "
-                + "  \"request\": "
-                + "  {"
-                + "    \"enabled\":true,"
-                + "    \"useWindowed\":false,"
-                + "    \"legacyVegas\": {"
-                + "      \"maxConcurrency\": 32768"
-                + "    },"
-                + "    \"algorithm\":\"LEGACY_VEGAS\""
-                + "  }"
-                + "}");
-    final Map<Integer, JsonNode> flowControlConfiguration =
-        getActuator().getFlowControlConfiguration();
+    actuator.setFlowControlConfiguration(
+        // language=JSON
+        """
+        {
+          "request": null,
+          "write": {
+             "rampUp": 0,
+             "enabled": true,
+             "limit": 5000
+          }
+        }""");
+    actuator.setFlowControlConfiguration(
+        // language=JSON
+        """
+        {
+          "write": null,
+          "request": {
+            "enabled":true,
+            "useWindowed":false,
+            "legacyVegas": {
+              "maxConcurrency": 32768
+            },
+            "algorithm":"LEGACY_VEGAS"
+          }
+        }""");
 
     // then
-    assertThat(flowControlConfiguration.get(1).toString())
-        .contains(
-            "\"requestLimiter\":{\"limit\":1024,\"estimatedLimit\":1024.0,\"rtt_noload\":0,\"maxLimit\":32768,\"smoothing\":1.0}",
-            "\"writeRateLimit\":{\"enabled\":true,\"limit\":5000,\"rampUp\":0.0}");
+    final var flowControlConfiguration = actuator.getFlowControlConfiguration();
+    final var requestLimiter = flowControlConfiguration.get(1).get("requestLimiter");
+    assertThat(requestLimiter.get("limit").asInt()).isEqualTo(1024);
+    assertThat(requestLimiter.get("estimatedLimit").asDouble()).isEqualTo(1024.0);
+    assertThat(requestLimiter.get("rtt_noload").asInt()).isEqualTo(0);
+    assertThat(requestLimiter.get("maxLimit").asInt()).isEqualTo(32768);
+    assertThat(requestLimiter.get("smoothing").asDouble()).isEqualTo(1.0);
+    final var writeRateLimit = flowControlConfiguration.get(1).get("writeRateLimit");
+    assertThat(writeRateLimit.get("enabled").asBoolean()).isTrue();
+    assertThat(writeRateLimit.get("limit").asInt()).isEqualTo(5000);
+    assertThat(writeRateLimit.get("rampUp").asDouble()).isEqualTo(0.0);
   }
 
   @Test
   void canDisableALimit() {
     // given
-    getActuator()
-        .setFlowControlConfiguration(
-            "{ \"request\": { \"enabled\": false }, "
-                + "\"write\": { \n"
-                + "     \"rampUp\": 0,"
-                + "     \"enabled\": false,"
-                + "     \"limit\": 1000"
-                + "  }"
-                + "}");
-    final Map<Integer, JsonNode> flowControlConfiguration =
-        getActuator().getFlowControlConfiguration();
+    final var actuator = FlowControlActuator.of(CLUSTER.availableGateway());
+    actuator.setFlowControlConfiguration(
+        // language=JSON
+        """
+        {
+          "request": {
+            "enabled": false
+          },
+          "write": {
+            "enabled": false,
+            "rampUp": 0,
+            "limit": 1000
+          }
+        }
+        """);
 
     // then
-    assertThat(flowControlConfiguration.get(1).toString())
-        .contains(
-            "\"requestLimiter\":null",
-            "\"writeRateLimit\":{\"enabled\":false,\"limit\":1000,\"rampUp\":0.0}");
+    final var flowControlConfiguration = actuator.getFlowControlConfiguration();
+    assertThat(flowControlConfiguration.get(1).get("requestLimiter")).isInstanceOf(NullNode.class);
+    final var writeRateLimit = flowControlConfiguration.get(1).get("writeRateLimit");
+    assertThat(writeRateLimit.get("enabled").asBoolean()).isFalse();
+    assertThat(writeRateLimit.get("limit").asInt()).isEqualTo(1000);
+    assertThat(writeRateLimit.get("rampUp").asDouble()).isEqualTo(0.0);
   }
 }

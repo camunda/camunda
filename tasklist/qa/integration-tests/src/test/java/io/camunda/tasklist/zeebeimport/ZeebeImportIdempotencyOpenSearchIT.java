@@ -10,9 +10,9 @@ package io.camunda.tasklist.zeebeimport;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.util.TestCheck;
-import io.camunda.tasklist.util.TestUtil;
 import io.camunda.tasklist.util.apps.idempotency.ZeebeImportIdempotencyOpenSearchTestConfig;
 import org.junit.jupiter.api.BeforeAll;
 import org.springframework.beans.factory.annotation.Autowired;

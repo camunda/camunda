@@ -80,7 +80,8 @@ class PartitionRestoreServiceTest {
   void setUp() {
     backupStore = new TestRestorableBackupStore();
 
-    snapshotStore = new FileBasedSnapshotStore(partitionId, dataDirectory);
+    snapshotStore =
+        new FileBasedSnapshotStore(0, partitionId, dataDirectory, snapshotPath -> Map.of());
     actorScheduler.submitActor(snapshotStore, SchedulingHints.IO_BOUND);
 
     backupService =
@@ -99,7 +100,8 @@ class PartitionRestoreServiceTest {
             PartitionId.from("raft", partitionId), Set.of(), Map.of(), 1, new MemberId("1"));
     final var raftPartition =
         new RaftPartition(partitionMetadata, null, dataDirectoryToRestore.toFile());
-    restoreService = new PartitionRestoreService(backupStore, raftPartition);
+    restoreService =
+        new PartitionRestoreService(backupStore, raftPartition, nodeId, snapshotPath -> Map.of());
 
     journal =
         SegmentedJournal.builder()

@@ -18,8 +18,10 @@ import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.Objects;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
@@ -81,6 +83,7 @@ final class SnapshotAfterScalingTest {
             .map(PartitionsActuator::query)
             .map(s -> s.get(1))
             .toList();
+
     assertThat(
             statuses.stream()
                 .map(PartitionStatus::exportedPosition)
@@ -101,12 +104,23 @@ final class SnapshotAfterScalingTest {
             .map(PartitionsActuator::of)
             .map(PartitionsActuator::query)
             .toList();
-    assertThat(statuses.stream().map(status -> status.get(1).snapshotId()).count())
+    assertThat(
+            statuses.stream()
+                .map(status -> status.get(1).snapshotId())
+                .filter(Objects::nonNull)
+                .count())
         .describedAs("Expected both replicas to have taken snapshot. Received status %s", statuses)
         .isEqualTo(2);
 
-    assertThat(statuses.stream().map(status -> status.get(1).snapshotId()).distinct().count())
-        .describedAs("Expected both replicas to have same snapshot. Received status %s", statuses)
+    assertThat(
+            statuses.stream()
+                .map(
+                    status ->
+                        FileBasedSnapshotId.ofFileName(status.get(1).snapshotId()).get().getIndex())
+                .distinct()
+                .count())
+        .describedAs(
+            "Expected both replicas to have snapshot at same index. Received status %s", statuses)
         .isOne();
   }
 }

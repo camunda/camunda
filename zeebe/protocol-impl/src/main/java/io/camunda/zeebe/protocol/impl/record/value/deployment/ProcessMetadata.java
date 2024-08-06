@@ -39,16 +39,18 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
 
   public ProcessMetadata() {
-    super(7);
+    super(8);
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)
         .declareProperty(resourceNameProp)
         .declareProperty(checksumProp)
         .declareProperty(isDuplicateProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(deploymentKeyProp);
   }
 
   @Override
@@ -84,6 +86,21 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
   @Override
   public boolean isDuplicate() {
     return isDuplicateProp.getValue();
+  }
+
+  public ProcessMetadata setDuplicate(final boolean isDuplicate) {
+    isDuplicateProp.setValue(isDuplicate);
+    return this;
+  }
+
+  @Override
+  public long getDeploymentKey() {
+    return deploymentKeyProp.getValue();
+  }
+
+  public ProcessMetadata setDeploymentKey(final long deploymentKey) {
+    deploymentKeyProp.setValue(deploymentKey);
+    return this;
   }
 
   public ProcessMetadata setResourceName(final String resourceName) {
@@ -151,11 +168,6 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
   public ProcessMetadata setBpmnProcessId(
       final DirectBuffer bpmnProcessId, final int offset, final int length) {
     bpmnProcessIdProp.setValue(bpmnProcessId, offset, length);
-    return this;
-  }
-
-  public ProcessMetadata markAsDuplicate() {
-    isDuplicateProp.setValue(true);
     return this;
   }
 

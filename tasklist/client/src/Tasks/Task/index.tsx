@@ -15,6 +15,7 @@ import {
 } from 'react-router-dom';
 import {observer} from 'mobx-react-lite';
 import {useCompleteTask} from 'modules/mutations/useCompleteTask';
+import {useTranslation} from 'react-i18next';
 import {pages, useTaskDetailsParams} from 'modules/routing';
 import {Task as TaskType, Variable} from 'modules/types';
 import {tracking} from 'modules/tracking';
@@ -51,6 +52,7 @@ const Task: React.FC = observer(() => {
 
   const filters = useTaskFilters();
   const {data, refetch: refetchAllTasks} = useTasks(filters);
+  const {t} = useTranslation();
   const tasks = data?.pages.flat() ?? [];
   const hasRemainingTasks = tasks.length > 0;
 
@@ -103,7 +105,7 @@ const Task: React.FC = observer(() => {
 
     notificationsStore.displayNotification({
       kind: 'success',
-      title: 'Task completed',
+      title: t('taskCompletedNotification'),
       isDismissable: true,
     });
   }
@@ -113,10 +115,13 @@ const Task: React.FC = observer(() => {
 
     if (autoSelectNextTaskEnabled) {
       const newTasks = (await refetchAllTasks()).data?.pages[0] ?? [];
-      if (newTasks.length > 1 && newTasks[0].id === id) {
-        autoSelectGoToTask(newTasks[1].id);
-      } else if (newTasks.length > 0 && newTasks[0].id !== id) {
-        autoSelectGoToTask(newTasks[0].id);
+      const openTasks = newTasks.filter(
+        ({taskState}) => taskState === 'CREATED',
+      );
+      if (openTasks.length > 1 && openTasks[0].id === id) {
+        autoSelectGoToTask(openTasks[1].id);
+      } else if (openTasks.length > 0 && openTasks[0].id !== id) {
+        autoSelectGoToTask(openTasks[0].id);
       } else {
         navigate({
           pathname: pages.initial,
@@ -134,12 +139,12 @@ const Task: React.FC = observer(() => {
 
   function handleSubmissionFailure(error: Error) {
     const errorMessage = isRequestError(error)
-      ? error?.networkError?.message ?? error.message
+      ? (error?.networkError?.message ?? error.message)
       : error.message;
 
     notificationsStore.displayNotification({
       kind: 'error',
-      title: 'Task could not be completed',
+      title: t('taskCouldNotBeCompletedNotification'),
       subtitle: getCompleteTaskErrorMessage(errorMessage),
       isDismissable: true,
     });

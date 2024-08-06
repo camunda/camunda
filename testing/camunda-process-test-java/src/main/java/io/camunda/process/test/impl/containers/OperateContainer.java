@@ -39,6 +39,7 @@ public class OperateContainer extends GenericContainer<OperateContainer> {
   private void applyDefaultConfiguration() {
     withNetwork(Network.SHARED)
         .waitingFor(newDefaultWaitStrategy())
+        .withEnv(ContainerRuntimeEnvs.CAMUNDA_OPERATE_IMPORTER_READERBACKOFF, "1000")
         .addExposedPorts(ContainerRuntimePorts.OPERATE_REST_API);
   }
 

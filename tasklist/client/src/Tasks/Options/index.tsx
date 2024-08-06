@@ -8,6 +8,7 @@
 
 import {observer} from 'mobx-react-lite';
 import {Toggle} from '@carbon/react';
+import {useTranslation} from 'react-i18next';
 import {autoSelectNextTaskStore} from 'modules/stores/autoSelectFirstTask';
 import styles from './styles.module.scss';
 
@@ -15,21 +16,30 @@ type Props = {
   onAutoSelectToggle?: (state: boolean) => void;
 };
 const Options: React.FC<Props> = observer(({onAutoSelectToggle}) => {
+  const {t} = useTranslation();
+
   return (
-    <section className={styles.container} aria-label="Options">
+    <section
+      className={styles.container}
+      aria-label={t('taskOptionsSectionAria')}
+    >
       <Toggle
         id="toggle-auto-select-task"
         data-testid="toggle-auto-select-task"
         size="sm"
-        labelText="Auto-select first available task"
-        aria-label="Auto-select first available task"
+        labelText={t('taskOptionsAutoSelectLabel')}
+        aria-label={t('taskOptionsAutoSelectLabel')}
         hideLabel
-        labelA="Off"
-        labelB="On"
+        labelA={t('taskOptionsAutoSelectOffAria')}
+        labelB={t('taskOptionsAutoSelectOnAria')}
         toggled={autoSelectNextTaskStore.enabled}
         onToggle={(state) => {
-          autoSelectNextTaskStore.toggle();
-          onAutoSelectToggle?.(!state);
+          if (state) {
+            autoSelectNextTaskStore.enable();
+          } else {
+            autoSelectNextTaskStore.disable();
+          }
+          onAutoSelectToggle?.(state);
         }}
       />
     </section>

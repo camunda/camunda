@@ -65,12 +65,14 @@ public class TaskService {
   @Autowired private AssigneeMigrator assigneeMigrator;
   @Autowired private TaskValidator taskValidator;
 
-  public List<TaskDTO> getTasks(TaskQueryDTO query) {
+  public List<TaskDTO> getTasks(final TaskQueryDTO query) {
     return getTasks(query, emptySet(), false);
   }
 
   public List<TaskDTO> getTasks(
-      TaskQueryDTO query, Set<String> includeVariableNames, boolean fetchFullValuesFromDB) {
+      final TaskQueryDTO query,
+      final Set<String> includeVariableNames,
+      final boolean fetchFullValuesFromDB) {
     if (countNonNullObjects(
             query.getSearchAfter(), query.getSearchAfterOrEqual(),
             query.getSearchBefore(), query.getSearchBeforeOrEqual())
@@ -80,7 +82,7 @@ public class TaskService {
     }
 
     if (query.getPageSize() <= 0) {
-      throw new InvalidRequestException("Page size cannot should be a positive number");
+      throw new InvalidRequestException("Page size should be a positive number");
     }
 
     if (query.getImplementation() != null
@@ -123,11 +125,12 @@ public class TaskService {
         .toList();
   }
 
-  public TaskDTO getTask(String taskId) {
+  public TaskDTO getTask(final String taskId) {
     return TaskDTO.createFrom(taskStore.getTask(taskId), objectMapper);
   }
 
-  public TaskDTO assignTask(String taskId, String assignee, Boolean allowOverrideAssignment) {
+  public TaskDTO assignTask(
+      final String taskId, final String assignee, Boolean allowOverrideAssignment) {
     if (allowOverrideAssignment == null) {
       allowOverrideAssignment = true;
     }
@@ -157,7 +160,7 @@ public class TaskService {
                 .assignee(taskAssignee)
                 .send()
                 .join();
-      } catch (ClientException exception) {
+      } catch (final ClientException exception) {
         throw new TasklistRuntimeException(exception.getMessage());
       }
     }
@@ -167,7 +170,7 @@ public class TaskService {
     return TaskDTO.createFrom(claimedTask, objectMapper);
   }
 
-  private String determineTaskAssignee(String assignee) {
+  private String determineTaskAssignee(final String assignee) {
     final UserDTO currentUser = getCurrentUser();
     return StringUtils.isEmpty(assignee) && !currentUser.isApiUser()
         ? currentUser.getUserId()
@@ -175,11 +178,12 @@ public class TaskService {
   }
 
   public TaskDTO completeTask(
-      String taskId, List<VariableInputDTO> variables, boolean withDraftVariableValues) {
+      final String taskId,
+      final List<VariableInputDTO> variables,
+      final boolean withDraftVariableValues) {
     final Map<String, Object> variablesMap = new HashMap<>();
     requireNonNullElse(variables, Collections.<VariableInputDTO>emptyList())
-        .forEach(
-            variable -> variablesMap.put(variable.getName(), this.extractTypedValue(variable)));
+        .forEach(variable -> variablesMap.put(variable.getName(), extractTypedValue(variable)));
 
     try {
       LOGGER.info("Starting completion of task with ID: {}", taskId);
@@ -201,7 +205,7 @@ public class TaskService {
               .send()
               .join();
         }
-      } catch (ClientException exception) {
+      } catch (final ClientException exception) {
         throw new TasklistRuntimeException(exception.getMessage());
       }
 
@@ -213,7 +217,7 @@ public class TaskService {
         deleteDraftTaskVariablesSafely(taskId);
         updateCompletedMetric(completedTaskEntity);
         LOGGER.info("Task with ID {} completed successfully.", taskId);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOGGER.error(
             "Task with key {} was COMPLETED but error happened after completion: {}.",
             taskId,
@@ -221,18 +225,18 @@ public class TaskService {
       }
 
       return TaskDTO.createFrom(completedTaskEntity, objectMapper);
-    } catch (HttpServerErrorException e) { // Track only internal server errors
+    } catch (final HttpServerErrorException e) { // Track only internal server errors
       LOGGER.error("Error completing task with ID: {}. Details: {}", taskId, e.getMessage(), e);
       throw new TasklistRuntimeException("Error completing task with ID: " + taskId, e);
     }
   }
 
-  void deleteDraftTaskVariablesSafely(String taskId) {
+  void deleteDraftTaskVariablesSafely(final String taskId) {
     try {
       LOGGER.info(
           "Start deletion of draft task variables associated with task with id='{}'", taskId);
       variableService.deleteDraftTaskVariables(taskId);
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       final String errorMessage =
           String.format(
               "Error during deletion of draft task variables associated with task with id='%s'",
@@ -241,7 +245,7 @@ public class TaskService {
     }
   }
 
-  private Object extractTypedValue(VariableInputDTO variable) {
+  private Object extractTypedValue(final VariableInputDTO variable) {
     if (variable.getValue().equals("null")) {
       return objectMapper
           .nullNode(); // JSON Object null must be instanced like "null", also should not send to
@@ -250,19 +254,19 @@ public class TaskService {
 
     try {
       return objectMapper.readValue(variable.getValue(), Object.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 
-  public TaskDTO unassignTask(String taskId) {
+  public TaskDTO unassignTask(final String taskId) {
     final TaskEntity taskBefore = taskStore.getTask(taskId);
     taskValidator.validateCanUnassign(taskBefore);
     final TaskEntity taskEntity = taskStore.persistTaskUnclaim(taskBefore);
     if (taskBefore.getImplementation().equals(TaskImplementation.ZEEBE_USER_TASK)) {
       try {
         zeebeClient.newUserTaskUnassignCommand(taskBefore.getKey()).send().join();
-      } catch (ClientException exception) {
+      } catch (final ClientException exception) {
         taskStore.persistTaskClaim(taskBefore, taskBefore.getAssignee());
         throw new TasklistRuntimeException(exception.getMessage());
       }
@@ -284,7 +288,7 @@ public class TaskService {
       metrics.recordCounts(COUNTER_NAME_COMPLETED_TASKS, 1, getTaskMetricLabels(task));
       assigneeMigrator.migrateUsageMetrics(getCurrentUser().getUserId());
       taskMetricsStore.registerTaskCompleteEvent(task);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error("Error updating completed task metric for task with ID: {}", task.getId(), e);
       throw new TasklistRuntimeException(
           "Error updating completed task metric for task with ID: " + task.getId(), e);

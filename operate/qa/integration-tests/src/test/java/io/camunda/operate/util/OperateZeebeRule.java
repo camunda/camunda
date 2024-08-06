@@ -17,27 +17,27 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class OperateZeebeRule extends TestWatcher {
   @Autowired public OperateZeebeRuleProvider operateZeebeRuleProvider;
 
-  @Override
-  public void starting(Description description) {
-    operateZeebeRuleProvider.starting(description);
-  }
-
-  public void updateRefreshInterval(String value) {
+  public void updateRefreshInterval(final String value) {
     operateZeebeRuleProvider.updateRefreshInterval(value);
   }
 
-  public void refreshIndices(Instant instant) {
+  public void refreshIndices(final Instant instant) {
     operateZeebeRuleProvider.refreshIndices(instant);
   }
 
   @Override
-  public void finished(Description description) {
-    operateZeebeRuleProvider.finished(description);
+  protected void failed(final Throwable e, final Description description) {
+    operateZeebeRuleProvider.failed(e, description);
   }
 
   @Override
-  protected void failed(Throwable e, Description description) {
-    operateZeebeRuleProvider.failed(e, description);
+  public void starting(final Description description) {
+    operateZeebeRuleProvider.starting(description);
+  }
+
+  @Override
+  public void finished(final Description description) {
+    operateZeebeRuleProvider.finished(description);
   }
 
   /**

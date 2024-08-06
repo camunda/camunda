@@ -7,7 +7,11 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
+import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
+import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
+import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
+import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
+import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.security.auth.Authentication;
@@ -16,44 +20,33 @@ import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.util.Either;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 
 public class RequestMapper {
 
-  private static final String ERROR_MESSAGE_EMPTY_ATTRIBUTE = "No %s provided";
-  private static final String ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE =
-      "The value for %s is '%s' but must be %s";
-  private static final String ERROR_MESSAGE_DATE_PARSING =
-      "The provided %s '%s' cannot be parsed as a date according to RFC 3339, section 5.6.";
-  private static final String ERROR_MESSAGE_EMPTY_UPDATE_CHANGESET =
-      """
-      No update data provided. Provide at least an "action" or a non-null value \
-      for a supported attribute in the "changeset".""";
-
-  public static Either<ProblemDetail, CompleteUserTaskRequest> toUserTaskCompletionRequest(
+  public static CompleteUserTaskRequest toUserTaskCompletionRequest(
       final UserTaskCompletionRequest completionRequest, final long userTaskKey) {
 
-    return Either.right(
-        new CompleteUserTaskRequest(
-            userTaskKey,
-            getMapOrEmpty(completionRequest, UserTaskCompletionRequest::getVariables),
-            getStringOrEmpty(completionRequest, UserTaskCompletionRequest::getAction)));
+    return new CompleteUserTaskRequest(
+        userTaskKey,
+        getMapOrEmpty(completionRequest, UserTaskCompletionRequest::getVariables),
+        getStringOrEmpty(completionRequest, UserTaskCompletionRequest::getAction));
   }
 
   public static Either<ProblemDetail, AssignUserTaskRequest> toUserTaskAssignmentRequest(
@@ -65,136 +58,90 @@ public class RequestMapper {
     final boolean allowOverride =
         assignmentRequest.getAllowOverride() == null || assignmentRequest.getAllowOverride();
 
-    return validateAssignmentRequest(assignmentRequest)
-        .<Either<ProblemDetail, AssignUserTaskRequest>>map(Either::left)
-        .orElseGet(
-            () ->
-                Either.right(
-                    new AssignUserTaskRequest(
-                        userTaskKey,
-                        assignmentRequest.getAssignee(),
-                        actionValue.isBlank() ? "assign" : actionValue,
-                        allowOverride)));
+    return getResult(
+        validateAssignmentRequest(assignmentRequest),
+        () ->
+            new AssignUserTaskRequest(
+                userTaskKey,
+                assignmentRequest.getAssignee(),
+                actionValue.isBlank() ? "assign" : actionValue,
+                allowOverride));
   }
 
-  public static Either<ProblemDetail, AssignUserTaskRequest> toUserTaskUnassignmentRequest(
-      final long userTaskKey) {
-    return Either.right(new AssignUserTaskRequest(userTaskKey, "", "unassign", true));
+  public static AssignUserTaskRequest toUserTaskUnassignmentRequest(final long userTaskKey) {
+    return new AssignUserTaskRequest(userTaskKey, "", "unassign", true);
   }
 
   public static Either<ProblemDetail, UpdateUserTaskRequest> toUserTaskUpdateRequest(
       final UserTaskUpdateRequest updateRequest, final long userTaskKey) {
 
-    return validateUpdateRequest(updateRequest)
-        .<Either<ProblemDetail, UpdateUserTaskRequest>>map(Either::left)
-        .orElseGet(
-            () ->
-                Either.right(
-                    new UpdateUserTaskRequest(
-                        userTaskKey,
-                        getRecordWithChangedAttributes(updateRequest),
-                        getStringOrEmpty(updateRequest, UserTaskUpdateRequest::getAction))));
+    return getResult(
+        validateUpdateRequest(updateRequest),
+        () ->
+            new UpdateUserTaskRequest(
+                userTaskKey,
+                getRecordWithChangedAttributes(updateRequest),
+                getStringOrEmpty(updateRequest, UserTaskUpdateRequest::getAction)));
   }
 
   public static Either<ProblemDetail, ActivateJobsRequest> toJobsActivationRequest(
       final JobActivationRequest activationRequest) {
 
-    final var validationErrorResponse = validateJobActivationRequest(activationRequest);
-    return validationErrorResponse
-        .<Either<ProblemDetail, ActivateJobsRequest>>map(Either::left)
-        .orElseGet(
-            () ->
-                Either.right(
-                    new ActivateJobsRequest(
-                        activationRequest.getType(),
-                        activationRequest.getMaxJobsToActivate(),
-                        getStringListOrEmpty(activationRequest, JobActivationRequest::getTenantIds),
-                        activationRequest.getTimeout(),
-                        getStringOrEmpty(activationRequest, JobActivationRequest::getWorker),
-                        getStringListOrEmpty(
-                            activationRequest, JobActivationRequest::getFetchVariable),
-                        getLongOrZero(
-                            activationRequest, JobActivationRequest::getRequestTimeout))));
+    return getResult(
+        validateJobActivationRequest(activationRequest),
+        () ->
+            new ActivateJobsRequest(
+                activationRequest.getType(),
+                activationRequest.getMaxJobsToActivate(),
+                getStringListOrEmpty(activationRequest, JobActivationRequest::getTenantIds),
+                activationRequest.getTimeout(),
+                getStringOrEmpty(activationRequest, JobActivationRequest::getWorker),
+                getStringListOrEmpty(activationRequest, JobActivationRequest::getFetchVariable),
+                getLongOrZero(activationRequest, JobActivationRequest::getRequestTimeout)));
   }
 
-  private static Optional<ProblemDetail> validateAssignmentRequest(
-      final UserTaskAssignmentRequest assignmentRequest) {
-    if (assignmentRequest.getAssignee() == null || assignmentRequest.getAssignee().isBlank()) {
-      final ProblemDetail problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST,
-              ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("assignee"),
-              INVALID_ARGUMENT.name());
-      return Optional.of(problemDetail);
-    }
-    return Optional.empty();
+  public static FailJobRequest toJobFailRequest(
+      final JobFailRequest failRequest, final long jobKey) {
+
+    return new FailJobRequest(
+        jobKey,
+        getIntOrZero(failRequest, JobFailRequest::getRetries),
+        getStringOrEmpty(failRequest, JobFailRequest::getErrorMessage),
+        getLongOrZero(failRequest, JobFailRequest::getRetryBackOff),
+        getMapOrEmpty(failRequest, JobFailRequest::getVariables));
   }
 
-  private static Optional<ProblemDetail> validateUpdateRequest(
-      final UserTaskUpdateRequest updateRequest) {
-    final List<String> violations = new ArrayList<>();
-    if (updateRequest == null
-        || (updateRequest.getAction() == null && isEmpty(updateRequest.getChangeset()))) {
-      violations.add(ERROR_MESSAGE_EMPTY_UPDATE_CHANGESET);
-    }
-    if (updateRequest != null && !isEmpty(updateRequest.getChangeset())) {
-      final Changeset changeset = updateRequest.getChangeset();
-      validateDate(changeset.getDueDate(), "due date", violations);
-      validateDate(changeset.getFollowUpDate(), "follow-up date", violations);
-    }
-    if (violations.isEmpty()) {
-      return Optional.empty();
-    }
-    return Optional.of(
-        RestErrorMapper.createProblemDetail(
-            HttpStatus.BAD_REQUEST, String.join(" ", violations), INVALID_ARGUMENT.name()));
+  public static Either<ProblemDetail, ErrorJobRequest> toJobErrorRequest(
+      final JobErrorRequest errorRequest, final long jobKey) {
+
+    final var validationErrorResponse = validateJobErrorRequest(errorRequest);
+    return getResult(
+        validationErrorResponse,
+        () ->
+            new ErrorJobRequest(
+                jobKey,
+                errorRequest.getErrorCode(),
+                getStringOrEmpty(errorRequest, JobErrorRequest::getErrorMessage),
+                getMapOrEmpty(errorRequest, JobErrorRequest::getVariables)));
   }
 
-  private static Optional<ProblemDetail> validateJobActivationRequest(
-      final JobActivationRequest activationRequest) {
-    final List<String> violations = new ArrayList<>();
-    if (activationRequest.getType() == null || activationRequest.getType().isBlank()) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("type"));
-    }
-    if (activationRequest.getTimeout() == null) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("timeout"));
-    } else if (activationRequest.getTimeout() < 1) {
-      violations.add(
-          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-              "timeout", activationRequest.getTimeout(), "greater than 0"));
-    }
-    if (activationRequest.getMaxJobsToActivate() == null) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("maxJobsToActivate"));
-    } else if (activationRequest.getMaxJobsToActivate() < 1) {
-      violations.add(
-          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-              "maxJobsToActivate", activationRequest.getTimeout(), "greater than 0"));
-    }
-    if (violations.isEmpty()) {
-      return Optional.empty();
-    }
-    return Optional.of(
-        RestErrorMapper.createProblemDetail(
-            HttpStatus.BAD_REQUEST, String.join(". ", violations), INVALID_ARGUMENT.name()));
+  public static CompleteJobRequest toJobCompletionRequest(
+      final JobCompletionRequest completionRequest, final long jobKey) {
+
+    return new CompleteJobRequest(
+        jobKey, getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables));
   }
 
-  private static void validateDate(
-      final String dateString, final String attributeName, final List<String> violations) {
-    if (dateString != null && !dateString.isEmpty()) {
-      try {
-        ZonedDateTime.parse(dateString);
-      } catch (final DateTimeParseException ex) {
-        violations.add(ERROR_MESSAGE_DATE_PARSING.formatted(attributeName, dateString));
-      }
-    }
-  }
-
-  private static boolean isEmpty(final Changeset changeset) {
-    return changeset == null
-        || (changeset.getFollowUpDate() == null
-            && changeset.getDueDate() == null
-            && changeset.getCandidateGroups() == null
-            && changeset.getCandidateUsers() == null);
+  public static Either<ProblemDetail, UpdateJobRequest> toJobUpdateRequest(
+      final JobUpdateRequest updateRequest, final long jobKey) {
+    final var validationJobUpdateResponse = validateJobUpdateRequest(updateRequest);
+    return getResult(
+        validationJobUpdateResponse,
+        () ->
+            new UpdateJobRequest(
+                jobKey,
+                getIntOrZero(updateRequest, r -> updateRequest.getChangeset().getRetries()),
+                getLongOrZero(updateRequest, r -> updateRequest.getChangeset().getTimeout())));
   }
 
   public static CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
@@ -207,7 +154,7 @@ public class RequestMapper {
                     .orElseGet(result));
   }
 
-  public static CompletableFuture<ResponseEntity<Object>> executeServiceMethodWithNoContenResult(
+  public static CompletableFuture<ResponseEntity<Object>> executeServiceMethodWithNoContentResult(
       final Supplier<CompletableFuture<?>> method) {
     return RequestMapper.executeServiceMethod(method, () -> ResponseEntity.noContent().build());
   }
@@ -223,6 +170,13 @@ public class RequestMapper {
             .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants)
             .encode();
     return new Builder().token(token).tenants(authorizedTenants).build();
+  }
+
+  public static <T> Either<ProblemDetail, T> getResult(
+      final Optional<ProblemDetail> error, final Supplier<T> resultSupplier) {
+    return error
+        .<Either<ProblemDetail, T>>map(Either::left)
+        .orElseGet(() -> Either.right(resultSupplier.get()));
   }
 
   private static UserTaskRecord getRecordWithChangedAttributes(
@@ -247,10 +201,9 @@ public class RequestMapper {
     return record;
   }
 
-  private static Map<String, Object> getMapOrEmpty(
-      final UserTaskCompletionRequest request,
-      final Function<UserTaskCompletionRequest, Map<String, Object>> variablesExtractor) {
-    return request == null ? Map.of() : variablesExtractor.apply(request);
+  private static <R> Map<String, Object> getMapOrEmpty(
+      final R request, final Function<R, Map<String, Object>> mapExtractor) {
+    return request == null ? Map.of() : mapExtractor.apply(request);
   }
 
   private static <R> String getStringOrEmpty(
@@ -270,6 +223,11 @@ public class RequestMapper {
     return value == null ? List.of() : value;
   }
 
+  private static <R> int getIntOrZero(final R request, final Function<R, Integer> valueExtractor) {
+    final Integer value = request == null ? null : valueExtractor.apply(request);
+    return value == null ? 0 : value;
+  }
+
   public record CompleteUserTaskRequest(
       long userTaskKey, Map<String, Object> variables, String action) {}
 
@@ -277,4 +235,18 @@ public class RequestMapper {
 
   public record AssignUserTaskRequest(
       long userTaskKey, String assignee, String action, boolean allowOverride) {}
+
+  public record FailJobRequest(
+      long jobKey,
+      int retries,
+      String errorMessage,
+      Long retryBackoff,
+      Map<String, Object> variables) {}
+
+  public record ErrorJobRequest(
+      long jobKey, String errorCode, String errorMessage, Map<String, Object> variables) {}
+
+  public record CompleteJobRequest(long jobKey, Map<String, Object> variables) {}
+
+  public record UpdateJobRequest(long jobKey, Integer retries, Long timeout) {}
 }

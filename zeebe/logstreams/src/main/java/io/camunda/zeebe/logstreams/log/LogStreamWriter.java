@@ -74,7 +74,8 @@ public interface LogStreamWriter {
 
   enum WriteFailure {
     CLOSED,
-    FULL,
+    WRITE_LIMIT_EXHAUSTED,
+    REQUEST_LIMIT_EXHAUSTED,
     INVALID_ARGUMENT
   }
 }

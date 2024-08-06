@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -39,7 +39,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   private final Consumer<FileBasedSnapshot> onSnapshotDeleted;
 
   private final Set<FileBasedSnapshotReservation> reservations = new HashSet<>();
-  private final ActorControl actor;
+  private final ConcurrencyControl actor;
 
   private boolean deleted = false;
 
@@ -50,7 +50,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
       final FileBasedSnapshotId snapshotId,
       final SnapshotMetadata metadata,
       final Consumer<FileBasedSnapshot> onSnapshotDeleted,
-      final ActorControl actor) {
+      final ConcurrencyControl actor) {
     this.directory = directory;
     this.checksumFile = checksumFile;
     this.checksum = checksum;

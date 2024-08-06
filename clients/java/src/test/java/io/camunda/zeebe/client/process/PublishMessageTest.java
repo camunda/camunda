@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.process;
 
-import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
@@ -24,6 +23,7 @@ import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
 import io.camunda.zeebe.client.util.ClientTest;
+import io.camunda.zeebe.client.util.JsonUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import java.io.ByteArrayInputStream;
 import java.time.Duration;
@@ -76,7 +76,8 @@ public final class PublishMessageTest extends ClientTest {
 
     // then
     final PublishMessageRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getVariables())).contains(entry("foo", "bar"));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .contains(entry("foo", "bar"));
   }
 
   @Test
@@ -97,7 +98,8 @@ public final class PublishMessageTest extends ClientTest {
 
     // then
     final PublishMessageRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getVariables())).contains(entry("foo", "bar"));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .contains(entry("foo", "bar"));
   }
 
   @Test
@@ -117,7 +119,8 @@ public final class PublishMessageTest extends ClientTest {
 
     // then
     final PublishMessageRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getVariables())).contains(entry("foo", "bar"));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .contains(entry("foo", "bar"));
   }
 
   @Test
@@ -133,7 +136,8 @@ public final class PublishMessageTest extends ClientTest {
 
     // then
     final PublishMessageRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getVariables())).contains(entry("foo", "bar"));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .contains(entry("foo", "bar"));
   }
 
   @Test
@@ -151,7 +155,8 @@ public final class PublishMessageTest extends ClientTest {
 
     // then
     final PublishMessageRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getVariables())).contains(entry(key, value));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(request.getVariables()))
+        .contains(entry(key, value));
   }
 
   @Test

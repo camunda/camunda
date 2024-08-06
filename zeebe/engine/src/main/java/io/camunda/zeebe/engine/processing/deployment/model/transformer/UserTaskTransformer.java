@@ -20,6 +20,7 @@ import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTask;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
 public final class UserTaskTransformer implements ModelElementTransformer<UserTask> {
@@ -58,9 +60,11 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     transformTaskSchedule(element, userTaskProperties);
     transformTaskFormId(element, userTaskProperties);
     transformModelTaskHeaders(element, userTaskProperties);
+    transformBindingType(element, userTaskProperties);
 
     if (isZeebeUserTask) {
       transformExternalReference(element, userTaskProperties);
+      transformTaskPriority(element, userTaskProperties);
       userTask.setUserTaskProperties(userTaskProperties);
     } else {
       final var jobWorkerProperties = new JobWorkerProperties();
@@ -239,6 +243,34 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
                       ExpressionTransformer.asStringLiteral(externalReference))));
         } else {
           userTaskProperties.setExternalFormReference(externalReferenceExpression);
+        }
+      }
+    }
+  }
+
+  private void transformBindingType(
+      final UserTask element, final UserTaskProperties userTaskProperties) {
+    final ZeebeFormDefinition formDefinition =
+        element.getSingleExtensionElement(ZeebeFormDefinition.class);
+
+    if (formDefinition != null) {
+      userTaskProperties.setBindingType(formDefinition.getBindingType());
+    }
+  }
+
+  private void transformTaskPriority(
+      final UserTask element, final UserTaskProperties userTaskProperties) {
+
+    final ZeebePriorityDefinition priorityDefinition =
+        element.getSingleExtensionElement(ZeebePriorityDefinition.class);
+    if (priorityDefinition != null) {
+      final var priority = StringUtils.trim(priorityDefinition.getPriority());
+      if (priority != null && !priority.isBlank()) {
+        final var priorityExpression = expressionLanguage.parseExpression(priority);
+        if (priorityExpression.isStatic()) {
+          userTaskProperties.setPriority(expressionLanguage.parseExpression(priority));
+        } else {
+          userTaskProperties.setPriority(priorityExpression);
         }
       }
     }

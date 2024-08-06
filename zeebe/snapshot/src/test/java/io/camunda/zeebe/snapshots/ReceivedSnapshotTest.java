@@ -51,10 +51,12 @@ public class ReceivedSnapshotTest {
     final var senderDirectory = temporaryFolder.newFolder("sender").toPath();
     final var receiverDirectory = temporaryFolder.newFolder("receiver").toPath();
 
-    senderSnapshotStore = new FileBasedSnapshotStore(partitionId, senderDirectory);
+    senderSnapshotStore =
+        new FileBasedSnapshotStore(0, partitionId, senderDirectory, snapshotPath -> Map.of());
     scheduler.get().submitActor((Actor) senderSnapshotStore).join();
 
-    receiverSnapshotStore = new FileBasedSnapshotStore(partitionId, receiverDirectory);
+    receiverSnapshotStore =
+        new FileBasedSnapshotStore(0, partitionId, receiverDirectory, snapshotPath -> Map.of());
 
     scheduler.get().submitActor((Actor) receiverSnapshotStore).join();
   }
@@ -188,7 +190,7 @@ public class ReceivedSnapshotTest {
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(SnapshotAlreadyExistsException.class)
         .withMessageContaining(
-            "Expected to receive snapshot with id 1-0-1-0, but was already persisted");
+            "Expected to receive snapshot with id 1-0-1-0-0, but was already persisted");
   }
 
   @Test

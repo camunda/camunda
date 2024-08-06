@@ -15,11 +15,11 @@
  */
 package io.camunda.zeebe.client.process;
 
-import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.client.util.ClientTest;
+import io.camunda.zeebe.client.util.JsonUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.ActivateInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.TerminateInstruction;
@@ -444,7 +444,8 @@ public class ModifyProcessInstanceTest extends ClientTest {
 
   private void assertVariableInstruction(
       final VariableInstruction variableInstruction, final String expectedScopeId) {
-    assertThat(fromJsonAsMap(variableInstruction.getVariables())).containsOnly(entry("foo", "bar"));
+    Assertions.assertThat(JsonUtil.fromJsonAsMap(variableInstruction.getVariables()))
+        .containsOnly(entry("foo", "bar"));
     assertThat(variableInstruction.getScopeId()).isEqualTo(expectedScopeId);
   }
 

@@ -15,7 +15,6 @@ component/zeebe:
         - 'monitor/**'
         - 'parent/*'
         - 'pom.xml'
-        - 'spring-boot-starter-camunda-sdk/**'
         - 'zeebe/**'
 component/operate:
   - changed-files:
@@ -55,6 +54,22 @@ component/tasklist:
           - 'tasklist/**'
           - 'tasklist.Dockerfile'
           - 'webapps-common/**'
+component/optimize:
+  - changed-files:
+      - any-glob-to-any-file:
+        - '.ci/docker/test/*'
+        - '.github/ISSUE_TEMPLATE/optimize-*'
+        - '.github/actions/**'
+        - '.github/renovate.json'
+        - '.github/workflows/optimize-*'
+        - 'bom/*'
+        - 'camunda.Dockerfile'
+        - 'dist/**'
+        - 'optimize.Dockerfile'
+        - 'optimize/**'
+        - 'parent/*'
+        - 'pom.xml'
+        - 'webapps-common/**'
 component/build-pipeline:
   - changed-files:
       - any-glob-to-any-file:

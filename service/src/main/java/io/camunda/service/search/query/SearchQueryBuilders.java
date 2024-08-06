@@ -40,4 +40,23 @@ public final class SearchQueryBuilders {
       final Function<VariableQuery.Builder, ObjectBuilder<VariableQuery>> fn) {
     return fn.apply(variableSearchQuery()).build();
   }
+
+  public static DecisionDefinitionQuery.Builder decisionDefinitionSearchQuery() {
+    return new DecisionDefinitionQuery.Builder();
+  }
+
+  public static DecisionDefinitionQuery decisionDefinitionSearchQuery(
+      final Function<DecisionDefinitionQuery.Builder, ObjectBuilder<DecisionDefinitionQuery>> fn) {
+    return fn.apply(decisionDefinitionSearchQuery()).build();
+  }
+
+  public static DecisionRequirementsQuery.Builder decisionRequirementsSearchQuery() {
+    return new DecisionRequirementsQuery.Builder();
+  }
+
+  public static DecisionRequirementsQuery decisionRequirementsSearchQuery(
+      final Function<DecisionRequirementsQuery.Builder, ObjectBuilder<DecisionRequirementsQuery>>
+          fn) {
+    return fn.apply(decisionRequirementsSearchQuery()).build();
+  }
 }

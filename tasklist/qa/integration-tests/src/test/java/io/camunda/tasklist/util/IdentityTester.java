@@ -79,6 +79,18 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
             "ZEEBE_AUTHORIZATION_SERVER_URL",
             testContext.getExternalKeycloakBaseUrl()
                 + "/auth/realms/camunda-platform/protocol/openid-connect/token");
+
+    /* Workaround: Zeebe Test Container is not yet compatible with ZeebeClient. The deprecated ZeebeClient
+    Environment properties must be set for the TestContainer poller.
+    ref: https://camunda.slack.com/archives/CSQ2E3BT4/p1721717060291479?thread_ts=1721648856.848609&cid=CSQ2E3BT4 */
+    io.camunda.zeebe.client.impl.util.Environment.system().put("ZEEBE_CLIENT_ID", "zeebe");
+    io.camunda.zeebe.client.impl.util.Environment.system().put("ZEEBE_CLIENT_SECRET", "zecret");
+    io.camunda.zeebe.client.impl.util.Environment.system().put("ZEEBE_TOKEN_AUDIENCE", "zeebe-api");
+    io.camunda.zeebe.client.impl.util.Environment.system()
+        .put(
+            "ZEEBE_AUTHORIZATION_SERVER_URL",
+            testContext.getExternalKeycloakBaseUrl()
+                + "/auth/realms/camunda-platform/protocol/openid-connect/token");
   }
 
   @Override
@@ -94,22 +106,24 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
   protected static void registerProperties(
       final DynamicPropertyRegistry registry, final boolean multiTenancyEnabled) {
     registry.add(
-        "camunda.tasklist.identity.baseUrl", () -> testContext.getExternalIdentityBaseUrl());
-    registry.add("camunda.tasklist.identity.resourcePermissionsEnabled", () -> true);
+        TasklistProperties.PREFIX + ".identity.baseUrl",
+        () -> testContext.getExternalIdentityBaseUrl());
+    registry.add(TasklistProperties.PREFIX + ".identity.resourcePermissionsEnabled", () -> true);
     registry.add(
-        "camunda.tasklist.identity.issuerBackendUrl",
+        TasklistProperties.PREFIX + ".identity.issuerBackendUrl",
         () -> testContext.getExternalKeycloakBaseUrl() + "/auth/realms/camunda-platform");
     registry.add(
-        "camunda.tasklist.identity.issuerUrl",
+        TasklistProperties.PREFIX + ".identity.issuerUrl",
         () -> testContext.getExternalKeycloakBaseUrl() + "/auth/realms/camunda-platform");
-    registry.add("camunda.tasklist.identity.clientId", () -> "tasklist");
-    registry.add("camunda.tasklist.identity.clientSecret", () -> "the-cake-is-alive");
-    registry.add("camunda.tasklist.identity.audience", () -> "tasklist-api");
+    registry.add(TasklistProperties.PREFIX + ".identity.clientId", () -> "tasklist");
+    registry.add(TasklistProperties.PREFIX + ".identity.clientSecret", () -> "the-cake-is-alive");
+    registry.add(TasklistProperties.PREFIX + ".identity.audience", () -> "tasklist-api");
     registry.add(TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup", () -> false);
     registry.add(TasklistProperties.PREFIX + ".archiver.rolloverEnabled", () -> false);
     registry.add(TasklistProperties.PREFIX + "importer.jobType", () -> "testJobType");
     registry.add(
-        "camunda.tasklist.multiTenancy.enabled", () -> String.valueOf(multiTenancyEnabled));
+        TasklistProperties.PREFIX + ".multiTenancy.enabled",
+        () -> String.valueOf(multiTenancyEnabled));
   }
 
   protected String generateCamundaIdentityToken() {
@@ -271,6 +285,10 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
     Environment.system().remove("ZEEBE_CLIENT_SECRET");
     Environment.system().remove("ZEEBE_TOKEN_AUDIENCE");
     Environment.system().remove("ZEEBE_AUTHORIZATION_SERVER_URL");
+    io.camunda.zeebe.client.impl.util.Environment.system().remove("ZEEBE_CLIENT_ID");
+    io.camunda.zeebe.client.impl.util.Environment.system().remove("ZEEBE_CLIENT_SECRET");
+    io.camunda.zeebe.client.impl.util.Environment.system().remove("ZEEBE_TOKEN_AUDIENCE");
+    io.camunda.zeebe.client.impl.util.Environment.system().remove("ZEEBE_AUTHORIZATION_SERVER_URL");
     testContainerUtil.stopIdentity(testContext);
   }
 }

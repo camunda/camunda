@@ -73,6 +73,15 @@
     },
     "implementation": {
       "type": "keyword"
+    },
+    "externalFormReference": {
+      "type": "keyword"
+    },
+    "processDefinitionVersion": {
+      "type": "integer"
+    },
+    "customHeaders": {
+      "type": "object"
     }
   }
 }

@@ -95,6 +95,11 @@ public class DecisionRequirementsMetadataRecord extends UnifiedRecordValue
     return isDuplicateProp.getValue();
   }
 
+  public DecisionRequirementsMetadataRecord setDuplicate(final boolean duplicate) {
+    isDuplicateProp.setValue(duplicate);
+    return this;
+  }
+
   public DecisionRequirementsMetadataRecord setChecksum(final DirectBuffer checksum) {
     checksumProp.setValue(checksum);
     return this;
@@ -131,11 +136,6 @@ public class DecisionRequirementsMetadataRecord extends UnifiedRecordValue
   public DecisionRequirementsMetadataRecord setDecisionRequirementsId(
       final String decisionRequirementsId) {
     decisionRequirementsIdProp.setValue(decisionRequirementsId);
-    return this;
-  }
-
-  public DecisionRequirementsMetadataRecord markAsDuplicate() {
-    isDuplicateProp.setValue(true);
     return this;
   }
 

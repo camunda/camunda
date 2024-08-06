@@ -6,7 +6,7 @@
   "io.openshift.wants": "zeebe,elasticsearch",
   "io.openshift.tags": "bpmn,tasklist,camunda",
   "org.opencontainers.image.authors": "hto@camunda.com",
-  "org.opencontainers.image.base.name": "docker.io/library/alpine:3.19.1",
+  "org.opencontainers.image.base.name": $BASE_IMAGE,
   "org.opencontainers.image.base.digest": $DIGEST,
   "org.opencontainers.image.created": $DATE,
   "org.opencontainers.image.description": "Tasklist is a ready-to-use application to rapidly implement business processes alongside user tasks in Zeebe",

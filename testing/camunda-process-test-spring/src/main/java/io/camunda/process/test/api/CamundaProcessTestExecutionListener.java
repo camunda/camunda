@@ -15,7 +15,9 @@
  */
 package io.camunda.process.test.api;
 
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
+import io.camunda.process.test.impl.containers.OperateContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
@@ -57,7 +59,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private final List<ZeebeClient> createdClients = new ArrayList<>();
 
   private CamundaContainerRuntime containerRuntime;
-  private ZeebeClient zeebeClient;
+  private ZeebeClient client;
 
   public CamundaProcessTestExecutionListener() {
     this(CamundaContainerRuntime.newBuilder());
@@ -78,27 +80,30 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         new CamundaProcessTestContextImpl(
             containerRuntime.getZeebeContainer(), createdClients::add);
 
-    zeebeClient = createZeebeClient(testContext, camundaProcessTestContext);
+    client = createClient(testContext, camundaProcessTestContext);
 
     // fill proxies
-    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).setZeebeClient(zeebeClient);
+    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).setZeebeClient(client);
     testContext
         .getApplicationContext()
         .getBean(CamundaProcessTestContextProxy.class)
         .setContext(camundaProcessTestContext);
 
     // publish Zeebe client
-    testContext
-        .getApplicationContext()
-        .publishEvent(new ZeebeClientCreatedEvent(this, zeebeClient));
+    testContext.getApplicationContext().publishEvent(new ZeebeClientCreatedEvent(this, client));
+
+    // initialize assertions
+    final CamundaDataSource dataSource = createDataSource(containerRuntime);
+    CamundaAssert.initialize(dataSource);
   }
 
   @Override
   public void afterTestMethod(final TestContext testContext) throws Exception {
+    // reset assertions
+    CamundaAssert.reset();
+
     // close Zeebe clients
-    testContext
-        .getApplicationContext()
-        .publishEvent(new ZeebeClientClosingEvent(this, zeebeClient));
+    testContext.getApplicationContext().publishEvent(new ZeebeClientClosingEvent(this, client));
 
     createdClients.forEach(ZeebeClient::close);
 
@@ -131,9 +136,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     return containerRuntimeBuilder.build();
   }
 
-  private static ZeebeClient createZeebeClient(
+  private static ZeebeClient createClient(
       final TestContext testContext, final CamundaProcessTestContext camundaProcessTestContext) {
-    return camundaProcessTestContext.createZeebeClient(
+    return camundaProcessTestContext.createClient(
         builder -> {
           if (hasJsonMapper(testContext)) {
             final JsonMapper jsonMapper =
@@ -145,6 +150,13 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private static boolean hasJsonMapper(final TestContext testContext) {
     return testContext.getApplicationContext().getBeanNamesForType(JsonMapper.class).length > 0;
+  }
+
+  private CamundaDataSource createDataSource(final CamundaContainerRuntime containerRuntime) {
+    final OperateContainer operateContainer = containerRuntime.getOperateContainer();
+    final String operateApiEndpoint =
+        "http://" + operateContainer.getHost() + ":" + operateContainer.getRestApiPort();
+    return new CamundaDataSource(operateApiEndpoint);
   }
 
   @Override

@@ -53,15 +53,16 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   private boolean failed = false;
 
   @Override
-  public void starting(Description description) {
-    this.prefix = TestUtil.createRandomString(10);
+  public void starting(final Description description) {
+    prefix = TestUtil.createRandomString(10);
     LOGGER.info("Starting Zeebe with OS prefix: " + prefix);
     operateProperties.getZeebeOpensearch().setPrefix(prefix);
 
     startZeebe();
   }
 
-  public void updateRefreshInterval(String value) {
+  @Override
+  public void updateRefreshInterval(final String value) {
     final ComponentTemplateSummary template =
         zeebeRichOpenSearchClient.template().getComponentTemplate().get(prefix).template();
     final IndexSettings indexSettings = template.settings().get("index");
@@ -76,14 +77,15 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
             .createComponentTemplateWithRetries(requestBuilder.build()));
   }
 
-  public void refreshIndices(Instant instant) {
+  @Override
+  public void refreshIndices(final Instant instant) {
     final String date =
         DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
     zeebeRichOpenSearchClient.index().refresh(prefix + "*" + date);
   }
 
   @Override
-  public void finished(Description description) {
+  public void finished(final Description description) {
     stopZeebe();
     if (client != null) {
       client.close();
@@ -96,8 +98,8 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   }
 
   @Override
-  public void failed(Throwable e, Description description) {
-    this.failed = true;
+  public void failed(final Throwable e, final Description description) {
+    failed = true;
   }
 
   /**
@@ -106,6 +108,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
    *
    * @throws IllegalStateException if no exporter has previously been configured
    */
+  @Override
   public void startZeebe() {
 
     final String zeebeVersion =
@@ -124,22 +127,26 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   }
 
   /** Stops the broker and destroys the client. Does nothing if not started yet. */
+  @Override
   public void stopZeebe() {
     testContainerUtil.stopZeebe(null);
   }
 
+  @Override
   public String getPrefix() {
     return prefix;
   }
 
-  public void setPrefix(String prefix) {
+  public void setPrefix(final String prefix) {
     this.prefix = prefix;
   }
 
+  @Override
   public ZeebeContainer getZeebeContainer() {
     return zeebeContainer;
   }
 
+  @Override
   public ZeebeClient getClient() {
     return client;
   }
@@ -155,7 +162,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
     while (topology == null) {
       try {
         topology = client.newTopologyRequest().send().join();
-      } catch (ClientException ex) {
+      } catch (final ClientException ex) {
         ex.printStackTrace();
       }
     }

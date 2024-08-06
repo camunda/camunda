@@ -12,7 +12,7 @@ import {expect} from '@playwright/test';
 import {
   mockResponses as mockProcessDetailResponses,
   eventBasedGatewayProcessInstance,
-} from '../mocks/processInstance.mocks';
+} from '../mocks/processInstance';
 
 test.beforeEach(async ({page, commonPage, context}) => {
   await commonPage.mockClientConfig(context);

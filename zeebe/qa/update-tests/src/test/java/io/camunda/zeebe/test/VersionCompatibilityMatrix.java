@@ -23,6 +23,9 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.SequencedCollection;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.provider.Arguments;
 
@@ -85,6 +88,13 @@ final class VersionCompatibilityMatrix {
 
   private static Stream<Arguments> full() {
     final var versions = discoverVersions().sorted().toList();
+    final var latestVersionPerMinor =
+        versions.stream()
+            .collect(
+                Collectors.toMap(
+                    SemanticVersion::minor,
+                    Function.identity(),
+                    BinaryOperator.maxBy(Comparator.comparing(SemanticVersion::patch))));
     final var combinations =
         versions.stream()
             .filter(version -> version.minor() > 0)
@@ -93,6 +103,17 @@ final class VersionCompatibilityMatrix {
                     versions.stream()
                         .filter(version2 -> version1.compareTo(version2) < 0)
                         .filter(version2 -> version2.minor() - version1.minor() <= 1)
+                        .filter(
+                            version2 -> {
+                              if (version1.minor() <= 4 && version2.minor() > version1.minor()) {
+                                // When updating from 8.4 (or earlier) to the next minor, only test
+                                // the latest patch.
+                                // Only 8.5 and onwards allow updating to a not-latest patch.
+                                return latestVersionPerMinor.get(version2.minor()).equals(version2);
+                              } else {
+                                return true;
+                              }
+                            })
                         .map(version2 -> Arguments.of(version1.toString(), version2.toString())))
             .toList();
 

@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.IncidentClient;
 import io.camunda.zeebe.engine.util.client.JobActivationClient;
 import io.camunda.zeebe.engine.util.client.JobClient;
+import io.camunda.zeebe.engine.util.client.MessageCorrelationClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
 import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.engine.util.client.ResourceDeletionClient;
@@ -283,6 +284,10 @@ public final class EngineRule extends ExternalResource {
 
   public PublishMessageClient message() {
     return new PublishMessageClient(environmentRule, partitionCount);
+  }
+
+  public MessageCorrelationClient messageCorrelation() {
+    return new MessageCorrelationClient(environmentRule, partitionCount);
   }
 
   public VariableClient variables() {

@@ -23,6 +23,8 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.util.Map;
 import org.awaitility.Awaitility;
@@ -38,12 +40,13 @@ final class ExporterContainerTest {
 
   private static final String EXPORTER_ID = "fakeExporter";
   private static final int PARTITION_ID = 123;
+  private static final String REGISTERED_COUNTER_NAME = "zeebe_exporter_counter";
 
   private ExporterContainerRuntime runtime;
   private FakeExporter exporter;
   private ExporterContainer exporterContainer;
 
-  public static final class FakeExporter implements Exporter {
+  public static class FakeExporter implements Exporter {
 
     private Context context;
     private Controller controller;
@@ -84,6 +87,15 @@ final class ExporterContainerTest {
     @Override
     public void export(final Record<?> record) {
       this.record = record;
+    }
+  }
+
+  public static final class FakeExporterWithMetrics extends FakeExporter implements Exporter {
+    @Override
+    public void configure(final Context context) throws Exception {
+      super.context = context;
+
+      Counter.builder(REGISTERED_COUNTER_NAME).register(context.getMeterRegistry());
     }
   }
 
@@ -674,6 +686,29 @@ final class ExporterContainerTest {
       assertThat(runtime.getState().getMetadataVersion(EXPORTER_ID))
           .describedAs("MetadataVersion is not changed")
           .isEqualTo(3);
+    }
+
+    @Test
+    void shouldAddMeterToMeterRegistryGivenInContext() throws Exception {
+      // given
+      descriptor =
+          runtime
+              .getRepository()
+              .load(
+                  "fakeExporterWithMetrics", FakeExporterWithMetrics.class, Map.of("key", "value"));
+
+      final var meterRegistry = new SimpleMeterRegistry();
+      exporterContainer =
+          runtime.newContainer(
+              descriptor, PARTITION_ID, new ExporterInitializationInfo(1, null), meterRegistry);
+
+      exporterContainer.configureExporter();
+      exporterContainer.initMetadata();
+
+      // when
+      // then
+      assertThat(meterRegistry.getMeters().get(0).getId().getName())
+          .isEqualTo(REGISTERED_COUNTER_NAME);
     }
   }
 }

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import io.camunda.zeebe.snapshots.ChecksumProvider;
+import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import java.io.IOException;
@@ -18,7 +18,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Collections;
 import java.util.Map;
 
 final class SnapshotChecksum {
@@ -44,31 +43,29 @@ final class SnapshotChecksum {
   }
 
   public static MutableChecksumsSFV calculate(final Path snapshotDirectory) throws IOException {
-    return createChecksumForSnapshot(snapshotDirectory, null);
+    return createChecksumForSnapshot(snapshotDirectory, snapshotPath -> Map.of());
   }
 
   public static MutableChecksumsSFV calculateWithProvidedChecksums(
-      final Path snapshotDirectory, final ChecksumProvider provider) throws IOException {
+      final Path snapshotDirectory, final CRC32CChecksumProvider provider) throws IOException {
     return createChecksumForSnapshot(snapshotDirectory, provider);
   }
 
   private static MutableChecksumsSFV createChecksumForSnapshot(
-      final Path snapshotDirectory, final ChecksumProvider provider) throws IOException {
+      final Path snapshotDirectory, final CRC32CChecksumProvider provider) throws IOException {
 
     try (final var fileStream =
         Files.list(snapshotDirectory).filter(SnapshotChecksum::isNotMetadataFile).sorted()) {
       final SfvChecksumImpl sfvChecksum = new SfvChecksumImpl();
-      final Map<String, Long> fullFileChecksums =
-          provider == null
-              ? Collections.emptyMap()
-              : provider.getSnapshotChecksums(snapshotDirectory);
+      final Map<String, Long> fullFileChecksums = provider.getSnapshotChecksums(snapshotDirectory);
       fileStream.forEachOrdered(path -> updateChecksum(sfvChecksum, fullFileChecksums, path));
 
       // While persisting transient snapshot, the checksum of metadata file is added at the end.
       // Hence when we recalculate the checksum, we must follow the same order. Otherwise base on
       // the file name, the sorted file list will have a differnt order and thus result in a
       // different checksum.
-      final var metadataFile = snapshotDirectory.resolve(FileBasedSnapshotStore.METADATA_FILE_NAME);
+      final var metadataFile =
+          snapshotDirectory.resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME);
       if (metadataFile.toFile().exists()) {
         sfvChecksum.updateFromFile(metadataFile);
       }
@@ -77,7 +74,7 @@ final class SnapshotChecksum {
   }
 
   private static boolean isNotMetadataFile(final Path file) {
-    return !file.getFileName().toString().equals(FileBasedSnapshotStore.METADATA_FILE_NAME);
+    return !file.getFileName().toString().equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME);
   }
 
   public static void persist(final Path checksumPath, final ImmutableChecksumsSFV checksum)

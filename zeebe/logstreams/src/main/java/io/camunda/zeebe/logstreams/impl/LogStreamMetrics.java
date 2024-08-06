@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.logstreams.impl;
 
+import static io.camunda.zeebe.logstreams.impl.LogStreamMetrics.FlowControlOutComeLabels.labelForContext;
+import static io.camunda.zeebe.logstreams.impl.LogStreamMetrics.FlowControlOutComeLabels.labelForReason;
+
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.WriteContext;
@@ -22,6 +25,7 @@ import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 import io.prometheus.client.Histogram.Timer;
+import java.util.EnumSet;
 import java.util.List;
 
 public final class LogStreamMetrics {
@@ -56,14 +60,6 @@ public final class LogStreamMetrics {
           .namespace("zeebe")
           .name("backpressure_inflight_append_count")
           .help("Current number of append inflight")
-          .labelNames("partition")
-          .register();
-
-  private static final Gauge APPEND_LIMIT =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("backpressure_append_limit")
-          .help("Current limit for number of inflight appends")
           .labelNames("partition")
           .register();
 
@@ -148,10 +144,27 @@ public final class LogStreamMetrics {
           .labelNames("partition")
           .register();
 
+  private static final Gauge WRITE_RATE_MAX_LIMIT =
+      Gauge.build()
+          .namespace("zeebe")
+          .subsystem("flow_control")
+          .name("write_rate_maximum")
+          .help("The maximum write rate limit")
+          .labelNames("partition")
+          .register();
+
+  private static final Gauge WRITE_RATE_LIMIT =
+      Gauge.build()
+          .namespace("zeebe")
+          .subsystem("flow_control")
+          .name("write_rate_limit")
+          .help("The current write rate limit")
+          .labelNames("partition")
+          .register();
+
   private final Counter.Child deferredAppends;
   private final Counter.Child triedAppends;
   private final Gauge.Child inflightAppends;
-  private final Gauge.Child appendLimit;
   private final Counter.Child receivedRequests;
   private final Counter.Child droppedRequests;
   private final Gauge.Child inflightRequests;
@@ -161,6 +174,8 @@ public final class LogStreamMetrics {
   private final Histogram.Child commitLatency;
   private final Histogram.Child appendLatency;
   private final Gauge.Child exportingRate;
+  private final Gauge.Child writeRateMaxLimit;
+  private final Gauge.Child writeRateLimit;
   private final String partitionLabel;
 
   public LogStreamMetrics(final int partitionId) {
@@ -168,7 +183,6 @@ public final class LogStreamMetrics {
     deferredAppends = TOTAL_DEFERRED_APPEND_COUNT.labels(partitionLabel);
     triedAppends = TOTAL_APPEND_TRY_COUNT.labels(partitionLabel);
     inflightAppends = INFLIGHT_APPENDS.labels(partitionLabel);
-    appendLimit = APPEND_LIMIT.labels(partitionLabel);
     receivedRequests = TOTAL_RECEIVED_REQUESTS.labels(partitionLabel);
     droppedRequests = TOTAL_DROPPED_REQUESTS.labels(partitionLabel);
     inflightRequests = INFLIGHT_REQUESTS.labels(partitionLabel);
@@ -178,6 +192,8 @@ public final class LogStreamMetrics {
     commitLatency = COMMIT_LATENCY.labels(partitionLabel);
     appendLatency = WRITE_LATENCY.labels(partitionLabel);
     exportingRate = EXPORTING_RATE.labels(partitionLabel);
+    writeRateMaxLimit = WRITE_RATE_MAX_LIMIT.labels(partitionLabel);
+    writeRateLimit = WRITE_RATE_LIMIT.labels(partitionLabel);
   }
 
   public void increaseInflightAppends() {
@@ -186,10 +202,6 @@ public final class LogStreamMetrics {
 
   public void decreaseInflightAppends() {
     inflightAppends.dec();
-  }
-
-  public void setAppendLimit(final long limit) {
-    appendLimit.set(limit);
   }
 
   public void setInflightRequests(final int count) {
@@ -238,7 +250,6 @@ public final class LogStreamMetrics {
     TOTAL_DEFERRED_APPEND_COUNT.remove(partitionLabel);
     TOTAL_APPEND_TRY_COUNT.remove(partitionLabel);
     INFLIGHT_APPENDS.remove(partitionLabel);
-    APPEND_LIMIT.remove(partitionLabel);
     INFLIGHT_REQUESTS.remove(partitionLabel);
     REQUEST_LIMIT.remove(partitionLabel);
     LAST_COMMITTED_POSITION.remove(partitionLabel);
@@ -246,23 +257,13 @@ public final class LogStreamMetrics {
     COMMIT_LATENCY.remove(partitionLabel);
     WRITE_LATENCY.remove(partitionLabel);
     EXPORTING_RATE.remove(partitionLabel);
-  }
-
-  private String contextLabel(final WriteContext context) {
-    return switch (context) {
-      case final UserCommand ignored -> "userCommand";
-      case final ProcessingResult ignored -> "processingResult";
-      case final InterPartition ignored -> "interPartition";
-      case final Scheduled ignored -> "scheduled";
-      case final Internal ignored -> "internal";
-    };
-  }
-
-  private String reasonLabel(final Rejection reason) {
-    return switch (reason) {
-      case Rejection.WriteRateLimitExhausted -> "writeRateLimitExhausted";
-      case Rejection.RequestLimitExhausted -> "requestLimitExhausted";
-    };
+    WRITE_RATE_MAX_LIMIT.remove(partitionLabel);
+    WRITE_RATE_LIMIT.remove(partitionLabel);
+    for (final var contextLabel : FlowControlOutComeLabels.allContextLabels()) {
+      for (final var reasonLabel : FlowControlOutComeLabels.allReasonLabels()) {
+        FLOW_CONTROL_OUTCOME.remove(partitionLabel, contextLabel, reasonLabel);
+      }
+    }
   }
 
   public void flowControlAccepted(
@@ -272,7 +273,7 @@ public final class LogStreamMetrics {
       receivedRequests.inc();
     }
     FLOW_CONTROL_OUTCOME
-        .labels(partitionLabel, contextLabel(context), "accepted")
+        .labels(partitionLabel, labelForContext(context), "accepted")
         .inc(batchMetadata.size());
   }
 
@@ -287,11 +288,69 @@ public final class LogStreamMetrics {
       droppedRequests.inc();
     }
     FLOW_CONTROL_OUTCOME
-        .labels(partitionLabel, contextLabel(context), reasonLabel(reason))
+        .labels(partitionLabel, labelForContext(context), labelForReason(reason))
         .inc(batchMetadata.size());
   }
 
   public void setExportingRate(final long value) {
     exportingRate.set(value);
+  }
+
+  public void setWriteRateMaxLimit(final long value) {
+    writeRateMaxLimit.set(value);
+  }
+
+  public void setWriteRateLimit(final double value) {
+    writeRateLimit.set(value);
+  }
+
+  static final class FlowControlOutComeLabels {
+
+    private FlowControlOutComeLabels() {}
+
+    static String[] allReasonLabels() {
+      return EnumSet.allOf(Rejection.class).stream()
+          .map(FlowControlOutComeLabels::labelForReason)
+          .toArray(String[]::new);
+    }
+
+    static String[] allContextLabels() {
+      final var labels = WriteContextLabel.values();
+      final var labelNames = new String[labels.length];
+      for (var i = 0; i < labels.length; i++) {
+        labelNames[i] = labels[i].labelName;
+      }
+      return labelNames;
+    }
+
+    static String labelForReason(final Rejection reason) {
+      return switch (reason) {
+        case WriteRateLimitExhausted -> "writeRateLimitExhausted";
+        case RequestLimitExhausted -> "requestLimitExhausted";
+      };
+    }
+
+    static String labelForContext(final WriteContext context) {
+      return switch (context) {
+        case final UserCommand ignored -> WriteContextLabel.UserCommand.labelName;
+        case final ProcessingResult ignored -> WriteContextLabel.ProcessingResult.labelName;
+        case final InterPartition ignored -> WriteContextLabel.InterPartition.labelName;
+        case final Scheduled ignored -> WriteContextLabel.Scheduled.labelName;
+        case final Internal ignored -> WriteContextLabel.Internal.labelName;
+      };
+    }
+
+    private enum WriteContextLabel {
+      UserCommand("userCommand"),
+      ProcessingResult("processingResult"),
+      InterPartition("interPartition"),
+      Scheduled("scheduled"),
+      Internal("internal");
+      private final String labelName;
+
+      WriteContextLabel(final String labelName) {
+        this.labelName = labelName;
+      }
+    }
   }
 }

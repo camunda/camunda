@@ -14,6 +14,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
+import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -21,8 +22,10 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -54,6 +57,8 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final SideEffectWriter sideEffectWriter;
   private final JobCommandPreconditionChecker preconditionChecker;
+  private final ElementInstanceState elementInstanceState;
+  private final ProcessState processState;
 
   public JobFailProcessor(
       final ProcessingState state,
@@ -63,6 +68,8 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       final JobBackoffChecker jobBackoffChecker,
       final BpmnBehaviors bpmnBehaviors) {
     jobState = state.getJobState();
+    elementInstanceState = state.getElementInstanceState();
+    processState = state.getProcessState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
@@ -163,6 +170,13 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
             ? ErrorType.EXECUTION_LISTENER_NO_RETRIES
             : ErrorType.JOB_NO_RETRIES;
 
+    final var treePathProperties =
+        new ElementTreePathBuilder()
+            .withElementInstanceState(elementInstanceState)
+            .withProcessState(processState)
+            .withElementInstanceKey(value.getElementInstanceKey())
+            .build();
+
     incidentEvent.reset();
     incidentEvent
         .setErrorType(errorType)
@@ -174,7 +188,10 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
         .setElementInstanceKey(value.getElementInstanceKey())
         .setJobKey(key)
         .setVariableScopeKey(value.getElementInstanceKey())
-        .setTenantId(value.getTenantId());
+        .setTenantId(value.getTenantId())
+        .setElementInstancePath(treePathProperties.elementInstancePath())
+        .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
+        .setCallingElementPath(treePathProperties.callingElementPath());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
   }
