@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.processing.relocation.ScaleRelocateCorrelationKeyCompletedApplier;
 import io.camunda.zeebe.engine.processing.relocation.ScaleRelocateCorrelationKeyStartedApplier;
+import io.camunda.zeebe.engine.processing.relocation.ScaleRelocateMessageAppliedApplier;
 import io.camunda.zeebe.engine.processing.relocation.ScaleRelocateMessageCompletedApplier;
 import io.camunda.zeebe.engine.processing.relocation.ScaleRelocateMessageSubscriptionCompletedApplier;
 import io.camunda.zeebe.engine.processing.relocation.ScaleRelocationOnPartitionCompletedApplier;
@@ -135,6 +136,9 @@ public final class EventAppliers implements EventApplier {
         new ScaleRelocateCorrelationKeyCompletedApplier(state.getRelocationState()));
     register(ScaleIntent.RELOCATION_COMPLETED, NOOP_EVENT_APPLIER);
     register(ScaleIntent.RELOCATION_STATUS_RESPONSE, NOOP_EVENT_APPLIER);
+    register(
+        ScaleIntent.RELOCATE_MESSAGE_APPLIED,
+        new ScaleRelocateMessageAppliedApplier(state.getMessageState()));
   }
 
   private void registerProcessAppliers(final MutableProcessingState state) {

@@ -19,7 +19,7 @@ import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.scale.ScaleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.ScaleIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public class ScaleRelocateMessageApplyProcessor implements TypedRecordProcessor<ScaleRecord> {
@@ -52,7 +52,9 @@ public class ScaleRelocateMessageApplyProcessor implements TypedRecordProcessor<
       rejectionWriter.appendRejection(
           record, RejectionType.ALREADY_EXISTS, "Message was already relocated");
     } else {
-      stateWriter.appendFollowUpEvent(messageKey, MessageIntent.PUBLISHED, messageRecord);
+      stateWriter.appendFollowUpEvent(
+          messageKey, ScaleIntent.RELOCATE_MESSAGE_APPLIED, record.getValue());
+
       final var correlatingSubscriptions = new Subscriptions();
       MessagePublishProcessor.correlateToSubscriptions(
           messageKey, messageRecord, subscriptionState, correlatingSubscriptions, stateWriter);
