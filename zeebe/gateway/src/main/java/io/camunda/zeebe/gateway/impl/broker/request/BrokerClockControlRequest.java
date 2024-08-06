@@ -9,39 +9,39 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.clock.ClockControlRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ClockControlIntent;
 import org.agrona.DirectBuffer;
 
-public final class BrokerDeployResourceRequest extends BrokerExecuteCommand<DeploymentRecord> {
+public final class BrokerClockControlRequest extends BrokerExecuteCommand<ClockControlRecord> {
 
-  private final DeploymentRecord requestDto = new DeploymentRecord();
+  private final ClockControlRecord clockControlDto = new ClockControlRecord();
 
-  public BrokerDeployResourceRequest() {
-    super(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
+  public BrokerClockControlRequest() {
+    super(ValueType.CLOCK_CONTROL, ClockControlIntent.PIN);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
-  public BrokerDeployResourceRequest addResource(final byte[] resource, final String resourceName) {
-    requestDto.resources().add().setResource(resource).setResourceName(resourceName);
+  public BrokerClockControlRequest setTime(final long time) {
+    clockControlDto.setTime(time);
 
     return this;
   }
 
-  public BrokerDeployResourceRequest setTenantId(final String tenantId) {
-    requestDto.setTenantId(tenantId);
+  public BrokerClockControlRequest setTenantId(final String tenantId) {
+    clockControlDto.setTenantId(tenantId);
     return this;
   }
 
   @Override
-  public DeploymentRecord getRequestWriter() {
-    return requestDto;
+  public ClockControlRecord getRequestWriter() {
+    return clockControlDto;
   }
 
   @Override
-  protected DeploymentRecord toResponseDto(final DirectBuffer buffer) {
-    final DeploymentRecord responseDto = new DeploymentRecord();
+  protected ClockControlRecord toResponseDto(final DirectBuffer buffer) {
+    final ClockControlRecord responseDto = new ClockControlRecord();
     responseDto.wrap(buffer);
     return responseDto;
   }

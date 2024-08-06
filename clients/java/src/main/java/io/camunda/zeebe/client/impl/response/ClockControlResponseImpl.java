@@ -13,46 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.protocol.record.intent;
+package io.camunda.zeebe.client.impl.response;
 
-public enum ClockControlIntent implements Intent {
-  PIN((short) 0),
+import io.camunda.zeebe.client.api.response.ClockControlResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
-  PINED((short) 1);
+public final class ClockControlResponseImpl implements ClockControlResponse {
 
-  private final short value;
+  private final long time;
+  private final String tenantId;
 
-  ClockControlIntent(final short value) {
-    this.value = value;
-  }
-
-  public short getIntent() {
-    return value;
-  }
-
-  public static Intent from(final short value) {
-    switch (value) {
-      case 0:
-        return PIN;
-      case 1:
-        return PINED;
-      default:
-        return Intent.UNKNOWN;
-    }
+  public ClockControlResponseImpl(final GatewayOuterClass.ClockControlResponse response) {
+    time = response.getTime();
+    tenantId = response.getTenantId();
   }
 
   @Override
-  public short value() {
-    return value;
+  public long getTime() {
+    return time;
   }
 
   @Override
-  public boolean isEvent() {
-    switch (this) {
-      case PINED:
-        return true;
-      default:
-        return false;
-    }
+  public String getTenantId() {
+    return tenantId;
   }
 }

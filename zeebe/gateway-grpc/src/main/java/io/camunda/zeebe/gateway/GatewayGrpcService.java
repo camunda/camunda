@@ -16,6 +16,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalReques
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ClockControlRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ClockControlResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
@@ -220,6 +222,14 @@ public class GatewayGrpcService extends GatewayImplBase {
       final BroadcastSignalRequest request,
       final StreamObserver<BroadcastSignalResponse> responseObserver) {
     endpointManager.broadcastSignal(
+        request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
+  }
+
+  @Override
+  public void clockControl(
+      final ClockControlRequest request,
+      final StreamObserver<ClockControlResponse> responseObserver) {
+    endpointManager.clockControl(
         request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
   }
 }

@@ -17,6 +17,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ClockControlResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
@@ -43,6 +44,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRespo
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutResponse;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.clock.ClockControlRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -392,6 +394,15 @@ public final class ResponseMapper {
       final long key, final SignalRecord brokerResponse) {
     return BroadcastSignalResponse.newBuilder()
         .setKey(key)
+        .setTenantId(brokerResponse.getTenantId())
+        .build();
+  }
+
+  public static ClockControlResponse toClockControlResponse(
+      final long key, final ClockControlRecord brokerResponse) {
+    return ClockControlResponse.newBuilder()
+        .setKey(key)
+        .setTime(brokerResponse.getTime())
         .setTenantId(brokerResponse.getTenantId())
         .build();
   }

@@ -1328,6 +1328,41 @@
                 "type": "string"
               }
             ]
+          },
+          {
+            "name": "ClockControlRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "time",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "tenantId",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "ClockControlResponse",
+            "fields": [
+              {
+                "id": 1,
+                "name": "key",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "time",
+                "type": "int64"
+              },
+              {
+                "id": 3,
+                "name": "tenantId",
+                "type": "string"
+              }
+            ]
           }
         ],
         "services": [
@@ -1446,6 +1481,11 @@
                 "name": "BroadcastSignal",
                 "in_type": "BroadcastSignalRequest",
                 "out_type": "BroadcastSignalResponse"
+              },
+              {
+                "name": "ClockControl",
+                "in_type": "ClockControlRequest",
+                "out_type": "ClockControlResponse"
               }
             ]
           }

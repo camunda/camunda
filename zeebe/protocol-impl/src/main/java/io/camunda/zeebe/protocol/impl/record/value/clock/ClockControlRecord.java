@@ -21,8 +21,8 @@ public class ClockControlRecord extends UnifiedRecordValue implements ClockContr
   private final LongProperty timeProperty = new LongProperty("time", -1);
 
   public ClockControlRecord() {
-    super(11);
-    declareProperty(tenantIdProperty).declareProperty(timeProperty);
+    super(3);
+    declareProperty(tenantIdProperty).declareProperty(timeProperty).declareProperty(keyProperty);
   }
 
   public void wrap(final ClockControlRecord record) {

@@ -26,6 +26,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRespon
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ClockControlRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ClockControlResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
@@ -132,6 +134,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(
         BroadcastSignalRequest.class, r -> BroadcastSignalResponse.getDefaultInstance());
     addRequestHandler(StreamActivatedJobsRequest.class, r -> ActivatedJob.getDefaultInstance());
+    addRequestHandler(ClockControlRequest.class, r -> ClockControlResponse.getDefaultInstance());
   }
 
   public static Partition partition(
@@ -439,6 +442,24 @@ public final class RecordingGatewayService extends GatewayImplBase {
       final BroadcastSignalRequest request,
       final StreamObserver<BroadcastSignalResponse> responseObserver) {
     handle(request, responseObserver);
+  }
+
+  @Override
+  public void clockControl(
+      final ClockControlRequest request,
+      final StreamObserver<ClockControlResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  public void onClockControlRequest(final long key, final long time) {
+    addRequestHandler(
+        BroadcastSignalRequest.class,
+        request ->
+            ClockControlResponse.newBuilder()
+                .setKey(key)
+                .setTime(time)
+                .setTenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER)
+                .build());
   }
 
   public void onTopologyRequest(

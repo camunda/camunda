@@ -31,6 +31,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ClockControlRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ClockControlResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
@@ -419,6 +421,17 @@ public final class EndpointManager {
         request,
         RequestMapper::toBroadcastSignalRequest,
         ResponseMapper::toBroadcastSignalResponse,
+        responseObserver);
+  }
+
+  public void clockControl(
+      final ClockControlRequest request,
+      final ServerStreamObserver<ClockControlResponse> responseObserver) {
+
+    sendRequest(
+        request,
+        RequestMapper::toClockControlRequest,
+        ResponseMapper::toClockControlResponse,
         responseObserver);
   }
 

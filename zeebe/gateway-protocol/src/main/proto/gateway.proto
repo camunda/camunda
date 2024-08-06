@@ -694,6 +694,21 @@ message BroadcastSignalResponse {
   string tenantId = 2;
 }
 
+message ClockControlRequest {
+  // the time
+  int64 time = 1;
+  // the tenant id where to apply the clock
+  string tenantId = 2;
+}
+message ClockControlResponse {
+  // the unique ID of the clock control.
+  int64 key = 1;
+  // the time
+  int64 time = 2;
+  // the tenant id where to apply the clock
+  string tenantId = 3;
+}
+
 service Gateway {
   /*
     Iterates through all known partitions round-robin and activates up to the requested
@@ -1012,6 +1027,12 @@ service Gateway {
     Broadcasts a signal.
    */
   rpc BroadcastSignal (BroadcastSignalRequest) returns (BroadcastSignalResponse) {
+
+  }
+  /*
+    Broadcasts a signal.
+   */
+  rpc ClockControl (ClockControlRequest) returns (ClockControlResponse) {
 
   }
 }
