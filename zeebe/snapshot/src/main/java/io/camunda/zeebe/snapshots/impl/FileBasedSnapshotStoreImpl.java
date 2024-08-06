@@ -14,7 +14,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
-import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
+import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistableSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
@@ -476,7 +476,7 @@ public final class FileBasedSnapshotStoreImpl {
 
   FileBasedSnapshot persistNewSnapshot(
       final FileBasedSnapshotId snapshotId,
-      final MutableChecksumsSFV mutableChecksumsSFV,
+      final ImmutableChecksumsSFV immutableChecksumsSFV,
       final FileBasedSnapshotMetadata metadata) {
     final var currentPersistedSnapshot = currentPersistedSnapshotRef.get();
 
@@ -500,7 +500,7 @@ public final class FileBasedSnapshotStoreImpl {
       final var tmpChecksumPath =
           checksumPath.resolveSibling(checksumPath.getFileName().toString() + TMP_CHECKSUM_SUFFIX);
       try {
-        SnapshotChecksum.persist(tmpChecksumPath, mutableChecksumsSFV);
+        SnapshotChecksum.persist(tmpChecksumPath, immutableChecksumsSFV);
         FileUtil.moveDurably(tmpChecksumPath, checksumPath);
       } catch (final IOException e) {
         rollbackPartialSnapshot(destination);
@@ -511,7 +511,7 @@ public final class FileBasedSnapshotStoreImpl {
           new FileBasedSnapshot(
               destination,
               checksumPath,
-              mutableChecksumsSFV,
+              immutableChecksumsSFV,
               snapshotId,
               metadata,
               this::onSnapshotDeleted,
