@@ -103,6 +103,20 @@ public final class ProcessInstanceStateTransitionGuard {
     }
   }
 
+  private Either<String, ElementInstance> getCallActivityInstance(
+      final BpmnElementContext context) {
+    final var callActivityInstanceKey = context.getParentElementInstanceKey();
+    final var callActivityInstance = stateBehavior.getElementInstance(callActivityInstanceKey);
+    if (callActivityInstance != null) {
+      return Either.right(callActivityInstance);
+    } else {
+      return Either.left(
+          String.format(
+              "Expected call activity instance with key '%d' to be present in state but not found.",
+              callActivityInstanceKey));
+    }
+  }
+
   private Either<String, ElementInstance> hasElementInstanceInState(
       final ElementInstance elementInstance,
       final ProcessInstanceIntent expectedState,
@@ -168,8 +182,18 @@ public final class ProcessInstanceStateTransitionGuard {
                       flowScopeInstance, ProcessInstanceIntent.ELEMENT_ACTIVATED))
           .flatMap(flowScopeInstance -> hasNonInterruptedFlowScope(flowScopeInstance, context));
 
+    } else if (context.getParentProcessInstanceKey() > 0) {
+      // a child process has a call activity instance (parentElementInstance) as special flow scope
+      return getCallActivityInstance(context)
+          .flatMap(
+              callActivityInstance ->
+                  hasElementInstanceInState(
+                      callActivityInstance, ProcessInstanceIntent.ELEMENT_ACTIVATED))
+          .flatMap(
+              callActivityInstance -> hasNonInterruptedFlowScope(callActivityInstance, context));
+
     } else {
-      // a process has no flow scope instance
+      // a root process has no flow scope instance
       return Either.right(null);
     }
   }
