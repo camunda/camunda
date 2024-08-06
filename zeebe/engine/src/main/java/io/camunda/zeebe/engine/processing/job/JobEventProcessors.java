@@ -78,7 +78,7 @@ public final class JobEventProcessors {
             new JobTimeOutProcessor(
                 processingState, writers, jobMetrics, bpmnBehaviors.jobActivationBehavior()))
         .onCommand(
-            ValueType.JOB, JobIntent.UPDATE_RETRIES, new JobUpdateRetriesProcessor(processingState))
+            ValueType.JOB, JobIntent.UPDATE_RETRIES, new JobUpdateRetriesProcessor(processingState, writers))
         .onCommand(
             ValueType.JOB,
             JobIntent.UPDATE_TIMEOUT,
