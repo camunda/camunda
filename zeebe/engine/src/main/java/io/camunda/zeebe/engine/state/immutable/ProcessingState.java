@@ -26,6 +26,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   ProcessMessageSubscriptionState getProcessMessageSubscriptionState();
 
+  MessageCorrelationState getMessageCorrelationState();
+
   IncidentState getIncidentState();
 
   BannedInstanceState getBannedInstanceState();

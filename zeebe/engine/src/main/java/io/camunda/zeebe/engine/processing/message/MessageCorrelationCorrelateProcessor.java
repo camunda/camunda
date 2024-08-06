@@ -27,7 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public final class MessageCorrelationProcessor
+public final class MessageCorrelationCorrelateProcessor
     implements TypedRecordProcessor<MessageCorrelationRecord> {
 
   private final MessageCorrelateBehavior correlateBehavior;
@@ -35,7 +35,7 @@ public final class MessageCorrelationProcessor
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
 
-  public MessageCorrelationProcessor(
+  public MessageCorrelationCorrelateProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final EventScopeInstanceState eventScopeInstanceState,
@@ -68,7 +68,12 @@ public final class MessageCorrelationProcessor
 
   @Override
   public void processRecord(final TypedRecord<MessageCorrelationRecord> command) {
+    final var messageCorrelationRecord = command.getValue();
     final long messageKey = keyGenerator.nextKey();
+    messageCorrelationRecord
+        .setMessageKey(messageKey)
+        .setRequestId(command.getRequestId())
+        .setRequestStreamId(command.getRequestStreamId());
 
     final var messageRecord =
         new MessageRecord()
@@ -79,15 +84,12 @@ public final class MessageCorrelationProcessor
             .setTimeToLive(-1L);
     stateWriter.appendFollowUpEvent(messageKey, MessageIntent.PUBLISHED, messageRecord);
 
+    stateWriter.appendFollowUpEvent(
+        messageKey, MessageCorrelationIntent.CORRELATING, messageCorrelationRecord);
+
     final var correlatingSubscriptions = new Subscriptions();
     correlateToMessageStartEventSubscriptions(command, messageKey, correlatingSubscriptions);
-    correlateToMessageEventSubscriptions(
-        command.getValue(),
-        messageKey,
-        correlatingSubscriptions,
-        command.getRequestId(),
-        command.getRequestStreamId(),
-        correlatingSubscriptions.isEmpty());
+    correlateToMessageEventSubscriptions(command.getValue(), messageKey, correlatingSubscriptions);
 
     if (correlatingSubscriptions.isEmpty()) {
       stateWriter.appendFollowUpEvent(
@@ -127,30 +129,14 @@ public final class MessageCorrelationProcessor
   private void correlateToMessageEventSubscriptions(
       final MessageCorrelationRecord messageCorrelationRecord,
       final long messageKey,
-      final Subscriptions correlatingSubscriptions,
-      final long requestId,
-      final int requestStreamId,
-      final boolean shouldRespond) {
-    if (shouldRespond) {
-      correlatingSubscriptions.addAll(
-          correlateBehavior.correlateToMessageEvents(
-              new MessageData(
-                  messageKey,
-                  messageCorrelationRecord.getNameBuffer(),
-                  messageCorrelationRecord.getCorrelationKeyBuffer(),
-                  messageCorrelationRecord.getVariablesBuffer(),
-                  messageCorrelationRecord.getTenantId(),
-                  requestId,
-                  requestStreamId)));
-    } else {
-      correlatingSubscriptions.addAll(
-          correlateBehavior.correlateToMessageEvents(
-              new MessageData(
-                  messageKey,
-                  messageCorrelationRecord.getNameBuffer(),
-                  messageCorrelationRecord.getCorrelationKeyBuffer(),
-                  messageCorrelationRecord.getVariablesBuffer(),
-                  messageCorrelationRecord.getTenantId())));
-    }
+      final Subscriptions correlatingSubscriptions) {
+    correlatingSubscriptions.addAll(
+        correlateBehavior.correlateToMessageEvents(
+            new MessageData(
+                messageKey,
+                messageCorrelationRecord.getNameBuffer(),
+                messageCorrelationRecord.getCorrelationKeyBuffer(),
+                messageCorrelationRecord.getVariablesBuffer(),
+                messageCorrelationRecord.getTenantId())));
   }
 }
