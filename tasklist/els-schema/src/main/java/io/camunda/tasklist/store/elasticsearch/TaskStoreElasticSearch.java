@@ -15,6 +15,7 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.tasklist.util.ElasticsearchUtil.getRawResponseWithTenantCheck;
 import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithOr;
 import static io.camunda.tasklist.util.ElasticsearchUtil.mapSearchHits;
 import static java.util.stream.Collectors.toList;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.WAIT_UNTIL;
@@ -68,6 +69,7 @@ import org.elasticsearch.script.Script;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.ScriptSortBuilder;
+import org.elasticsearch.search.sort.ScriptSortBuilder.ScriptSortType;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -87,6 +89,8 @@ public class TaskStoreElasticSearch implements TaskStore {
           TaskState.CREATED, TaskTemplate.CREATION_TIME,
           TaskState.COMPLETED, TaskTemplate.COMPLETION_TIME,
           TaskState.CANCELED, TaskTemplate.COMPLETION_TIME);
+  private static final QueryBuilder INCLUDE_NULL_PRIORITY =
+      QueryBuilders.boolQuery().mustNot(existsQuery(TaskTemplate.PRIORITY));
 
   @Autowired
   @Qualifier("tasklistEsClient")
@@ -112,16 +116,157 @@ public class TaskStoreElasticSearch implements TaskStore {
       final SearchHit response =
           getRawResponseWithTenantCheck(id, taskTemplate, ALL, tenantAwareClient);
       return fromSearchHit(response.getSourceAsString(), objectMapper, TaskEntity.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 
-  public List<TaskEntity> getTasksById(List<String> ids) {
+  @Override
+  public List<String> getTaskIdsByProcessInstanceId(final String processInstanceId) {
+    final SearchRequest searchRequest =
+        ElasticsearchUtil.createSearchRequest(taskTemplate)
+            .source(
+                SearchSourceBuilder.searchSource()
+                    .query(termQuery(PROCESS_INSTANCE_ID, processInstanceId))
+                    .fetchField(TaskTemplate.ID));
+    try {
+      return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public Map<String, String> getTaskIdsWithIndexByProcessDefinitionId(
+      final String processDefinitionId) {
+    final SearchRequest searchRequest =
+        ElasticsearchUtil.createSearchRequest(taskTemplate)
+            .source(
+                SearchSourceBuilder.searchSource()
+                    .query(termQuery(TaskTemplate.PROCESS_DEFINITION_ID, processDefinitionId))
+                    .fetchField(TaskTemplate.ID));
+    try {
+      return ElasticsearchUtil.scrollIdsWithIndexToMap(searchRequest, esClient);
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public List<TaskSearchView> getTasks(final TaskQuery query) {
+    final List<TaskSearchView> response = queryTasks(query);
+
+    // query one additional instance
+    if (query.getSearchAfterOrEqual() != null || query.getSearchBeforeOrEqual() != null) {
+      adjustResponse(response, query);
+    }
+
+    if (response.size() > 0
+        && (query.getSearchAfter() != null || query.getSearchAfterOrEqual() != null)) {
+      final TaskSearchView firstTask = response.get(0);
+      firstTask.setFirst(checkTaskIsFirst(query, firstTask.getId()));
+    }
+
+    return response;
+  }
+
+  /**
+   * Persist that task is completed even before the corresponding events are imported from Zeebe.
+   */
+  @Override
+  public TaskEntity persistTaskCompletion(final TaskEntity taskBefore) {
+    final SearchHit taskBeforeSearchHit;
+    try {
+      taskBeforeSearchHit =
+          getRawResponseWithTenantCheck(taskBefore.getId(), taskTemplate, ALL, tenantAwareClient);
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+
+    final TaskEntity completedTask =
+        taskBefore.makeCopy().setState(TaskState.COMPLETED).setCompletionTime(OffsetDateTime.now());
+
+    try {
+      // update task with optimistic locking
+      final Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(TaskTemplate.STATE, completedTask.getState());
+      updateFields.put(TaskTemplate.COMPLETION_TIME, completedTask.getCompletionTime());
+
+      // format date fields properly
+      final Map<String, Object> jsonMap =
+          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+      final UpdateRequest updateRequest =
+          new UpdateRequest()
+              .index(taskTemplate.getFullQualifiedName())
+              .id(taskBeforeSearchHit.getId())
+              .doc(jsonMap)
+              .setRefreshPolicy(WAIT_UNTIL)
+              .setIfSeqNo(taskBeforeSearchHit.getSeqNo())
+              .setIfPrimaryTerm(taskBeforeSearchHit.getPrimaryTerm());
+      ElasticsearchUtil.executeUpdate(esClient, updateRequest);
+    } catch (final Exception e) {
+      // we're OK with not updating the task here, it will be marked as completed within import
+      LOGGER.error(e.getMessage(), e);
+    }
+    return completedTask;
+  }
+
+  @Override
+  public TaskEntity rollbackPersistTaskCompletion(final TaskEntity taskBefore) {
+    final SearchHit taskBeforeSearchHit;
+    try {
+      taskBeforeSearchHit =
+          getRawResponseWithTenantCheck(taskBefore.getId(), taskTemplate, ALL, tenantAwareClient);
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+
+    final TaskEntity completedTask = taskBefore.makeCopy().setCompletionTime(null);
+
+    try {
+      // update task with optimistic locking
+      final Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(TaskTemplate.STATE, completedTask.getState());
+      updateFields.put(TaskTemplate.COMPLETION_TIME, null);
+
+      // format date fields properly
+      final Map<String, Object> jsonMap =
+          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+      final UpdateRequest updateRequest =
+          new UpdateRequest()
+              .index(taskTemplate.getFullQualifiedName())
+              .id(taskBeforeSearchHit.getId())
+              .doc(jsonMap)
+              .setRefreshPolicy(WAIT_UNTIL)
+              .setIfSeqNo(taskBeforeSearchHit.getSeqNo())
+              .setIfPrimaryTerm(taskBeforeSearchHit.getPrimaryTerm());
+      ElasticsearchUtil.executeUpdate(esClient, updateRequest);
+    } catch (final Exception e) {
+      LOGGER.error("Error when trying to rollback Task to CREATED state: {}", e.getMessage());
+    }
+    return completedTask;
+  }
+
+  @Override
+  public TaskEntity persistTaskClaim(final TaskEntity taskBefore, final String assignee) {
+
+    updateTask(taskBefore.getId(), asMap(TaskTemplate.ASSIGNEE, assignee));
+
+    return taskBefore.makeCopy().setAssignee(assignee);
+  }
+
+  @Override
+  public TaskEntity persistTaskUnclaim(final TaskEntity task) {
+    updateTask(task.getId(), asMap(TaskTemplate.ASSIGNEE, null));
+    return task.makeCopy().setAssignee(null);
+  }
+
+  @Override
+  public List<TaskEntity> getTasksById(final List<String> ids) {
     try {
       final SearchHit[] response = getTasksRawResponse(ids);
       return mapSearchHits(response, objectMapper, TaskEntity.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -142,37 +287,7 @@ public class TaskStoreElasticSearch implements TaskStore {
     }
   }
 
-  @Override
-  public List<String> getTaskIdsByProcessInstanceId(String processInstanceId) {
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(taskTemplate)
-            .source(
-                SearchSourceBuilder.searchSource()
-                    .query(termQuery(PROCESS_INSTANCE_ID, processInstanceId))
-                    .fetchField(TaskTemplate.ID));
-    try {
-      return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
-    } catch (IOException e) {
-      throw new TasklistRuntimeException(e.getMessage(), e);
-    }
-  }
-
-  @Override
-  public Map<String, String> getTaskIdsWithIndexByProcessDefinitionId(String processDefinitionId) {
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(taskTemplate)
-            .source(
-                SearchSourceBuilder.searchSource()
-                    .query(termQuery(TaskTemplate.PROCESS_DEFINITION_ID, processDefinitionId))
-                    .fetchField(TaskTemplate.ID));
-    try {
-      return ElasticsearchUtil.scrollIdsWithIndexToMap(searchRequest, esClient);
-    } catch (IOException e) {
-      throw new TasklistRuntimeException(e.getMessage(), e);
-    }
-  }
-
-  private List<TaskSearchView> mapTasksFromEntity(SearchResponse response) {
+  private List<TaskSearchView> mapTasksFromEntity(final SearchResponse response) {
     return ElasticsearchUtil.mapSearchHits(
         response.getHits().getHits(),
         (sh) ->
@@ -180,24 +295,6 @@ public class TaskStoreElasticSearch implements TaskStore {
                 ElasticsearchUtil.fromSearchHit(
                     sh.getSourceAsString(), objectMapper, TaskEntity.class),
                 sh.getSortValues()));
-  }
-
-  @Override
-  public List<TaskSearchView> getTasks(TaskQuery query) {
-    final List<TaskSearchView> response = queryTasks(query);
-
-    // query one additional instance
-    if (query.getSearchAfterOrEqual() != null || query.getSearchBeforeOrEqual() != null) {
-      adjustResponse(response, query);
-    }
-
-    if (response.size() > 0
-        && (query.getSearchAfter() != null || query.getSearchAfterOrEqual() != null)) {
-      final TaskSearchView firstTask = response.get(0);
-      firstTask.setFirst(checkTaskIsFirst(query, firstTask.getId()));
-    }
-
-    return response;
   }
 
   /**
@@ -247,7 +344,7 @@ public class TaskStoreElasticSearch implements TaskStore {
     return queryTasks(query, null);
   }
 
-  private List<TaskSearchView> queryTasks(final TaskQuery query, String taskId) {
+  private List<TaskSearchView> queryTasks(final TaskQuery query, final String taskId) {
     List<String> tasksIds = null;
     if (query.getTaskVariables() != null && query.getTaskVariables().length > 0) {
       tasksIds = getTasksContainsVarNameAndValue(query.getTaskVariables());
@@ -287,7 +384,7 @@ public class TaskStoreElasticSearch implements TaskStore {
               : tenantAwareClient.searchByTenantIds(searchRequest, Set.of(query.getTenantIds()));
       final List<TaskSearchView> tasks = mapTasksFromEntity(response);
 
-      if (tasks.size() > 0) {
+      if (!tasks.isEmpty()) {
         if (query.getSearchBefore() != null || query.getSearchBeforeOrEqual() != null) {
           if (tasks.size() <= query.getPageSize()) {
             // last task will be the first in the whole list
@@ -302,14 +399,14 @@ public class TaskStoreElasticSearch implements TaskStore {
         }
       }
       return tasks;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining tasks: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
-  private static ElasticsearchUtil.QueryType getQueryTypeByTaskState(TaskState taskState) {
+  private static ElasticsearchUtil.QueryType getQueryTypeByTaskState(final TaskState taskState) {
     return TaskState.CREATED == taskState
         ? ElasticsearchUtil.QueryType.ONLY_RUNTIME
         : ElasticsearchUtil.QueryType.ALL;
@@ -332,7 +429,7 @@ public class TaskStoreElasticSearch implements TaskStore {
     }
   }
 
-  private QueryBuilder buildQuery(TaskQuery query, List<String> taskIds) {
+  private QueryBuilder buildQuery(final TaskQuery query, final List<String> taskIds) {
     QueryBuilder stateQ = boolQuery().mustNot(termQuery(TaskTemplate.STATE, TaskState.CANCELED));
     if (query.getState() != null) {
       stateQ = termQuery(TaskTemplate.STATE, query.getState());
@@ -424,6 +521,8 @@ public class TaskStoreElasticSearch implements TaskStore {
       implementationQ = termQuery(TaskTemplate.IMPLEMENTATION, query.getImplementation());
     }
 
+    final QueryBuilder priorityQ = buildPriorityQuery(query);
+
     QueryBuilder jointQ =
         joinWithAnd(
             stateQ,
@@ -441,7 +540,8 @@ public class TaskStoreElasticSearch implements TaskStore {
             processDefinitionIdQ,
             followUpQ,
             dueDateQ,
-            implementationQ);
+            implementationQ,
+            priorityQ);
     if (jointQ == null) {
       jointQ = matchAllQuery();
     }
@@ -454,7 +554,7 @@ public class TaskStoreElasticSearch implements TaskStore {
    * @param searchSourceBuilder
    * @param query
    */
-  private void applySorting(SearchSourceBuilder searchSourceBuilder, TaskQuery query) {
+  private void applySorting(final SearchSourceBuilder searchSourceBuilder, final TaskQuery query) {
 
     final boolean isSortOnRequest;
     if (query.getSort() != null) {
@@ -524,6 +624,8 @@ public class TaskStoreElasticSearch implements TaskStore {
             SortBuilders.scriptSort(script, ScriptSortBuilder.ScriptSortType.STRING)
                 .order(sortOrder);
         searchSourceBuilder.sort(sortBuilder);
+        searchSourceBuilder.sort(
+            mapNullInSort(TaskTemplate.PRIORITY, "50", sortOrder, ScriptSortType.NUMBER));
       }
     } else {
       final String sort1Field;
@@ -550,97 +652,6 @@ public class TaskStoreElasticSearch implements TaskStore {
     }
   }
 
-  /**
-   * Persist that task is completed even before the corresponding events are imported from Zeebe.
-   */
-  @Override
-  public TaskEntity persistTaskCompletion(final TaskEntity taskBefore) {
-    final SearchHit taskBeforeSearchHit;
-    try {
-      taskBeforeSearchHit =
-          getRawResponseWithTenantCheck(taskBefore.getId(), taskTemplate, ALL, tenantAwareClient);
-    } catch (IOException e) {
-      throw new TasklistRuntimeException(e.getMessage(), e);
-    }
-
-    final TaskEntity completedTask =
-        taskBefore.makeCopy().setState(TaskState.COMPLETED).setCompletionTime(OffsetDateTime.now());
-
-    try {
-      // update task with optimistic locking
-      final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(TaskTemplate.STATE, completedTask.getState());
-      updateFields.put(TaskTemplate.COMPLETION_TIME, completedTask.getCompletionTime());
-
-      // format date fields properly
-      final Map<String, Object> jsonMap =
-          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-      final UpdateRequest updateRequest =
-          new UpdateRequest()
-              .index(taskTemplate.getFullQualifiedName())
-              .id(taskBeforeSearchHit.getId())
-              .doc(jsonMap)
-              .setRefreshPolicy(WAIT_UNTIL)
-              .setIfSeqNo(taskBeforeSearchHit.getSeqNo())
-              .setIfPrimaryTerm(taskBeforeSearchHit.getPrimaryTerm());
-      ElasticsearchUtil.executeUpdate(esClient, updateRequest);
-    } catch (Exception e) {
-      // we're OK with not updating the task here, it will be marked as completed within import
-      LOGGER.error(e.getMessage(), e);
-    }
-    return completedTask;
-  }
-
-  @Override
-  public TaskEntity rollbackPersistTaskCompletion(final TaskEntity taskBefore) {
-    final SearchHit taskBeforeSearchHit;
-    try {
-      taskBeforeSearchHit =
-          getRawResponseWithTenantCheck(taskBefore.getId(), taskTemplate, ALL, tenantAwareClient);
-    } catch (IOException e) {
-      throw new TasklistRuntimeException(e.getMessage(), e);
-    }
-
-    final TaskEntity completedTask = taskBefore.makeCopy().setCompletionTime(null);
-
-    try {
-      // update task with optimistic locking
-      final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(TaskTemplate.STATE, completedTask.getState());
-      updateFields.put(TaskTemplate.COMPLETION_TIME, null);
-
-      // format date fields properly
-      final Map<String, Object> jsonMap =
-          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-      final UpdateRequest updateRequest =
-          new UpdateRequest()
-              .index(taskTemplate.getFullQualifiedName())
-              .id(taskBeforeSearchHit.getId())
-              .doc(jsonMap)
-              .setRefreshPolicy(WAIT_UNTIL)
-              .setIfSeqNo(taskBeforeSearchHit.getSeqNo())
-              .setIfPrimaryTerm(taskBeforeSearchHit.getPrimaryTerm());
-      ElasticsearchUtil.executeUpdate(esClient, updateRequest);
-    } catch (Exception e) {
-      LOGGER.error("Error when trying to rollback Task to CREATED state: {}", e.getMessage());
-    }
-    return completedTask;
-  }
-
-  @Override
-  public TaskEntity persistTaskClaim(TaskEntity taskBefore, String assignee) {
-
-    updateTask(taskBefore.getId(), asMap(TaskTemplate.ASSIGNEE, assignee));
-
-    return taskBefore.makeCopy().setAssignee(assignee);
-  }
-
-  @Override
-  public TaskEntity persistTaskUnclaim(TaskEntity task) {
-    updateTask(task.getId(), asMap(TaskTemplate.ASSIGNEE, null));
-    return task.makeCopy().setAssignee(null);
-  }
-
   private void updateTask(final String taskId, final Map<String, Object> updateFields) {
     try {
       final SearchHit searchHit =
@@ -658,12 +669,13 @@ public class TaskStoreElasticSearch implements TaskStore {
               .setIfSeqNo(searchHit.getSeqNo())
               .setIfPrimaryTerm(searchHit.getPrimaryTerm());
       ElasticsearchUtil.executeUpdate(esClient, updateRequest);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 
-  private List<String> getTasksContainsVarNameAndValue(TaskByVariables[] taskVariablesFilter) {
+  private List<String> getTasksContainsVarNameAndValue(
+      final TaskByVariables[] taskVariablesFilter) {
     final List<String> varNames =
         Arrays.stream(taskVariablesFilter).map(TaskByVariables::getName).collect(toList());
     final List<String> varValues =
@@ -684,7 +696,7 @@ public class TaskStoreElasticSearch implements TaskStore {
   }
 
   private List<String> getTasksIdsCompletedWithMatchingVars(
-      List<String> varNames, List<String> varValues) {
+      final List<String> varNames, final List<String> varValues) {
     final List<Set<String>> tasksIdsMatchingAllVars = new ArrayList<>();
 
     for (int i = 0; i < varNames.size(); i++) {
@@ -734,7 +746,7 @@ public class TaskStoreElasticSearch implements TaskStore {
 
         tasksIdsMatchingAllVars.add(taskIds);
 
-      } catch (IOException e) {
+      } catch (final IOException e) {
         final String message =
             String.format(
                 "Exception occurred while obtaining taskIds for variable %s: %s",
@@ -754,7 +766,8 @@ public class TaskStoreElasticSearch implements TaskStore {
             .orElse(Collections.emptySet()));
   }
 
-  private BoolQueryBuilder returnUserGroupBoolQuery(List<String> userGroups, String userName) {
+  private BoolQueryBuilder returnUserGroupBoolQuery(
+      final List<String> userGroups, final String userName) {
     final SearchRequest searchRequest = new SearchRequest(taskTemplate.getFullQualifiedName());
     final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
 
@@ -776,7 +789,7 @@ public class TaskStoreElasticSearch implements TaskStore {
   }
 
   private List<String> retrieveTaskIdByProcessInstanceId(
-      List<String> processIds, TaskByVariables[] taskVariablesFilter) {
+      final List<String> processIds, final TaskByVariables[] taskVariablesFilter) {
     final List<String> taskIdsCreated = new ArrayList<>();
     final Map<String, String> variablesMap =
         IntStream.range(0, taskVariablesFilter.length)
@@ -785,9 +798,9 @@ public class TaskStoreElasticSearch implements TaskStore {
                 Collectors.toMap(
                     i -> taskVariablesFilter[i].getName(), i -> taskVariablesFilter[i].getValue()));
 
-    for (String processId : processIds) {
+    for (final String processId : processIds) {
       final List<String> taskIds = getTaskIdsByProcessInstanceId(processId);
-      for (String taskId : taskIds) {
+      for (final String taskId : taskIds) {
         final TaskEntity taskEntity = getTask(taskId);
         if (taskEntity.getState() == TaskState.CREATED) {
           final List<VariableStore.GetVariablesRequest> request =
@@ -801,5 +814,67 @@ public class TaskStoreElasticSearch implements TaskStore {
       }
     }
     return taskIdsCreated;
+  }
+
+  private QueryBuilder buildPriorityQuery(final TaskQuery query) {
+    QueryBuilder priorityQ = null;
+    if (query.getPriority() != null) {
+      if (query.getPriority().getValue() != null) {
+        final BoolQueryBuilder priorityQBuilder = QueryBuilders.boolQuery();
+        if (query.getPriority().getOperator() != null) {
+          switch (query.getPriority().getOperator()) {
+            case eq:
+              priorityQBuilder.must(
+                  QueryBuilders.termQuery(TaskTemplate.PRIORITY, query.getPriority().getValue()));
+              break;
+            case gt:
+              priorityQ =
+                  QueryBuilders.rangeQuery(TaskTemplate.PRIORITY)
+                      .gt(query.getPriority().getValue());
+              break;
+            case gte:
+              priorityQ =
+                  QueryBuilders.rangeQuery(TaskTemplate.PRIORITY)
+                      .gte(query.getPriority().getValue());
+              break;
+            case lt:
+              priorityQ =
+                  QueryBuilders.rangeQuery(TaskTemplate.PRIORITY)
+                      .lt(query.getPriority().getValue());
+              break;
+            case lte:
+              priorityQ =
+                  QueryBuilders.rangeQuery(TaskTemplate.PRIORITY)
+                      .lte(query.getPriority().getValue());
+              break;
+            default:
+              break;
+          }
+        }
+        priorityQ = joinWithOr(priorityQ, INCLUDE_NULL_PRIORITY);
+      } else {
+        priorityQ =
+            joinWithOr(
+                QueryBuilders.rangeQuery(TaskTemplate.PRIORITY)
+                    .from(query.getPriority().getFrom())
+                    .to(query.getPriority().getTo()),
+                INCLUDE_NULL_PRIORITY);
+      }
+    }
+    return priorityQ;
+  }
+
+  private SortBuilder<?> mapNullInSort(
+      final String field,
+      final String defaultValue,
+      final SortOrder order,
+      final ScriptSortBuilder.ScriptSortType sortType) {
+    final String nullHandlingScript =
+        String.format(
+            "if (doc['%s'].size() == 0) { %s } else { doc['%s'].value }",
+            field, defaultValue, field);
+
+    final Script script = new Script(nullHandlingScript);
+    return SortBuilders.scriptSort(script, sortType).order(order);
   }
 }

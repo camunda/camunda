@@ -14,6 +14,7 @@ import static io.camunda.tasklist.util.OpenSearchUtil.QueryType.ALL;
 import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.OpenSearchUtil.getRawResponseWithTenantCheck;
 import static io.camunda.tasklist.util.OpenSearchUtil.joinQueryBuilderWithAnd;
+import static io.camunda.tasklist.util.OpenSearchUtil.joinQueryBuilderWithOr;
 import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,6 +46,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -58,13 +60,17 @@ import org.opensearch.client.opensearch._types.ScriptSortType;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.Query.Builder;
+import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.util.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,6 +87,12 @@ public class TaskStoreOpenSearch implements TaskStore {
           TaskState.CREATED, TaskTemplate.CREATION_TIME,
           TaskState.COMPLETED, TaskTemplate.COMPLETION_TIME,
           TaskState.CANCELED, TaskTemplate.COMPLETION_TIME);
+  private static final Builder INCLUDE_NULL_PRIORITY =
+      QueryBuilders.bool()
+          .mustNot(mn -> mn.exists(e -> e.field(TaskTemplate.PRIORITY)))
+          .build()
+          .toQuery()
+          .toBuilder();
 
   @Autowired
   @Qualifier("tasklistOsClient")
@@ -105,13 +117,13 @@ public class TaskStoreOpenSearch implements TaskStore {
     try {
       return getRawResponseWithTenantCheck(
           id, taskTemplate, ALL, tenantAwareClient, TaskEntity.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 
   @Override
-  public List<String> getTaskIdsByProcessInstanceId(String processInstanceId) {
+  public List<String> getTaskIdsByProcessInstanceId(final String processInstanceId) {
     final SearchRequest.Builder searchRequest =
         OpenSearchUtil.createSearchRequest(taskTemplate)
             .query(
@@ -124,13 +136,14 @@ public class TaskStoreOpenSearch implements TaskStore {
 
     try {
       return OpenSearchUtil.scrollIdsToList(searchRequest, osClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 
   @Override
-  public Map<String, String> getTaskIdsWithIndexByProcessDefinitionId(String processDefinitionId) {
+  public Map<String, String> getTaskIdsWithIndexByProcessDefinitionId(
+      final String processDefinitionId) {
     final SearchRequest.Builder searchRequest =
         OpenSearchUtil.createSearchRequest(taskTemplate)
             .query(
@@ -143,13 +156,13 @@ public class TaskStoreOpenSearch implements TaskStore {
 
     try {
       return OpenSearchUtil.scrollIdsWithIndexToMap(searchRequest, osClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 
   @Override
-  public List<TaskSearchView> getTasks(TaskQuery query) {
+  public List<TaskSearchView> getTasks(final TaskQuery query) {
     final List<TaskSearchView> response = queryTasks(query);
 
     // query one additional instance
@@ -164,6 +177,106 @@ public class TaskStoreOpenSearch implements TaskStore {
     }
 
     return response;
+  }
+
+  /**
+   * Persist that task is completed even before the corresponding events are imported from Zeebe.
+   */
+  @Override
+  public TaskEntity persistTaskCompletion(final TaskEntity taskBefore) {
+    final Hit taskBeforeSearchHit;
+    try {
+      taskBeforeSearchHit = getTaskRawResponse(taskBefore.getId());
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+
+    final TaskEntity completedTask =
+        taskBefore.makeCopy().setState(TaskState.COMPLETED).setCompletionTime(OffsetDateTime.now());
+
+    try {
+      // update task with optimistic locking
+      final Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(TaskTemplate.STATE, completedTask.getState());
+      updateFields.put(TaskTemplate.COMPLETION_TIME, completedTask.getCompletionTime());
+
+      // format date fields properly
+      final Map<String, Object> jsonMap =
+          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+      final UpdateRequest.Builder updateRequest = new UpdateRequest.Builder();
+      updateRequest
+          .index(taskTemplate.getFullQualifiedName())
+          .id(taskBeforeSearchHit.id())
+          .doc(jsonMap)
+          .refresh(Refresh.WaitFor)
+          .ifSeqNo(taskBeforeSearchHit.seqNo())
+          .ifPrimaryTerm(taskBeforeSearchHit.primaryTerm());
+      OpenSearchUtil.executeUpdate(osClient, updateRequest.build());
+    } catch (final Exception e) {
+      // we're OK with not updating the task here, it will be marked as completed within import
+      LOGGER.error(e.getMessage(), e);
+    }
+    return completedTask;
+  }
+
+  @Override
+  public TaskEntity rollbackPersistTaskCompletion(final TaskEntity taskBefore) {
+    final Hit taskBeforeSearchHit;
+    try {
+      taskBeforeSearchHit = getTaskRawResponse(taskBefore.getId());
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+
+    final TaskEntity completedTask = taskBefore.makeCopy().setCompletionTime(null);
+
+    try {
+      // update task with optimistic locking
+      final Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(TaskTemplate.STATE, completedTask.getState());
+      updateFields.put(TaskTemplate.COMPLETION_TIME, completedTask.getCompletionTime());
+
+      // format date fields properly
+      final Map<String, Object> jsonMap =
+          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+      final UpdateRequest.Builder updateRequest = new UpdateRequest.Builder();
+      updateRequest
+          .index(taskTemplate.getFullQualifiedName())
+          .id(taskBeforeSearchHit.id())
+          .doc(jsonMap)
+          .refresh(Refresh.WaitFor)
+          .ifSeqNo(taskBeforeSearchHit.seqNo())
+          .ifPrimaryTerm(taskBeforeSearchHit.primaryTerm());
+      OpenSearchUtil.executeUpdate(osClient, updateRequest.build());
+    } catch (final Exception e) {
+      // we're OK with not updating the task here, it will be marked as completed within import
+      LOGGER.error(e.getMessage(), e);
+    }
+    return completedTask;
+  }
+
+  @Override
+  public TaskEntity persistTaskClaim(final TaskEntity taskBefore, final String assignee) {
+
+    updateTask(taskBefore.getId(), asMap(TaskTemplate.ASSIGNEE, assignee));
+
+    return taskBefore.makeCopy().setAssignee(assignee);
+  }
+
+  @Override
+  public TaskEntity persistTaskUnclaim(final TaskEntity task) {
+    updateTask(task.getId(), asMap(TaskTemplate.ASSIGNEE, null));
+    return task.makeCopy().setAssignee(null);
+  }
+
+  @Override
+  public List<TaskEntity> getTasksById(final List<String> ids) {
+    try {
+      final List<Hit<TaskEntity>> response = getTasksRawResponse(ids);
+      return response.stream().map(Hit::source).collect(Collectors.toList());
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**
@@ -213,7 +326,7 @@ public class TaskStoreOpenSearch implements TaskStore {
     return queryTasks(query, null);
   }
 
-  private List<TaskSearchView> queryTasks(final TaskQuery query, String taskId) {
+  private List<TaskSearchView> queryTasks(final TaskQuery query, final String taskId) {
     List<String> tasksIds = null;
     if (query.getTaskVariables() != null && query.getTaskVariables().length > 0) {
       tasksIds = getTasksContainsVarNameAndValue(query.getTaskVariables());
@@ -276,14 +389,15 @@ public class TaskStoreOpenSearch implements TaskStore {
         }
       }
       return tasks;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining tasks: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
-  private List<String> getTasksContainsVarNameAndValue(TaskByVariables[] taskVariablesFilter) {
+  private List<String> getTasksContainsVarNameAndValue(
+      final TaskByVariables[] taskVariablesFilter) {
     final List<String> varNames =
         Arrays.stream(taskVariablesFilter).map(TaskByVariables::getName).collect(toList());
     final List<String> varValues =
@@ -303,7 +417,7 @@ public class TaskStoreOpenSearch implements TaskStore {
         .collect(Collectors.toList());
   }
 
-  private static OpenSearchUtil.QueryType getQueryTypeByTaskState(TaskState taskState) {
+  private static OpenSearchUtil.QueryType getQueryTypeByTaskState(final TaskState taskState) {
     return TaskState.CREATED == taskState
         ? OpenSearchUtil.QueryType.ONLY_RUNTIME
         : OpenSearchUtil.QueryType.ALL;
@@ -326,7 +440,7 @@ public class TaskStoreOpenSearch implements TaskStore {
     }
   }
 
-  private Query.Builder buildQuery(TaskQuery query, List<String> taskIds) {
+  private Query.Builder buildQuery(final TaskQuery query, final List<String> taskIds) {
     final Query.Builder stateQ = new Query.Builder();
     stateQ.bool(
         b ->
@@ -481,6 +595,8 @@ public class TaskStoreOpenSearch implements TaskStore {
                   .value(FieldValue.of(query.getImplementation().name())));
     }
 
+    final Query.Builder priorityQ = buildPriorityQuery(query);
+
     final Query.Builder jointQ =
         joinQueryBuilderWithAnd(
             stateQ,
@@ -498,7 +614,8 @@ public class TaskStoreOpenSearch implements TaskStore {
             processDefinitionIdQ,
             followUpQ,
             dueDateQ,
-            implementationQ);
+            implementationQ,
+            priorityQ);
 
     if (jointQ == null) {
       jointQ.matchAll(new MatchAllQuery.Builder().build());
@@ -508,7 +625,8 @@ public class TaskStoreOpenSearch implements TaskStore {
     return result;
   }
 
-  private Query.Builder returnUserGroupBoolQuery(List<String> userGroups, String userName) {
+  private Query.Builder returnUserGroupBoolQuery(
+      final List<String> userGroups, final String userName) {
     final Query.Builder userNameAssigneeQ = new Query.Builder();
     userNameAssigneeQ.term(t -> t.field(TaskTemplate.ASSIGNEE).value(FieldValue.of(userName)));
 
@@ -517,7 +635,7 @@ public class TaskStoreOpenSearch implements TaskStore {
         t -> t.field(TaskTemplate.CANDIDATE_USERS).value(FieldValue.of(userName)));
 
     Query.Builder userNameCandidateGroupsQ = null;
-    for (String group : userGroups) {
+    for (final String group : userGroups) {
       final Query.Builder singleUserNameCandidateGroupQ = new Query.Builder();
       singleUserNameCandidateGroupQ.term(
           t -> t.field(TaskTemplate.CANDIDATE_GROUPS).value(FieldValue.of(group)));
@@ -556,7 +674,8 @@ public class TaskStoreOpenSearch implements TaskStore {
    * @param searchRequestBuilder
    * @param query
    */
-  private void applySorting(SearchRequest.Builder searchRequestBuilder, TaskQuery query) {
+  private void applySorting(
+      final SearchRequest.Builder searchRequestBuilder, final TaskQuery query) {
 
     final boolean isSortOnRequest;
     if (query.getSort() != null) {
@@ -638,6 +757,8 @@ public class TaskStoreOpenSearch implements TaskStore {
                             .script(scriptBuilder.build())
                             .order(sortOrder)
                             .type(ScriptSortType.String)));
+        searchRequestBuilder.sort(
+            mapNullInSort(TaskTemplate.PRIORITY, "50", sortOrder, ScriptSortType.Number));
       }
 
     } else {
@@ -681,96 +802,6 @@ public class TaskStoreOpenSearch implements TaskStore {
     }
   }
 
-  /**
-   * Persist that task is completed even before the corresponding events are imported from Zeebe.
-   */
-  @Override
-  public TaskEntity persistTaskCompletion(final TaskEntity taskBefore) {
-    final Hit taskBeforeSearchHit;
-    try {
-      taskBeforeSearchHit = this.getTaskRawResponse(taskBefore.getId());
-    } catch (IOException e) {
-      throw new TasklistRuntimeException(e.getMessage(), e);
-    }
-
-    final TaskEntity completedTask =
-        taskBefore.makeCopy().setState(TaskState.COMPLETED).setCompletionTime(OffsetDateTime.now());
-
-    try {
-      // update task with optimistic locking
-      final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(TaskTemplate.STATE, completedTask.getState());
-      updateFields.put(TaskTemplate.COMPLETION_TIME, completedTask.getCompletionTime());
-
-      // format date fields properly
-      final Map<String, Object> jsonMap =
-          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-      final UpdateRequest.Builder updateRequest = new UpdateRequest.Builder();
-      updateRequest
-          .index(taskTemplate.getFullQualifiedName())
-          .id(taskBeforeSearchHit.id())
-          .doc(jsonMap)
-          .refresh(Refresh.WaitFor)
-          .ifSeqNo(taskBeforeSearchHit.seqNo())
-          .ifPrimaryTerm(taskBeforeSearchHit.primaryTerm());
-      OpenSearchUtil.executeUpdate(osClient, updateRequest.build());
-    } catch (Exception e) {
-      // we're OK with not updating the task here, it will be marked as completed within import
-      LOGGER.error(e.getMessage(), e);
-    }
-    return completedTask;
-  }
-
-  @Override
-  public TaskEntity rollbackPersistTaskCompletion(final TaskEntity taskBefore) {
-    final Hit taskBeforeSearchHit;
-    try {
-      taskBeforeSearchHit = this.getTaskRawResponse(taskBefore.getId());
-    } catch (IOException e) {
-      throw new TasklistRuntimeException(e.getMessage(), e);
-    }
-
-    final TaskEntity completedTask = taskBefore.makeCopy().setCompletionTime(null);
-
-    try {
-      // update task with optimistic locking
-      final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(TaskTemplate.STATE, completedTask.getState());
-      updateFields.put(TaskTemplate.COMPLETION_TIME, completedTask.getCompletionTime());
-
-      // format date fields properly
-      final Map<String, Object> jsonMap =
-          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-      final UpdateRequest.Builder updateRequest = new UpdateRequest.Builder();
-      updateRequest
-          .index(taskTemplate.getFullQualifiedName())
-          .id(taskBeforeSearchHit.id())
-          .doc(jsonMap)
-          .refresh(Refresh.WaitFor)
-          .ifSeqNo(taskBeforeSearchHit.seqNo())
-          .ifPrimaryTerm(taskBeforeSearchHit.primaryTerm());
-      OpenSearchUtil.executeUpdate(osClient, updateRequest.build());
-    } catch (Exception e) {
-      // we're OK with not updating the task here, it will be marked as completed within import
-      LOGGER.error(e.getMessage(), e);
-    }
-    return completedTask;
-  }
-
-  @Override
-  public TaskEntity persistTaskClaim(TaskEntity taskBefore, String assignee) {
-
-    updateTask(taskBefore.getId(), asMap(TaskTemplate.ASSIGNEE, assignee));
-
-    return taskBefore.makeCopy().setAssignee(assignee);
-  }
-
-  @Override
-  public TaskEntity persistTaskUnclaim(TaskEntity task) {
-    updateTask(task.getId(), asMap(TaskTemplate.ASSIGNEE, null));
-    return task.makeCopy().setAssignee(null);
-  }
-
   private void updateTask(final String taskId, final Map<String, Object> updateFields) {
     try {
       final Hit searchHit = getTaskRawResponse(taskId);
@@ -787,7 +818,7 @@ public class TaskStoreOpenSearch implements TaskStore {
           .ifSeqNo(searchHit.seqNo())
           .ifPrimaryTerm(searchHit.primaryTerm());
       OpenSearchUtil.executeUpdate(osClient, updateRequest.build());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
@@ -807,15 +838,6 @@ public class TaskStoreOpenSearch implements TaskStore {
     }
   }
 
-  public List<TaskEntity> getTasksById(List<String> ids) {
-    try {
-      final List<Hit<TaskEntity>> response = getTasksRawResponse(ids);
-      return response.stream().map(Hit::source).collect(Collectors.toList());
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   private List<Hit<TaskEntity>> getTasksRawResponse(final List<String> ids) throws IOException {
     final SearchRequest.Builder request =
         OpenSearchUtil.createSearchRequest(taskTemplate)
@@ -830,7 +852,7 @@ public class TaskStoreOpenSearch implements TaskStore {
   }
 
   private List<String> getTasksIdsCompletedWithMatchingVars(
-      List<String> varNames, List<String> varValues) {
+      final List<String> varNames, final List<String> varValues) {
 
     final List<Set<String>> listOfTaskIdsSets = new ArrayList<>();
 
@@ -899,7 +921,7 @@ public class TaskStoreOpenSearch implements TaskStore {
 
         listOfTaskIdsSets.add(taskIdsForCurrentVar);
 
-      } catch (IOException e) {
+      } catch (final IOException e) {
         final String message =
             String.format("Exception occurred while obtaining taskIds: %s", e.getMessage());
         throw new TasklistRuntimeException(message, e);
@@ -918,7 +940,7 @@ public class TaskStoreOpenSearch implements TaskStore {
   }
 
   private List<String> retrieveTaskIdByProcessInstanceId(
-      List<String> processIds, TaskByVariables[] taskVariablesFilter) {
+      final List<String> processIds, final TaskByVariables[] taskVariablesFilter) {
     final List<String> taskIdsCreated = new ArrayList<>();
     final Map<String, String> variablesMap =
         IntStream.range(0, taskVariablesFilter.length)
@@ -927,9 +949,9 @@ public class TaskStoreOpenSearch implements TaskStore {
                 Collectors.toMap(
                     i -> taskVariablesFilter[i].getName(), i -> taskVariablesFilter[i].getValue()));
 
-    for (String processId : processIds) {
+    for (final String processId : processIds) {
       final List<String> taskIds = getTaskIdsByProcessInstanceId(processId);
-      for (String taskId : taskIds) {
+      for (final String taskId : taskIds) {
         final TaskEntity taskEntity = getTask(taskId);
         if (taskEntity.getState() == TaskState.CREATED) {
           final List<VariableStore.GetVariablesRequest> request =
@@ -943,5 +965,75 @@ public class TaskStoreOpenSearch implements TaskStore {
       }
     }
     return taskIdsCreated;
+  }
+
+  private Query.Builder buildPriorityQuery(final TaskQuery query) {
+    Query.Builder priorityQ = new Query.Builder();
+    if (query.getPriority() != null) {
+      if (query.getPriority().getValue() != null) {
+        final BoolQuery.Builder priorityQBuilder = new BoolQuery.Builder();
+        if (query.getPriority().getOperator() != null) {
+          switch (query.getPriority().getOperator()) {
+            case eq:
+              priorityQ.term(
+                  r ->
+                      r.field(TaskTemplate.PRIORITY)
+                          .value(FieldValue.of((Integer) query.getPriority().getValue())));
+              break;
+            case gt:
+              priorityQ.range(
+                  r ->
+                      r.field(TaskTemplate.PRIORITY)
+                          .gt(JsonData.of(query.getPriority().getValue())));
+              break;
+            case gte:
+              priorityQ.range(
+                  r ->
+                      r.field(TaskTemplate.PRIORITY)
+                          .gte(JsonData.of(query.getPriority().getValue())));
+              break;
+            case lt:
+              priorityQ.range(
+                  r ->
+                      r.field(TaskTemplate.PRIORITY)
+                          .lt(JsonData.of(query.getPriority().getValue())));
+              break;
+            case lte:
+              priorityQ.range(
+                  r ->
+                      r.field(TaskTemplate.PRIORITY)
+                          .lte(JsonData.of(query.getPriority().getValue())));
+              break;
+            default:
+              break;
+          }
+        }
+        priorityQ = joinQueryBuilderWithOr(priorityQ, INCLUDE_NULL_PRIORITY);
+      } else {
+        priorityQ =
+            joinQueryBuilderWithOr(
+                priorityQ.range(
+                    r ->
+                        r.field(TaskTemplate.PRIORITY)
+                            .from(JsonData.of(query.getPriority().getFrom()))
+                            .to(JsonData.of(query.getPriority().getTo()))),
+                INCLUDE_NULL_PRIORITY);
+      }
+    }
+    return priorityQ;
+  }
+
+  private Function<SortOptions.Builder, ObjectBuilder<SortOptions>> mapNullInSort(
+      final String field,
+      final String defaultValue,
+      final SortOrder order,
+      final ScriptSortType sortType) {
+    final String nullHandlingScript =
+        String.format(
+            "if (doc['%s'].size() == 0) { %s } else { doc['%s'].value }",
+            field, defaultValue, field);
+
+    final Script script = new Script.Builder().inline(i -> i.source(nullHandlingScript)).build();
+    return f -> f.script(s -> s.script(script).order(order).type(sortType));
   }
 }

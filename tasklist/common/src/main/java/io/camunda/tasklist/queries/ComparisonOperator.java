@@ -7,10 +7,11 @@
  */
 package io.camunda.tasklist.queries;
 
-public enum TaskSortFields {
-  completionTime,
-  creationTime,
-  followUpDate,
-  dueDate,
-  priority
+public enum ComparisonOperator {
+  eq,
+  gt,
+  gte,
+  lt,
+  lte,
+  between
 }
