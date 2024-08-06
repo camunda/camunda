@@ -291,7 +291,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     // initializes metadata and position in the runtime state
     container.initMetadata();
     if (exporterMode == ExporterMode.ACTIVE) {
-      openRetryStrategy().runWithRetry(container::openExporter, this::isClosed);
+      container.openExporter();
     }
     containers.add(container);
     LOG.debug("Exporter '{}' is enabled.", exporterId);
@@ -490,7 +490,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private void startActiveExportingMode() {
     for (final ExporterContainer container : containers) {
       container.initMetadata();
-      openRetryStrategy().runWithRetry(container::openExporter, this::isClosed);
+      new BackOffRetryStrategy(actor, Duration.ofSeconds(10))
+          .runWithRetry(container::openExporter, this::isClosed);
     }
 
     if (state.hasExporters()) {
@@ -632,10 +633,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                 exporterId);
           }
         });
-  }
-
-  private RetryStrategy openRetryStrategy() {
-    return new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
   }
 
   private boolean isClosed() {
