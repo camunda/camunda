@@ -69,7 +69,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final String name;
   private final RetryStrategy exportingRetryStrategy;
   private final RetryStrategy recordWrapStrategy;
-  private final RetryStrategy openRetryStrategy;
   private final Set<FailureListener> listeners = new HashSet<>();
   private LogStreamReader logStreamReader;
   private EventFilter eventFilter;
@@ -115,7 +114,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     recordExporter = new RecordExporter(metrics, containers, partitionId);
     exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
     recordWrapStrategy = new EndlessRetryStrategy(actor);
-    openRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(1));
     zeebeDb = context.getZeebeDb();
     this.exporterPhase = exporterPhase;
     partitionMessagingService = context.getPartitionMessagingService();
@@ -293,7 +291,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     // initializes metadata and position in the runtime state
     container.initMetadata();
     if (exporterMode == ExporterMode.ACTIVE) {
-      openRetryStrategy.runWithRetry(() -> container.openExporter(), this::isClosed);
+      openRetryStrategy().runWithRetry(container::openExporter, this::isClosed);
     }
     containers.add(container);
     LOG.debug("Exporter '{}' is enabled.", exporterId);
@@ -492,7 +490,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private void startActiveExportingMode() {
     for (final ExporterContainer container : containers) {
       container.initMetadata();
-      openRetryStrategy.runWithRetry(() -> container.openExporter(), this::isClosed);
+      openRetryStrategy().runWithRetry(container::openExporter, this::isClosed);
     }
 
     if (state.hasExporters()) {
@@ -634,6 +632,10 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                 exporterId);
           }
         });
+  }
+
+  private RetryStrategy openRetryStrategy() {
+    return new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
   }
 
   private boolean isClosed() {

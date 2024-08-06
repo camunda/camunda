@@ -184,20 +184,31 @@ public final class ExporterDirectorTest {
 
   @Test
   public void shouldRetryOpenCallIfFails() throws Exception {
-    startExporterWithFaultyOpenCall();
+    // given, when
+    final var exporter = startExporterWithFaultyOpenCall();
+
+    // then
+    Awaitility.await("exporter open has been retried")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> verify(exporter, times(2)).open(any()));
 
     rule.closeExporterDirector();
   }
 
   @Test
   public void shouldExportAfterOpenRetried() throws Exception {
+    // given
     final var exporter = startExporterWithFaultyOpenCall();
 
-    //    export
+    Awaitility.await("exporter open has been retried")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> verify(exporter, times(2)).open(any()));
+
+    // when
     final var eventPosition1 = writeEvent();
     final var eventPosition2 = writeEvent();
 
-    //    verify export
+    // then
     Awaitility.await("Exporter has exported all records")
         .untilAsserted(
             () ->
@@ -752,11 +763,6 @@ public final class ExporterDirectorTest {
 
     // when
     startExporterDirector(List.of(descriptor));
-
-    // then
-    Awaitility.await("exporter open has been retried")
-        .atMost(Duration.ofSeconds(10))
-        .untilAsserted(() -> verify(exporter, times(2)).open(any()));
 
     return exporter;
   }
