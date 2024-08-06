@@ -602,8 +602,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    * zeebeClient
    *  .newDecisionDefinitionQuery()
-   *  .filter((f) -> f.key(decisionDefinitionKey))
-   *  .sort((s) -> s.name().asc())
+   *  .filter((f) -> f.decisionKey(decisionDefinitionKey))
+   *  .sort((s) -> s.dmnDecisionName().asc())
    *  .page((p) -> p.limit(100))
    *  .send();
    * </pre>
