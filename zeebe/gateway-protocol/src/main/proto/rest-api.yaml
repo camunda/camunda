@@ -640,6 +640,29 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /decision-requirements/search:
+    post:
+      tags:
+        - Decision Requirements
+      summary: Query decision requirements (experimental)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionRequirementsSearchQueryRequest"
+      responses:
+        '200':
+          description: >
+            The Decision Requirements Search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionRequirementsSearchQueryResponse"
+        '400':
+          description: >
+            The Decision Requirements Search Query failed.
+            More details are provided in the response body.
 
 components:
   schemas:
@@ -1329,6 +1352,55 @@ components:
           type: object
         lte:
           type: object
+    DecisionRequirementsSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          allOf:
+            - $ref: "#/components/schemas/DecisionRequirementsFilterRequest"
+    DecisionRequirementsFilterRequest:
+      type: object
+      properties:
+        decisionRequirementsKey:
+          type: integer
+          format: int64
+        dmnDecisionRequirementsName:
+          type: string
+        version:
+          type: integer
+          format: int32
+        dmnDecisionRequirementsId:
+          type: string
+        tenantId:
+          type: string
+    DecisionRequirementsSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionRequirementsItem"
+    DecisionRequirementsItem:
+      type: object
+      properties:
+        decisionRequirementsKey:
+          type: integer
+          format: int64
+        dmnDecisionRequirementsName:
+          type: string
+        version:
+          type: integer
+          format: int32
+        dmnDecisionRequirementsId:
+          type: string
+        resourceName:
+          type: string
+        tenantId:
+          type: string
   securitySchemes:
     bearerAuth:
       type: http
