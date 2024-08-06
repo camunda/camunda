@@ -39,7 +39,7 @@ public class ClockControlProcessor implements DistributedTypedRecordProcessor<Cl
   public void processNewCommand(final TypedRecord<ClockControlRecord> command) {
     final long eventKey = keyGenerator.nextKey();
     final var clockRecord = command.getValue();
-    clockRecord.setKey(eventKey);
+
     stateWriter.appendFollowUpEvent(eventKey, ClockControlIntent.PINED, clockRecord);
     responseWriter.writeEventOnCommand(eventKey, ClockControlIntent.PINED, clockRecord, command);
 
