@@ -186,7 +186,6 @@ public class ClientRestInterceptorTest {
               if (httpRequest.getRequestUri().contains("/user-tasks")) {
                 throw new RuntimeException("No user task requests while testing.");
               }
-              ;
               return asyncExecCallback.handleResponse(response, entityDetails);
             }
 
