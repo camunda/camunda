@@ -490,7 +490,18 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private void startActiveExportingMode() {
     for (final ExporterContainer container : containers) {
       container.initMetadata();
-      container.openExporter();
+      new BackOffRetryStrategy(actor, Duration.ofSeconds(10))
+          .runWithRetry(
+              () -> {
+                try {
+                  container.openExporter();
+                  return true;
+                } catch (final Exception e) {
+                  LOG.error("Failed to open exporter '{}'. Retrying...", container.getId(), e);
+                  return false;
+                }
+              },
+              this::isClosed);
     }
 
     if (state.hasExporters()) {
