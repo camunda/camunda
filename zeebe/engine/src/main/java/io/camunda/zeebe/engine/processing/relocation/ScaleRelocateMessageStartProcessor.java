@@ -63,6 +63,8 @@ public class ScaleRelocateMessageStartProcessor implements TypedRecordProcessor<
 
           final var scaleRecord = new ScaleRecord();
           scaleRecord.setMessageRecord(message.getMessage());
+          scaleRecord.setCorrelatedProcesses(
+              messageState.getCorrelatedProcessIds(message.getMessageKey()));
 
           commandDistributionBehavior.distributeCommand(
               distributionKey,

@@ -25,6 +25,8 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.LinkedList;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableBoolean;
 
@@ -356,6 +358,19 @@ public final class DbMessageState implements MutableMessageState {
     bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
 
     return correlatedMessageColumnFamily.exists(messageBpmnProcessIdKey);
+  }
+
+  @Override
+  public DirectBuffer[] getCorrelatedProcessIds(final long messageKey) {
+    this.messageKey.wrapLong(messageKey);
+    final var processIds = new LinkedList<>();
+    correlatedMessageColumnFamily.whileEqualPrefix(
+        this.messageKey,
+        (key, value) -> {
+          final var processId = key.second().getBuffer();
+          processIds.add(BufferUtil.cloneBuffer(processId));
+        });
+    return processIds.toArray(new DirectBuffer[0]);
   }
 
   @Override

@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.scale;
 
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -43,6 +45,8 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
   // ScaleRelocateMessageApply
   private final ObjectProperty<MessageRecord> messageRecord =
       new ObjectProperty<>("messageRecord", new MessageRecord());
+  private final ArrayProperty<StringValue> correlatedProcesses =
+      new ArrayProperty<StringValue>("correlatedProcesses", StringValue::new);
 
   // ScaleRelocateOnPartitionCompleted
   private final IntegerProperty completedPartitionProp =
@@ -111,6 +115,17 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
 
   public void setMessageRecord(final MessageRecord messageRecord) {
     this.messageRecord.getValue().wrap(messageRecord);
+  }
+
+  public DirectBuffer[] getCorrelatedProcesses() {
+    return correlatedProcesses.stream().map(StringValue::getValue).toArray(DirectBuffer[]::new);
+  }
+
+  public void setCorrelatedProcesses(final DirectBuffer[] processes) {
+    correlatedProcesses.reset();
+    for (final var process : processes) {
+      correlatedProcesses.add().wrap(process);
+    }
   }
 
   public int getCompletedPartition() {
