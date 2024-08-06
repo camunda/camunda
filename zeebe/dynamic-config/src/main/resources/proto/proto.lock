@@ -653,6 +653,16 @@
                 "id": 12,
                 "name": "routingAddPartition",
                 "type": "RoutingAddPartitionOperation"
+              },
+              {
+                "id": 13,
+                "name": "relocationStart",
+                "type": "RelocationStartOperation"
+              },
+              {
+                "id": 14,
+                "name": "relocationStatus",
+                "type": "RelocationStatusOperation"
               }
             ]
           },
@@ -799,6 +809,24 @@
               {
                 "id": 1,
                 "name": "partitionId",
+                "type": "int32"
+              }
+            ]
+          },
+          {
+            "name": "RelocationStatusOperation"
+          },
+          {
+            "name": "RelocationStartOperation",
+            "fields": [
+              {
+                "id": 1,
+                "name": "oldPartitionCount",
+                "type": "int32"
+              },
+              {
+                "id": 2,
+                "name": "newPartitionCount",
                 "type": "int32"
               }
             ]
