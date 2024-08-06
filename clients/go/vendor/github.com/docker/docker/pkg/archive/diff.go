@@ -2,6 +2,7 @@ package archive // import "github.com/docker/docker/pkg/archive"
 
 import (
 	"archive/tar"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -9,9 +10,9 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/containerd/log"
 	"github.com/docker/docker/pkg/pools"
 	"github.com/docker/docker/pkg/system"
-	"github.com/sirupsen/logrus"
 )
 
 // UnpackLayer unpack `layer` to a `dest`. The stream `layer` can be
@@ -67,7 +68,7 @@ func UnpackLayer(dest string, layer io.Reader, options *TarOptions) (size int64,
 		// image but have it tagged as Windows inadvertently.
 		if runtime.GOOS == "windows" {
 			if strings.Contains(hdr.Name, ":") {
-				logrus.Warnf("Windows: Ignoring %s (is this a Linux image?)", hdr.Name)
+				log.G(context.TODO()).Warnf("Windows: Ignoring %s (is this a Linux image?)", hdr.Name)
 				continue
 			}
 		}
@@ -92,7 +93,7 @@ func UnpackLayer(dest string, layer io.Reader, options *TarOptions) (size int64,
 					}
 					defer os.RemoveAll(aufsTempdir)
 				}
-				if err := createTarFile(filepath.Join(aufsTempdir, basename), dest, hdr, tr, true, nil, options.InUserNS); err != nil {
+				if err := createTarFile(filepath.Join(aufsTempdir, basename), dest, hdr, tr, options); err != nil {
 					return 0, err
 				}
 			}
@@ -101,7 +102,7 @@ func UnpackLayer(dest string, layer io.Reader, options *TarOptions) (size int64,
 				continue
 			}
 		}
-		//#nosec G305 -- The joined path is guarded against path traversal.
+		// #nosec G305 -- The joined path is guarded against path traversal.
 		path := filepath.Join(dest, hdr.Name)
 		rel, err := filepath.Rel(dest, path)
 		if err != nil {
@@ -183,7 +184,7 @@ func UnpackLayer(dest string, layer io.Reader, options *TarOptions) (size int64,
 				return 0, err
 			}
 
-			if err := createTarFile(path, dest, srcHdr, srcData, !options.NoLchown, nil, options.InUserNS); err != nil {
+			if err := createTarFile(path, dest, srcHdr, srcData, options); err != nil {
 				return 0, err
 			}
 
@@ -197,7 +198,7 @@ func UnpackLayer(dest string, layer io.Reader, options *TarOptions) (size int64,
 	}
 
 	for _, hdr := range dirs {
-		//#nosec G305 -- The header was checked for path traversal before it was appended to the dirs slice.
+		// #nosec G305 -- The header was checked for path traversal before it was appended to the dirs slice.
 		path := filepath.Join(dest, hdr.Name)
 		if err := system.Chtimes(path, hdr.AccessTime, hdr.ModTime); err != nil {
 			return 0, err
