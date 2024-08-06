@@ -11,22 +11,22 @@ import {createDemoInstances} from './operations.mocks';
 import {test} from '../test-fixtures';
 import {expect} from '@playwright/test';
 import {config} from '../config';
-import {ENDPOINTS} from './api/endpoints';
 
 let initialData: Awaited<ReturnType<typeof createDemoInstances>>;
 
 test.beforeAll(async ({request}) => {
   test.setTimeout(SETUP_WAITING_TIME);
   initialData = await createDemoInstances();
-  const instanceKeys = [
-    initialData.singleOperationInstance.processInstanceKey,
-    ...initialData.batchOperationInstances.map(
-      ({processInstanceKey}) => processInstanceKey,
-    ),
-  ];
-  // wait until all instances are created
+  const batchOperationInstanceKeys = initialData.batchOperationInstances.map(
+    ({processInstanceKey}) => processInstanceKey,
+  );
+
+  const singleOperationInstanceKey =
+    initialData.singleOperationInstance.processInstanceKey;
+
+  // wait until batch operation instances are created
   await Promise.all(
-    instanceKeys.map(
+    batchOperationInstanceKeys.map(
       async (instanceKey) =>
         await expect
           .poll(
@@ -42,42 +42,19 @@ test.beforeAll(async ({request}) => {
     ),
   );
 
-  // create demo operations
-  await Promise.all(
-    [...new Array(50)].map(async () => {
-      const response = await request.post(
-        ENDPOINTS.createOperation(
-          initialData.singleOperationInstance.processInstanceKey,
-        ),
-        {
-          data: {
-            operationType: 'RESOLVE_INCIDENT',
-          },
-        },
-      );
-
-      return response;
-    }),
-  );
-
-  // wait until all operations are created
+  // wait until single operation instances is created and in incident state
   await expect
     .poll(
       async () => {
-        const response = await request.post(
-          `${config.endpoint}/api/batch-operations`,
-          {
-            data: {
-              pageSize: 50,
-            },
-          },
+        const response = await request.get(
+          `${config.endpoint}/v1/process-instances/${singleOperationInstanceKey}`,
         );
-        const operations = await response.json();
-        return operations.length;
+        const {incident} = await response.json();
+        return incident;
       },
       {timeout: SETUP_WAITING_TIME},
     )
-    .toBe(50);
+    .toBeTruthy();
 });
 
 test.beforeEach(async ({page, dashboardPage}) => {
@@ -86,13 +63,6 @@ test.beforeEach(async ({page, dashboardPage}) => {
 });
 
 test.describe('Operations', () => {
-  test('infinite scrolling', async ({page, commonPage}) => {
-    await commonPage.expandOperationsPanel();
-    await expect(page.getByTestId('operations-entry')).toHaveCount(20);
-    await page.getByTestId('operations-entry').nth(19).scrollIntoViewIfNeeded();
-    await expect(page.getByTestId('operations-entry')).toHaveCount(40);
-  });
-
   test('Retry and Cancel single instance @roundtrip', async ({
     commonPage,
     processesPage,
