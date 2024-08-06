@@ -12,6 +12,7 @@ import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.executi
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.SERVICE_TASK_TYPE;
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.START_EL_TYPE;
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.createProcessInstance;
+import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -25,8 +26,10 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractGatewayBuilder;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.instance.Gateway;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
@@ -218,6 +221,40 @@ public class ExecutionListenerGatewayElementsTest {
           ExpectedValidationResult.expect(
               Gateway.class,
               "Execution listeners of type 'end' are not supported by gateway element"));
+    }
+
+    @Test
+    public void shouldCancelActiveStartElJobAfterProcessInstanceCancellation() {
+      // given
+      final var modelInstance =
+          scenario
+              .processBuilder
+              .apply(
+                  scenario
+                      .gatewayBuilderFunction
+                      .apply(Bpmn.createExecutableProcess(PROCESS_ID).startEvent("start"))
+                      .zeebeStartExecutionListener(START_EL_TYPE))
+              .done();
+
+      final long processInstanceKey =
+          createProcessInstance(ENGINE, modelInstance, scenario.variables);
+      jobRecords(JobIntent.CREATED)
+          .withProcessInstanceKey(processInstanceKey)
+          .withType(START_EL_TYPE)
+          .await();
+
+      // when
+      ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+      // then: start EL job should be canceled
+      assertThat(
+              jobRecords(JobIntent.CANCELED)
+                  .withProcessInstanceKey(processInstanceKey)
+                  .withJobKind(JobKind.EXECUTION_LISTENER)
+                  .onlyEvents()
+                  .getFirst())
+          .extracting(r -> r.getValue().getType())
+          .isEqualTo(START_EL_TYPE);
     }
 
     private record GatewayTestScenario(

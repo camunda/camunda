@@ -208,6 +208,45 @@ public class ExecutionListenerTest {
   }
 
   @Test
+  public void shouldCancelActiveStartElJobForEmbeddedSubProcessAfterProcessInstanceCancellation() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            ENGINE,
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .manualTask()
+                .subProcess(
+                    SUB_PROCESS_ID,
+                    s ->
+                        s.zeebeStartExecutionListener(START_EL_TYPE + "_sub")
+                            .embeddedSubProcess()
+                            .startEvent()
+                            .manualTask()
+                            .endEvent())
+                .manualTask()
+                .endEvent()
+                .done());
+    jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(START_EL_TYPE + "_sub")
+        .await();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then: start EL job should be canceled
+    assertThat(
+            jobRecords(JobIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .onlyEvents()
+                .getFirst())
+        .extracting(r -> r.getValue().getType())
+        .isEqualTo(START_EL_TYPE + "_sub");
+  }
+
+  @Test
   public void shouldAccessVariableFromEmbeddedSubProcessStartListenerInSubProcessServiceTask() {
     // given
     final long processInstanceKey =
@@ -325,6 +364,51 @@ public class ExecutionListenerTest {
   }
 
   @Test
+  public void shouldCancelActiveStartElJobForCallActivityAfterProcessInstanceCancellation() {
+    // given
+    final var childProcess =
+        Bpmn.createExecutableProcess(SUB_PROCESS_ID)
+            .startEvent()
+            .manualTask("task")
+            .endEvent()
+            .done();
+
+    final var parentProcess =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .callActivity(SUB_PROCESS_ID, c -> c.zeebeProcessId(SUB_PROCESS_ID))
+            .zeebeStartExecutionListener(START_EL_TYPE + "_sub")
+            .manualTask()
+            .endEvent()
+            .done();
+
+    ENGINE
+        .deployment()
+        .withXmlResource("parent.xml", parentProcess)
+        .withXmlResource("child.xml", childProcess)
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(START_EL_TYPE + "_sub")
+        .await();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then: start EL job should be canceled
+    assertThat(
+            jobRecords(JobIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .onlyEvents()
+                .getFirst())
+        .extracting(r -> r.getValue().getType())
+        .isEqualTo(START_EL_TYPE + "_sub");
+  }
+
+  @Test
   public void shouldCompleteEventSubProcessWithMultipleExecutionListeners() {
     final var messageName = "subprocess-event";
 
@@ -422,6 +506,71 @@ public class ExecutionListenerTest {
                 BpmnElementType.EVENT_SUB_PROCESS,
                 ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCancelActiveStartElJobForEventSubProcessAfterProcessInstanceCancellation() {
+    // given
+    final var messageName = "subprocess-event";
+
+    final String messageSubprocessId = "message-event-subprocess";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .eventSubProcess(
+                    messageSubprocessId,
+                    sub ->
+                        sub.zeebeStartExecutionListener(START_EL_TYPE + "_sub")
+                            .startEvent("startEvent_sub")
+                            .interrupting(false)
+                            .message(m -> m.name(messageName).zeebeCorrelationKeyExpression("key"))
+                            .serviceTask(
+                                "task_sub", t -> t.zeebeJobType(SERVICE_TASK_TYPE + "_sub"))
+                            .endEvent("endEvent_sub"))
+                .startEvent("startEvent")
+                .serviceTask("task", t -> t.zeebeJobType(SERVICE_TASK_TYPE))
+                .endEvent("endEvent")
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withStartInstruction("task")
+            .withVariable("key", "key-1")
+            .create();
+
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    ENGINE.message().withName(messageName).withCorrelationKey("key-1").publish();
+
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType(SERVICE_TASK_TYPE).complete();
+
+    jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(START_EL_TYPE + "_sub")
+        .await();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then: start EL job should be canceled
+    assertThat(
+            jobRecords(JobIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .onlyEvents()
+                .getFirst())
+        .extracting(r -> r.getValue().getType())
+        .isEqualTo(START_EL_TYPE + "_sub");
   }
 
   // test util methods

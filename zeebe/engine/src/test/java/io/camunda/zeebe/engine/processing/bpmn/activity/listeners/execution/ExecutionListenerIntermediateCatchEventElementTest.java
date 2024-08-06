@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.executi
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.PROCESS_ID;
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.START_EL_TYPE;
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.createProcessInstance;
+import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -21,10 +22,12 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.IntermediateCatchEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -266,6 +269,39 @@ public class ExecutionListenerIntermediateCatchEventElementTest {
           .hasValueSatisfying(
               job -> assertThat(job.getVariables()).contains(entry("end_el_var", "baz")));
       ENGINE.job().ofInstance(processInstanceKey).withType("subsequent_service_task").complete();
+    }
+
+    @Test
+    public void shouldCancelActiveStartElJobAfterProcessInstanceCancellation() {
+      // given
+      final var modelInstance =
+          Bpmn.createExecutableProcess(PROCESS_ID)
+              .startEvent()
+              .intermediateCatchEvent(scenario.name, c -> scenario.builderFunction.apply(c))
+              .zeebeStartExecutionListener(START_EL_TYPE)
+              .manualTask()
+              .endEvent()
+              .done();
+
+      final long processInstanceKey =
+          createProcessInstance(ENGINE, modelInstance, scenario.processVariables);
+      jobRecords(JobIntent.CREATED)
+          .withProcessInstanceKey(processInstanceKey)
+          .withType(START_EL_TYPE)
+          .await();
+
+      // when
+      ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+      // then: start EL job should be canceled
+      assertThat(
+              jobRecords(JobIntent.CANCELED)
+                  .withProcessInstanceKey(processInstanceKey)
+                  .withJobKind(JobKind.EXECUTION_LISTENER)
+                  .onlyEvents()
+                  .getFirst())
+          .extracting(r -> r.getValue().getType())
+          .isEqualTo(START_EL_TYPE);
     }
 
     private record IntermediateCatchEventTestScenario(
