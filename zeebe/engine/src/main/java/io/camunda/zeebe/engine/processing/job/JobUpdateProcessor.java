@@ -43,7 +43,6 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
     final int retries = command.getValue().getRetries();
     final long timeout = command.getValue().getTimeout();
     final var job = jobState.getJob(key, command.getAuthorizations());
-    boolean isJobUpdated = false;
 
     if (job == null) {
       rejectionWriter.appendRejection(
@@ -57,7 +56,6 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
     if (retries > 0) {
       job.setRetries(retries);
       stateWriter.appendFollowUpEvent(key, JobIntent.RETRIES_UPDATED, job);
-      isJobUpdated = true;
     }
     // Handle timeout
     final long oldDeadline = job.getDeadline();
@@ -65,12 +63,9 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
       final long newDeadline = ActorClock.currentTimeMillis() + job.getTimeout();
       job.setDeadline(newDeadline);
       stateWriter.appendFollowUpEvent(key, JobIntent.TIMEOUT_UPDATED, job);
-      isJobUpdated = true;
     }
 
-    if (isJobUpdated) {
-      stateWriter.appendFollowUpEvent(key, JobIntent.UPDATED, job);
-      responseWriter.writeEventOnCommand(key, JobIntent.UPDATED, job, command);
-    }
+    stateWriter.appendFollowUpEvent(key, JobIntent.UPDATED, job);
+    responseWriter.writeEventOnCommand(key, JobIntent.UPDATED, job, command);
   }
 }
