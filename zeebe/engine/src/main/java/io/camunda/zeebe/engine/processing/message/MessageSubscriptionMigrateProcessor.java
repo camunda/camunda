@@ -30,7 +30,7 @@ public class MessageSubscriptionMigrateProcessor
   @Override
   public void processNewCommand(final TypedRecord<MessageSubscriptionRecord> command) {
     final var value = command.getValue();
-
+    // TODO: Check relocation state of correlation key, if currently relocating just enqueue.
     stateWriter.appendFollowUpEvent(command.getKey(), MessageSubscriptionIntent.MIGRATED, value);
   }
 
@@ -38,6 +38,7 @@ public class MessageSubscriptionMigrateProcessor
   public void processDistributedCommand(final TypedRecord<MessageSubscriptionRecord> command) {
     final var value = command.getValue();
 
+    // TODO: Check relocation state of correlation key, if currently relocating just enqueue.
     stateWriter.appendFollowUpEvent(command.getKey(), MessageSubscriptionIntent.MIGRATED, value);
     commandDistributionBehavior.acknowledgeCommand(command);
   }
