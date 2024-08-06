@@ -230,6 +230,58 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /jobs/{jobKey}:
+    patch:
+      tags:
+        - Job
+      summary: Update a job
+      description: Update a job with the given key.
+      parameters:
+        - name: jobKey
+          in: path
+          required: true
+          description: The key of the job to update.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobUpdateRequest"
+      responses:
+        '204':
+          description: The job was updated successfully.
+        '400':
+          description: >
+            The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '404':
+          description: The job with the jobKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '409':
+          description: >
+            The job with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
   /incidents/{incidentKey}/resolution:
     post:
       tags:
@@ -267,6 +319,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+
   /user-tasks/{userTaskKey}/completion:
     post:
       tags:
@@ -1140,6 +1193,40 @@ components:
           description: The variables to complete the job with.
           type: object
           nullable: true
+    JobUpdateRequest:
+      type: object
+      properties:
+        changeset:
+          $ref: "#/components/schemas/JobChangeset"
+      required:
+        - changeset
+    JobChangeset:
+      description: |
+        JSON object with changed job attribute values.
+
+        The following attributes can be adjusted with this endpoint, additional attributes
+        will be ignored:
+
+        * `retries` - The new amount of retries for the job; must be a positive number.
+        * `timeout` - The duration of the new timeout in ms, starting from the current moment.
+
+        Providing any of those attributes with a null value or omitting it preserves the persisted attribute’s value.
+
+        The job cannot be completed or failed with this endpoint, use the Complete job or Fail job endpoints instead.
+      type: object
+      additionalProperties: true
+      properties:
+        retries:
+          type: integer
+          format: int32
+          description: The new amount of retries for the job; must be a positive number.
+          nullable: true
+        timeout:
+          type: integer
+          format: int64
+          description: The duration of the new timeout in ms, starting from the current moment.
+          nullable: true
+
     ProblemDetail:
       description: >
         A Problem detail object as described in [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457).
