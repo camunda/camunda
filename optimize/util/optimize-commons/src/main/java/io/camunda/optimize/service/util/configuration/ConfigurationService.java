@@ -23,7 +23,6 @@ import static io.camunda.optimize.service.util.configuration.ConfigurationServic
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPENSEARCH_DATABASE_PROPERTY;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPTIMIZE_API_CONFIGURATION;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PANEL_NOTIFICATION_CONFIGURATION;
-import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.optimizeModeProfiles;
 import static io.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
@@ -177,7 +176,6 @@ public class ConfigurationService {
   private UserTaskIdentityCacheConfiguration userTaskIdentityCacheConfiguration;
   private UserIdentityCacheConfiguration userIdentityCacheConfiguration;
   private EventBasedProcessConfiguration eventBasedProcessConfiguration;
-  private TelemetryConfiguration telemetryConfiguration;
   private ExternalVariableConfiguration externalVariableConfiguration;
   private GlobalCacheConfiguration caches;
   private AnalyticsConfiguration analytics;
@@ -1091,14 +1089,6 @@ public class ConfigurationService {
           configJsonContext.read(OPTIMIZE_API_CONFIGURATION, OptimizeApiConfiguration.class);
     }
     return optimizeApiConfiguration;
-  }
-
-  public TelemetryConfiguration getTelemetryConfiguration() {
-    if (telemetryConfiguration == null) {
-      telemetryConfiguration =
-          configJsonContext.read(TELEMETRY_CONFIGURATION, TelemetryConfiguration.class);
-    }
-    return telemetryConfiguration;
   }
 
   public ExternalVariableConfiguration getExternalVariableConfiguration() {
