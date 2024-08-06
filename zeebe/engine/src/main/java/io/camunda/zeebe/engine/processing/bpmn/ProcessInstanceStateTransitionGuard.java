@@ -160,17 +160,17 @@ public final class ProcessInstanceStateTransitionGuard {
 
   private Either<String, ?> hasActiveFlowScopeInstance(final BpmnElementContext context) {
     // a shortcut to improve readability
-    if (context.getBpmnElementType() == BpmnElementType.PROCESS) {
-      // a process has no flow scope instance
-      return Either.right(null);
-
-    } else {
+    if (context.getBpmnElementType() != BpmnElementType.PROCESS) {
       return getFlowScopeInstance(context)
           .flatMap(
               flowScopeInstance ->
                   hasFlowScopeInstanceInState(
                       flowScopeInstance, ProcessInstanceIntent.ELEMENT_ACTIVATED))
           .flatMap(flowScopeInstance -> hasNonInterruptedFlowScope(flowScopeInstance, context));
+
+    } else {
+      // a process has no flow scope instance
+      return Either.right(null);
     }
   }
 
