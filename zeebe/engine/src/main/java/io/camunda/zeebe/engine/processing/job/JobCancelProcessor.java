@@ -37,7 +37,7 @@ public final class JobCancelProcessor implements CommandProcessor<JobRecord> {
       // Note that this logic is duplicated in BpmnJobBehavior, if you change this please change
       // it there as well.
       commandControl.accept(JobIntent.CANCELED, job);
-      jobMetrics.jobCanceled(job.getType());
+      jobMetrics.jobCanceled(job.getType(), job.getJobKind());
     } else {
       commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, jobKey));
     }
