@@ -35,7 +35,6 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   private final FileBasedSnapshotStoreImpl snapshotStore;
 
   private final FileBasedSnapshotId snapshotId;
-  private long expectedSnapshotChecksum;
   private int expectedTotalCount;
   private FileBasedSnapshotMetadata metadata;
   private ByteBuffer metadataBuffer;
@@ -51,7 +50,6 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     this.snapshotStore = snapshotStore;
     this.directory = directory;
     this.actor = actor;
-    expectedSnapshotChecksum = Long.MIN_VALUE;
     expectedTotalCount = Integer.MIN_VALUE;
     writtenMetadataBytes = 0;
   }
@@ -72,9 +70,6 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
   private void applyInternal(final SnapshotChunk snapshotChunk) throws SnapshotWriteException {
     checkSnapshotIdIsValid(snapshotChunk.getSnapshotId());
-
-    final long currentSnapshotChecksum = snapshotChunk.getSnapshotChecksum();
-    checkSnapshotChecksumIsValid(currentSnapshotChecksum);
 
     final var currentTotalCount = snapshotChunk.getTotalCount();
     checkTotalCountIsValid(currentTotalCount);
@@ -144,20 +139,6 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
           String.format(
               "Expected to have checksum %d for snapshot chunk %s (%s), but calculated %d",
               expectedChecksum, chunkName, snapshotId, actualChecksum));
-    }
-  }
-
-  private void checkSnapshotChecksumIsValid(final long currentSnapshotChecksum)
-      throws SnapshotWriteException {
-    if (expectedSnapshotChecksum == Long.MIN_VALUE) {
-      expectedSnapshotChecksum = currentSnapshotChecksum;
-    }
-
-    if (expectedSnapshotChecksum != currentSnapshotChecksum) {
-      throw new SnapshotWriteException(
-          String.format(
-              "Expected snapshot chunk with equal snapshot checksum %d, but got chunk with snapshot checksum %d.",
-              expectedSnapshotChecksum, currentSnapshotChecksum));
     }
   }
 

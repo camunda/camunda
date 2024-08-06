@@ -202,13 +202,7 @@ public final class FileBasedSnapshotStoreImpl {
 
       final var metadata = collectMetadata(path, snapshotId);
       return new FileBasedSnapshot(
-          path,
-          checksumPath,
-          actualChecksum.getCombinedValue(),
-          snapshotId,
-          metadata,
-          this::onSnapshotDeleted,
-          actor);
+          path, checksumPath, actualChecksum, snapshotId, metadata, this::onSnapshotDeleted, actor);
     } catch (final Exception e) {
       LOGGER.warn("Could not load snapshot in {}", path, e);
       return null;
@@ -517,7 +511,7 @@ public final class FileBasedSnapshotStoreImpl {
           new FileBasedSnapshot(
               destination,
               checksumPath,
-              immutableChecksumsSFV.getCombinedValue(),
+              immutableChecksumsSFV,
               snapshotId,
               metadata,
               this::onSnapshotDeleted,

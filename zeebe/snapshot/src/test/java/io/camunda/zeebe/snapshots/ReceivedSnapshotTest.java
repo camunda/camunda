@@ -108,9 +108,9 @@ public class ReceivedSnapshotTest {
     assertThat(receiverSnapshotStore.getLatestSnapshot())
         .as("the received snapshot was committed and is the latest snapshot")
         .hasValue(receivedSnapshot);
-    assertThat(receivedSnapshot.getChecksum())
+    assertThat(receivedSnapshot.getChecksums().sameChecksums(persistedSnapshot.getChecksums()))
         .as("the received snapshot has the same checksum as the sent snapshot")
-        .isEqualTo(persistedSnapshot.getChecksum());
+        .isTrue();
     assertThat(receivedSnapshot.getId())
         .as("the received snapshot has the same ID as the sent snapshot")
         .isEqualTo(persistedSnapshot.getId());
@@ -145,9 +145,9 @@ public class ReceivedSnapshotTest {
     assertThat(receivedSnapshot)
         .as("the previous snapshot should still be the latest snapshot")
         .isEqualTo(receiverSnapshotStore.getLatestSnapshot().orElseThrow());
-    assertThat(receivedSnapshot.getChecksum())
+    assertThat(receivedSnapshot.getChecksums().sameChecksums(persistedSnapshot.getChecksums()))
         .as("the received snapshot still has the same checksum")
-        .isEqualTo(persistedSnapshot.getChecksum());
+        .isTrue();
   }
 
   @Test
@@ -256,9 +256,12 @@ public class ReceivedSnapshotTest {
     assertThat(secondReceivedSnapshot.getPath())
         .as("the second received snapshot was not removed as it's not considered older")
         .exists();
-    assertThat(receivedPersistedSnapshot.getChecksum())
+    assertThat(
+            receivedPersistedSnapshot
+                .getChecksums()
+                .sameChecksums(persistedSnapshot.getChecksums()))
         .as("the received, persisted snapshot have the same checksum as the persisted one")
-        .isEqualTo(persistedSnapshot.getChecksum());
+        .isTrue();
   }
 
   @Test
@@ -279,32 +282,9 @@ public class ReceivedSnapshotTest {
     assertThat(receivedSnapshot.getPath())
         .as("the received snapshot was removed on persist of the other snapshot")
         .doesNotExist();
-    assertThat(receivedPersisted.getChecksum())
+    assertThat(receivedPersisted.getChecksums().sameChecksums(persistedSnapshot.getChecksums()))
         .as("the received, persisted snapshot have the same checksum as the persisted one")
-        .isEqualTo(persistedSnapshot.getChecksum());
-  }
-
-  @Test
-  public void shouldCompleteExceptionallyOnConsumingChunkWithInvalidSnapshotChecksum() {
-    // given
-    final var persistedSnapshot = takePersistedSnapshot();
-
-    // when
-    final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
-
-    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
-      receivedSnapshot.apply(snapshotChunkReader.next()).join();
-
-      final var originalChunk = snapshotChunkReader.next();
-      final SnapshotChunk corruptedChunk =
-          SnapshotChunkWrapper.withSnapshotChecksum(originalChunk, 0xCAFEL);
-
-      // then
-      assertThatThrownBy(() -> receivedSnapshot.apply(corruptedChunk).join())
-          .as("the snapshot chunk should not be applied as it had a different snapshot checksum")
-          .hasCauseInstanceOf(SnapshotWriteException.class);
-    }
+        .isTrue();
   }
 
   @Test
@@ -325,29 +305,6 @@ public class ReceivedSnapshotTest {
           .as("the chunk should not be applied as its content checksum is not 0xCAFEL")
           .hasCauseInstanceOf(SnapshotWriteException.class);
     }
-  }
-
-  @Test
-  public void shouldPersistEvenIfCombinedChecksumDoesNotMatch() {
-    // given
-    final var persistedSnapshot = takePersistedSnapshot();
-
-    // when
-    final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
-    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
-      while (snapshotChunkReader.hasNext()) {
-        final var originalChunk = snapshotChunkReader.next();
-        final var corruptedChunk =
-            SnapshotChunkWrapper.withSnapshotChecksum(originalChunk, 0xDEADBEEFL);
-        receivedSnapshot.apply(corruptedChunk).join();
-      }
-    }
-
-    // then
-    assertThat(receivedSnapshot.persist().join())
-        .as("The snapshot should persist with mis-match in combined checksums")
-        .isEqualTo(receiverSnapshotStore.getLatestSnapshot().get());
   }
 
   @Test

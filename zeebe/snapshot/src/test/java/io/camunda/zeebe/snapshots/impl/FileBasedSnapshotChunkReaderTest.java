@@ -98,7 +98,6 @@ public final class FileBasedSnapshotChunkReaderTest {
             .isEqualTo(nextId);
         assertThat(chunk.getSnapshotId()).isEqualTo(snapshotDirectory.getFileName().toString());
         assertThat(chunk.getTotalCount()).isEqualTo(SNAPSHOT_CHUNK.size());
-        assertThat(chunk.getSnapshotChecksum()).isEqualTo(SNAPSHOT_CHECKSUM);
         assertThat(chunk.getChecksum())
             .isEqualTo(SnapshotChunkUtil.createChecksum(chunk.getContent()));
         assertThat(snapshotDirectory.resolve(chunk.getChunkName()))
@@ -356,7 +355,7 @@ public final class FileBasedSnapshotChunkReaderTest {
       Files.writeString(path, SNAPSHOT_CHUNK.get(chunk));
     }
 
-    return new FileBasedSnapshotChunkReader(snapshotDirectory, SNAPSHOT_CHECKSUM, chunkSize);
+    return new FileBasedSnapshotChunkReader(snapshotDirectory, chunkSize);
   }
 
   private FileBasedSnapshotChunkReader newReader() throws IOException {

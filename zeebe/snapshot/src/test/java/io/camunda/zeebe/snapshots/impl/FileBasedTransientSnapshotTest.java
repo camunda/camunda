@@ -295,9 +295,9 @@ public class FileBasedTransientSnapshotTest {
 
     // then
     assertThat(secondSnapshot).as("did persist the same snapshot twice").isEqualTo(firstSnapshot);
-    assertThat(secondSnapshot.getChecksum())
+    assertThat(secondSnapshot.getChecksums().sameChecksums(firstSnapshot.getChecksums()))
         .as("the content of the snapshot remains unchanged")
-        .isEqualTo(firstSnapshot.getChecksum());
+        .isTrue();
     assertThat(snapshotsDir)
         .asInstanceOf(DirectoryAssert.factory())
         .as("snapshots directory only contains snapshot %s", firstSnapshot.getId())

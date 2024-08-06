@@ -163,7 +163,7 @@ public class FileBasedReceivedSnapshotTest {
         new FileBasedSnapshot(
             persistedSnapshot.getDirectory(),
             persistedSnapshot.getChecksumPath(),
-            0xDEADBEEFL,
+            new SfvChecksumImpl(),
             persistedSnapshot.getSnapshotId(),
             null,
             s -> {},
@@ -211,32 +211,6 @@ public class FileBasedReceivedSnapshotTest {
     assertThat(snapshotRef)
         .as("the listener was never called and the ref value is still null")
         .hasValue(null);
-  }
-
-  @Test
-  public void shouldNotWriteChunkIfItHasTheWrongSnapshotChecksum() {
-    // given
-    final var persistedSnapshot = takePersistedSnapshot(1L);
-
-    // when
-    final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
-
-    final SnapshotChunk firstChunk;
-    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
-      firstChunk = snapshotChunkReader.next();
-      receivedSnapshot.apply(firstChunk).join();
-
-      final SnapshotChunk corruptedChunk =
-          SnapshotChunkWrapper.withSnapshotChecksum(firstChunk, 0xCAFEL);
-
-      // then
-      assertThatCode(() -> receivedSnapshot.apply(corruptedChunk).join())
-          .hasCauseInstanceOf(SnapshotWriteException.class)
-          .hasMessageContaining(
-              "Expected snapshot chunk with equal snapshot checksum 562580221, but got chunk with snapshot checksum "
-                  + 0xCAFEL);
-    }
   }
 
   @Test
