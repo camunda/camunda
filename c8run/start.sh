@@ -3,6 +3,8 @@
 BASEDIR=$(dirname "$0")
 runScript=$BASEDIR/internal/run.sh
 
+POLLING_CAMUNDA_PID_PATH=$BASEDIR/camunda-polling.pid
+
 
 function checkCamundaStartup {
   RETRIES=24
@@ -25,6 +27,28 @@ function checkCamundaStartup {
   echo "$NAME has successfully been started.";
 }
 
+function killPolling {
+  polling_pid="$(cat "$POLLING_CAMUNDA_PID_PATH")"
+  kill $polling_pid
+  rm "$POLLING_CAMUNDA_PID_PATH"
+}
+
+function childExitHandler {
+  pid=$1
+  status=$2
+  if [[ "$status" == "0" ]]; then
+    return
+  fi
+
+  if [[ "$status" == "1" ]]; then
+    polling_pid="$(cat "$POLLING_CAMUNDA_PID_PATH")"
+    kill $polling_pid
+    rm "$POLLING_CAMUNDA_PID_PATH"
+  fi
+}
+
+trap killPolling SIGINT ERR SIGTERM
+trap childExitHandler SIGCHLD
 
 if [ $# -eq 0 ]; then
 
@@ -51,10 +75,11 @@ if [ $# -eq 0 ]; then
   else
     URL="http://localhost:8080/operate/login"
     ( checkCamundaStartup "$URL" "Camunda"; $BROWSER "http://localhost:8080/operate/login"; ) &
+    echo $! > "$POLLING_CAMUNDA_PID_PATH"
   fi
 
-  # start Camunda Run in the background
-  exec $runScript start --detached
+  # start Camunda Run in the foreground
+  exec $runScript start
 
 else
   # start Camunda Run with the passed arguments
