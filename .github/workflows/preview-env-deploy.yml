@@ -1,0 +1,89 @@
+---
+name: Preview Env Deploy
+on:
+  pull_request:
+    types: [labeled, synchronize]
+
+jobs:
+  deploy-preview:
+    # checks that the PR isn't closed AND check whether the labeled event contains deploy-preview as substring || check whether on new commit of PR the label deploy-preview is part of label array
+    if: github.event.pull_request.state != 'closed' && (contains( github.event.label.name, 'deploy-preview') || contains( github.event.pull_request.labels.*.name, 'deploy-preview'))
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    name: deploy-preview-env-c8sm
+    env:
+      BRANCH_NAME: ${{ github.head_ref }} # head_ref = branch on PR
+    concurrency:
+      group: pr-update-${{ github.head_ref }}-${{ matrix.product_context }} # env is not yet available here
+      cancel-in-progress: true
+
+    steps:
+    #########################################################################
+    # Sanitize the branch name to remove dependabot/,renovate/ and transform the name
+    - id: sanitize
+      uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+      with:
+        branch: ${{ env.BRANCH_NAME }}
+        max_length: '15'
+
+    #########################################################################
+    # Setup: import secrets from vault
+    - name: Import secrets
+      id: secrets
+      uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/camunda/ci/camunda ARGOCD_DEV_TOKEN;
+
+    #########################################################################
+    # Setup: checkout code. This is required because we are using
+    # composite actions and deployment manifests.
+    - name: Checkout
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+    - name: "Read Java / Version Info"
+      id: pom-info
+      uses: YunaBraska/java-info-action@main
+
+    #########################################################################
+    # Determine the argocd arguments that need to be passed to the create app command
+    - name: Determine Argocd Arguments for c8sm
+      shell: bash
+      run: |
+        echo "argocd_arguments=--dest-namespace ${app_name} \
+          --file .ci/preview-environments/argo/c8sm.yml \
+          --helm-set camunda-platform.camunda.image.tag=${docker_tag} \
+          --helm-set camunda-platform.elasticsearch.image.tag=${elasticsearch_image_tag} \
+          --helm-set git.branch=${revision} \
+          --helm-set global.labels.app=${app_name} \
+          --helm-set global.identity.auth.publicIssuerUrl=${app_keycloak_url} \
+          --helm-set global.identity.auth.operate.redirectUrl=https://operate-${app_url} \
+          --helm-set global.identity.auth.camunda.redirectUrl=https://${app_url} \
+          --helm-set global.identity.auth.tasklist.redirectUrl=https://tasklist-${app_url} \
+          --helm-set camunda-platform.identity.fullURL=https://identity-${app_url} \
+          --name ${app_name} \
+          --revision ${revision} \
+          --upsert" >> $GITHUB_ENV
+      env:
+        docker_tag: "pr-dce606a0185e3306afa357ba9fbd33a83b001b04" # commit id of latest PR event
+        revision: ${{ env.BRANCH_NAME }}
+        app_name: camunda-${{ steps.sanitize.outputs.branch_name }}
+        elasticsearch_image_tag: "8.13.4"
+        app_keycloak_url: https://keycloak-${{ steps.sanitize.outputs.branch_name }}.camunda.camunda.cloud/auth/realms/camunda-platform
+        app_url: ${{ steps.sanitize.outputs.branch_name }}.camunda.camunda.cloud
+
+    #########################################################################
+    # Create a preview environment
+    - name: Deploy Preview Environment for c8sm
+      uses: camunda/infra-global-github-actions/preview-env/create@main
+      with:
+        revision: ${{ env.BRANCH_NAME }}
+        argocd_token: ${{ steps.secrets.outputs.ARGOCD_DEV_TOKEN }}
+        app_name: camunda-${{ steps.sanitize.outputs.branch_name }}
+        app_url: https://${{ steps.sanitize.outputs.branch_name }}.camunda.camunda.cloud
+        argocd_arguments: ${{ env.argocd_arguments }}
+        argocd_server: dev.argocd.int.camunda.com
