@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.executi
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.PROCESS_ID;
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.SERVICE_TASK_TYPE;
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.START_EL_TYPE;
+import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -222,6 +224,43 @@ public class ExecutionListenerStartEventElementTest {
         ExpectedValidationResult.expect(
             StartEvent.class,
             "Execution listeners of type 'start' are not supported by start events"));
+  }
+
+  @Test
+  public void shouldCancelActiveEndElJobAfterProcessInstanceCancellation() {
+    // given
+    final var modelInstance =
+        scenario
+            .builderFunction
+            .apply(Bpmn.createExecutableProcess(PROCESS_ID).startEvent(scenario.name))
+            .zeebeEndExecutionListener(END_EL_TYPE)
+            .manualTask()
+            .endEvent()
+            .done();
+
+    final Record<DeploymentRecordValue> deployment =
+        ENGINE.deployment().withXmlResource(modelInstance).deploy();
+
+    // trigger start event
+    scenario.processTrigger.run();
+    final long processInstanceKey = scenario.processInstanceKeyProvider.apply(deployment);
+    jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(END_EL_TYPE)
+        .await();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then: end EL job should be canceled
+    assertThat(
+            jobRecords(JobIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .onlyEvents()
+                .getFirst())
+        .extracting(r -> r.getValue().getType())
+        .isEqualTo(END_EL_TYPE);
   }
 
   private record StartEventTestScenario(

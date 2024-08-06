@@ -461,4 +461,34 @@ public class ExecutionListenerProcessInstanceTest {
             tuple(START_EL_TYPE + "evaluated_2", 6),
             tuple(END_EL_TYPE, 11));
   }
+
+  @Test
+  public void shouldCancelActiveStartElJobAfterProcessInstanceCancellation() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            ENGINE,
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .zeebeStartExecutionListener(START_EL_TYPE)
+                .startEvent()
+                .endEvent()
+                .done());
+    jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(START_EL_TYPE)
+        .await();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then: start EL job should be canceled
+    assertThat(
+            jobRecords(JobIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .onlyEvents()
+                .getFirst())
+        .extracting(r -> r.getValue().getType())
+        .isEqualTo(START_EL_TYPE);
+  }
 }
