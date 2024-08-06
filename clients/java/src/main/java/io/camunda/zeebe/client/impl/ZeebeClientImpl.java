@@ -27,6 +27,7 @@ import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.ClockControlCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
@@ -55,6 +56,7 @@ import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.command.AssignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.zeebe.client.impl.command.CancelProcessInstanceCommandImpl;
+import io.camunda.zeebe.client.impl.command.ClockControlCommandImpl;
 import io.camunda.zeebe.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteResourceCommandImpl;
@@ -481,6 +483,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public UserTaskQuery newUserTaskQuery() {
     return new UserTaskQueryImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public ClockControlCommandStep1 newClockControlCommand() {
+    return new ClockControlCommandImpl(asyncStub, config, credentialsProvider::shouldRetryRequest);
   }
 
   private JobClient newJobClient() {

@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.protocol.record;
 
+import io.camunda.zeebe.protocol.record.intent.ClockControlIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -51,6 +52,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.protocol.record.value.ClockControlRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
@@ -228,6 +230,9 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.MESSAGE_CORRELATION,
         new Mapping<>(MessageCorrelationRecordValue.class, MessageCorrelationIntent.class));
+    mapping.put(
+        ValueType.CLOCK_CONTROL,
+        new Mapping<>(ClockControlRecordValue.class, ClockControlIntent.class));
 
     return mapping;
   }

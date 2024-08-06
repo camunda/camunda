@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
+import io.camunda.zeebe.engine.processing.clock.ClockControlProcessor;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
@@ -44,6 +45,7 @@ import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ClockControlIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
@@ -184,6 +186,12 @@ public final class EngineProcessors {
 
     UserTaskEventProcessors.addUserTaskProcessors(
         typedRecordProcessors, processingState, bpmnBehaviors, writers);
+
+    addClockControlRelatedProcessor(
+        typedRecordProcessors,
+        writers,
+        processingState.getKeyGenerator(),
+        commandDistributionBehavior);
 
     return typedRecordProcessors;
   }
@@ -385,5 +393,14 @@ public final class EngineProcessors {
         ValueType.COMMAND_DISTRIBUTION,
         CommandDistributionIntent.ACKNOWLEDGE,
         commandDistributionAcknowledgeProcessor);
+  }
+
+  private static void addClockControlRelatedProcessor(
+      final TypedRecordProcessors typedRecordProcessors,
+      final Writers writers,
+      final KeyGenerator keyGenerator,
+      final CommandDistributionBehavior distributionBehavior) {
+    final var processor = new ClockControlProcessor(writers, keyGenerator, distributionBehavior);
+    typedRecordProcessors.onCommand(ValueType.CLOCK_CONTROL, ClockControlIntent.PIN, processor);
   }
 }

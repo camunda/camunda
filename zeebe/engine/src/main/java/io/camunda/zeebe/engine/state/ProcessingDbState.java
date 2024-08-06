@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.state.clock.DbClockControlState;
 import io.camunda.zeebe.engine.state.compensation.DbCompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableClockControlState;
 import io.camunda.zeebe.engine.state.mutable.MutableCompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
@@ -91,6 +93,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableDistributionState distributionState;
   private final MutableUserTaskState userTaskState;
   private final MutableCompensationSubscriptionState compensationSubscriptionState;
+  private final MutableClockControlState clockControlState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -133,6 +136,7 @@ public class ProcessingDbState implements MutableProcessingState {
     userTaskState = new DbUserTaskState(zeebeDb, transactionContext);
     compensationSubscriptionState =
         new DbCompensationSubscriptionState(zeebeDb, transactionContext);
+    clockControlState = new DbClockControlState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -246,6 +250,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableCompensationSubscriptionState getCompensationSubscriptionState() {
     return compensationSubscriptionState;
+  }
+
+  @Override
+  public MutableClockControlState getClockControlState() {
+    return clockControlState;
   }
 
   @Override

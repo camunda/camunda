@@ -127,6 +127,8 @@ public class OpensearchExporterConfiguration {
         return index.compensationSubscription;
       case MESSAGE_CORRELATION:
         return index.messageCorrelation;
+      case CLOCK_CONTROL:
+        return index.clockControl;
       default:
         return false;
     }
@@ -193,6 +195,7 @@ public class OpensearchExporterConfiguration {
     public boolean userTask = true;
     public boolean compensationSubscription = true;
     public boolean messageCorrelation = true;
+    public boolean clockControl = false;
 
     // index settings
     private Integer numberOfShards = null;

@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
+import io.camunda.zeebe.protocol.impl.record.value.clock.ClockControlRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
@@ -2484,6 +2485,24 @@ final class JsonSerializableToJsonTest {
           "messageKey": -1,
           "requestId": -1,
           "requestStreamId": -1
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////// ClockControlRecord ///////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ClockControlRecord",
+        (Supplier<ClockControlRecord>)
+            () -> {
+              final long time = 1722859030;
+
+              return new ClockControlRecord().setTime(time);
+            },
+        """
+        {
+          "time": 1722859030,
+          "tenantId": "<default>"
         }
         """
       },

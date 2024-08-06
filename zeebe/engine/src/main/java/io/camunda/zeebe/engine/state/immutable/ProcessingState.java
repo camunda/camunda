@@ -58,6 +58,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   CompensationSubscriptionState getCompensationSubscriptionState();
 
+  ClockControlState getClockControlState();
+
   int getPartitionId();
 
   boolean isEmpty(final ZbColumnFamilies column);
