@@ -718,12 +718,6 @@ eventBasedProcess:
     # A rollover is triggered when the size of the current event index matches or exceeds the maxIndexSizeGB threshold.
     maxIndexSizeGB: 50
 
-telemetry:
-  # Is telemetry initialized
-  initializeTelemetry: ${CAMUNDA_OPTIMIZE_TELEMETRY_ENABLED:false}
-  # Interval for telemetry reporting, defaults to every 24 hours.
-  reportingIntervalInHours: 24
-
 analytics:
   # Enable/Disable user interaction tracking
   enabled: ${CAMUNDA_OPTIMIZE_ANALYTICS_ENABLED:false}
