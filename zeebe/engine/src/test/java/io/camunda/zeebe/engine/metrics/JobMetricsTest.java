@@ -177,9 +177,6 @@ public class JobMetricsTest {
 
   @Test
   public void shouldCountCanceled() {
-    // TODO remove after merging with `20775-fix-el-job-cancellation` branch
-    assumeThat(scenario.jobKind, is(not(equalTo(JobKind.EXECUTION_LISTENER))));
-
     // given
     ENGINE.deployment().withXmlResource(scenario.process).deploy();
     final long processInstanceKey = createProcessInstanceWithJob(JOB_TYPE);

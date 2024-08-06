@@ -68,8 +68,8 @@ final class JobBatchCollector {
    * key. On success, it will return the amount of jobs activated.
    *
    * @param record the batch activate command; jobs and their keys will be added directly into it
-   * @return the amount of activated jobs on success per jobKind, or a job which was too large to
-   *     activate
+   * @return the amount of activated jobs per jobKind on success, or a job which was too large to
+   *     activate on failure
    */
   public Either<TooLargeJob, Map<JobKind, Integer>> collectJobs(
       final TypedRecord<JobBatchRecord> record) {
