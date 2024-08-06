@@ -216,6 +216,10 @@ public class OperateElasticsearchExporter implements Exporter {
             new PostImporterQueueFromIncidentHandler(
                 (PostImporterQueueTemplate)
                     (new PostImporterQueueTemplate().setIndexPrefix(indexPrefix))))
+        .withHandler(
+            new UserTaskHandler(
+                (UserTaskTemplate) (new UserTaskTemplate().setIndexPrefix(indexPrefix)),
+                configuration.newObjectMapper()))
         .build();
   }
 
@@ -229,10 +233,10 @@ public class OperateElasticsearchExporter implements Exporter {
             DECISION_REQUIREMENTS,
             DECISION_EVALUATION,
             JOB,
-            INCIDENT
+            INCIDENT,
+            PROCESS_MESSAGE_SUBSCRIPTION,
+            USER_TASK
             //            VARIABLE_DOCUMENT,
-            //            PROCESS_MESSAGE_SUBSCRIPTION,
-            //            USER_TASK
             );
 
     @Override

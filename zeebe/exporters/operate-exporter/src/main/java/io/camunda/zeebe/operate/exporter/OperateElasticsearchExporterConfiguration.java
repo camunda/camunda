@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.operate.exporter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.property.OperateElasticsearchProperties;
 
 public class OperateElasticsearchExporterConfiguration {
@@ -14,6 +15,10 @@ public class OperateElasticsearchExporterConfiguration {
   public final BulkConfiguration bulk = new BulkConfiguration();
 
   public final OperateElasticsearchProperties elasticsearch = new OperateElasticsearchProperties();
+
+  public ObjectMapper newObjectMapper() {
+    return new ObjectMapper();
+  }
 
   @Override
   public String toString() {
