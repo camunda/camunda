@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.search.response;
 
-import io.camunda.zeebe.client.api.response.DecisionRequirements;
+import io.camunda.zeebe.client.api.search.response.DecisionRequirements;
 import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsItem;
 
 public class DecisionRequirementsImpl implements DecisionRequirements {
@@ -24,7 +24,7 @@ public class DecisionRequirementsImpl implements DecisionRequirements {
   private final String tenantId;
   private final String dmnDecisionRequirementsId;
   private final String dmnDecisionRequirementsName;
-  private final int version;
+  private final Integer version;
 
   public DecisionRequirementsImpl(final DecisionRequirementsItem item) {
     decisionRequirementsKey = item.getDecisionRequirementsKey();
