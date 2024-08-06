@@ -13,11 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.search;
+package io.camunda.zeebe.client.api.search.response;
 
-import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
+import io.camunda.zeebe.client.api.response.Decision;
 
-public interface DecisionDefinitionQuery
-    extends TypedSearchQueryRequest<
-            DecisionDefinitionFilter, DecisionDefinitionSort, DecisionDefinitionQuery>,
-        FinalSearchQueryStep<DecisionDefinition> {}
+public interface DecisionDefinition extends Decision {}

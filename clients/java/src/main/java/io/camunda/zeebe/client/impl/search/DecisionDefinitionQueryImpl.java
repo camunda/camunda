@@ -21,12 +21,12 @@ import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.searchReq
 
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.response.Decision;
 import io.camunda.zeebe.client.api.search.DecisionDefinitionFilter;
 import io.camunda.zeebe.client.api.search.DecisionDefinitionQuery;
 import io.camunda.zeebe.client.api.search.DecisionDefinitionSort;
 import io.camunda.zeebe.client.api.search.FinalSearchQueryStep;
 import io.camunda.zeebe.client.api.search.SearchRequestPage;
+import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
@@ -99,14 +99,14 @@ public class DecisionDefinitionQueryImpl
   }
 
   @Override
-  public FinalSearchQueryStep<Decision> requestTimeout(final Duration requestTimeout) {
+  public FinalSearchQueryStep<DecisionDefinition> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public ZeebeFuture<SearchQueryResponse<Decision>> send() {
-    final HttpZeebeFuture<SearchQueryResponse<Decision>> result = new HttpZeebeFuture<>();
+  public ZeebeFuture<SearchQueryResponse<DecisionDefinition>> send() {
+    final HttpZeebeFuture<SearchQueryResponse<DecisionDefinition>> result = new HttpZeebeFuture<>();
     httpClient.post(
         "/decision-definitions/search",
         jsonMapper.toJson(request),

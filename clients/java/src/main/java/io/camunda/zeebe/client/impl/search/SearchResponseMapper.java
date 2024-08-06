@@ -15,12 +15,12 @@
  */
 package io.camunda.zeebe.client.impl.search;
 
-import io.camunda.zeebe.client.api.response.Decision;
+import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.api.search.response.SearchResponsePage;
 import io.camunda.zeebe.client.api.search.response.UserTask;
-import io.camunda.zeebe.client.impl.response.DecisionImpl;
+import io.camunda.zeebe.client.impl.search.response.DecisionDefinitionImpl;
 import io.camunda.zeebe.client.impl.search.response.ProcessInstanceImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchQueryResponseImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchResponsePageImpl;
@@ -56,11 +56,11 @@ public final class SearchResponseMapper {
     return new SearchQueryResponseImpl<>(instances, page);
   }
 
-  public static SearchQueryResponse<Decision> toDecisionDefinitionSearchResponse(
+  public static SearchQueryResponse<DecisionDefinition> toDecisionDefinitionSearchResponse(
       final DecisionDefinitionSearchQueryResponse response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
-    final List<Decision> instances =
-        toSearchResponseInstances(response.getItems(), DecisionImpl::new);
+    final List<DecisionDefinition> instances =
+        toSearchResponseInstances(response.getItems(), DecisionDefinitionImpl::new);
     return new SearchQueryResponseImpl<>(instances, page);
   }
 
