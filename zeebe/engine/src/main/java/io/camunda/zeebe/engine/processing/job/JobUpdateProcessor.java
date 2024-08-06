@@ -24,9 +24,6 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
 
   private static final String NO_JOB_FOUND_MESSAGE =
       "Expected to update job with key '%d', but no such job was found";
-  private static final String NEGATIVE_RETRIES_MESSAGE =
-      "Expected to update job with key '%d' with a positive amount of retries, "
-          + "but the amount given was '%d'";
 
   private final JobState jobState;
   private final StateWriter stateWriter;
@@ -46,6 +43,7 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
     final int retries = command.getValue().getRetries();
     final long timeout = command.getValue().getTimeout();
     final var job = jobState.getJob(key, command.getAuthorizations());
+    boolean isJobUpdated = false;
 
     if (job == null) {
       rejectionWriter.appendRejection(
@@ -59,7 +57,7 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
     if (retries > 0) {
       job.setRetries(retries);
       stateWriter.appendFollowUpEvent(key, JobIntent.RETRIES_UPDATED, job);
-      responseWriter.writeEventOnCommand(key, JobIntent.RETRIES_UPDATED, job, command);
+      isJobUpdated = true;
     }
     // Handle timeout
     final long oldDeadline = job.getDeadline();
@@ -67,7 +65,12 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
       final long newDeadline = ActorClock.currentTimeMillis() + job.getTimeout();
       job.setDeadline(newDeadline);
       stateWriter.appendFollowUpEvent(key, JobIntent.TIMEOUT_UPDATED, job);
-      responseWriter.writeEventOnCommand(key, JobIntent.TIMEOUT_UPDATED, job, command);
+      isJobUpdated = true;
+    }
+
+    if (isJobUpdated) {
+      stateWriter.appendFollowUpEvent(key, JobIntent.UPDATED, job);
+      responseWriter.writeEventOnCommand(key, JobIntent.UPDATED, job, command);
     }
   }
 }
