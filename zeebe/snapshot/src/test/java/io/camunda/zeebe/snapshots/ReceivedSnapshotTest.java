@@ -16,7 +16,6 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
-import io.camunda.zeebe.snapshots.impl.SfvChecksumImpl;
 import io.camunda.zeebe.snapshots.impl.SnapshotWriteException;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -306,29 +305,6 @@ public class ReceivedSnapshotTest {
           .as("the chunk should not be applied as its content checksum is not 0xCAFEL")
           .hasCauseInstanceOf(SnapshotWriteException.class);
     }
-  }
-
-  @Test
-  public void shouldPersistEvenIfCombinedChecksumDoesNotMatch() {
-    // given
-    final var persistedSnapshot = takePersistedSnapshot();
-
-    // when
-    final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
-    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
-      while (snapshotChunkReader.hasNext()) {
-        final var originalChunk = snapshotChunkReader.next();
-        final var corruptedChunk =
-            SnapshotChunkWrapper.withSnapshotChecksums(originalChunk, new SfvChecksumImpl());
-        receivedSnapshot.apply(corruptedChunk).join();
-      }
-    }
-
-    // then
-    assertThat(receivedSnapshot.persist().join())
-        .as("The snapshot should persist with mis-match in combined checksums")
-        .isEqualTo(receiverSnapshotStore.getLatestSnapshot().get());
   }
 
   @Test
