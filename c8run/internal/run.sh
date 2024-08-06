@@ -12,9 +12,12 @@ WEBAPPS_PATH=$BASEDIR/webapps/
 REST_PATH=$BASEDIR/rest/
 SWAGGER_PATH=$BASEDIR/swaggerui
 EXAMPLE_PATH=$BASEDIR/example
+
 PID_PATH=$BASEDIR/run.pid
 ELASTIC_PID_PATH=$BASEDIR/elasticsearch.pid
 CONNECTORS_PID_PATH=$BASEDIR/connectors.pid
+POLLING_CAMUNDA_PID_PATH=$PARENTDIR/camunda-polling.pid
+
 OPTIONS_HELP="Options:
   --webapps    - Enables the Camunda Platform Webapps
   --rest       - Enables the REST API
@@ -57,6 +60,58 @@ swaggeruiChosen=false
 detachProcess=false
 classPath=$PARENTDIR/configuration/userlib/,$PARENTDIR/configuration/keystore/
 
+
+function stop {
+  if [ -s "$PID_PATH" ]; then
+    # stop Camunda Run if the process is still running
+    kill $(cat "$PID_PATH")
+
+    # remove process ID file
+    rm "$PID_PATH"
+
+    echo "Camunda Run is shutting down."
+  fi
+  if [ -s "$ELASTIC_PID_PATH" ]; then
+    # stop Camunda Run if the process is still running
+    kill $(cat "$ELASTIC_PID_PATH")
+
+    # remove process ID file
+    rm "$ELASTIC_PID_PATH"
+
+    echo "Elasticsearch is shutting down."
+  fi
+
+  if [ -s "$CONNECTORS_PID_PATH" ]; then
+    kill $(cat "$CONNECTORS_PID_PATH")
+    rm "$CONNECTORS_PID_PATH"
+    echo "Connectors is shutting down."
+  fi
+
+  if [ -s "$POLLING_CAMUNDA_PID_PATH" ]; then
+    kill $(cat "$POLLING_CAMUNDA_PID_PATH")
+    rm "$POLLING_CAMUNDA_PID_PATH"
+  fi
+  exit
+}
+
+function childExitHandler {
+  pid=$1
+  status=$2
+  if [[ "$status" == "0" ]]; then
+    return
+  fi
+
+  if [[ "$status" == "1" ]]; then
+    if [ -s "$POLLING_CAMUNDA_PID_PATH" ]; then
+      polling_pid="$(cat "$POLLING_CAMUNDA_PID_PATH")"
+      kill $polling_pid
+      rm "$POLLING_CAMUNDA_PID_PATH"
+    fi
+  fi
+}
+
+trap stop SIGINT SIGTERM ERR
+trap childExitHandler SIGCHLD
 
 if [ "$1" = "start" ] ; then
   shift
@@ -133,7 +188,7 @@ if [ "$1" = "start" ] ; then
   echo "(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)"
   echo
   ELASTICSEARCH_LOG_FILE=$PARENTDIR/log/elasticsearch.log
-  bash -c "$PARENTDIR/elasticsearch-${ELASTICSEARCH_VERSION}/bin/elasticsearch -E xpack.ml.enabled=false -E xpack.security.enabled=false" </dev/null > "$ELASTICSEARCH_LOG_FILE" 2>&1 &
+  $PARENTDIR/elasticsearch-${ELASTICSEARCH_VERSION}/bin/elasticsearch -E xpack.ml.enabled=false -E xpack.security.enabled=false </dev/null > "$ELASTICSEARCH_LOG_FILE" 2>&1 &
   echo $! > $ELASTIC_PID_PATH
 
 
@@ -192,6 +247,7 @@ if [ "$1" = "start" ] ; then
     fi
   fi
 
+
   if [ "$detachProcess" = "true" ]; then
 
     # check if a Camunda Run instance is already in operation
@@ -211,7 +267,9 @@ Please stop it or remove the file $PID_PATH."
 
     $JAVA -cp "$PARENTDIR/*:$PARENTDIR/custom_connectors/*:./camunda-zeebe-$CAMUNDA_VERSION/lib/*" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> $PARENTDIR/log/connectors.log 2>> $PARENTDIR/log/connectors.log &
     echo $! > "$CONNECTORS_PID_PATH"
-
+    if [ -s "$POLLING_CAMUNDA_PID_PATH" ]; then
+      wait $(cat "$POLLING_CAMUNDA_PID_PATH")
+    fi
   else
     $JAVA -cp "$PARENTDIR/*:$PARENTDIR/custom_connectors/*:./camunda-zeebe-$CAMUNDA_VERSION/lib/*'" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> $PARENTDIR/log/connectors.log 2>> $PARENTDIR/log/connectors.log &
     echo $! > "$CONNECTORS_PID_PATH"
@@ -222,39 +280,14 @@ Please stop it or remove the file $PID_PATH."
     popd
 
   fi
+#   wait $(cat "$CONNECTORS_PID_PATH")
+#   wait $(cat "$POLLING_CAMUNDA_PID_PATH")
+#   wait $(cat "$ELASTIC_PID_PATH")
+#   wait $(cat "$PID_PATH")
 
 elif [ "$1" = "stop" ] ; then
 
-  if [ -s "$PID_PATH" ]; then
-    # stop Camunda Run if the process is still running
-    kill $(cat "$PID_PATH")
-
-    # remove process ID file
-    rm "$PID_PATH"
-
-    echo "Camunda Run is shutting down."
-  else
-    echo "There is no instance of Camunda Run to shut down."
-  fi
-  if [ -s "$ELASTIC_PID_PATH" ]; then
-    # stop Camunda Run if the process is still running
-    kill $(cat "$ELASTIC_PID_PATH")
-
-    # remove process ID file
-    rm "$ELASTIC_PID_PATH"
-
-    echo "Elasticsearch is shutting down."
-  else
-    echo "There is no instance of Elasticsearch to shut down."
-  fi
-
-  if [ -s "$CONNECTORS_PID_PATH" ]; then
-    kill $(cat "$CONNECTORS_PID_PATH")
-    rm "$CONNECTORS_PID_PATH"
-    echo "Connectors is shutting down."
-  else
-    echo "There is no instance of Connectors to shut down."
-  fi
+  stop
 
 elif [ "$1" = "" ] || [ "$1" = "help" ] ; then
 
