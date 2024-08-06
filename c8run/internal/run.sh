@@ -241,9 +241,9 @@ if [ "$1" = "start" ] ; then
   # start the application
   if [[ "$configuration" != "" ]]; then
     if [[ "$configuration" == "/*" ]]; then
-      extraArgs="--spring.config.location=$configuration"
+      extraArgs="--spring.config.location=classpath:$PARENTDIR/camunda-zeebe-$CAMUNDA_VERSION/config/application.yaml,classpath:$configuration"
     else
-      extraArgs="--spring.config.location=$(pwd)/$configuration"
+      extraArgs="--spring.config.location=classpath:$PARENTDIR/camunda-zeebe-$CAMUNDA_VERSION/config/application.yaml,classpath:$(pwd)/$configuration"
     fi
   fi
 
