@@ -32,6 +32,7 @@ import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryResponse;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class SearchResponseMapper {
@@ -84,19 +85,16 @@ public final class SearchResponseMapper {
 
   public static SearchQueryResponse<DecisionRequirements> toDecisionRequirementsSearchResponse(
       final DecisionRequirementsSearchQueryResponse response) {
-    final SearchQueryPageResponse pageResponse = response.getPage();
-    final SearchResponsePage page = toSearchResponsePage(pageResponse);
-
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<DecisionRequirements> instances =
-        Optional.ofNullable(response.getItems())
-            .map(
-                (i) ->
-                    i.stream()
-                        .map(DecisionRequirementsImpl::new)
-                        .map((p) -> (DecisionRequirements) p)
-                        .collect(Collectors.toList()))
-            .orElse(Collections.emptyList());
-
+        toSearchResponseInstances(response.getItems(), DecisionRequirementsImpl::new);
     return new SearchQueryResponseImpl<>(instances, page);
+  }
+
+  private static <T, R> List<R> toSearchResponseInstances(
+      final List<T> items, final Function<T, R> mapper) {
+    return Optional.ofNullable(items)
+        .map(i -> i.stream().map(mapper).collect(Collectors.toList()))
+        .orElse(Collections.emptyList());
   }
 }
