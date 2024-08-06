@@ -614,6 +614,6 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the decision requirements query
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20704")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   DecisionRequirementsQuery newDecisionRequirementsQuery();
 }
