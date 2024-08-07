@@ -21,6 +21,20 @@ test.beforeAll(async ({request}) => {
 
   const {processInstanceKey} = initialData.singleOperationInstance;
 
+  // wait until single operation instances is created and in incident state
+  await expect
+    .poll(
+      async () => {
+        const response = await request.get(
+          `${config.endpoint}/v1/process-instances/${processInstanceKey}`,
+        );
+        const {incident} = await response.json();
+        return incident;
+      },
+      {timeout: SETUP_WAITING_TIME},
+    )
+    .toBeTruthy();
+
   // create demo operations
   await Promise.all(
     [...new Array(50)].map(async () => {
