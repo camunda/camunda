@@ -80,4 +80,6 @@ public interface UserTaskRecordValue
    * @return the process key of the corresponding process definition
    */
   long getProcessDefinitionKey();
+
+  int getPriority();
 }

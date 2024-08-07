@@ -17,8 +17,9 @@ package io.camunda.zeebe.protocol.record.intent;
 
 public enum MessageCorrelationIntent implements Intent {
   CORRELATE(1),
-  CORRELATED(2),
-  NOT_CORRELATED(3);
+  CORRELATING(2),
+  CORRELATED(3),
+  NOT_CORRELATED(4);
 
   private final short value;
 
@@ -34,6 +35,7 @@ public enum MessageCorrelationIntent implements Intent {
   @Override
   public boolean isEvent() {
     switch (this) {
+      case CORRELATING:
       case CORRELATED:
       case NOT_CORRELATED:
         return true;
@@ -47,8 +49,10 @@ public enum MessageCorrelationIntent implements Intent {
       case 1:
         return CORRELATE;
       case 2:
-        return CORRELATED;
+        return CORRELATING;
       case 3:
+        return CORRELATED;
+      case 4:
         return NOT_CORRELATED;
       default:
         return Intent.UNKNOWN;

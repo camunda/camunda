@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.state.instance.DbIncidentState;
 import io.camunda.zeebe.engine.state.instance.DbJobState;
 import io.camunda.zeebe.engine.state.instance.DbTimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbUserTaskState;
+import io.camunda.zeebe.engine.state.message.DbMessageCorrelationState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
@@ -42,6 +43,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -79,6 +81,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final DbMessageSubscriptionState messageSubscriptionState;
   private final MutableMessageStartEventSubscriptionState messageStartEventSubscriptionState;
   private final DbProcessMessageSubscriptionState processMessageSubscriptionState;
+  private final DbMessageCorrelationState messageCorrelationState;
   private final MutableIncidentState incidentState;
   private final MutableBannedInstanceState bannedInstanceState;
   private final MutableMigrationState mutableMigrationState;
@@ -119,6 +122,7 @@ public class ProcessingDbState implements MutableProcessingState {
     processMessageSubscriptionState =
         new DbProcessMessageSubscriptionState(
             zeebeDb, transactionContext, transientProcessMessageSubscriptionState);
+    messageCorrelationState = new DbMessageCorrelationState(zeebeDb, transactionContext);
     incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId);
     bannedInstanceState = new DbBannedInstanceState(zeebeDb, transactionContext, partitionId);
     decisionState = new DbDecisionState(zeebeDb, transactionContext, config);
@@ -172,6 +176,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableProcessMessageSubscriptionState getProcessMessageSubscriptionState() {
     return processMessageSubscriptionState;
+  }
+
+  @Override
+  public MutableMessageCorrelationState getMessageCorrelationState() {
+    return messageCorrelationState;
   }
 
   @Override

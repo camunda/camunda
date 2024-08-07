@@ -200,7 +200,7 @@ func (s *ContainerSuite) SetupSuite() {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:        s.ContainerImage,
-			ExposedPorts: []string{"0.0.0.0::26500", "0.0.0.0::9600"},
+			ExposedPorts: []string{"26500/tcp", "9600/tcp"},
 			WaitingFor:   zeebeWaitStrategy{waitTime: s.WaitTime},
 			Env: map[string]string{
 				"ZEEBE_BROKER_NETWORK_HOST":           "0.0.0.0",

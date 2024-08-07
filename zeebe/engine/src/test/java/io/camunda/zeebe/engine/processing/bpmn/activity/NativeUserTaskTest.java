@@ -59,7 +59,6 @@ public final class NativeUserTaskTest {
   private static BpmnModelInstance process(final Consumer<UserTaskBuilder> consumer) {
     final var builder =
         Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask("task").zeebeUserTask();
-
     consumer.accept(builder);
 
     return builder.endEvent().done();
@@ -896,5 +895,64 @@ public final class NativeUserTaskTest {
             RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(2))
         .extracting(Record::getIntent)
         .containsExactly(IncidentIntent.CREATED, IncidentIntent.RESOLVED);
+  }
+
+  @Test
+  public void shouldCreateUserTaskWithStaticPriority() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeTaskPriorityExpression("20"))).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasPriority(20);
+  }
+
+  @Test
+  public void shouldCreateUserTaskWithPriorityExpression() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeTaskPriorityExpression("10+task_priority")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("task_priority", 13L)
+            .create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasPriority(23);
+  }
+
+  @Test
+  public void shouldCreateUserTaskWithDefaultPriority() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasPriority(50);
   }
 }

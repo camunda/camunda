@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -101,7 +102,10 @@ public final class BpmnUserTaskBehavior {
             p ->
                 evaluateExternalFormReferenceExpression(
                         userTaskProps.getExternalFormReference(), scopeKey)
-                    .map(p::externalFormReference));
+                    .map(p::externalFormReference))
+        .flatMap(
+            p ->
+                evaluatePriorityExpression(userTaskProps.getPriority(), scopeKey).map(p::priority));
   }
 
   public UserTaskRecord createNewUserTask(
@@ -130,6 +134,7 @@ public final class BpmnUserTaskBehavior {
         .setElementId(element.getId())
         .setElementInstanceKey(context.getElementInstanceKey())
         .setTenantId(context.getTenantId())
+        .setPriority(userTaskProperties.getPriority())
         .setCreationTimestamp(ActorClock.currentTimeMillis());
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
@@ -251,6 +256,14 @@ public final class BpmnUserTaskBehavior {
     return expressionBehavior.evaluateStringExpression(externalFormReference, scopeKey);
   }
 
+  public Either<Failure, Integer> evaluatePriorityExpression(
+      final Expression priorityExpression, final long scopeKey) {
+    if (priorityExpression == null) {
+      return Either.right(ZeebePriorityDefinition.DEFAULT_NUMBER_PRIORITY);
+    }
+    return expressionBehavior.evaluateIntegerExpression(priorityExpression, scopeKey);
+  }
+
   public void cancelUserTask(final BpmnElementContext context) {
     final var elementInstance = stateBehavior.getElementInstance(context);
     cancelUserTask(elementInstance);
@@ -282,6 +295,7 @@ public final class BpmnUserTaskBehavior {
     private String externalFormReference;
     private String followUpDate;
     private Long formKey;
+    private Integer priority;
 
     public String getAssignee() {
       return getOrEmpty(assignee);
@@ -343,6 +357,15 @@ public final class BpmnUserTaskBehavior {
 
     public UserTaskProperties formKey(final Long formKey) {
       this.formKey = formKey;
+      return this;
+    }
+
+    public Integer getPriority() {
+      return priority == null ? ZeebePriorityDefinition.DEFAULT_NUMBER_PRIORITY : priority;
+    }
+
+    public UserTaskProperties priority(final Integer priority) {
+      this.priority = priority;
       return this;
     }
 

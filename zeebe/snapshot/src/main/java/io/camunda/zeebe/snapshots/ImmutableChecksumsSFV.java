@@ -18,11 +18,6 @@ import java.util.SortedMap;
 public interface ImmutableChecksumsSFV {
 
   /**
-   * @return a combined CRC32C checksum over all files (for backwards compatibility)
-   */
-  long getCombinedValue();
-
-  /**
    * Write the checksum collection in SFV format to the given output stream.
    *
    * @param stream in which the data will be written to
@@ -33,4 +28,12 @@ public interface ImmutableChecksumsSFV {
    * @return the map containing the individual file checksums
    */
   SortedMap<String, Long> getChecksums();
+
+  /**
+   * Returns if all file checksums match exactly.
+   *
+   * @param o The other checksum
+   * @return boolean denoting match
+   */
+  boolean sameChecksums(ImmutableChecksumsSFV o);
 }
