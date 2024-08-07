@@ -577,7 +577,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * zeebeClient
    *  .newUserTaskQuery()
    *  .filter((f) -> f.userTaskKey(userTaskKey))
-   *  .sort((s) -> s.startDate().asc())
+   *  .sort((s) -> s.creationDate().asc())
    *  .page((p) -> p.limit(100))
    *  .send();
    * </pre>
