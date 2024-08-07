@@ -45,7 +45,7 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
               jobUpdateBehaviour.updateJobRetries(jobKey, job, command).ifPresent(errors::add);
               final long timeout = command.getValue().getTimeout();
               // if no timeout is provided (the default value is -1L), no update
-              if (timeout > -1L) {
+              if (timeout > 0) {
                 jobUpdateBehaviour.updateJobTimeout(jobKey, job, command).ifPresent(errors::add);
               }
               if (errors.isEmpty()) {

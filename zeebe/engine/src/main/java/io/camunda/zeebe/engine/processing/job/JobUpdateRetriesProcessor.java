@@ -42,9 +42,9 @@ public final class JobUpdateRetriesProcessor implements TypedRecordProcessor<Job
                     .ifPresentOrElse(
                         errorMessage -> {
                           rejectionWriter.appendRejection(
-                              command, RejectionType.INVALID_STATE, errorMessage);
+                              command, RejectionType.INVALID_ARGUMENT, errorMessage);
                           responseWriter.writeRejectionOnCommand(
-                              command, RejectionType.INVALID_STATE, errorMessage);
+                              command, RejectionType.INVALID_ARGUMENT, errorMessage);
                         },
                         () ->
                             responseWriter.writeEventOnCommand(
