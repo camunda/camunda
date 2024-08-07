@@ -10,11 +10,11 @@ package io.camunda.service.search.query;
 import io.camunda.service.search.filter.FilterBuilders;
 import io.camunda.service.search.filter.ProcessInstanceFilter;
 import io.camunda.service.search.page.SearchQueryPage;
+import io.camunda.service.search.result.ProcessInstanceQueryResultConfig;
+import io.camunda.service.search.result.QueryResultConfig;
+import io.camunda.service.search.result.QueryResultConfigBuilders;
 import io.camunda.service.search.sort.ProcessInstanceSort;
 import io.camunda.service.search.sort.SortOptionBuilders;
-import io.camunda.service.search.source.ProcessInstanceSourceConfig;
-import io.camunda.service.search.source.SourceConfig;
-import io.camunda.service.search.source.SourceConfigBuilders;
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;
@@ -23,7 +23,7 @@ public record ProcessInstanceQuery(
     ProcessInstanceFilter filter,
     ProcessInstanceSort sort,
     SearchQueryPage page,
-    SourceConfig source)
+    QueryResultConfig resultConfig)
     implements TypedSearchQuery<ProcessInstanceFilter, ProcessInstanceSort> {
 
   public static ProcessInstanceQuery of(
@@ -42,7 +42,7 @@ public record ProcessInstanceQuery(
 
     private ProcessInstanceFilter filter;
     private ProcessInstanceSort sort;
-    private ProcessInstanceSourceConfig source;
+    private ProcessInstanceQueryResultConfig resultConfig;
 
     public Builder filter(final ProcessInstanceFilter value) {
       filter = value;
@@ -64,16 +64,17 @@ public record ProcessInstanceQuery(
       return sort(SortOptionBuilders.processInstance(fn));
     }
 
-    public Builder source(final ProcessInstanceSourceConfig value) {
-      source = value;
+    public Builder resultConfig(final ProcessInstanceQueryResultConfig value) {
+      resultConfig = value;
       return this;
     }
 
-    public Builder source(
+    public Builder resultConfig(
         final Function<
-                ProcessInstanceSourceConfig.Builder, ObjectBuilder<ProcessInstanceSourceConfig>>
+                ProcessInstanceQueryResultConfig.Builder,
+                ObjectBuilder<ProcessInstanceQueryResultConfig>>
             fn) {
-      return source(SourceConfigBuilders.processInstance(fn));
+      return resultConfig(QueryResultConfigBuilders.processInstance(fn));
     }
 
     @Override
@@ -85,7 +86,7 @@ public record ProcessInstanceQuery(
     public ProcessInstanceQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, EMPTY_SORT);
-      return new ProcessInstanceQuery(filter, sort, page(), source);
+      return new ProcessInstanceQuery(filter, sort, page(), resultConfig);
     }
   }
 }

@@ -5,22 +5,22 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service.search.source;
+package io.camunda.service.search.result;
 
-import io.camunda.service.search.source.ProcessInstanceSourceConfig.Builder;
+import io.camunda.service.search.result.ProcessInstanceQueryResultConfig.Builder;
 import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 
-public final class SourceConfigBuilders {
+public final class QueryResultConfigBuilders {
 
-  private SourceConfigBuilders() {}
+  private QueryResultConfigBuilders() {}
 
-  public static ProcessInstanceSourceConfig.Builder processInstance() {
-    return new ProcessInstanceSourceConfig.Builder();
+  public static ProcessInstanceQueryResultConfig.Builder processInstance() {
+    return new ProcessInstanceQueryResultConfig.Builder();
   }
 
-  public static ProcessInstanceSourceConfig processInstance(
-      final Function<Builder, ObjectBuilder<ProcessInstanceSourceConfig>> fn) {
+  public static ProcessInstanceQueryResultConfig processInstance(
+      final Function<Builder, ObjectBuilder<ProcessInstanceQueryResultConfig>> fn) {
     return fn.apply(processInstance()).build();
   }
 }
