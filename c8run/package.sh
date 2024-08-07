@@ -41,7 +41,7 @@ if [ ! -f "$connectorsFileName" ]; then
   wget "https://repo1.maven.org/maven2/io/camunda/connector/connector-runtime-bundle/$CAMUNDA_CONNECTORS_VERSION/$connectorsFileName"
 fi
 
-tar -czvf camunda8-run-$CAMUNDA_VERSION.tar.gz \
+tar -czvf camunda8-run-$CAMUNDA_VERSION-$architecture.tar.gz \
   -C ../ \
   c8run/start.sh \
   c8run/start.bat \
