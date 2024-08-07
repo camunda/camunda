@@ -26,7 +26,8 @@ public class BpmnTemplateGeneratorFactory {
         List.of(
             elementSequenceGenerator,
             // new BpmnEmbeddedSubprocessGenerator(generatorContext, elementSequenceGenerator),
-            new BpmnExclusiveGatewayGenerator(generatorContext, elementSequenceGenerator));
+            new BpmnExclusiveGatewayGenerator(generatorContext, elementSequenceGenerator),
+            new ParallelGatewayGenerator(generatorContext, bpmnFactories));
   }
 
   public BpmnTemplateGenerator getGenerator() {
