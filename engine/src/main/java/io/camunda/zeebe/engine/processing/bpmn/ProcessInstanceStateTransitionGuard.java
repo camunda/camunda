@@ -165,7 +165,6 @@ public final class ProcessInstanceStateTransitionGuard {
   }
 
   private Either<String, ?> hasActiveFlowScopeInstance(final BpmnElementContext context) {
-    // a shortcut to improve readability
     if (context.getBpmnElementType() != BpmnElementType.PROCESS) {
       return getFlowScopeInstance(context)
           .flatMap(
