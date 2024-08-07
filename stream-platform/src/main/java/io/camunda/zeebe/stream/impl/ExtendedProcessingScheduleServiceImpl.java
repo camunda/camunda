@@ -78,6 +78,11 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   }
 
   @Override
+  public ScheduledTask runAt(final long timestamp, final Runnable task) {
+    return processorActorService.runAt(timestamp, task);
+  }
+
+  @Override
   public void runAtFixedRate(final Duration delay, final Task task) {
     processorActorService.runAtFixedRate(delay, task);
   }
