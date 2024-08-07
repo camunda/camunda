@@ -7,13 +7,27 @@
  */
 package io.camunda.zeebe.test.broker.protocol;
 
-// import io.camunda.zeebe.protocol.record.RecordAssert;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordAssert;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.ValueTypeMapping;
+import java.util.EnumSet;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class ProtocolFactoryTest {
-  /*private final ProtocolFactory factory = new ProtocolFactory();
+  private final ProtocolFactory factory = new ProtocolFactory();
 
   @Test
   void shouldUseSameSeedOnConstruction() {
@@ -199,5 +213,5 @@ final class ProtocolFactoryTest {
 
   private static Stream<Class<?>> provideProtocolClasses() {
     return ProtocolFactory.findProtocolTypes().loadClasses().stream();
-  }*/
+  }
 }

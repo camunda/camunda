@@ -7,14 +7,28 @@
  */
 package io.camunda.zeebe.protocol.jackson;
 
-// import io.camunda.zeebe.protocol.record.RecordAssert;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordAssert;
+import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.ValueTypeMapping;
+import io.camunda.zeebe.protocol.record.ValueTypeMapping.Mapping;
+import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.io.IOException;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @SuppressWarnings("unchecked")
 @Execution(ExecutionMode.CONCURRENT)
 final class ZeebeProtocolModuleTest {
-  /* private static final ObjectMapper MAPPER =
+  private static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new ZeebeProtocolModule());
 
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -70,5 +84,5 @@ final class ZeebeProtocolModuleTest {
 
   private static Stream<ValueType> provideValueTypes() {
     return ValueTypeMapping.getAcceptedValueTypes().stream();
-  }*/
+  }
 }
