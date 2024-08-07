@@ -34,7 +34,7 @@ public final class UserClient {
                 .withIntent(UserIntent.CREATED)
                 .withSourceRecordPosition(position)
                 .getFirst();
-    ;
+
     private static final Function<Long, Record<UserRecordValue>> REJECTION_SUPPLIER =
         (position) ->
             RecordingExporter.userRecords()
