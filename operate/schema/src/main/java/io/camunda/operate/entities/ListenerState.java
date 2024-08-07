@@ -16,6 +16,9 @@ public enum ListenerState {
   UNKNOWN;
 
   public static ListenerState fromZeebeJobIntent(final String jobState) {
+    if (jobState == null) {
+      return UNKNOWN;
+    }
     final ListenerState result =
         switch (jobState) {
           case "CREATED", "RETRIES_UPDATED", "MIGRATED" -> ACTIVE;
