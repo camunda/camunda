@@ -31,9 +31,9 @@ public class UserStateTest {
     userState = processingState.getUserState();
   }
 
-  @DisplayName("should return null if no user with given username exists")
+  @DisplayName("should return null if a user with the given username exists")
   @Test
-  void shouldReturnNullIfNoUserWithUsername() {
+  void shouldReturnNullIfNoUserWithUsernameExists() {
     // when
     final var persistedUser = userState.getUser("username" + UUID.randomUUID());
 
@@ -41,9 +41,9 @@ public class UserStateTest {
     assertThat(persistedUser).isNull();
   }
 
-  @DisplayName("should create user if no user with given username exists")
+  @DisplayName("should create user if no user with the given username exists")
   @Test
-  void shouldCreateIfUsernameDoesNotExist() {
+  void shouldCreateUserIfUsernameDoesNotExist() {
     // when
     final UserRecord user =
         new UserRecord()
@@ -58,13 +58,14 @@ public class UserStateTest {
     assertThat(persistedUser).isEqualTo(user);
   }
 
-  @DisplayName("should create user throws exception when username already exists")
+  @DisplayName("should throw an exception when creating a user with a username that already exists")
   @Test
-  void shouldThrowExceptionInCreateIfUsernameDoesNotExist() {
+  void shouldThrowExceptionIfUsernameAlreadyExists() {
+    final var username = "username" + UUID.randomUUID();
     // given
     final UserRecord user =
         new UserRecord()
-            .setUsername("username" + UUID.randomUUID())
+            .setUsername(username)
             .setName("U")
             .setPassword("P")
             .setEmail("email" + UUID.randomUUID());
@@ -72,6 +73,40 @@ public class UserStateTest {
 
     // when/then
     assertThatThrownBy(() -> userState.create(user))
-        .isInstanceOf(ZeebeDbInconsistentException.class);
+        .isInstanceOf(ZeebeDbInconsistentException.class)
+        .hasMessage("Key " + username + " in ColumnFamily USERS already exists");
+  }
+
+  @DisplayName("should return the correct user by username")
+  @Test
+  void shouldReturnCorrectUserByUsername() {
+    final var usernameOne = "username" + UUID.randomUUID();
+    // given
+    final UserRecord userOne =
+        new UserRecord()
+            .setUsername(usernameOne)
+            .setName("U")
+            .setPassword("P")
+            .setEmail("email" + UUID.randomUUID());
+    userState.create(userOne);
+
+    final var usernameTwo = "username" + UUID.randomUUID();
+    final UserRecord userTwo =
+        new UserRecord()
+            .setUsername(usernameTwo)
+            .setName("U")
+            .setPassword("P")
+            .setEmail("email" + UUID.randomUUID());
+    userState.create(userTwo);
+
+    // when
+    final var persistedUserOne = userState.getUser(usernameOne);
+    final var persistedUserTwo = userState.getUser(usernameTwo);
+
+    // then
+    assertThat(persistedUserOne).isNotEqualTo(persistedUserTwo);
+
+    assertThat(persistedUserOne.getUsername()).isEqualTo(usernameOne);
+    assertThat(persistedUserTwo.getUsername()).isEqualTo(usernameTwo);
   }
 }
