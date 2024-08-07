@@ -15,10 +15,10 @@
  */
 package io.camunda.zeebe.client.api.search;
 
-import io.camunda.zeebe.client.impl.search.DecisionRequirementsFilterImpl;
-import io.camunda.zeebe.client.impl.search.DecisionRequirementsSortImpl;
 import io.camunda.zeebe.client.impl.search.DecisionDefinitionFilterImpl;
 import io.camunda.zeebe.client.impl.search.DecisionDefinitionSortImpl;
+import io.camunda.zeebe.client.impl.search.DecisionRequirementsFilterImpl;
+import io.camunda.zeebe.client.impl.search.DecisionRequirementsSortImpl;
 import io.camunda.zeebe.client.impl.search.ProcessInstanceFilterImpl;
 import io.camunda.zeebe.client.impl.search.ProcessInstanceSortImpl;
 import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;

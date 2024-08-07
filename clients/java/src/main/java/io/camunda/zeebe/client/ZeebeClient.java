@@ -36,8 +36,8 @@ import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.search.DecisionRequirementsQuery;
 import io.camunda.zeebe.client.api.search.DecisionDefinitionQuery;
+import io.camunda.zeebe.client.api.search.DecisionRequirementsQuery;
 import io.camunda.zeebe.client.api.search.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.search.UserTaskQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
@@ -615,10 +615,10 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the decision requirements query
    */
-   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
-   DecisionRequirementsQuery newDecisionRequirementsQuery();
-   
-   /*
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+  DecisionRequirementsQuery newDecisionRequirementsQuery();
+
+  /*
    * Executes a search request to query decision definitions.
    *
    * <pre>
