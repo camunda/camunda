@@ -7,6 +7,9 @@
  */
 package io.camunda.process.generator;
 
+import io.camunda.process.generator.execution.ProcessExecutionStep;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -16,9 +19,14 @@ public class GeneratorContext {
   private final Random random;
   private final AtomicLong id = new AtomicLong(1);
   private int currentDepth = 1;
+  private final List<ProcessExecutionStep> executionPath = new ArrayList<>();
 
   public GeneratorContext(final Random random) {
     this.random = random;
+  }
+
+  public List<ProcessExecutionStep> getExecutionPath() {
+    return executionPath;
   }
 
   public String createNewId() {
@@ -39,5 +47,10 @@ public class GeneratorContext {
 
   public boolean shouldGoDeeper() {
     return currentDepth < MAXIMUM_DEPTH;
+  }
+
+  public GeneratorContext addExecutionStep(final ProcessExecutionStep executionStep) {
+    executionPath.add(executionStep);
+    return this;
   }
 }

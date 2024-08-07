@@ -7,13 +7,22 @@
  */
 package io.camunda.process.generator.event;
 
+import io.camunda.process.generator.GeneratorContext;
+import io.camunda.process.generator.execution.BroadcastSignalStep;
 import io.camunda.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
 
 public class SignalCatchEventGenerator implements BpmnCatchEventGenerator {
 
   @Override
   public void addEventDefinition(
-      final String elementId, final AbstractCatchEventBuilder<?, ?> catchEventBuilder) {
+      final String elementId,
+      final AbstractCatchEventBuilder<?, ?> catchEventBuilder,
+      final GeneratorContext generatorContext,
+      final boolean generateExecutionPath) {
     catchEventBuilder.signal("signal_" + elementId);
+
+    if (generateExecutionPath) {
+      generatorContext.addExecutionStep(new BroadcastSignalStep(elementId));
+    }
   }
 }

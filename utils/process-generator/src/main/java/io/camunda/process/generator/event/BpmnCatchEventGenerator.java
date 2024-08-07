@@ -7,10 +7,14 @@
  */
 package io.camunda.process.generator.event;
 
+import io.camunda.process.generator.GeneratorContext;
 import io.camunda.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
 
 public interface BpmnCatchEventGenerator {
 
   void addEventDefinition(
-      final String elementId, final AbstractCatchEventBuilder<?, ?> catchEventBuilder);
+      final String elementId,
+      final AbstractCatchEventBuilder<?, ?> catchEventBuilder,
+      final GeneratorContext generatorContext,
+      final boolean generateExecutionPath);
 }

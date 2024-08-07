@@ -26,14 +26,14 @@ public class BpmnElementSequenceGenerator implements BpmnTemplateGenerator {
 
   @Override
   public AbstractFlowNodeBuilder<?, ?> addElements(
-      final AbstractFlowNodeBuilder<?, ?> processBuilder) {
+      final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
     AbstractFlowNodeBuilder<?, ?> builder = processBuilder;
 
     final int elementLimit = 10;
 
     for (int i = 0; i < generatorContext.getRandomNumber(elementLimit); i++) {
       final BpmnElementGenerator elementGenerator = elementGeneratorFactory.getGenerator();
-      builder = elementGenerator.addElement(builder);
+      builder = elementGenerator.addElement(builder, generateExecutionPath);
     }
 
     return builder;

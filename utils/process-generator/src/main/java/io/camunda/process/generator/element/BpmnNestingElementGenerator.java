@@ -20,10 +20,10 @@ public abstract class BpmnNestingElementGenerator implements BpmnElementGenerato
 
   @Override
   public AbstractFlowNodeBuilder<?, ?> addElement(
-      final AbstractFlowNodeBuilder<?, ?> processBuilder) {
+      final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
     generatorContext.incrementCurrentDepth();
 
-    final var builder = addNestingElement(processBuilder);
+    final var builder = addNestingElement(processBuilder, generateExecutionPath);
 
     generatorContext.decrementCurrentDepth();
     return builder;
@@ -35,5 +35,5 @@ public abstract class BpmnNestingElementGenerator implements BpmnElementGenerato
   }
 
   abstract AbstractFlowNodeBuilder<?, ?> addNestingElement(
-      final AbstractFlowNodeBuilder<?, ?> processBuilder);
+      final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath);
 }

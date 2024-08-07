@@ -27,10 +27,11 @@ public class BpmnExclusiveGatewayGenerator implements BpmnTemplateGenerator {
 
   @Override
   public AbstractFlowNodeBuilder<?, ?> addElements(
-      final AbstractFlowNodeBuilder<?, ?> processBuilder) {
+      final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
 
     final var amountOfBranches =
         generatorContext.getRandomNumber(MAX_AMOUNT_OF_BRANCHES) + MIN_AMOUNT_OF_BRANCHES;
+    final var executionBranch = generatorContext.getRandomNumber(MAX_AMOUNT_OF_BRANCHES);
 
     final var forkingGatewayId = generatorContext.createNewId();
     final var joiningGatewayId = generatorContext.createNewId();
@@ -43,18 +44,23 @@ public class BpmnExclusiveGatewayGenerator implements BpmnTemplateGenerator {
             .addElements(
                 exclusiveGatewayBuilder
                     .defaultFlow()
-                    .sequenceFlowId(generatorContext.createNewId()))
+                    .sequenceFlowId(generatorContext.createNewId()),
+                executionBranch == 0 && generateExecutionPath)
             .sequenceFlowId(generatorContext.createNewId())
             .exclusiveGateway(joiningGatewayId);
 
     // Add other branches
-    for (int i = 0; i < amountOfBranches - 1; i++) {
+    for (int index = 1; index < amountOfBranches; index++) {
+      final var branchShouldGenerateExecutionPath =
+          executionBranch == index && generateExecutionPath;
       final AbstractFlowNodeBuilder<?, ?> branchBuilder =
           exclusiveGatewayBuilder
               .sequenceFlowId(generatorContext.createNewId())
-              .conditionExpression("false");
+              .conditionExpression(String.valueOf(branchShouldGenerateExecutionPath));
       // TODO generate more complex branches
-      elementSequenceGenerator.addElements(branchBuilder).connectTo(joiningGatewayId);
+      elementSequenceGenerator
+          .addElements(branchBuilder, branchShouldGenerateExecutionPath)
+          .connectTo(joiningGatewayId);
     }
 
     return joiningGatewayBuilder;

@@ -7,18 +7,27 @@
  */
 package io.camunda.process.generator.event;
 
+import io.camunda.process.generator.GeneratorContext;
+import io.camunda.process.generator.execution.PublishMessageStep;
 import io.camunda.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
 
 public class MessageCatchEventGenerator implements BpmnCatchEventGenerator {
 
   @Override
   public void addEventDefinition(
-      final String elementId, final AbstractCatchEventBuilder<?, ?> catchEventBuilder) {
+      final String elementId,
+      final AbstractCatchEventBuilder<?, ?> catchEventBuilder,
+      final GeneratorContext generatorContext,
+      final boolean generateExecutionPath) {
 
     catchEventBuilder.message(
         messageBuilder ->
             messageBuilder
                 .name("message_" + elementId)
                 .zeebeCorrelationKeyExpression("message_" + elementId));
+
+    if (generateExecutionPath) {
+      generatorContext.addExecutionStep(new PublishMessageStep(elementId));
+    }
   }
 }

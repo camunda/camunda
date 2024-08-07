@@ -8,6 +8,7 @@
 package io.camunda.process.generator.element;
 
 import io.camunda.process.generator.GeneratorContext;
+import io.camunda.process.generator.execution.CompleteJobStep;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 
@@ -21,12 +22,16 @@ public class ServiceTaskGenerator implements BpmnElementGenerator {
 
   @Override
   public AbstractFlowNodeBuilder<?, ?> addElement(
-      final AbstractFlowNodeBuilder<?, ?> processBuilder) {
+      final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
     final String elementId = generatorContext.createNewId();
     final String jobType = "task_" + elementId;
 
     final ServiceTaskBuilder serviceTaskBuilder = processBuilder.serviceTask();
     serviceTaskBuilder.id(elementId).name(elementId).zeebeJobType(jobType);
+
+    if (generateExecutionPath) {
+      generatorContext.addExecutionStep(new CompleteJobStep(elementId, jobType));
+    }
 
     return serviceTaskBuilder;
   }
