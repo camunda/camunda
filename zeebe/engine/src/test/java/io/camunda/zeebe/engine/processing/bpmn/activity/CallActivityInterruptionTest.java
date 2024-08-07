@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
 import static io.camunda.zeebe.protocol.record.RecordType.COMMAND;
+import static io.camunda.zeebe.protocol.record.RecordType.COMMAND_REJECTION;
 import static io.camunda.zeebe.protocol.record.RecordType.EVENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -110,6 +111,8 @@ public class CallActivityInterruptionTest {
         .containsSubsequence(
             tuple(COMMAND, BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple(EVENT, BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(
+                COMMAND_REJECTION, BpmnElementType.PROCESS, ProcessInstanceIntent.COMPLETE_ELEMENT),
             tuple(EVENT, BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(EVENT, BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(EVENT, BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATED),
