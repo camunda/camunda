@@ -86,10 +86,6 @@
           <ignoredNonTestScopedDependencies>
             <ignoredNonTestScopedDependency>com.fasterxml.jackson.core:jackson-core</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
-          <ignoredUnusedDeclaredDependencies>
-            <ignoredUnusedDeclaredDependency>io.camunda:zeebe-protocol-test-util</ignoredUnusedDeclaredDependency>
-            <ignoredUnusedDeclaredDependency>io.camunda:zeebe-protocol-asserts</ignoredUnusedDeclaredDependency>
-          </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
     </plugins>
