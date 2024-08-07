@@ -15,19 +15,21 @@
  */
 package io.camunda.process.generator;
 
-import io.camunda.process.generator.element.BpmnElementGeneratorFactory;
 import io.camunda.process.generator.template.BpmnTemplateGenerator;
 import io.camunda.process.generator.template.BpmnTemplateGeneratorFactory;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
+import io.camunda.zeebe.model.bpmn.instance.Definitions;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class ProcessGenerator {
 
-  private final BpmnElementGeneratorFactory elementGeneratorFactory;
-  private final BpmnTemplateGeneratorFactory templateGeneratorFactory;
+  public static final String CAMUNDA_VERSION = "8.5.0";
+
+  private final BpmnFactories factories;
 
   public ProcessGenerator() {
     this(ThreadLocalRandom.current().nextLong());
@@ -35,20 +37,32 @@ public class ProcessGenerator {
 
   public ProcessGenerator(final long seed) {
     final Random random = new Random(seed);
-    final var generatorContent = new GeneratorContext(random);
+    final var generatorContext = new GeneratorContext(random);
 
-    elementGeneratorFactory = new BpmnElementGeneratorFactory(generatorContent);
-    templateGeneratorFactory =
-        new BpmnTemplateGeneratorFactory(generatorContent, elementGeneratorFactory);
+    factories = new BpmnFactories(generatorContext);
   }
 
   public BpmnModelInstance generateProcess() {
     AbstractFlowNodeBuilder<?, ?> processBuilder =
         Bpmn.createExecutableProcess("process").startEvent();
 
-    final BpmnTemplateGenerator templateGenerator = templateGeneratorFactory.getGenerator();
-    processBuilder = templateGenerator.addElements(processBuilder);
+    final BpmnTemplateGeneratorFactory templateGeneratorFactory =
+        factories.getTemplateGeneratorFactory();
 
-    return processBuilder.endEvent().done();
+    final var templateLimit = 3;
+    for (int i = 0; i < templateLimit; i++) {
+      final BpmnTemplateGenerator templateGenerator = templateGeneratorFactory.getGenerator();
+      processBuilder = templateGenerator.addElements(processBuilder);
+    }
+
+    final BpmnModelInstance process = processBuilder.endEvent().done();
+
+    // modify the version so I can open the process in the Camunda Modeler
+    final Definitions definitions = process.getDefinitions();
+    definitions.setExporterVersion(CAMUNDA_VERSION);
+    definitions.setAttributeValueNs(
+        BpmnModelConstants.MODELER_NS, "executionPlatformVersion", CAMUNDA_VERSION);
+
+    return process;
   }
 }

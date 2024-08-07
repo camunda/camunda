@@ -29,7 +29,9 @@ public class BpmnElementSequenceGenerator implements BpmnTemplateGenerator {
       final AbstractFlowNodeBuilder<?, ?> processBuilder) {
     AbstractFlowNodeBuilder<?, ?> builder = processBuilder;
 
-    for (int i = 0; i < generatorContext.getRandomNumber(5); i++) {
+    final int elementLimit = 10;
+
+    for (int i = 0; i < generatorContext.getRandomNumber(elementLimit); i++) {
       final BpmnElementGenerator elementGenerator = elementGeneratorFactory.getGenerator();
       builder = elementGenerator.addElement(builder);
     }

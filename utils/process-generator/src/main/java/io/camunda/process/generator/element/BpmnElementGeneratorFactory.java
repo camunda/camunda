@@ -11,13 +11,23 @@ import io.camunda.process.generator.GeneratorContext;
 
 public class BpmnElementGeneratorFactory {
 
-  private final ServiceTaskGenerator serviceTaskGenerator;
+  private final GeneratorContext generatorContext;
+  private final List<BpmnElementGenerator> bpmnElementGenerators;
 
-  public BpmnElementGeneratorFactory(final GeneratorContext generatorContext) {
-    serviceTaskGenerator = new ServiceTaskGenerator(generatorContext);
+  public BpmnElementGeneratorFactory(
+      final GeneratorContext generatorContext,
+      final BpmnCatchEventGeneratorFactory catchEventGeneratorFactory) {
+    this.generatorContext = generatorContext;
+    bpmnElementGenerators =
+        List.of(
+            new ServiceTaskGenerator(generatorContext),
+            new UserTaskGenerator(generatorContext),
+            new UndefinedTaskGenerator(generatorContext),
+            new IntermediateCatchEventGenerator(generatorContext, catchEventGeneratorFactory));
   }
 
   public BpmnElementGenerator getGenerator() {
-    return serviceTaskGenerator;
+    final var randomIndex = generatorContext.getRandomNumber(bpmnElementGenerators.size());
+    return bpmnElementGenerators.get(randomIndex);
   }
 }
