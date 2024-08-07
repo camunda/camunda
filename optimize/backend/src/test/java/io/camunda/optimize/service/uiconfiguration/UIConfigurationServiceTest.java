@@ -23,7 +23,7 @@ import io.camunda.optimize.rest.cloud.CloudSaasMetaInfoService;
 import io.camunda.optimize.service.SettingsService;
 import io.camunda.optimize.service.UIConfigurationService;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import io.camunda.optimize.service.metadata.PlatformOptimizeVersionService;
+import io.camunda.optimize.service.metadata.OptimizeVersionService;
 import io.camunda.optimize.service.tenant.TenantService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
@@ -53,7 +53,7 @@ public class UIConfigurationServiceTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private ConfigurationService configurationService;
 
-  @Mock private PlatformOptimizeVersionService versionService;
+  @Mock private OptimizeVersionService versionService;
   @Mock private TenantService tenantService;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
