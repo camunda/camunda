@@ -12,6 +12,7 @@ import static io.camunda.zeebe.scheduler.clock.ActorClock.currentTimeMillis;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.DeadlineIndex;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
@@ -46,7 +47,9 @@ final class JobTimeoutChecker implements Task {
 
   public void schedule(final Duration idleInterval) {
     if (shouldReschedule) {
-      processingContext.getScheduleService().runDelayed(idleInterval, this);
+      processingContext
+          .getScheduleService()
+          .runAt(ActorClock.currentTimeMillis() + idleInterval.toMillis(), this);
     }
   }
 

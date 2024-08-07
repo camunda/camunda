@@ -100,6 +100,22 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   }
 
   @Override
+  public ScheduledTask runAt(final long timestamp, final Runnable task) {
+    if (alwaysAsync) {
+      final var futureScheduledTask = concurrencyControl.<ScheduledTask>createFuture();
+      concurrencyControl.run(
+          () -> {
+            // we must run in different actor in order to schedule task
+            final var scheduledTask = asyncActorService.runAt(timestamp, task);
+            futureScheduledTask.complete(scheduledTask);
+          });
+      return new AsyncScheduledTask(futureScheduledTask);
+    } else {
+      return processorActorService.runAt(timestamp, task);
+    }
+  }
+
+  @Override
   public void runAtFixedRate(final Duration delay, final Task task) {
     if (alwaysAsync) {
       runAtFixedRateAsync(delay, task);
