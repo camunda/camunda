@@ -23,7 +23,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * {@link LoggedEvent} which fits exactly within the block.
  */
 @NotThreadSafe
-final class LogStreamReaderImpl implements LogStreamReader {
+public final class LogStreamReaderImpl implements LogStreamReader {
   private final LogStorageReader reader;
 
   private LoggedEventImpl currentEvent;
@@ -34,7 +34,7 @@ final class LogStreamReaderImpl implements LogStreamReader {
 
   private int nextEventOffset;
 
-  LogStreamReaderImpl(final LogStorageReader reader) {
+  public LogStreamReaderImpl(final LogStorageReader reader) {
     this.reader = reader;
 
     reset();
