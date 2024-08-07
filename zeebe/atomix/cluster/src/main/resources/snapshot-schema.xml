@@ -18,6 +18,7 @@
   <sbe:message name="SnapshotChunk" id="4">
     <field name="totalCount" id="0" type="int32"/>
     <field name="checksum" id="1" type="uint64"/>
+    <!-- snapshotChecksum is deprecated and not used anymore, here for backwards compatibility  -->
     <field name="snapshotChecksum" id="5" type="uint64" sinceVersion="2"/>
     <field name="fileBlockPosition" id="6" type="uint64" sinceVersion="3"/>
     <field name="totalFileSize" id="7" type="uint64" sinceVersion="3"/>

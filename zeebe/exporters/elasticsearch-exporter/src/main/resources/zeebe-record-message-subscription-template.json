@@ -48,12 +48,6 @@
             },
             "tenantId": {
               "type": "keyword"
-            },
-            "requestId": {
-              "type": "long"
-            },
-            "requestStreamId": {
-              "type": "integer"
             }
           }
         }

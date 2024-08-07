@@ -135,10 +135,9 @@ public final class STracer implements AutoCloseable {
     }
   }
 
-  public record FSyncTrace(int pid, int fd, Path path, int result) {
+  public record FSyncTrace(int pid, int fd, Path path) {
     private static final Pattern FSYNC_CALL =
-        Pattern.compile(
-            "^(?<pid>[0-9]+)\\s+fsync\\((?<fd>[0-9]+)<(?<path>.+?)>\\)\\s+=\\s+(?<result>[0-9]+)$");
+        Pattern.compile("^(?<pid>[0-9]+)\\s+fsync\\((?<fd>[0-9]+)<(?<path>.+?)>.+$");
 
     public static FSyncTrace of(final String straceLine) {
       final var matcher = FSYNC_CALL.matcher(straceLine);
@@ -151,9 +150,8 @@ public final class STracer implements AutoCloseable {
       final var pid = Integer.parseInt(matcher.group("pid"));
       final var fd = Integer.parseInt(matcher.group("fd"));
       final var path = Path.of(matcher.group("path"));
-      final var result = Integer.parseInt(matcher.group("result"));
 
-      return new FSyncTrace(pid, fd, path, result);
+      return new FSyncTrace(pid, fd, path);
     }
   }
 

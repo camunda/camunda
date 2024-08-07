@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
+import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
@@ -19,8 +20,10 @@ import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
@@ -122,6 +125,25 @@ public class RequestMapper {
                 getMapOrEmpty(errorRequest, JobErrorRequest::getVariables)));
   }
 
+  public static CompleteJobRequest toJobCompletionRequest(
+      final JobCompletionRequest completionRequest, final long jobKey) {
+
+    return new CompleteJobRequest(
+        jobKey, getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables));
+  }
+
+  public static Either<ProblemDetail, UpdateJobRequest> toJobUpdateRequest(
+      final JobUpdateRequest updateRequest, final long jobKey) {
+    final var validationJobUpdateResponse = validateJobUpdateRequest(updateRequest);
+    return getResult(
+        validationJobUpdateResponse,
+        () ->
+            new UpdateJobRequest(
+                jobKey,
+                getIntOrZero(updateRequest, r -> updateRequest.getChangeset().getRetries()),
+                getLongOrZero(updateRequest, r -> updateRequest.getChangeset().getTimeout())));
+  }
+
   public static CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
       final Supplier<CompletableFuture<?>> method, final Supplier<ResponseEntity<Object>> result) {
     return method
@@ -180,8 +202,8 @@ public class RequestMapper {
   }
 
   private static <R> Map<String, Object> getMapOrEmpty(
-      final R request, final Function<R, Map<String, Object>> variablesExtractor) {
-    return request == null ? Map.of() : variablesExtractor.apply(request);
+      final R request, final Function<R, Map<String, Object>> mapExtractor) {
+    return request == null ? Map.of() : mapExtractor.apply(request);
   }
 
   private static <R> String getStringOrEmpty(
@@ -223,4 +245,8 @@ public class RequestMapper {
 
   public record ErrorJobRequest(
       long jobKey, String errorCode, String errorMessage, Map<String, Object> variables) {}
+
+  public record CompleteJobRequest(long jobKey, Map<String, Object> variables) {}
+
+  public record UpdateJobRequest(long jobKey, Integer retries, Long timeout) {}
 }

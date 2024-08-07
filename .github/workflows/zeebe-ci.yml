@@ -600,7 +600,16 @@ jobs:
       - go-apidiff
       - docker-checks
     steps:
+      - uses: actions/checkout@v4
+      - name: Check for aborted jobs
+        continue-on-error: true
+        uses: ./.github/actions/observe-aborted-jobs
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
+
   deploy-snapshots:
     name: Deploy snapshot artifacts
     needs: [ test-summary ]
@@ -622,7 +631,7 @@ jobs:
           secrets: |
             secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
             secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
-      - uses: actions/setup-java@v4.2.1
+      - uses: actions/setup-java@v4.2.2
         with:
           distribution: 'temurin'
           java-version: '21'

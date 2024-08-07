@@ -290,4 +290,237 @@ public class JobControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody);
   }
+
+  @Test
+  void shouldCompleteJob() {
+    // given
+    when(jobServices.completeJob(anyLong(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(jobServices).completeJob(1L, Map.of());
+  }
+
+  @Test
+  void shouldCompleteJobWithVariables() {
+    // given
+    when(jobServices.completeJob(anyLong(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+        {
+          "variables": {
+            "foo": "bar"
+          }
+        }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(jobServices).completeJob(1L, Map.of("foo", "bar"));
+  }
+
+  @Test
+  void shouldUpdateJob() {
+    // given
+    when(jobServices.updateJob(anyLong(), anyInt(), anyLong()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+        {
+          "changeset": {
+            "retries": 5,
+            "timeout": 1000
+          }
+        }""";
+    // when/then
+    webClient
+        .patch()
+        .uri(JOBS_BASE_URL + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(jobServices).updateJob(1L, 5, 1000L);
+  }
+
+  @Test
+  void shouldUpdateJobWithOnlyRetries() {
+    // given
+    when(jobServices.updateJob(anyLong(), anyInt(), anyLong()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+        {
+          "changeset": {
+            "retries": 5
+          }
+        }""";
+    // when/then
+    webClient
+        .patch()
+        .uri(JOBS_BASE_URL + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(jobServices).updateJob(1L, 5, 0L);
+  }
+
+  @Test
+  void shouldUpdateJobWithOnlyTimeout() {
+    // given
+    when(jobServices.updateJob(anyLong(), anyInt(), anyLong()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+        {
+          "changeset": {
+            "timeout": 1000
+          }
+        }""";
+    // when/then
+    webClient
+        .patch()
+        .uri(JOBS_BASE_URL + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(jobServices).updateJob(1L, 0, 1000L);
+  }
+
+  @Test
+  void shouldRejectUpdateJob() {
+    // given
+    final var request =
+        """
+        {
+          "changeset": {}
+        }""";
+
+    final var expectedBody =
+        """
+        {
+          "type": "about:blank",
+          "status": 400,
+          "title": "INVALID_ARGUMENT",
+          "detail": "At least one of [retries, timeout] is required.",
+          "instance": "%s"
+        }"""
+            .formatted(JOBS_BASE_URL + "/1");
+
+    // when/then
+    webClient
+        .patch()
+        .uri(JOBS_BASE_URL + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  @Test
+  void shouldRejectUpdateJobWithValues0() {
+    // given
+    final var request =
+        """
+        {
+          "changeset": {
+            "retries": 0,
+            "timeout": 0
+          }
+        }""";
+
+    final var expectedBody =
+        """
+        {
+          "type": "about:blank",
+          "status": 400,
+          "title": "INVALID_ARGUMENT",
+          "detail": "The value for retries is '0' but must be greater than 0. The value for timeout is '0' but must be greater than 0.",
+          "instance": "%s"
+        }"""
+            .formatted(JOBS_BASE_URL + "/1");
+
+    // when/then
+    webClient
+        .patch()
+        .uri(JOBS_BASE_URL + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
+
+  @Test
+  void shouldRejectUpdateJobNoBody() {
+    // given
+    final var expectedBody =
+        """
+        {
+          "type": "about:blank",
+          "status": 400,
+          "title": "Bad Request",
+          "detail": "Required request body is missing",
+          "instance": "%s"
+        }"""
+            .formatted(JOBS_BASE_URL + "/1");
+
+    // when/then
+    webClient
+        .patch()
+        .uri(JOBS_BASE_URL + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+  }
 }

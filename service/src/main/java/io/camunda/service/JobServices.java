@@ -12,8 +12,10 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.ResponseObserver;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -87,6 +89,16 @@ public final class JobServices<T> extends ApiServices<JobServices<T>> {
             .setErrorMessage(errorMessage)
             .setVariables(getDocumentOrEmpty(variables));
     return sendBrokerRequest(request);
+  }
+
+  public CompletableFuture<JobRecord> completeJob(
+      final long jobKey, final Map<String, Object> variables) {
+    return sendBrokerRequest(new BrokerCompleteJobRequest(jobKey, getDocumentOrEmpty(variables)));
+  }
+
+  public CompletableFuture<JobRecord> updateJob(
+      final long jobKey, final Integer retries, final Long timeout) {
+    return sendBrokerRequest(new BrokerUpdateJobRequest(jobKey, retries, timeout));
   }
 
   public record ActivateJobsRequest(

@@ -30,23 +30,19 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
   private long offset;
   private NavigableSet<CharSequence> chunksView;
   private final int totalCount;
-  private final long snapshotChecksum;
   private final String snapshotID;
   private long maximumChunkSize;
 
-  public FileBasedSnapshotChunkReader(final Path directory, final long checksum)
-      throws IOException {
-    this(directory, checksum, Long.MAX_VALUE);
+  public FileBasedSnapshotChunkReader(final Path directory) throws IOException {
+    this(directory, Long.MAX_VALUE);
   }
 
-  FileBasedSnapshotChunkReader(
-      final Path directory, final long checksum, final long maximumChunkSize) throws IOException {
+  FileBasedSnapshotChunkReader(final Path directory, final long maximumChunkSize)
+      throws IOException {
     this.directory = directory;
     chunks = collectChunks(directory);
     totalCount = chunks.size();
     chunksView = new TreeSet<>(chunks);
-
-    snapshotChecksum = checksum;
 
     snapshotID = directory.getFileName().toString();
 
@@ -124,13 +120,7 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
       }
 
       return SnapshotChunkUtil.createSnapshotChunkFromFileChunk(
-          snapshotID,
-          totalCount,
-          snapshotChecksum,
-          fileName,
-          buffer,
-          fileBlockPosition,
-          fileLength);
+          snapshotID, totalCount, fileName, buffer, fileBlockPosition, fileLength);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }

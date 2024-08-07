@@ -10,11 +10,14 @@ package io.camunda.zeebe.gateway.rest;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.service.entities.DecisionDefinitionEntity;
+import io.camunda.service.entities.DecisionRequirementsEntity;
 import io.camunda.service.entities.ProcessInstanceEntity;
 import io.camunda.service.entities.UserTaskEntity;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsItem;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
@@ -47,6 +50,17 @@ public final class SearchQueryResponseMapper {
         .items(
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toDecisionDefinitions)
+                .orElseGet(Collections::emptyList));
+  }
+
+  public static DecisionRequirementsSearchQueryResponse toDecisionRequirementsSearchQueryResponse(
+      final SearchQueryResult<DecisionRequirementsEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new DecisionRequirementsSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toDecisionRequirements)
                 .orElseGet(Collections::emptyList));
   }
 
@@ -91,18 +105,31 @@ public final class SearchQueryResponseMapper {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionDefinition).toList();
   }
 
+  private static List<DecisionRequirementsItem> toDecisionRequirements(
+      final List<DecisionRequirementsEntity> instances) {
+    return instances.stream().map(SearchQueryResponseMapper::toDecisionRequirements).toList();
+  }
+
   private static DecisionDefinitionItem toDecisionDefinition(final DecisionDefinitionEntity d) {
     return new DecisionDefinitionItem()
         .tenantId(d.tenantId())
-        .key(d.key())
-        .id(d.id())
-        .name(d.name())
+        .decisionKey(d.key())
+        .dmnDecisionName(d.name())
         .version(d.version())
-        .decisionId(d.decisionId())
+        .dmnDecisionId(d.decisionId())
         .decisionRequirementsKey(d.decisionRequirementsKey())
-        .decisionRequirementsId(d.decisionRequirementsId())
-        .decisionRequirementsName(d.decisionRequirementsName())
-        .decisionRequirementsVersion(d.decisionRequirementsVersion());
+        .dmnDecisionRequirementsId(d.decisionRequirementsId());
+  }
+
+  private static DecisionRequirementsItem toDecisionRequirements(
+      final DecisionRequirementsEntity d) {
+    return new DecisionRequirementsItem()
+        .tenantId(d.tenantId())
+        .decisionRequirementsKey(d.key())
+        .dmnDecisionRequirementsName(d.name())
+        .version(d.version())
+        .resourceName(d.resourceName())
+        .dmnDecisionRequirementsId(d.decisionRequirementsId());
   }
 
   private static List<UserTaskItem> toUserTasks(final List<UserTaskEntity> tasks) {

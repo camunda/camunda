@@ -17,10 +17,13 @@ package io.camunda.zeebe.exporter.api.context;
 
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 
 /** Encapsulates context associated with the exporter on open. */
 public interface Context {
+
+  MeterRegistry getMeterRegistry();
 
   /**
    * @return pre-configured logger for this exporter

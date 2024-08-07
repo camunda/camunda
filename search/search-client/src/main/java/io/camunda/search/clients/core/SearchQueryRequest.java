@@ -19,6 +19,7 @@ import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.clients.source.SourceConfigBuilders;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 public record SearchQueryRequest(
@@ -104,7 +105,15 @@ public record SearchQueryRequest(
 
     @Override
     public SearchQueryRequest build() {
-      return new SearchQueryRequest(index, query, sort, searchAfter, from, size, source);
+      return new SearchQueryRequest(
+          Objects.requireNonNull(
+              index, "Expected to create request for index, but given index was null."),
+          query,
+          sort,
+          searchAfter,
+          from,
+          size,
+          source);
     }
   }
 }

@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.MessageCorrelationState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.MessageSubscription;
@@ -33,6 +34,7 @@ public final class MessageSubscriptionCorrelateProcessor
           + "but no such message subscription exists";
 
   private final MessageSubscriptionState subscriptionState;
+  private final MessageCorrelationState messageCorrelationState;
   private final MessageCorrelator messageCorrelator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -41,10 +43,12 @@ public final class MessageSubscriptionCorrelateProcessor
   public MessageSubscriptionCorrelateProcessor(
       final int partitionId,
       final MessageState messageState,
+      final MessageCorrelationState messageCorrelationState,
       final MessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender,
       final Writers writers) {
     this.subscriptionState = subscriptionState;
+    this.messageCorrelationState = messageCorrelationState;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
@@ -78,24 +82,27 @@ public final class MessageSubscriptionCorrelateProcessor
   private void writeCorrelationResponse(
       final TypedRecord<MessageSubscriptionRecord> record,
       final MessageSubscriptionRecord messageSubscription) {
-    if (messageSubscription.hasRequestData()) {
+    final var messageKey = messageSubscription.getMessageKey();
+    if (messageCorrelationState.existsRequestDataForMessageKey(messageKey)) {
+      final var requestData = messageCorrelationState.getRequestData(messageKey);
       final var messageCorrelationRecord =
           new MessageCorrelationRecord()
               .setName(messageSubscription.getMessageName())
               .setCorrelationKey(messageSubscription.getCorrelationKey())
               .setVariables(messageSubscription.getVariablesBuffer())
               .setTenantId(messageSubscription.getTenantId())
+              .setMessageKey(messageKey)
               .setProcessInstanceKey(messageSubscription.getProcessInstanceKey());
 
       stateWriter.appendFollowUpEvent(
-          record.getKey(), MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);
+          messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);
       responseWriter.writeResponse(
           record.getValue().getMessageKey(),
           MessageCorrelationIntent.CORRELATED,
           messageCorrelationRecord,
           ValueType.MESSAGE_CORRELATION,
-          messageSubscription.getRequestId(),
-          messageSubscription.getRequestStreamId());
+          requestData.getRequestId(),
+          requestData.getRequestStreamId());
     }
   }
 

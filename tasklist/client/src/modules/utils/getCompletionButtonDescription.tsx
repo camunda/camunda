@@ -7,18 +7,19 @@
  */
 
 import {InlineLoadingStatus} from '@carbon/react';
+import {t} from 'i18next';
 
 function getCompletionButtonDescription(status: InlineLoadingStatus) {
   if (status === 'active') {
-    return 'Completing task...';
+    return t('taskDetailsCompletingTaskMessage');
   }
 
   if (status === 'error') {
-    return 'Completion failed';
+    return t('taskDetailsCompletionFailedMessage');
   }
 
   if (status === 'finished') {
-    return 'Completed';
+    return t('taskDetailsCompletedTaskMessage');
   }
 
   return undefined;

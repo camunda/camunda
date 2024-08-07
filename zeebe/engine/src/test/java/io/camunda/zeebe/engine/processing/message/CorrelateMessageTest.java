@@ -58,6 +58,7 @@ public final class CorrelateMessageTest {
         .containsExactly(
             MessageCorrelationIntent.CORRELATE,
             MessageIntent.PUBLISHED,
+            MessageCorrelationIntent.CORRELATING,
             MessageCorrelationIntent.NOT_CORRELATED,
             MessageIntent.EXPIRED);
   }
@@ -90,6 +91,7 @@ public final class CorrelateMessageTest {
             MessageStartEventSubscriptionIntent.CREATED,
             MessageCorrelationIntent.CORRELATE,
             MessageIntent.PUBLISHED,
+            MessageCorrelationIntent.CORRELATING,
             MessageStartEventSubscriptionIntent.CORRELATED,
             MessageCorrelationIntent.CORRELATED,
             MessageIntent.EXPIRED);

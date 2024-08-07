@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.BusinessRuleTaskBuilder;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
@@ -107,6 +108,44 @@ public class BusinessRuleTaskIncidentTest {
             Expected to evaluate decision 'unknown_decision_id', \
             but no decision found for id 'unknown_decision_id'\
             """);
+  }
+
+  @Test
+  public void shouldCreateIncidentIfDecisionNotDeployedInSameDeploymentForBindingTypeDeployment() {
+    // given
+    engine.deployment().withXmlClasspathResource(DMN_RESOURCE).deploy();
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                processWithBusinessRuleTask(
+                    b ->
+                        b.zeebeCalledDecisionId(DECISION_ID)
+                            .zeebeBindingType(ZeebeBindingType.deployment)
+                            .zeebeResultVariable(RESULT_VARIABLE)))
+            .deploy();
+
+    // when
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var taskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, taskActivating.getKey())
+        .hasErrorType(ErrorType.CALLED_DECISION_ERROR)
+        .hasErrorMessage(
+            """
+            Expected to evaluate decision '%s' with binding type 'deployment', \
+            but no such decision found in the deployment with key %s which contained the current process. \
+            To resolve this incident, migrate the process instance to a process definition \
+            that is deployed together with the intended decision to evaluate.\
+            """
+                .formatted(DECISION_ID, deployment.getKey()));
   }
 
   @Test
