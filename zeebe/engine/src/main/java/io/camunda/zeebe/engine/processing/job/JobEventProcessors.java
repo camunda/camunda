@@ -79,15 +79,15 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB,
             JobIntent.UPDATE_RETRIES,
-            new JobUpdateRetriesProcessor(bpmnBehaviors.jobUpdateBehaviour()))
+            new JobUpdateRetriesProcessor(bpmnBehaviors.jobUpdateBehaviour(), writers))
         .onCommand(
             ValueType.JOB,
             JobIntent.UPDATE_TIMEOUT,
-            new JobUpdateTimeoutProcessor(bpmnBehaviors.jobUpdateBehaviour()))
+            new JobUpdateTimeoutProcessor(bpmnBehaviors.jobUpdateBehaviour(), writers))
         .onCommand(
             ValueType.JOB,
             JobIntent.UPDATE,
-            new JobUpdateProcessor(bpmnBehaviors.jobUpdateBehaviour()))
+            new JobUpdateProcessor(bpmnBehaviors.jobUpdateBehaviour(), writers))
         .onCommand(
             ValueType.JOB, JobIntent.CANCEL, new JobCancelProcessor(processingState, jobMetrics))
         .onCommand(

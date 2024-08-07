@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.job.behaviour;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -17,6 +16,8 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.Either;
+import java.util.Optional;
 
 public class JobUpdateBehaviour {
 
@@ -31,111 +32,47 @@ public class JobUpdateBehaviour {
   private final JobState jobState;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
-  private final TypedResponseWriter responseWriter;
 
   public JobUpdateBehaviour(final JobState jobState, final Writers writers) {
     this.jobState = jobState;
     stateWriter = writers.state();
-    responseWriter = writers.response();
     rejectionWriter = writers.rejection();
   }
 
-  private JobRecord getJobOrAppendRejection(
-      final long jobKey, final TypedRecord<JobRecord> command) {
+  public Either<String, JobRecord> getJob(final long jobKey, final TypedRecord<JobRecord> command) {
     final var job = jobState.getJob(jobKey, command.getAuthorizations());
 
     if (job != null) {
-      return job;
+      return Either.right(job);
     }
     rejectionWriter.appendRejection(
         command, RejectionType.NOT_FOUND, NO_JOB_FOUND_MESSAGE.formatted(jobKey));
-    responseWriter.writeRejectionOnCommand(
-        command, RejectionType.NOT_FOUND, NO_JOB_FOUND_MESSAGE.formatted(jobKey));
-    return null;
+    return Either.left(NO_JOB_FOUND_MESSAGE.formatted(jobKey));
   }
 
-  private void updateJobRetries(
+  public Optional<String> updateJobRetries(
       final long jobKey, final JobRecord jobRecord, final TypedRecord<JobRecord> command) {
     final int retries = command.getValue().getRetries();
     if (retries < 1) {
-      rejectionWriter.appendRejection(
-          command,
-          RejectionType.INVALID_ARGUMENT,
-          String.format(NEGATIVE_RETRIES_MESSAGE, jobKey, retries));
-      responseWriter.writeRejectionOnCommand(
-          command,
-          RejectionType.INVALID_ARGUMENT,
-          String.format(NEGATIVE_RETRIES_MESSAGE, jobKey, retries));
-      return;
+      return Optional.of(NEGATIVE_RETRIES_MESSAGE.formatted(jobKey, retries));
     }
     // update retries for response sent to client
     jobRecord.setRetries(retries);
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.RETRIES_UPDATED, jobRecord);
+    return Optional.empty();
   }
 
-  public void writeUpdateJobRetriesResponse(
-      final long jobKey, final JobRecord jobRecord, final TypedRecord<JobRecord> command) {
-    responseWriter.writeEventOnCommand(jobKey, JobIntent.RETRIES_UPDATED, jobRecord, command);
-  }
-
-  private void updateJobTimeout(
+  public Optional<String> updateJobTimeout(
       final long jobKey, final JobRecord jobRecord, final TypedRecord<JobRecord> command) {
     final long oldDeadline = jobRecord.getDeadline();
 
     if (!jobState.jobDeadlineExists(jobKey, oldDeadline)) {
-      rejectionWriter.appendRejection(
-          command, RejectionType.INVALID_STATE, NO_DEADLINE_FOUND_MESSAGE.formatted(jobKey));
-      responseWriter.writeRejectionOnCommand(
-          command, RejectionType.INVALID_STATE, NO_DEADLINE_FOUND_MESSAGE.formatted(jobKey));
-      return;
+      return Optional.of(NO_DEADLINE_FOUND_MESSAGE.formatted(jobKey));
     }
     final long timeout = command.getValue().getTimeout();
     final long newDeadline = ActorClock.currentTimeMillis() + timeout;
     jobRecord.setDeadline(newDeadline);
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMEOUT_UPDATED, jobRecord);
-  }
-
-  private void writeUpdateJobTimeoutResponse(
-      final long jobKey, final JobRecord jobRecord, final TypedRecord<JobRecord> command) {
-    responseWriter.writeEventOnCommand(jobKey, JobIntent.TIMEOUT_UPDATED, jobRecord, command);
-  }
-
-  public void completeJobUpdate(final TypedRecord<JobRecord> command) {
-    final long jobKey = command.getKey();
-    final var jobRecord = getJobOrAppendRejection(jobKey, command);
-    if (jobRecord == null) {
-      return;
-    }
-    // update retries
-    updateJobRetries(jobKey, jobRecord, command);
-    // update timeout
-    final long timeout = command.getValue().getTimeout();
-    if (timeout > -1L) {
-      updateJobTimeout(jobKey, jobRecord, command);
-    }
-    stateWriter.appendFollowUpEvent(jobKey, JobIntent.UPDATED, jobRecord);
-    responseWriter.writeEventOnCommand(jobKey, JobIntent.UPDATED, jobRecord, command);
-  }
-
-  public void completeJobUpdateRetries(final TypedRecord<JobRecord> command) {
-    final long jobKey = command.getKey();
-
-    final var jobRecord = getJobOrAppendRejection(jobKey, command);
-    if (jobRecord == null) {
-      return;
-    }
-    updateJobRetries(jobKey, jobRecord, command);
-    writeUpdateJobRetriesResponse(jobKey, jobRecord, command);
-  }
-
-  public void completeJobUpdateTimeout(final TypedRecord<JobRecord> command) {
-    final long jobKey = command.getKey();
-
-    final var jobRecord = getJobOrAppendRejection(jobKey, command);
-    if (jobRecord == null) {
-      return;
-    }
-    updateJobTimeout(jobKey, jobRecord, command);
-    writeUpdateJobTimeoutResponse(jobKey, jobRecord, command);
+    return Optional.empty();
   }
 }
