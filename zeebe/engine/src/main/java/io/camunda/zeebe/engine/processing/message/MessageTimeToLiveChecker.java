@@ -107,10 +107,11 @@ public final class MessageTimeToLiveChecker implements Task {
   }
 
   private void reschedule(final Duration idleInterval) {
+    final var timestamp = ActorClock.currentTimeMillis() + idleInterval.toMillis();
     if (enableMessageTtlCheckerAsync) {
-      scheduleService.runDelayedAsync(idleInterval, this);
+      scheduleService.runAtAsync(timestamp, this);
     } else {
-      scheduleService.runDelayed(idleInterval, this);
+      scheduleService.runAt(timestamp, this);
     }
   }
 }
