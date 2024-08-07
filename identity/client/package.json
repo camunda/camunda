@@ -44,7 +44,7 @@
     "prettier": "3.3.3",
     "sass": "1.77.8",
     "typescript": "5.5.4",
-    "vite": "5.3.5"
+    "vite": "5.4.0"
   },
   "packageManager": "yarn@4.3.1"
 }
