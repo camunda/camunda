@@ -1,4 +1,3 @@
-
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
@@ -10,7 +9,6 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
-import io.camunda.zeebe.gateway.protocol.rest.SearchQueryRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -18,11 +16,7 @@ import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
