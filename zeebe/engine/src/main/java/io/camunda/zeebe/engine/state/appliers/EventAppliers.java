@@ -216,6 +216,7 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.TIMED_OUT, new JobTimedOutApplier(state));
     register(JobIntent.RECURRED_AFTER_BACKOFF, new JobRecurredApplier(state));
     register(JobIntent.TIMEOUT_UPDATED, new JobTimeoutUpdatedApplier(state));
+    register(JobIntent.UPDATED, new JobNoopApplier());
     register(JobIntent.MIGRATED, new JobMigratedApplier(state));
   }
 
@@ -225,7 +226,8 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerMessageCorrelationAppliers(final MutableProcessingState state) {
-    register(MessageCorrelationIntent.CORRELATED, NOOP_EVENT_APPLIER);
+    register(MessageCorrelationIntent.CORRELATING, new MessageCorrelationCorrelatingApplier(state));
+    register(MessageCorrelationIntent.CORRELATED, new MessageCorrelationCorrelatedApplier(state));
     register(MessageCorrelationIntent.NOT_CORRELATED, NOOP_EVENT_APPLIER);
   }
 

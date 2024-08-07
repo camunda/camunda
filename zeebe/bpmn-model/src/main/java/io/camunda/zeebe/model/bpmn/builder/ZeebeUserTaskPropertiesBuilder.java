@@ -176,4 +176,20 @@ public interface ZeebeUserTaskPropertiesBuilder<B extends ZeebeUserTaskPropertie
    * @return the builder object
    */
   B zeebeFormBindingType(final ZeebeBindingType bindingType);
+
+  /**
+   * Sets a static priority for the user task.
+   *
+   * @param priority the priority value to set
+   * @return the builder object
+   */
+  B zeebeTaskPriority(final String priority);
+
+  /**
+   * Sets a dynamic priority for the user task retrieved from the given expression.
+   *
+   * @param expression the expression for the priority to set
+   * @return the builder object
+   */
+  B zeebeTaskPriorityExpression(final String expression);
 }

@@ -1078,9 +1078,7 @@ final class JsonSerializableToJsonTest {
                   .setMessageName(wrapString(messageName))
                   .setProcessInstanceKey(processInstanceKey)
                   .setCorrelationKey(wrapString(correlationKey))
-                  .setVariables(VARIABLES_MSGPACK)
-                  .setRequestId(requestId)
-                  .setRequestStreamId(requestStreamId);
+                  .setVariables(VARIABLES_MSGPACK);
             },
         """
         {
@@ -1094,9 +1092,7 @@ final class JsonSerializableToJsonTest {
             "foo": "bar"
           },
           "interrupting": true,
-          "tenantId": "<default>",
-          "requestId": 4,
-          "requestStreamId": 5
+          "tenantId": "<default>"
         }
         """
       },
@@ -1125,9 +1121,7 @@ final class JsonSerializableToJsonTest {
           "messageKey": -1,
           "variables": {},
           "interrupting": true,
-          "tenantId": "<default>",
-          "requestId": -1,
-          "requestStreamId": -1
+          "tenantId": "<default>"
         }
         """
       },
@@ -2206,7 +2200,8 @@ final class JsonSerializableToJsonTest {
                     .setProcessDefinitionVersion(12)
                     .setProcessInstanceKey(1234)
                     .setElementId("activity")
-                    .setElementInstanceKey(5678),
+                    .setElementInstanceKey(5678)
+                    .setPriority(80),
         """
       {
         "bpmnProcessId": "test-process",
@@ -2232,7 +2227,8 @@ final class JsonSerializableToJsonTest {
         "action": "complete",
         "formKey": 456,
         "userTaskKey": 123,
-        "tenantId": "<default>"
+        "tenantId": "<default>",
+        "priority": 80
       }
       """
       },
@@ -2264,7 +2260,8 @@ final class JsonSerializableToJsonTest {
         "action": "",
         "formKey": -1,
         "userTaskKey": -1,
-        "tenantId": "<default>"
+        "tenantId": "<default>",
+        "priority": 50
       }
       """
       },
@@ -2301,7 +2298,8 @@ final class JsonSerializableToJsonTest {
         "action": "",
         "formKey": -1,
         "userTaskKey": -1,
-        "tenantId": "<default>"
+        "tenantId": "<default>",
+        "priority": 50
       }
       """
       },
@@ -2433,13 +2431,19 @@ final class JsonSerializableToJsonTest {
               final String correlationKey = "test-key";
               final String messageName = "test-message";
               final long processInstanceKey = 1L;
+              final long messageKey = 2L;
+              final long requestId = 3L;
+              final int requestStreamId = 4;
 
               return new MessageCorrelationRecord()
                   .setCorrelationKey(correlationKey)
                   .setName(messageName)
                   .setVariables(VARIABLES_MSGPACK)
                   .setTenantId("foo")
-                  .setProcessInstanceKey(processInstanceKey);
+                  .setProcessInstanceKey(processInstanceKey)
+                  .setMessageKey(messageKey)
+                  .setRequestId(requestId)
+                  .setRequestStreamId(requestStreamId);
             },
         """
         {
@@ -2449,7 +2453,10 @@ final class JsonSerializableToJsonTest {
           },
           "name": "test-message",
           "tenantId": "foo",
-          "processInstanceKey": 1
+          "processInstanceKey": 1,
+          "messageKey": 2,
+          "requestId": 3,
+          "requestStreamId": 4
         }
         """
       },
@@ -2473,7 +2480,10 @@ final class JsonSerializableToJsonTest {
           "variables": {},
           "name": "test-message",
           "tenantId": "<default>",
-          "processInstanceKey": -1
+          "processInstanceKey": -1,
+          "messageKey": -1,
+          "requestId": -1,
+          "requestStreamId": -1
         }
         """
       },

@@ -72,11 +72,11 @@ public interface PersistedSnapshot {
   String getId();
 
   /**
-   * Returns the checksum of the snapshot, which can be used to verify integrity.
+   * Returns the checksums of the snapshot files, which can be used to verify integrity.
    *
-   * @return the checksum of the snapshot
+   * @return the checksum of the snapshot files
    */
-  long getChecksum();
+  ImmutableChecksumsSFV getChecksums();
 
   /**
    * SnapshotMetadata includes information related to a snapshot.

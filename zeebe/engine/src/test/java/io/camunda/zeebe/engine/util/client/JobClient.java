@@ -181,6 +181,14 @@ public final class JobClient {
     return expectation.apply(position);
   }
 
+  public Record<JobRecordValue> update() {
+    final long jobKey = findJobKey();
+    final long position =
+        writer.writeCommand(
+            jobKey, JobIntent.UPDATE, jobRecord, authorizedTenantIds.toArray(new String[0]));
+    return expectation.apply(position);
+  }
+
   public Record<JobRecordValue> throwError() {
     final long jobKey = findJobKey();
     final long position =

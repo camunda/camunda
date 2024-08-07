@@ -37,6 +37,7 @@ import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.search.DecisionRequirementsQuery;
+import io.camunda.zeebe.client.api.search.DecisionDefinitionQuery;
 import io.camunda.zeebe.client.api.search.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.search.UserTaskQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
@@ -614,6 +615,31 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the decision requirements query
    */
+   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
+   DecisionRequirementsQuery newDecisionRequirementsQuery();
+   
+   /*
+   * Executes a search request to query decision definitions.
+   *
+   * <pre>
+   * long decisionDefinitionKey = ...;
+   *
+   * zeebeClient
+   *  .newDecisionDefinitionQuery()
+   *  .filter((f) -> f.decisionKey(decisionDefinitionKey))
+   *  .sort((s) -> s.dmnDecisionName().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * <p><strong>Experimental: This method is under development, and as such using it may have no
+   * effect on the client builder when called. The respective API on compatible clusters is not
+   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
+   * warning is removed, anything described below may not yet have taken effect, and the interface
+   * and its description are subject to change.</strong>
+   *
+   * @return a builder for the decision requirements query
+   */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
-  DecisionRequirementsQuery newDecisionRequirementsQuery();
+  DecisionDefinitionQuery newDecisionDefinitionQuery();
 }

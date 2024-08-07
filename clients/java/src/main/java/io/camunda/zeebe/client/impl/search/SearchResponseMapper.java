@@ -16,16 +16,19 @@
 package io.camunda.zeebe.client.impl.search;
 
 import io.camunda.zeebe.client.api.search.response.DecisionRequirements;
+import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.api.search.response.SearchResponsePage;
 import io.camunda.zeebe.client.api.search.response.UserTask;
 import io.camunda.zeebe.client.impl.search.response.DecisionRequirementsImpl;
+import io.camunda.zeebe.client.impl.search.response.DecisionDefinitionImpl;
 import io.camunda.zeebe.client.impl.search.response.ProcessInstanceImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchQueryResponseImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchResponsePageImpl;
 import io.camunda.zeebe.client.impl.search.response.UserTaskImpl;
 import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsSearchQueryResponse;
+import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQueryResponse;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.client.protocol.rest.SearchQueryPageResponse;
 import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryResponse;
@@ -41,37 +44,26 @@ public final class SearchResponseMapper {
 
   public static SearchQueryResponse<ProcessInstance> toProcessInstanceSearchResponse(
       final ProcessInstanceSearchQueryResponse response) {
-    final SearchQueryPageResponse pageResponse = response.getPage();
-    final SearchResponsePage page = toSearchResponsePage(pageResponse);
-
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<ProcessInstance> instances =
-        Optional.ofNullable(response.getItems())
-            .map(
-                (i) ->
-                    i.stream()
-                        .map(ProcessInstanceImpl::new)
-                        .map((p) -> (ProcessInstance) p)
-                        .collect(Collectors.toList()))
-            .orElse(Collections.emptyList());
+        toSearchResponseInstances(response.getItems(), ProcessInstanceImpl::new);
 
     return new SearchQueryResponseImpl<>(instances, page);
   }
 
   public static SearchQueryResponse<UserTask> toUserTaskSearchResponse(
       final UserTaskSearchQueryResponse response) {
-    final SearchQueryPageResponse pageResponse = response.getPage();
-    final SearchResponsePage page = toSearchResponsePage(pageResponse);
-
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<UserTask> instances =
-        Optional.ofNullable(response.getItems())
-            .map(
-                (i) ->
-                    i.stream()
-                        .map(UserTaskImpl::new)
-                        .map((p) -> (UserTask) p)
-                        .collect(Collectors.toList()))
-            .orElse(Collections.emptyList());
+        toSearchResponseInstances(response.getItems(), UserTaskImpl::new);
+    return new SearchQueryResponseImpl<>(instances, page);
+  }
 
+  public static SearchQueryResponse<DecisionDefinition> toDecisionDefinitionSearchResponse(
+      final DecisionDefinitionSearchQueryResponse response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<DecisionDefinition> instances =
+        toSearchResponseInstances(response.getItems(), DecisionDefinitionImpl::new);
     return new SearchQueryResponseImpl<>(instances, page);
   }
 

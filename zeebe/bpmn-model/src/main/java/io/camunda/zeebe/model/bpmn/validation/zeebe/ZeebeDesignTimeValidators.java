@@ -24,6 +24,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePublishMessage;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
@@ -127,6 +128,10 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new ZeebeBindingTypeValidator<>(ZeebeCalledDecision.class));
     validators.add(new ZeebeBindingTypeValidator<>(ZeebeCalledElement.class));
     validators.add(new ZeebeBindingTypeValidator<>(ZeebeFormDefinition.class));
+    validators.add(
+        ZeebeElementValidator.verifyThat(ZeebePriorityDefinition.class)
+            .hasNonEmptyAttribute(
+                ZeebePriorityDefinition::getPriority, ZeebeConstants.ATTRIBUTE_PRIORITY));
 
     VALIDATORS = Collections.unmodifiableList(validators);
   }

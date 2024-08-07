@@ -36,11 +36,6 @@ public interface SnapshotChunk {
   byte[] getContent();
 
   /**
-   * @return the checksum of the entire snapshot
-   */
-  long getSnapshotChecksum();
-
-  /**
    * @return the index of the part of the chunk contents.
    */
   long getFileBlockPosition();
