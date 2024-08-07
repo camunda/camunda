@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.user;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
-public class UserCreateProcessor implements TypedRecordProcessor<UserRecord> {
+public class UserCreateProcessor implements DistributedTypedRecordProcessor<UserRecord> {
 
   private final UserState userState;
   private final StateWriter stateWriter;
@@ -40,7 +40,7 @@ public class UserCreateProcessor implements TypedRecordProcessor<UserRecord> {
   }
 
   @Override
-  public void processRecord(final TypedRecord<UserRecord> command) {
+  public void processNewCommand(final TypedRecord<UserRecord> command) {
     final long key = command.getKey();
     final var username = command.getValue().getUsernameBuffer();
     final var user = userState.getUser(username);
@@ -56,5 +56,12 @@ public class UserCreateProcessor implements TypedRecordProcessor<UserRecord> {
     responseWriter.writeEventOnCommand(key, UserIntent.CREATED, command.getValue(), command);
 
     distributionBehavior.distributeCommand(key, command);
+  }
+
+  @Override
+  public void processDistributedCommand(final TypedRecord<UserRecord> command) {
+    stateWriter.appendFollowUpEvent(command.getKey(), UserIntent.CREATED, command.getValue());
+
+    distributionBehavior.acknowledgeCommand(command);
   }
 }
