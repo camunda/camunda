@@ -83,7 +83,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - run: ./mvnw -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
+      - run: ./mvnw -T1C -B -D skipTests -D skipOptimize -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -151,7 +151,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
-          maven-extra-args: -T1C -PskipFrontendBuild
+          maven-extra-args: -T1C -PskipFrontendBuild -D skipOptimize
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -161,6 +161,7 @@ jobs:
           ./mvnw -T2 -B --no-snapshot-updates
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
+          -D skipOptimize
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
@@ -238,7 +239,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild
+          maven-extra-args: -T1C -PskipFrontendBuild -D skipOptimize
       - uses: ./.github/actions/build-platform-docker
         with:
           repository: localhost:5000/camunda/zeebe
@@ -252,7 +253,7 @@ jobs:
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
           -D forkCount=${{ matrix.maven-test-fork-count }}
           -D maven.javadoc.skip=true
-          -D skipUTs -D skipChecks
+          -D skipUTs -D skipChecks -D skipOptimize
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
@@ -333,7 +334,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild
+          maven-extra-args: -PskipFrontendBuild -D skipOptimize
           go: false
       - uses: ./.github/actions/build-platform-docker
         id: build-camunda-docker
