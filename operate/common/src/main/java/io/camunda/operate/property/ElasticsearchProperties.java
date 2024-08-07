@@ -45,6 +45,8 @@ public class ElasticsearchProperties {
 
   @NestedConfigurationProperty private SslProperties ssl;
 
+  @NestedConfigurationProperty private InterceptorPluginProperties interceptorPlugin;
+
   public String getClusterName() {
     return clusterName;
   }
@@ -173,5 +175,13 @@ public class ElasticsearchProperties {
 
   public void setBulkRequestMaxSizeInBytes(final int bulkRequestMaxSizeInBytes) {
     this.bulkRequestMaxSizeInBytes = bulkRequestMaxSizeInBytes;
+  }
+
+  public InterceptorPluginProperties getInterceptorPlugin() {
+    return interceptorPlugin;
+  }
+
+  public void setInterceptorPlugin(final InterceptorPluginProperties interceptorPlugin) {
+    this.interceptorPlugin = interceptorPlugin;
   }
 }
