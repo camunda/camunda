@@ -80,7 +80,7 @@ jobs:
       - name: Is current release major or minor.
         id: release-type
         env:
-          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION || '8.6.0-alpha4-rc2' }}
+          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION || '8.6.0-alpha4' }}
         run: |
           is_major_or_minor="false"
           is_patch="true"
@@ -122,7 +122,7 @@ jobs:
           {
             echo "DOCKER_LATEST=${{ github.event.inputs.DOCKER_LATEST || false}}"
             echo "DEVELOPMENT_VERSION=${{ github.event.inputs.DEVELOPMENT_VERSION || '8.6.0-SNAPSHOT' }}"
-            echo "RELEASE_VERSION=${{ github.event.inputs.RELEASE_VERSION || '8.6.0-alpha4-rc2' }}"
+            echo "RELEASE_VERSION=${{ github.event.inputs.RELEASE_VERSION || '8.6.0-alpha4' }}"
             echo "BRANCH=${{ github.event.inputs.BRANCH || 'release/optimize-8.6.0-alpha4' }}"
             echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
             echo "MAJOR_OR_MINOR=${{ steps.release-type.outputs.is_major_or_minor }}"
@@ -130,7 +130,7 @@ jobs:
             echo "IS_ALPHA=${{ steps.release-type.outputs.is_alpha }}"
             echo "IS_RC=${{ steps.release-type.outputs.is_rc }}"
             echo "IS_DRY_RUN=${{ github.event.inputs.IS_DRY_RUN || 'false' }}"
-            echo "TAG=${{ github.event.inputs.RELEASE_VERSION || '8.6.0-alpha4-rc2' }}-optimize"
+            echo "TAG=${{ github.event.inputs.RELEASE_VERSION || '8.6.0-alpha4' }}-optimize"
           } >> "$GITHUB_ENV"
 
       - name: Login to prod Harbor docker registry
