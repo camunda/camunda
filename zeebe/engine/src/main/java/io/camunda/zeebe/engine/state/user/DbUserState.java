@@ -42,24 +42,6 @@ public class DbUserState implements UserState, MutableUserState {
   }
 
   @Override
-  public void update(final UserRecord user) {
-    username.wrapBuffer(user.getUsernameBuffer());
-    persistedUser.setRecord(user);
-    userColumnFamily.update(username, persistedUser);
-  }
-
-  @Override
-  public void delete(final DirectBuffer username) {
-    this.username.wrapBuffer(username);
-    userColumnFamily.deleteExisting(this.username);
-  }
-
-  @Override
-  public void delete(final String username) {
-    delete(wrapString(username));
-  }
-
-  @Override
   public UserRecord getUser(final DirectBuffer username) {
     this.username.wrapBuffer(username);
     final PersistedUser user = userColumnFamily.get(this.username);

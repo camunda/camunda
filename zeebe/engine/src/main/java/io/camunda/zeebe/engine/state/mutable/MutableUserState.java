@@ -9,15 +9,8 @@ package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
-import org.agrona.DirectBuffer;
 
 public interface MutableUserState extends UserState {
 
   void create(final UserRecord user);
-
-  void update(final UserRecord user);
-
-  void delete(final DirectBuffer username);
-
-  void delete(final String username);
 }
