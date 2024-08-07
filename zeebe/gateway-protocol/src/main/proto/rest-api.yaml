@@ -663,6 +663,52 @@ paths:
           description: >
             The Decision Requirements Search Query failed.
             More details are provided in the response body.
+  /users:
+    post:
+      tags:
+        - User
+      summary: "Create a user"
+      operationId: "createUser"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CamundaUserWithPasswordRequest"
+        required: true
+      responses:
+        "204":
+          description: |
+            The User was created successfully.
+        "400":
+          description: |
+            The User could not be created.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: |
+            The request to create a user was unauthorized.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: |
+            The request to create a user was denied.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 
 components:
   schemas:
@@ -882,6 +928,22 @@ components:
           format: int64
         tenantId:
           type: string
+    CamundaUserWithPasswordRequest:
+      type: "object"
+      properties:
+        password:
+          type: "string"
+        id:
+          type: "integer"
+          format: "int64"
+        username:
+          type: "string"
+        name:
+          type: "string"
+        email:
+          type: "string"
+        enabled:
+          type: "boolean"
     TopologyResponse:
       description: The response of a topology request.
       type: object
