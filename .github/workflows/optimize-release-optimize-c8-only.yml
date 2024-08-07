@@ -1,8 +1,6 @@
 name: Optimize Release Camunda Optimize C8
 
 on:
-  schedule:
-    - cron: "0 0 * * 1-5"
   workflow_dispatch:
     inputs:
       RELEASE_VERSION:
@@ -37,7 +35,6 @@ jobs:
     name: Execute Release
     runs-on: gcp-core-2-release
     env:
-      DOCKER_IMAGE_TEAM: registry.camunda.cloud/optimize-ee/optimize
       DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
       DOCKER_LATEST_TAG: latest
     strategy:
@@ -79,7 +76,7 @@ jobs:
       - name: Is current release major or minor.
         id: release-type
         env:
-          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}
+          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION }}
         run: |
           is_major_or_minor="false"
           is_patch="true"
@@ -119,17 +116,17 @@ jobs:
       - name: Expose common variables as Env
         run: |
           {
-            echo "DOCKER_LATEST=${{ github.event.inputs.DOCKER_LATEST || true}}"
-            echo "DEVELOPMENT_VERSION=${{ github.event.inputs.DEVELOPMENT_VERSION || '0.1.0-SNAPSHOT' }}"
-            echo "RELEASE_VERSION=${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}"
-            echo "BRANCH=${{ github.event.inputs.BRANCH || github.ref_name }}"
+            echo "DOCKER_LATEST=${{ github.event.inputs.DOCKER_LATEST }}"
+            echo "DEVELOPMENT_VERSION=${{ github.event.inputs.DEVELOPMENT_VERSION }}"
+            echo "RELEASE_VERSION=${{ github.event.inputs.RELEASE_VERSION }}"
+            echo "BRANCH=${{ github.event.inputs.BRANCH }}"
             echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
             echo "MAJOR_OR_MINOR=${{ steps.release-type.outputs.is_major_or_minor }}"
             echo "IS_PATCH=${{ steps.release-type.outputs.is_patch }}"
             echo "IS_ALPHA=${{ steps.release-type.outputs.is_alpha }}"
             echo "IS_RC=${{ steps.release-type.outputs.is_rc }}"
-            echo "IS_DRY_RUN=${{ github.event.inputs.IS_DRY_RUN || 'true' }}"
-            echo "TAG=${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}-optimize"
+            echo "IS_DRY_RUN=${{ github.event.inputs.IS_DRY_RUN }}"
+            echo "TAG=${{ github.event.inputs.RELEASE_VERSION }}-optimize"
           } >> "$GITHUB_ENV"
 
       - name: Login to prod Harbor docker registry
@@ -190,10 +187,23 @@ jobs:
             -Darguments="-Dmaven.deploy.skip=${IS_DRY_RUN} -DskipTests -DskipNexusStagingDeployMojo=${IS_DRY_RUN} -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -f pom.xml"
 
       - name: Remove tag for RC release
-        if: env.IS_RC == 'true'
+        if: env.IS_RC == 'true' || failure()
         run: |
           git tag -d ${TAG}
           git push origin :refs/tags/${TAG}
+
+      - name: Create a GitHub release
+        if: ${{ env.IS_RC == 'false' && env.DRY_RUN == 'false' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: octokit/request-action@v2.3.1
+        with:
+          route: POST /repos/camunda/zeebe/releases
+          draft: true
+          name: ${{ env.TAG }}
+          tag_name: ${{ env.TAG }}
+          generate_release_notes: true
+          make_latest: \"false\"
 
       - name: Auto-update previous version
         run: |
@@ -234,13 +244,11 @@ jobs:
 
           # Tagging the optimize release Docker image with the specified version
           echo "Tagging optimize release docker image with version ${RELEASE_VERSION}"
-          tags=("${DOCKER_IMAGE_TEAM}:${RELEASE_VERSION}")
-          tags+=("${DOCKER_IMAGE_DOCKER_HUB}:${RELEASE_VERSION}")
+          tags=("${DOCKER_IMAGE_DOCKER_HUB}:${RELEASE_VERSION}")
 
           # Major and minor versions are always tagged as the latest
           if [ "${MAJOR_OR_MINOR}" = true ] || [ "${DOCKER_LATEST}" = true ]; then
               echo "Tagging optimize release docker image with \`${DOCKER_LATEST_TAG}\`"
-              tags+=("${DOCKER_IMAGE_TEAM}:${DOCKER_LATEST_TAG}")
               tags+=("${DOCKER_IMAGE_DOCKER_HUB}:${DOCKER_LATEST_TAG}")
           fi
 
@@ -275,7 +283,7 @@ jobs:
         with:
           compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.smoketest.release.yml
           project_name: smoketest
-          timeout: 600
+          timeout: 15
         env:
           OPTIMIZE_IMAGE_TAG: ${{ env.RELEASE_VERSION }}
           ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}
