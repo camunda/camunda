@@ -107,7 +107,8 @@ public class CallActivityInterruptionTest {
         .containsSubsequence(
             tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
