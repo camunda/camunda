@@ -14,7 +14,6 @@ import static io.camunda.tasklist.util.OpenSearchUtil.QueryType.ALL;
 import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.OpenSearchUtil.getRawResponseWithTenantCheck;
 import static io.camunda.tasklist.util.OpenSearchUtil.joinQueryBuilderWithAnd;
-import static io.camunda.tasklist.util.OpenSearchUtil.joinQueryBuilderWithOr;
 import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,6 +27,7 @@ import io.camunda.tasklist.queries.Sort;
 import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
 import io.camunda.tasklist.queries.TaskQuery;
+import io.camunda.tasklist.queries.TaskSortFields;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.TaskStore;
@@ -60,11 +60,8 @@ import org.opensearch.client.opensearch._types.ScriptSortType;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
-import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch._types.query_dsl.Query.Builder;
-import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -87,12 +84,6 @@ public class TaskStoreOpenSearch implements TaskStore {
           TaskState.CREATED, TaskTemplate.CREATION_TIME,
           TaskState.COMPLETED, TaskTemplate.COMPLETION_TIME,
           TaskState.CANCELED, TaskTemplate.COMPLETION_TIME);
-  private static final Builder INCLUDE_NULL_PRIORITY =
-      QueryBuilders.bool()
-          .mustNot(mn -> mn.exists(e -> e.field(TaskTemplate.PRIORITY)))
-          .build()
-          .toQuery()
-          .toBuilder();
 
   @Autowired
   @Qualifier("tasklistOsClient")
@@ -718,48 +709,18 @@ public class TaskStoreOpenSearch implements TaskStore {
       for (int i = 0; i < query.getSort().length; i++) {
         final TaskOrderBy orderBy = query.getSort()[i];
         final String field = orderBy.getField().toString();
-        final SortOrder sortOrder;
+        final SortOrder sortOrder =
+            directSorting
+                ? orderBy.getOrder().equals(Sort.DESC) ? SortOrder.Desc : SortOrder.Asc
+                : orderBy.getOrder().equals(Sort.DESC) ? SortOrder.Asc : SortOrder.Desc;
 
-        final String nullDate;
-        if (orderBy.getOrder().equals(Sort.ASC)) {
-          nullDate = "2099-12-31";
+        if (!orderBy.getField().equals(TaskSortFields.priority)) {
+          searchRequestBuilder.sort(applyDateSortScript(orderBy.getOrder(), field, sortOrder));
         } else {
-          nullDate = "1900-01-01";
+          searchRequestBuilder.sort(
+              mapNullInSort(
+                  TaskTemplate.PRIORITY, DEFAULT_PRIORITY, sortOrder, ScriptSortType.Number));
         }
-        final Script.Builder scriptBuilder = new Script.Builder();
-        scriptBuilder.inline(
-            in ->
-                in.source(
-                    "def sf = new SimpleDateFormat(\"yyyy-MM-dd\"); "
-                        + "def nullDate=sf.parse('"
-                        + nullDate
-                        + "');"
-                        + "if(doc['"
-                        + field
-                        + "'].size() == 0){"
-                        + "nullDate.getTime().toString()"
-                        + "}else{"
-                        + "doc['"
-                        + field
-                        + "'].value.getMillis().toString()"
-                        + "}"));
-        if (directSorting) {
-          sortOrder = orderBy.getOrder().equals(Sort.DESC) ? SortOrder.Desc : SortOrder.Asc;
-        } else {
-          sortOrder = orderBy.getOrder().equals(Sort.DESC) ? SortOrder.Asc : SortOrder.Desc;
-        }
-
-        searchRequestBuilder.sort(
-            s ->
-                s.script(
-                    script ->
-                        script
-                            .script(scriptBuilder.build())
-                            .order(sortOrder)
-                            .type(ScriptSortType.String)));
-        searchRequestBuilder.sort(
-            mapNullInSort(
-                TaskTemplate.PRIORITY, DEFAULT_PRIORITY, sortOrder, ScriptSortType.Number));
       }
 
     } else {
@@ -801,6 +762,37 @@ public class TaskStoreOpenSearch implements TaskStore {
     if (querySearchAfter != null) {
       searchRequestBuilder.searchAfter(Arrays.stream(querySearchAfter).toList());
     }
+  }
+
+  private Function<SortOptions.Builder, ObjectBuilder<SortOptions>> applyDateSortScript(
+      final Sort sorting, final String field, final SortOrder sortOrder) {
+    final String nullDate;
+    if (sorting.equals(Sort.ASC)) {
+      nullDate = "2099-12-31";
+    } else {
+      nullDate = "1900-01-01";
+    }
+    final Script.Builder scriptBuilder = new Script.Builder();
+    scriptBuilder.inline(
+        in ->
+            in.source(
+                "def sf = new SimpleDateFormat(\"yyyy-MM-dd\"); "
+                    + "def nullDate=sf.parse('"
+                    + nullDate
+                    + "');"
+                    + "if(doc['"
+                    + field
+                    + "'].size() == 0){"
+                    + "nullDate.getTime().toString()"
+                    + "}else{"
+                    + "doc['"
+                    + field
+                    + "'].value.getMillis().toString()"
+                    + "}"));
+    return s ->
+        s.script(
+            script ->
+                script.script(scriptBuilder.build()).order(sortOrder).type(ScriptSortType.String));
   }
 
   private void updateTask(final String taskId, final Map<String, Object> updateFields) {
@@ -969,10 +961,9 @@ public class TaskStoreOpenSearch implements TaskStore {
   }
 
   private Query.Builder buildPriorityQuery(final TaskQuery query) {
-    Query.Builder priorityQ = new Query.Builder();
+    Query.Builder priorityQ = null;
     if (query.getPriority() != null) {
       if (query.getPriority().getValue() != null) {
-        final BoolQuery.Builder priorityQBuilder = new BoolQuery.Builder();
         if (query.getPriority().getOperator() != null) {
           switch (query.getPriority().getOperator()) {
             case eq:
@@ -1009,16 +1000,16 @@ public class TaskStoreOpenSearch implements TaskStore {
               break;
           }
         }
-        priorityQ = joinQueryBuilderWithOr(priorityQ, INCLUDE_NULL_PRIORITY);
       } else {
         priorityQ =
-            joinQueryBuilderWithOr(
-                priorityQ.range(
+            priorityQ
+                .range(
                     r ->
                         r.field(TaskTemplate.PRIORITY)
                             .from(JsonData.of(query.getPriority().getFrom()))
-                            .to(JsonData.of(query.getPriority().getTo()))),
-                INCLUDE_NULL_PRIORITY);
+                            .to(JsonData.of(query.getPriority().getTo())))
+                .build()
+                .toBuilder();
       }
     }
     return priorityQ;

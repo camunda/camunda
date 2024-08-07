@@ -15,7 +15,6 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.tasklist.util.ElasticsearchUtil.getRawResponseWithTenantCheck;
 import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithOr;
 import static io.camunda.tasklist.util.ElasticsearchUtil.mapSearchHits;
 import static java.util.stream.Collectors.toList;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.WAIT_UNTIL;
@@ -31,6 +30,7 @@ import io.camunda.tasklist.queries.Sort;
 import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
 import io.camunda.tasklist.queries.TaskQuery;
+import io.camunda.tasklist.queries.TaskSortFields;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
@@ -89,8 +89,6 @@ public class TaskStoreElasticSearch implements TaskStore {
           TaskState.CREATED, TaskTemplate.CREATION_TIME,
           TaskState.COMPLETED, TaskTemplate.COMPLETION_TIME,
           TaskState.CANCELED, TaskTemplate.COMPLETION_TIME);
-  private static final QueryBuilder INCLUDE_NULL_PRIORITY =
-      QueryBuilders.boolQuery().mustNot(existsQuery(TaskTemplate.PRIORITY));
 
   @Autowired
   @Qualifier("tasklistEsClient")
@@ -591,42 +589,18 @@ public class TaskStoreElasticSearch implements TaskStore {
       for (int i = 0; i < query.getSort().length; i++) {
         final TaskOrderBy orderBy = query.getSort()[i];
         final String field = orderBy.getField().toString();
-        final SortOrder sortOrder;
-        final SortBuilder sortBuilder;
+        final SortOrder sortOrder =
+            directSorting
+                ? orderBy.getOrder().equals(Sort.DESC) ? SortOrder.DESC : SortOrder.ASC
+                : orderBy.getOrder().equals(Sort.DESC) ? SortOrder.ASC : SortOrder.DESC;
 
-        final String nullDate;
-        if (orderBy.getOrder().equals(Sort.ASC)) {
-          nullDate = "2099-12-31";
+        if (!orderBy.getField().equals(TaskSortFields.priority)) {
+          searchSourceBuilder.sort(applyDateSortScript(orderBy.getOrder(), field, sortOrder));
         } else {
-          nullDate = "1900-01-01";
+          searchSourceBuilder.sort(
+              mapNullInSort(
+                  TaskTemplate.PRIORITY, DEFAULT_PRIORITY, sortOrder, ScriptSortType.NUMBER));
         }
-        final Script script =
-            new Script(
-                "def sf = new SimpleDateFormat(\"yyyy-MM-dd\"); "
-                    + "def nullDate=sf.parse('"
-                    + nullDate
-                    + "');"
-                    + "if(doc['"
-                    + field
-                    + "'].size() == 0){"
-                    + "nullDate.getTime().toString()"
-                    + "}else{"
-                    + "doc['"
-                    + field
-                    + "'].value.getMillis().toString()"
-                    + "}");
-        if (directSorting) {
-          sortOrder = orderBy.getOrder().equals(Sort.DESC) ? SortOrder.DESC : SortOrder.ASC;
-        } else {
-          sortOrder = orderBy.getOrder().equals(Sort.DESC) ? SortOrder.ASC : SortOrder.DESC;
-        }
-        sortBuilder =
-            SortBuilders.scriptSort(script, ScriptSortBuilder.ScriptSortType.STRING)
-                .order(sortOrder);
-        searchSourceBuilder.sort(sortBuilder);
-        searchSourceBuilder.sort(
-            mapNullInSort(
-                TaskTemplate.PRIORITY, DEFAULT_PRIORITY, sortOrder, ScriptSortType.NUMBER));
       }
     } else {
       final String sort1Field;
@@ -651,6 +625,32 @@ public class TaskStoreElasticSearch implements TaskStore {
     if (querySearchAfter != null) {
       searchSourceBuilder.searchAfter(querySearchAfter);
     }
+  }
+
+  private SortBuilder<?> applyDateSortScript(
+      final Sort sorting, final String field, final SortOrder sortOrder) {
+    final String nullDate;
+    if (sorting.equals(Sort.ASC)) {
+      nullDate = "2099-12-31";
+    } else {
+      nullDate = "1900-01-01";
+    }
+    final Script script =
+        new Script(
+            "def sf = new SimpleDateFormat(\"yyyy-MM-dd\"); "
+                + "def nullDate=sf.parse('"
+                + nullDate
+                + "');"
+                + "if(doc['"
+                + field
+                + "'].size() == 0){"
+                + "nullDate.getTime().toString()"
+                + "}else{"
+                + "doc['"
+                + field
+                + "'].value.getMillis().toString()"
+                + "}");
+    return SortBuilders.scriptSort(script, ScriptSortType.STRING).order(sortOrder);
   }
 
   private void updateTask(final String taskId, final Map<String, Object> updateFields) {
@@ -825,8 +825,10 @@ public class TaskStoreElasticSearch implements TaskStore {
         if (query.getPriority().getOperator() != null) {
           switch (query.getPriority().getOperator()) {
             case eq:
-              priorityQBuilder.must(
-                  QueryBuilders.termQuery(TaskTemplate.PRIORITY, query.getPriority().getValue()));
+              priorityQ =
+                  priorityQBuilder.must(
+                      QueryBuilders.termQuery(
+                          TaskTemplate.PRIORITY, query.getPriority().getValue()));
               break;
             case gt:
               priorityQ =
@@ -852,14 +854,11 @@ public class TaskStoreElasticSearch implements TaskStore {
               break;
           }
         }
-        priorityQ = joinWithOr(priorityQ, INCLUDE_NULL_PRIORITY);
       } else {
         priorityQ =
-            joinWithOr(
-                QueryBuilders.rangeQuery(TaskTemplate.PRIORITY)
-                    .from(query.getPriority().getFrom())
-                    .to(query.getPriority().getTo()),
-                INCLUDE_NULL_PRIORITY);
+            QueryBuilders.rangeQuery(TaskTemplate.PRIORITY)
+                .from(query.getPriority().getFrom())
+                .to(query.getPriority().getTo());
       }
     }
     return priorityQ;
