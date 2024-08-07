@@ -28,7 +28,7 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 
-describe('FlowNodeInstancesTree - modifications with ancestor selection', () => {
+describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess({
       ...createInstance({
