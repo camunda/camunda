@@ -15,37 +15,28 @@
  */
 package io.camunda.process.generator;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
-import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import org.junit.jupiter.api.Test;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
-public class ProcessGeneratorTest {
+public class BpmnGenerator {
 
-  @Test
-  void shouldGenerateProcess() {
-    // given
-    final var generator = new ProcessGenerator();
+  public static final String CAMUNDA_VERSION = "8.5.0";
 
-    // when
-    final BpmnModelInstance process = generator.generateProcess();
+  private final ProcessGenerator processGenerator;
 
-    // then
-    assertThat(process).isNotNull();
+  public BpmnGenerator() {
+    this(ThreadLocalRandom.current().nextLong());
   }
 
-  @Test
-  void shouldGenerateARandomProcess() {
-    // given
-    final var generator = new ProcessGenerator();
+  public BpmnGenerator(final long seed) {
+    final Random random = new Random(seed);
+    final var generatorContext = new GeneratorContext(random);
+    final var factories = new BpmnFactories(generatorContext);
+    processGenerator = new ProcessGenerator(CAMUNDA_VERSION, generatorContext, factories);
+  }
 
-    // when
-    final BpmnModelInstance process = generator.generateProcess();
-
-    // then
-    assertThat(process).isNotNull();
-
-    System.out.println(Bpmn.convertToString(process));
+  public BpmnModelInstance generateProcess() {
+    return processGenerator.generateProcess();
   }
 }

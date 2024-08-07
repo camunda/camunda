@@ -19,11 +19,8 @@ public class BpmnFactories {
 
   public BpmnFactories(final GeneratorContext generatorContent) {
     catchEventGeneratorFactory = new BpmnCatchEventGeneratorFactory(generatorContent);
-    elementGeneratorFactory =
-        new BpmnElementGeneratorFactory(generatorContent, catchEventGeneratorFactory);
-
-    templateGeneratorFactory =
-        new BpmnTemplateGeneratorFactory(generatorContent, elementGeneratorFactory);
+    elementGeneratorFactory = new BpmnElementGeneratorFactory(generatorContent, this);
+    templateGeneratorFactory = new BpmnTemplateGeneratorFactory(generatorContent, this);
   }
 
   public BpmnCatchEventGeneratorFactory getCatchEventGeneratorFactory() {
