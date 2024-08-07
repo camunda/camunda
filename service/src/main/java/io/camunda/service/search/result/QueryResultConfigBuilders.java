@@ -7,7 +7,6 @@
  */
 package io.camunda.service.search.result;
 
-import io.camunda.service.search.result.ProcessInstanceQueryResultConfig.Builder;
 import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 
@@ -20,7 +19,22 @@ public final class QueryResultConfigBuilders {
   }
 
   public static ProcessInstanceQueryResultConfig processInstance(
-      final Function<Builder, ObjectBuilder<ProcessInstanceQueryResultConfig>> fn) {
+      final Function<
+              ProcessInstanceQueryResultConfig.Builder,
+              ObjectBuilder<ProcessInstanceQueryResultConfig>>
+          fn) {
     return fn.apply(processInstance()).build();
+  }
+
+  public static DecisionRequirementsQueryResultConfig.Builder decisionRequirements() {
+    return new DecisionRequirementsQueryResultConfig.Builder();
+  }
+
+  public static DecisionRequirementsQueryResultConfig decisionRequirements(
+      final Function<
+              DecisionRequirementsQueryResultConfig.Builder,
+              ObjectBuilder<DecisionRequirementsQueryResultConfig>>
+          fn) {
+    return fn.apply(decisionRequirements()).build();
   }
 }

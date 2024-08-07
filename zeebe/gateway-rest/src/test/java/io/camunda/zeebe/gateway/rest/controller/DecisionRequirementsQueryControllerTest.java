@@ -89,7 +89,9 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE);
 
-    verify(decisionRequirementsServices).search(new DecisionRequirementsQuery.Builder().build());
+    verify(decisionRequirementsServices)
+        .search(
+            new DecisionRequirementsQuery.Builder().resultConfig(b -> b.xml().exclude()).build());
   }
 
   @Test
@@ -113,7 +115,9 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE);
 
-    verify(decisionRequirementsServices).search(new DecisionRequirementsQuery.Builder().build());
+    verify(decisionRequirementsServices)
+        .search(
+            new DecisionRequirementsQuery.Builder().resultConfig(b -> b.xml().exclude()).build());
   }
 
   @Test
@@ -159,6 +163,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                         .versions(1)
                         .dmnDecisionRequirementsIds("drId")
                         .build())
+                .resultConfig(b -> b.xml().exclude())
                 .build());
   }
 
@@ -224,6 +229,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                         .dmnDecisionRequirementsId()
                         .asc()
                         .build())
+                .resultConfig(b -> b.xml().exclude())
                 .build());
   }
 

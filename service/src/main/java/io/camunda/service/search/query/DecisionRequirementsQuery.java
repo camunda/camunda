@@ -10,6 +10,8 @@ package io.camunda.service.search.query;
 import io.camunda.service.search.filter.DecisionRequirementsFilter;
 import io.camunda.service.search.filter.FilterBuilders;
 import io.camunda.service.search.page.SearchQueryPage;
+import io.camunda.service.search.result.DecisionRequirementsQueryResultConfig;
+import io.camunda.service.search.result.QueryResultConfigBuilders;
 import io.camunda.service.search.sort.DecisionRequirementsSort;
 import io.camunda.service.search.sort.SortOptionBuilders;
 import io.camunda.util.ObjectBuilder;
@@ -17,7 +19,10 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record DecisionRequirementsQuery(
-    DecisionRequirementsFilter filter, DecisionRequirementsSort sort, SearchQueryPage page)
+    DecisionRequirementsFilter filter,
+    DecisionRequirementsSort sort,
+    SearchQueryPage page,
+    DecisionRequirementsQueryResultConfig resultConfig)
     implements TypedSearchQuery<DecisionRequirementsFilter, DecisionRequirementsSort> {
 
   public static DecisionRequirementsQuery of(
@@ -36,9 +41,12 @@ public record DecisionRequirementsQuery(
         FilterBuilders.decisionRequirements().build();
     private static final DecisionRequirementsSort EMPTY_SORT =
         SortOptionBuilders.decisionRequirements().build();
+    private static final DecisionRequirementsQueryResultConfig EXCLUDE_XML_RESULT_CONFIG =
+        QueryResultConfigBuilders.decisionRequirements().xml().exclude().build();
 
     private DecisionRequirementsFilter filter;
     private DecisionRequirementsSort sort;
+    private DecisionRequirementsQueryResultConfig resultConfig;
 
     @Override
     public Builder filter(final DecisionRequirementsFilter value) {
@@ -65,6 +73,19 @@ public record DecisionRequirementsQuery(
       return sort(SortOptionBuilders.decisionRequirements(fn));
     }
 
+    public Builder resultConfig(final DecisionRequirementsQueryResultConfig value) {
+      resultConfig = value;
+      return this;
+    }
+
+    public Builder resultConfig(
+        final Function<
+                DecisionRequirementsQueryResultConfig.Builder,
+                ObjectBuilder<DecisionRequirementsQueryResultConfig>>
+            fn) {
+      return resultConfig(QueryResultConfigBuilders.decisionRequirements(fn));
+    }
+
     @Override
     protected Builder self() {
       return this;
@@ -74,7 +95,8 @@ public record DecisionRequirementsQuery(
     public DecisionRequirementsQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, EMPTY_SORT);
-      return new DecisionRequirementsQuery(filter, sort, page());
+      resultConfig = Objects.requireNonNullElse(resultConfig, EXCLUDE_XML_RESULT_CONFIG);
+      return new DecisionRequirementsQuery(filter, sort, page(), resultConfig);
     }
   }
 }
