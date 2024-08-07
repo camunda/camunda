@@ -151,7 +151,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
-          maven-extra-args: -T1C -PskipFrontendBuild
+          maven-extra-args: -T1C -PskipFrontendBuild -D skipOptimize
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -334,7 +334,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild -D skipOptimize
+          maven-extra-args: -PskipFrontendBuild
           go: false
       - uses: ./.github/actions/build-platform-docker
         id: build-camunda-docker
