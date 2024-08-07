@@ -10,8 +10,12 @@ package io.camunda.process.generator.element;
 import io.camunda.process.generator.BpmnFactories;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BpmnEmbeddedSubprocessGenerator extends BpmnNestingElementGenerator {
+
+  private static final Logger LOG = LoggerFactory.getLogger(BpmnEmbeddedSubprocessGenerator.class);
 
   private final BpmnFactories bpmnFactories;
 
@@ -27,6 +31,8 @@ public class BpmnEmbeddedSubprocessGenerator extends BpmnNestingElementGenerator
     generatorContext.incrementCurrentDepth();
 
     final String elementId = generatorContext.createNewId();
+
+    LOG.debug("Adding embedded subprocess with id {}", elementId);
 
     AbstractFlowNodeBuilder<?, ?> subprocessBuilder =
         processBuilder.subProcess(elementId).name(elementId).embeddedSubProcess().startEvent();

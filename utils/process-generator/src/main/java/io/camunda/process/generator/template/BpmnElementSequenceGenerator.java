@@ -11,8 +11,12 @@ import io.camunda.process.generator.GeneratorContext;
 import io.camunda.process.generator.element.BpmnElementGenerator;
 import io.camunda.process.generator.element.BpmnElementGeneratorFactory;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BpmnElementSequenceGenerator implements BpmnTemplateGenerator {
+
+  private static final Logger LOG = LoggerFactory.getLogger(BpmnElementSequenceGenerator.class);
 
   private final GeneratorContext generatorContext;
   private final BpmnElementGeneratorFactory elementGeneratorFactory;
@@ -31,6 +35,8 @@ public class BpmnElementSequenceGenerator implements BpmnTemplateGenerator {
 
     final int elementLimit = 5;
     final int numberOfElements = 1 + generatorContext.getRandomNumber(elementLimit);
+
+    LOG.debug("Adding sequence of {} elements", numberOfElements);
 
     for (int i = 0; i < numberOfElements; i++) {
       final BpmnElementGenerator elementGenerator = elementGeneratorFactory.getGenerator();

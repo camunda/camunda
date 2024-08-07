@@ -12,11 +12,13 @@ import io.camunda.process.generator.GeneratorContext;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ParallelGatewayBuilder;
 import java.util.stream.IntStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ParallelGatewayGenerator implements BpmnTemplateGenerator {
 
   public static final int BRANCH_LIMIT = 3;
-
+  private static final Logger LOG = LoggerFactory.getLogger(ParallelGatewayGenerator.class);
   private final GeneratorContext generatorContext;
   private final BpmnFactories bpmnFactories;
 
@@ -49,6 +51,13 @@ public class ParallelGatewayGenerator implements BpmnTemplateGenerator {
 
     // add remaining branches
     final int numberOfBranches = 1 + generatorContext.getRandomNumber(BRANCH_LIMIT - 1);
+
+    LOG.debug(
+        "Adding parallel gateway with {} branches, forking element id: {}, joining element id: {}",
+        numberOfBranches,
+        forkingElementId,
+        joiningElementId);
+
     IntStream.range(0, numberOfBranches)
         .forEach(
             i -> {

@@ -11,8 +11,12 @@ import io.camunda.process.generator.GeneratorContext;
 import io.camunda.process.generator.execution.CompleteJobStep;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ServiceTaskGenerator implements BpmnElementGenerator {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ServiceTaskGenerator.class);
 
   private final GeneratorContext generatorContext;
 
@@ -24,6 +28,9 @@ public class ServiceTaskGenerator implements BpmnElementGenerator {
   public AbstractFlowNodeBuilder<?, ?> addElement(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
     final String elementId = generatorContext.createNewId();
+
+    LOG.debug("Adding service task with id {}", elementId);
+
     final String jobType = "task_" + elementId;
 
     final ServiceTaskBuilder serviceTaskBuilder = processBuilder.serviceTask();

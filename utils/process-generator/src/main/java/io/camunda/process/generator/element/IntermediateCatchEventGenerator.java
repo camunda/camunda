@@ -12,8 +12,11 @@ import io.camunda.process.generator.event.BpmnCatchEventGenerator;
 import io.camunda.process.generator.event.BpmnCatchEventGeneratorFactory;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.IntermediateCatchEventBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class IntermediateCatchEventGenerator implements BpmnElementGenerator {
+  private static final Logger LOG = LoggerFactory.getLogger(IntermediateCatchEventGenerator.class);
 
   private final GeneratorContext generatorContext;
   private final BpmnCatchEventGeneratorFactory catchEventGeneratorFactory;
@@ -29,6 +32,8 @@ public class IntermediateCatchEventGenerator implements BpmnElementGenerator {
   public AbstractFlowNodeBuilder<?, ?> addElement(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
     final String elementId = generatorContext.createNewId();
+
+    LOG.debug("Adding intermediate catch event with id {}", elementId);
 
     final IntermediateCatchEventBuilder intermediateCatchEventBuilder =
         processBuilder.intermediateCatchEvent();

@@ -12,8 +12,13 @@ import io.camunda.process.generator.GeneratorContext;
 import io.camunda.zeebe.model.bpmn.builder.AbstractEndEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import java.util.function.IntPredicate;
+import java.util.stream.IntStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BpmnTerminateEndEventTemplate implements BpmnTemplateGenerator {
+
+  private static final Logger LOG = LoggerFactory.getLogger(BpmnTerminateEndEventTemplate.class);
 
   private final GeneratorContext generatorContext;
   private final BpmnFactories bpmnFactories;
@@ -31,6 +36,9 @@ public class BpmnTerminateEndEventTemplate implements BpmnTemplateGenerator {
     final var elementId = "terminate_%s".formatted(generatorContext.createNewId());
     final var numberOfFlows = generatorContext.getRandomNumber(2, 3);
     final var indexOfFlowWithTerminateEndEvent = generatorContext.getRandomNumber(numberOfFlows);
+
+    LOG.debug(
+        "Adding {} parallel flows, one with terminate end event {}", numberOfFlows, elementId);
 
     final IntPredicate shouldGenerateExecutionPathForFlow =
         i -> i == indexOfFlowWithTerminateEndEvent;

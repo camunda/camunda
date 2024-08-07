@@ -10,8 +10,12 @@ package io.camunda.process.generator.event;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.process.generator.execution.PublishMessageStep;
 import io.camunda.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MessageCatchEventGenerator implements BpmnCatchEventGenerator {
+
+  private static final Logger LOG = LoggerFactory.getLogger(MessageCatchEventGenerator.class);
 
   @Override
   public void addEventDefinition(
@@ -19,6 +23,8 @@ public class MessageCatchEventGenerator implements BpmnCatchEventGenerator {
       final AbstractCatchEventBuilder<?, ?> catchEventBuilder,
       final GeneratorContext generatorContext,
       final boolean generateExecutionPath) {
+
+    LOG.debug("Turning catch event with id {} into a message catch event", elementId);
 
     final var messageName = "message_" + elementId;
     final var correlationKey = "correlationKey_" + elementId;

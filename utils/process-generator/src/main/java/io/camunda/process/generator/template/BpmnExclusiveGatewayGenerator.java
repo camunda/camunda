@@ -9,8 +9,12 @@ package io.camunda.process.generator.template;
 
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BpmnExclusiveGatewayGenerator implements BpmnTemplateGenerator {
+
+  private static final Logger LOG = LoggerFactory.getLogger(BpmnExclusiveGatewayGenerator.class);
 
   private static final int MIN_AMOUNT_OF_BRANCHES = 2;
   private static final int MAX_AMOUNT_OF_BRANCHES = 3;
@@ -35,6 +39,14 @@ public class BpmnExclusiveGatewayGenerator implements BpmnTemplateGenerator {
 
     final var forkingGatewayId = generatorContext.createNewId();
     final var joiningGatewayId = generatorContext.createNewId();
+
+    LOG.debug(
+        "Adding exclusive gateway {} with {} branches, joining at {}, execution branch {}",
+        forkingGatewayId,
+        amountOfBranches,
+        joiningGatewayId,
+        executionBranch);
+
     final var exclusiveGatewayBuilder = processBuilder.exclusiveGateway(forkingGatewayId);
 
     // Add the default flow

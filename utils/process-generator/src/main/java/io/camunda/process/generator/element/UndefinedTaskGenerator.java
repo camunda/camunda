@@ -9,8 +9,12 @@ package io.camunda.process.generator.element;
 
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UndefinedTaskGenerator implements BpmnElementGenerator {
+
+  private static final Logger LOG = LoggerFactory.getLogger(UndefinedTaskGenerator.class);
 
   private final GeneratorContext generatorContext;
 
@@ -22,6 +26,8 @@ public class UndefinedTaskGenerator implements BpmnElementGenerator {
   public AbstractFlowNodeBuilder<?, ?> addElement(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
     final String elementId = generatorContext.createNewId();
+
+    LOG.debug("Adding undefined task with id {}", elementId);
 
     return processBuilder.task(elementId);
   }

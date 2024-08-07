@@ -11,8 +11,12 @@ import io.camunda.process.generator.GeneratorContext;
 import io.camunda.process.generator.execution.CompleteUserTaskStep;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UserTaskGenerator implements BpmnElementGenerator {
+
+  private static final Logger LOG = LoggerFactory.getLogger(UserTaskGenerator.class);
 
   private final GeneratorContext generatorContext;
 
@@ -24,6 +28,8 @@ public class UserTaskGenerator implements BpmnElementGenerator {
   public AbstractFlowNodeBuilder<?, ?> addElement(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
     final String elementId = generatorContext.createNewId();
+
+    LOG.debug("Adding user task with id {}", elementId);
 
     final UserTaskBuilder userTaskBuilder = processBuilder.userTask().zeebeUserTask();
     userTaskBuilder.id(elementId).name(elementId);

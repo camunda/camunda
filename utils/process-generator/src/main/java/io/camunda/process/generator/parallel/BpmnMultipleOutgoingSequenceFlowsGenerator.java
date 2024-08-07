@@ -13,8 +13,13 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import java.util.List;
 import java.util.function.IntPredicate;
 import java.util.stream.IntStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BpmnMultipleOutgoingSequenceFlowsGenerator implements BpmnParallelFlowGenerator {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(BpmnMultipleOutgoingSequenceFlowsGenerator.class);
 
   private final BpmnFactories bpmnFactories;
 
@@ -36,6 +41,8 @@ public class BpmnMultipleOutgoingSequenceFlowsGenerator implements BpmnParallelF
             .getElementGeneratorFactory()
             .getGenerator()
             .addElement(processBuilder, generateExecutionPath);
+
+    LOG.debug("Adding {} outgoing sequence flows to previous element", numberOfFlows);
 
     return IntStream.range(0, numberOfFlows)
         .mapToObj(
