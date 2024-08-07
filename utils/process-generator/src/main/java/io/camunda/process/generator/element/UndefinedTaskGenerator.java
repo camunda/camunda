@@ -20,7 +20,7 @@ public class UndefinedTaskGenerator implements BpmnElementGenerator {
 
   @Override
   public AbstractFlowNodeBuilder<?, ?> addElement(
-      final AbstractFlowNodeBuilder<?, ?> processBuilder) {
+      final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
     final String elementId = generatorContext.createNewId();
 
     return processBuilder.task(elementId);

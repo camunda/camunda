@@ -8,6 +8,7 @@
 package io.camunda.process.generator.element;
 
 import io.camunda.process.generator.GeneratorContext;
+import io.camunda.process.generator.execution.CompleteUserTaskStep;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 
@@ -21,11 +22,15 @@ public class UserTaskGenerator implements BpmnElementGenerator {
 
   @Override
   public AbstractFlowNodeBuilder<?, ?> addElement(
-      final AbstractFlowNodeBuilder<?, ?> processBuilder) {
+      final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
     final String elementId = generatorContext.createNewId();
 
     final UserTaskBuilder userTaskBuilder = processBuilder.userTask();
     userTaskBuilder.id(elementId).name(elementId);
+
+    if (generateExecutionPath) {
+      generatorContext.addExecutionStep(new CompleteUserTaskStep(elementId));
+    }
 
     return userTaskBuilder;
   }

@@ -27,7 +27,7 @@ public class IntermediateCatchEventGenerator implements BpmnElementGenerator {
 
   @Override
   public AbstractFlowNodeBuilder<?, ?> addElement(
-      final AbstractFlowNodeBuilder<?, ?> processBuilder) {
+      final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
     final String elementId = generatorContext.createNewId();
 
     final IntermediateCatchEventBuilder intermediateCatchEventBuilder =
@@ -36,7 +36,8 @@ public class IntermediateCatchEventGenerator implements BpmnElementGenerator {
     intermediateCatchEventBuilder.id(elementId).name(elementId);
 
     final BpmnCatchEventGenerator catchEventGenerator = catchEventGeneratorFactory.getGenerator();
-    catchEventGenerator.addEventDefinition(elementId, intermediateCatchEventBuilder);
+    catchEventGenerator.addEventDefinition(
+        elementId, intermediateCatchEventBuilder, generatorContext, generateExecutionPath);
 
     return intermediateCatchEventBuilder;
   }

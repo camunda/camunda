@@ -23,7 +23,7 @@ public class BpmnEmbeddedSubprocessGenerator extends BpmnNestingElementGenerator
 
   @Override
   public AbstractFlowNodeBuilder<?, ?> addNestingElement(
-      final AbstractFlowNodeBuilder<?, ?> processBuilder) {
+      final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
     generatorContext.incrementCurrentDepth();
 
     final String elementId = generatorContext.createNewId();
@@ -32,7 +32,7 @@ public class BpmnEmbeddedSubprocessGenerator extends BpmnNestingElementGenerator
         processBuilder.subProcess(elementId).name(elementId).embeddedSubProcess().startEvent();
 
     final var templateGenerator = bpmnFactories.getTemplateGeneratorFactory().getGenerator();
-    subprocessBuilder = templateGenerator.addElements(subprocessBuilder);
+    subprocessBuilder = templateGenerator.addElements(subprocessBuilder, generateExecutionPath);
 
     generatorContext.decrementCurrentDepth();
     return subprocessBuilder.endEvent().subProcessDone();

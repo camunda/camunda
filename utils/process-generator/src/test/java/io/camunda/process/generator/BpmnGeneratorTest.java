@@ -18,7 +18,6 @@ package io.camunda.process.generator;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import org.junit.jupiter.api.Test;
 
 public class BpmnGeneratorTest {
@@ -29,10 +28,10 @@ public class BpmnGeneratorTest {
     final var generator = new BpmnGenerator();
 
     // when
-    final BpmnModelInstance process = generator.generateProcess();
+    final var generatedProcess = generator.generateProcess();
 
     // then
-    assertThat(process).isNotNull();
+    assertThat(generatedProcess).isNotNull();
   }
 
   @Test
@@ -41,11 +40,11 @@ public class BpmnGeneratorTest {
     final var generator = new BpmnGenerator();
 
     // when
-    final BpmnModelInstance process = generator.generateProcess();
+    final var generatedProcess = generator.generateProcess();
 
     // then
-    assertThat(process).isNotNull();
+    assertThat(generatedProcess).isNotNull();
 
-    System.out.println(Bpmn.convertToString(process));
+    System.out.println(Bpmn.convertToString(generatedProcess.process()));
   }
 }

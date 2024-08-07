@@ -11,5 +11,6 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 
 public interface BpmnTemplateGenerator {
 
-  AbstractFlowNodeBuilder<?, ?> addElements(final AbstractFlowNodeBuilder<?, ?> processBuilder);
+  AbstractFlowNodeBuilder<?, ?> addElements(
+      final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath);
 }
