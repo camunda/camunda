@@ -15,37 +15,5 @@
  */
 package io.camunda.zeebe.client.api.search.response;
 
-public interface DecisionRequirements {
-
-  /**
-   * @return the dmn decision requirements ID, as parsed during deployment; together with the
-   *     versions forms a unique identifier for a specific decision
-   */
-  String getDmnDecisionRequirementsId();
-
-  /**
-   * @return the dmn name of the decision requirements, as parsed during deployment
-   */
-  String getDmnDecisionRequirementsName();
-
-  /**
-   * @return the assigned decision requirements version
-   */
-  int getVersion();
-
-  /**
-   * @return the assigned decision requirements key, which acts as a unique identifier for this
-   *     decision requirements
-   */
-  long getDecisionRequirementsKey();
-
-  /**
-   * @return the resource name (i.e. filename) from which this decision requirements was parsed
-   */
-  String getResourceName();
-
-  /**
-   * @return the tenant identifier that owns this decision requirements
-   */
-  String getTenantId();
-}
+public interface DecisionRequirements
+    extends io.camunda.zeebe.client.api.response.DecisionRequirements {}
