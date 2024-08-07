@@ -58,14 +58,4 @@ public class OpenSearchISMOperations extends OpenSearchRetryOperation {
                         "GET", "/_plugins/_ism/policies/" + policyName, "{}"),
                 e -> format("Failed to get policy: %s", policyName)));
   }
-
-  public Map<String, Object> removePolicyFromIndex(final String index) {
-    return withExtendedOpenSearchClient(
-        extendedOpenSearchClient ->
-            safe(
-                () ->
-                    extendedOpenSearchClient.arbitraryRequest(
-                        "POST", "/_plugins/_ism/remove/" + index, "{}"),
-                e -> format("Failed to remove policy from index: %s", index)));
-  }
 }

@@ -63,10 +63,6 @@ public class SchemaStartup {
             "SchemaStartup: schema won't be created, it either already exist, or schema creation is disabled in configuration.");
       }
 
-      if (createSchema) {
-        schemaManager.checkAndUpdateIndices();
-      }
-
       if (!newFields.isEmpty()) {
         if (createSchema) {
           schemaManager.updateSchema(newFields);
