@@ -35,7 +35,7 @@ public class BpmnGeneratorTest {
   }
 
   @Test
-  void shouldGenerateARandomProcess() {
+  void shouldGenerateARandomProcess() throws Exception {
     // given
     final var generator = new BpmnGenerator();
 
@@ -46,5 +46,13 @@ public class BpmnGeneratorTest {
     assertThat(generatedProcess).isNotNull();
 
     System.out.println(Bpmn.convertToString(generatedProcess.process()));
+
+    //    Uncomment to open the generated process in the modeler automatically
+    //
+    //    final File tempFile = File.createTempFile("temp", ".bpmn");
+    //    final FileWriter writer = new FileWriter(tempFile);
+    //    writer.write(Bpmn.convertToString(generatedProcess.process()));
+    //    writer.close();
+    //    Desktop.getDesktop().open(tempFile);
   }
 }
