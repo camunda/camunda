@@ -29,11 +29,17 @@ public final class UserClient {
   public static class UserCreationClient {
 
     private static final Function<Long, Record<UserRecordValue>> SUCCESS_SUPPLIER =
-        (position) -> RecordingExporter.userRecords().withSourceRecordPosition(position).getFirst();
+        (position) ->
+            RecordingExporter.userRecords()
+                .withIntent(UserIntent.CREATED)
+                .withSourceRecordPosition(position)
+                .getFirst();
+    ;
     private static final Function<Long, Record<UserRecordValue>> REJECTION_SUPPLIER =
         (position) ->
             RecordingExporter.userRecords()
                 .onlyCommandRejections()
+                .withIntent(UserIntent.CREATE)
                 .withSourceRecordPosition(position)
                 .getFirst();
     private final CommandWriter writer;
