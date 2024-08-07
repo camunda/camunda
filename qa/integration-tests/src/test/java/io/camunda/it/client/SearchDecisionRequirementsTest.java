@@ -36,9 +36,9 @@ public class SearchDecisionRequirementsTest {
   public static void setup() {
     zeebeClient = testStandaloneCamunda.newClientBuilder().build();
 
-    deployProcessModel("decision/decision_model.dmn");
-    deployProcessModel("decision/decision_model_1.dmn");
-    deployProcessModel("decision/decision_model_1_v2.dmn");
+    deployResource("decision/decision_model.dmn");
+    deployResource("decision/decision_model_1.dmn");
+    deployResource("decision/decision_model_1_v2.dmn");
 
     waitForDecisionRequirementsBeingExported();
   }
@@ -300,7 +300,7 @@ public class SearchDecisionRequirementsTest {
             });
   }
 
-  private static void deployProcessModel(final String resourceName) {
+  private static void deployResource(final String resourceName) {
     zeebeClient.newDeployResourceCommand().addResourceFromClasspath(resourceName).send().join();
   }
 }
