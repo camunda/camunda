@@ -36,7 +36,7 @@ public class ProcessInstanceQueryController {
   public ResponseEntity<ProcessInstanceSearchQueryResponse> searchProcessInstances(
       @RequestBody(required = false) final ProcessInstanceSearchQueryRequest query) {
     return SearchQueryRequestMapper.toProcessInstanceQuery(query)
-        .fold(this::search, RestErrorMapper::mapProblemToResponse);
+        .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
   private ResponseEntity<ProcessInstanceSearchQueryResponse> search(

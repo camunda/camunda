@@ -45,10 +45,10 @@ public final class SearchClientBasedQueryExecutor {
     return searchClient
         .search(searchRequest, documentClass)
         .fold(
-            responseTransformer::apply,
             (e) -> {
               throw rethrowRuntimeException(e);
-            });
+            },
+            responseTransformer::apply);
   }
 
   private SearchQuery getAuthenticationCheckIfPresent() {
