@@ -7,18 +7,8 @@
  */
 package io.camunda.process.generator.execution;
 
-public class CreateProcessInstanceStep implements ProcessExecutionStep {
-
-  private final String processId;
-
-  public CreateProcessInstanceStep(final String processId) {
-    this.processId = processId;
-  }
-
-  @Override
-  public String elementId() {
-    return processId; // TODO getElementId returns processId??? Improve naming
-  }
+public record CreateProcessInstanceStep(String elementId, String processId)
+    implements ProcessExecutionStep {
 
   @Override
   public String description() {

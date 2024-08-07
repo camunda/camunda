@@ -36,7 +36,7 @@ public class ProcessGenerator {
     final String processId = "process_" + generatorContext.createNewId();
     AbstractFlowNodeBuilder<?, ?> processBuilder =
         Bpmn.createExecutableProcess(processId).name(processId).startEvent();
-    generatorContext.addExecutionStep(new CreateProcessInstanceStep(processId));
+    generatorContext.addExecutionStep(new CreateProcessInstanceStep(processId, processId));
 
     final BpmnTemplateGeneratorFactory templateGeneratorFactory =
         bpmnFactories.getTemplateGeneratorFactory();

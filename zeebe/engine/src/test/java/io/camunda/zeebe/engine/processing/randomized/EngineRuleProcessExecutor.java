@@ -29,7 +29,7 @@ public class EngineRuleProcessExecutor implements ProcessExecutor {
 
   @Override
   public void execute(final CreateProcessInstanceStep step) {
-    engineRule.processInstance().ofBpmnProcessId(step.elementId()).create();
+    engineRule.processInstance().ofBpmnProcessId(step.processId()).create();
   }
 
   @Override
