@@ -23,7 +23,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
