@@ -14,9 +14,15 @@ import org.springframework.stereotype.Component;
 @Component
 @Getter
 @AllArgsConstructor
-public abstract class OptimizeVersionService {
+public class OptimizeVersionService {
 
   private final String rawVersion;
   private final String version;
   private final String docsVersion;
+
+  public OptimizeVersionService() {
+    rawVersion = Version.RAW_VERSION;
+    version = Version.VERSION;
+    docsVersion = Version.VERSION;
+  }
 }
