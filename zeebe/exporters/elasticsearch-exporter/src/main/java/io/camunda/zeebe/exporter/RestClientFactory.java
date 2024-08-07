@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter;
 
 import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.InterceptorPlugin;
+import io.camunda.zeebe.util.jar.ExternalJarClassLoader;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -105,7 +106,7 @@ final class RestClientFactory {
   Class<?> createInterceptorClass(final InterceptorPlugin interceptorPlugin) {
     // File type and path are checked by class loader
     try (final var classLoader =
-        ExternalJarClassLoaderMaybeRemove.ofPath(Paths.get(interceptorPlugin.getJarPath()))) {
+        ExternalJarClassLoader.ofPath(Paths.get(interceptorPlugin.getJarPath()))) {
       return classLoader.loadClass(interceptorPlugin.getClassName());
     } catch (final IOException | ClassNotFoundException e) {
       LOGGER.error(

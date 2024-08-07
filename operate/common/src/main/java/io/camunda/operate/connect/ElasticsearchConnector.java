@@ -20,6 +20,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.SslProperties;
 import io.camunda.operate.util.RetryOperation;
 import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
+import io.camunda.zeebe.util.jar.ExternalJarClassLoader;
 import jakarta.annotation.PreDestroy;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -241,7 +242,7 @@ public class ElasticsearchConnector {
   Class<?> createInterceptorClass(final InterceptorPluginProperties interceptorPlugin) {
     // File type and path are checked by class loader
     try (final var classLoader =
-        ExternalJarClassLoaderMaybeRemove.ofPath(Paths.get(interceptorPlugin.getJarPath()))) {
+        ExternalJarClassLoader.ofPath(Paths.get(interceptorPlugin.getJarPath()))) {
       return classLoader.loadClass(interceptorPlugin.getClassName());
     } catch (final IOException | ClassNotFoundException e) {
       LOGGER.error(
