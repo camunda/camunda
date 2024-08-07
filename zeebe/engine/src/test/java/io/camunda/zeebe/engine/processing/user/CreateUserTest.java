@@ -79,6 +79,10 @@ public class CreateUserTest {
     assertThat(createdUser).isNotNull().hasFieldOrPropertyWithValue("username", username);
 
     io.camunda.zeebe.protocol.record.Assertions.assertThat(duplicatedUserRecord)
-        .hasRejectionType(RejectionType.ALREADY_EXISTS);
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to create user with name "
+                + username
+                + ", but a user with this name already exists");
   }
 }
