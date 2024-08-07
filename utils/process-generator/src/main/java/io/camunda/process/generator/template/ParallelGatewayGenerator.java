@@ -28,7 +28,7 @@ public class ParallelGatewayGenerator implements BpmnTemplateGenerator {
 
   @Override
   public AbstractFlowNodeBuilder<?, ?> addElements(
-      final AbstractFlowNodeBuilder<?, ?> processBuilder) {
+      final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
 
     final String forkingElementId = generatorContext.createNewId();
     final String joiningElementId = generatorContext.createNewId();
@@ -41,7 +41,8 @@ public class ParallelGatewayGenerator implements BpmnTemplateGenerator {
 
     // add first branch
     final BpmnTemplateGenerator generator = templateGeneratorFactory.getGenerator();
-    final AbstractFlowNodeBuilder<?, ?> firstBranch = generator.addElements(forkingGateway);
+    final AbstractFlowNodeBuilder<?, ?> firstBranch =
+        generator.addElements(forkingGateway, generateExecutionPath);
 
     final ParallelGatewayBuilder joiningGateway =
         firstBranch.parallelGateway(joiningElementId).name(joiningElementId);
@@ -53,7 +54,7 @@ public class ParallelGatewayGenerator implements BpmnTemplateGenerator {
             i -> {
               final BpmnTemplateGenerator branchGenerator = templateGeneratorFactory.getGenerator();
               final AbstractFlowNodeBuilder<?, ?> branch =
-                  branchGenerator.addElements(forkingGateway);
+                  branchGenerator.addElements(forkingGateway, generateExecutionPath);
               branch.connectTo(joiningElementId);
             });
 
