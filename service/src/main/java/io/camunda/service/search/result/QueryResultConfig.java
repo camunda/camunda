@@ -5,12 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service.search.source;
+package io.camunda.service.search.result;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public interface SourceConfig {
+public interface QueryResultConfig {
 
   List<FieldFilter> getFieldFilters();
 
@@ -42,5 +42,5 @@ public interface SourceConfig {
     }
   }
 
-  record FieldFilter(String field, boolean include) {}
+  record FieldFilter(String field, Boolean include) {}
 }
