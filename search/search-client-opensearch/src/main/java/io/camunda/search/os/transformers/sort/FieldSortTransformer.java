@@ -11,6 +11,7 @@ import io.camunda.search.clients.sort.SearchFieldSort;
 import io.camunda.search.os.transformers.OpensearchTransformer;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import org.opensearch.client.opensearch._types.FieldSort;
+import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOptionsBuilders;
 import org.opensearch.client.opensearch._types.SortOrder;
 
@@ -24,7 +25,10 @@ public final class FieldSortTransformer extends OpensearchTransformer<SearchFiel
   public FieldSort apply(final SearchFieldSort value) {
     final var field = value.field();
     final var order = toSortOrder(value);
-    return SortOptionsBuilders.field().field(field).order(order).build();
+    final var missing = value.missing();
+
+    final var builder = SortOptionsBuilders.field().field(field).order(order);
+    return missing == null ? builder.build() : builder.missing(FieldValue.of(missing)).build();
   }
 
   private SortOrder toSortOrder(final SearchFieldSort value) {

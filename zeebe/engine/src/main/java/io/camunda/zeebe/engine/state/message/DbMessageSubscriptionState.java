@@ -153,8 +153,6 @@ public final class DbMessageSubscriptionState
   public void updateToCorrelatingState(final MessageSubscriptionRecord record) {
     final var messageKey = record.getMessageKey();
     var messageVariables = record.getVariablesBuffer();
-    final var requestId = record.getRequestId();
-    final var requestStreamId = record.getRequestStreamId();
     if (record == messageSubscription.getRecord()) {
       // copy the buffer before loading the subscription to avoid that it is overridden
       messageVariables = BufferUtil.cloneBuffer(record.getVariablesBuffer());
@@ -169,12 +167,7 @@ public final class DbMessageSubscriptionState
     }
 
     // update the message key, variables and request data
-    subscription
-        .getRecord()
-        .setMessageKey(messageKey)
-        .setVariables(messageVariables)
-        .setRequestId(requestId)
-        .setRequestStreamId(requestStreamId);
+    subscription.getRecord().setMessageKey(messageKey).setVariables(messageVariables);
 
     updateCorrelatingFlag(subscription, true);
 

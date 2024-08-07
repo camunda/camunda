@@ -14,8 +14,6 @@ import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionStat
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.DirectBuffer;
 
 public final class MessageCorrelateBehavior {
@@ -78,7 +76,6 @@ public final class MessageCorrelateBehavior {
 
   public Subscriptions correlateToMessageEvents(final MessageData messageData) {
     final var correlatingSubscriptions = new Subscriptions();
-    final var hasResponded = new AtomicBoolean(false);
 
     messageSubscriptionState.visitSubscriptions(
         messageData.tenantId(),
@@ -96,16 +93,6 @@ public final class MessageCorrelateBehavior {
                     .getRecord()
                     .setMessageKey(messageData.messageKey())
                     .setVariables(messageData.variables());
-
-            // Respond only for one subscription if we have request data available.
-            final var hasRequestData =
-                messageData.requestId().isPresent() && messageData.requestStreamId().isPresent();
-            if (hasRequestData && !hasResponded.get()) {
-              correlatingSubscription
-                  .setRequestId(messageData.requestId().get())
-                  .setRequestStreamId(messageData.requestStreamId().get());
-              hasResponded.set(true);
-            }
 
             stateWriter.appendFollowUpEvent(
                 subscription.getKey(),
@@ -135,42 +122,5 @@ public final class MessageCorrelateBehavior {
       DirectBuffer messageName,
       DirectBuffer correlationKey,
       DirectBuffer variables,
-      String tenantId,
-      Optional<Long> requestId,
-      Optional<Integer> requestStreamId) {
-
-    MessageData(
-        final long messageKey,
-        final DirectBuffer messageName,
-        final DirectBuffer correlationKey,
-        final DirectBuffer variables,
-        final String tenantId) {
-      this(
-          messageKey,
-          messageName,
-          correlationKey,
-          variables,
-          tenantId,
-          Optional.empty(),
-          Optional.empty());
-    }
-
-    MessageData(
-        final long messageKey,
-        final DirectBuffer messageName,
-        final DirectBuffer correlationKey,
-        final DirectBuffer variables,
-        final String tenantId,
-        final long requestId,
-        final int requestStreamId) {
-      this(
-          messageKey,
-          messageName,
-          correlationKey,
-          variables,
-          tenantId,
-          Optional.of(requestId),
-          Optional.of(requestStreamId));
-    }
-  }
+      String tenantId) {}
 }

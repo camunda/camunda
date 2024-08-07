@@ -41,15 +41,6 @@ type Config struct {
 func Read() Config {
 	tcConfigOnce.Do(func() {
 		tcConfig = read()
-
-		if tcConfig.RyukDisabled {
-			ryukDisabledMessage := `
-**********************************************************************************************
-Ryuk has been disabled for the current execution. This can cause unexpected behavior in your environment.
-More on this: https://golang.testcontainers.org/features/garbage_collector/
-**********************************************************************************************`
-			fmt.Println(ryukDisabledMessage)
-		}
 	})
 
 	return tcConfig
@@ -85,6 +76,16 @@ func read() Config {
 		ryukVerboseEnv := os.Getenv("TESTCONTAINERS_RYUK_VERBOSE")
 		if parseBool(ryukVerboseEnv) {
 			config.RyukVerbose = ryukVerboseEnv == "true"
+		}
+
+		ryukReconnectionTimeoutEnv := os.Getenv("TESTCONTAINERS_RYUK_RECONNECTION_TIMEOUT")
+		if timeout, err := time.ParseDuration(ryukReconnectionTimeoutEnv); err == nil {
+			config.RyukReconnectionTimeout = timeout
+		}
+
+		ryukConnectionTimeoutEnv := os.Getenv("TESTCONTAINERS_RYUK_CONNECTION_TIMEOUT")
+		if timeout, err := time.ParseDuration(ryukConnectionTimeoutEnv); err == nil {
+			config.RyukConnectionTimeout = timeout
 		}
 
 		return config

@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.client.api.search;
 
+import io.camunda.zeebe.client.impl.search.DecisionDefinitionFilterImpl;
+import io.camunda.zeebe.client.impl.search.DecisionDefinitionSortImpl;
 import io.camunda.zeebe.client.impl.search.DecisionRequirementsFilterImpl;
 import io.camunda.zeebe.client.impl.search.DecisionRequirementsSortImpl;
 import io.camunda.zeebe.client.impl.search.ProcessInstanceFilterImpl;
@@ -54,6 +56,19 @@ public final class SearchRequestBuilders {
     return filter;
   }
 
+  /** Create a decision definition filter. */
+  public static DecisionDefinitionFilter decisionDefinitionFilter() {
+    return new DecisionDefinitionFilterImpl() {};
+  }
+
+  /** Create a decision definition filter by using a fluent builder. */
+  public static DecisionDefinitionFilter decisionDefinitionFilter(
+      final Consumer<DecisionDefinitionFilter> fn) {
+    final DecisionDefinitionFilter filter = decisionDefinitionFilter();
+    fn.accept(filter);
+    return filter;
+  }
+
   /** Create a process instance sort option. */
   public static ProcessInstanceSort processInstanceSort() {
     return new ProcessInstanceSortImpl();
@@ -62,6 +77,19 @@ public final class SearchRequestBuilders {
   /** Create a process instance sort option by using a fluent builder. */
   public static ProcessInstanceSort processInstanceSort(final Consumer<ProcessInstanceSort> fn) {
     final ProcessInstanceSort sort = processInstanceSort();
+    fn.accept(sort);
+    return sort;
+  }
+
+  /** Create a decision definition sort option. */
+  public static DecisionDefinitionSort decisionDefinitionSort() {
+    return new DecisionDefinitionSortImpl() {};
+  }
+
+  /** Create a decision definition sort option by using a fluent builder. */
+  public static DecisionDefinitionSort decisionDefinitionSort(
+      final Consumer<DecisionDefinitionSort> fn) {
+    final DecisionDefinitionSort sort = decisionDefinitionSort();
     fn.accept(sort);
     return sort;
   }

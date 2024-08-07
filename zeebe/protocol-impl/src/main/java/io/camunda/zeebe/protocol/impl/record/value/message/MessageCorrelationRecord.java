@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -28,14 +29,21 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+  private final LongProperty messageKey = new LongProperty("messageKey", -1L);
+  private final LongProperty requestIdProp = new LongProperty("requestId", -1L);
+  private final IntegerProperty requestStreamIdProp = new IntegerProperty("requestStreamId", -1);
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
 
   public MessageCorrelationRecord() {
-    super(5);
+    super(7);
     declareProperty(nameProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(variablesProp)
         .declareProperty(tenantIdProp)
+        .declareProperty(messageKey)
+        .declareProperty(requestIdProp)
+        .declareProperty(requestStreamIdProp)
         .declareProperty(processInstanceKeyProp);
   }
 
@@ -59,6 +67,36 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
 
   public MessageCorrelationRecord setCorrelationKey(final String correlationKey) {
     correlationKeyProp.setValue(correlationKey);
+    return this;
+  }
+
+  @Override
+  public long getMessageKey() {
+    return messageKey.getValue();
+  }
+
+  @Override
+  public long getRequestId() {
+    return requestIdProp.getValue();
+  }
+
+  @Override
+  public int getRequestStreamId() {
+    return requestStreamIdProp.getValue();
+  }
+
+  public MessageCorrelationRecord setRequestStreamId(final int requestStreamId) {
+    requestStreamIdProp.setValue(requestStreamId);
+    return this;
+  }
+
+  public MessageCorrelationRecord setRequestId(final long requestId) {
+    requestIdProp.setValue(requestId);
+    return this;
+  }
+
+  public MessageCorrelationRecord setMessageKey(final long messageKey) {
+    this.messageKey.setValue(messageKey);
     return this;
   }
 

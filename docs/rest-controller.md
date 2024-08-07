@@ -21,7 +21,7 @@ Define the endpoint you want to create.
 
 1. Consider the (🔒 currently internal) [REST API guidelines](https://docs.google.com/document/d/1G9AmmNac-4QLGZ0LXQXa3FyeCrSJdIboaPt3-R6dWNw/).
 2. Consider the [existing endpoints](https://docs.camunda.io/docs/next/apis-tools/camunda-api-rest/specifications/camunda-8-rest-api/) to create consistent endpoints.
-3. Share and validate your endpoint design with peers.
+3. Share and validate your endpoint design with peers, for example in the [#prj-camunda-8-rest-api](https://camunda.slack.com/archives/C06UKS51QV9).
 
 ### OpenAPI extension
 

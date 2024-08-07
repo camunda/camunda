@@ -33,6 +33,15 @@
             },
             "processInstanceKey": {
               "type": "long"
+            },
+            "messageKey": {
+              "type": "long"
+            },
+            "requestId": {
+              "type": "long"
+            },
+            "requestStreamId": {
+              "type": "integer"
             }
           }
         }

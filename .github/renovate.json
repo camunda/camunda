@@ -42,20 +42,20 @@
     },
     {
       "matchManagers": ["maven"],
-      "matchPackageNames": ["org.opensearch.client{/,}**", "org.elasticsearch{/,}**", "co.elastic{/,}**"],
+      "matchPackagePrefixes": ["org.opensearch.client", "org.elasticsearch", "co.elastic"],
       "matchUpdateTypes": ["minor", "major"],
       "enabled": false
     },
     {
       "description": "Skip lucene major updates to avoid breaking changes.",
       "matchManagers": ["maven"],
-      "matchPackageNames": ["org.apache.lucene{/,}**"],
+      "matchPackagePrefixes": ["org.apache.lucene"],
       "matchUpdateTypes": ["major"],
       "enabled": false
     },
     {
       "matchManagers": ["maven"],
-      "matchPackageNames": ["com.graphql-java{/,}**"],
+      "matchPackagePrefixes": ["com.graphql-java"],
       "matchUpdateTypes": ["major"],
       "enabled": false
     },
@@ -68,19 +68,19 @@
     },
     {
       "matchManagers": ["maven"],
-      "matchPackageNames": ["org.jacoco{/,}**"],
+      "matchPackagePrefixes": ["org.jacoco"],
       "allowedVersions": "!/0.8.9/"
     },
     {
       "description" : "Exclude SNAPSHOT versions, renovate may suggest them for pre-release values.",
       "matchManagers": ["maven"],
-      "matchPackageNames": ["*"],
+      "matchPackagePatterns": [".*"],
       "allowedVersions": "!/-SNAPSHOT$/"
     },
     {
       "description" : "Exclude internal Maven modules and Maven dependencies lacking metadata.",
       "matchManagers": ["maven"],
-      "matchPackageNames": [
+      "matchPackagePatterns": [
         "io.camunda:operate-parent",
         "io.camunda:operate-qa",
         "io.camunda:operate-qa-migration-tests-parent",
@@ -94,7 +94,7 @@
       "description": "Exclude frontend deps until migration is done in Operate (see issues #17736, #17844, #18851)",
       "matchManagers": ["npm", "nvm"],
       "matchFileNames": ["operate/**"],
-      "matchPackageNames": [
+      "matchPackagePatterns": [
         "react-router-dom",
         "msw",
         "@carbon/react"
@@ -111,7 +111,7 @@
       "additionalBranchPrefix": "fe-"
     },
     {
-      "matchPackageNames": ["@types/{/,}**"],
+      "matchPackagePrefixes": ["@types/"],
       "groupName": "definitelyTyped"
     },
     {
@@ -124,7 +124,7 @@
     },
     {
       "matchManagers": ["npm", "nvm"],
-      "matchPackageNames": ["*"],
+      "matchPackagePatterns": ["*"],
       "matchUpdateTypes": ["patch"],
       "groupName": "all non-major dependencies",
       "groupSlug": "all-minor-patch"
@@ -146,7 +146,7 @@
     },
     {
       "description": "Automerge all updates with green CI.",
-      "matchPackageNames": ["*"],
+      "matchPackagePatterns": ["*"],
       "automerge": true,
       "addLabels": ["automerge"]
     }

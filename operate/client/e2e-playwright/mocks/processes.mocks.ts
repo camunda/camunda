@@ -3008,6 +3008,40 @@ const mockFinishedOrderProcessInstances: ProcessInstancesDto = {
   ),
 };
 
+const mockOrderProcessInstancesWithFailedOperations: ProcessInstancesDto = {
+  totalCount: mockOrderProcessInstances.totalCount,
+  processInstances: mockOrderProcessInstances.processInstances.map(
+    (instance, index) => {
+      return {
+        ...instance,
+        operations:
+          index < 3
+            ? [
+                {
+                  id: '653ed5e6-49ed-4675-85bf-2c54a94d8180',
+                  batchOperationId: '653ed5e6-49ed-4675-85bf-2c54a94d8180',
+                  type: 'MIGRATE_PROCESS_INSTANCE',
+                  state: 'FAILED',
+                  errorMessage:
+                    "Unable to process operation: Command 'MIGRATE' rejected with code 'INVALID_STATE': Expected to migrate process instance but target process has an event subprocess. Target processes with event subprocesses cannot be migrated yet.",
+                  completedDate: null,
+                },
+              ]
+            : [
+                {
+                  id: '653ed5e6-49ed-4675-85bf-2c54a94d8180',
+                  batchOperationId: '653ed5e6-49ed-4675-85bf-2c54a94d8180',
+                  type: 'MIGRATE_PROCESS_INSTANCE',
+                  state: 'COMPLETED',
+                  errorMessage: null,
+                  completedDate: '2023-09-29T14:12:11.684+0000',
+                },
+              ],
+      };
+    },
+  ),
+};
+
 const mockOrderProcessV2Instances: ProcessInstancesDto = {
   totalCount: 3,
   processInstances: Array(3)
@@ -3284,6 +3318,7 @@ export {
   mockDeleteProcess,
   mockOrderProcessInstances,
   mockFinishedOrderProcessInstances,
+  mockOrderProcessInstancesWithFailedOperations,
   mockOrderProcessV2Instances,
   mockMigrationOperation,
 };
