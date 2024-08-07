@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public final class UserRecord extends UnifiedRecordValue implements UserRecordValue {
@@ -34,6 +35,15 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
     nameProp.setValue(record.getNameBuffer());
     emailProp.setValue(record.getEmailBuffer());
     passwordProp.setValue(record.getPasswordBuffer());
+  }
+
+  public UserRecord copy() {
+    final var copy = new UserRecord();
+    copy.usernameProp.setValue(BufferUtil.cloneBuffer(getUsernameBuffer()));
+    copy.nameProp.setValue(BufferUtil.cloneBuffer(getNameBuffer()));
+    copy.emailProp.setValue(BufferUtil.cloneBuffer(getEmailBuffer()));
+    copy.passwordProp.setValue(BufferUtil.cloneBuffer(getPasswordBuffer()));
+    return copy;
   }
 
   @Override

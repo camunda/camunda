@@ -45,7 +45,7 @@ public class DbUserState implements UserState, MutableUserState {
   public UserRecord getUser(final DirectBuffer username) {
     this.username.wrapBuffer(username);
     final PersistedUser user = userColumnFamily.get(this.username);
-    return user == null ? null : user.getRecord();
+    return user == null ? null : user.getRecord().copy();
   }
 
   @Override
