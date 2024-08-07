@@ -20,9 +20,13 @@ on:
         required: true
         type: string
       pushDocker:
-        description: "whether the built docker images are pushed to camunda registry"
+        description: "Whether the built docker images are pushed to camunda registry"
         type: boolean
         default: true
+      previewEnv:
+        description: "Set to true if the build is for the preview environment"
+        type: boolean
+        default: false
 
 defaults:
   run:
@@ -96,7 +100,7 @@ jobs:
       - name: Login to Harbor docker registry
         uses: docker/login-action@v3
         with:
-          registry: registry.camunda.cloud
+          registry: dev.registry.camunda.cloud
           username: ${{ steps.secrets.outputs.NEXUS_USR }}
           password: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
@@ -105,7 +109,7 @@ jobs:
       - name: Build Docker image
         uses: ./.github/actions/build-platform-docker
         with:
-          repository: registry.camunda.cloud/team-operate/camunda-operate
+          repository: ${{ inputs.previewEnv && 'dev.registry.camunda.cloud/team-camunda/operate' || 'dev.registry.camunda.cloud/team-operate/camunda-operate' }}
           version: |
             ${{ env.IMAGE_TAG }}
             ${{ env.CI_IMAGE_TAG }}

@@ -34,6 +34,19 @@ inputs:
     description: 'Path to the dockerfile, that should be used; defaults to Dockerfile'
     required: false
     default: 'Dockerfile'
+  preview-env:
+    description: 'If true, will build the image for the preview environment'
+    required: false
+    default: 'false'
+  secret_vault_address:
+    description: 'secret vault url'
+    required: false
+  secret_vault_roleId:
+    description: 'secret vault roleId'
+    required: false
+  secret_vault_secretId:
+    description: 'secret valut secret id'
+    required: false
 
 outputs:
   image:
@@ -97,6 +110,30 @@ runs:
       id: get-distball
       shell: bash
       run: echo "result=$(realpath --relative-to="${PWD}" ${{ inputs.distball }})" >> $GITHUB_OUTPUT
+
+    - name: Import Secrets
+      id: secrets
+      uses: hashicorp/vault-action@v3.0.0
+      if: |
+        inputs.secret_vault_address != ''
+        && inputs.secret_vault_roleId != ''
+        && inputs.secret_vault_secretId != ''
+      with:
+        url: ${{ inputs.secret_vault_address }}
+        method: approle
+        roleId: ${{ inputs.secret_vault_roleId }}
+        secretId: ${{ inputs.secret_vault_secretId }}
+        secrets: |
+          secret/data/github.com/organizations/camunda NEXUS_USR;
+          secret/data/github.com/organizations/camunda NEXUS_PSW;
+
+    - name: Login to Harbor docker registry
+      uses: docker/login-action@v3
+      if: inputs.preview-env == 'true'
+      with:
+        registry: dev.registry.camunda.cloud
+        username: ${{ steps.secrets.outputs.NEXUS_USR }}
+        password: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
     - name: Build Docker image
       uses: docker/build-push-action@v6

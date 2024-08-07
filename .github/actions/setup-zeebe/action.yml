@@ -43,6 +43,10 @@ inputs:
     description: The path to Docker Hub secrets
     required: false
     default: "secret/data/products/zeebe/ci/zeebe"
+  preview-env:
+    description: 'If true, will build the image for the preview environment'
+    required: false
+    default: 'false'
 
 outputs: {}
 
@@ -73,6 +77,8 @@ runs:
         roleId: ${{ inputs.secret_vault_roleId }}
         secretId: ${{ inputs.secret_vault_secretId }}
         secrets: |
+          secret/data/github.com/organizations/camunda NEXUS_USR;
+          secret/data/github.com/organizations/camunda NEXUS_PSW;
           secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
           secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
           ${{ inputs.docker-secret-path }} REGISTRY_HUB_DOCKER_COM_USR;
@@ -90,9 +96,17 @@ runs:
         && inputs.secret_vault_address != ''
         && inputs.secret_vault_roleId != ''
         && inputs.secret_vault_secretId != ''
+        && inputs.preview-env == 'false'
       with:
         username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
         password: ${{ steps.secrets.outputs[inputs.docker-token] }}
+    - name: Login to Harbor docker registry
+      uses: docker/login-action@v3
+      if: inputs.preview-env == 'true'
+      with:
+        registry: dev.registry.camunda.cloud
+        username: ${{ steps.secrets.outputs.NEXUS_USR }}
+        password: ${{ steps.secrets.outputs.NEXUS_PSW }}
     # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
     - name: 'Create settings.xml'
       uses: s4u/maven-settings-action@v3.0.0
