@@ -11,14 +11,17 @@ import io.camunda.service.license.CamundaLicense;
 
 public final class ManagementServices {
 
-  private CamundaLicense camundaLicense;
+  private final CamundaLicense license;
 
-  public ManagementServices withLicense(final CamundaLicense license) {
-    camundaLicense = license;
-    return this;
+  public ManagementServices(final CamundaLicense license) {
+    this.license = license;
   }
 
   public boolean isCamundaLicenseValid() {
-    return camundaLicense != null && camundaLicense.isValid();
+    return license.isValid();
+  }
+
+  public boolean isCamundaLicenseSelfManaged() {
+    return license.isSelfManaged();
   }
 }
