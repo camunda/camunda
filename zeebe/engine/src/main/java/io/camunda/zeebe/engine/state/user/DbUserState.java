@@ -21,31 +21,31 @@ import org.agrona.DirectBuffer;
 
 public class DbUserState implements UserState, MutableUserState {
 
-  private final UserRecordValue userRecordValue = new UserRecordValue();
+  private final PersistedUser persistedUser = new PersistedUser();
 
   private final DbString username;
-  private final ColumnFamily<DbString, UserRecordValue> userColumnFamily;
+  private final ColumnFamily<DbString, PersistedUser> userColumnFamily;
 
   public DbUserState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     username = new DbString();
     userColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.USERS, transactionContext, username, userRecordValue);
+            ZbColumnFamilies.USERS, transactionContext, username, persistedUser);
   }
 
   @Override
   public void create(final UserRecord user) {
     username.wrapBuffer(user.getUsernameBuffer());
-    userRecordValue.setRecord(user);
-    userColumnFamily.insert(username, userRecordValue);
+    persistedUser.setRecord(user);
+    userColumnFamily.insert(username, persistedUser);
   }
 
   @Override
   public void update(final UserRecord user) {
     username.wrapBuffer(user.getUsernameBuffer());
-    userRecordValue.setRecord(user);
-    userColumnFamily.update(username, userRecordValue);
+    persistedUser.setRecord(user);
+    userColumnFamily.update(username, persistedUser);
   }
 
   @Override
@@ -62,7 +62,7 @@ public class DbUserState implements UserState, MutableUserState {
   @Override
   public UserRecord getUser(final DirectBuffer username) {
     this.username.wrapBuffer(username);
-    final UserRecordValue user = userColumnFamily.get(this.username);
+    final PersistedUser user = userColumnFamily.get(this.username);
     return user == null ? null : user.getRecord();
   }
 

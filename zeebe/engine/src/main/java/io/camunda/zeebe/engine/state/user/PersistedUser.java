@@ -12,12 +12,12 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 
-public class UserRecordValue extends UnpackedObject implements DbValue {
+public class PersistedUser extends UnpackedObject implements DbValue {
 
   private final ObjectProperty<UserRecord> recordProp =
       new ObjectProperty<>("userRecord", new UserRecord());
 
-  public UserRecordValue() {
+  public PersistedUser() {
     super(1);
     declareProperty(recordProp);
   }
