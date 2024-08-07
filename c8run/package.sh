@@ -5,6 +5,26 @@ CAMUNDA_VERSION="8.6.0-alpha3"
 CAMUNDA_CONNECTORS_VERSION="8.6.0-alpha3"
 ELASTICSEARCH_VERSION="8.13.4"
 
+architectureRaw="$(uname -m)"
+case "${architectureRaw}" in
+  arm64*)     architecture=aarch64;;
+  x86_64*)    architecture=x86_64;;
+  *)          architecture=UNKNOWN
+esac
+
+unameOut="$(uname -s)"
+case "${unameOut}" in
+    Linux*)     machine=Linux;;
+    Darwin*)    machine=Mac;;
+    *)          machine="UNKNOWN:${unameOut}"
+esac
+
+if [ "$machine" == "Mac" ]; then
+    export PLATFORM=darwin
+elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+    export PLATFORM=linux
+fi
+
 # Retrieve elasticsearch
 if [ ! -d "elasticsearch-$ELASTICSEARCH_VERSION" ]; then
   wget "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ELASTICSEARCH_VERSION}-${PLATFORM}-${architecture}.tar.gz"
