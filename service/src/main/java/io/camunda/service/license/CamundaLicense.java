@@ -19,7 +19,7 @@ public class CamundaLicense {
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaLicense.class);
   private boolean isValid;
   private boolean isSelfManaged;
-  private volatile boolean isInitialized;
+  private boolean isInitialized;
 
   public CamundaLicense() {}
 
@@ -33,15 +33,10 @@ public class CamundaLicense {
 
   public void initializeWithLicense(final String license) {
     if (!isInitialized) {
-      synchronized (this) {
-        if (!isInitialized) {
+      isValid = determineLicenseValidity(license);
+      isSelfManaged = determineIfLicenseEnvModeIsSelfManaged(license);
 
-          isValid = determineLicenseValidity(license);
-          isSelfManaged = determineIfLicenseEnvModeIsSelfManaged(license);
-
-          isInitialized = true;
-        }
-      }
+      isInitialized = true;
     }
   }
 
