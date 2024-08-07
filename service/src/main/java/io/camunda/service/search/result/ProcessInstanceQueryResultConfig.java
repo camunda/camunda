@@ -28,7 +28,7 @@ public record ProcessInstanceQueryResultConfig(List<FieldFilter> fieldFilters)
       implements ObjectBuilder<ProcessInstanceQueryResultConfig> {
 
     public Builder processInstanceKey() {
-      currentFieldFilter = new FieldFilter("key", true);
+      currentFieldFilter = new FieldFilter("key", null);
       return this;
     }
 

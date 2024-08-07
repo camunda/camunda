@@ -42,5 +42,5 @@ public interface QueryResultConfig {
     }
   }
 
-  record FieldFilter(String field, boolean include) {}
+  record FieldFilter(String field, Boolean include) {}
 }
