@@ -7,18 +7,7 @@
  */
 package io.camunda.process.generator.execution;
 
-public class CompleteUserTaskStep implements ProcessExecutionStep {
-
-  private final String elementId;
-
-  public CompleteUserTaskStep(final String elementId) {
-    this.elementId = elementId;
-  }
-
-  @Override
-  public String getElementId() {
-    return elementId;
-  }
+public record CompleteUserTaskStep(String elementId) implements ProcessExecutionStep {
 
   @Override
   public String description() {

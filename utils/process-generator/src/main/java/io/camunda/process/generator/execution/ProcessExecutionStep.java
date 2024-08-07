@@ -9,7 +9,7 @@ package io.camunda.process.generator.execution;
 
 public interface ProcessExecutionStep {
 
-  String getElementId();
+  String elementId();
 
   String description();
 }

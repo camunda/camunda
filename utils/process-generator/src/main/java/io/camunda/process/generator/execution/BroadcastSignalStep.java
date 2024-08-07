@@ -7,18 +7,7 @@
  */
 package io.camunda.process.generator.execution;
 
-public class BroadcastSignalStep implements ProcessExecutionStep {
-
-  private final String elementId;
-
-  public BroadcastSignalStep(final String elementId) {
-    this.elementId = elementId;
-  }
-
-  @Override
-  public String getElementId() {
-    return elementId;
-  }
+public record BroadcastSignalStep(String elementId) implements ProcessExecutionStep {
 
   @Override
   public String description() {

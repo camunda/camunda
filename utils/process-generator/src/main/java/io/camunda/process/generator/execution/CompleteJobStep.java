@@ -7,28 +7,11 @@
  */
 package io.camunda.process.generator.execution;
 
-public class CompleteJobStep implements ProcessExecutionStep {
-
-  private final String elementId;
-  private final String jobType;
-
-  public CompleteJobStep(final String elementId, final String jobType) {
-    this.elementId = elementId;
-    this.jobType = jobType;
-  }
-
-  @Override
-  public String getElementId() {
-    return elementId;
-  }
+public record CompleteJobStep(String elementId, String jobType) implements ProcessExecutionStep {
 
   @Override
   public String description() {
     return "Complete a job of type '%s' for BPMN element with id '%s'."
         .formatted(jobType, elementId);
-  }
-
-  public String getJobType() {
-    return jobType;
   }
 }

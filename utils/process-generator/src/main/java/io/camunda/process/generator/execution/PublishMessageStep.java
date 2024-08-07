@@ -7,18 +7,7 @@
  */
 package io.camunda.process.generator.execution;
 
-public class PublishMessageStep implements ProcessExecutionStep {
-
-  private final String elementId;
-
-  public PublishMessageStep(final String elementId) {
-    this.elementId = elementId;
-  }
-
-  @Override
-  public String getElementId() {
-    return elementId;
-  }
+public record PublishMessageStep(String elementId) implements ProcessExecutionStep {
 
   @Override
   public String description() {
