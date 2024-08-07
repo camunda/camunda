@@ -50,7 +50,7 @@ public class CreateUserTest {
         .hasFieldOrPropertyWithValue("password", "password");
   }
 
-  @DisplayName("should create user throws exception when username already exists")
+  @DisplayName("should reject user create command when username already exists")
   @Test
   public void shouldNotDuplicate() {
     // given
