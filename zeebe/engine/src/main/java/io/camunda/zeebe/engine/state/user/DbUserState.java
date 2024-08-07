@@ -21,8 +21,7 @@ import org.agrona.DirectBuffer;
 
 public class DbUserState implements UserState, MutableUserState {
 
-  private final UserRecordValue userRecordToRead = new UserRecordValue();
-  private final UserRecordValue userRecordToWrite = new UserRecordValue();
+  private final UserRecordValue userRecordValue = new UserRecordValue();
 
   private final DbString username;
   private final ColumnFamily<DbString, UserRecordValue> userColumnFamily;
@@ -32,21 +31,21 @@ public class DbUserState implements UserState, MutableUserState {
     username = new DbString();
     userColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.USERS, transactionContext, username, userRecordToRead);
+            ZbColumnFamilies.USERS, transactionContext, username, userRecordValue);
   }
 
   @Override
   public void create(final UserRecord user) {
     username.wrapBuffer(user.getUsernameBuffer());
-    userRecordToWrite.setRecord(user);
-    userColumnFamily.insert(username, userRecordToWrite);
+    userRecordValue.setRecord(user);
+    userColumnFamily.insert(username, userRecordValue);
   }
 
   @Override
   public void update(final UserRecord user) {
     username.wrapBuffer(user.getUsernameBuffer());
-    userRecordToWrite.setRecord(user);
-    userColumnFamily.update(username, userRecordToWrite);
+    userRecordValue.setRecord(user);
+    userColumnFamily.update(username, userRecordValue);
   }
 
   @Override
