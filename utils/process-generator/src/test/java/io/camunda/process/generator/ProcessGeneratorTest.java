@@ -36,7 +36,7 @@ public class ProcessGeneratorTest {
   }
 
   @Test
-  void shouldGenerateARandommProcess() {
+  void shouldGenerateARandomProcess() {
     // given
     final var generator = new ProcessGenerator();
 
