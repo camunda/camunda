@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
+import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +52,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
   private final CamundaClientProperties camundaClientProperties;
   private final JsonMapper jsonMapper;
   private final List<ClientInterceptor> interceptors;
+  private final List<AsyncExecChainHandler> chainHandlers;
   private final ZeebeClientExecutorService zeebeClientExecutorService;
 
   @Autowired
@@ -59,11 +61,13 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
       final CamundaClientProperties camundaClientProperties,
       final JsonMapper jsonMapper,
       final List<ClientInterceptor> interceptors,
+      final List<AsyncExecChainHandler> chainHandlers,
       final ZeebeClientExecutorService zeebeClientExecutorService) {
     this.properties = properties;
     this.camundaClientProperties = camundaClientProperties;
     this.jsonMapper = jsonMapper;
     this.interceptors = interceptors;
+    this.chainHandlers = chainHandlers;
     this.zeebeClientExecutorService = zeebeClientExecutorService;
   }
 
@@ -252,6 +256,11 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
   }
 
   @Override
+  public List<AsyncExecChainHandler> getChainHandlers() {
+    return chainHandlers;
+  }
+
+  @Override
   public JsonMapper getJsonMapper() {
     return jsonMapper;
   }
@@ -415,6 +424,8 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
         + jsonMapper
         + ", interceptors="
         + interceptors
+        + ", chainHandlers="
+        + chainHandlers
         + ", zeebeClientExecutorService="
         + zeebeClientExecutorService
         + '}';
