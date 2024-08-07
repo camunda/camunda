@@ -253,7 +253,7 @@ jobs:
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
           -D forkCount=${{ matrix.maven-test-fork-count }}
           -D maven.javadoc.skip=true
-          -D skipUTs -D skipChecks
+          -D skipUTs -D skipChecks -D skipOptimize
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
