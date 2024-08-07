@@ -39,6 +39,11 @@ public class GeneratorContext {
     return random.nextInt(limit);
   }
 
+  /** Returns a random number between the lower and upper bound, inclusive. */
+  public int getRandomNumber(final int lowerBound, final int upperBound) {
+    return random.nextInt(lowerBound, upperBound + 1);
+  }
+
   public void incrementCurrentDepth() {
     currentDepth++;
   }
