@@ -14,19 +14,19 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 
 public class PersistedUser extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<UserRecord> recordProp =
-      new ObjectProperty<>("userRecord", new UserRecord());
+  private final ObjectProperty<UserRecord> userProp =
+      new ObjectProperty<>("user", new UserRecord());
 
   public PersistedUser() {
     super(1);
-    declareProperty(recordProp);
+    declareProperty(userProp);
   }
 
-  public UserRecord getRecord() {
-    return recordProp.getValue();
+  public UserRecord getUser() {
+    return userProp.getValue();
   }
 
-  public void setRecord(final UserRecord record) {
-    recordProp.getValue().wrap(record);
+  public void setUser(final UserRecord record) {
+    userProp.getValue().wrap(record);
   }
 }
