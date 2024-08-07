@@ -9,7 +9,6 @@ package io.camunda.process.generator.element;
 
 import io.camunda.process.generator.BpmnFactories;
 import io.camunda.process.generator.GeneratorContext;
-import io.camunda.process.generator.event.BpmnCatchEventGeneratorFactory;
 import java.util.List;
 
 public class BpmnElementGeneratorFactory {

@@ -9,7 +9,6 @@ package io.camunda.process.generator.template;
 
 import io.camunda.process.generator.BpmnFactories;
 import io.camunda.process.generator.GeneratorContext;
-import io.camunda.process.generator.element.BpmnElementGeneratorFactory;
 import java.util.List;
 
 public class BpmnTemplateGeneratorFactory {
@@ -26,7 +25,8 @@ public class BpmnTemplateGeneratorFactory {
     templateGenerators =
         List.of(
             elementSequenceGenerator,
-            new BpmnEmbeddedSubprocessGenerator(generatorContext, elementSequenceGenerator));
+            // new BpmnEmbeddedSubprocessGenerator(generatorContext, elementSequenceGenerator),
+            new BpmnExclusiveGatewayGenerator(generatorContext, elementSequenceGenerator));
   }
 
   public BpmnTemplateGenerator getGenerator() {

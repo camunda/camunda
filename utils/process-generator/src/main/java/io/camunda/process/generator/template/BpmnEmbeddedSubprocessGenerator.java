@@ -26,6 +26,7 @@ public class BpmnEmbeddedSubprocessGenerator implements BpmnTemplateGenerator {
   public AbstractFlowNodeBuilder<?, ?> addElements(
       final AbstractFlowNodeBuilder<?, ?> processBuilder) {
 
+    // TODO generate more complex inner processes
     return processBuilder.subProcess(
         generatorContext.createNewId(),
         subProcess -> {
