@@ -18,7 +18,6 @@ package io.camunda.process.generator;
 import io.camunda.process.generator.execution.ProcessExecutionStep;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class BpmnGenerator {
@@ -32,8 +31,7 @@ public class BpmnGenerator {
   }
 
   public BpmnGenerator(final long seed) {
-    final Random random = new Random(seed);
-    final var generatorContext = new GeneratorContext(random);
+    final var generatorContext = new GeneratorContext(seed);
     final var factories = new BpmnFactories(generatorContext);
     processGenerator = new ProcessGenerator(CAMUNDA_VERSION, generatorContext, factories);
   }
@@ -43,5 +41,8 @@ public class BpmnGenerator {
   }
 
   public record GeneratedProcess(
-      BpmnModelInstance process, List<ProcessExecutionStep> executionPath) {}
+      BpmnModelInstance process,
+      List<ProcessExecutionStep> executionPath,
+      String processId,
+      long seed) {}
 }

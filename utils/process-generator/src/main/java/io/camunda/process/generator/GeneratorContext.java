@@ -16,13 +16,15 @@ import java.util.concurrent.atomic.AtomicLong;
 public class GeneratorContext {
 
   private static final int MAXIMUM_DEPTH = 3;
+  private final long seed;
   private final Random random;
   private final AtomicLong id = new AtomicLong(1);
   private int currentDepth = 1;
   private final List<ProcessExecutionStep> executionPath = new ArrayList<>();
 
-  public GeneratorContext(final Random random) {
-    this.random = random;
+  public GeneratorContext(final long seed) {
+    this.seed = seed;
+    random = new Random(seed);
   }
 
   public List<ProcessExecutionStep> getExecutionPath() {
@@ -52,5 +54,9 @@ public class GeneratorContext {
   public GeneratorContext addExecutionStep(final ProcessExecutionStep executionStep) {
     executionPath.add(executionStep);
     return this;
+  }
+
+  public long getSeed() {
+    return seed;
   }
 }

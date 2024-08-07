@@ -20,14 +20,17 @@ public class MessageCatchEventGenerator implements BpmnCatchEventGenerator {
       final GeneratorContext generatorContext,
       final boolean generateExecutionPath) {
 
+    final var messageName = "message_" + elementId;
+    final var correlationKey = "correlationKey_" + elementId;
     catchEventBuilder.message(
         messageBuilder ->
             messageBuilder
-                .name("message_" + elementId)
-                .zeebeCorrelationKeyExpression("message_" + elementId));
+                .name(messageName)
+                .zeebeCorrelationKeyExpression("\"%s\"".formatted(correlationKey)));
 
     if (generateExecutionPath) {
-      generatorContext.addExecutionStep(new PublishMessageStep(elementId));
+      generatorContext.addExecutionStep(
+          new PublishMessageStep(elementId, messageName, correlationKey));
     }
   }
 }

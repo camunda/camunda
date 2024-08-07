@@ -25,7 +25,7 @@ public class UserTaskGenerator implements BpmnElementGenerator {
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
     final String elementId = generatorContext.createNewId();
 
-    final UserTaskBuilder userTaskBuilder = processBuilder.userTask();
+    final UserTaskBuilder userTaskBuilder = processBuilder.userTask().zeebeUserTask();
     userTaskBuilder.id(elementId).name(elementId);
 
     if (generateExecutionPath) {

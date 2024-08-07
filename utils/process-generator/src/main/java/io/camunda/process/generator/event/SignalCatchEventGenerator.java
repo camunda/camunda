@@ -19,10 +19,11 @@ public class SignalCatchEventGenerator implements BpmnCatchEventGenerator {
       final AbstractCatchEventBuilder<?, ?> catchEventBuilder,
       final GeneratorContext generatorContext,
       final boolean generateExecutionPath) {
-    catchEventBuilder.signal("signal_" + elementId);
+    final var signalName = "signal_" + elementId;
+    catchEventBuilder.signal(signalName);
 
     if (generateExecutionPath) {
-      generatorContext.addExecutionStep(new BroadcastSignalStep(elementId));
+      generatorContext.addExecutionStep(new BroadcastSignalStep(signalName));
     }
   }
 }

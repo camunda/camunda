@@ -8,6 +8,7 @@
 package io.camunda.process.generator;
 
 import io.camunda.process.generator.BpmnGenerator.GeneratedProcess;
+import io.camunda.process.generator.execution.CreateProcessInstanceStep;
 import io.camunda.process.generator.template.BpmnTemplateGenerator;
 import io.camunda.process.generator.template.BpmnTemplateGeneratorFactory;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -35,6 +36,7 @@ public class ProcessGenerator {
     final String processId = "process_" + generatorContext.createNewId();
     AbstractFlowNodeBuilder<?, ?> processBuilder =
         Bpmn.createExecutableProcess(processId).name(processId).startEvent();
+    generatorContext.addExecutionStep(new CreateProcessInstanceStep(processId));
 
     final BpmnTemplateGeneratorFactory templateGeneratorFactory =
         bpmnFactories.getTemplateGeneratorFactory();
@@ -53,6 +55,7 @@ public class ProcessGenerator {
     definitions.setAttributeValueNs(
         BpmnModelConstants.MODELER_NS, "executionPlatformVersion", camundaVersion);
 
-    return new GeneratedProcess(process, generatorContext.getExecutionPath());
+    return new GeneratedProcess(
+        process, generatorContext.getExecutionPath(), processId, generatorContext.getSeed());
   }
 }
