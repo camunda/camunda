@@ -53,12 +53,12 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
       rejectionWriter.appendRejection(
           command,
           RejectionType.ALREADY_EXISTS,
-          "Expected to create user with name %s, but a user with this name already exists"
+          "Expected to create user with username %s, but a user with this username already exists"
               .formatted(user.getUsername()));
       responseWriter.writeRejectionOnCommand(
           command,
           RejectionType.ALREADY_EXISTS,
-          "Expected to create user with name %s, but a user with this name already exists"
+          "Expected to create user with username %s, but a user with this username already exists"
               .formatted(user.getUsername()));
       return;
     }
