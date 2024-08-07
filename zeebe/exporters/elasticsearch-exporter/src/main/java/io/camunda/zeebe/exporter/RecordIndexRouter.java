@@ -86,6 +86,6 @@ final class RecordIndexRouter {
   }
 
   private String valueTypeToString(final ValueType valueType) {
-    return valueType != null ? valueType.name().toLowerCase().replace("_", "-") : "";
+    return valueType.name().toLowerCase().replace("_", "-");
   }
 }
