@@ -187,7 +187,11 @@ public final class EngineProcessors {
         typedRecordProcessors, processingState, bpmnBehaviors, writers);
 
     UserEventProcessors.addUserProcessors(
-        typedRecordProcessors, processingState, writers, commandDistributionBehavior);
+        processingState.getKeyGenerator(),
+        typedRecordProcessors,
+        processingState,
+        writers,
+        commandDistributionBehavior);
 
     return typedRecordProcessors;
   }

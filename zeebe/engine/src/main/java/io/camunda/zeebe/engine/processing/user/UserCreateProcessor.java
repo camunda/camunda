@@ -19,20 +19,24 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class UserCreateProcessor implements DistributedTypedRecordProcessor<UserRecord> {
 
   private final UserState userState;
+  private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
 
   public UserCreateProcessor(
+      final KeyGenerator keyGenerator,
       final ProcessingState state,
       final Writers writers,
       final CommandDistributionBehavior distributionBehavior) {
     userState = state.getUserState();
+    this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
@@ -41,7 +45,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
 
   @Override
   public void processNewCommand(final TypedRecord<UserRecord> command) {
-    final long key = command.getKey();
+    final long key = keyGenerator.nextKey();
     final var username = command.getValue().getUsernameBuffer();
     final var user = userState.getUser(username);
 

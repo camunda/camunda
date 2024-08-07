@@ -13,9 +13,11 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class UserEventProcessors {
   public static void addUserProcessors(
+      final KeyGenerator keyGenerator,
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessingState processingState,
       final Writers writers,
@@ -23,6 +25,6 @@ public class UserEventProcessors {
     typedRecordProcessors.onCommand(
         ValueType.USER,
         UserIntent.CREATE,
-        new UserCreateProcessor(processingState, writers, distributionBehavior));
+        new UserCreateProcessor(keyGenerator, processingState, writers, distributionBehavior));
   }
 }
