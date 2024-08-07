@@ -32,6 +32,11 @@ public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
   }
 
   @Override
+  public long getDeploymentKey() {
+    throw new UnsupportedOperationException("Operation not supported");
+  }
+
+  @Override
   public boolean isDuplicate() {
     // Process Records should never be duplicate in Zeebe
     return false;
