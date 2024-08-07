@@ -12,4 +12,8 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 public interface BpmnElementGenerator {
 
   AbstractFlowNodeBuilder<?, ?> addElement(final AbstractFlowNodeBuilder<?, ?> processBuilder);
+
+  default boolean addsDepth() {
+    return false;
+  }
 }

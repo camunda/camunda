@@ -11,20 +11,20 @@ import io.camunda.process.generator.BpmnFactories;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 
-public class BpmnEmbeddedSubprocessGenerator implements BpmnElementGenerator {
+public class BpmnEmbeddedSubprocessGenerator extends BpmnNestingElementGenerator {
 
-  private final GeneratorContext generatorContext;
   private final BpmnFactories bpmnFactories;
 
   public BpmnEmbeddedSubprocessGenerator(
       final GeneratorContext generatorContext, final BpmnFactories bpmnFactories) {
-    this.generatorContext = generatorContext;
+    super(generatorContext);
     this.bpmnFactories = bpmnFactories;
   }
 
   @Override
-  public AbstractFlowNodeBuilder<?, ?> addElement(
+  public AbstractFlowNodeBuilder<?, ?> addNestingElement(
       final AbstractFlowNodeBuilder<?, ?> processBuilder) {
+    generatorContext.incrementCurrentDepth();
 
     final String elementId = generatorContext.createNewId();
 
@@ -34,6 +34,7 @@ public class BpmnEmbeddedSubprocessGenerator implements BpmnElementGenerator {
     final var templateGenerator = bpmnFactories.getTemplateGeneratorFactory().getGenerator();
     subprocessBuilder = templateGenerator.addElements(subprocessBuilder);
 
+    generatorContext.decrementCurrentDepth();
     return subprocessBuilder.endEvent().subProcessDone();
   }
 }

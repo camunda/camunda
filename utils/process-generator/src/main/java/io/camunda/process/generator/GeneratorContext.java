@@ -12,9 +12,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class GeneratorContext {
 
+  private static final int MAXIMUM_DEPTH = 3;
   private final Random random;
-
   private final AtomicLong id = new AtomicLong(1);
+  private int currentDepth = 1;
 
   public GeneratorContext(final Random random) {
     this.random = random;
@@ -26,5 +27,17 @@ public class GeneratorContext {
 
   public int getRandomNumber(final int limit) {
     return random.nextInt(limit);
+  }
+
+  public void incrementCurrentDepth() {
+    currentDepth++;
+  }
+
+  public void decrementCurrentDepth() {
+    currentDepth--;
+  }
+
+  public boolean shouldGoDeeper() {
+    return currentDepth < MAXIMUM_DEPTH;
   }
 }
