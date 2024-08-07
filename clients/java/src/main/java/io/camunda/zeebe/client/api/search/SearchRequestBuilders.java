@@ -17,6 +17,8 @@ package io.camunda.zeebe.client.api.search;
 
 import io.camunda.zeebe.client.impl.search.DecisionDefinitionFilterImpl;
 import io.camunda.zeebe.client.impl.search.DecisionDefinitionSortImpl;
+import io.camunda.zeebe.client.impl.search.DecisionRequirementsFilterImpl;
+import io.camunda.zeebe.client.impl.search.DecisionRequirementsSortImpl;
 import io.camunda.zeebe.client.impl.search.ProcessInstanceFilterImpl;
 import io.camunda.zeebe.client.impl.search.ProcessInstanceSortImpl;
 import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;
@@ -120,6 +122,28 @@ public final class SearchRequestBuilders {
 
   public static UserTaskSort userTaskSort(final Consumer<UserTaskSort> fn) {
     final UserTaskSort sort = userTaskSort();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static DecisionRequirementsFilter decisionRequirementsFilter() {
+    return new DecisionRequirementsFilterImpl();
+  }
+
+  public static DecisionRequirementsFilter decisionRequirementsFilter(
+      final Consumer<DecisionRequirementsFilter> fn) {
+    final DecisionRequirementsFilter filter = decisionRequirementsFilter();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static DecisionRequirementsSort decisionRequirementsSort() {
+    return new DecisionRequirementsSortImpl();
+  }
+
+  public static DecisionRequirementsSort decisionRequirementsSort(
+      final Consumer<DecisionRequirementsSort> fn) {
+    final DecisionRequirementsSort sort = decisionRequirementsSort();
     fn.accept(sort);
     return sort;
   }
