@@ -15,12 +15,40 @@
  */
 package io.camunda.process.generator;
 
+import io.camunda.process.generator.element.BpmnElementGeneratorFactory;
+import io.camunda.process.generator.template.BpmnTemplateGenerator;
+import io.camunda.process.generator.template.BpmnTemplateGeneratorFactory;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class ProcessGenerator {
 
+  private final BpmnElementGeneratorFactory elementGeneratorFactory;
+  private final BpmnTemplateGeneratorFactory templateGeneratorFactory;
+
+  public ProcessGenerator() {
+    this(ThreadLocalRandom.current().nextLong());
+  }
+
+  public ProcessGenerator(final long seed) {
+    final Random random = new Random(seed);
+    final var generatorContent = new GeneratorContext(random);
+
+    elementGeneratorFactory = new BpmnElementGeneratorFactory(generatorContent);
+    templateGeneratorFactory =
+        new BpmnTemplateGeneratorFactory(generatorContent, elementGeneratorFactory);
+  }
+
   public BpmnModelInstance generateProcess() {
-    return Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
+    AbstractFlowNodeBuilder<?, ?> processBuilder =
+        Bpmn.createExecutableProcess("process").startEvent();
+
+    final BpmnTemplateGenerator templateGenerator = templateGeneratorFactory.getGenerator();
+    processBuilder = templateGenerator.addElements(processBuilder);
+
+    return processBuilder.endEvent().done();
   }
 }
