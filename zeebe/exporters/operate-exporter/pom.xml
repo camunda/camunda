@@ -25,11 +25,6 @@
   <dependencies>
 
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-core</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-schema</artifactId>
     </dependency>

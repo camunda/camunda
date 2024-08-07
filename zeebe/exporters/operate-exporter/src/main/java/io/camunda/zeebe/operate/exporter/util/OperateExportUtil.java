@@ -36,4 +36,8 @@ public class OperateExportUtil {
       return null;
     }
   }
+
+  public static String trimWhitespace(String str) {
+    return (str == null) ? null : str.strip();
+  }
 }

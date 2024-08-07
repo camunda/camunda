@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.StringUtils;
 
 public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRecordValue> {
 
@@ -92,7 +91,7 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
       entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
     }
     entity.setBpmnProcessId(recordValue.getBpmnProcessId());
-    final String errorMessage = StringUtils.trimWhitespace(recordValue.getErrorMessage());
+    final String errorMessage = OperateExportUtil.trimWhitespace(recordValue.getErrorMessage());
     entity
         .setErrorMessage(errorMessage)
         .setErrorType(

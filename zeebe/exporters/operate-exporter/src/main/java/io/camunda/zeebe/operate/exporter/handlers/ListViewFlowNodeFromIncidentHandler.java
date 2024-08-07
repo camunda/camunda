@@ -17,6 +17,7 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.elasticsearch.NewElasticsearchBatchRequest;
 import io.camunda.operate.util.ConversionUtils;
+import io.camunda.zeebe.operate.exporter.util.OperateExportUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -26,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.StringUtils;
 
 public class ListViewFlowNodeFromIncidentHandler
     implements ExportHandler<FlowNodeInstanceForListViewEntity, IncidentRecordValue> {
@@ -86,7 +86,7 @@ public class ListViewFlowNodeFromIncidentHandler
         .setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
-      entity.setErrorMessage(StringUtils.trimWhitespace(recordValue.getErrorMessage()));
+      entity.setErrorMessage(OperateExportUtil.trimWhitespace(recordValue.getErrorMessage()));
     } else if (intentStr.equals(IncidentIntent.RESOLVED.name())) {
       entity.setErrorMessage(null);
     }
