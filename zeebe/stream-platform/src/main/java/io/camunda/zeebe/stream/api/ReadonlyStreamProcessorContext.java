@@ -8,6 +8,7 @@
 package io.camunda.zeebe.stream.api;
 
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import java.time.InstantSource;
 
 public interface ReadonlyStreamProcessorContext {
 
@@ -24,4 +25,6 @@ public interface ReadonlyStreamProcessorContext {
    * @return true when scheduled tasks should run async, concurrently to the processing actor.
    */
   boolean enableAsyncScheduledTasks();
+
+  InstantSource getClock();
 }
