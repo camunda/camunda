@@ -13,14 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.search;
+package io.camunda.zeebe.client.impl.search.query;
 
-import io.camunda.zeebe.client.api.command.FinalCommandStep;
-import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
-import java.time.Duration;
+public abstract class TypedSearchRequestPropertyProvider<T> {
 
-public interface FinalSearchQueryStep<T> extends FinalCommandStep<SearchQueryResponse<T>> {
+  protected abstract T getSearchRequestProperty();
 
-  @Override
-  FinalSearchQueryStep<T> requestTimeout(Duration requestTimeout);
+  public static <T> T provideSearchRequestProperty(final Object value) {
+    if (value instanceof TypedSearchRequestPropertyProvider) {
+      final TypedSearchRequestPropertyProvider<T> provider =
+          (TypedSearchRequestPropertyProvider<T>) value;
+      return provider.getSearchRequestProperty();
+    }
+    throw new UnsupportedOperationException(
+        "Passed value is not of type " + TypedSearchRequestPropertyProvider.class);
+  }
 }

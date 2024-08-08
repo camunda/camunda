@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.search.filter;
 
 import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
-import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
+import io.camunda.zeebe.client.impl.search.query.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
 
 public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserTaskFilterRequest>

@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.search.sort;
 
 import io.camunda.zeebe.client.api.search.sort.DecisionDefinitionSort;
-import io.camunda.zeebe.client.impl.search.SearchQuerySortBase;
+import io.camunda.zeebe.client.impl.search.query.SearchQuerySortBase;
 
 public class DecisionDefinitionSortImpl extends SearchQuerySortBase<DecisionDefinitionSort>
     implements DecisionDefinitionSort {

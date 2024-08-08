@@ -15,8 +15,6 @@
  */
 package io.camunda.zeebe.client.api.search.query;
 
-import io.camunda.zeebe.client.api.search.FinalSearchQueryStep;
-import io.camunda.zeebe.client.api.search.TypedSearchQueryRequest;
 import io.camunda.zeebe.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
 import io.camunda.zeebe.client.api.search.sort.DecisionDefinitionSort;

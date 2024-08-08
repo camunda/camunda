@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.search.sort;
 
 import io.camunda.zeebe.client.api.search.sort.UserTaskSort;
-import io.camunda.zeebe.client.impl.search.SearchQuerySortBase;
+import io.camunda.zeebe.client.impl.search.query.SearchQuerySortBase;
 
 public class UserTaskSortImpl extends SearchQuerySortBase<UserTaskSort> implements UserTaskSort {
 

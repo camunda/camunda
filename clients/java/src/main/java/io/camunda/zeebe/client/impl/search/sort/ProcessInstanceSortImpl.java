@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.search.sort;
 
 import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
-import io.camunda.zeebe.client.impl.search.SearchQuerySortBase;
+import io.camunda.zeebe.client.impl.search.query.SearchQuerySortBase;
 
 public class ProcessInstanceSortImpl extends SearchQuerySortBase<ProcessInstanceSort>
     implements ProcessInstanceSort {

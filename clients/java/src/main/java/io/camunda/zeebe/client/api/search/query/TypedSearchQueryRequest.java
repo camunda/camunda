@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.search;
+package io.camunda.zeebe.client.api.search.query;
 
-import io.camunda.zeebe.client.api.search.TypedSearchQueryRequest.SearchRequestFilter;
-import io.camunda.zeebe.client.api.search.TypedSearchQueryRequest.SearchRequestSort;
+import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestSort;
 import java.util.function.Consumer;
 
 public interface TypedSearchQueryRequest<

@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.api.search.filter;
 
-import io.camunda.zeebe.client.api.search.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 
 /** Interface for defining Decision Requirmeent in search queries. */
 public interface DecisionRequirementsFilter extends SearchRequestFilter {

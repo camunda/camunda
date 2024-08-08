@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.api.search.filter;
 
-import io.camunda.zeebe.client.api.search.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 
 public interface VariableValueFilter extends SearchRequestFilter {
 

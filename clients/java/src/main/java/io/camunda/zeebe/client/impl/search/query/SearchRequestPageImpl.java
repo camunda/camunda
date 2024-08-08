@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.impl.search;
+package io.camunda.zeebe.client.impl.search.query;
 
-import io.camunda.zeebe.client.api.search.SearchRequestPage;
+import io.camunda.zeebe.client.api.search.query.SearchRequestPage;
 import io.camunda.zeebe.client.protocol.rest.SearchQueryPageRequest;
 import java.util.List;
 

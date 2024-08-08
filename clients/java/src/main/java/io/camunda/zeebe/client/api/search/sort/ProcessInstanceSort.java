@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.api.search.sort;
 
-import io.camunda.zeebe.client.api.search.TypedSearchQueryRequest.SearchRequestSort;
+import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestSort;
 
 public interface ProcessInstanceSort extends SearchRequestSort<ProcessInstanceSort> {
 

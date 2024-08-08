@@ -16,13 +16,13 @@
 
 package io.camunda.zeebe.client.impl.search.query;
 
-import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.searchRequestPage;
-import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.userTaskFilter;
-import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.userTaskSort;
+import static io.camunda.zeebe.client.api.search.query.SearchRequestBuilders.searchRequestPage;
+import static io.camunda.zeebe.client.api.search.query.SearchRequestBuilders.userTaskFilter;
+import static io.camunda.zeebe.client.api.search.query.SearchRequestBuilders.userTaskSort;
 
 import io.camunda.zeebe.client.api.JsonMapper;
-import io.camunda.zeebe.client.api.search.FinalSearchQueryStep;
-import io.camunda.zeebe.client.api.search.SearchRequestPage;
+import io.camunda.zeebe.client.api.search.query.FinalSearchQueryStep;
+import io.camunda.zeebe.client.api.search.query.SearchRequestPage;
 import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
 import io.camunda.zeebe.client.api.search.query.UserTaskQuery;
 import io.camunda.zeebe.client.api.search.sort.UserTaskSort;
@@ -30,9 +30,6 @@ import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.api.search.response.UserTask;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
-import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;
-import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
-import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.impl.search.sort.UserTaskSortImpl;
 import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryRequest;
