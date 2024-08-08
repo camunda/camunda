@@ -19,8 +19,8 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.time.InstantSource;
 
 public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord> {
   public static final String NOT_ACTIVATED_JOB_MESSAGE =
@@ -30,17 +30,20 @@ public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord
   private final TypedRejectionWriter rejectionWriter;
   private final JobMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
+  private final InstantSource clock;
 
   public JobTimeOutProcessor(
       final ProcessingState state,
       final Writers writers,
       final JobMetrics jobMetrics,
-      final BpmnJobActivationBehavior jobActivationBehavior) {
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final InstantSource clock) {
     jobState = state.getJobState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.jobMetrics = jobMetrics;
     this.jobActivationBehavior = jobActivationBehavior;
+    this.clock = clock;
   }
 
   @Override
@@ -69,6 +72,6 @@ public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord
   }
 
   private boolean hasTimedOut(final JobRecord job) {
-    return job.getDeadline() < ActorClock.currentTimeMillis();
+    return job.getDeadline() < clock.millis();
   }
 }
