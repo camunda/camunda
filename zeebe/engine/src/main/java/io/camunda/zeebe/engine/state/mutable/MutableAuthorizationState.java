@@ -13,8 +13,4 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 public interface MutableAuthorizationState extends AuthorizationState {
 
   void createAuthorization(final AuthorizationRecord authorizationRecord);
-
-  void updateAuthorization(final AuthorizationRecord authorizationRecord);
-
-  void deleteAuthorization(final Long key);
 }

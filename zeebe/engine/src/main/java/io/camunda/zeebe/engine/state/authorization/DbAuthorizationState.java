@@ -81,19 +81,6 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   }
 
   @Override
-  public void updateAuthorization(final AuthorizationRecord authorizationRecord) {
-    authorizationKey.wrapLong(authorizationRecord.getAuthorizationKey());
-    authorizationRecordToWrite.setRecord(authorizationRecord);
-    authorizationColumnFamily.update(authorizationKey, authorizationRecordToWrite);
-  }
-
-  @Override
-  public void deleteAuthorization(final Long key) {
-    authorizationKey.wrapLong(key);
-    authorizationColumnFamily.deleteExisting(authorizationKey);
-  }
-
-  @Override
   public AuthorizationRecord getAuthorization(final Long key) {
     authorizationKey.wrapLong(key);
     final AuthorizationRecordValue authorizationRecordValue =
