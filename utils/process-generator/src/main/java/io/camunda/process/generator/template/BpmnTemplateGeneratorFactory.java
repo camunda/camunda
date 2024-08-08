@@ -28,7 +28,8 @@ public class BpmnTemplateGeneratorFactory {
             new BpmnExclusiveGatewayGenerator(generatorContext, elementSequenceGenerator),
             new ParallelGatewayGenerator(generatorContext, bpmnFactories),
             new BpmnTerminateEndEventTemplate(generatorContext, bpmnFactories),
-            new BoundaryEventTemplate(generatorContext, bpmnFactories));
+            new BoundaryEventTemplate(generatorContext, bpmnFactories),
+            new BpmnCompensationEventTemplate(generatorContext, bpmnFactories));
   }
 
   public BpmnTemplateGenerator getGenerator() {

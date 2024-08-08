@@ -16,6 +16,8 @@ public class BpmnElementGeneratorFactory {
   private final GeneratorContext generatorContext;
   private final List<BpmnElementGenerator> bpmnElementGenerators;
   private final List<BpmnElementGenerator> activityForBoundaryEventGenerators;
+  private final List<BpmnElementGenerator> activityForCompensationEventGenerators;
+  private final List<BpmnElementGenerator> compensationEventGenerators;
 
   public BpmnElementGeneratorFactory(
       final GeneratorContext generatorContext, final BpmnFactories bpmnFactories) {
@@ -34,6 +36,16 @@ public class BpmnElementGeneratorFactory {
             new ServiceTaskGenerator(generatorContext),
             new UserTaskGenerator(generatorContext),
             new BpmnEmbeddedSubprocessGenerator(generatorContext, bpmnFactories));
+
+    activityForCompensationEventGenerators =
+        List.of(
+            new ServiceTaskGenerator(generatorContext),
+            new UserTaskGenerator(generatorContext)
+        );
+
+    compensationEventGenerators = List.of(
+        new CompensationCatchEventGenerator(generatorContext, bpmnFactories.getCatchEventGeneratorFactory())
+    );
   }
 
   public BpmnElementGenerator getGenerator() {
@@ -53,5 +65,17 @@ public class BpmnElementGeneratorFactory {
     final var randomIndex =
         generatorContext.getRandomNumber(activityForBoundaryEventGenerators.size());
     return activityForBoundaryEventGenerators.get(randomIndex);
+  }
+
+  public BpmnElementGenerator getGeneratorForActivityWithCompensationEvent() {
+    final var randomIndex =
+        generatorContext.getRandomNumber(activityForCompensationEventGenerators.size());
+    return activityForCompensationEventGenerators.get(randomIndex);
+  }
+
+  public BpmnElementGenerator getGeneratorForCompensationEvent() {
+    final var randomIndex =
+        generatorContext.getRandomNumber(compensationEventGenerators.size());
+    return compensationEventGenerators.get(randomIndex);
   }
 }
