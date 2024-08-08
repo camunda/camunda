@@ -11,6 +11,7 @@ import co.elastic.clients.elasticsearch.core.search.SourceFilter;
 import io.camunda.search.clients.source.SearchSourceFilter;
 import io.camunda.search.es.transformers.ElasticsearchTransformer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
+import java.util.List;
 
 public final class SourceFilterTransformer
     extends ElasticsearchTransformer<SearchSourceFilter, SourceFilter> {
@@ -22,11 +23,15 @@ public final class SourceFilterTransformer
   @Override
   public SourceFilter apply(final SearchSourceFilter value) {
     final var builder = new SourceFilter.Builder();
-    if (value.includes() != null) {
-      builder.includes(value.includes());
+
+    final List<String> includes = value.includes();
+    if (includes != null && !includes.isEmpty()) {
+      builder.includes(includes);
     }
-    if (value.excludes() != null) {
-      builder.excludes(value.excludes());
+
+    final List<String> excludes = value.excludes();
+    if (excludes != null && !excludes.isEmpty()) {
+      builder.excludes(excludes);
     }
     return builder.build();
   }
