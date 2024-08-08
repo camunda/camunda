@@ -9,23 +9,22 @@ package io.camunda.process.generator.event;
 
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
+import io.camunda.zeebe.model.bpmn.builder.AbstractThrowEventBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CompensationCatchEventGenerator implements BpmnCatchEventGenerator {
+public class CompensationCatchEventGenerator implements BpmnThrowEventGenerator {
 
   private static final Logger LOG = LoggerFactory.getLogger(CompensationCatchEventGenerator.class);
 
   @Override
   public void addEventDefinition(final String elementId,
-      final AbstractCatchEventBuilder<?, ?> catchEventBuilder,
+      final AbstractThrowEventBuilder<?, ?> throwEventBuilder,
       final GeneratorContext generatorContext, final boolean generateExecutionPath) {
 
     LOG.debug("Turning end event with id {} into a compensation end event", elementId);
 
-    final var compensationEndEventId = "compensation_end_" + generatorContext.createNewId();
-
-    catchEventBuilder
+    throwEventBuilder
         .compensateEventDefinition()
         .compensateEventDefinitionDone();
   }

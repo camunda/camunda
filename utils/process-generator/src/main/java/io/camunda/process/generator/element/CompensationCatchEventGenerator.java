@@ -10,8 +10,10 @@ package io.camunda.process.generator.element;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.process.generator.event.BpmnCatchEventGenerator;
 import io.camunda.process.generator.event.BpmnCatchEventGeneratorFactory;
+import io.camunda.process.generator.event.BpmnThrowEventGenerator;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.IntermediateCatchEventBuilder;
+import io.camunda.zeebe.model.bpmn.builder.IntermediateThrowEventBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,15 +37,15 @@ public class CompensationCatchEventGenerator implements BpmnElementGenerator {
 
     LOG.debug("Adding compensation catch event with id {}", elementId);
 
-    final IntermediateCatchEventBuilder intermediateCatchEventBuilder =
-        processBuilder.intermediateCatchEvent();
+    final IntermediateThrowEventBuilder intermediateThrowEventBuilder =
+        processBuilder.intermediateThrowEvent();
 
-    intermediateCatchEventBuilder.id(elementId).name(elementId);
+    intermediateThrowEventBuilder.id(elementId).name(elementId);
 
-    final BpmnCatchEventGenerator catchEventGenerator = catchEventGeneratorFactory.getCompensationGenerator();
+    final BpmnThrowEventGenerator catchEventGenerator = catchEventGeneratorFactory.getCompensationGenerator();
     catchEventGenerator.addEventDefinition(
-        elementId, intermediateCatchEventBuilder, generatorContext, generateExecutionPath);
+        elementId, intermediateThrowEventBuilder, generatorContext, generateExecutionPath);
 
-    return intermediateCatchEventBuilder;
+    return intermediateThrowEventBuilder;
   }
 }
