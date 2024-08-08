@@ -10,8 +10,10 @@ package io.camunda.zeebe.engine.state.user;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
@@ -24,27 +26,43 @@ public class DbUserState implements UserState, MutableUserState {
   private final PersistedUser persistedUser = new PersistedUser();
 
   private final DbString username;
-  private final ColumnFamily<DbString, PersistedUser> userColumnFamily;
+  private final DbLong userKey;
+  private final ColumnFamily<DbString, DbLong> usernameToKeyColumnFamily;
+  private final ColumnFamily<DbKey, PersistedUser> keyToUserColumnFamily;
 
   public DbUserState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     username = new DbString();
-    userColumnFamily =
+    userKey = new DbLong();
+
+    usernameToKeyColumnFamily =
+        zeebeDb.createColumnFamily(ZbColumnFamilies.USERS, transactionContext, username, userKey);
+
+    keyToUserColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.USERS, transactionContext, username, persistedUser);
+            ZbColumnFamilies.USERS, transactionContext, userKey, persistedUser);
   }
 
   @Override
-  public void create(final UserRecord user) {
+  public void create(final long key, final UserRecord user) {
     username.wrapBuffer(user.getUsernameBuffer());
+    userKey.wrapLong(key);
     persistedUser.setUser(user);
-    userColumnFamily.insert(username, persistedUser);
+
+    usernameToKeyColumnFamily.insert(username, userKey);
+    keyToUserColumnFamily.insert(userKey, persistedUser);
   }
 
   @Override
   public UserRecord getUser(final DirectBuffer username) {
     this.username.wrapBuffer(username);
-    final PersistedUser user = userColumnFamily.get(this.username);
+    final var key = usernameToKeyColumnFamily.get(this.username);
+
+    if (key == null) {
+      return null;
+    }
+
+    final var user = keyToUserColumnFamily.get(key);
     return user == null ? null : user.getUser().copy();
   }
 

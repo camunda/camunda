@@ -51,7 +51,7 @@ public class UserStateTest {
             .setName("U")
             .setPassword("P")
             .setEmail("email" + UUID.randomUUID());
-    userState.create(user);
+    userState.create(1L, user);
 
     // then
     final var persistedUser = userState.getUser(user.getUsername());
@@ -69,10 +69,10 @@ public class UserStateTest {
             .setName("U")
             .setPassword("P")
             .setEmail("email" + UUID.randomUUID());
-    userState.create(user);
+    userState.create(2L, user);
 
     // when/then
-    assertThatThrownBy(() -> userState.create(user))
+    assertThatThrownBy(() -> userState.create(2L, user))
         .isInstanceOf(ZeebeDbInconsistentException.class)
         .hasMessage("Key " + username + " in ColumnFamily USERS already exists");
   }
@@ -88,7 +88,7 @@ public class UserStateTest {
             .setName("U")
             .setPassword("P")
             .setEmail("email" + UUID.randomUUID());
-    userState.create(userOne);
+    userState.create(3L, userOne);
 
     final var usernameTwo = "username" + UUID.randomUUID();
     final UserRecord userTwo =
@@ -97,7 +97,7 @@ public class UserStateTest {
             .setName("U")
             .setPassword("P")
             .setEmail("email" + UUID.randomUUID());
-    userState.create(userTwo);
+    userState.create(4L, userTwo);
 
     // when
     final var persistedUserOne = userState.getUser(usernameOne);
