@@ -18,6 +18,8 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import java.time.InstantSource;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 public class TypedRecordProcessorContextImpl implements TypedRecordProcessorContext {
@@ -31,6 +33,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   private final EngineConfiguration config;
   private final TransientPendingSubscriptionState transientMessageSubscriptionState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
+  private final InstantSource clock;
 
   public TypedRecordProcessorContextImpl(
       final RecordProcessorContext context,
@@ -53,6 +56,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
     this.writers = writers;
     partitionCommandSender = context.getPartitionCommandSender();
     this.config = config;
+    clock = Objects.requireNonNull(context.getClock());
   }
 
   @Override
@@ -94,5 +98,10 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   @Override
   public EngineConfiguration getConfig() {
     return config;
+  }
+
+  @Override
+  public InstantSource getClock() {
+    return clock;
   }
 }
