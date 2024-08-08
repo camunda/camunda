@@ -25,32 +25,38 @@ public class BpmnGenerator {
   public static final String CAMUNDA_VERSION = "8.5.0";
 
   public static GeneratorConfiguration DEFAULT_CONFIGURATION = new GeneratorConfiguration();
-
-  private final ProcessGenerator processGenerator;
+  private final GeneratorConfiguration generatorConfiguration;
 
   public BpmnGenerator() {
-    this(ThreadLocalRandom.current().nextLong(), DEFAULT_CONFIGURATION);
+    this(DEFAULT_CONFIGURATION);
   }
 
   public BpmnGenerator(final GeneratorConfiguration generatorConfiguration) {
-    this(ThreadLocalRandom.current().nextLong(), generatorConfiguration);
+    this.generatorConfiguration = generatorConfiguration;
   }
 
-  public BpmnGenerator(final long seed, final GeneratorConfiguration generatorConfiguration) {
+    public GeneratedProcess generateProcess() {
+    return generateProcess(ThreadLocalRandom.current().nextLong());
+  }
+
+  public GeneratedProcess generateProcess(final long seed) {
     final var generatorContext = new GeneratorContext(seed, generatorConfiguration);
     final var factories = new BpmnFactories(generatorContext);
-    processGenerator = new ProcessGenerator(CAMUNDA_VERSION, generatorContext, factories);
-  }
-
-  public GeneratedProcess generateProcess() {
-    return processGenerator.generateProcess();
+    final ProcessGenerator processGenerator = new ProcessGenerator(CAMUNDA_VERSION, factories);
+    return processGenerator.generateProcess(generatorContext);
   }
 
   public record GeneratedProcess(
       BpmnModelInstance process,
       List<ProcessExecutionStep> executionPath,
       String processId,
-      long seed) {}
+      long seed) {
+
+    @Override
+    public String toString() {
+      return "GeneratedProcess{seed='%d'}".formatted(seed);
+    }
+  }
 
   public class Builder {}
 }

@@ -20,20 +20,15 @@ import io.camunda.zeebe.model.bpmn.instance.Definitions;
 public class ProcessGenerator {
 
   private final String camundaVersion;
-  private final GeneratorContext generatorContext;
   private final BpmnFactories bpmnFactories;
 
-  public ProcessGenerator(
-      final String camundaVersion,
-      final GeneratorContext generatorContext,
-      final BpmnFactories bpmnFactories) {
+  public ProcessGenerator(final String camundaVersion, final BpmnFactories bpmnFactories) {
     this.camundaVersion = camundaVersion;
-    this.generatorContext = generatorContext;
     this.bpmnFactories = bpmnFactories;
   }
 
-  public GeneratedProcess generateProcess() {
-    final String processId = "process_" + generatorContext.createNewId();
+  public GeneratedProcess generateProcess(final GeneratorContext generatorContext) {
+    final String processId = "process_" + generatorContext.getSeed();
     AbstractFlowNodeBuilder<?, ?> processBuilder =
         Bpmn.createExecutableProcess(processId).name(processId).startEvent();
     generatorContext.addExecutionStep(new CreateProcessInstanceStep(processId, processId));
