@@ -28,6 +28,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.InstantSource;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -166,7 +167,8 @@ public class ProcessingStateExtension implements BeforeEachCallback {
                 keyGenerator,
                 new TransientPendingSubscriptionState(),
                 new TransientPendingSubscriptionState(),
-                new EngineConfiguration());
+                new EngineConfiguration(),
+                InstantSource.system());
       } catch (final Exception e) {
         ExceptionUtils.throwAsUncheckedException(e);
       }
