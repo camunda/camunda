@@ -53,6 +53,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
@@ -83,7 +84,8 @@ public final class DeploymentCreateProcessor
       final KeyGenerator keyGenerator,
       final FeatureFlags featureFlags,
       final CommandDistributionBehavior distributionBehavior,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final InstantSource clock) {
     processState = processingState.getProcessState();
     decisionState = processingState.getDecisionState();
     formState = processingState.getFormState();
@@ -97,7 +99,13 @@ public final class DeploymentCreateProcessor
     this.distributionBehavior = distributionBehavior;
     deploymentTransformer =
         new DeploymentTransformer(
-            stateWriter, processingState, expressionProcessor, keyGenerator, featureFlags, config);
+            stateWriter,
+            processingState,
+            expressionProcessor,
+            keyGenerator,
+            featureFlags,
+            config,
+            clock);
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
   }

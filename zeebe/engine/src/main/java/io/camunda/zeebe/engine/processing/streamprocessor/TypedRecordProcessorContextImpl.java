@@ -44,6 +44,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
     zeebeDb = context.getZeebeDb();
     transientMessageSubscriptionState = new TransientPendingSubscriptionState();
     transientProcessMessageSubscriptionState = new TransientPendingSubscriptionState();
+    clock = Objects.requireNonNull(context.getClock());
     processingState =
         new ProcessingDbState(
             partitionId,
@@ -52,11 +53,11 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
             context.getKeyGenerator(),
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
-            config);
+            config,
+            clock);
     this.writers = writers;
     partitionCommandSender = context.getPartitionCommandSender();
     this.config = config;
-    clock = Objects.requireNonNull(context.getClock());
   }
 
   @Override
@@ -92,7 +93,8 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
             zeebeDb.createContext(),
             partitionId,
             transientMessageSubscriptionState,
-            transientProcessMessageSubscriptionState);
+            transientProcessMessageSubscriptionState,
+            clock);
   }
 
   @Override

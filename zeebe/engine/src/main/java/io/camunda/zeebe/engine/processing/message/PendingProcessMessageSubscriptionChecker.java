@@ -10,11 +10,11 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import java.time.Duration;
+import java.time.InstantSource;
 
 public final class PendingProcessMessageSubscriptionChecker
     implements StreamProcessorLifecycleAware {
@@ -28,12 +28,15 @@ public final class PendingProcessMessageSubscriptionChecker
 
   private ProcessingScheduleService scheduleService;
   private boolean schouldRescheduleTimer = false;
+  private final InstantSource clock;
 
   public PendingProcessMessageSubscriptionChecker(
       final SubscriptionCommandSender commandSender,
-      final PendingProcessMessageSubscriptionState pendingState) {
+      final PendingProcessMessageSubscriptionState pendingState,
+      final InstantSource clock) {
     this.commandSender = commandSender;
     this.pendingState = pendingState;
+    this.clock = clock;
     subscriptionTimeoutInMillis = SUBSCRIPTION_TIMEOUT.toMillis();
   }
 
@@ -68,8 +71,7 @@ public final class PendingProcessMessageSubscriptionChecker
   private void rescheduleTimer() {
     if (schouldRescheduleTimer) {
       scheduleService.runAt(
-          ActorClock.currentTimeMillis() + SUBSCRIPTION_CHECK_INTERVAL.toMillis(),
-          this::checkPendingSubscriptions);
+          clock.millis() + SUBSCRIPTION_CHECK_INTERVAL.toMillis(), this::checkPendingSubscriptions);
     }
   }
 
@@ -79,7 +81,7 @@ public final class PendingProcessMessageSubscriptionChecker
 
   private void checkPendingSubscriptions() {
     pendingState.visitPending(
-        ActorClock.currentTimeMillis() - subscriptionTimeoutInMillis, this::sendPendingCommand);
+        clock.millis() - subscriptionTimeoutInMillis, this::sendPendingCommand);
     rescheduleTimer();
   }
 
@@ -91,7 +93,7 @@ public final class PendingProcessMessageSubscriptionChecker
       sendCloseCommand(subscription);
     }
 
-    final var sentTime = ActorClock.currentTimeMillis();
+    final var sentTime = clock.millis();
     pendingState.onSent(subscription.getRecord(), sentTime);
 
     return true; // to continue visiting

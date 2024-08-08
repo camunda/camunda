@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import java.time.InstantSource;
 import java.util.function.Supplier;
 
 public final class JobEventProcessors {
@@ -29,7 +30,8 @@ public final class JobEventProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final JobMetrics jobMetrics,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final InstantSource clock) {
 
     final var keyGenerator = processingState.getKeyGenerator();
 
@@ -43,7 +45,7 @@ public final class JobEventProcessors {
             bpmnBehaviors.stateBehavior());
 
     final var jobBackoffChecker =
-        new JobBackoffChecker(scheduledTaskStateFactory.get().getJobState());
+        new JobBackoffChecker(clock, scheduledTaskStateFactory.get().getJobState());
     typedRecordProcessors
         .onCommand(
             ValueType.JOB,
@@ -75,7 +77,7 @@ public final class JobEventProcessors {
             ValueType.JOB,
             JobIntent.TIME_OUT,
             new JobTimeOutProcessor(
-                processingState, writers, jobMetrics, bpmnBehaviors.jobActivationBehavior()))
+                processingState, writers, jobMetrics, bpmnBehaviors.jobActivationBehavior(), clock))
         .onCommand(
             ValueType.JOB,
             JobIntent.UPDATE_RETRIES,
@@ -93,7 +95,8 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB,
             JobIntent.RECUR_AFTER_BACKOFF,
-            new JobRecurProcessor(processingState, writers, bpmnBehaviors.jobActivationBehavior()))
+            new JobRecurProcessor(
+                processingState, writers, bpmnBehaviors.jobActivationBehavior(), clock))
         .onCommand(
             ValueType.JOB_BATCH,
             JobBatchIntent.ACTIVATE,
@@ -103,7 +106,8 @@ public final class JobEventProcessors {
             new JobTimeoutCheckerScheduler(
                 scheduledTaskStateFactory.get().getJobState(),
                 config.getJobsTimeoutCheckerPollingInterval(),
-                config.getJobsTimeoutCheckerBatchLimit()))
+                config.getJobsTimeoutCheckerBatchLimit(),
+                clock))
         .withListener(jobBackoffChecker);
   }
 }

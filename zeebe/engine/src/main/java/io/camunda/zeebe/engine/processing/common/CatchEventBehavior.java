@@ -36,10 +36,10 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
@@ -63,6 +63,7 @@ public final class CatchEventBehavior {
   private final DueDateTimerChecker timerChecker;
   private final KeyGenerator keyGenerator;
   private final SignalSubscriptionRecord signalSubscription = new SignalSubscriptionRecord();
+  private final InstantSource clock;
 
   public CatchEventBehavior(
       final ProcessingState processingState,
@@ -72,7 +73,8 @@ public final class CatchEventBehavior {
       final StateWriter stateWriter,
       final SideEffectWriter sideEffectWriter,
       final DueDateTimerChecker timerChecker,
-      final int partitionsCount) {
+      final int partitionsCount,
+      final InstantSource clock) {
     this.expressionProcessor = expressionProcessor;
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.stateWriter = stateWriter;
@@ -86,6 +88,7 @@ public final class CatchEventBehavior {
 
     this.keyGenerator = keyGenerator;
     this.timerChecker = timerChecker;
+    this.clock = clock;
   }
 
   /**
@@ -344,7 +347,7 @@ public final class CatchEventBehavior {
       final DirectBuffer handlerNodeId,
       final String tenantId,
       final Timer timer) {
-    final long dueDate = timer.getDueDate(ActorClock.currentTimeMillis());
+    final long dueDate = timer.getDueDate(clock.millis());
     timerRecord.reset();
     timerRecord
         .setRepetitions(timer.getRepetitions())
