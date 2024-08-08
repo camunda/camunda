@@ -12,9 +12,9 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CompensationEndEventGenerator implements BpmnCatchEventGenerator {
+public class CompensationCatchEventGenerator implements BpmnCatchEventGenerator {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CompensationEndEventGenerator.class);
+  private static final Logger LOG = LoggerFactory.getLogger(CompensationCatchEventGenerator.class);
 
   @Override
   public void addEventDefinition(final String elementId,
@@ -26,7 +26,6 @@ public class CompensationEndEventGenerator implements BpmnCatchEventGenerator {
     final var compensationEndEventId = "compensation_end_" + generatorContext.createNewId();
 
     catchEventBuilder
-        .endEvent(compensationEndEventId)
         .compensateEventDefinition()
         .compensateEventDefinitionDone();
   }

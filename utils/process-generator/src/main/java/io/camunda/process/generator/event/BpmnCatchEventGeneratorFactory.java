@@ -17,7 +17,7 @@ public class BpmnCatchEventGeneratorFactory {
   private final List<BpmnCatchEventGenerator> generators =
       List.of(new MessageCatchEventGenerator(), new SignalCatchEventGenerator());
   private final List<BpmnCatchEventGenerator> compensationGenerators =
-      List.of(new CompensationIntermediateThrowEventGenerator(), new CompensationEndEventGenerator());
+      List.of(new CompensationCatchEventGenerator());
 
   public BpmnCatchEventGeneratorFactory(final GeneratorContext generatorContext) {
     this.generatorContext = generatorContext;
