@@ -40,6 +40,8 @@ public class BoundaryEventTemplate implements BpmnTemplateGenerator {
     final var element =
         elementGenerator.addElement(
             processBuilder, generateExecutionPath && !shouldTriggerBoundaryEvent);
+    final var joiningGatewayId = generatorContext.createNewId();
+    final var joiningGateway = element.exclusiveGateway(joiningGatewayId);
 
     if (element instanceof final AbstractActivityBuilder<?, ?> activity) {
       // add an interrupting boundary event
@@ -58,18 +60,18 @@ public class BoundaryEventTemplate implements BpmnTemplateGenerator {
           generateExecutionPath && shouldTriggerBoundaryEvent);
 
       final BpmnTemplateGenerator branchGenerator =
-          bpmnFactories.getTemplateGeneratorFactory().getGenerator();
+          bpmnFactories.getTemplateGeneratorFactory().getMiddleGenerator();
       final AbstractFlowNodeBuilder<?, ?> branch =
           branchGenerator.addElements(
               boundaryEvent, generateExecutionPath && shouldTriggerBoundaryEvent);
 
-      branch.endEvent(endEventElementId).name(endEventElementId);
+      branch.connectTo(joiningGatewayId);
     } else {
       throw new RuntimeException(
           "Can't attach a boundary event to '%s'".formatted(element.getClass().getSimpleName()));
     }
 
-    return element;
+    return joiningGateway;
   }
 
   @Override
