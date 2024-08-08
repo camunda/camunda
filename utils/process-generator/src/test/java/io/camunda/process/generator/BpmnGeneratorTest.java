@@ -49,6 +49,8 @@ public class BpmnGeneratorTest {
     assertThat(generatedProcess).isNotNull();
 
     System.out.println(Bpmn.convertToString(generatedProcess.process()));
+    System.out.println("----------");
+    System.out.printf("Seed: %sL%n", generatedProcess.seed());
 
     //    Uncomment to open the generated process in the modeler automatically
 
