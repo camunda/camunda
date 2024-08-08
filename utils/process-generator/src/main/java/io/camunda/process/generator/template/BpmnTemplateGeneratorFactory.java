@@ -34,7 +34,7 @@ public class BpmnTemplateGeneratorFactory {
     final var randomIndex = generatorContext.getRandomNumber(templateGenerators.size());
     final var generator = templateGenerators.get(randomIndex);
 
-    while (!generatorContext.canAddBranches() && generator.addsBranches()) {
+    if (!generatorContext.canAddBranches() && generator.addsBranches()) {
       return getGenerator();
     }
 
