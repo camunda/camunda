@@ -10,5 +10,21 @@ package io.camunda.operate;
 public enum ListenerState {
   ACTIVE,
   COMPLETED,
-  FAILED;
+  FAILED,
+  TIMED_OUT,
+  CANCELED,
+  UNKNOWN;
+
+  public static ListenerState fromZeebeJobIntent(final String jobState) {
+    final ListenerState result =
+        switch (jobState) {
+          case "CREATED", "RETRIES_UPDATED", "MIGRATED" -> ACTIVE;
+          case "COMPLETED" -> COMPLETED;
+          case "TIMED_OUT" -> TIMED_OUT;
+          case "CANCELED" -> CANCELED;
+          case "FAILED", "FAIL" -> FAILED;
+          default -> UNKNOWN;
+        };
+    return result;
+  }
 }

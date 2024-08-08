@@ -183,14 +183,14 @@ public class EventZeebeRecordProcessor {
   }
 
   private <T extends RecordValue> void processLastRecord(
-      final List<Record<T>> incidentRecords,
+      final List<Record<T>> records,
       final Set<String> events,
       final Consumer<Record<? extends RecordValue>> recordProcessor) {
-    if (incidentRecords.size() >= 1) {
-      for (int i = incidentRecords.size() - 1; i >= 0; i--) {
-        final String intentStr = incidentRecords.get(i).getIntent().name();
+    if (records.size() >= 1) {
+      for (int i = records.size() - 1; i >= 0; i--) {
+        final String intentStr = records.get(i).getIntent().name();
         if (events.contains(intentStr)) {
-          recordProcessor.accept(incidentRecords.get(i));
+          recordProcessor.accept(records.get(i));
           break;
         }
       }

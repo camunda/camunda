@@ -7,7 +7,9 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
+import io.camunda.operate.schema.templates.JobTemplate;
 import java.util.Objects;
+import java.util.Set;
 
 public class ListenerRequestDto extends PaginatedQuery<ListenerRequestDto> {
   private String flowNodeId;
@@ -19,6 +21,11 @@ public class ListenerRequestDto extends PaginatedQuery<ListenerRequestDto> {
   public ListenerRequestDto setFlowNodeId(final String flowNodeId) {
     this.flowNodeId = flowNodeId;
     return this;
+  }
+
+  @Override
+  protected Set<String> getValidSortByValues() {
+    return Set.of(JobTemplate.TIME);
   }
 
   @Override
