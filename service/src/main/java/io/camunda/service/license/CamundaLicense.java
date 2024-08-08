@@ -21,17 +21,22 @@ public class CamundaLicense {
   private boolean isSelfManaged;
   private boolean isInitialized;
 
-  public CamundaLicense() {}
+  @VisibleForTesting
+  protected CamundaLicense() {}
 
-  public boolean isValid() {
+  public CamundaLicense(final String license) {
+    initializeWithLicense(license);
+  }
+
+  public synchronized boolean isValid() {
     return isValid;
   }
 
-  public boolean isSelfManaged() {
+  public synchronized boolean isSelfManaged() {
     return isSelfManaged;
   }
 
-  public void initializeWithLicense(final String license) {
+  public synchronized void initializeWithLicense(final String license) {
     if (!isInitialized) {
       isValid = determineLicenseValidity(license);
       isSelfManaged = determineIfLicenseEnvModeIsSelfManaged(license);
@@ -49,11 +54,16 @@ public class CamundaLicense {
     try {
       final LicenseKey licenseKey = getLicenseKey(licenseStr);
       return licenseKey.getProperties().entrySet().stream()
-          .noneMatch(x -> x.getKey().equals("environmentMode") && x.getValue().equals("saas"));
+          .noneMatch(x -> x.getKey().equals("licenseType") && x.getValue().equals("saas"));
     } catch (final InvalidLicenseException e) {
+      LOGGER.error(
+          "Expected a valid license when determining the type of license, but encountered an invalid one instead. ",
+          e);
       return true;
     } catch (final Exception e) {
-      LOGGER.error("Unexpected error when determining environment mode of license", e);
+      LOGGER.error(
+          "Expected to determine the license type of the license, but the following unexpected error was encountered: ",
+          e);
       return true;
     }
   }
@@ -64,9 +74,14 @@ public class CamundaLicense {
       license.validate(); // this method logs the license status
       return true;
     } catch (final InvalidLicenseException e) {
+      LOGGER.error(
+          "Expected a valid license when determining license validity, but encountered an invalid one instead. ",
+          e);
       return false;
     } catch (final Exception e) {
-      LOGGER.error("Unexpected error when validating license", e);
+      LOGGER.error(
+          "Expected to validate a the Camunda license, but the following unexpected error was encountered: ",
+          e);
       return false;
     }
   }

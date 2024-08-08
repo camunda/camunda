@@ -33,9 +33,7 @@ public class ManagementServicesConfiguration {
 
   @Bean
   public CamundaLicense camundaLicense() {
-    final CamundaLicense licence = new CamundaLicense();
-    licence.initializeWithLicense(licenseKeyProperties.key());
-    return licence;
+    return new CamundaLicense(licenseKeyProperties.key());
   }
 
   @ConfigurationProperties("camunda.license")
