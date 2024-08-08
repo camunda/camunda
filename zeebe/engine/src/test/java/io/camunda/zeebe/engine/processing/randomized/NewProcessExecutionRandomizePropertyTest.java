@@ -20,7 +20,7 @@ import org.junit.rules.TestWatcher;
 
 public class NewProcessExecutionRandomizePropertyTest {
   @Rule public final EngineRule engineRule = EngineRule.singlePartition();
-  private final BpmnGenerator bpmnGenerator = new BpmnGenerator(-7396149015711058731L);
+  private final BpmnGenerator bpmnGenerator = new BpmnGenerator();
   private GeneratedProcess generatedProcess;
 
   @Rule
