@@ -27,7 +27,6 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobTimeoutRequest;
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
@@ -51,7 +50,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Resource;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -135,16 +133,6 @@ public final class RequestMapper extends RequestUtil {
       final UpdateJobTimeoutRequest grpcRequest) {
     final var brokerRequest =
         new BrokerUpdateJobTimeoutRequest(grpcRequest.getJobKey(), grpcRequest.getTimeout());
-    if (grpcRequest.hasOperationReference()) {
-      brokerRequest.setOperationReference(grpcRequest.getOperationReference());
-    }
-    return brokerRequest;
-  }
-
-  public static BrokerUpdateJobRequest toUpdateJobRequest(final UpdateJobRequest grpcRequest) {
-    final var brokerRequest =
-        new BrokerUpdateJobRequest(
-            grpcRequest.getJobKey(), grpcRequest.getRetries(), grpcRequest.getTimeout());
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }
