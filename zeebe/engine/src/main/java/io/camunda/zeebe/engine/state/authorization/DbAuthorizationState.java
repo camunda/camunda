@@ -85,7 +85,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     authorizationKey.wrapLong(key);
     final AuthorizationRecordValue authorizationRecordValue =
         authorizationColumnFamily.get(authorizationKey);
-    return authorizationRecordValue == null ? null : authorizationRecordToRead.getRecord();
+    return authorizationRecordValue == null ? null : authorizationRecordToRead.getRecord().copy();
   }
 
   @Override

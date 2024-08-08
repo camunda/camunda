@@ -51,6 +51,17 @@ public final class AuthorizationRecord extends UnifiedRecordValue
     setPermissions(record.getPermissions());
   }
 
+  public AuthorizationRecord copy() {
+    final AuthorizationRecord copy = new AuthorizationRecord();
+    copy.ownerKeyProp.setValue(BufferUtil.cloneBuffer(getOwnerKeyBuffer()));
+    copy.ownerTypeProp.setValue(BufferUtil.cloneBuffer(getOwnerTypeBuffer()));
+    copy.resourceKeyProp.setValue(BufferUtil.cloneBuffer(getResourceKeyBuffer()));
+    copy.resourceTypeProp.setValue(BufferUtil.cloneBuffer(getResourceTypeBuffer()));
+    copy.authorizationKeyProp.setValue(getAuthorizationKey());
+    copy.setPermissions(getPermissions());
+    return copy;
+  }
+
   @JsonIgnore
   public DirectBuffer getOwnerKeyBuffer() {
     return ownerKeyProp.getValue();
