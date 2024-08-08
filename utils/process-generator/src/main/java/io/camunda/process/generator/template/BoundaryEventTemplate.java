@@ -32,13 +32,14 @@ public class BoundaryEventTemplate implements BpmnTemplateGenerator {
     final String boundaryEventElementId = generatorContext.createNewId();
     final String endEventElementId = generatorContext.createNewId();
 
-    final boolean shouldTriggerBoundaryEvent =
-        generateExecutionPath && generatorContext.getRandomBoolean();
+    final boolean shouldTriggerBoundaryEvent = generatorContext.getRandomBoolean();
 
     final BpmnElementGenerator elementGenerator =
         bpmnFactories.getElementGeneratorFactory().getGeneratorForActivityWithBoundaryEvent();
 
-    final var element = elementGenerator.addElement(processBuilder, generateExecutionPath);
+    final var element =
+        elementGenerator.addElement(
+            processBuilder, generateExecutionPath && !shouldTriggerBoundaryEvent);
 
     if (element instanceof final AbstractActivityBuilder<?, ?> activity) {
       // add an interrupting boundary event
@@ -51,12 +52,16 @@ public class BoundaryEventTemplate implements BpmnTemplateGenerator {
       final BpmnCatchEventGenerator catchEventGenerator =
           bpmnFactories.getCatchEventGeneratorFactory().getGenerator();
       catchEventGenerator.addEventDefinition(
-          boundaryEventElementId, boundaryEvent, generatorContext, shouldTriggerBoundaryEvent);
+          boundaryEventElementId,
+          boundaryEvent,
+          generatorContext,
+          generateExecutionPath && shouldTriggerBoundaryEvent);
 
       final BpmnTemplateGenerator branchGenerator =
           bpmnFactories.getTemplateGeneratorFactory().getGenerator();
       final AbstractFlowNodeBuilder<?, ?> branch =
-          branchGenerator.addElements(boundaryEvent, shouldTriggerBoundaryEvent);
+          branchGenerator.addElements(
+              boundaryEvent, generateExecutionPath && shouldTriggerBoundaryEvent);
 
       branch.endEvent(endEventElementId).name(endEventElementId);
     } else {
