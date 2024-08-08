@@ -350,7 +350,8 @@ public class BackupManagerElasticSearch extends BackupManager {
         .createAsync(snapshotRequest, RequestOptions.DEFAULT, getSnapshotActionListener());
   }
 
-  private GetBackupStateResponseDto getBackupResponse(final Long backupId, final List<SnapshotInfo> snapshots) {
+  private GetBackupStateResponseDto getBackupResponse(
+      final Long backupId, final List<SnapshotInfo> snapshots) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
 
     final Metadata metadata =
