@@ -6,7 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED = false;
-const IS_LISTENERS_TAB_SUPPORTED = true;
+import capitalize from 'lodash/capitalize';
 
-export {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED, IS_LISTENERS_TAB_SUPPORTED};
+const spaceAndCapitalize = (str: string) => {
+  return capitalize(str.replace(/[-_]/gi, ' '));
+};
+
+export {spaceAndCapitalize};

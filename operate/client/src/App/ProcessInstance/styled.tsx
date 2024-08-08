@@ -11,7 +11,7 @@ import {Stack} from '@carbon/react';
 
 const BottomPanel = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 2fr;
   height: 100%;
 `;
 

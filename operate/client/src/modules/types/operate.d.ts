@@ -100,3 +100,12 @@ interface DecisionInstanceEntity {
   state: DecisionInstanceEntityState;
   sortValues: [string, string];
 }
+
+interface ListenerEntity {
+  listenerType: 'EXECUTION' | 'USER_TASK';
+  listenerKey: number;
+  state: string;
+  jobType: 'UNSPECIFIED' | 'START' | 'END';
+  event: string;
+  time: string;
+}
