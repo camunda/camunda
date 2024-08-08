@@ -60,16 +60,18 @@ import io.camunda.zeebe.util.ReflectUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
 import java.time.InstantSource;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.SequencedCollection;
 import java.util.SortedSet;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jetbrains.annotations.NotNull;
 
@@ -150,9 +152,7 @@ public final class InMemoryEngine implements TestEngines {
 
   public void runAction(final Action action) {
     switch (action) {
-      case final WriteRecord write -> {
-        writers[write.partitionId() - 1].tryWrite(WriteContext.internal(), write.entry());
-      }
+      case WriteRecord(final var partition, final var entry) -> writeInternal(entry);
       case final ProcessRecord process -> {
         final ProcessingResultBuilder resultBuilder = new TestProcessingResultBuilder();
         final RecordMetadata metadata = new RecordMetadata();
@@ -172,7 +172,7 @@ public final class InMemoryEngine implements TestEngines {
 
               final var processingResult = engine.process(record, resultBuilder);
               final var newRecords = processingResult.getRecordBatch();
-              writers[partitionId - 1].tryWrite(WriteContext.internal(), newRecords.entries());
+              writeInternal(newRecords.entries());
               processingResult.executePostCommitTasks();
               return;
             } catch (final Exception e) {
@@ -189,28 +189,47 @@ public final class InMemoryEngine implements TestEngines {
     }
   }
 
-  public SequencedCollection<Record<?>> records() {
-    final var records = new ArrayList<Record<?>>();
-
-    try (final var logStorageReader = logStorage.newReader();
-        final var logStreamReader = new LogStreamReaderImpl(logStorageReader)) {
-      while (logStreamReader.hasNext()) {
-        final var metadata = new RecordMetadata();
-        final var logEntry = logStreamReader.next();
-        final var copy = new UnsafeBuffer(new byte[logEntry.getLength()]);
-        logEntry.write(copy, 0);
-        final var copiedLogEntry = new LoggedEventImpl();
-        copiedLogEntry.wrap(copy, 0);
-        copiedLogEntry.readMetadata(metadata);
-        final var value =
-            ReflectUtil.newInstance(TypedEventRegistry.EVENT_REGISTRY.get(metadata.getValueType()));
-        copiedLogEntry.readValue(value);
-        final var record = new TypedRecordImpl(partitionId);
-        record.wrap(copiedLogEntry, metadata, value);
-        records.add(record);
-      }
+  private void writeInternal(final LogAppendEntry entry) {
+    final var result = writers[partitionId - 1].tryWrite(WriteContext.internal(), entry);
+    if (result.isLeft()) {
+      throw new IllegalStateException("Failed to write entry: " + result.getLeft());
     }
-    return records;
+  }
+
+  private void writeInternal(final List<LogAppendEntry> entries) {
+    final var result = writers[partitionId - 1].tryWrite(WriteContext.internal(), entries);
+    if (result.isLeft()) {
+      throw new IllegalStateException("Failed to write entry: " + result.getLeft());
+    }
+  }
+
+  public Stream<? extends Record<?>> records() {
+    final var logStorageReader = logStorage.newReader();
+    final var logStreamReader = new LogStreamReaderImpl(logStorageReader);
+    return StreamSupport.stream(
+            Spliterators.spliteratorUnknownSize(logStreamReader, Spliterator.ORDERED), false)
+        .map(
+            logEntry -> {
+              final var bufferCopy = new UnsafeBuffer(new byte[logEntry.getLength()]);
+              final var logEntryCopy = new LoggedEventImpl();
+              final var record = new TypedRecordImpl(partitionId);
+
+              logEntry.write(bufferCopy, 0);
+              logEntryCopy.wrap(bufferCopy, 0);
+
+              final var metadata = new RecordMetadata();
+              logEntryCopy.readMetadata(metadata);
+
+              final var value =
+                  ReflectUtil.newInstance(
+                      TypedEventRegistry.EVENT_REGISTRY.get(metadata.getValueType()));
+              logEntryCopy.readValue(value);
+
+              record.wrap(logEntryCopy, metadata, value);
+              return (Record<?>) record;
+            })
+        .onClose(logStreamReader::close)
+        .onClose(logStorageReader::close);
   }
 
   public static final class TestScheduleService implements ProcessingScheduleService {
@@ -409,7 +428,7 @@ public final class InMemoryEngine implements TestEngines {
           new SequencedBatch(clock.millis(), position, sourcePosition, appendEntries),
           new AppendListener() {});
       position = position + appendEntries.size();
-      return null;
+      return Either.right(position - 1);
     }
   }
 

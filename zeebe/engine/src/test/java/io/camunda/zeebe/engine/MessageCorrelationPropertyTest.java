@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.test.util.record.CompactRecordLogger;
 import java.nio.charset.StandardCharsets;
 import java.util.SequencedCollection;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 final class MessageCorrelationPropertyTest {
@@ -70,9 +71,9 @@ final class MessageCorrelationPropertyTest {
     engine.runAction(new ProcessRecord(1, true));
     engine.runAction(new ExecuteScheduledTask(1, true));
 
-    new CompactRecordLogger(engines[0].records()).log();
-    new CompactRecordLogger(engines[1].records()).log();
-    new CompactRecordLogger(engines[2].records()).log();
+    new CompactRecordLogger(engines[0].records().collect(Collectors.toUnmodifiableList())).log();
+    new CompactRecordLogger(engines[1].records().collect(Collectors.toUnmodifiableList())).log();
+    new CompactRecordLogger(engines[2].records().collect(Collectors.toUnmodifiableList())).log();
   }
 
   static final class AllMessagesExpire implements MessageProperty {
