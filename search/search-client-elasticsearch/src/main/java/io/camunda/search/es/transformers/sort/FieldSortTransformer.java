@@ -8,6 +8,7 @@
 package io.camunda.search.es.transformers.sort;
 
 import co.elastic.clients.elasticsearch._types.FieldSort;
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOptionsBuilders;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import io.camunda.search.clients.sort.SearchFieldSort;
@@ -25,7 +26,10 @@ public final class FieldSortTransformer
   public FieldSort apply(final SearchFieldSort value) {
     final var field = value.field();
     final var order = toSortOrder(value);
-    return SortOptionsBuilders.field().field(field).order(order).build();
+    final var missing = value.missing();
+
+    final var builder = SortOptionsBuilders.field().field(field).order(order);
+    return missing == null ? builder.build() : builder.missing(FieldValue.of(missing)).build();
   }
 
   private SortOrder toSortOrder(final SearchFieldSort value) {
