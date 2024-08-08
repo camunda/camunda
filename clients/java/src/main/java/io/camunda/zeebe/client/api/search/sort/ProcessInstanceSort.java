@@ -13,30 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.search;
+package io.camunda.zeebe.client.api.search.sort;
 
 import io.camunda.zeebe.client.api.search.TypedSearchQueryRequest.SearchRequestSort;
 
-public interface DecisionDefinitionSort extends SearchRequestSort<DecisionDefinitionSort> {
+public interface ProcessInstanceSort extends SearchRequestSort<ProcessInstanceSort> {
 
-  /** Sort by decision key. */
-  DecisionDefinitionSort decisionKey();
+  /** Sort by process instance key. */
+  ProcessInstanceSort processInstanceKey();
 
-  /** Sort by dmn decision id. */
-  DecisionDefinitionSort dmnDecisionId();
+  /** Sort by process instance start date. */
+  ProcessInstanceSort startDate();
 
-  /** Sort by dmn decision name. */
-  DecisionDefinitionSort dmnDecisionName();
-
-  /** Sort by version. */
-  DecisionDefinitionSort version();
-
-  /** Sort by dmn decision requirements id. */
-  DecisionDefinitionSort dmnDecisionRequirementsId();
-
-  /** Sort by decision requirements key. */
-  DecisionDefinitionSort decisionRequirementsKey();
-
-  /** Sort by tenant id. */
-  DecisionDefinitionSort tenantId();
+  /** Sort by process instance end date. */
+  ProcessInstanceSort endDate();
 }

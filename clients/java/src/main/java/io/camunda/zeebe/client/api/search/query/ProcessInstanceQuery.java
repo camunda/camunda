@@ -13,11 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.search;
+package io.camunda.zeebe.client.api.search.query;
 
-import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
+import io.camunda.zeebe.client.api.search.FinalSearchQueryStep;
+import io.camunda.zeebe.client.api.search.TypedSearchQueryRequest;
+import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.zeebe.client.api.search.response.ProcessInstance;
+import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
 
-public interface DecisionDefinitionQuery
+public interface ProcessInstanceQuery
     extends TypedSearchQueryRequest<
-            DecisionDefinitionFilter, DecisionDefinitionSort, DecisionDefinitionQuery>,
-        FinalSearchQueryStep<DecisionDefinition> {}
+        ProcessInstanceFilter, ProcessInstanceSort, ProcessInstanceQuery>,
+    FinalSearchQueryStep<ProcessInstance> {}

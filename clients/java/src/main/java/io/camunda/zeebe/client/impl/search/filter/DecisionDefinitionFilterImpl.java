@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.impl.search;
+package io.camunda.zeebe.client.impl.search.filter;
 
-import io.camunda.zeebe.client.api.search.DecisionDefinitionFilter;
+import io.camunda.zeebe.client.api.search.filter.DecisionDefinitionFilter;
+import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilterRequest;
 
 public class DecisionDefinitionFilterImpl

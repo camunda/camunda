@@ -13,30 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.impl.search;
+package io.camunda.zeebe.client.api.search.query;
 
-import io.camunda.zeebe.client.api.search.ProcessInstanceSort;
+import io.camunda.zeebe.client.api.search.FinalSearchQueryStep;
+import io.camunda.zeebe.client.api.search.TypedSearchQueryRequest;
+import io.camunda.zeebe.client.api.search.filter.DecisionDefinitionFilter;
+import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
+import io.camunda.zeebe.client.api.search.sort.DecisionDefinitionSort;
 
-public class ProcessInstanceSortImpl extends SearchQuerySortBase<ProcessInstanceSort>
-    implements ProcessInstanceSort {
-
-  @Override
-  public ProcessInstanceSort processInstanceKey() {
-    return field("processInstanceKey");
-  }
-
-  @Override
-  public ProcessInstanceSort startDate() {
-    return field("startDate");
-  }
-
-  @Override
-  public ProcessInstanceSort endDate() {
-    return field("endDate");
-  }
-
-  @Override
-  protected ProcessInstanceSort self() {
-    return this;
-  }
-}
+public interface DecisionDefinitionQuery
+    extends TypedSearchQueryRequest<
+        DecisionDefinitionFilter, DecisionDefinitionSort, DecisionDefinitionQuery>,
+    FinalSearchQueryStep<DecisionDefinition> {}

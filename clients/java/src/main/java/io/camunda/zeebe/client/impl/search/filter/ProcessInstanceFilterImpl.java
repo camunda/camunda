@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.impl.search;
+package io.camunda.zeebe.client.impl.search.filter;
 
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.variableValueFilter;
 
-import io.camunda.zeebe.client.api.search.ProcessInstanceFilter;
-import io.camunda.zeebe.client.api.search.VariableValueFilter;
+import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.zeebe.client.api.search.filter.VariableValueFilter;
+import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.impl.util.CollectionUtil;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.VariableValueFilterRequest;

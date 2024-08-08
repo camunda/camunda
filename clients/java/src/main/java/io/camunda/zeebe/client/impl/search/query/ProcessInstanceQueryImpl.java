@@ -13,26 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.impl.search;
+package io.camunda.zeebe.client.impl.search.query;
 
-import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.decisionDefinitionFilter;
-import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.decisionDefinitionSort;
+import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.processInstanceFilter;
+import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.processInstanceSort;
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.search.DecisionDefinitionFilter;
-import io.camunda.zeebe.client.api.search.DecisionDefinitionQuery;
-import io.camunda.zeebe.client.api.search.DecisionDefinitionSort;
 import io.camunda.zeebe.client.api.search.FinalSearchQueryStep;
+import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.zeebe.client.api.search.query.ProcessInstanceQuery;
+import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.zeebe.client.api.search.SearchRequestPage;
-import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
+import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
-import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQueryRequest;
-import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQueryResponse;
+import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
+import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryRequest;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
 import java.time.Duration;
@@ -41,78 +43,78 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class DecisionDefinitionQueryImpl
-    extends TypedSearchRequestPropertyProvider<DecisionDefinitionSearchQueryRequest>
-    implements DecisionDefinitionQuery {
+public class ProcessInstanceQueryImpl
+    extends TypedSearchRequestPropertyProvider<ProcessInstanceSearchQueryRequest>
+    implements ProcessInstanceQuery {
 
-  private final DecisionDefinitionSearchQueryRequest request;
+  private final ProcessInstanceSearchQueryRequest request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public DecisionDefinitionQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
-    request = new DecisionDefinitionSearchQueryRequest();
+  public ProcessInstanceQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+    request = new ProcessInstanceSearchQueryRequest();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
-  public DecisionDefinitionQuery filter(final DecisionDefinitionFilter value) {
-    final DecisionDefinitionFilterRequest filter = provideSearchRequestProperty(value);
+  public ProcessInstanceQuery filter(final ProcessInstanceFilter value) {
+    final ProcessInstanceFilterRequest filter = provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
 
   @Override
-  public DecisionDefinitionQuery filter(final Consumer<DecisionDefinitionFilter> fn) {
-    return filter(decisionDefinitionFilter(fn));
+  public ProcessInstanceQuery filter(final Consumer<ProcessInstanceFilter> fn) {
+    return filter(processInstanceFilter(fn));
   }
 
   @Override
-  public DecisionDefinitionQuery sort(final DecisionDefinitionSort value) {
+  public ProcessInstanceQuery sort(final ProcessInstanceSort value) {
     final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
     request.setSort(sorting);
     return this;
   }
 
   @Override
-  public DecisionDefinitionQuery sort(final Consumer<DecisionDefinitionSort> fn) {
-    return sort(decisionDefinitionSort(fn));
+  public ProcessInstanceQuery sort(final Consumer<ProcessInstanceSort> fn) {
+    return sort(processInstanceSort(fn));
   }
 
   @Override
-  public DecisionDefinitionQuery page(final SearchRequestPage value) {
+  public ProcessInstanceQuery page(final SearchRequestPage value) {
     final SearchQueryPageRequest page = provideSearchRequestProperty(value);
     request.setPage(page);
     return this;
   }
 
   @Override
-  public DecisionDefinitionQuery page(final Consumer<SearchRequestPage> fn) {
+  public ProcessInstanceQuery page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
   }
 
   @Override
-  protected DecisionDefinitionSearchQueryRequest getSearchRequestProperty() {
+  protected ProcessInstanceSearchQueryRequest getSearchRequestProperty() {
     return request;
   }
 
   @Override
-  public FinalSearchQueryStep<DecisionDefinition> requestTimeout(final Duration requestTimeout) {
+  public FinalSearchQueryStep<ProcessInstance> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public ZeebeFuture<SearchQueryResponse<DecisionDefinition>> send() {
-    final HttpZeebeFuture<SearchQueryResponse<DecisionDefinition>> result = new HttpZeebeFuture<>();
+  public ZeebeFuture<SearchQueryResponse<ProcessInstance>> send() {
+    final HttpZeebeFuture<SearchQueryResponse<ProcessInstance>> result = new HttpZeebeFuture<>();
     httpClient.post(
-        "/decision-definitions/search",
+        "/process-instances/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        DecisionDefinitionSearchQueryResponse.class,
-        SearchResponseMapper::toDecisionDefinitionSearchResponse,
+        ProcessInstanceSearchQueryResponse.class,
+        SearchResponseMapper::toProcessInstanceSearchResponse,
         result);
     return result;
   }

@@ -13,23 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.search;
+package io.camunda.zeebe.client.api.search.filter;
 
 import io.camunda.zeebe.client.api.search.TypedSearchQueryRequest.SearchRequestFilter;
-import java.util.List;
-import java.util.function.Consumer;
 
-public interface ProcessInstanceFilter extends SearchRequestFilter {
+public interface VariableValueFilter extends SearchRequestFilter {
 
-  /** Filter by process instance keys. */
-  ProcessInstanceFilter processInstanceKeys(final Long... values);
+  /** Filter by variable name */
+  VariableValueFilter name(final String value);
 
-  /** Filter by process instance keys. */
-  ProcessInstanceFilter processInstanceKeys(final List<Long> values);
+  /** Filter by variable value equal to value */
+  VariableValueFilter eq(final Object value);
 
-  /** Filter by variable values. */
-  ProcessInstanceFilter variable(final VariableValueFilter filter);
+  /** Filter by variable value greater than value */
+  VariableValueFilter gt(final Object value);
 
-  /** Filter by variable values. */
-  ProcessInstanceFilter variable(final Consumer<VariableValueFilter> fn);
+  /** Filter by variable value greater equals than value */
+  VariableValueFilter gte(final Object value);
+
+  /** Filter by variable value lower than value */
+  VariableValueFilter lt(final Object value);
+
+  /** Filter by variable value lower equals than value */
+  VariableValueFilter lte(final Object value);
 }

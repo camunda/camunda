@@ -13,24 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.impl.search;
+package io.camunda.zeebe.client.impl.search.sort;
 
-import io.camunda.zeebe.client.api.search.UserTaskSort;
+import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
+import io.camunda.zeebe.client.impl.search.SearchQuerySortBase;
 
-public class UserTaskSortImpl extends SearchQuerySortBase<UserTaskSort> implements UserTaskSort {
+public class ProcessInstanceSortImpl extends SearchQuerySortBase<ProcessInstanceSort>
+    implements ProcessInstanceSort {
 
   @Override
-  public UserTaskSort creationDate() {
-    return field("creationDate");
+  public ProcessInstanceSort processInstanceKey() {
+    return field("processInstanceKey");
   }
 
   @Override
-  public UserTaskSort completionDate() {
-    return field("completionDate");
+  public ProcessInstanceSort startDate() {
+    return field("startDate");
   }
 
   @Override
-  protected UserTaskSort self() {
+  public ProcessInstanceSort endDate() {
+    return field("endDate");
+  }
+
+  @Override
+  protected ProcessInstanceSort self() {
     return this;
   }
 }
