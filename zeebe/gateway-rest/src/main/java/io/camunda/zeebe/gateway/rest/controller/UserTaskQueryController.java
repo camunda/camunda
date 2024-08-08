@@ -36,7 +36,7 @@ public class UserTaskQueryController {
   public ResponseEntity<Object> searchUserTasks(
       @RequestBody(required = false) final UserTaskSearchQueryRequest query) {
     return SearchQueryRequestMapper.toUserTaskQuery(query)
-        .fold(this::search, RestErrorMapper::mapProblemToResponse);
+        .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
   private ResponseEntity<Object> search(final UserTaskQuery query) {

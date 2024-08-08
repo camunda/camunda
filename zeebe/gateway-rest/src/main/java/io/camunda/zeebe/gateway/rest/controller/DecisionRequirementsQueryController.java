@@ -36,7 +36,7 @@ public class DecisionRequirementsQueryController {
   public ResponseEntity<Object> searchUserTasks(
       @RequestBody(required = false) final DecisionRequirementsSearchQueryRequest query) {
     return SearchQueryRequestMapper.toDecisionRequirementsQuery(query)
-        .fold(this::search, RestErrorMapper::mapProblemToResponse);
+        .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
   private ResponseEntity<Object> search(final DecisionRequirementsQuery query) {
