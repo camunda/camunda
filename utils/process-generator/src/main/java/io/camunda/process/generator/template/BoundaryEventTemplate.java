@@ -31,7 +31,6 @@ public class BoundaryEventTemplate implements BpmnTemplateGenerator {
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
 
     final String boundaryEventElementId = generatorContext.createNewId();
-    final String endEventElementId = generatorContext.createNewId();
 
     final boolean shouldTriggerBoundaryEvent = generatorContext.getRandomBoolean();
 

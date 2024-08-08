@@ -33,8 +33,8 @@ public class BpmnTemplateGeneratorFactory {
     finalTemplateGenerators =
         List.of(
             new BpmnEndEventTemplate(generatorContext),
-            new BpmnTerminateEndEventTemplate(generatorContext, bpmnFactories),
-            new BpmnCompensationEventTemplate(generatorContext, bpmnFactories));
+            new BpmnTerminateEndEventTemplate(generatorContext, bpmnFactories));
+    //            new BpmnCompensationEventTemplate(generatorContext, bpmnFactories));
   }
 
   public BpmnTemplateGenerator getMiddleGenerator() {

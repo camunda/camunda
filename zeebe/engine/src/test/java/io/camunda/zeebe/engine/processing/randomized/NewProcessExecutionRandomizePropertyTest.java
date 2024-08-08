@@ -19,8 +19,8 @@ import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
 public class NewProcessExecutionRandomizePropertyTest {
-  private static final BpmnGenerator BPMN_GENERATOR = new BpmnGenerator();
   @Rule public final EngineRule engineRule = EngineRule.singlePartition();
+  private final BpmnGenerator bpmnGenerator = new BpmnGenerator(-7396149015711058731L);
   private GeneratedProcess generatedProcess;
 
   @Rule
@@ -34,7 +34,7 @@ public class NewProcessExecutionRandomizePropertyTest {
   @Test
   public void shouldExecuteProcessToEnd() {
     // given - generate and deploy a process
-    generatedProcess = BPMN_GENERATOR.generateProcess();
+    generatedProcess = bpmnGenerator.generateProcess();
     final var engineRuleProcessExecutor = new EngineRuleProcessExecutor(engineRule);
     engineRule.deployment().withXmlResource(generatedProcess.process()).deploy();
 
