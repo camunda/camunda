@@ -36,7 +36,8 @@ public class DbUserState implements UserState, MutableUserState {
     userKey = new DbLong();
 
     usernameToKeyColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.USERS, transactionContext, username, userKey);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.USERNAME_BY_USER_KEY, transactionContext, username, userKey);
 
     keyToUserColumnFamily =
         zeebeDb.createColumnFamily(
