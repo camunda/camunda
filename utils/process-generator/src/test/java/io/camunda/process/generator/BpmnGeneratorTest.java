@@ -40,7 +40,7 @@ public class BpmnGeneratorTest {
   @Test
   void shouldGenerateARandomProcess() throws Exception {
     // given
-    final var generator = new BpmnGenerator();
+    final var generator = new BpmnGenerator(946493473066018254L);
 
     // when
     final var generatedProcess = generator.generateProcess();
@@ -50,7 +50,7 @@ public class BpmnGeneratorTest {
 
     System.out.println(Bpmn.convertToString(generatedProcess.process()));
     System.out.println("----------");
-    System.out.printf("Seed: %sL%n", generatedProcess.seed());
+    System.out.printf("Seed: %nL", generatedProcess.seed());
 
     //    Uncomment to open the generated process in the modeler automatically
 
