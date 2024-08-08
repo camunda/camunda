@@ -28,6 +28,6 @@ public class FailedRandomProcessTestPrinter extends TestWatcher {
   @Override
   protected void failed(final Throwable e, final Description description) {
     final var process = processSupplier.get();
-    LOGGER.info("Seed of failed test case: {}", process.seed());
+    LOGGER.info("Seed of failed test case: {}L", process.seed());
   }
 }

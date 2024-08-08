@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class GeneratorContext {
 
   private static final int MAXIMUM_DEPTH = 3;
-  private static final int MAXIMUM_BRANCHES = 8;
+  private static final int MAXIMUM_BRANCHES = 3;
   private final long seed;
   private final Random random;
   private final AtomicLong id = new AtomicLong(1);
@@ -68,6 +68,10 @@ public class GeneratorContext {
         Math.min(getMaximumAvailableAmountOfBranches(), numberOfBranches);
     currentAmountOfBranches += numberOfBranchesToGenerate;
     return numberOfBranchesToGenerate;
+  }
+
+  public void decrementCurrentAmountOfBranches(final int amount) {
+    currentAmountOfBranches -= amount;
   }
 
   public boolean canAddBranches() {

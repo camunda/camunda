@@ -57,7 +57,7 @@ public class BpmnMultipleOutgoingSequenceFlowsGenerator implements BpmnParallelF
       final boolean generateExecutionPath) {
     return bpmnFactories
         .getTemplateGeneratorFactory()
-        .getGenerator()
+        .getMiddleGenerator()
         .addElements(builder, generateExecutionPath);
   }
 }

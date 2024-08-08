@@ -34,11 +34,11 @@ public class BpmnTerminateEndEventTemplate implements BpmnTemplateGenerator {
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
 
     final var elementId = "terminate_%s".formatted(generatorContext.createNewId());
-    final var numberOfFlows = generatorContext.getRandomNumberOfBranches(2, 3);
-    final var indexOfFlowWithTerminateEndEvent = generatorContext.getRandomNumber(numberOfFlows);
+    final var amountOfBranches = generatorContext.getRandomNumberOfBranches(2, 3);
+    final var indexOfFlowWithTerminateEndEvent = generatorContext.getRandomNumber(amountOfBranches);
 
     LOG.debug(
-        "Adding {} parallel flows, one with terminate end event {}", numberOfFlows, elementId);
+        "Adding {} parallel flows, one with terminate end event {}", amountOfBranches, elementId);
 
     final IntPredicate shouldGenerateExecutionPathForFlow =
         i -> i == indexOfFlowWithTerminateEndEvent;
@@ -48,7 +48,7 @@ public class BpmnTerminateEndEventTemplate implements BpmnTemplateGenerator {
             .getParallelFlowGeneratorFactory()
             .getGenerator()
             .addFlows(
-                numberOfFlows,
+                amountOfBranches,
                 processBuilder,
                 generateExecutionPath,
                 shouldGenerateExecutionPathForFlow);
@@ -56,10 +56,15 @@ public class BpmnTerminateEndEventTemplate implements BpmnTemplateGenerator {
     final var selectedFlow = parallelFlows.get(indexOfFlowWithTerminateEndEvent);
 
     selectedFlow.endEvent(elementId, AbstractEndEventBuilder::terminate);
+    parallelFlows.stream()
+        .filter(flow -> flow != selectedFlow)
+        .forEach(AbstractFlowNodeBuilder::endEvent);
+
+    generatorContext.decrementCurrentAmountOfBranches(amountOfBranches);
 
     // return any of the flows that does not have the terminate end event
     return parallelFlows.get(
-        IntStream.range(0, numberOfFlows)
+        IntStream.range(0, amountOfBranches)
             .filter(i -> i != indexOfFlowWithTerminateEndEvent)
             .findAny()
             .orElseThrow());

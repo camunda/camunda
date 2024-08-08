@@ -35,7 +35,7 @@ public class BpmnExclusiveGatewayGenerator implements BpmnTemplateGenerator {
 
     final var amountOfBranches =
         generatorContext.getRandomNumberOfBranches(MIN_AMOUNT_OF_BRANCHES, MAX_AMOUNT_OF_BRANCHES);
-    final var executionBranch = generatorContext.getRandomNumber(MAX_AMOUNT_OF_BRANCHES);
+    final var executionBranch = generatorContext.getRandomNumber(amountOfBranches);
 
     final var forkingGatewayId = generatorContext.createNewId();
     final var joiningGatewayId = generatorContext.createNewId();
@@ -75,6 +75,7 @@ public class BpmnExclusiveGatewayGenerator implements BpmnTemplateGenerator {
           .connectTo(joiningGatewayId);
     }
 
+    generatorContext.decrementCurrentAmountOfBranches(amountOfBranches);
     return joiningGatewayBuilder;
   }
 
