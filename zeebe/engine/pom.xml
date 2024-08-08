@@ -25,10 +25,6 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-stream-platform</artifactId>
     </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-scheduler</artifactId>
-    </dependency>
 
     <dependency>
       <groupId>org.agrona</groupId>
@@ -116,6 +112,12 @@
     </dependency>
 
     <!-- TEST DEPENDENCIES -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-scheduler</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-logstreams</artifactId>
