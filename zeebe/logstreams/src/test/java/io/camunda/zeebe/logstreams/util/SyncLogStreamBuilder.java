@@ -8,6 +8,7 @@
 package io.camunda.zeebe.logstreams.util;
 
 import com.netflix.concurrency.limits.Limit;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
@@ -62,14 +63,14 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   }
 
   @Override
-  public LogStreamBuilder withAppendLimit(final Limit appendLimit) {
-    delegate.withAppendLimit(appendLimit);
+  public LogStreamBuilder withRequestLimit(final Limit requestLimit) {
+    delegate.withRequestLimit(requestLimit);
     return this;
   }
 
   @Override
-  public LogStreamBuilder withRequestLimit(final Limit requestLimit) {
-    delegate.withRequestLimit(requestLimit);
+  public LogStreamBuilder withWriteRateLimit(final RateLimit writeRateLimiter) {
+    delegate.withWriteRateLimit(writeRateLimiter);
     return this;
   }
 

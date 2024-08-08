@@ -23,4 +23,6 @@ public interface MutableMessageSubscriptionState extends MessageSubscriptionStat
   boolean remove(long elementInstanceKey, DirectBuffer messageName);
 
   void remove(MessageSubscription subscription);
+
+  void update(long key, MessageSubscriptionRecord record);
 }

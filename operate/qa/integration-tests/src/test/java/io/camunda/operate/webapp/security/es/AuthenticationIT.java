@@ -37,9 +37,8 @@ import io.camunda.operate.webapp.security.auth.RolePermissionService;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
+import jakarta.json.Json;
 import java.util.List;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -210,7 +209,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   }
 
   @Test
-  public void testCanReadAndWriteLoggersActuatorEndpoint() throws JSONException {
+  public void testCanReadAndWriteLoggersActuatorEndpoint() {
     ResponseEntity<String> response =
         testRestTemplate.getForEntity(
             "http://localhost:" + managementPort + "/actuator/loggers/io.camunda.operate",
@@ -221,7 +220,8 @@ public class AuthenticationIT implements AuthenticationTestable {
     final HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
     final HttpEntity<String> request =
-        new HttpEntity<>(new JSONObject().put("configuredLevel", "TRACE").toString(), headers);
+        new HttpEntity<>(
+            Json.createObjectBuilder().add("configuredLevel", "TRACE").build().toString(), headers);
     response =
         testRestTemplate.postForEntity(
             "http://localhost:" + managementPort + "/actuator/loggers/io.camunda.operate",

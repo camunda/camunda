@@ -17,7 +17,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.44.1
+      image: mcr.microsoft.com/playwright:v1.45.1
       options: --user 1001:1000
     steps:
       - name: Check out repository code
@@ -25,7 +25,7 @@ jobs:
       - name: Setup yarn cache
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
           cache: "yarn"
           cache-dependency-path: operate/client/yarn.lock
       - name: Install node dependencies

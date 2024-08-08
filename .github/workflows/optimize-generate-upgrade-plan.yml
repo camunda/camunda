@@ -6,7 +6,7 @@ on:
       BRANCH:
         required: true
         description: "The branch to push the upgrade plan"
-        default: "maintenance/0.0.0"
+        default: "stable/0.0.0"
       FROM_VERSION:
         description: 'From version'
         required: true

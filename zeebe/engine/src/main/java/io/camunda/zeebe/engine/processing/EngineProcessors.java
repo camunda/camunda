@@ -120,7 +120,8 @@ public final class EngineProcessors {
         deploymentDistributionCommandSender,
         processingState.getKeyGenerator(),
         featureFlags,
-        commandDistributionBehavior);
+        commandDistributionBehavior,
+        config);
     addMessageProcessors(
         bpmnBehaviors,
         subscriptionCommandSender,
@@ -129,7 +130,8 @@ public final class EngineProcessors {
         typedRecordProcessors,
         writers,
         config,
-        featureFlags);
+        featureFlags,
+        commandDistributionBehavior);
 
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
         addProcessProcessors(
@@ -139,7 +141,10 @@ public final class EngineProcessors {
             typedRecordProcessors,
             subscriptionCommandSender,
             writers,
-            timerChecker);
+            timerChecker,
+            commandDistributionBehavior,
+            partitionId,
+            partitionsCount);
 
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
@@ -210,7 +215,10 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
-      final DueDateTimerChecker timerChecker) {
+      final DueDateTimerChecker timerChecker,
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final int partitionId,
+      final int partitionsCount) {
     return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
         scheduledTaskState,
@@ -218,7 +226,10 @@ public final class EngineProcessors {
         typedRecordProcessors,
         subscriptionCommandSender,
         timerChecker,
-        writers);
+        writers,
+        commandDistributionBehavior,
+        partitionId,
+        partitionsCount);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
@@ -230,7 +241,8 @@ public final class EngineProcessors {
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final KeyGenerator keyGenerator,
       final FeatureFlags featureFlags,
-      final CommandDistributionBehavior distributionBehavior) {
+      final CommandDistributionBehavior distributionBehavior,
+      final EngineConfiguration config) {
 
     // on deployment partition CREATE Command is received and processed
     // it will cause a distribution to other partitions
@@ -241,7 +253,8 @@ public final class EngineProcessors {
             writers,
             keyGenerator,
             featureFlags,
-            distributionBehavior);
+            distributionBehavior,
+            config);
     typedRecordProcessors.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
 
     // periodically retries deployment distribution
@@ -289,7 +302,8 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final EngineConfiguration config,
-      final FeatureFlags featureFlags) {
+      final FeatureFlags featureFlags,
+      final CommandDistributionBehavior commandDistributionBehavior) {
     MessageEventProcessors.addMessageProcessors(
         bpmnBehaviors,
         typedRecordProcessors,
@@ -298,7 +312,8 @@ public final class EngineProcessors {
         subscriptionCommandSender,
         writers,
         config,
-        featureFlags);
+        featureFlags,
+        commandDistributionBehavior);
   }
 
   private static void addDecisionProcessors(

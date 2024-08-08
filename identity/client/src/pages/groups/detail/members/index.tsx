@@ -10,12 +10,15 @@ import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
-import { getGroupUsers } from "src/utility/api/groups";
+import { getGroupMembers } from "src/utility/api/membership";
 import EntityList, {
   DocumentationDescription,
 } from "src/components/entityList";
 import { DocumentationLink } from "src/components/documentation";
 import { TrashCan } from "@carbon/react/icons";
+import { useEntityModal } from "src/components/modal";
+import AssignMembersModal from "src/pages/groups/detail/members/AssignMembersModal";
+import DeleteModal from "src/pages/groups/detail/members/DeleteModal";
 
 type MembersProps = {
   groupId: string;
@@ -29,12 +32,26 @@ const Members: FC<MembersProps> = ({ groupId }) => {
     loading,
     success,
     reload,
-  } = useApi(getGroupUsers, {
-    id: groupId,
+  } = useApi(getGroupMembers, {
+    groupId: groupId,
   });
 
   const areNoUsersAssigned = !users || users.length === 0;
-
+  const [assignUsers, assignUsersModal] = useEntityModal(
+    AssignMembersModal,
+    reload,
+    {
+      assignedUsers: users || [],
+    },
+  );
+  const openAssignModal = () => assignUsers({ id: groupId });
+  const [unassignMember, unassignMemberModal] = useEntityModal(
+    DeleteModal,
+    reload,
+    {
+      group: groupId,
+    },
+  );
   if (!loading && !success)
     return (
       <C3EmptyState
@@ -56,13 +73,14 @@ const Members: FC<MembersProps> = ({ groupId }) => {
           )}
           button={{
             label: t("Assign members"),
-            onClick: () => null,
+            onClick: openAssignModal,
           }}
           link={{
             label: t("Learn more about groups"),
             href: `/identity/concepts/access-control/groups`,
           }}
         />
+        {assignUsersModal}
       </>
     );
 
@@ -83,7 +101,7 @@ const Members: FC<MembersProps> = ({ groupId }) => {
             label: t("Remove"),
             icon: TrashCan,
             isDangerous: true,
-            onClick: () => {},
+            onClick: unassignMember,
           },
         ]}
       />
@@ -96,6 +114,10 @@ const Members: FC<MembersProps> = ({ groupId }) => {
           .
         </DocumentationDescription>
       )}
+      <>
+        {assignUsersModal}
+        {unassignMemberModal}
+      </>
     </>
   );
 };

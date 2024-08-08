@@ -4,6 +4,7 @@ on:
     types: [created]
 jobs:
   optimize-commands-dispatch:
+    if: ${{ contains(github.event.issue.labels.*.name, 'component/optimize') }}
     name: Dispatch Command
     runs-on: ubuntu-latest
     steps:

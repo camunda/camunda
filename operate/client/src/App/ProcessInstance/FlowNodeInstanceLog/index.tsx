@@ -20,8 +20,9 @@ import {
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {TimeStampPill} from './TimeStampPill';
 import {modificationsStore} from 'modules/stores/modifications';
-import {TreeView} from '@carbon/react';
+import {Stack, TreeView} from '@carbon/react';
 import {Skeleton} from './Skeleton';
+import {ExecutionCountToggle} from './ExecutionCountToggle';
 
 const FlowNodeInstanceLog: React.FC = observer(() => {
   const {
@@ -40,15 +41,17 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
   const instanceHistoryRef = useRef<HTMLDivElement>(null);
 
   return (
-    <Container>
+    <Container data-testid="instance-history">
       <PanelHeader title="Instance History" size="sm">
-        {!modificationsStore.isModificationModeEnabled && <TimeStampPill />}
+        {!modificationsStore.isModificationModeEnabled && (
+          <Stack orientation="horizontal" gap={5}>
+            <TimeStampPill />
+            <ExecutionCountToggle />
+          </Stack>
+        )}
       </PanelHeader>
       {areDiagramDefinitionsAvailable && isInstanceExecutionHistoryAvailable ? (
-        <InstanceHistory
-          data-testid="instance-history"
-          ref={instanceHistoryRef}
-        >
+        <InstanceHistory ref={instanceHistoryRef}>
           <NodeContainer>
             <TreeView
               label={`${instanceExecutionHistory!.flowNodeId} instance history`}

@@ -37,13 +37,13 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
 
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
-  private final Function<DeploymentResource, DirectBuffer> checksumGenerator;
+  private final Function<byte[], DirectBuffer> checksumGenerator;
   private final FormState formState;
 
   public FormResourceTransformer(
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
-      final Function<DeploymentResource, DirectBuffer> checksumGenerator,
+      final Function<byte[], DirectBuffer> checksumGenerator,
       final FormState formState) {
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
@@ -111,7 +111,7 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
       final DeploymentResource resource,
       final String tenantId) {
     final LongSupplier newFormKey = keyGenerator::nextKey;
-    final DirectBuffer checksum = checksumGenerator.apply(resource);
+    final DirectBuffer checksum = checksumGenerator.apply(resource.getResource());
 
     formRecord.setFormId(formId);
     formRecord.setChecksum(checksum);

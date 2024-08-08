@@ -23,8 +23,11 @@ const TurnOnNotificationPermission: React.FC = () => {
         title="Don't miss new assignments"
         subtitle="Turn on notifications in your browser to get notified when new tasks are assigned to you"
         actionButtonLabel="Turn on notifications"
-        onActionButtonClick={() => {
-          requestPermission();
+        onActionButtonClick={async () => {
+          const result = await requestPermission();
+          if (result !== 'default') {
+            setEnabled(false);
+          }
         }}
         onClose={() => setEnabled(false)}
         style={{maxInlineSize: 'initial'}}

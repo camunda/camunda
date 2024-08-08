@@ -16,6 +16,7 @@
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_WAIT_FOR_COMPLETION;
+import static io.camunda.zeebe.model.bpmn.util.ModelUtil.validateExecutionListenersDefinitionForElement;
 
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
@@ -25,6 +26,8 @@ import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.TerminateEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -57,6 +60,29 @@ public class EndEventValidator implements ModelElementValidator<EndEvent> {
     }
 
     validateEventDefinition(element, validationResultCollector);
+
+    validateExecutionListenersDefinitionForElement(
+        element,
+        validationResultCollector,
+        listeners -> {
+          final Collection<EventDefinition> eventDefinitions = element.getEventDefinitions();
+          eventDefinitions.stream()
+              .findFirst()
+              .ifPresent(
+                  eventDefinition -> {
+                    if (eventDefinition instanceof ErrorEventDefinition) {
+                      final boolean endExecutionListenersDefined =
+                          listeners.stream()
+                              .map(ZeebeExecutionListener::getEventType)
+                              .anyMatch(ZeebeExecutionListenerEventType.end::equals);
+                      if (endExecutionListenersDefined) {
+                        validationResultCollector.addError(
+                            0,
+                            "Execution listeners of type 'end' are not supported by [error] end events");
+                      }
+                    }
+                  });
+        });
   }
 
   private void validateEventDefinition(
@@ -78,7 +104,7 @@ public class EndEventValidator implements ModelElementValidator<EndEvent> {
           if (def instanceof CompensateEventDefinition) {
             final String waitForCompletion =
                 def.getAttributeValue(BPMN_ATTRIBUTE_WAIT_FOR_COMPLETION);
-            if (waitForCompletion != null && !Boolean.valueOf(waitForCompletion)) {
+            if (waitForCompletion != null && !Boolean.parseBoolean(waitForCompletion)) {
               validationResultCollector.addError(
                   0,
                   "A compensation end event waitForCompletion attribute must be true or not present");

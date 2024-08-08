@@ -7,13 +7,15 @@
  */
 import { FC } from "react";
 import Lazy from "src/components/router/Lazy";
+import { DetailPageFallback } from "src/components/fallbacks";
 import PageRoutes from "src/components/router/PageRoutes";
-import Detail from "./detail";
 
 const Groups: FC = () => (
   <PageRoutes
     indexElement={<Lazy load={() => import("./List")} />}
-    detailElement={<Detail />}
+    detailElement={
+      <Lazy load={() => import("./detail")} fallback={<DetailPageFallback />} />
+    }
   />
 );
 

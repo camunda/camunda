@@ -50,10 +50,15 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
   @Override
   public Either<Failure, ?> onComplete(
       final ExecutableBoundaryEvent element, final BpmnElementContext context) {
+    return variableMappingBehavior.applyOutputMappings(context, element);
+  }
 
-    return variableMappingBehavior
-        .applyOutputMappings(context, element)
-        .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
+  @Override
+  public Either<Failure, ?> finalizeCompletion(
+      final ExecutableBoundaryEvent element, final BpmnElementContext context) {
+
+    return stateTransitionBehavior
+        .transitionToCompleted(element, context)
         .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
   }
 

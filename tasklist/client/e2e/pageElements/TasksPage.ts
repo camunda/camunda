@@ -21,6 +21,7 @@ class TasksPage {
   readonly assignToMeButton: Locator;
   readonly unassignButton: Locator;
   readonly assignee: Locator;
+  readonly completeTaskButton: Locator;
   readonly detailsPanel: Locator;
   readonly detailsHeader: Locator;
   readonly detailsNav: Locator;
@@ -38,6 +39,7 @@ class TasksPage {
     this.assignToMeButton = page.getByRole('button', {name: 'Assign to me'});
     this.unassignButton = page.getByRole('button', {name: 'Unassign'});
     this.assignee = page.getByTestId('assignee');
+    this.completeTaskButton = page.getByRole('button', {name: 'Complete Task'});
     this.detailsPanel = this.page.getByRole('complementary', {
       name: 'Task details right panel',
     });

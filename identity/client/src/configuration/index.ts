@@ -1,5 +1,5 @@
-export const baseUrl = "/";
+export const baseUrl = "/identity";
 
-export const apiBaseUrl = "/api";
+export const apiBaseUrl = "/v2";
 
 export const docsUrl = "https://docs.camunda.io";

@@ -1,10 +1,10 @@
 ---
 
 name: Optimize Task
-about: Describe a technical task (e.g. a refactoring, a new productivity tool, missing tests).
-title: ''
-labels: type:task
-assignees: ''
+about: Describe a task for the technical issue - it may be individual issue or be connected to epic.
+title: ""
+labels: ["kind/task", "component/optimize"]
+assignees: ""
 -------------
 
 ### Context

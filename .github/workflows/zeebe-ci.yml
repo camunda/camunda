@@ -21,7 +21,7 @@ on:
       - 'pom.xml'
       - 'zeebe/**'
   pull_request:
-    paths:
+    paths: # keep in sync with common-ci.yml trigger
       - '.ci/docker/test/*'
       - '.github/actions/**'
       - '.github/workflows/zeebe-*'
@@ -53,7 +53,7 @@ env:
 jobs:
   integration-tests:
     name: "[IT] ${{ matrix.name }}"
-    timeout-minutes: 20
+    timeout-minutes: 30
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     runs-on: [ self-hosted, linux, amd64, "16" ]
@@ -102,7 +102,7 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         with:
           repository: localhost:5000/camunda/zeebe
           version: current-test
@@ -249,7 +249,7 @@ jobs:
         with:
           go: false
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         # Currently only Linux runners support building docker images without further ado
         if: ${{ runner.os == 'Linux' }}
@@ -409,7 +409,7 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
           repository: camunda/zeebe
@@ -541,7 +541,7 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
           # we use a local registry for pushing
@@ -590,7 +590,7 @@ jobs:
       - go-apidiff
       - docker-checks
     steps:
-      - run: exit ${{ ((contains(needs.*.result, 'skipped') || contains(needs.*.result, 'failure')) && 1) || 0 }}
+      - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
   deploy-snapshots:
     name: Deploy snapshot artifacts
     needs: [ test-summary ]
@@ -655,7 +655,7 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: ./.github/actions/build-zeebe-docker
+      - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
           repository: camunda/zeebe

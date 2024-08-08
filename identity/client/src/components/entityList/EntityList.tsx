@@ -155,41 +155,45 @@ const EntityList = <D extends EntityData>({
     DataTableFilter<D>["options"]
   >([]);
 
-  const [index, tableData] = useMemo(() => {
-    const entityIndex: { [id: string]: D } = {};
-    const entityTableData: (D & { id: string })[] = [];
+  const [index, tableData] = useMemo(
+    () => {
+      const entityIndex: { [id: string]: D } = {};
+      const entityTableData: (D & { id: string })[] = [];
 
-    data?.forEach((dataset) => {
-      const id = dataset.id || (Date.now() + Math.random()).toString();
-      entityIndex[id] = dataset;
-      entityTableData.push({ ...dataset, id });
-    });
+      data?.forEach((dataset) => {
+        const id = dataset.id || (Date.now() + Math.random()).toString();
+        entityIndex[id] = dataset;
+        entityTableData.push({ ...dataset, id });
+      });
 
-    const filteredData =
-      filter && selectedFilterItems.length > 0
-        ? entityTableData.filter((entry) =>
-            filter.callback(entry, selectedFilterItems),
-          )
-        : entityTableData;
+      const filteredData =
+        filter && selectedFilterItems.length > 0
+          ? entityTableData.filter((entry) =>
+              filter.callback(entry, selectedFilterItems),
+            )
+          : entityTableData;
 
-    const sortedEntityTableData =
-      filteredData.length > 0
-        ? filteredData.sort((a, b) => {
-            const propertyName =
-              sortProperty || Object.keys(entityTableData[0])[0];
+      const sortedEntityTableData =
+        filteredData.length > 0
+          ? filteredData.sort((a, b) => {
+              const propertyName =
+                sortProperty || Object.keys(entityTableData[0])[0];
 
-            if (a[propertyName] < b[propertyName]) {
-              return -1;
-            }
-            if (a[propertyName] > b[propertyName]) {
-              return 1;
-            }
-            return 0;
-          })
-        : filteredData;
+              if (a[propertyName] < b[propertyName]) {
+                return -1;
+              }
+              if (a[propertyName] > b[propertyName]) {
+                return 1;
+              }
+              return 0;
+            })
+          : filteredData;
 
-    return [entityIndex, sortedEntityTableData];
-  }, [data, selectedFilterItems]);
+      return [entityIndex, sortedEntityTableData];
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sortProperty, data, selectedFilterItems],
+  );
 
   const areRowsEmpty = !tableData || tableData.length === 0;
 

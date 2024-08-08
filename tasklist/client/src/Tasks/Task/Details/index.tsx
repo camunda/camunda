@@ -7,7 +7,7 @@
  */
 
 import {Section} from '@carbon/react';
-import {Outlet, useMatch} from 'react-router-dom';
+import {Outlet, useMatch, useNavigate} from 'react-router-dom';
 import {CurrentUser, Process, Task} from 'modules/types';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {useTask} from 'modules/queries/useTask';
@@ -19,6 +19,8 @@ import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';
 import {Aside} from './Aside';
 import {Header} from './Header';
 import styles from './styles.module.scss';
+import {useEffect} from 'react';
+import {notificationsStore} from 'modules/stores/notifications';
 
 type OutletContext = {
   task: Task;
@@ -32,16 +34,31 @@ const Details: React.FC = () => {
   const {data: task, refetch} = useTask(id, {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    refetchInterval: 5000,
   });
-  const taskCompleted = task?.taskState === 'COMPLETED';
+  const taskState = task?.taskState;
+  const isTaskCompleted = taskState === 'COMPLETED';
   const {data: process, isLoading: processLoading} = useProcessDefinition(
     task?.processDefinitionKey ?? '',
     {
-      enabled: task !== undefined && !taskCompleted,
+      enabled: task !== undefined && !isTaskCompleted,
     },
   );
   const {data: currentUser} = useCurrentUser();
   const onAssignmentError = () => refetch();
+
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (taskState === 'CANCELED') {
+      notificationsStore.displayNotification({
+        kind: 'info',
+        title: 'Process instance cancelled',
+        subtitle: `${task?.processName} (${task?.processInstanceKey})`,
+        isDismissable: true,
+      });
+      navigate(pages.initial);
+    }
+  }, [navigate, task?.processInstanceKey, task?.processName, taskState]);
 
   const tabs = [
     {
@@ -62,7 +79,7 @@ const Details: React.FC = () => {
         pathname: pages.taskDetailsProcess(id),
       },
       visible:
-        !taskCompleted && process !== undefined && process.bpmnXml !== null,
+        !isTaskCompleted && process !== undefined && process.bpmnXml !== null,
     },
   ];
 

@@ -10,66 +10,16 @@ package io.camunda.tasklist.property;
 public class IdentityProperties {
   public static final String ALL_RESOURCES = "*";
   public static final String FULL_GROUP_ACCESS = "";
-  private String issuerUrl;
-  private String baseUrl;
-  private String issuerBackendUrl;
   private String redirectRootUrl;
-  private String clientId;
-  private String clientSecret;
-  private String audience;
   private boolean resourcePermissionsEnabled = false;
   private boolean userAccessRestrictionsEnabled = true;
-
-  public String getIssuerUrl() {
-    return issuerUrl;
-  }
-
-  public void setIssuerUrl(final String issuerUrl) {
-    this.issuerUrl = issuerUrl;
-  }
-
-  public String getClientId() {
-    return clientId;
-  }
-
-  public void setClientId(final String clientId) {
-    this.clientId = clientId;
-  }
-
-  public String getClientSecret() {
-    return clientSecret;
-  }
-
-  public void setClientSecret(final String clientSecret) {
-    this.clientSecret = clientSecret;
-  }
-
-  public String getIssuerBackendUrl() {
-    return issuerBackendUrl;
-  }
-
-  public void setIssuerBackendUrl(final String issuerBackendUrl) {
-    this.issuerBackendUrl = issuerBackendUrl;
-  }
 
   public String getRedirectRootUrl() {
     return redirectRootUrl;
   }
 
-  public void setRedirectRootUrl(String redirectRootUrl) {
+  public void setRedirectRootUrl(final String redirectRootUrl) {
     this.redirectRootUrl = redirectRootUrl;
-  }
-
-  public String getAudience() {
-    return audience;
-  }
-
-  public void setAudience(final String audience) {
-    this.audience = audience;
-  }
-
-  public String getBaseUrl() {
-    return baseUrl;
   }
 
   public boolean isUserAccessRestrictionsEnabled() {
@@ -77,13 +27,8 @@ public class IdentityProperties {
   }
 
   public IdentityProperties setUserAccessRestrictionsEnabled(
-      boolean userAccessRestrictionsEnabled) {
+      final boolean userAccessRestrictionsEnabled) {
     this.userAccessRestrictionsEnabled = userAccessRestrictionsEnabled;
-    return this;
-  }
-
-  public IdentityProperties setBaseUrl(String baseUrl) {
-    this.baseUrl = baseUrl;
     return this;
   }
 
@@ -91,7 +36,8 @@ public class IdentityProperties {
     return resourcePermissionsEnabled;
   }
 
-  public IdentityProperties setResourcePermissionsEnabled(boolean resourcePermissionsEnabled) {
+  public IdentityProperties setResourcePermissionsEnabled(
+      final boolean resourcePermissionsEnabled) {
     this.resourcePermissionsEnabled = resourcePermissionsEnabled;
     return this;
   }

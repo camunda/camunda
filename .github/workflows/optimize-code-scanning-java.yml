@@ -3,8 +3,8 @@ name: Optimize Java code scan
 on:
   pull_request:
     branches:
-      - "master"
-      - "maintenance/**"
+      - "main"
+      - "stable/**"
       - "release/**"
     paths:
       - "optimize/backend/src/**/*.java"

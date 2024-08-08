@@ -48,11 +48,7 @@ public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends I
   private VALUE value;
   private INTENT intent;
   private Map<String, Object> authorizations;
-
-  @Override
-  public Record<VALUE> copyOf() {
-    throw new UnsupportedOperationException("Operation not supported");
-  }
+  private long operationReference;
 
   @Override
   public String toJson() {
@@ -61,6 +57,11 @@ public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends I
 
   @Override
   public int getRecordVersion() {
+    throw new UnsupportedOperationException("Operation not supported");
+  }
+
+  @Override
+  public Record<VALUE> copyOf() {
     throw new UnsupportedOperationException("Operation not supported");
   }
 

@@ -19,10 +19,10 @@ import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.sso.model.C8ConsoleService;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterMetadata;
+import jakarta.json.Json;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
@@ -96,7 +96,7 @@ public class SSOUserReader implements UserReader {
   public Optional<String> getUserToken(final Authentication authentication) {
     if (authentication instanceof TokenAuthentication) {
       return Optional.of(
-          JSONObject.valueToString(((TokenAuthentication) authentication).getAccessToken()));
+          Json.createValue(((TokenAuthentication) authentication).getAccessToken()).toString());
     } else {
       throw new UnsupportedOperationException(
           "Not supported for token class: " + authentication.getClass().getName());

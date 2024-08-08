@@ -19,7 +19,10 @@ function useTask(
   id: Task['id'],
   options?: Pick<
     UseQueryOptions<Task, RequestError | Error>,
-    'enabled' | 'refetchOnWindowFocus' | 'refetchOnReconnect'
+    | 'enabled'
+    | 'refetchOnWindowFocus'
+    | 'refetchOnReconnect'
+    | 'refetchInterval'
   >,
 ) {
   return useQuery<Task, RequestError | Error>({

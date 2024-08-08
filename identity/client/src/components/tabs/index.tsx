@@ -40,11 +40,15 @@ const Tabs = <T extends { key: string; label: string; content: ReactNode }>({
 
   const selectedTabIndex = tabs.findIndex(({ key }) => key === selectedTabKey);
 
-  useEffect(() => {
-    if (selectedTabIndex === -1) {
-      navigate(`${path}/${tabs[0].key}`, { replace: true });
-    }
-  }, [selectedTabKey]);
+  useEffect(
+    () => {
+      if (selectedTabIndex === -1) {
+        navigate(`${path}/${tabs[0].key}`, { replace: true });
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [navigate, path, selectedTabIndex],
+  );
 
   return (
     <CarbonTabs

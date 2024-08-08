@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.webapp.security.sso.SSOUserReader;
 import io.camunda.tasklist.webapp.security.sso.TokenAuthentication;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -31,7 +32,7 @@ public class SSOUserReaderTest {
   public void shouldReturnToken() {
     final Jwt jwt = mock(Jwt.class);
     final var authenticationToken = mock(TokenAuthentication.class);
-    when(authenticationToken.getNewTokenByRefreshToken()).thenReturn("123");
-    assertThat(ssoUserReader.getUserToken(authenticationToken)).isNotEmpty();
+    when(authenticationToken.getAccessToken()).thenReturn("123");
+    assertThat(ssoUserReader.getUserToken(authenticationToken)).isEqualTo(Optional.of("\"123\""));
   }
 }

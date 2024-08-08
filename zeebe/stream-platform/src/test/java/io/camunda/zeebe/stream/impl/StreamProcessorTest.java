@@ -50,6 +50,8 @@ import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.exception.RecoverableException;
+import java.io.Closeable;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -1414,6 +1416,46 @@ public final class StreamProcessorTest {
     verify(testProcessor, timeout(5000)).process(any(), any());
     Awaitility.await("until command is removed from cache after processing")
         .untilAsserted(() -> assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1)).isFalse());
+  }
+
+  @Test
+  void shouldCloseWhileScheduledTaskIsLoopingOnWrite() throws InterruptedException, IOException {
+    // given -- a scheduled task that wants to write a record
+    final var recovery = new CountDownLatch(1);
+    final var writing = new CountDownLatch(1);
+    final var lifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
+    doAnswer(
+            (invocationOnMock -> {
+              final var context = (ReadonlyStreamProcessorContext) invocationOnMock.getArgument(0);
+              recovery.countDown();
+              context
+                  .getScheduleService()
+                  .runDelayed(
+                      Duration.ZERO,
+                      (taskResultBuilder) -> {
+                        try {
+                          writing.await();
+                        } catch (final InterruptedException e) {
+                          throw new RuntimeException(e);
+                        }
+                        taskResultBuilder.appendCommandRecord(
+                            1, ACTIVATE_ELEMENT, Records.processInstance(1));
+                        return taskResultBuilder.build();
+                      });
+              return invocationOnMock.callRealMethod();
+            }))
+        .when(lifecycleAware)
+        .onRecovered(any());
+
+    streamPlatform.startStreamProcessor();
+    recovery.await(); // make sure that the stream processor started and the task is scheduled.
+
+    // when -- closing the writer so that scheduled task can't write
+    ((Closeable) streamPlatform.getLogStream().newLogStreamWriter()).close();
+    writing.countDown(); // only now allow the scheduled task to write something
+
+    // then -- closing the stream processor is not blocked by the scheduled task retrying the write
+    streamPlatform.getStreamProcessor().closeAsync().join(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
   }
 
   @Test

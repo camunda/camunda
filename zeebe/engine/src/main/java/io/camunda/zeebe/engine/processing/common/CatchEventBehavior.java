@@ -148,7 +148,7 @@ public final class CatchEventBehavior {
    */
   public Either<Failure, Void> subscribeToEvents(
       final BpmnElementContext context, final ExecutableCatchEventSupplier supplier) {
-    return subscribeToEvents(context, supplier, catchEvent -> true);
+    return subscribeToEvents(context, supplier, executableCatchEvent -> true, catchEvent -> true);
   }
 
   /**
@@ -161,19 +161,28 @@ public final class CatchEventBehavior {
    * @param context the context of the element instance that subscribes to events
    * @param supplier the supplier of catch events to subscribe to, typically the element of the
    *     element instance that subscribes to events
-   * @param filter the filter for catch events to subscribe to, only events that match the filter
-   *     are subscribed to.
+   * @param filterBeforeEvaluation the filter for catch events to subscribe to. Only events that
+   *     match the filter are subscribed to. This filter is applied before evaluating the catch
+   *     event's expressions. This is especially useful for filtering catch events that doesn't
+   *     require an expression evaluation.
+   * @param filterAfterEvaluation the filter for catch events to subscribe to. Only events that
+   *     match the filter are subscribed to. This filter is applied after evaluating the catch
+   *     event's expressions.
    * @return either a failure or nothing
    */
   public Either<Failure, Void> subscribeToEvents(
       final BpmnElementContext context,
       final ExecutableCatchEventSupplier supplier,
-      final Predicate<CatchEvent> filter) {
+      final Predicate<ExecutableCatchEvent> filterBeforeEvaluation,
+      final Predicate<CatchEvent> filterAfterEvaluation) {
     final var evaluationResults =
         supplier.getEvents().stream()
             .filter(event -> event.isTimer() || event.isMessage() || event.isSignal())
+            .filter(filterBeforeEvaluation)
             .map(event -> evalExpressions(expressionProcessor, event, context))
-            .filter(result -> result.map(CatchEvent::new).map(filter::test).getOrElse(true))
+            .filter(
+                result ->
+                    result.map(CatchEvent::new).map(filterAfterEvaluation::test).getOrElse(true))
             .collect(Either.collectorFoldingLeft());
 
     evaluationResults.ifRight(

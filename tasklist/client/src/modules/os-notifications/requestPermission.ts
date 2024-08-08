@@ -15,6 +15,8 @@ async function requestPermission() {
     eventName: 'os-notification-permission-requested',
     outcome: permission,
   });
+
+  return permission;
 }
 
 export {requestPermission};

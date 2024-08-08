@@ -16,26 +16,29 @@ import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.util.ObjectBuilder;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.function.Function;
 
 public final class ProcessInstanceServices
     extends SearchQueryService<
         ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
 
-  public ProcessInstanceServices(final CamundaSearchClient dataStoreClient) {
-    this(dataStoreClient, null, null);
+  public ProcessInstanceServices(
+      final BrokerClient brokerClient, final CamundaSearchClient dataStoreClient) {
+    this(brokerClient, dataStoreClient, null, null);
   }
 
   public ProcessInstanceServices(
+      final BrokerClient brokerClient,
       final CamundaSearchClient searchClient,
       final ServiceTransformers transformers,
       final Authentication authentication) {
-    super(searchClient, transformers, authentication);
+    super(brokerClient, searchClient, transformers, authentication);
   }
 
   @Override
   public ProcessInstanceServices withAuthentication(final Authentication authentication) {
-    return new ProcessInstanceServices(searchClient, transformers, authentication);
+    return new ProcessInstanceServices(brokerClient, searchClient, transformers, authentication);
   }
 
   @Override

@@ -17,6 +17,8 @@ test.afterAll(async ({resetData}) => {
 
 test.beforeAll(async () => {
   await deploy('./e2e/resources/user_process.bpmn');
+  await deploy('./e2e/resources/processWithStartNodeFormDeployed.bpmn');
+  await deploy('./e2e/resources/create-invoice_8-5.form');
 
   await sleep(2000);
 });
@@ -85,7 +87,6 @@ test.describe('process page', () => {
   test('complete task started by process instance', async ({
     page,
     header,
-    taskFormView,
     processesPage,
     tasksPage,
   }) => {
@@ -102,7 +103,78 @@ test.describe('process page', () => {
     await tasksPage.openTask('User_Task');
 
     await tasksPage.assignToMeButton.click();
-    await taskFormView.completeTaskButton.click();
+    await tasksPage.completeTaskButton.click();
+    await expect(page.getByText('Task completed')).toBeVisible();
+  });
+
+  test('complete process with start node having deployed form', async ({
+    page,
+    header,
+    taskFormView,
+    processesPage,
+    tasksPage,
+  }) => {
+    await header.processesTab.click();
+    await expect(page).toHaveURL('/tasklist/processes');
+    await processesPage.continueButton.click();
+    await processesPage.searchForProcess('processWithStartNodeFormDeployed');
+    await expect(processesPage.processTile).toHaveCount(1, {
+      timeout: 30000,
+    });
+
+    await processesPage.startProcessButton.click();
+    await page.getByLabel('Client Name*').fill('Jon');
+    await page.getByLabel('Client Address*').fill('Earth');
+    await taskFormView.fillDateField('Invoice Date*', '1/1/3000');
+    await taskFormView.fillDateField('Due Date*', '1/2/3000');
+    await page.getByLabel('Invoice Number*').fill('123');
+    await taskFormView.selectDropdownOption(
+      'USD - United States Dollar',
+      'EUR - Euro',
+    );
+    await page.getByRole('button', {name: /add new/i}).click();
+    await taskFormView.forEachDynamicListItem(
+      page.getByLabel('Item Name*'),
+      async (element, index) => {
+        await element.fill(`${'Laptop'}${index + 1}`);
+      },
+    );
+    await taskFormView.forEachDynamicListItem(
+      page.getByLabel('Unit Price*'),
+      async (element, index) => {
+        await element.fill(`${'1'}${index + 1}`);
+      },
+    );
+    await taskFormView.forEachDynamicListItem(
+      page.getByLabel('Quantity*'),
+      async (element, index) => {
+        await element.clear();
+        await element.fill(`${'2'}${index + 1}`);
+      },
+    );
+
+    await expect(page.getByText('EUR 231')).toBeVisible();
+    await expect(page.getByText('EUR 264')).toBeVisible();
+    await expect(page.getByText('Total: EUR 544.5')).toBeVisible();
+    await processesPage.modaLStartProcessButton.click();
+
+    await processesPage.tasksTab.click();
+    await tasksPage.openTask('processStartedByForm_user_task');
+    await tasksPage.assignToMeButton.click();
+    await expect(
+      page.getByText('{"name":"jon","address":"earth"}'),
+    ).toBeVisible();
+    await expect(page.getByText('EUR')).toBeVisible();
+    await expect(page.getByText('3000-01-01')).toBeVisible();
+    await expect(page.getByText('3000-01-02')).toBeVisible();
+    await expect(page.getByText('123')).toBeVisible();
+    await expect(
+      page.getByText(
+        '[{"itemName":"laptop1","unitPrice":11,"quantity":21},{"itemName":"laptop2","unitPrice":12,"quantity":22}]',
+      ),
+    ).toBeVisible();
+
+    await tasksPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
   });
 });

@@ -18,6 +18,7 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import static io.camunda.zeebe.util.StringUtil.LIST_SANITIZER;
 
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
+import io.atomix.utils.net.Address;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -26,12 +27,15 @@ import java.util.Optional;
 
 public final class ClusterCfg {
 
+  private static final String DEFAULT_ADVERTISED_HOST =
+      Address.defaultAdvertisedHost().getHostAddress();
   private List<String> initialContactPoints =
       Collections.singletonList(DEFAULT_CONTACT_POINT_HOST + ":" + DEFAULT_CONTACT_POINT_PORT);
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private String clusterName = DEFAULT_CLUSTER_NAME;
   private String memberId = DEFAULT_CLUSTER_MEMBER_ID;
-  private String host = DEFAULT_CLUSTER_HOST;
+  // leave host and advertised host to null, so we can distinguish if they are set explicitly or not
+  private String host = null;
   private String advertisedHost = null;
   private int port = DEFAULT_CLUSTER_PORT;
   private Integer advertisedPort = null;
@@ -49,7 +53,7 @@ public final class ClusterCfg {
   }
 
   public String getHost() {
-    return host;
+    return host != null ? host : DEFAULT_CLUSTER_HOST;
   }
 
   public ClusterCfg setHost(final String host) {
@@ -58,7 +62,15 @@ public final class ClusterCfg {
   }
 
   public String getAdvertisedHost() {
-    return Optional.ofNullable(advertisedHost).orElseGet(this::getHost);
+    if (advertisedHost != null) {
+      return advertisedHost;
+    }
+
+    if (host != null) {
+      return host;
+    }
+
+    return DEFAULT_ADVERTISED_HOST;
   }
 
   public ClusterCfg setAdvertisedHost(final String advertisedHost) {

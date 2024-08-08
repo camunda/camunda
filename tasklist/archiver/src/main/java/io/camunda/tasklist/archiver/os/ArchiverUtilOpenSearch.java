@@ -18,11 +18,12 @@ import io.camunda.tasklist.schema.manager.OpenSearchSchemaManager;
 import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.micrometer.core.instrument.Timer;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import org.json.JSONObject;
 import org.opensearch.client.Request;
 import org.opensearch.client.Response;
 import org.opensearch.client.RestClient;
@@ -137,8 +138,12 @@ public class ArchiverUtilOpenSearch extends ArchiverUtilAbstract {
       try {
         final Request request = new Request("POST", "/_plugins/_ism/add/" + destinationIndexName);
 
-        final JSONObject requestJson = new JSONObject();
-        requestJson.put("policy_id", OpenSearchSchemaManager.TASKLIST_DELETE_ARCHIVED_INDICES);
+        final JsonObject requestJson =
+            Json.createObjectBuilder()
+                .add(
+                    "policy_id",
+                    Json.createValue(OpenSearchSchemaManager.TASKLIST_DELETE_ARCHIVED_INDICES))
+                .build();
         request.setJsonEntity(requestJson.toString());
         final Response response = opensearchRestClient.performRequest(request);
       } catch (final IOException e) {

@@ -46,7 +46,7 @@ public final class InclusiveGatewayProcessor
   }
 
   @Override
-  public Either<Failure, ?> onActivate(
+  public Either<Failure, ?> finalizeActivation(
       final ExecutableInclusiveGateway element, final BpmnElementContext activating) {
     // find outgoing sequence flow with fulfilled condition or the default (or none if implicit end)
     return findSequenceFlowsToTake(element, activating)
@@ -68,7 +68,7 @@ public final class InclusiveGatewayProcessor
   }
 
   @Override
-  public Either<Failure, ?> onComplete(
+  public Either<Failure, ?> finalizeCompletion(
       final ExecutableInclusiveGateway element, final BpmnElementContext context) {
     throw new UnsupportedOperationException(
         String.format(
@@ -94,9 +94,10 @@ public final class InclusiveGatewayProcessor
     }
 
     final var outgoingSequenceFlows = element.getOutgoing();
-    if (outgoingSequenceFlows.size() == 1 && outgoingSequenceFlows.get(0).getCondition() == null) {
+    if (outgoingSequenceFlows.size() == 1
+        && outgoingSequenceFlows.getFirst().getCondition() == null) {
       // only one flow without a condition, can just be taken
-      executableSequenceFlows.add(outgoingSequenceFlows.get(0));
+      executableSequenceFlows.add(outgoingSequenceFlows.getFirst());
       return Either.right(executableSequenceFlows);
     }
 

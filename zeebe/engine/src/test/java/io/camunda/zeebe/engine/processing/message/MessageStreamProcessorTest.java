@@ -21,6 +21,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
@@ -53,6 +54,7 @@ public final class MessageStreamProcessorTest {
 
   private SubscriptionCommandSender spySubscriptionCommandSender;
   private InterPartitionCommandSender mockInterpartitionCommandSender;
+  private CommandDistributionBehavior spyCommandDistributionBehavior;
 
   @Before
   public void setup() {
@@ -63,6 +65,8 @@ public final class MessageStreamProcessorTest {
     spySubscriptionCommandSender =
         spy(new SubscriptionCommandSender(1, mockInterpartitionCommandSender));
     spySubscriptionCommandSender.setWriters(writers);
+    spyCommandDistributionBehavior =
+        spy(new CommandDistributionBehavior(writers, 1, 1, mockInterpartitionCommandSender));
 
     rule.startTypedStreamProcessor(
         (typedRecordProcessors, processingContext) -> {
@@ -76,7 +80,8 @@ public final class MessageStreamProcessorTest {
               spySubscriptionCommandSender,
               processingContext.getWriters(),
               DEFAULT_ENGINE_CONFIGURATION,
-              FeatureFlags.createDefault());
+              FeatureFlags.createDefault(),
+              spyCommandDistributionBehavior);
           return typedRecordProcessors;
         });
   }

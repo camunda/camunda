@@ -59,7 +59,6 @@ import io.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionNotFound
 import io.camunda.optimize.service.exceptions.OptimizeProcessDefinitionFetchException;
 import io.camunda.optimize.service.exceptions.OptimizeProcessDefinitionNotFoundException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import io.camunda.optimize.service.util.EngineVersionChecker;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.core.GenericType;
@@ -87,8 +86,6 @@ public class EngineContext {
   private final Client engineClient;
   private final ConfigurationService configurationService;
 
-  private boolean versionValidated;
-
   public EngineContext(
       final String engineAlias,
       final Client engineClient,
@@ -99,21 +96,6 @@ public class EngineContext {
   }
 
   public Client getEngineClient() {
-    if (!versionValidated) {
-      try {
-        EngineVersionChecker.checkEngineVersionSupport(
-            engineClient,
-            configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()));
-        this.versionValidated = true;
-      } catch (Exception e) {
-        log.error(
-            "Failed to validate engine {} version with error message: {}",
-            getEngineAlias(),
-            e.getMessage(),
-            e);
-        throw e;
-      }
-    }
     return engineClient;
   }
 

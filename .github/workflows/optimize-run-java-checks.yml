@@ -4,7 +4,8 @@ env:
 on:
   push:
     branches:
-      - master
+      - merge-optimize-in
+      - main
   pull_request: { }
   merge_group: { }
   workflow_dispatch: { }
@@ -31,7 +32,7 @@ jobs:
         uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4
         with:
           distribution: "adopt"
-          java-version: "17"
+          java-version: "21"
           cache: "maven"
       - name: "Create settings.xml"
         uses: s4u/maven-settings-action@7802f6aec16c9098b4798ad1f1d8ac75198194bd # v3.0.0
@@ -45,4 +46,4 @@ jobs:
              }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Run checks
-        run: mvn -T1C -B -D skipTests -P !autoFormat,checkFormat verify
+        run: mvn -f optimize/pom.xml -T1C -B -D skipTests -P !autoFormat,checkFormat verify

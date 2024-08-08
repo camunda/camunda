@@ -5,10 +5,15 @@
   <parent>
     <groupId>io.camunda.optimize</groupId>
     <artifactId>optimize-parent</artifactId>
-    <version>8.6.0-SNAPSHOT</version>
+    <version>8.6.0</version>
   </parent>
 
   <artifactId>upgrade-optimize</artifactId>
+  <name>Optimize Upgrade</name>
+
+  <properties>
+    <skip.docker>${skipTests}</skip.docker>
+  </properties>
 
   <dependencies>
 

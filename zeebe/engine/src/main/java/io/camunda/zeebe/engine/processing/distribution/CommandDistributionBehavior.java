@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.List;
@@ -73,7 +74,8 @@ public final class CommandDistributionBehavior {
    *     identifying for the distributed command's partition, and correlating the ACKNOWLEDGE
    *     command to the pending distribution. This can be a newly generated key, or the key
    *     identifying the entity that's being distributed. Please note that it must be unique for
-   *     command distribution. Don't reuse the key to distribute another command.
+   *     command distribution. Don't reuse the key to distribute another command until the previous
+   *     command distribution has been completed.
    * @param command the command to distribute
    */
   public <T extends UnifiedRecordValue> void distributeCommand(
@@ -89,12 +91,44 @@ public final class CommandDistributionBehavior {
    *     distributing partition when processing the distributed command, and as the key to correlate
    *     the ACKNOWLEDGE command to the pending distribution. This can be a newly generated key, or
    *     the key identifying the entity that's being distributed. Please note that it must be unique
-   *     for command distribution. Don't reuse the key to distribute another command.
+   *     for command distribution. Don't reuse the key to distribute another command. Don't reuse
+   *     the key to distribute another command until the previous command distribution has been
+   *     completed.
    * @param command the command to distribute
    * @param partitions the partitions to distribute the command to
    */
   public <T extends UnifiedRecordValue> void distributeCommand(
       final long distributionKey, final TypedRecord<T> command, final List<Integer> partitions) {
+    distributeCommand(
+        distributionKey,
+        command.getValueType(),
+        command.getIntent(),
+        command.getValue(),
+        partitions);
+  }
+
+  /**
+   * Distributes a command to the specified partitions.
+   *
+   * @param distributionKey the key to identify this unique command distribution. The key is used to
+   *     store the pending distribution, as the key of distributed command, to identify the
+   *     distributing partition when processing the distributed command, and as the key to correlate
+   *     the ACKNOWLEDGE command to the pending distribution. This can be a newly generated key, or
+   *     the key identifying the entity that's being distributed. Please note that it must be unique
+   *     for command distribution. Don't reuse the key to distribute another command. Don't reuse
+   *     the key to distribute another command until the previous command distribution has been
+   *     completed.
+   * @param valueType the type of the command to distribute
+   * @param intent the intent of the command to distribute
+   * @param value the value of the command to distribute
+   * @param partitions the partitions to distribute the command to
+   */
+  public <T extends UnifiedRecordValue> void distributeCommand(
+      final long distributionKey,
+      final ValueType valueType,
+      final Intent intent,
+      final T value,
+      final List<Integer> partitions) {
     if (partitions.isEmpty()) {
       return;
     }
@@ -104,9 +138,9 @@ public final class CommandDistributionBehavior {
     final var distributionRecord =
         commandDistributionStarted
             .setPartitionId(currentPartitionId)
-            .setValueType(command.getValueType())
-            .setIntent(command.getIntent())
-            .setCommandValue(command.getValue());
+            .setValueType(valueType)
+            .setIntent(intent)
+            .setCommandValue(value);
 
     stateWriter.appendFollowUpEvent(
         distributionKey, CommandDistributionIntent.STARTED, distributionRecord);

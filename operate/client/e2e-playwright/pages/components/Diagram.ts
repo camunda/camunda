@@ -49,4 +49,17 @@ export class Diagram {
       .locator('.djs-element')
       .filter({hasText: new RegExp(`^${flowNodeName}$`, 'i')});
   }
+
+  getExecutionCount(elementId: string) {
+    return this.diagram.evaluate(
+      (node, {elementId}) => {
+        const completedOverlay: HTMLDivElement | null = node.querySelector(
+          `[data-container-id="${elementId}"] [data-testid="state-overlay-completed"]`,
+        );
+
+        return completedOverlay?.innerText;
+      },
+      {elementId},
+    );
+  }
 }

@@ -7,7 +7,5 @@
  */
 
 export const useAuth = () => {
-  return {
-    authorization: "Basic ZGVtbzpkZW1v",
-  };
+  return {};
 };

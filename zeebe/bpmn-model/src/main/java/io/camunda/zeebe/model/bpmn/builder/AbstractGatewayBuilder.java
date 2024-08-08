@@ -19,6 +19,7 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.GatewayDirection;
 import io.camunda.zeebe.model.bpmn.instance.Gateway;
+import java.util.function.Consumer;
 
 /**
  * @author Sebastian Menski
@@ -27,9 +28,12 @@ public abstract class AbstractGatewayBuilder<
         B extends AbstractGatewayBuilder<B, E>, E extends Gateway>
     extends AbstractFlowNodeBuilder<B, E> {
 
+  private final ZeebeExecutionListenersBuilder<B> zeebeExecutionListenersBuilder;
+
   protected AbstractGatewayBuilder(
       final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
+    zeebeExecutionListenersBuilder = new ZeebeExecutionListenersBuilderImpl<>(myself);
   }
 
   /**
@@ -41,5 +45,18 @@ public abstract class AbstractGatewayBuilder<
   public B gatewayDirection(final GatewayDirection gatewayDirection) {
     element.setGatewayDirection(gatewayDirection);
     return myself;
+  }
+
+  public B zeebeStartExecutionListener(final String type, final String retries) {
+    return zeebeExecutionListenersBuilder.zeebeStartExecutionListener(type, retries);
+  }
+
+  public B zeebeStartExecutionListener(final String type) {
+    return zeebeExecutionListenersBuilder.zeebeStartExecutionListener(type);
+  }
+
+  public B zeebeExecutionListener(
+      final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer) {
+    return zeebeExecutionListenersBuilder.zeebeExecutionListener(executionListenerBuilderConsumer);
   }
 }

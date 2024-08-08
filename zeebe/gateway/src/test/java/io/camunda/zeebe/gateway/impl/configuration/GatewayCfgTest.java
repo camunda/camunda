@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.impl.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.utils.net.Address;
 import io.camunda.zeebe.test.util.TestConfigurationFactory;
 import io.camunda.zeebe.util.Environment;
 import java.io.File;
@@ -235,6 +236,22 @@ public final class GatewayCfgTest {
     final var expectedHost = "zeebe";
     final var expectedPort = "5432";
     setEnv("zeebe.gateway.cluster.host", expectedHost);
+    setEnv("zeebe.gateway.cluster.port", expectedPort);
+
+    // when
+    final GatewayCfg actual = readEmptyConfig();
+
+    // then
+    assertThat(actual.getCluster().getAdvertisedHost()).isEqualTo(expectedHost);
+    assertThat(actual.getCluster().getAdvertisedPort()).isEqualTo(Integer.parseInt(expectedPort));
+  }
+
+  @Test
+  public void shouldUseFirstNonLoopBackAdvertisedAddressIfNothingSet() {
+    // given
+    final var expectedHost = Address.defaultAdvertisedHost().getHostAddress();
+    final var expectedPort = "5432";
+    setEnv("zeebe.gateway.cluster.host", null);
     setEnv("zeebe.gateway.cluster.port", expectedPort);
 
     // when

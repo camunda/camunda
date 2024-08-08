@@ -630,6 +630,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                   LOG.error(ERROR_MESSAGE_EXPORTING_ABORTED, event, throwable);
                   onFailure();
                 } else {
+                  logStream
+                      .getFlowControl()
+                      .onExported(recordExporter.getTypedEvent().getPosition());
                   metrics.eventExported(recordExporter.getTypedEvent().getValueType());
                   inExportingPhase = false;
                   actor.submit(this::readNextEvent);

@@ -38,7 +38,7 @@ import org.springframework.security.core.Authentication;
  * service layer of Tasklist.
  */
 @Configuration(proxyBeanMethods = false)
-@Profile("tasklist && operate")
+@Profile("tasklist & operate")
 public class TasklistSecurityStubsConfiguration {
 
   /** UserReader that gets user details using Operate's UserService */

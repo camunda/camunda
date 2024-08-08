@@ -24,14 +24,14 @@ jobs:
   test:
     runs-on: gcp-core-2-default
     container:
-      image: mcr.microsoft.com/playwright:v1.44.1
+      image: mcr.microsoft.com/playwright:v1.45.1
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
       - name: Install node dependencies
         working-directory: ./operate/client
         run: yarn

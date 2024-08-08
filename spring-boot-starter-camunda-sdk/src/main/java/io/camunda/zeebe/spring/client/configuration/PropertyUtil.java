@@ -49,7 +49,6 @@ public class PropertyUtil {
       return (T) propertyValue;
     }
     T property = getPropertyFromSupplier(legacyPropertySupplier, propertyName, "legacy");
-
     if (property == null || property.equals(defaultProperty)) {
       property = getPropertyFromSupplier(propertySupplier, propertyName, "property");
     }
@@ -63,6 +62,29 @@ public class PropertyUtil {
 
     LOG.debug("Property {} set to {}", propertyName, property);
     return property;
+  }
+
+  /**
+   * Returns the property in the given relevance: property, defaultProperty
+   *
+   * @param propertyName the name of the property, used for logging
+   * @param propertySupplier a function to supply the property, may throw
+   * @param defaultProperty the default to apply if nothing else suits, may be null
+   * @param configCache the cache to save the property to, may be null
+   * @return the property resolved
+   * @param <T> the type of the property
+   */
+  public static <T> T getOrDefault(
+      final String propertyName,
+      final Supplier<T> propertySupplier,
+      final T defaultProperty,
+      final Map<String, Object> configCache) {
+    return getOrLegacyOrDefault(
+        propertyName, propertySupplier, noPropertySupplier(), defaultProperty, configCache);
+  }
+
+  private static <T> Supplier<T> noPropertySupplier() {
+    return () -> null;
   }
 
   private static <T> T getPropertyFromSupplier(

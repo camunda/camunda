@@ -2,11 +2,28 @@ name: Optimize e2e cloud test
 
 on:
   pull_request:
+    paths:
+      - ".github/actions/**"
+      - ".github/workflows/optimize-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "optimize/**"
+      - "optimize.Dockerfile"
   push:
     branches:
-    - master
-    - maintenance/*
-  workflow_dispatch: 
+      - "main"
+      - "stable/**"
+      - "release/**"
+    paths:
+      - ".github/actions/**"
+      - ".github/workflows/optimize-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "optimize/**"
+      - "optimize.Dockerfile"
+  workflow_dispatch:
 
 jobs:
   e2e-cloud-test:
@@ -50,12 +67,12 @@ jobs:
       with:
         node-version: ${{ steps.pom-info.outputs.x_version_node }}
         cache: "yarn"
-        cache-dependency-path: optimize/client/yarn.lock    
+        cache-dependency-path: optimize/client/yarn.lock
     - name: Install node dependencies
       working-directory: ./optimize/client
       run: yarn install
     - name: 'build backend & frontend'
-      run: mvn clean install -DskipTests -Dskip.docker -pl optimize/backend,optimize/qa/data-generation -am
+      run: mvn clean install -DskipTests -Dskip.docker -pl optimize/backend -am
     - name: 'start backend'
       working-directory: ./optimize/client
       run: |
@@ -64,9 +81,9 @@ jobs:
       working-directory: ./optimize/client
       run: yarn start &
     - name: Wait for backend to start
-      run: ./.github/scripts/wait-for.sh http://localhost:8090/api/readyz
+      run: ./.github/optimize/scripts/wait-for.sh http://localhost:8090/api/readyz
     - name: Wait for frontend to start
-      run: ./.github/scripts/wait-for.sh http://localhost:3000/ready
+      run: ./.github/optimize/scripts/wait-for.sh http://localhost:3000/ready
     - name: 'start e2e test'
       working-directory: ./optimize/client
       env:

@@ -5,9 +5,9 @@
  * file except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
-import { TableContainer } from '@carbon/react';
-import { layer01, productiveHeading01, spacing04 } from '@carbon/themes';
+import styled from "styled-components";
+import { TableContainer } from "@carbon/react";
+import { layer01, productiveHeading01, spacing04 } from "@carbon/themes";
 
 export const NoDataContainer = styled.div`
   padding: ${spacing04};

@@ -70,10 +70,12 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
               assertThat(importedDef.getVersionTag()).isNull();
               assertThat(importedDef.getType()).isEqualTo(DefinitionType.PROCESS);
               assertThat(importedDef.isEventBased()).isFalse();
+
               assertThat(importedDef.getBpmn20Xml()).isEqualTo(Bpmn.convertToString(simpleProcess));
               assertThat(importedDef.getName()).isEqualTo(processName);
               assertThat(importedDef.getDataSource().getType())
                   .isEqualTo(DataImportSourceType.ZEEBE);
+
               assertThat(importedDef.getDataSource().getName()).isEqualTo(getConfiguredZeebeName());
               assertThat(importedDef.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
               assertThat(importedDef.isDeleted()).isFalse();
@@ -115,6 +117,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
               assertThat(importedDef.getName()).isEqualTo(deployedProcess.getBpmnProcessId());
               assertThat(importedDef.getDataSource().getType())
                   .isEqualTo(DataImportSourceType.ZEEBE);
+
               assertThat(importedDef.getDataSource().getName()).isEqualTo(getConfiguredZeebeName());
               assertThat(importedDef.getTenantId()).isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
               assertThat(importedDef.isDeleted()).isFalse();

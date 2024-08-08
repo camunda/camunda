@@ -24,6 +24,7 @@ import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.stream.impl.StreamProcessorBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessorContext;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
@@ -137,9 +139,11 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   public StreamProcessor startTypedStreamProcessor(
       final int partitionId,
       final TypedRecordProcessorFactory factory,
-      final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt,
+      final Consumer<StreamProcessorBuilder> processorConfiguration,
+      final boolean awaitOpening) {
     return streamProcessingComposite.startTypedStreamProcessor(
-        partitionId, factory, streamProcessorListenerOpt);
+        partitionId, factory, streamProcessorListenerOpt, processorConfiguration, awaitOpening);
   }
 
   public void pauseProcessing(final int partitionId) {

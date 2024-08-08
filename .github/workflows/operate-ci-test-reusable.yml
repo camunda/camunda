@@ -53,7 +53,7 @@ env:
 jobs:
   integration-tests:
     name: ${{ inputs.test-type }}
-    timeout-minutes: 20
+    timeout-minutes: 40
     runs-on: ${{ inputs.runner-type }}
     if: ${{ !startsWith(inputs.branch, 'fe-') && !(startsWith(inputs.branch, 'renovate/') && contains(inputs.branch, '-fe-')) }}
 
@@ -98,14 +98,6 @@ jobs:
           ${{ inputs.command }}
 
       # Reports: publish test metrics results
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2.16.1
-        if: ${{ (success() || failure()) }}
-        with:
-          check_name: "Operate ${{ inputs.test-type }} Results"
-          files: |
-            operate/**/target/*-reports/*.xml
-            !operate/**/target/*-reports/*-summary.xml
       - name: Upload Test Report
         if: ${{ (success() || failure()) }}
         uses: ./.github/actions/collect-operate-test-artifacts

@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.util.IdentityTester;
 import java.io.IOException;
-import org.json.JSONException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -32,7 +31,7 @@ public class ProcessIdentityIT extends IdentityTester {
   }
 
   @Test
-  public void shouldReturnProcessAfterAssigningAuthorizations() throws IOException, JSONException {
+  public void shouldReturnProcessAfterAssigningAuthorizations() throws IOException {
     tester.deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
 
     final String querySimpleProcess = "simple";
@@ -52,7 +51,7 @@ public class ProcessIdentityIT extends IdentityTester {
   }
 
   @Test
-  public void shouldReturnAllProcessesWithWildCard() throws IOException, JSONException {
+  public void shouldReturnAllProcessesWithWildCard() throws IOException {
     tester.deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
     tester.deployProcess("simple_process_2.bpmn").waitUntil().processIsDeployed();
     tester.deployProcess("userTaskForm.bpmn").waitUntil().processIsDeployed();

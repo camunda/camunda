@@ -7,16 +7,19 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn;
 
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnInclusiveGatewayBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * Checks the preconditions of a state transition command.
@@ -29,9 +32,11 @@ import java.util.Arrays;
 public final class ProcessInstanceStateTransitionGuard {
 
   private final BpmnStateBehavior stateBehavior;
+  private final BpmnInclusiveGatewayBehavior inclusiveGatewayBehavior;
 
   public ProcessInstanceStateTransitionGuard(final BpmnStateBehavior stateBehavior) {
     this.stateBehavior = stateBehavior;
+    inclusiveGatewayBehavior = new BpmnInclusiveGatewayBehavior(stateBehavior);
   }
 
   /**
@@ -46,10 +51,12 @@ public final class ProcessInstanceStateTransitionGuard {
 
   private Either<String, ?> checkStateTransition(
       final BpmnElementContext context, final ExecutableFlowElement element) {
+
     return switch (context.getIntent()) {
       case ACTIVATE_ELEMENT ->
           hasActiveFlowScopeInstance(context)
-              .flatMap(ok -> canActivateParallelGateway(context, element));
+              .flatMap(ok -> canActivateParallelGateway(context, element))
+              .flatMap(ok -> canActivateInclusiveGateway(context, element));
       case COMPLETE_ELEMENT ->
           // an incident is resolved by writing a COMPLETE command when the element instance is in
           // state COMPLETING
@@ -191,5 +198,54 @@ public final class ProcessInstanceStateTransitionGuard {
                       + " but not all sequence flows have been taken.",
                   BufferUtil.bufferAsString(element.getId())));
     }
+  }
+
+  private Either<String, ?> canActivateInclusiveGateway(
+      final BpmnElementContext context, final ExecutableFlowElement executableFlowElement) {
+    if (context.getBpmnElementType() != BpmnElementType.INCLUSIVE_GATEWAY) {
+      return Either.right(null);
+    }
+
+    final var element = (ExecutableFlowNode) executableFlowElement;
+    final int numberOfIncomingSequenceFlows = element.getIncoming().size();
+    final int numberOfTakenSequenceFlows =
+        stateBehavior.getNumberOfTakenSequenceFlows(context.getFlowScopeKey(), element.getId());
+
+    // Accept after incident resolved
+    if (hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_ACTIVATING).isRight()) {
+      return Either.right(null);
+    }
+
+    // Accept if all incoming sequence flows were taken at least once
+    if (numberOfTakenSequenceFlows >= numberOfIncomingSequenceFlows) {
+      return Either.right(null);
+    } else if (numberOfTakenSequenceFlows == 0) {
+      return Either.left(
+          String.format(
+              "Expected to be able to activate inclusive gateway '%s',"
+                  + " but the inclusive gateway way already activated.",
+              BufferUtil.bufferAsString(element.getId())));
+    }
+
+    final Optional<DeployedProcess> deployedProcess =
+        stateBehavior.getProcess(context.getProcessDefinitionKey(), context.getTenantId());
+
+    if (deployedProcess.isEmpty()) {
+      return Either.left(
+          String.format(
+              "Expected to find a deployed process for process definition key '%d', but none found.",
+              context.getProcessDefinitionKey()));
+    }
+
+    if (inclusiveGatewayBehavior.hasActivePathToTheGateway(
+        context, element, deployedProcess.get().getProcess())) {
+      return Either.left(
+          String.format(
+              "Expected to be able to activate inclusive gateway '%s',"
+                  + " but not all satisfied sequence flows have been taken.",
+              BufferUtil.bufferAsString(element.getId())));
+    }
+
+    return Either.right(null);
   }
 }

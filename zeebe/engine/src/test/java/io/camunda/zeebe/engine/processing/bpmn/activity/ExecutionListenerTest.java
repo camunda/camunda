@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -42,11 +43,11 @@ import org.junit.Test;
 public class ExecutionListenerTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
-  private static final String PROCESS_ID = "process";
-  private static final String SUB_PROCESS_ID = "sub_".concat(PROCESS_ID);
-  private static final String SERVICE_TASK_TYPE = "test_service_task";
-  private static final String START_EL_TYPE = "start_execution_listener_job";
-  private static final String END_EL_TYPE = "end_execution_listener_job";
+  static final String PROCESS_ID = "process";
+  static final String SUB_PROCESS_ID = "sub_".concat(PROCESS_ID);
+  static final String START_EL_TYPE = "start_execution_listener_job";
+  static final String END_EL_TYPE = "end_execution_listener_job";
+  static final String SERVICE_TASK_TYPE = "test_service_task";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -357,6 +358,7 @@ public class ExecutionListenerTest {
     // given
     final long processInstanceKey =
         createProcessInstance(
+            ENGINE,
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .zeebeStartExecutionListener(START_EL_TYPE + "_1")
                 .zeebeStartExecutionListener(START_EL_TYPE + "_2")
@@ -407,6 +409,7 @@ public class ExecutionListenerTest {
     // given
     final long processInstanceKey =
         createProcessInstance(
+            ENGINE,
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .zeebeStartExecutionListener(START_EL_TYPE)
                 .zeebeEndExecutionListener(END_EL_TYPE)
@@ -455,6 +458,7 @@ public class ExecutionListenerTest {
     // given
     final long processInstanceKey =
         createProcessInstance(
+            ENGINE,
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .zeebeStartExecutionListener(START_EL_TYPE)
                 .zeebeEndExecutionListener(END_EL_TYPE)
@@ -504,6 +508,7 @@ public class ExecutionListenerTest {
     // given
     final long processInstanceKey =
         createProcessInstance(
+            ENGINE,
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .zeebeExecutionListener(el -> el.start().type(START_EL_TYPE + "_1"))
                 .zeebeExecutionListener(el -> el.start().typeExpression("start_el_2_name_var"))
@@ -590,6 +595,7 @@ public class ExecutionListenerTest {
     // given
     final long processInstanceKey =
         createProcessInstance(
+            ENGINE,
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .zeebeExecutionListener(el -> el.start().type(START_EL_TYPE))
                 .zeebeExecutionListener(el -> el.end().type(END_EL_TYPE + "_1"))
@@ -681,6 +687,7 @@ public class ExecutionListenerTest {
     // given
     final long processInstanceKey =
         createProcessInstance(
+            ENGINE,
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .zeebeStartExecutionListener(START_EL_TYPE)
                 .startEvent()
@@ -719,6 +726,7 @@ public class ExecutionListenerTest {
     // given
     final long processInstanceKey =
         createProcessInstance(
+            ENGINE,
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .zeebeExecutionListener(el -> el.start().type(START_EL_TYPE + "_1"))
                 .zeebeExecutionListener(
@@ -766,6 +774,7 @@ public class ExecutionListenerTest {
     // given
     final long processInstanceKey =
         createProcessInstance(
+            ENGINE,
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .zeebeStartExecutionListener(START_EL_TYPE)
                 .zeebeEndExecutionListener(END_EL_TYPE)
@@ -837,6 +846,7 @@ public class ExecutionListenerTest {
     // given
     final long processInstanceKey =
         createProcessInstance(
+            ENGINE,
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
                 .subProcess(
@@ -1051,9 +1061,21 @@ public class ExecutionListenerTest {
   // subprocess related tests: end
 
   // test util methods
-  private static long createProcessInstance(final BpmnModelInstance modelInstance) {
-    ENGINE.deployment().withXmlResource(modelInstance).deploy();
-    return ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+  static long createProcessInstance(
+      final EngineRule engineRule, final BpmnModelInstance modelInstance) {
+    return createProcessInstance(engineRule, modelInstance, Collections.emptyMap());
+  }
+
+  static long createProcessInstance(
+      final EngineRule engineRule,
+      final BpmnModelInstance modelInstance,
+      final Map<String, Object> variables) {
+    engineRule.deployment().withXmlResource(modelInstance).deploy();
+    return engineRule
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withVariables(variables)
+        .create();
   }
 
   private static void completeRecreatedJobWithType(

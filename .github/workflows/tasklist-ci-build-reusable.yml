@@ -34,12 +34,13 @@ defaults:
 env:
   BRANCH_NAME: ${{ inputs.branch }}
   IS_DEFAULT_BRANCH: ${{ inputs.branch == 'main' }}
+  DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
 
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
@@ -104,26 +105,18 @@ jobs:
           password: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       #########################################################################
-      # Build and tag Docker images
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
+      # Build Docker image
+      - name: Build Docker image
+        uses: ./.github/actions/build-platform-docker
         with:
-          images: |
-            registry.camunda.cloud/team-hto/tasklist
-          tags: |
+          repository: registry.camunda.cloud/team-hto/tasklist
+          version: |
             ${{ env.IMAGE_TAG }}
             ${{ env.CI_IMAGE_TAG }}
             ${{ env.PR_IMAGE_TAG }}
-
-      #########################################################################
-      # Build Docker image
-      - name: Build Docker image
-        uses: ./.github/actions/build-tasklist-docker
-        with:
-          tags: ${{ steps.meta.outputs.tags }}
           push: ${{ inputs.pushDocker }}
-          platforms: ${{ inputs.pushDocker && 'linux/arm64,linux/amd64' || 'linux/amd64' }}
+          platforms: ${{ inputs.pushDocker && env.DOCKER_PLATFORMS || 'linux/amd64' }}
+          dockerfile: tasklist.Dockerfile
 
       #########################################################################
       # Docker login for snapshot deployment
@@ -138,11 +131,13 @@ jobs:
       # Build SNAPSHOT Docker image
       - name: Build SNAPSHOT Docker image
         if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
-        uses: ./.github/actions/build-tasklist-docker
+        uses: ./.github/actions/build-platform-docker
         with:
-          tags: |
-            camunda/tasklist:SNAPSHOT
+          repository: camunda/tasklist
+          version: SNAPSHOT
           push: true
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          dockerfile: tasklist.Dockerfile
 
       #########################################################################
       # Deploy Nexus SNAPSHOT

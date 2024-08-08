@@ -27,6 +27,8 @@ public final class AtomixClusterConfiguration {
 
   @Bean(destroyMethod = "stop")
   public AtomixCluster atomixCluster() {
-    return new AtomixCluster(config, Version.from(VersionUtil.getVersion()));
+    final var atomixCluster = new AtomixCluster(config, Version.from(VersionUtil.getVersion()));
+    atomixCluster.start();
+    return atomixCluster;
   }
 }

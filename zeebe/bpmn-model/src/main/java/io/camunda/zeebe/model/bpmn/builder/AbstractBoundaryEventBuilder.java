@@ -41,7 +41,7 @@ public abstract class AbstractBoundaryEventBuilder<B extends AbstractBoundaryEve
   /**
    * Set if the boundary event cancels the attached activity.
    *
-   * @param cancelActivity true if the boundary event cancels the activiy, false otherwise
+   * @param cancelActivity true if the boundary event cancels the activity, false otherwise
    * @return the builder object
    */
   public B cancelActivity(final Boolean cancelActivity) {

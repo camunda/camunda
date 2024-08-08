@@ -19,6 +19,7 @@ type Props =
     }
   | {
       mode: 'edit';
+      label: string;
       children: React.ReactNode;
     };
 

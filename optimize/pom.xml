@@ -4,8 +4,10 @@
 
   <groupId>io.camunda.optimize</groupId>
   <artifactId>optimize-parent</artifactId>
-  <version>8.6.0-SNAPSHOT</version>
+  <version>8.6.0</version>
   <packaging>pom</packaging>
+  <name>Optimize Parent</name>
+
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -15,8 +17,8 @@
     <camunda.maven.artifacts.version>7.19.11-ee</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <zeebe.version>8.6.0-alpha2</zeebe.version>
-    <identity.version>8.6.0-alpha2</identity.version>
+    <zeebe.version>8.6.0-alpha4</zeebe.version>
+    <identity.version>8.6.0-alpha4</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
@@ -77,9 +79,8 @@
 
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
+    <spring-boot.version>3.3.0</spring-boot.version>
   </properties>
-
-  <name>Camunda Optimize</name>
 
   <modules>
     <!-- client should be built before distro -->
@@ -87,13 +88,19 @@
     <module>util</module>
     <module>plugins</module>
     <module>backend</module>
-    <module>qa</module>
     <module>../optimize-distro</module>
     <module>upgrade</module>
   </modules>
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${spring-boot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <dependency>
         <groupId>org.springframework</groupId>
         <artifactId>spring-framework-bom</artifactId>

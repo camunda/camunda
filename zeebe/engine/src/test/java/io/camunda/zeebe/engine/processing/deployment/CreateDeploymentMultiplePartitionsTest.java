@@ -211,6 +211,37 @@ public final class CreateDeploymentMultiplePartitionsTest {
   }
 
   @Test
+  public void shouldCreateDeploymentResourceWithMultipleProcessWithSameResourceName() {
+    // given
+
+    // when
+    final Record<DeploymentRecordValue> deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource("process.bpmn", PROCESS)
+            .withXmlResource("process.bpmn", PROCESS_2)
+            .deploy();
+
+    // then
+    assertThat(deployment.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
+
+    final var deployments =
+        RecordingExporter.deploymentRecords()
+            .withIntent(DeploymentIntent.CREATED)
+            .withRecordKey(deployment.getKey())
+            .limit(PARTITION_COUNT)
+            .asList();
+
+    assertThat(deployments)
+        .hasSize(PARTITION_COUNT)
+        .extracting(Record::getValue)
+        .flatExtracting(DeploymentRecordValue::getProcessesMetadata)
+        .extracting(ProcessMetadataValue::getBpmnProcessId)
+        .containsOnly("process", "process2");
+  }
+
+  @Test
   public void shouldIncrementProcessVersions() {
     // given
     final BpmnModelInstance modelInstance =

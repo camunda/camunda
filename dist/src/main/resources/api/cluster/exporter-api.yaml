@@ -17,11 +17,13 @@ servers:
 paths:
   /{exporterId}/disable:
     post:
+      summary: Disable an exporter
+      description: Disable the exporter with the given exporterId. After the exporter is disabled, the records are not exported to this exporter anymore.
       parameters:
         - $ref: '#/components/parameters/ExporterId'
       responses:
         '202':
-          $ref: "#/components/responses/ExporterDisableResponse"
+          $ref: "#/components/responses/ExporterOperationResponse"
         '400':
           $ref: 'components.yaml#/responses/InvalidRequest'
         '409':
@@ -33,6 +35,43 @@ paths:
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
 
+  /{exporterId}/enable:
+    summary: Enable an exporter
+    description: Enable the exporter with the given exporterId. After the exporter is enabled, the records are exported to this exporter.
+    post:
+      parameters:
+        - $ref: '#/components/parameters/ExporterId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnableExporterRequest"
+      responses:
+        '202':
+          $ref: "#/components/responses/ExporterOperationResponse"
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+
+  /:
+    get:
+      summary: List all exporters
+      description: List all exporters and their status whether they are enabled or disabled.
+      responses:
+        '200':
+          description: "List of exporters"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExporterList"
 components:
   parameters:
     ExporterId:
@@ -44,9 +83,41 @@ components:
         $ref: 'components.yaml#/schemas/ExporterId'
 
   responses:
-    ExporterDisableResponse:
-      description: Request to disable exporters is accepted.
+    ExporterOperationResponse:
+      description: Request to disable or enable exporter is accepted.
       content:
         application.json:
           schema:
             $ref: "components.yaml#/schemas/PlannedOperationsResponse"
+
+  schemas:
+    ExporterList:
+        type: array
+        items:
+            $ref: "#/components/schemas/ExporterStatus"
+
+    ExporterStatus:
+      type: object
+      properties:
+        exporterId:
+          type: string
+          description: Id of the exporter
+        status:
+          type: string
+          enum:
+            - ENABLING
+            - ENABLED
+            - DISABLING
+            - DISABLED
+            - UNKNOWN
+          description: Status of the exporter
+          example: "ENABLED"
+
+    EnableExporterRequest:
+      type: object
+      properties:
+        initializeFrom:
+          type: string
+          description: Id of the exporter to initialize from
+          example: "exporter-1"
+

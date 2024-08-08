@@ -130,12 +130,14 @@ describe('stores/processInstanceDetailsStatistics', () => {
     ).toBe(0);
     expect(processInstanceDetailsStatisticsStore.flowNodeStatistics).toEqual([
       {count: 2, flowNodeId: 'inclGatewayFork', flowNodeState: 'active'},
+      {count: 1, flowNodeId: 'inclGatewayFork', flowNodeState: 'completed'},
       {count: 1, flowNodeId: 'exclusiveGateway', flowNodeState: 'incidents'},
       {count: 2, flowNodeId: 'exclusiveGateway', flowNodeState: 'canceled'},
+      {count: 25, flowNodeId: 'startEvent', flowNodeState: 'completed'},
       {count: 4, flowNodeId: 'alwaysFailingTask', flowNodeState: 'incidents'},
       {count: 5, flowNodeId: 'messageCatchEvent', flowNodeState: 'active'},
       {count: 1, flowNodeId: 'messageCatchEvent', flowNodeState: 'incidents'},
-      {count: 12, flowNodeId: 'endEvent', flowNodeState: 'completed'},
+      {count: 12, flowNodeId: 'endEvent', flowNodeState: 'completedEndEvents'},
     ]);
 
     modificationsStore.enableModificationMode();
@@ -146,6 +148,42 @@ describe('stores/processInstanceDetailsStatistics', () => {
       {count: 4, flowNodeId: 'alwaysFailingTask', flowNodeState: 'incidents'},
       {count: 5, flowNodeId: 'messageCatchEvent', flowNodeState: 'active'},
       {count: 1, flowNodeId: 'messageCatchEvent', flowNodeState: 'incidents'},
+    ]);
+  });
+
+  it('should get executed/completed flow nodes', async () => {
+    mockAndFetchDiagram();
+    processInstanceDetailsStatisticsStore.init(PROCESS_INSTANCE_ID);
+
+    await waitFor(() => {
+      expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched');
+      expect(processInstanceDetailsStatisticsStore.state.statistics).toEqual(
+        mockProcessInstanceDetailsStatistics,
+      );
+    });
+
+    expect(processInstanceDetailsStatisticsStore.executedFlowNodes).toEqual([
+      {
+        activityId: 'inclGatewayFork',
+        active: 2,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        activityId: 'startEvent',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 25,
+      },
+      {
+        activityId: 'endEvent',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 12,
+      },
     ]);
   });
 
@@ -326,8 +364,10 @@ describe('stores/processInstanceDetailsStatistics', () => {
 
     expect(processInstanceDetailsStatisticsStore.flowNodeStatistics).toEqual([
       {count: 2, flowNodeId: 'service-task-1', flowNodeState: 'active'},
+      {count: 1, flowNodeId: 'service-task-1', flowNodeState: 'completed'},
       {count: 2, flowNodeId: 'service-task-2', flowNodeState: 'active'},
       {count: 2, flowNodeId: 'service-task-2', flowNodeState: 'incidents'},
+      {count: 1, flowNodeId: 'service-task-2', flowNodeState: 'completed'},
     ]);
   });
 

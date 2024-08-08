@@ -2,9 +2,9 @@
 
 name: Optimize Epic
 about: This issue is used to track the progress of an Optimize Epic
-title: ''
-labels: type:epic
-assignees: ''
+title: 🎯
+labels: ["kind/epic", "component/optimize"]
+assignees: ""
 -------------
 
 ### Summary

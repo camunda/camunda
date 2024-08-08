@@ -39,6 +39,10 @@ inputs:
     description: The token to use when logging into Docker Hub
     required: false
     default: "REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY"
+  docker-secret-path:
+    description: The path to Docker Hub secrets
+    required: false
+    default: "secret/data/products/zeebe/ci/zeebe"
 
 outputs: {}
 
@@ -71,8 +75,8 @@ runs:
         secrets: |
           secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
           secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
-          secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
-          secret/data/products/zeebe/ci/zeebe ${{ inputs.docker-token }};
+          ${{ inputs.docker-secret-path }} REGISTRY_HUB_DOCKER_COM_USR;
+          ${{ inputs.docker-secret-path }} ${{ inputs.docker-token }};
     - uses: actions/setup-java@v4
       if: inputs.java == 'true'
       with:
@@ -137,6 +141,7 @@ runs:
         -D aether.enhancedLocalRepository.splitRemote=true
         -D aether.syncContext.named.nameMapper=file-gav
         -D aether.syncContext.named.factory=file-lock
+        -D aether.syncContext.named.time=120
         -D maven.artifact.threads=32
         EOF
     - name: Determine if running on GH infra or self-hosted

@@ -21,6 +21,7 @@ import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.reader.FlowNodeStatisticsReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
+import io.camunda.operate.webapp.reader.ListenerReader;
 import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.*;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
@@ -66,6 +67,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   private final ModifyProcessInstanceRequestValidator modifyProcessInstanceRequestValidator;
   private final BatchOperationWriter batchOperationWriter;
   private final ProcessInstanceReader processInstanceReader;
+  private final ListenerReader listenerReader;
   private final ListViewReader listViewReader;
   private final IncidentReader incidentReader;
   private final VariableReader variableReader;
@@ -79,6 +81,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       final ModifyProcessInstanceRequestValidator modifyProcessInstanceRequestValidator,
       final BatchOperationWriter batchOperationWriter,
       final ProcessInstanceReader processInstanceReader,
+      final ListenerReader listenerReader,
       final ListViewReader listViewReader,
       final IncidentReader incidentReader,
       final VariableReader variableReader,
@@ -90,6 +93,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
     this.modifyProcessInstanceRequestValidator = modifyProcessInstanceRequestValidator;
     this.batchOperationWriter = batchOperationWriter;
     this.processInstanceReader = processInstanceReader;
+    this.listenerReader = listenerReader;
     this.listViewReader = listViewReader;
     this.incidentReader = incidentReader;
     this.variableReader = variableReader;
@@ -196,6 +200,16 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       @PathVariable final String variableId) {
     checkIdentityReadPermission(Long.parseLong(processInstanceId));
     return variableReader.getVariable(variableId);
+  }
+
+  @Operation(summary = "Get listeners by process instance id")
+  @PostMapping("/{processInstanceId}/listeners")
+  public List<ListenerDto> getListeners(
+      @PathVariable @ValidLongId final String processInstanceId,
+      @RequestBody final ListenerRequestDto request) {
+    checkIdentityReadPermission(Long.parseLong(processInstanceId));
+    processInstanceRequestValidator.validateListenerRequest(request);
+    return listenerReader.getListenerExecutions(processInstanceId, request);
   }
 
   @Operation(summary = "Get flow node states by process instance id")

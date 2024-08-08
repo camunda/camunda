@@ -21,6 +21,8 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class BpmnStateBehavior {
@@ -96,6 +98,20 @@ public final class BpmnStateBehavior {
 
   public ElementInstance getFlowScopeInstance(final BpmnElementContext context) {
     return elementInstanceState.getInstance(context.getFlowScopeKey());
+  }
+
+  public List<BpmnElementContext> getChildInstanceContexts(final BpmnElementContext context) {
+    return elementInstanceState.getChildren(context.getElementInstanceKey()).stream()
+        .map(
+            childInstance ->
+                context.copy(
+                    childInstance.getKey(), childInstance.getValue(), childInstance.getState()))
+        .collect(Collectors.toList());
+  }
+
+  public Set<DirectBuffer> getTakenSequenceFlowIds(final BpmnElementContext context) {
+    return elementInstanceState.getTakenSequenceFlows(
+        context.getFlowScopeKey(), context.getElementId());
   }
 
   public BpmnElementContext getFlowScopeContext(final BpmnElementContext context) {

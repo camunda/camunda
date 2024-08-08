@@ -25,4 +25,4 @@ jobs:
     needs:
       - run-build
     steps:
-      - run: exit ${{ ((contains(needs.*.result, 'skipped') || contains(needs.*.result, 'failure')) && 1) || 0 }}
+      - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}

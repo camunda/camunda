@@ -17,6 +17,7 @@
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
   <artifactId>webapps-common</artifactId>
+  <name>Webapps Common</name>
 
   <dependencies>
     <dependency>

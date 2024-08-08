@@ -15,6 +15,7 @@ import {processesStore} from 'modules/stores/processes/processes.migration';
 import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
+import {MigrationConfirmationModal} from '../MigrationConfirmationModal';
 
 const Footer: React.FC = observer(() => {
   const navigate = useNavigate();
@@ -84,36 +85,51 @@ const Footer: React.FC = observer(() => {
           >
             Back
           </Button>
-          <Button
-            aria-label="Confirm"
-            size="sm"
-            onClick={() => {
-              const {selectedTargetProcess, selectedTargetVersion} =
-                processesStore.migrationState;
 
-              processInstanceMigrationStore.setHasPendingRequest();
-              processInstanceMigrationStore.disable();
-
-              tracking.track({
-                eventName: 'process-instance-migration-confirmed',
-              });
-
-              navigate(
-                Locations.processes({
-                  active: true,
-                  incidents: true,
-                  ...(selectedTargetProcess
-                    ? {process: selectedTargetProcess.bpmnProcessId}
-                    : {}),
-                  ...(selectedTargetVersion
-                    ? {version: selectedTargetVersion.toString()}
-                    : {}),
-                }),
-              );
-            }}
+          <ModalStateManager
+            renderLauncher={({setOpen}) => (
+              <Button
+                aria-label="Confirm"
+                size="sm"
+                onClick={() => {
+                  setOpen(true);
+                }}
+              >
+                Confirm
+              </Button>
+            )}
           >
-            Confirm
-          </Button>
+            {({open, setOpen}) => (
+              <MigrationConfirmationModal
+                open={open}
+                setOpen={setOpen}
+                onSubmit={() => {
+                  const {selectedTargetProcess, selectedTargetVersion} =
+                    processesStore.migrationState;
+
+                  processInstanceMigrationStore.setHasPendingRequest();
+                  processInstanceMigrationStore.disable();
+
+                  tracking.track({
+                    eventName: 'process-instance-migration-confirmed',
+                  });
+
+                  navigate(
+                    Locations.processes({
+                      active: true,
+                      incidents: true,
+                      ...(selectedTargetProcess
+                        ? {process: selectedTargetProcess.bpmnProcessId}
+                        : {}),
+                      ...(selectedTargetVersion
+                        ? {version: selectedTargetVersion.toString()}
+                        : {}),
+                    }),
+                  );
+                }}
+              />
+            )}
+          </ModalStateManager>
         </>
       )}
     </Container>
