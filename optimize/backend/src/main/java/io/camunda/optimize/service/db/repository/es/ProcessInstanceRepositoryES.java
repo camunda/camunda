@@ -18,14 +18,11 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.V
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLE_ID;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
-import static java.lang.String.format;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -77,50 +74,6 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
   private final DateTimeFormatter dateTimeFormatter;
 
   @Override
-  public void bulkImportProcessInstances(
-      final String importItemName, final List<ProcessInstanceDto> processInstanceDtos) {
-    doImportBulkRequestWithList(
-        importItemName,
-        processInstanceDtos,
-        (request, dto) ->
-            addImportProcessInstanceRequest(
-                getProcessInstanceIndexAliasName(dto.getProcessDefinitionKey()),
-                request,
-                dto,
-                createUpdateStateScript(dto.getState()),
-                objectMapper));
-  }
-
-  @Override
-  public void updateProcessInstanceStateForProcessDefinitionId(
-      final String importItemName,
-      final String definitionKey,
-      final String processDefinitionId,
-      final String state) {
-    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-        esClient,
-        format(
-            "%s with %s: %s",
-            importItemName, ProcessInstanceDto.Fields.processDefinitionId, processDefinitionId),
-        createUpdateStateScript(state),
-        termsQuery(ProcessInstanceDto.Fields.processDefinitionId, processDefinitionId),
-        getProcessInstanceIndexAliasName(definitionKey));
-  }
-
-  @Override
-  public void updateAllProcessInstancesStates(
-      final String importItemName, final String definitionKey, final String state) {
-    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-        esClient,
-        format(
-            "%s with %s: %s",
-            importItemName, ProcessInstanceDto.Fields.processDefinitionKey, definitionKey),
-        createUpdateStateScript(state),
-        matchAllQuery(),
-        getProcessInstanceIndexAliasName(definitionKey));
-  }
-
-  @Override
   public void deleteByIds(
       final String index, final String itemName, final List<String> processInstanceIds) {
     final BulkRequest bulkRequest = new BulkRequest();
@@ -135,28 +88,6 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
         bulkRequestName,
         importRequests,
         configurationService.getSkipDataAfterNestedDocLimitReached());
-  }
-
-  @Override
-  public void deleteEndedBefore(
-      final String index, final OffsetDateTime endDate, final String deletedItemIdentifier) {
-    final BoolQueryBuilder filterQuery =
-        boolQuery().filter(rangeQuery(END_DATE).lt(dateTimeFormatter.format(endDate)));
-    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
-        esClient, filterQuery, deletedItemIdentifier, false, index);
-  }
-
-  @Override
-  public void deleteVariablesOfInstancesThatEndedBefore(
-      final String index, final OffsetDateTime endDate, final String updateItem) {
-    final BoolQueryBuilder filterQuery =
-        boolQuery()
-            .filter(rangeQuery(END_DATE).lt(dateTimeFormatter.format(endDate)))
-            .filter(
-                nestedQuery(VARIABLES, existsQuery(VARIABLES + "." + VARIABLE_ID), ScoreMode.None));
-    final Script script = new Script(ProcessInstanceScriptFactory.createVariableClearScript());
-    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-        esClient, updateItem, script, filterQuery, index);
   }
 
   @Override

@@ -52,8 +52,9 @@ public class DeleteIndexTemplateIfExistsStep extends UpgradeStep {
   }
 
   public String getVersionedTemplateNameWithTemplateSuffix() {
-    return String.format("%s[Template]",
-            OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion(
-                templateName, String.valueOf(templateVersion)));
+    return String.format(
+        "%s[Template]",
+        OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion(
+            templateName, String.valueOf(templateVersion)));
   }
 }

@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 // TODO recreate C8 IT equivalent of this with #13337
+// TODO recreate C8 IT equivalent of this with #13337
 //package io.camunda.optimize.upgrade.migrate313to86;
 //
 //import io.camunda.optimize.upgrade.AbstractUpgradeIT;
@@ -15,6 +16,7 @@
 //import io.camunda.optimize.upgrade.migrate313to86.indices.EventPublishStateIndexV4;
 //import io.camunda.optimize.upgrade.migrate313to86.indices.EventSequenceCountIndexV4;
 //import io.camunda.optimize.upgrade.migrate313to86.indices.EventTraceStateIndexV2;
+//import io.camunda.optimize.upgrade.migrate313to86.indices.ImportIndexIndexV3;
 //import io.camunda.optimize.upgrade.migrate313to86.indices.OnboardingStateIndexV2;
 //import io.camunda.optimize.upgrade.migrate313to86.indices.SettingsIndexV2;
 //import io.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -40,6 +42,7 @@
 //      new EventSequenceCountIndexV4();
 //  protected final EventTraceStateIndexV2 EVENT_TRACE_STATE_EXTERNAL_INDEX =
 //      new EventTraceStateIndexV2();
+//  protected final ImportIndexIndexV3 IMPORT_INDEX_INDEX = new ImportIndexIndexV3();
 //
 //  @BeforeEach
 //  protected void setUp() throws Exception {
@@ -47,6 +50,7 @@
 //    initSchema(
 //        List.of(
 //            ONBOARDING_STATE_INDEX,
+//            IMPORT_INDEX_INDEX,
 //            SETTINGS_INDEX,
 //            EVENT_INDEX,
 //            EVENT_PROCESS_DEFINITION_INDEX,

@@ -5,14 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.schema.index.index;
+package io.camunda.optimize.upgrade.migrate313to86.indices;
 
-import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import java.io.IOException;
 import org.elasticsearch.xcontent.XContentBuilder;
 
-public abstract class ImportIndexIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
+public class ImportIndexIndexV3 extends DefaultIndexMappingCreator<XContentBuilder> {
 
   public static final int VERSION = 3;
 
@@ -21,7 +20,7 @@ public abstract class ImportIndexIndex<TBuilder> extends DefaultIndexMappingCrea
 
   @Override
   public String getIndexName() {
-    return DatabaseConstants.IMPORT_INDEX_INDEX_NAME;
+    return "import-index";
   }
 
   @Override
@@ -45,5 +44,11 @@ public abstract class ImportIndexIndex<TBuilder> extends DefaultIndexMappingCrea
         .field("type", "long")
         .endObject();
     // @formatter:on
+  }
+
+  @Override
+  public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder)
+      throws IOException {
+    return contentBuilder.field(key, value);
   }
 }

@@ -14,8 +14,8 @@ import org.elasticsearch.xcontent.XContentBuilder;
 public class EventPublishStateIndexV4 extends DefaultIndexMappingCreator<XContentBuilder> {
 
   @Override
-  public XContentBuilder addStaticSetting(final String key, final int value,
-      final XContentBuilder contentBuilder) throws IOException {
+  public XContentBuilder addStaticSetting(
+      final String key, final int value, final XContentBuilder contentBuilder) throws IOException {
     return contentBuilder.field(key, value);
   }
 

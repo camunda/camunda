@@ -21,7 +21,6 @@ public enum UpgradeStepType {
   SCHEMA_DELETE_TEMPLATE,
   REINDEX;
 
-
   @JsonValue
   public String getId() {
     return name().toLowerCase(Locale.ENGLISH).replace("_", "-");

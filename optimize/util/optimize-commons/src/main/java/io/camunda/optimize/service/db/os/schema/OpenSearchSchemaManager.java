@@ -33,7 +33,6 @@ import io.camunda.optimize.service.db.os.schema.index.TenantIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TerminatedUserSessionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.VariableLabelIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.VariableUpdateInstanceIndexOS;
-import io.camunda.optimize.service.db.os.schema.index.index.ImportIndexIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.index.PositionBasedImportIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.index.TimestampBasedImportIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.report.CombinedReportIndexOS;
@@ -656,7 +655,6 @@ public class OpenSearchSchemaManager
         new TerminatedUserSessionIndexOS(),
         new VariableUpdateInstanceIndexOS(),
         new TenantIndexOS(),
-        new ImportIndexIndexOS(),
         new TimestampBasedImportIndexOS(),
         new PositionBasedImportIndexOS(),
         new CombinedReportIndexOS(),

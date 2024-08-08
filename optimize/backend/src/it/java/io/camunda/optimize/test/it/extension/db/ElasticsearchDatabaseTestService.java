@@ -21,17 +21,14 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.P
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
-import static io.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX;
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static io.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithPercentileInterpolation;
 import static io.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithoutPercentileInterpolation;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.script.Script.DEFAULT_SCRIPT_LANG;
@@ -60,7 +57,6 @@ import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
-import io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.DatabaseHelper;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -88,7 +84,6 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.lucene.search.join.ScoreMode;
 import org.apache.tika.utils.StringUtils;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
@@ -103,7 +98,6 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.core.CountRequest;
@@ -113,7 +107,6 @@ import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -777,71 +770,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
         .filter(
             index -> indexNameToAliasMap.get(index).stream().anyMatch(AliasMetadata::writeIndex))
         .toList();
-  }
-
-  @Override
-  @SneakyThrows
-  public List<String> getAllIndicesWithReadOnlyAlias(final String aliasNameWithPrefix) {
-    final GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasNameWithPrefix);
-    final Map<String, Set<AliasMetadata>> indexNameToAliasMap =
-        getOptimizeElasticClient().getAlias(aliasesRequest).getAliases();
-    return indexNameToAliasMap.keySet().stream()
-        .filter(
-            index -> indexNameToAliasMap.get(index).stream().anyMatch(alias -> !alias.writeIndex()))
-        .toList();
-  }
-
-  @Override
-  @SneakyThrows
-  public void verifyThatAllDocumentsOfIndexAreRelatedToRunningInstancesOnly(
-      final String entityIndex,
-      final String processInstanceField,
-      final TimeValue scrollKeepAlive) {
-    final SearchRequest variableUpdateSearchRequest =
-        new SearchRequest()
-            .indices(entityIndex)
-            .source(
-                new SearchSourceBuilder()
-                    .query(matchAllQuery())
-                    .fetchSource(processInstanceField, null)
-                    .size(10_000));
-
-    SearchResponse camundaActivityEventsResponse =
-        getOptimizeElasticClient().search(variableUpdateSearchRequest.scroll(scrollKeepAlive));
-
-    while (camundaActivityEventsResponse.getHits().getHits().length > 0) {
-      final Set<Object> processInstanceIds =
-          Arrays.stream(camundaActivityEventsResponse.getHits().getHits())
-              .map(SearchHit::getSourceAsMap)
-              .map(hit -> hit.get(processInstanceField))
-              .collect(Collectors.toSet());
-
-      // all of these instances should be running
-      final Integer finishedProcessInstanceCount =
-          getCountOfCompletedInstancesWithIdsIn(processInstanceIds);
-      assertThat(finishedProcessInstanceCount).isZero();
-
-      camundaActivityEventsResponse =
-          getOptimizeElasticClient()
-              .scroll(
-                  new SearchScrollRequest(camundaActivityEventsResponse.getScrollId())
-                      .scroll(scrollKeepAlive));
-    }
-  }
-
-  @Override
-  public Integer getVariableInstanceCount(final String variableName) {
-    final QueryBuilder query =
-        nestedQuery(
-            VARIABLES,
-            boolQuery().must(termQuery(getNestedVariableNameField(), variableName)),
-            ScoreMode.None);
-    return getVariableInstanceCountForAllProcessInstances(query);
-  }
-
-  @Override
-  public VariableUpdateInstanceIndex getVariableUpdateInstanceIndex() {
-    return new VariableUpdateInstanceIndexES();
   }
 
   public OptimizeIndexNameService getIndexNameService() {

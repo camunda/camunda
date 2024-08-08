@@ -68,8 +68,7 @@ public class CleanupConfiguration {
   // not relevant for serialization but only for application logic
   @JsonIgnore
   public boolean isEnabled() {
-    return processDataCleanupConfiguration.isEnabled()
-        || decisionCleanupConfiguration.isEnabled();
+    return processDataCleanupConfiguration.isEnabled() || decisionCleanupConfiguration.isEnabled();
   }
 
   public final void setCronTrigger(String cronTrigger) {

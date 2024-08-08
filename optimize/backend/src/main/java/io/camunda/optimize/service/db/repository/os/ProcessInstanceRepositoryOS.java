@@ -10,16 +10,12 @@ package io.camunda.optimize.service.db.repository.os;
 import static io.camunda.optimize.dto.optimize.ProcessInstanceConstants.ACTIVE_STATE;
 import static io.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.and;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.exists;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.json;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.lt;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.matchAll;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.nested;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.script;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.sourceInclude;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
 import static io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
@@ -31,7 +27,6 @@ import static java.lang.String.format;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
-import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.query.PageResultDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.repository.ProcessInstanceRepository;
@@ -60,7 +55,6 @@ import org.opensearch.client.opensearch.core.ScrollResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
-import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -76,52 +70,6 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
   private final OptimizeOpenSearchClient osClient;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
-
-  @Override
-  public void bulkImportProcessInstances(
-      final String importItemName, final List<ProcessInstanceDto> processInstanceDtos) {
-    osClient.doImportBulkRequestWithList(
-        importItemName,
-        processInstanceDtos,
-        dto ->
-            UpdateOperation.<ProcessInstanceDto>of(
-                    operation ->
-                        operation
-                            .index(aliasForProcessDefinitionKey(dto.getProcessDefinitionKey()))
-                            .id(dto.getProcessInstanceId())
-                            .script(createUpdateStateScript(dto.getState()))
-                            .upsert(dto)
-                            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT))
-                ._toBulkOperation(),
-        configurationService.getSkipDataAfterNestedDocLimitReached());
-  }
-
-  @Override
-  public void updateProcessInstanceStateForProcessDefinitionId(
-      final String importItemName,
-      final String definitionKey,
-      final String processDefinitionId,
-      final String state) {
-    osClient.updateByQueryTask(
-        format(
-            "%s with %s: %s",
-            importItemName, ProcessInstanceDto.Fields.processDefinitionId, processDefinitionId),
-        createUpdateStateScript(state),
-        term(ProcessInstanceDto.Fields.processDefinitionId, processDefinitionId),
-        aliasForProcessDefinitionKey(definitionKey));
-  }
-
-  @Override
-  public void updateAllProcessInstancesStates(
-      final String importItemName, final String definitionKey, final String state) {
-    osClient.updateByQueryTask(
-        format(
-            "%s with %s: %s",
-            importItemName, ProcessInstanceDto.Fields.processDefinitionKey, definitionKey),
-        createUpdateStateScript(state),
-        matchAll(),
-        aliasForProcessDefinitionKey(definitionKey));
-  }
 
   @Override
   public void deleteByIds(
@@ -148,28 +96,6 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
         bulkRequestName,
         importRequests,
         configurationService.getSkipDataAfterNestedDocLimitReached());
-  }
-
-  @Override
-  public void deleteEndedBefore(
-      final String index, final OffsetDateTime endDate, final String deletedItemIdentifier) {
-    osClient.deleteByQueryTask(
-        deletedItemIdentifier,
-        lt(END_DATE, dateTimeFormatter.format(endDate)),
-        false,
-        indexNameService.getOptimizeIndexAliasForIndex(index));
-  }
-
-  @Override
-  public void deleteVariablesOfInstancesThatEndedBefore(
-      final String index, final OffsetDateTime endDate, final String updateItem) {
-    osClient.updateByQueryTask(
-        updateItem,
-        script(ProcessInstanceScriptFactory.createVariableClearScript(), Map.of()),
-        and(
-            lt(END_DATE, dateTimeFormatter.format(endDate)),
-            nested(VARIABLES, exists(VARIABLES + "." + VARIABLE_ID), ChildScoreMode.None)),
-        indexNameService.getOptimizeIndexAliasForIndex(index));
   }
 
   @Override

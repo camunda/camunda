@@ -36,7 +36,6 @@ import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import io.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
-import io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
@@ -56,7 +55,6 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
-import org.elasticsearch.core.TimeValue;
 import org.mockserver.integration.ClientAndServer;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
@@ -293,13 +291,4 @@ public abstract class DatabaseTestService {
   public abstract Long getImportedActivityCount();
 
   public abstract List<String> getAllIndicesWithWriteAlias(String aliasNameWithPrefix);
-
-  public abstract List<String> getAllIndicesWithReadOnlyAlias(String aliasNameWithPrefix);
-
-  public abstract void verifyThatAllDocumentsOfIndexAreRelatedToRunningInstancesOnly(
-      String entityIndex, String processInstanceField, TimeValue scrollKeepAlive);
-
-  public abstract Integer getVariableInstanceCount(String variableName);
-
-  public abstract VariableUpdateInstanceIndex getVariableUpdateInstanceIndex();
 }

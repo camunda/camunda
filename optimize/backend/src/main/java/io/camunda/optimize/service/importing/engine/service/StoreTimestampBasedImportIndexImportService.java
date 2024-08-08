@@ -7,11 +7,11 @@
  */
 package io.camunda.optimize.service.importing.engine.service;
 
-import io.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
+import io.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.writer.ImportIndexWriter;
 import io.camunda.optimize.service.importing.DatabaseImportJobExecutor;
-import io.camunda.optimize.service.importing.job.StoreIndexesDatabaseImportJob;
+import io.camunda.optimize.service.importing.job.StoreTimestampBasedImportIndexDatabaseImportJob;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -21,12 +21,13 @@ import lombok.extern.slf4j.Slf4j;
  * import index can thus be restored again.
  */
 @Slf4j
-public class StoreIndexesEngineImportService implements ImportService<EngineImportIndexDto> {
+public class StoreTimestampBasedImportIndexImportService
+    implements ImportService<TimestampBasedImportIndexDto> {
   private final ImportIndexWriter importIndexWriter;
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final DatabaseClient databaseClient;
 
-  public StoreIndexesEngineImportService(
+  public StoreTimestampBasedImportIndexImportService(
       final ConfigurationService configurationService,
       final ImportIndexWriter importIndexWriter,
       final DatabaseClient databaseClient) {
@@ -38,10 +39,10 @@ public class StoreIndexesEngineImportService implements ImportService<EngineImpo
 
   @Override
   public void executeImport(
-      final List<EngineImportIndexDto> importIndexesToStore,
+      final List<TimestampBasedImportIndexDto> importIndexesToStore,
       final Runnable importCompleteCallback) {
-    final StoreIndexesDatabaseImportJob storeIndexesImportJob =
-        new StoreIndexesDatabaseImportJob(
+    final StoreTimestampBasedImportIndexDatabaseImportJob storeIndexesImportJob =
+        new StoreTimestampBasedImportIndexDatabaseImportJob(
             importIndexWriter, importCompleteCallback, databaseClient);
     storeIndexesImportJob.setEntitiesToImport(importIndexesToStore);
     databaseImportJobExecutor.executeImportJob(storeIndexesImportJob);

@@ -42,7 +42,6 @@ import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
-import io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.DatabaseHelper;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -53,7 +52,6 @@ import io.camunda.optimize.test.it.extension.MockServerUtil;
 import io.camunda.optimize.test.repository.TestIndexRepositoryOS;
 import io.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import jakarta.ws.rs.NotSupportedException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -67,7 +65,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.core.TimeValue;
 import org.jetbrains.annotations.NotNull;
 import org.mockserver.integration.ClientAndServer;
 import org.opensearch.client.json.JsonData;
@@ -659,41 +656,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
                     .anyMatch(alias -> alias.isWriteIndex() != null && alias.isWriteIndex()))
         .map(Map.Entry::getKey)
         .toList();
-  }
-
-  @Override
-  @SneakyThrows
-  public List<String> getAllIndicesWithReadOnlyAlias(final String aliasNameWithPrefix) {
-    final GetAliasResponse aliasResponse =
-        getOptimizeOpenSearchClient().getAlias(aliasNameWithPrefix);
-    final Map<String, IndexAliases> indexNameToAliasMap = aliasResponse.result();
-    return indexNameToAliasMap.entrySet().stream()
-        .filter(
-            entry ->
-                entry.getValue().aliases().values().stream()
-                    .anyMatch(alias -> alias.isWriteIndex() != null && !alias.isWriteIndex()))
-        .map(Map.Entry::getKey)
-        .toList();
-  }
-
-  @Override
-  public void verifyThatAllDocumentsOfIndexAreRelatedToRunningInstancesOnly(
-      final String entityIndex,
-      final String processInstanceField,
-      final TimeValue scrollKeepAlive) {
-    throw new NotSupportedException("This operation is not supported for OpenSearch yet");
-  }
-
-  @Override
-  public Integer getVariableInstanceCount(final String variableName) {
-    // TODO implement with #11121
-    throw new NotImplementedException(
-        "Not yet implemented for OpenSearch, will be implemented with issue #11121");
-  }
-
-  @Override
-  public VariableUpdateInstanceIndex getVariableUpdateInstanceIndex() {
-    return new VariableUpdateInstanceIndexOS();
   }
 
   private OptimizeOpenSearchClient getOptimizeOpenSearchClient() {

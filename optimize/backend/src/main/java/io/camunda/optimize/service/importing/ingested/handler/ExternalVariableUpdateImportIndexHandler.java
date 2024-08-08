@@ -5,14 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.importing;
-
+package io.camunda.optimize.service.importing.ingested.handler;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_DATA_SOURCE_ALIAS;
 
-import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
+import io.camunda.optimize.dto.optimize.datasource.IngestedDataSourceDto;
 import io.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import io.camunda.optimize.service.db.reader.importindex.TimestampBasedImportIndexReader;
+import io.camunda.optimize.service.importing.ImportIndexHandler;
 import io.camunda.optimize.service.importing.page.TimestampBasedImportPage;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -31,15 +31,18 @@ import org.springframework.context.annotation.Scope;
 
 @RequiredArgsConstructor
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public abstract class TimestampBasedExternalDataImportIndexHandler<T extends DataSourceDto>
+public class ExternalVariableUpdateImportIndexHandler
     implements ImportIndexHandler<TimestampBasedImportPage, TimestampBasedImportIndexDto> {
 
+  public static final String EXTERNAL_VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID =
+      "externalVariableUpdateImportIndex";
   public static final OffsetDateTime BEGINNING_OF_TIME =
       OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
 
   @Autowired protected ConfigurationService configurationService;
   @Autowired protected TimestampBasedImportIndexReader importIndexReader;
   protected Logger logger = LoggerFactory.getLogger(getClass());
+  protected IngestedDataSourceDto dataSource;
   private OffsetDateTime lastImportExecutionTimestamp = BEGINNING_OF_TIME;
 
   private OffsetDateTime timestampOfLastEntity = BEGINNING_OF_TIME;
@@ -80,7 +83,7 @@ public abstract class TimestampBasedExternalDataImportIndexHandler<T extends Dat
     updatePendingLastEntityTimestamp(BEGINNING_OF_TIME);
   }
 
-  public String getEngineAlias() {
+  public String getDataSourceAlias() {
     return EXTERNAL_DATA_SOURCE_ALIAS;
   }
 
@@ -118,27 +121,31 @@ public abstract class TimestampBasedExternalDataImportIndexHandler<T extends Dat
     }
   }
 
-  protected abstract String getDatabaseDocID();
+  private String getDatabaseDocID() {
+    return EXTERNAL_VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID;
+  }
 
-  protected abstract T getDataSource();
+  private IngestedDataSourceDto getDataSource() {
+    return new IngestedDataSourceDto(getDataSourceAlias());
+  }
 
-  protected void updateLastPersistedEntityTimestamp(final OffsetDateTime timestamp) {
+  private void updateLastPersistedEntityTimestamp(final OffsetDateTime timestamp) {
     this.persistedTimestampOfLastEntity = timestamp;
   }
 
-  protected void updateLastImportExecutionTimestamp(final OffsetDateTime timestamp) {
+  private void updateLastImportExecutionTimestamp(final OffsetDateTime timestamp) {
     this.lastImportExecutionTimestamp = timestamp;
   }
 
-  protected void updatePendingLastEntityTimestamp(final OffsetDateTime timestamp) {
+  private void updatePendingLastEntityTimestamp(final OffsetDateTime timestamp) {
     timestampOfLastEntity = timestamp;
   }
 
-  protected OffsetDateTime reduceByCurrentTimeBackoff(final OffsetDateTime currentDateTime) {
+  private OffsetDateTime reduceByCurrentTimeBackoff(final OffsetDateTime currentDateTime) {
     return currentDateTime.minus(getTipOfTimeBackoffMilliseconds(), ChronoUnit.MILLIS);
   }
 
-  protected int getTipOfTimeBackoffMilliseconds() {
+  private int getTipOfTimeBackoffMilliseconds() {
     return configurationService.getCurrentTimeBackoffMilliseconds();
   }
 }

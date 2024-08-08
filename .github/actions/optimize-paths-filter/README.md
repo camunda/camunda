@@ -6,10 +6,10 @@ Action that returns flags based on Optimize files changes, to indicate what type
 
 ### Outputs
 
-| Output           | Description                                                                  |
-| ---------------- | ---------------------------------------------------------------------------- |
-| backend-changes  | Returns `true` if there were changes done to backend files                   |
-| frontend-changes | Returns `true` if there were changes done to frontend files                  |
+|      Output      |                         Description                         |
+|------------------|-------------------------------------------------------------|
+| backend-changes  | Returns `true` if there were changes done to backend files  |
+| frontend-changes | Returns `true` if there were changes done to frontend files |
 
 ## Example of using the action
 
@@ -34,3 +34,4 @@ jobs:
     if: needs.detect-changes.outputs.frontend-changes == 'true'
     steps: ...
 ```
+

@@ -28,7 +28,6 @@ import io.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder;
-import io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.test.it.extension.db.DatabaseTestService;
@@ -46,7 +45,6 @@ import java.util.Set;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
-import org.elasticsearch.core.TimeValue;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -356,28 +354,5 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     final String aliasNameWithPrefix =
         getIndexNameService().getOptimizeIndexAliasForIndex(externalProcessVariableIndexName);
     return databaseTestService.getAllIndicesWithWriteAlias(aliasNameWithPrefix);
-  }
-
-  public List<String> getAllIndicesWithReadOnlyAlias(
-      final String externalProcessVariableIndexName) {
-    final String aliasNameWithPrefix =
-        getIndexNameService().getOptimizeIndexAliasForIndex(externalProcessVariableIndexName);
-    return databaseTestService.getAllIndicesWithReadOnlyAlias(aliasNameWithPrefix);
-  }
-
-  public void verifyThatAllDocumentsOfIndexAreRelatedToRunningInstancesOnly(
-      final String entityIndex,
-      final String processInstanceField,
-      final TimeValue scrollKeepAlive) {
-    databaseTestService.verifyThatAllDocumentsOfIndexAreRelatedToRunningInstancesOnly(
-        entityIndex, processInstanceField, scrollKeepAlive);
-  }
-
-  public Integer getVariableInstanceCount(final String variableName) {
-    return databaseTestService.getVariableInstanceCount(variableName);
-  }
-
-  public VariableUpdateInstanceIndex getVariableUpdateInstanceIndex() {
-    return databaseTestService.getVariableUpdateInstanceIndex();
   }
 }
