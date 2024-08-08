@@ -91,7 +91,7 @@ test.describe('task details page', () => {
     await expect(tasksPage.detailsPanel).toContainText('Creation date');
     await expect(
       tasksPage.detailsPanel.getByText(
-        /^\d{2}\s\w{3}\s\d{4}\s-\s\d{1,2}:\d{2}\s(AM|PM)$/,
+        /^\d{2}\s\w{3}\s\d{4}\s-\s\d{2}:\d{2}\s(AM|PM)$/,
       ),
     ).toBeVisible();
     await expect(tasksPage.detailsPanel).toContainText('Candidates');
