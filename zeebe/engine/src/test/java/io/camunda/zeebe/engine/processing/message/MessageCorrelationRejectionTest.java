@@ -37,17 +37,17 @@ public final class MessageCorrelationRejectionTest {
             .done();
     engine.deployment().withXmlResource(process).deploy();
 
+    // MESSAGE_SUBSCRIPTION.CORRELATE messages from partition 2 to partition 1 is dropped
+    engine.interceptInterPartitionCommands(
+        (receiverPartitionId, valueType, intent, recordKey, command) ->
+            !(receiverPartitionId == 2 && intent == MessageSubscriptionIntent.CORRELATE));
+
     final var processInstanceKey =
         engine
             .processInstance()
             .ofBpmnProcessId("process")
             .withVariable("key", correlationKey)
             .create();
-
-    // given - MESSAGE_SUBSCRIPTION.CORRELATE messages from partition 2 to partition 1 is dropped
-    engine.interceptInterPartitionCommands(
-        (receiverPartitionId, valueType, intent, recordKey, command) ->
-            !(receiverPartitionId == 2 && intent == MessageSubscriptionIntent.CORRELATE));
 
     // when - A message correlate command is send and some time passes
     engine
