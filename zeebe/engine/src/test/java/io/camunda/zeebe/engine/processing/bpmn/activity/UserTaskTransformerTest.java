@@ -19,7 +19,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTr
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -36,7 +36,7 @@ class UserTaskTransformerTest {
 
   private final ExpressionLanguage expressionLanguage =
       ExpressionLanguageFactory.createExpressionLanguage(
-          new ZeebeFeelEngineClock(ActorClock.current()));
+          new ZeebeFeelEngineClock(InstantSource.system()));
   private final BpmnTransformer transformer = new BpmnTransformer(expressionLanguage);
 
   private BpmnModelInstance processWithUserTask(final Consumer<UserTaskBuilder> userTaskModifier) {
