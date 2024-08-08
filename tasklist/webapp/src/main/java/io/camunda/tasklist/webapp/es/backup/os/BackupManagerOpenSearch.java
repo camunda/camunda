@@ -301,7 +301,6 @@ public class BackupManagerOpenSearch extends BackupManager {
                       // ignoreUnavailable = false - indices defined by their exact name MUST be
                       // present
                       .ignoreUnavailable(false)
-                      .includeGlobalState(true)
                       .metadata(
                           Map.of(
                               "backupId", JsonData.of(metadata.getBackupId()),
