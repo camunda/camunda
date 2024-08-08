@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
+import com.esotericsoftware.minlog.Log;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
@@ -488,29 +489,41 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void startActiveExportingMode() {
+    final var containerOpenFutures = new ArrayList<ActorFuture<Boolean>>();
     for (final ExporterContainer container : containers) {
       container.initMetadata();
-      new BackOffRetryStrategy(actor, Duration.ofSeconds(10))
-          .runWithRetry(
-              () -> {
-                try {
-                  container.openExporter();
-                  return true;
-                } catch (final Exception e) {
-                  LOG.error("Failed to open exporter '{}'. Retrying...", container.getId(), e);
-                  return false;
-                }
-              },
-              this::isClosed);
+      final var openFuture =
+          new BackOffRetryStrategy(actor, Duration.ofSeconds(10))
+              .runWithRetry(
+                  () -> {
+                    try {
+                      container.openExporter();
+                      return true;
+                    } catch (final Exception e) {
+                      LOG.error("Failed to open exporter '{}'. Retrying...", container.getId(), e);
+                      return false;
+                    }
+                  },
+                  this::isClosed);
+
+      containerOpenFutures.add(openFuture);
     }
 
-    if (state.hasExporters()) {
-      final long snapshotPosition = state.getLowestPosition();
-      // start reading and exporting
-      startActiveExportingFrom(snapshotPosition);
-    } else {
-      becomeIdle();
-    }
+    actor.runOnCompletion(
+        containerOpenFutures,
+        (error) -> {
+          if (error != null) {
+            Log.error("Failed to open exporters", error);
+            return;
+          }
+          if (state.hasExporters()) {
+            final long snapshotPosition = state.getLowestPosition();
+            // start reading and exporting
+            startActiveExportingFrom(snapshotPosition);
+          } else {
+            becomeIdle();
+          }
+        });
   }
 
   private void restartActiveExportingMode() {
