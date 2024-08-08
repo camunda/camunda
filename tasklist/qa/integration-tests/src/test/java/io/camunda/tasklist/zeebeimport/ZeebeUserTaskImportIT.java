@@ -59,7 +59,8 @@ public class ZeebeUserTaskImportIT extends TasklistZeebeIntegrationTest {
 
     final String taskId =
         tester
-            .createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId)
+            .createAndDeploySimpleProcess(
+                bpmnProcessId, flowNodeBpmnId, AbstractUserTaskBuilder::zeebeUserTask)
             .waitUntil()
             .processIsDeployed()
             .startProcessInstance(bpmnProcessId)
