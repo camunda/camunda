@@ -10,7 +10,8 @@ import {useForm} from 'react-final-form';
 import {PendingVariable} from './PendingVariable';
 import {NewVariable} from './NewVariable';
 import {FooterContainer} from './styled';
-import {AddVariableButton} from '../AddVariableButton';
+import {AddVariableButton} from './AddVariableButton';
+import {CopyVariablesButton} from './CopyVariablesButton';
 
 type Props = {
   variant: 'initial' | 'disabled' | 'add-variable' | 'pending-variable';
@@ -31,6 +32,7 @@ const Footer: React.FC<Props> = ({variant}) => {
           disabled={variant === 'disabled'}
         />
       )}
+      <CopyVariablesButton />
     </FooterContainer>
   );
 };
