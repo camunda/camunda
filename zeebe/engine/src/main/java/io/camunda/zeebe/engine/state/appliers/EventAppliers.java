@@ -34,6 +34,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -71,6 +72,7 @@ public final class EventAppliers implements EventApplier {
     registerProcessInstanceModificationAppliers(state);
     registerProcessInstanceMigrationAppliers();
     register(ProcessInstanceResultIntent.COMPLETED, NOOP_EVENT_APPLIER);
+    registerProcessInstanceBatchEventAppliers(state);
 
     registerProcessAppliers(state);
     register(ErrorIntent.CREATED, new ErrorCreatedApplier(state.getBannedInstanceState()));
@@ -202,6 +204,12 @@ public final class EventAppliers implements EventApplier {
 
   private void registerProcessInstanceMigrationAppliers() {
     register(ProcessInstanceMigrationIntent.MIGRATED, NOOP_EVENT_APPLIER);
+  }
+
+  private void registerProcessInstanceBatchEventAppliers(final MutableProcessingState state) {
+    register(
+        ProcessInstanceBatchIntent.ACTIVATING, new ProcessInstanceBatchActivatingApplier(state));
+    register(ProcessInstanceBatchIntent.ACTIVATED, new ProcessInstanceBatchActivatedApplier(state));
   }
 
   private void registerJobIntentEventAppliers(final MutableProcessingState state) {

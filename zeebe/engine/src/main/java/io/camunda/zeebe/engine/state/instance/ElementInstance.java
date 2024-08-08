@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
@@ -49,8 +50,11 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private final IntegerProperty executionListenerIndexProp =
       new IntegerProperty("executionListenerIndex", 0);
 
+  private final BooleanProperty multiInstanceBatchActivating =
+      new BooleanProperty("multiInstanceBatchActivating", false);
+
   public ElementInstance() {
-    super(14);
+    super(15);
     declareProperty(parentKeyProp)
         .declareProperty(childCountProp)
         .declareProperty(childActivatedCountProp)
@@ -64,7 +68,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(activeSequenceFlowsProp)
         .declareProperty(activeSequenceFlowIdsProp)
         .declareProperty(userTaskKeyProp)
-        .declareProperty(executionListenerIndexProp);
+        .declareProperty(executionListenerIndexProp)
+        .declareProperty(multiInstanceBatchActivating);
   }
 
   public ElementInstance(
@@ -280,5 +285,13 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
    */
   public List<DirectBuffer> getActiveSequenceFlowIds() {
     return activeSequenceFlowIdsProp.stream().map(StringValue::getValue).toList();
+  }
+
+  public boolean isMultiInstanceBatchActivating() {
+    return multiInstanceBatchActivating.getValue();
+  }
+
+  public void setMultiInstanceBatchActivating(final boolean activating) {
+    multiInstanceBatchActivating.setValue(activating);
   }
 }
