@@ -15,6 +15,7 @@ public class BpmnElementGeneratorFactory {
 
   private final GeneratorContext generatorContext;
   private final List<BpmnElementGenerator> bpmnElementGenerators;
+  private final List<BpmnElementGenerator> activityForBoundaryEventGenerators;
 
   public BpmnElementGeneratorFactory(
       final GeneratorContext generatorContext, final BpmnFactories bpmnFactories) {
@@ -26,6 +27,12 @@ public class BpmnElementGeneratorFactory {
             new UndefinedTaskGenerator(generatorContext),
             new IntermediateCatchEventGenerator(
                 generatorContext, bpmnFactories.getCatchEventGeneratorFactory()),
+            new BpmnEmbeddedSubprocessGenerator(generatorContext, bpmnFactories));
+
+    activityForBoundaryEventGenerators =
+        List.of(
+            new ServiceTaskGenerator(generatorContext),
+            new UserTaskGenerator(generatorContext),
             new BpmnEmbeddedSubprocessGenerator(generatorContext, bpmnFactories));
   }
 
@@ -40,5 +47,11 @@ public class BpmnElementGeneratorFactory {
     }
 
     return generator;
+  }
+
+  public BpmnElementGenerator getGeneratorForActivityWithBoundaryEvent() {
+    final var randomIndex =
+        generatorContext.getRandomNumber(activityForBoundaryEventGenerators.size());
+    return activityForBoundaryEventGenerators.get(randomIndex);
   }
 }

@@ -82,4 +82,8 @@ public class GeneratorContext {
   public long getSeed() {
     return seed;
   }
+
+  public boolean getRandomBoolean() {
+    return random.nextBoolean();
+  }
 }
