@@ -24,6 +24,7 @@ import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.TypedSearchQuery;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.service.search.query.VariableQuery;
+import io.camunda.service.search.result.QueryResultConfig;
 import io.camunda.service.search.sort.DecisionDefinitionSort;
 import io.camunda.service.search.sort.DecisionRequirementsSort;
 import io.camunda.service.search.sort.ProcessInstanceSort;
@@ -42,6 +43,7 @@ import io.camunda.service.transformers.filter.VariableFilterTransformer;
 import io.camunda.service.transformers.filter.VariableValueFilterTransformer;
 import io.camunda.service.transformers.query.SearchQueryResultTransformer;
 import io.camunda.service.transformers.query.TypedSearchQueryTransformer;
+import io.camunda.service.transformers.result.ResultConfigTransformer;
 import io.camunda.service.transformers.sort.FieldSortingTransformer;
 import java.util.HashMap;
 import java.util.Map;
@@ -111,5 +113,8 @@ public final class ServiceTransformers {
         new VariableFilterTransformer(mappers, new VariableValueFilterTransformer()));
     mappers.put(DecisionDefinitionFilter.class, new DecisionDefinitionFilterTransformer());
     mappers.put(DecisionRequirementsFilter.class, new DecisionRequirementsFilterTransformer());
+
+    // result config -> source config
+    mappers.put(QueryResultConfig.class, new ResultConfigTransformer());
   }
 }

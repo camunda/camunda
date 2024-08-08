@@ -8,6 +8,7 @@
 package io.camunda.service.search.query;
 
 import io.camunda.service.search.filter.FilterBase;
+import io.camunda.service.search.result.QueryResultConfig;
 import io.camunda.service.search.sort.SortOption;
 
 public interface TypedSearchQuery<F extends FilterBase, S extends SortOption>
@@ -16,4 +17,8 @@ public interface TypedSearchQuery<F extends FilterBase, S extends SortOption>
   F filter();
 
   S sort();
+
+  default QueryResultConfig resultConfig() {
+    return null;
+  }
 }

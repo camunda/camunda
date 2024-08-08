@@ -9,6 +9,7 @@ package io.camunda.search.os.transformers.search;
 
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.sort.SearchSortOptions;
+import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.os.transformers.OpensearchTransformer;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import java.util.Arrays;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.search.SourceConfig;
 
 public final class SearchRequestTransformer
     extends OpensearchTransformer<SearchQueryRequest, SearchRequest> {
@@ -47,6 +49,10 @@ public final class SearchRequestTransformer
       builder.searchAfter(of(searchAfter));
     }
 
+    if (value.source() != null) {
+      builder.source(of(value.source()));
+    }
+
     return builder.build();
   }
 
@@ -57,5 +63,10 @@ public final class SearchRequestTransformer
 
   private List<String> of(final Object[] values) {
     return Arrays.asList(values).stream().map(Object::toString).collect(Collectors.toList());
+  }
+
+  private SourceConfig of(final SearchSourceConfig value) {
+    final var sourceTransformer = getSourceConfigTransformer();
+    return sourceTransformer.apply(value);
   }
 }

@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.service.search.filter.ProcessInstanceFilter;
 import io.camunda.service.search.page.SearchQueryPage;
 import io.camunda.service.search.query.ProcessInstanceQuery;
+import io.camunda.service.search.result.ProcessInstanceQueryResultConfig;
 import io.camunda.service.search.sort.ProcessInstanceSort;
 import org.junit.jupiter.api.Test;
 
@@ -23,15 +24,23 @@ public class SearchQueryBuilderTest {
     final var searchQueryBuilder = new ProcessInstanceQuery.Builder();
     final var searchQueryPage = new SearchQueryPage.Builder().size(50).build();
     final var searchQuerySort = ProcessInstanceSort.of(builder -> builder.startDate().asc());
+    final var searchQueryResultConfig =
+        ProcessInstanceQueryResultConfig.of(builder -> builder.processInstanceKey().include());
     final var filter = new ProcessInstanceFilter.Builder().build(); // all
 
     // when
     final ProcessInstanceQuery query =
-        searchQueryBuilder.page(searchQueryPage).sort(searchQuerySort).filter(filter).build();
+        searchQueryBuilder
+            .page(searchQueryPage)
+            .sort(searchQuerySort)
+            .filter(filter)
+            .resultConfig(searchQueryResultConfig)
+            .build();
 
     // when
     assertThat(query.filter()).isEqualTo(filter);
     assertThat(query.sort()).isEqualTo(searchQuerySort);
     assertThat(query.page()).isEqualTo(searchQueryPage);
+    assertThat(query.resultConfig()).isEqualTo(searchQueryResultConfig);
   }
 }
