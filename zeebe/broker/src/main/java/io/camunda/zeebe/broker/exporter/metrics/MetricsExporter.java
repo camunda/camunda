@@ -23,6 +23,8 @@ import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Set;
 
@@ -45,35 +47,37 @@ public class MetricsExporter implements Exporter {
    */
   public static final Duration TIME_TO_LIVE = Duration.ofSeconds(60);
 
-  private final ExecutionLatencyMetrics executionLatencyMetrics;
+  private ExecutionLatencyMetrics executionLatencyMetrics;
   private final TtlKeyCache processInstanceCache;
   private final TtlKeyCache jobCache;
 
   private Controller controller;
+  private MeterRegistry meterRegistry;
 
   public MetricsExporter() {
-    this(new ExecutionLatencyMetrics());
-  }
-
-  public MetricsExporter(final ExecutionLatencyMetrics executionLatencyMetrics) {
     this(
-        executionLatencyMetrics,
+        new ExecutionLatencyMetrics(),
         new TtlKeyCache(TIME_TO_LIVE.toMillis()),
-        new TtlKeyCache(TIME_TO_LIVE.toMillis()));
+        new TtlKeyCache(TIME_TO_LIVE.toMillis()),
+        new SimpleMeterRegistry());
   }
 
   @VisibleForTesting
   MetricsExporter(
       final ExecutionLatencyMetrics executionLatencyMetrics,
       final TtlKeyCache processInstanceCache,
-      final TtlKeyCache jobCache) {
+      final TtlKeyCache jobCache,
+      final MeterRegistry meterRegistry) {
     this.executionLatencyMetrics = executionLatencyMetrics;
     this.processInstanceCache = processInstanceCache;
     this.jobCache = jobCache;
+    this.meterRegistry = meterRegistry;
   }
 
   @Override
   public void configure(final Context context) throws Exception {
+    meterRegistry = context.getMeterRegistry();
+    executionLatencyMetrics = new ExecutionLatencyMetrics(meterRegistry);
     context.setFilter(
         new RecordFilter() {
           private static final Set<ValueType> ACCEPTED_VALUE_TYPES =
