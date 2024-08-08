@@ -21,7 +21,7 @@ public final class ManagementServices {
     return license.isValid();
   }
 
-  public boolean isCamundaLicenseSelfManaged() {
-    return license.isSelfManaged();
+  public String getCamundaLicenseType() {
+    return license.getLicenseTypePropertyFromLicense();
   }
 }
