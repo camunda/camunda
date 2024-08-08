@@ -18,6 +18,9 @@ package io.camunda.process.generator;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import java.awt.Desktop;
+import java.io.File;
+import java.io.FileWriter;
 import org.junit.jupiter.api.Test;
 
 public class BpmnGeneratorTest {
@@ -48,11 +51,11 @@ public class BpmnGeneratorTest {
     System.out.println(Bpmn.convertToString(generatedProcess.process()));
 
     //    Uncomment to open the generated process in the modeler automatically
-    //
-    //    final File tempFile = File.createTempFile("temp", ".bpmn");
-    //    final FileWriter writer = new FileWriter(tempFile);
-    //    writer.write(Bpmn.convertToString(generatedProcess.process()));
-    //    writer.close();
-    //    Desktop.getDesktop().open(tempFile);
+
+    final File tempFile = File.createTempFile("temp", ".bpmn");
+    final FileWriter writer = new FileWriter(tempFile);
+    writer.write(Bpmn.convertToString(generatedProcess.process()));
+    writer.close();
+    Desktop.getDesktop().open(tempFile);
   }
 }

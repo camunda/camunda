@@ -32,6 +32,12 @@ public class BpmnTemplateGeneratorFactory {
 
   public BpmnTemplateGenerator getGenerator() {
     final var randomIndex = generatorContext.getRandomNumber(templateGenerators.size());
-    return templateGenerators.get(randomIndex);
+    final var generator = templateGenerators.get(randomIndex);
+
+    while (!generatorContext.canAddBranches() && generator.addsBranches()) {
+      return getGenerator();
+    }
+
+    return generator;
   }
 }

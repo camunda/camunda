@@ -50,7 +50,7 @@ public class ParallelGatewayGenerator implements BpmnTemplateGenerator {
         firstBranch.parallelGateway(joiningElementId).name(joiningElementId);
 
     // add remaining branches
-    final int numberOfBranches = 1 + generatorContext.getRandomNumber(BRANCH_LIMIT - 1);
+    final int numberOfBranches = generatorContext.getRandomNumberOfBranches(1, BRANCH_LIMIT);
 
     LOG.debug(
         "Adding parallel gateway with {} branches, forking element id: {}, joining element id: {}",
@@ -68,5 +68,10 @@ public class ParallelGatewayGenerator implements BpmnTemplateGenerator {
             });
 
     return joiningGateway;
+  }
+
+  @Override
+  public boolean addsBranches() {
+    return true;
   }
 }

@@ -34,7 +34,7 @@ public class BpmnTerminateEndEventTemplate implements BpmnTemplateGenerator {
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
 
     final var elementId = "terminate_%s".formatted(generatorContext.createNewId());
-    final var numberOfFlows = generatorContext.getRandomNumber(2, 3);
+    final var numberOfFlows = generatorContext.getRandomNumberOfBranches(2, 3);
     final var indexOfFlowWithTerminateEndEvent = generatorContext.getRandomNumber(numberOfFlows);
 
     LOG.debug(
@@ -63,5 +63,10 @@ public class BpmnTerminateEndEventTemplate implements BpmnTemplateGenerator {
             .filter(i -> i != indexOfFlowWithTerminateEndEvent)
             .findAny()
             .orElseThrow());
+  }
+
+  @Override
+  public boolean addsBranches() {
+    return true;
   }
 }

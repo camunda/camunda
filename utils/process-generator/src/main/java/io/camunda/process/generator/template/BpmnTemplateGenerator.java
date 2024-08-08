@@ -13,4 +13,6 @@ public interface BpmnTemplateGenerator {
 
   AbstractFlowNodeBuilder<?, ?> addElements(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath);
+
+  boolean addsBranches();
 }

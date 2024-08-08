@@ -35,7 +35,7 @@ public class BpmnElementGeneratorFactory {
 
     // If we are at the maximum depth we should not go deeper. Instead, we use a different
     // generator.
-    if (!generatorContext.shouldGoDeeper() && generator.addsDepth()) {
+    if (!generatorContext.canGoDeeper() && generator.addsDepth()) {
       return getGenerator();
     }
 

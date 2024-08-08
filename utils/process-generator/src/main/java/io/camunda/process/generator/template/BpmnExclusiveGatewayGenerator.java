@@ -34,7 +34,7 @@ public class BpmnExclusiveGatewayGenerator implements BpmnTemplateGenerator {
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
 
     final var amountOfBranches =
-        generatorContext.getRandomNumber(MAX_AMOUNT_OF_BRANCHES) + MIN_AMOUNT_OF_BRANCHES;
+        generatorContext.getRandomNumberOfBranches(MIN_AMOUNT_OF_BRANCHES, MAX_AMOUNT_OF_BRANCHES);
     final var executionBranch = generatorContext.getRandomNumber(MAX_AMOUNT_OF_BRANCHES);
 
     final var forkingGatewayId = generatorContext.createNewId();
@@ -76,5 +76,10 @@ public class BpmnExclusiveGatewayGenerator implements BpmnTemplateGenerator {
     }
 
     return joiningGatewayBuilder;
+  }
+
+  @Override
+  public boolean addsBranches() {
+    return true;
   }
 }

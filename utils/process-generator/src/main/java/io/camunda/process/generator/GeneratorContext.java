@@ -16,11 +16,13 @@ import java.util.concurrent.atomic.AtomicLong;
 public class GeneratorContext {
 
   private static final int MAXIMUM_DEPTH = 3;
+  private static final int MAXIMUM_BRANCHES = 8;
   private final long seed;
   private final Random random;
   private final AtomicLong id = new AtomicLong(1);
   private int currentDepth = 1;
   private final List<ProcessExecutionStep> executionPath = new ArrayList<>();
+  private int currentAmountOfBranches = 1;
 
   public GeneratorContext(final long seed) {
     this.seed = seed;
@@ -52,8 +54,24 @@ public class GeneratorContext {
     currentDepth--;
   }
 
-  public boolean shouldGoDeeper() {
+  public boolean canGoDeeper() {
     return currentDepth < MAXIMUM_DEPTH;
+  }
+
+  private int getMaximumAvailableAmountOfBranches() {
+    return MAXIMUM_BRANCHES - currentAmountOfBranches;
+  }
+
+  public int getRandomNumberOfBranches(final int lowerBound, final int upperBound) {
+    final int numberOfBranches = getRandomNumber(lowerBound, upperBound);
+    final var numberOfBranchesToGenerate =
+        Math.min(getMaximumAvailableAmountOfBranches(), numberOfBranches);
+    currentAmountOfBranches += numberOfBranchesToGenerate;
+    return numberOfBranchesToGenerate;
+  }
+
+  public boolean canAddBranches() {
+    return currentAmountOfBranches + 1 < MAXIMUM_BRANCHES;
   }
 
   public GeneratorContext addExecutionStep(final ProcessExecutionStep executionStep) {

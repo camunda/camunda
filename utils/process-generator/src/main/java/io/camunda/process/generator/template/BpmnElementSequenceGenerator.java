@@ -45,4 +45,9 @@ public class BpmnElementSequenceGenerator implements BpmnTemplateGenerator {
 
     return builder;
   }
+
+  @Override
+  public boolean addsBranches() {
+    return false;
+  }
 }
