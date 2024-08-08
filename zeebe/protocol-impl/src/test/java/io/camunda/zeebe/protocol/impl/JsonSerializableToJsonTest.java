@@ -2463,11 +2463,13 @@ final class JsonSerializableToJsonTest {
       },
       {
         "UserRecord",
-        (Supplier<UserRecord>) () -> new UserRecord()
-            .setUsername("foobar")
-            .setName("Foo Bar")
-            .setEmail("foo@bar")
-            .setPassword("f00b4r"),
+        (Supplier<UserRecord>)
+            () ->
+                new UserRecord()
+                    .setUsername("foobar")
+                    .setName("Foo Bar")
+                    .setEmail("foo@bar")
+                    .setPassword("f00b4r"),
         """
         {
           "username": "foobar",
