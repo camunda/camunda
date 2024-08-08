@@ -13,7 +13,6 @@ import io.camunda.process.generator.GeneratorContext;
 import io.camunda.process.generator.element.BpmnElementGenerator;
 import io.camunda.zeebe.model.bpmn.builder.AbstractActivityBuilder;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
-import java.util.stream.IntStream;
 
 public class BpmnCompensationEventTemplate implements BpmnTemplateGenerator {
 
@@ -59,17 +58,16 @@ public class BpmnCompensationEventTemplate implements BpmnTemplateGenerator {
 
     final int numberOfElement = generatorContext.getRandomNumberOfBranches(1, ELEMENT_LIMIT);
 
-    IntStream.range(0, numberOfElement)
-        .forEach(
-            i -> {
-              final BpmnTemplateGenerator branchGenerator =
-                  templateGeneratorFactory.getMiddleGenerator();
-              branchGenerator.addElements(element, generateExecutionPath);
-            });
+    AbstractFlowNodeBuilder<?, ?> branch = element;
+
+    for (int i = 0; i < numberOfElement; i++) {
+      final BpmnTemplateGenerator branchGenerator = templateGeneratorFactory.getMiddleGenerator();
+      branch = branchGenerator.addElements(branch, generateExecutionPath);
+    }
 
     final BpmnElementGenerator catchEventGenerator =
         bpmnFactories.getElementGeneratorFactory().getGeneratorForCompensationEvent();
-    catchEventGenerator.addElement(element, false);
+    catchEventGenerator.addElement(branch, false);
 
     return element;
   }

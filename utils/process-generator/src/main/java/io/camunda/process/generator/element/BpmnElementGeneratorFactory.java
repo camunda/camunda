@@ -40,13 +40,9 @@ public class BpmnElementGeneratorFactory {
 
     activityForCompensationEventGenerators =
         List.of(
-            new ServiceTaskGenerator(generatorContext),
-            new UserTaskGenerator(generatorContext)
-        );
+            new ServiceTaskGenerator(generatorContext), new UserTaskGenerator(generatorContext));
 
-    compensationEventGenerators = List.of(
-        new CompensationCatchEventGenerator(generatorContext, bpmnFactories.getCatchEventGeneratorFactory())
-    );
+    compensationEventGenerators = List.of(new CompensationThrowEventGenerator(generatorContext));
   }
 
   public BpmnElementGenerator getGenerator() {
@@ -65,14 +61,11 @@ public class BpmnElementGeneratorFactory {
   }
 
   public BpmnElementGenerator getGeneratorForActivityWithCompensationEvent() {
-    final var randomIndex =
-        generatorContext.getRandomNumber(activityForCompensationEventGenerators.size());
-    return activityForCompensationEventGenerators.get(randomIndex);
+    return FactoryUtil.getGenerator(activityForCompensationEventGenerators, generatorContext);
   }
 
   public BpmnElementGenerator getGeneratorForCompensationEvent() {
-    final var randomIndex =
-        generatorContext.getRandomNumber(compensationEventGenerators.size());
+    final var randomIndex = generatorContext.getRandomNumber(compensationEventGenerators.size());
     return compensationEventGenerators.get(randomIndex);
   }
 }

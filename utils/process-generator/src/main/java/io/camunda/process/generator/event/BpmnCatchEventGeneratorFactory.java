@@ -17,8 +17,6 @@ public class BpmnCatchEventGeneratorFactory {
 
   private final List<BpmnCatchEventGenerator> generators =
       List.of(new MessageCatchEventGenerator(), new SignalCatchEventGenerator());
-  private final List<BpmnThrowEventGenerator> compensationGenerators =
-      List.of(new CompensationCatchEventGenerator());
 
   public BpmnCatchEventGeneratorFactory(final GeneratorContext generatorContext) {
     this.generatorContext = generatorContext;
@@ -26,10 +24,5 @@ public class BpmnCatchEventGeneratorFactory {
 
   public BpmnCatchEventGenerator getGenerator() {
     return FactoryUtil.getGenerator(generators, generatorContext);
-  }
-
-  public BpmnThrowEventGenerator getCompensationGenerator() {
-    final int randomIndex = generatorContext.getRandomNumber(compensationGenerators.size());
-    return compensationGenerators.get(randomIndex);
   }
 }
