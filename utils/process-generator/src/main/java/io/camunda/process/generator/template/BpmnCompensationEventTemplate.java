@@ -63,7 +63,7 @@ public class BpmnCompensationEventTemplate implements BpmnTemplateGenerator {
     IntStream.range(0, numberOfElement)
         .forEach(
             i -> {
-              final BpmnTemplateGenerator branchGenerator = templateGeneratorFactory.getGenerator();
+              final BpmnTemplateGenerator branchGenerator = templateGeneratorFactory.getMiddleGenerator();
               branchGenerator.addElements(element, generateExecutionPath);
             });
 
