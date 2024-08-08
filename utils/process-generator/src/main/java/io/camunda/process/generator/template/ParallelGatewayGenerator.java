@@ -42,7 +42,7 @@ public class ParallelGatewayGenerator implements BpmnTemplateGenerator {
         bpmnFactories.getTemplateGeneratorFactory();
 
     // add first branch
-    final BpmnTemplateGenerator generator = templateGeneratorFactory.getGenerator();
+    final BpmnTemplateGenerator generator = templateGeneratorFactory.getMiddleGenerator();
     final AbstractFlowNodeBuilder<?, ?> firstBranch =
         generator.addElements(forkingGateway, generateExecutionPath);
 
@@ -61,7 +61,8 @@ public class ParallelGatewayGenerator implements BpmnTemplateGenerator {
     IntStream.range(0, numberOfBranches)
         .forEach(
             i -> {
-              final BpmnTemplateGenerator branchGenerator = templateGeneratorFactory.getGenerator();
+              final BpmnTemplateGenerator branchGenerator =
+                  templateGeneratorFactory.getMiddleGenerator();
               final AbstractFlowNodeBuilder<?, ?> branch =
                   branchGenerator.addElements(forkingGateway, generateExecutionPath);
               branch.connectTo(joiningElementId);

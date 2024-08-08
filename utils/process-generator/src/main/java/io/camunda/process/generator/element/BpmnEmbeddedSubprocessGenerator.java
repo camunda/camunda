@@ -37,10 +37,15 @@ public class BpmnEmbeddedSubprocessGenerator extends BpmnNestingElementGenerator
     AbstractFlowNodeBuilder<?, ?> subprocessBuilder =
         processBuilder.subProcess(elementId).name(elementId).embeddedSubProcess().startEvent();
 
-    final var templateGenerator = bpmnFactories.getTemplateGeneratorFactory().getGenerator();
+    final var templateGenerator = bpmnFactories.getTemplateGeneratorFactory().getMiddleGenerator();
     subprocessBuilder = templateGenerator.addElements(subprocessBuilder, generateExecutionPath);
 
+    final var finalTemplateGenerator =
+        bpmnFactories.getTemplateGeneratorFactory().getFinalGenerator();
+    subprocessBuilder =
+        finalTemplateGenerator.addElements(subprocessBuilder, generateExecutionPath);
+
     generatorContext.decrementCurrentDepth();
-    return subprocessBuilder.endEvent().subProcessDone();
+    return subprocessBuilder.subProcessDone();
   }
 }

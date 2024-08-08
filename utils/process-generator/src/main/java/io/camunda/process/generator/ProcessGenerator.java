@@ -43,11 +43,12 @@ public class ProcessGenerator {
 
     final var templateLimit = 3;
     for (int i = 0; i < templateLimit; i++) {
-      final BpmnTemplateGenerator templateGenerator = templateGeneratorFactory.getGenerator();
+      final BpmnTemplateGenerator templateGenerator = templateGeneratorFactory.getMiddleGenerator();
       processBuilder = templateGenerator.addElements(processBuilder, true);
     }
 
-    final BpmnModelInstance process = processBuilder.endEvent().done();
+    final BpmnModelInstance process =
+        templateGeneratorFactory.getFinalGenerator().addElements(processBuilder, true).done();
 
     // modify the version so I can open the process in the Camunda Modeler
     final Definitions definitions = process.getDefinitions();

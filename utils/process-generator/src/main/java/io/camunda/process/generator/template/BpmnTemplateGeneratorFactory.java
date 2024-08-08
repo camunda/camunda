@@ -14,7 +14,8 @@ import java.util.List;
 public class BpmnTemplateGeneratorFactory {
 
   private final GeneratorContext generatorContext;
-  private final List<BpmnTemplateGenerator> templateGenerators;
+  private final List<BpmnTemplateGenerator> middleTemplateGenerators;
+  private final List<BpmnTemplateGenerator> finalTemplateGenerators;
 
   public BpmnTemplateGeneratorFactory(
       final GeneratorContext generatorContext, final BpmnFactories bpmnFactories) {
@@ -22,21 +23,35 @@ public class BpmnTemplateGeneratorFactory {
     final var elementSequenceGenerator =
         new BpmnElementSequenceGenerator(
             generatorContext, bpmnFactories.getElementGeneratorFactory());
-    templateGenerators =
+    middleTemplateGenerators =
         List.of(
             elementSequenceGenerator,
             new BpmnExclusiveGatewayGenerator(generatorContext, elementSequenceGenerator),
             new ParallelGatewayGenerator(generatorContext, bpmnFactories),
-            new BpmnTerminateEndEventTemplate(generatorContext, bpmnFactories),
             new BoundaryEventTemplate(generatorContext, bpmnFactories));
+    finalTemplateGenerators =
+        List.of(
+            new BpmnEndEventTemplate(generatorContext),
+            new BpmnTerminateEndEventTemplate(generatorContext, bpmnFactories));
   }
 
-  public BpmnTemplateGenerator getGenerator() {
-    final var randomIndex = generatorContext.getRandomNumber(templateGenerators.size());
-    final var generator = templateGenerators.get(randomIndex);
+  public BpmnTemplateGenerator getMiddleGenerator() {
+    final var randomIndex = generatorContext.getRandomNumber(middleTemplateGenerators.size());
+    final var generator = middleTemplateGenerators.get(randomIndex);
 
     if (!generatorContext.canAddBranches() && generator.addsBranches()) {
-      return getGenerator();
+      return getMiddleGenerator();
+    }
+
+    return generator;
+  }
+
+  public BpmnTemplateGenerator getFinalGenerator() {
+    final var randomIndex = generatorContext.getRandomNumber(finalTemplateGenerators.size());
+    final var generator = finalTemplateGenerators.get(randomIndex);
+
+    if (!generatorContext.canAddBranches() && generator.addsBranches()) {
+      return getFinalGenerator();
     }
 
     return generator;
