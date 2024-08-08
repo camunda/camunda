@@ -39,6 +39,6 @@ public class VariableSearchQueryStub implements RequestStub<VariableEntity> {
 
   @Override
   public void registerWith(final StubbedCamundaSearchClient client) {
-    client.registerHandler(this);
+    client.registerHandler(this, VariableEntity.class);
   }
 }

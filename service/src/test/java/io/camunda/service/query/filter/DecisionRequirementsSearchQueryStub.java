@@ -7,6 +7,8 @@
  */
 package io.camunda.service.query.filter;
 
+import static java.util.Collections.emptyList;
+
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
@@ -18,12 +20,18 @@ import java.util.List;
 public class DecisionRequirementsSearchQueryStub
     implements RequestStub<DecisionRequirementsEntity> {
 
+  private boolean returnEmptyResults = false;
+
   @Override
   public SearchQueryResponse<DecisionRequirementsEntity> handle(final SearchQueryRequest request)
       throws Exception {
 
+    if (returnEmptyResults) {
+      return SearchQueryResponse.of(f -> f.totalHits(0).hits(emptyList()));
+    }
+
     final var decisionRequirement =
-        new DecisionRequirementsEntity("t", 123L, "id", "dId", 1, "name");
+        new DecisionRequirementsEntity("t", 124L, "id", "dId", 1, "name", "<xml/>");
 
     final SearchQueryHit<DecisionRequirementsEntity> hit =
         new SearchQueryHit.Builder<DecisionRequirementsEntity>()
@@ -41,8 +49,12 @@ public class DecisionRequirementsSearchQueryStub
     return response;
   }
 
+  public void setReturnEmptyResults(final boolean returnEmptyResults) {
+    this.returnEmptyResults = returnEmptyResults;
+  }
+
   @Override
   public void registerWith(final StubbedCamundaSearchClient client) {
-    client.registerHandler(this);
+    client.registerHandler(this, DecisionRequirementsEntity.class);
   }
 }

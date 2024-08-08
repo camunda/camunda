@@ -42,6 +42,6 @@ public class ProcessInstanceSearchQueryStub implements RequestStub<ProcessInstan
 
   @Override
   public void registerWith(final StubbedCamundaSearchClient client) {
-    client.registerHandler(this);
+    client.registerHandler(this, ProcessInstanceEntity.class);
   }
 }
