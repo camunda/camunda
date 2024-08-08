@@ -40,7 +40,7 @@ public class BpmnGeneratorTest {
   @Test
   void shouldGenerateARandomProcess() throws Exception {
     // given
-    final var generator = new BpmnGenerator(946493473066018254L);
+    final var generator = new BpmnGenerator();
 
     // when
     final var generatedProcess = generator.generateProcess();
