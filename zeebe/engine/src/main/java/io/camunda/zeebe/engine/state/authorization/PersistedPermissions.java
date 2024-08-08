@@ -16,11 +16,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public class PermissionsRecordValue extends UnpackedObject implements DbValue {
+public class PersistedPermissions extends UnpackedObject implements DbValue {
   private final ArrayProperty<StringValue> permissionsProp =
       new ArrayProperty<>("permissions", StringValue::new);
 
-  public PermissionsRecordValue() {
+  public PersistedPermissions() {
     super(1);
     declareProperty(permissionsProp);
   }

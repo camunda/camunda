@@ -23,8 +23,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   private final AuthorizationRecordValue authorizationRecordToWrite =
       new AuthorizationRecordValue();
 
-  private final PermissionsRecordValue permissionsRecordToRead = new PermissionsRecordValue();
-  private final PermissionsRecordValue permissionsRecordToWrite = new PermissionsRecordValue();
+  private final PersistedPermissions persistedPermissions = new PersistedPermissions();
 
   private final DbLong authorizationKey;
   private final DbString ownerKey;
@@ -38,7 +37,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   private final ColumnFamily<DbLong, AuthorizationRecordValue> authorizationColumnFamily;
   private final ColumnFamily<
           DbCompositeKey<DbCompositeKey<DbString, DbString>, DbCompositeKey<DbString, DbString>>,
-          PermissionsRecordValue>
+          PersistedPermissions>
       ownerAuthorizationColumnFamily;
 
   public DbAuthorizationState(
@@ -64,7 +63,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
             ZbColumnFamilies.AUTHORIZATIONS_BY_USERNAME_AND_PERMISSION,
             transactionContext,
             ownerAndResourceCompositeKey,
-            permissionsRecordToRead);
+            persistedPermissions);
   }
 
   @Override
@@ -77,8 +76,8 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     ownerType.wrapString(authorizationRecord.getOwnerType());
     resourceKey.wrapString(authorizationRecord.getResourceKey());
     resourceType.wrapString(authorizationRecord.getResourceType());
-    permissionsRecordToWrite.setPermissions(authorizationRecord.getPermissions());
-    ownerAuthorizationColumnFamily.insert(ownerAndResourceCompositeKey, permissionsRecordToWrite);
+    persistedPermissions.setPermissions(authorizationRecord.getPermissions());
+    ownerAuthorizationColumnFamily.insert(ownerAndResourceCompositeKey, persistedPermissions);
   }
 
   @Override
@@ -103,7 +102,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   }
 
   @Override
-  public PermissionsRecordValue getAuthorization(
+  public PersistedPermissions getAuthorization(
       final String ownerKey,
       final String ownerType,
       final String resourceKey,
