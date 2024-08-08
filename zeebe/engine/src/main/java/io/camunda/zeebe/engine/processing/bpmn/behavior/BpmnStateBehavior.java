@@ -82,6 +82,11 @@ public final class BpmnStateBehavior {
       return false;
     }
 
+    final boolean multiInstanceStillActivating = flowScopeInstance.isMultiInstanceBatchActivating();
+    if (multiInstanceStillActivating) {
+      return false;
+    }
+
     final long activePaths =
         flowScopeInstance.getNumberOfActiveElementInstances()
             + flowScopeInstance.getActiveSequenceFlows();
