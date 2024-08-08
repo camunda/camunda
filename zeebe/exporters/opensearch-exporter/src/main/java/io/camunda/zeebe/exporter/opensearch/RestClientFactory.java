@@ -7,8 +7,15 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
+import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.AwsConfiguration;
+import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.InterceptorPlugin;
+import io.camunda.zeebe.util.jar.ExternalJarClassLoader;
 import io.github.acm19.aws.interceptor.http.AwsRequestSigningApacheInterceptor;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Paths;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -96,6 +103,41 @@ final class RestClientFactory {
       log.info("AWS Signing is disabled.");
     }
 
+    log.error("IGPETROV Attempt to load plugins");
+    if (config.getInterceptorPlugin() != null) {
+      log.error("IGPETROV Plugins detected to be not empty {}", config.getInterceptorPlugin());
+
+      final InterceptorPlugin interceptor = config.getInterceptorPlugin();
+      log.error("IGPETROV Attempting to register {}", interceptor.getId());
+      final var interceptorClazz = createInterceptorClass(interceptor);
+      if (interceptorClazz != null) {
+        // TODO: only default constructor
+        final Constructor<?> constructor = interceptorClazz.getConstructors()[0];
+        try {
+          final var createdInterceptor = constructor.newInstance();
+          if (createdInterceptor instanceof final DatabaseCustomHeaderSupplier dchs) {
+            log.error(
+                "IGPETROV Plugin {} appears to be a DB Header Provider. Registering with interceptor",
+                interceptor.getId());
+            builder.addInterceptorLast(
+                (HttpRequestInterceptor)
+                    (httpRequest, httpContext) -> {
+                      httpRequest.addHeader(
+                          dchs.getElasticsearchCustomHeader().key(),
+                          dchs.getElasticsearchCustomHeader().value());
+                    });
+          }
+        } catch (final InstantiationException
+            | IllegalAccessException
+            | InvocationTargetException e) {
+          log.error(
+              "IGPETROV Plugin {} failed to register due to exception. Ignoring",
+              interceptor.getId(),
+              e);
+        }
+      }
+    }
+
     if (allowAllSelfSignedCertificates) {
       // This code makes it so ALL self-signed certificates are accepted. This is meant for testing
       // purposes only.
@@ -109,6 +151,23 @@ final class RestClientFactory {
     }
 
     return builder;
+  }
+
+  Class<?> createInterceptorClass(final InterceptorPlugin interceptorPlugin) {
+    // File type and path are checked by class loader
+    try (final var classLoader =
+        ExternalJarClassLoader.ofPath(Paths.get(interceptorPlugin.getJarPath()))) {
+      return classLoader.loadClass(interceptorPlugin.getClassName());
+    } catch (final IOException | ClassNotFoundException e) {
+      log.error(
+          "IGPETROV Plugin {} failed to register due to exception. Ignoring",
+          interceptorPlugin.getId(),
+          e);
+      return null;
+    }
+
+    // TODO other validations?
+
   }
 
   private void setupBasicAuthentication(

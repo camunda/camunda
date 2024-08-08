@@ -39,10 +39,14 @@ import java.util.stream.Collectors;
 import org.apache.http.entity.EntityTemplate;
 import org.opensearch.client.Request;
 import org.opensearch.client.RestClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class OpensearchClient implements AutoCloseable {
+
   public static final String ISM_INITIAL_STATE = "initial";
   public static final String ISM_DELETE_STATE = "delete";
+  private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchClient.class);
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private final RestClient client;
   private final OpensearchExporterConfiguration configuration;
@@ -313,6 +317,8 @@ public class OpensearchClient implements AutoCloseable {
 
   private <T> T sendRequest(final Request request, final Class<T> responseType) throws IOException {
     final var response = client.performRequest(request);
+    LOGGER.error("IGPETROV Sending request {}", request);
+    LOGGER.error("IGPETROV Got response {}", response);
     // buffer the complete response in memory before parsing it; this will give us a better error
     // message which contains the raw response should the deserialization fail
     final var responseBody = response.getEntity().getContent().readAllBytes();
