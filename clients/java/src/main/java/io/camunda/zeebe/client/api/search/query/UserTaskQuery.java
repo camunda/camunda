@@ -22,4 +22,4 @@ import io.camunda.zeebe.client.api.search.sort.UserTaskSort;
 
 public interface UserTaskQuery
     extends TypedSearchQueryRequest<UserTaskFilter, UserTaskSort, UserTaskQuery>,
-    FinalSearchQueryStep<UserTask> {}
+        FinalSearchQueryStep<UserTask> {}

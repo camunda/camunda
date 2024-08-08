@@ -21,13 +21,13 @@ import static io.camunda.zeebe.client.api.search.query.SearchRequestBuilders.use
 import static io.camunda.zeebe.client.api.search.query.SearchRequestBuilders.userTaskSort;
 
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
 import io.camunda.zeebe.client.api.search.query.FinalSearchQueryStep;
 import io.camunda.zeebe.client.api.search.query.SearchRequestPage;
-import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
 import io.camunda.zeebe.client.api.search.query.UserTaskQuery;
-import io.camunda.zeebe.client.api.search.sort.UserTaskSort;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.api.search.response.UserTask;
+import io.camunda.zeebe.client.api.search.sort.UserTaskSort;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.search.sort.UserTaskSortImpl;

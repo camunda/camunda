@@ -21,5 +21,5 @@ import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
 
 public interface ProcessInstanceQuery
     extends TypedSearchQueryRequest<
-        ProcessInstanceFilter, ProcessInstanceSort, ProcessInstanceQuery>,
-    FinalSearchQueryStep<ProcessInstance> {}
+            ProcessInstanceFilter, ProcessInstanceSort, ProcessInstanceQuery>,
+        FinalSearchQueryStep<ProcessInstance> {}

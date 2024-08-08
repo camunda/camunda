@@ -21,5 +21,5 @@ import io.camunda.zeebe.client.api.search.sort.DecisionDefinitionSort;
 
 public interface DecisionDefinitionQuery
     extends TypedSearchQueryRequest<
-        DecisionDefinitionFilter, DecisionDefinitionSort, DecisionDefinitionQuery>,
-    FinalSearchQueryStep<DecisionDefinition> {}
+            DecisionDefinitionFilter, DecisionDefinitionSort, DecisionDefinitionQuery>,
+        FinalSearchQueryStep<DecisionDefinition> {}

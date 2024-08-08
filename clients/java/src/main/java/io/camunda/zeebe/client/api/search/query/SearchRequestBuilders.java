@@ -25,15 +25,15 @@ import io.camunda.zeebe.client.api.search.sort.DecisionRequirementsSort;
 import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.zeebe.client.api.search.sort.UserTaskSort;
 import io.camunda.zeebe.client.impl.search.filter.DecisionDefinitionFilterImpl;
-import io.camunda.zeebe.client.impl.search.sort.DecisionDefinitionSortImpl;
 import io.camunda.zeebe.client.impl.search.filter.DecisionRequirementsFilterImpl;
-import io.camunda.zeebe.client.impl.search.sort.DecisionRequirementsSortImpl;
 import io.camunda.zeebe.client.impl.search.filter.ProcessInstanceFilterImpl;
-import io.camunda.zeebe.client.impl.search.sort.ProcessInstanceSortImpl;
-import io.camunda.zeebe.client.impl.search.query.SearchRequestPageImpl;
 import io.camunda.zeebe.client.impl.search.filter.UserTaskFilterImpl;
-import io.camunda.zeebe.client.impl.search.sort.UserTaskSortImpl;
 import io.camunda.zeebe.client.impl.search.filter.VariableValueFilterImpl;
+import io.camunda.zeebe.client.impl.search.query.SearchRequestPageImpl;
+import io.camunda.zeebe.client.impl.search.sort.DecisionDefinitionSortImpl;
+import io.camunda.zeebe.client.impl.search.sort.DecisionRequirementsSortImpl;
+import io.camunda.zeebe.client.impl.search.sort.ProcessInstanceSortImpl;
+import io.camunda.zeebe.client.impl.search.sort.UserTaskSortImpl;
 import java.util.function.Consumer;
 
 public final class SearchRequestBuilders {

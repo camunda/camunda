@@ -22,5 +22,5 @@ import io.camunda.zeebe.client.api.search.sort.DecisionRequirementsSort;
 
 public interface DecisionRequirementsQuery
     extends TypedSearchQueryRequest<
-        DecisionRequirementsFilter, DecisionRequirementsSort, DecisionRequirementsQuery>,
-    FinalSearchQueryStep<DecisionRequirements> {}
+            DecisionRequirementsFilter, DecisionRequirementsSort, DecisionRequirementsQuery>,
+        FinalSearchQueryStep<DecisionRequirements> {}
