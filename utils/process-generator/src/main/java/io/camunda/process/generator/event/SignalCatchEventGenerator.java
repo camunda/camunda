@@ -7,6 +7,7 @@
  */
 package io.camunda.process.generator.event;
 
+import io.camunda.process.generator.BpmnFeature;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.process.generator.execution.BroadcastSignalStep;
 import io.camunda.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
@@ -32,5 +33,10 @@ public class SignalCatchEventGenerator implements BpmnCatchEventGenerator {
     if (generateExecutionPath) {
       generatorContext.addExecutionStep(new BroadcastSignalStep(signalName));
     }
+  }
+
+  @Override
+  public BpmnFeature getFeature() {
+    return BpmnFeature.SIGNAL_EVENT;
   }
 }

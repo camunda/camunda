@@ -7,6 +7,7 @@
  */
 package io.camunda.process.generator.element;
 
+import io.camunda.process.generator.BpmnFeature;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.process.generator.event.BpmnCatchEventGenerator;
 import io.camunda.process.generator.event.BpmnCatchEventGeneratorFactory;
@@ -45,5 +46,10 @@ public class IntermediateCatchEventGenerator implements BpmnElementGenerator {
         elementId, intermediateCatchEventBuilder, generatorContext, generateExecutionPath);
 
     return intermediateCatchEventBuilder;
+  }
+
+  @Override
+  public BpmnFeature getFeature() {
+    return BpmnFeature.INTERMEDIATE_CATCH_EVENT;
   }
 }

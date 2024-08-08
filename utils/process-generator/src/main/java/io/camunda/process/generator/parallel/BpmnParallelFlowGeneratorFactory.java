@@ -8,6 +8,7 @@
 package io.camunda.process.generator.parallel;
 
 import io.camunda.process.generator.BpmnFactories;
+import io.camunda.process.generator.FactoryUtil;
 import io.camunda.process.generator.GeneratorContext;
 import java.util.List;
 
@@ -23,7 +24,6 @@ public class BpmnParallelFlowGeneratorFactory {
   }
 
   public BpmnParallelFlowGenerator getGenerator() {
-    final var randomIndex = generatorContext.getRandomNumber(parallelFlowGenerators.size());
-    return parallelFlowGenerators.get(randomIndex);
+    return FactoryUtil.getGenerator(parallelFlowGenerators, generatorContext);
   }
 }

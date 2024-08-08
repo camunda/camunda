@@ -26,19 +26,7 @@ import org.junit.jupiter.api.Test;
 public class BpmnGeneratorTest {
 
   @Test
-  void shouldGenerateProcess() {
-    // given
-    final var generator = new BpmnGenerator();
-
-    // when
-    final var generatedProcess = generator.generateProcess();
-
-    // then
-    assertThat(generatedProcess).isNotNull();
-  }
-
-  @Test
-  void shouldGenerateARandomProcess() throws Exception {
+  void shouldGenerateProcess() throws Exception {
     // given
     final var generator = new BpmnGenerator();
 
@@ -51,6 +39,38 @@ public class BpmnGeneratorTest {
     System.out.println(Bpmn.convertToString(generatedProcess.process()));
     System.out.println("----------");
     System.out.printf("Seed: %nL", generatedProcess.seed());
+
+    //    Uncomment to open the generated process in the modeler automatically
+
+    final File tempFile = File.createTempFile("temp", ".bpmn");
+    final FileWriter writer = new FileWriter(tempFile);
+    writer.write(Bpmn.convertToString(generatedProcess.process()));
+    writer.close();
+    Desktop.getDesktop().open(tempFile);
+  }
+
+  @Test
+  void shouldGenerateProcessWithConfiguration() throws Exception {
+    // given
+    final GeneratorConfiguration configuration =
+        new GeneratorConfiguration()
+            .withFeatures(BpmnFeature.USER_TASK, BpmnFeature.COMPENSATION_EVENT)
+            .excludeFeatures(
+                BpmnFeature.TERMINATE_EVENT,
+                BpmnFeature.UNDEFINED_TASK,
+                BpmnFeature.PARALLEL_GATEWAY,
+                BpmnFeature.BOUNDARY_EVENT,
+                BpmnFeature.EMBEDDED_SUBPROCESS,
+                BpmnFeature.MULTIPLE_OUTGOING_SEQUENCE_FLOWS);
+    final var generator = new BpmnGenerator(configuration);
+
+    // when
+    final var generatedProcess = generator.generateProcess();
+
+    // then
+    assertThat(generatedProcess).isNotNull();
+
+    System.out.println(Bpmn.convertToString(generatedProcess.process()));
 
     //    Uncomment to open the generated process in the modeler automatically
 

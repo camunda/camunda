@@ -8,14 +8,12 @@
 package io.camunda.process.generator.template;
 
 import io.camunda.process.generator.BpmnFactories;
+import io.camunda.process.generator.BpmnFeature;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.process.generator.element.BpmnElementGenerator;
-import io.camunda.process.generator.event.BpmnCatchEventGenerator;
 import io.camunda.zeebe.model.bpmn.builder.AbstractActivityBuilder;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import java.util.stream.IntStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class BpmnCompensationEventTemplate implements BpmnTemplateGenerator {
 
@@ -46,16 +44,17 @@ public class BpmnCompensationEventTemplate implements BpmnTemplateGenerator {
 
     if (element instanceof final AbstractActivityBuilder<?, ?> activity) {
       // add a task with compensation handler
-          activity
-            .boundaryEvent()
-            .compensation(
-                compensation ->
-                    compensation
+      activity
+          .boundaryEvent()
+          .compensation(
+              compensation ->
+                  compensation
                       .serviceTask(compensationHandlerId)
                       .zeebeJobType(compensationHandlerJobType));
     } else {
       throw new RuntimeException(
-          "Can't attach a task with compensation handler to '%s'".formatted(element.getClass().getSimpleName()));
+          "Can't attach a task with compensation handler to '%s'"
+              .formatted(element.getClass().getSimpleName()));
     }
 
     final int numberOfElement = generatorContext.getRandomNumberOfBranches(1, ELEMENT_LIMIT);
@@ -63,14 +62,14 @@ public class BpmnCompensationEventTemplate implements BpmnTemplateGenerator {
     IntStream.range(0, numberOfElement)
         .forEach(
             i -> {
-              final BpmnTemplateGenerator branchGenerator = templateGeneratorFactory.getMiddleGenerator();
+              final BpmnTemplateGenerator branchGenerator =
+                  templateGeneratorFactory.getMiddleGenerator();
               branchGenerator.addElements(element, generateExecutionPath);
             });
 
     final BpmnElementGenerator catchEventGenerator =
         bpmnFactories.getElementGeneratorFactory().getGeneratorForCompensationEvent();
-    catchEventGenerator.addElement(
-        element, false);
+    catchEventGenerator.addElement(element, false);
 
     return element;
   }
@@ -78,5 +77,10 @@ public class BpmnCompensationEventTemplate implements BpmnTemplateGenerator {
   @Override
   public boolean addsBranches() {
     return false;
+  }
+
+  @Override
+  public BpmnFeature getFeature() {
+    return BpmnFeature.COMPENSATION_EVENT;
   }
 }

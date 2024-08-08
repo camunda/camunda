@@ -13,7 +13,7 @@
       <AppenderRef ref="Console"/>
     </Root>
 
-    <Logger name="io.camunda.process.generator" level="debug"/>
+    <Logger name="io.camunda.process.generator" level="info"/>
 
   </Loggers>
 

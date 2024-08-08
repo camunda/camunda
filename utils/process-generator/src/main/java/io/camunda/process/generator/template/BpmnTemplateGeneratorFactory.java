@@ -8,6 +8,7 @@
 package io.camunda.process.generator.template;
 
 import io.camunda.process.generator.BpmnFactories;
+import io.camunda.process.generator.FactoryUtil;
 import io.camunda.process.generator.GeneratorContext;
 import java.util.List;
 
@@ -37,8 +38,7 @@ public class BpmnTemplateGeneratorFactory {
   }
 
   public BpmnTemplateGenerator getMiddleGenerator() {
-    final var randomIndex = generatorContext.getRandomNumber(middleTemplateGenerators.size());
-    final var generator = middleTemplateGenerators.get(randomIndex);
+    final var generator = FactoryUtil.getGenerator(middleTemplateGenerators, generatorContext);
 
     if (!generatorContext.canAddBranches() && generator.addsBranches()) {
       return getMiddleGenerator();
@@ -48,8 +48,7 @@ public class BpmnTemplateGeneratorFactory {
   }
 
   public BpmnTemplateGenerator getFinalGenerator() {
-    final var randomIndex = generatorContext.getRandomNumber(finalTemplateGenerators.size());
-    final var generator = finalTemplateGenerators.get(randomIndex);
+    final var generator = FactoryUtil.getGenerator(finalTemplateGenerators, generatorContext);
 
     if (!generatorContext.canAddBranches() && generator.addsBranches()) {
       return getFinalGenerator();

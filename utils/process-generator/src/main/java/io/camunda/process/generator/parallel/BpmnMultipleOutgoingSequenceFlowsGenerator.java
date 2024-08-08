@@ -8,6 +8,7 @@
 package io.camunda.process.generator.parallel;
 
 import io.camunda.process.generator.BpmnFactories;
+import io.camunda.process.generator.BpmnFeature;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import java.util.List;
@@ -59,5 +60,10 @@ public class BpmnMultipleOutgoingSequenceFlowsGenerator implements BpmnParallelF
         .getTemplateGeneratorFactory()
         .getMiddleGenerator()
         .addElements(builder, generateExecutionPath);
+  }
+
+  @Override
+  public BpmnFeature getFeature() {
+    return BpmnFeature.MULTIPLE_OUTGOING_SEQUENCE_FLOWS;
   }
 }

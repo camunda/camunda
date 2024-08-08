@@ -8,6 +8,7 @@
 package io.camunda.process.generator.element;
 
 import io.camunda.process.generator.BpmnFactories;
+import io.camunda.process.generator.FactoryUtil;
 import io.camunda.process.generator.GeneratorContext;
 import java.util.List;
 
@@ -49,22 +50,18 @@ public class BpmnElementGeneratorFactory {
   }
 
   public BpmnElementGenerator getGenerator() {
-    final var randomIndex = generatorContext.getRandomNumber(bpmnElementGenerators.size());
-    final var generator = bpmnElementGenerators.get(randomIndex);
+    final var generator = FactoryUtil.getGenerator(bpmnElementGenerators, generatorContext);
 
     // If we are at the maximum depth we should not go deeper. Instead, we use a different
     // generator.
     if (!generatorContext.canGoDeeper() && generator.addsDepth()) {
       return getGenerator();
     }
-
     return generator;
   }
 
   public BpmnElementGenerator getGeneratorForActivityWithBoundaryEvent() {
-    final var randomIndex =
-        generatorContext.getRandomNumber(activityForBoundaryEventGenerators.size());
-    return activityForBoundaryEventGenerators.get(randomIndex);
+    return FactoryUtil.getGenerator(activityForBoundaryEventGenerators, generatorContext);
   }
 
   public BpmnElementGenerator getGeneratorForActivityWithCompensationEvent() {

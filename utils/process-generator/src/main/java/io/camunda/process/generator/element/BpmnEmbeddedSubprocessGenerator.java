@@ -8,6 +8,7 @@
 package io.camunda.process.generator.element;
 
 import io.camunda.process.generator.BpmnFactories;
+import io.camunda.process.generator.BpmnFeature;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import org.slf4j.Logger;
@@ -47,5 +48,10 @@ public class BpmnEmbeddedSubprocessGenerator extends BpmnNestingElementGenerator
 
     generatorContext.decrementCurrentDepth();
     return subprocessBuilder.subProcessDone();
+  }
+
+  @Override
+  public BpmnFeature getFeature() {
+    return BpmnFeature.EMBEDDED_SUBPROCESS;
   }
 }

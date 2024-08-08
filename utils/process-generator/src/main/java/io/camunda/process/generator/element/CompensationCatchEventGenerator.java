@@ -7,12 +7,11 @@
  */
 package io.camunda.process.generator.element;
 
+import io.camunda.process.generator.BpmnFeature;
 import io.camunda.process.generator.GeneratorContext;
-import io.camunda.process.generator.event.BpmnCatchEventGenerator;
 import io.camunda.process.generator.event.BpmnCatchEventGeneratorFactory;
 import io.camunda.process.generator.event.BpmnThrowEventGenerator;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
-import io.camunda.zeebe.model.bpmn.builder.IntermediateCatchEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.IntermediateThrowEventBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,10 +41,16 @@ public class CompensationCatchEventGenerator implements BpmnElementGenerator {
 
     intermediateThrowEventBuilder.id(elementId).name(elementId);
 
-    final BpmnThrowEventGenerator catchEventGenerator = catchEventGeneratorFactory.getCompensationGenerator();
+    final BpmnThrowEventGenerator catchEventGenerator =
+        catchEventGeneratorFactory.getCompensationGenerator();
     catchEventGenerator.addEventDefinition(
         elementId, intermediateThrowEventBuilder, generatorContext, generateExecutionPath);
 
     return intermediateThrowEventBuilder;
+  }
+
+  @Override
+  public BpmnFeature getFeature() {
+    return BpmnFeature.COMPENSATION_EVENT;
   }
 }

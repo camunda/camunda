@@ -7,6 +7,7 @@
  */
 package io.camunda.process.generator.event;
 
+import io.camunda.process.generator.FactoryUtil;
 import io.camunda.process.generator.GeneratorContext;
 import java.util.List;
 
@@ -24,8 +25,7 @@ public class BpmnCatchEventGeneratorFactory {
   }
 
   public BpmnCatchEventGenerator getGenerator() {
-    final int randomIndex = generatorContext.getRandomNumber(generators.size());
-    return generators.get(randomIndex);
+    return FactoryUtil.getGenerator(generators, generatorContext);
   }
 
   public BpmnThrowEventGenerator getCompensationGenerator() {

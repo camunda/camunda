@@ -8,6 +8,7 @@
 package io.camunda.process.generator.template;
 
 import io.camunda.process.generator.BpmnFactories;
+import io.camunda.process.generator.BpmnFeature;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.process.generator.element.BpmnElementGenerator;
 import io.camunda.process.generator.event.BpmnCatchEventGenerator;
@@ -77,5 +78,10 @@ public class BoundaryEventTemplate implements BpmnTemplateGenerator {
   @Override
   public boolean addsBranches() {
     return true;
+  }
+
+  @Override
+  public BpmnFeature getFeature() {
+    return BpmnFeature.BOUNDARY_EVENT;
   }
 }

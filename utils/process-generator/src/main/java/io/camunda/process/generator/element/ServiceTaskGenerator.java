@@ -7,6 +7,7 @@
  */
 package io.camunda.process.generator.element;
 
+import io.camunda.process.generator.BpmnFeature;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.process.generator.execution.CompleteJobStep;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
@@ -41,5 +42,10 @@ public class ServiceTaskGenerator implements BpmnElementGenerator {
     }
 
     return serviceTaskBuilder;
+  }
+
+  @Override
+  public BpmnFeature getFeature() {
+    return BpmnFeature.SERVICE_TASK;
   }
 }
