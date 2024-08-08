@@ -67,6 +67,7 @@ public class ParallelGatewayGenerator implements BpmnTemplateGenerator {
               branch.connectTo(joiningElementId);
             });
 
+    generatorContext.decrementCurrentAmountOfBranches(numberOfBranches);
     return joiningGateway;
   }
 
