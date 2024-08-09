@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.service.db.schema;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_INDEX_PREFIX;
 import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
@@ -19,18 +18,15 @@ import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
-import io.camunda.optimize.service.db.es.schema.index.events.CamundaActivityEventIndexES;
 import io.camunda.optimize.service.db.es.schema.index.events.EventSequenceCountIndexES;
 import io.camunda.optimize.service.db.es.schema.index.events.EventTraceStateIndexES;
 import io.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
 import io.camunda.optimize.service.db.os.schema.index.DecisionInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
-import io.camunda.optimize.service.db.os.schema.index.events.CamundaActivityEventIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.events.EventSequenceCountIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.events.EventTraceStateIndexOS;
 import io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
-import io.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
 import io.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
 import io.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -48,13 +44,13 @@ public class MappingMetadataUtil {
   private final DatabaseClient dbClient;
   private final boolean isElasticSearchClient;
 
-  public MappingMetadataUtil(DatabaseClient dbClient) {
+  public MappingMetadataUtil(final DatabaseClient dbClient) {
     this.dbClient = dbClient;
     isElasticSearchClient = dbClient instanceof OptimizeElasticsearchClient;
   }
 
   public List<IndexMappingCreator<?>> getAllMappings(final String indexPrefix) {
-    List<IndexMappingCreator<?>> allMappings = new ArrayList<>();
+    final List<IndexMappingCreator<?>> allMappings = new ArrayList<>();
     allMappings.addAll(getAllNonDynamicMappings());
     allMappings.addAll(getAllDynamicMappings(indexPrefix));
     return allMappings;
@@ -67,8 +63,7 @@ public class MappingMetadataUtil {
   }
 
   public List<IndexMappingCreator<?>> getAllDynamicMappings(final String indexPrefix) {
-    List<IndexMappingCreator<?>> dynamicMappings = new ArrayList<>();
-    dynamicMappings.addAll(retrieveAllCamundaActivityEventIndices());
+    final List<IndexMappingCreator<?>> dynamicMappings = new ArrayList<>();
     dynamicMappings.addAll(retrieveAllSequenceCountIndices());
     dynamicMappings.addAll(retrieveAllEventTraceIndices());
     dynamicMappings.addAll(retrieveAllProcessInstanceIndices(indexPrefix));
@@ -85,7 +80,7 @@ public class MappingMetadataUtil {
             + (eventBased ? EVENT_PROCESS_INSTANCE_INDEX_PREFIX : PROCESS_INSTANCE_INDEX_PREFIX);
     try {
       aliases = dbClient.getAliasesForIndexPattern(fullIndexPrefix + "*");
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(
           "Failed retrieving aliases for dynamic index prefix " + fullIndexPrefix, e);
     }
@@ -123,16 +118,6 @@ public class MappingMetadataUtil {
                 isElasticSearchClient
                     ? new DecisionInstanceIndexES(key)
                     : new DecisionInstanceIndexOS(key))
-        .toList();
-  }
-
-  private List<? extends CamundaActivityEventIndex<?>> retrieveAllCamundaActivityEventIndices() {
-    return retrieveAllDynamicIndexKeysForPrefix(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX).stream()
-        .map(
-            key ->
-                isElasticSearchClient
-                    ? new CamundaActivityEventIndexES(key)
-                    : new CamundaActivityEventIndexOS(key))
         .toList();
   }
 
@@ -175,7 +160,7 @@ public class MappingMetadataUtil {
                   fullAliasName.substring(
                       fullAliasName.indexOf(dynamicIndexPrefix) + dynamicIndexPrefix.length()))
           .toList();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(
           "Failed retrieving aliases for dynamic index prefix " + dynamicIndexPrefix, e);
     }

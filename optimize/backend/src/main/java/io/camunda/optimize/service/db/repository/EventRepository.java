@@ -15,7 +15,6 @@ import static io.camunda.optimize.service.db.schema.index.events.EventIndex.N_GR
 import static io.camunda.optimize.service.db.schema.index.events.EventIndex.SOURCE;
 import static io.camunda.optimize.service.db.schema.index.events.EventIndex.TIMESTAMP;
 import static io.camunda.optimize.service.db.schema.index.events.EventIndex.TRACE_ID;
-import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 
 import com.google.common.collect.ImmutableMap;
 import io.camunda.optimize.dto.optimize.IdentityDto;
@@ -23,17 +22,11 @@ import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
 import io.camunda.optimize.dto.optimize.query.event.EventGroupRequestDto;
 import io.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
-import io.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatableProcessInstanceDto;
-import io.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelationValueDto;
-import io.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
-import io.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
-import io.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
-import io.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import io.camunda.optimize.dto.optimize.rest.Page;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -45,8 +38,6 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 
 public interface EventRepository {
@@ -96,46 +87,8 @@ public interface EventRepository {
 
   List<String> getEventGroups(EventGroupRequestDto eventGroupRequestDto);
 
-  List<String> getCorrelationValueSampleForEventSources(
-      List<CamundaEventSourceEntryDto> camundaSources);
-
-  List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForSources(
-      List<CamundaEventSourceEntryDto> camundaSources, List<String> correlationValues);
-
-  enum TimeRangeRequest {
-    AT,
-    BETWEEN,
-    AFTER
-  }
-
   default OffsetDateTime convertToOffsetDateTime(final Long eventTimestamp) {
     return OffsetDateTime.ofInstant(Instant.ofEpochMilli(eventTimestamp), ZoneId.systemDefault());
-  }
-
-  void deleteByProcessInstanceIds(
-      final String definitionKey, final List<String> processInstanceIds);
-
-  List<CamundaActivityEventDto> getPageOfEventsForDefinitionKeySortedByTimestamp(
-      final String definitionKey,
-      final Pair<Long, Long> timestampRange,
-      final int limit,
-      final TimeRangeRequest mode);
-
-  default List<CamundaActivityEventDto> getPageOfEventsForDefinitionKeySortedByTimestamp(
-      final String definitionKey,
-      final Long timestamp,
-      final int limit,
-      final TimeRangeRequest mode) {
-    if (mode.equals(TimeRangeRequest.AT)) {
-      return getPageOfEventsForDefinitionKeySortedByTimestamp(
-          definitionKey, Pair.of(timestamp, timestamp), limit, mode);
-    } else if (mode.equals(TimeRangeRequest.AFTER)) {
-      return getPageOfEventsForDefinitionKeySortedByTimestamp(
-          definitionKey, Pair.of(timestamp, Long.MAX_VALUE), limit, mode);
-    } else {
-      throw new IllegalArgumentException(
-          "When using the between mode, you need to provide a pair of timestamps");
-    }
   }
 
   default String getNgramSearchField(final String searchFieldName) {
@@ -150,9 +103,6 @@ public interface EventRepository {
           "Could not extract event sort field from " + providedField);
     }
   }
-
-  Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>>
-      getMinAndMaxIngestedTimestampsForDefinition(final String processDefinitionKey);
 
   Optional<EventProcessMappingDto> getEventProcessMapping(final String eventProcessMappingId);
 
@@ -192,49 +142,25 @@ public interface EventRepository {
   List<EventProcessDefinitionDto> getAllEventProcessDefinitionsOmitXml();
 
   default Optional<OffsetDateTime> parseDateString(
-      String dateAsStr, final DateTimeFormatter formatter) {
+      final String dateAsStr, final DateTimeFormatter formatter) {
     try {
       return Optional.of(
           OffsetDateTime.ofInstant(Instant.parse(dateAsStr), ZoneId.systemDefault()));
-    } catch (DateTimeParseException e1) {
+    } catch (final DateTimeParseException e1) {
       try {
         // if parsing fails, try to parse as offset format (e.g., 2024-05-23T10:30:39.651+0000)
         return Optional.of(
             OffsetDateTime.ofInstant(
                 OffsetDateTime.parse(dateAsStr, formatter).toInstant(), ZoneId.systemDefault()));
-      } catch (DateTimeParseException e2) {
+      } catch (final DateTimeParseException e2) {
         return Optional.empty();
       }
     }
   }
 
-  default String[] getInstanceIndexNames(final List<CamundaEventSourceEntryDto> eventSources) {
-    return eventSources.stream()
-        .map(
-            source ->
-                getProcessInstanceIndexAliasName(
-                    source.getConfiguration().getProcessDefinitionKey()))
-        .toArray(String[]::new);
-  }
-
-  default Optional<String> extractCorrelationValue(
-      CamundaEventSourceEntryDto eventSourceForCurrentBucket,
-      CorrelationValueDto correlationValueDto) {
-    Optional<String> correlationValueToAdd;
-    final CamundaEventSourceConfigDto eventSourceConfig =
-        eventSourceForCurrentBucket.getConfiguration();
-    if (eventSourceConfig.isTracedByBusinessKey()) {
-      correlationValueToAdd = Optional.ofNullable(correlationValueDto.getBusinessKey());
-    } else if (eventSourceConfig.getTraceVariable() != null) {
-      final Map<String, SimpleProcessVariableDto> variablesByName =
-          correlationValueDto.getVariables().stream()
-              .collect(Collectors.toMap(SimpleProcessVariableDto::getName, Function.identity()));
-      correlationValueToAdd =
-          variablesByName.get(eventSourceConfig.getTraceVariable()).getValue().stream().findFirst();
-    } else {
-      throw new OptimizeRuntimeException(
-          "Cannot get variable sample values for event source with no tracing variable");
-    }
-    return correlationValueToAdd;
+  enum TimeRangeRequest {
+    AT,
+    BETWEEN,
+    AFTER
   }
 }

@@ -15,11 +15,9 @@ import io.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatableE
 import io.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatableInstanceDto;
 import io.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatedInstanceDto;
 import io.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatedTraceDto;
-import io.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import io.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import io.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
 import io.camunda.optimize.service.db.events.EventTraceStateServiceFactory;
-import io.camunda.optimize.service.db.reader.CorrelatedCamundaProcessInstanceReader;
 import io.camunda.optimize.service.events.EventTraceStateService;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,21 +33,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class CorrelatedInstanceService {
 
-  private final CorrelatedCamundaProcessInstanceReader correlatedCamundaProcessInstanceReader;
   private final EventTraceStateService externalEventTraceStateService;
 
   public CorrelatedInstanceService(
-      CorrelatedCamundaProcessInstanceReader correlatedCamundaProcessInstanceReader,
-      EventTraceStateServiceFactory eventTraceStateServiceFactory) {
-    this.correlatedCamundaProcessInstanceReader = correlatedCamundaProcessInstanceReader;
-    this.externalEventTraceStateService =
+      final EventTraceStateServiceFactory eventTraceStateServiceFactory) {
+    externalEventTraceStateService =
         eventTraceStateServiceFactory.createEventTraceStateService(EXTERNAL_EVENTS_INDEX_SUFFIX);
-  }
-
-  public List<String> getCorrelationValueSampleForCamundaEventSources(
-      final List<CamundaEventSourceEntryDto> eventSources) {
-    return correlatedCamundaProcessInstanceReader.getCorrelationValueSampleForEventSources(
-        eventSources);
   }
 
   public List<CorrelatedTraceDto> getCorrelatedTracesForEventSources(
@@ -59,20 +48,8 @@ public class CorrelatedInstanceService {
     final Map<String, EventSourceEntryDto<?>> sourcesBySourceIdentifier =
         eventSources.stream()
             .collect(toMap(EventSourceEntryDto::getSourceIdentifier, Function.identity()));
-    final Map<String, CamundaEventSourceEntryDto> camundaSourceByDefKey =
-        sourceByType.get(EventSourceType.CAMUNDA).stream()
-            .map(CamundaEventSourceEntryDto.class::cast)
-            .collect(
-                toMap(
-                    source -> source.getConfiguration().getProcessDefinitionKey(),
-                    Function.identity()));
 
     final List<CorrelatableInstanceDto> correlatableInstances = new ArrayList<>();
-    if (!CollectionUtils.isEmpty(sourceByType.get(EventSourceType.CAMUNDA))) {
-      correlatableInstances.addAll(
-          correlatedCamundaProcessInstanceReader.getCorrelatableInstancesForSources(
-              new ArrayList<>(camundaSourceByDefKey.values()), correlationValues));
-    }
     if (!CollectionUtils.isEmpty(sourceByType.get(EventSourceType.EXTERNAL))) {
       correlatableInstances.addAll(
           externalEventTraceStateService.getTracesWithTraceIdIn(correlationValues).stream()

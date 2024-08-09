@@ -7,11 +7,7 @@
  */
 package io.camunda.optimize.test.optimize;
 
-import static io.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import io.camunda.optimize.OptimizeRequestExecutor;
 import io.camunda.optimize.dto.optimize.IdentityDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceConstants;
@@ -24,8 +20,6 @@ import io.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequ
 import io.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
 import io.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import io.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
-import io.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
-import io.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import io.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
 import io.camunda.optimize.dto.optimize.query.event.process.source.EventSourceConfigDto;
 import io.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
@@ -267,35 +261,6 @@ public class EventProcessClient {
                 .eventScope(Collections.singletonList(EventScopeType.ALL))
                 .includeAllGroups(false)
                 .group(group)
-                .build())
-        .build();
-  }
-
-  public static CamundaEventSourceEntryDto createSimpleCamundaEventSourceEntry(
-      final String processDefinitionKey) {
-    return createSimpleCamundaEventSourceEntryWithTenant(processDefinitionKey, null);
-  }
-
-  public static CamundaEventSourceEntryDto createSimpleCamundaEventSourceEntryWithTenant(
-      final String processDefinitionKey, final String tenantId) {
-    return createSimpleCamundaEventSourceEntry(processDefinitionKey, ALL_VERSIONS, tenantId);
-  }
-
-  public static CamundaEventSourceEntryDto createSimpleCamundaEventSourceEntry(
-      final String processDefinitionKey, final String version) {
-    return createSimpleCamundaEventSourceEntry(processDefinitionKey, version, null);
-  }
-
-  public static CamundaEventSourceEntryDto createSimpleCamundaEventSourceEntry(
-      final String processDefinitionKey, final String version, final String tenantId) {
-    return CamundaEventSourceEntryDto.builder()
-        .configuration(
-            CamundaEventSourceConfigDto.builder()
-                .eventScope(Collections.singletonList(EventScopeType.ALL))
-                .processDefinitionKey(processDefinitionKey)
-                .versions(ImmutableList.of(version))
-                .tenants(Lists.newArrayList(tenantId))
-                .tracedByBusinessKey(true)
                 .build())
         .build();
   }

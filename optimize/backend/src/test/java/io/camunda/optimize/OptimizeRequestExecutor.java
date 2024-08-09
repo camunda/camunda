@@ -909,12 +909,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildCheckImportStatusRequest() {
-    this.path = "/status";
-    this.method = GET;
-    return this;
-  }
-
   public OptimizeRequestExecutor buildGetReadinessRequest() {
     this.path = "/readyz";
     this.method = GET;

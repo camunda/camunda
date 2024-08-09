@@ -28,7 +28,7 @@ import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableDataDto;
 import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
-import io.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
+import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.importing.engine.service.ObjectVariableService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -58,7 +58,7 @@ public class ZeebeVariableImportService
 
   public ZeebeVariableImportService(
       final ConfigurationService configurationService,
-      final ZeebeProcessInstanceWriter processInstanceWriter,
+      final ProcessInstanceWriter processInstanceWriter,
       final int partitionId,
       final ObjectMapper objectMapper,
       final ProcessDefinitionReader processDefinitionReader,

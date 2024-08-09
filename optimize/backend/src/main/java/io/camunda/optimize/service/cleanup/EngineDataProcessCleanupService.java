@@ -13,9 +13,7 @@ import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.query.PageResultDto;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessInstanceReader;
-import io.camunda.optimize.service.db.writer.BusinessKeyWriter;
-import io.camunda.optimize.service.db.writer.CamundaActivityEventWriter;
-import io.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
+import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
 import io.camunda.optimize.service.db.writer.variable.VariableUpdateInstanceWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -36,10 +34,8 @@ public class EngineDataProcessCleanupService extends CleanupService {
   private final ConfigurationService configurationService;
   private final ProcessDefinitionReader processDefinitionReader;
   private final ProcessInstanceReader processInstanceReader;
-  private final CompletedProcessInstanceWriter processInstanceWriter;
+  private final ProcessInstanceWriter processInstanceWriter;
   private final ProcessVariableUpdateWriter processVariableUpdateWriter;
-  private final BusinessKeyWriter businessKeyWriter;
-  private final CamundaActivityEventWriter camundaActivityEventWriter;
   private final VariableUpdateInstanceWriter variableUpdateInstanceWriter;
 
   @Override
@@ -57,7 +53,7 @@ public class EngineDataProcessCleanupService extends CleanupService {
             .getProcessDataCleanupConfiguration()
             .getAllProcessSpecificConfigurationKeys());
     int i = 1;
-    for (String currentProcessDefinitionKey : allOptimizeProcessDefinitionKeys) {
+    for (final String currentProcessDefinitionKey : allOptimizeProcessDefinitionKeys) {
       log.info("Process History Cleanup step {}/{}", i, allOptimizeProcessDefinitionKeys.size());
       performCleanupForProcessKey(startTime, currentProcessDefinitionKey);
       i++;
@@ -103,8 +99,6 @@ public class EngineDataProcessCleanupService extends CleanupService {
             definitionKey, endDate, batchSize);
     while (!currentPageOfProcessInstanceIds.isEmpty()) {
       final List<String> currentInstanceIds = currentPageOfProcessInstanceIds.getEntities();
-      camundaActivityEventWriter.deleteByProcessInstanceIds(definitionKey, currentInstanceIds);
-      businessKeyWriter.deleteByProcessInstanceIds(currentInstanceIds);
       variableUpdateInstanceWriter.deleteByProcessInstanceIds(currentInstanceIds);
       processInstanceWriter.deleteByIds(definitionKey, currentInstanceIds);
       currentPageOfProcessInstanceIds =
@@ -138,7 +132,7 @@ public class EngineDataProcessCleanupService extends CleanupService {
   }
 
   private CleanupConfiguration getCleanupConfiguration() {
-    return this.configurationService.getCleanupServiceConfiguration();
+    return configurationService.getCleanupServiceConfiguration();
   }
 
   private int getBatchSize() {
