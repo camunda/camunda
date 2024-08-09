@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.property.Action.ExecuteScheduledTask;
 import io.camunda.zeebe.engine.property.Action.ProcessRecord;
+import io.camunda.zeebe.engine.property.Action.UpdateClock;
 import io.camunda.zeebe.engine.property.Action.WriteRecord;
 import io.camunda.zeebe.engine.property.db.InMemoryDb;
 import io.camunda.zeebe.logstreams.impl.log.LogStreamReaderImpl;
@@ -59,6 +60,7 @@ import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.ReflectUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.InstantSource;
 import java.util.Collections;
 import java.util.Iterator;
@@ -83,6 +85,7 @@ public final class InMemoryEngine implements TestEngines {
   private final LogStreamReader reader;
   private final LogStorage logStorage;
   private final TestScheduleService scheduleService;
+  private final ControllableInstantSource clock;
 
   private InMemoryEngine(
       final int partitionId,
@@ -110,8 +113,7 @@ public final class InMemoryEngine implements TestEngines {
     engine = new Engine(processorFactory, new EngineConfiguration());
     final ZeebeDb<?> zeebeDb = new InMemoryDb<>();
     final TransactionContext transactionContext = zeebeDb.createContext();
-    // TODO: needs a controllable clock
-    final InstantSource clock = InstantSource.system();
+    clock = new ControllableInstantSource(InstantSource.system().millis());
     scheduleService = new TestScheduleService(clock);
     this.writers = writers;
     final InterPartitionCommandSender interPartitionCommandSender =
@@ -154,37 +156,38 @@ public final class InMemoryEngine implements TestEngines {
   public void runAction(final Action action) {
     switch (action) {
       case WriteRecord(final var partition, final var entry) -> writeInternal(entry);
-      case final ProcessRecord process -> {
-        final ProcessingResultBuilder resultBuilder = new TestProcessingResultBuilder();
-        final RecordMetadata metadata = new RecordMetadata();
-        while (reader.hasNext()) {
-          final var logEntry = reader.next();
-          if (logEntry.shouldSkipProcessing()) {
-            continue;
-          }
-          logEntry.readMetadata(metadata);
-          if (metadata.getRecordType() == RecordType.COMMAND) {
-            final var valueClass = TypedEventRegistry.EVENT_REGISTRY.get(metadata.getValueType());
-            try {
-              final var value = valueClass.getConstructor().newInstance();
-              logEntry.readValue(value);
-              final var record = new TypedRecordImpl(partitionId);
-              record.wrap(logEntry, metadata, value);
+      case final ProcessRecord process -> processNextCommand();
+      case final ExecuteScheduledTask scheduledTask -> scheduleService.runNext();
+      case UpdateClock(final var partition, final var difference) -> clock.add(difference);
+    }
+  }
 
-              final var processingResult = engine.process(record, resultBuilder);
-              final var newRecords = processingResult.getRecordBatch();
-              writeInternal(newRecords.entries());
-              processingResult.executePostCommitTasks();
-              return;
-            } catch (final Exception e) {
-              throw new RuntimeException(e);
-            }
-          }
+  private void processNextCommand() {
+    final ProcessingResultBuilder resultBuilder = new TestProcessingResultBuilder();
+    final RecordMetadata metadata = new RecordMetadata();
+    while (reader.hasNext()) {
+      final var logEntry = reader.next();
+      if (logEntry.shouldSkipProcessing()) {
+        continue;
+      }
+      logEntry.readMetadata(metadata);
+      if (metadata.getRecordType() == RecordType.COMMAND) {
+        final var valueClass = TypedEventRegistry.EVENT_REGISTRY.get(metadata.getValueType());
+        try {
+          final var value = valueClass.getConstructor().newInstance();
+          logEntry.readValue(value);
+          final var record = new TypedRecordImpl(partitionId);
+          record.wrap(logEntry, metadata, value);
+
+          final var processingResult = engine.process(record, resultBuilder);
+          final var newRecords = processingResult.getRecordBatch();
+          writeInternal(newRecords.entries());
+          processingResult.executePostCommitTasks();
+          return;
+        } catch (final Exception e) {
+          throw new RuntimeException(e);
         }
       }
-      case final ExecuteScheduledTask scheduledTask -> scheduleService.runNext();
-
-      case null, default -> throw new UnsupportedOperationException();
     }
   }
 
@@ -438,6 +441,28 @@ public final class InMemoryEngine implements TestEngines {
           new AppendListener() {});
       position = position + appendEntries.size();
       return Either.right(position - 1);
+    }
+  }
+
+  private static final class ControllableInstantSource implements InstantSource {
+    private long currentTime;
+
+    ControllableInstantSource(final long currentTime) {
+      this.currentTime = currentTime;
+    }
+
+    @Override
+    public Instant instant() {
+      return Instant.ofEpochMilli(currentTime);
+    }
+
+    @Override
+    public long millis() {
+      return currentTime;
+    }
+
+    public void add(final Duration difference) {
+      currentTime += difference.toMillis();
     }
   }
 

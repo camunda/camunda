@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.property;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import java.time.Duration;
 
 public sealed interface Action {
   record WriteRecord(int partitionId, LogAppendEntry entry) implements Action {}
@@ -16,5 +17,5 @@ public sealed interface Action {
 
   record ExecuteScheduledTask(int partitionId, boolean deliverIpc) implements Action {}
 
-  record UpdateClock(int partitionId) implements Action {}
+  record UpdateClock(int partitionId, Duration difference) implements Action {}
 }
