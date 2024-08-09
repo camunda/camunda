@@ -67,8 +67,8 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.util.StringUtils;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.http.SdkHttpClient;
-import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
+import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 
 @Configuration
@@ -233,7 +233,7 @@ public class OpensearchConnector {
 
   private OpenSearchClient getAwsClient(OpensearchProperties osConfig) {
     final String region = new DefaultAwsRegionProviderChain().getRegion();
-    final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+    final SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder().build();
     final AwsSdk2Transport transport =
         new AwsSdk2Transport(
             httpClient,
@@ -247,7 +247,7 @@ public class OpensearchConnector {
 
   private OpenSearchAsyncClient getAwsAsyncClient(OpensearchProperties osConfig) {
     final String region = new DefaultAwsRegionProviderChain().getRegion();
-    final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+    final SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder().build();
     final AwsSdk2Transport transport =
         new AwsSdk2Transport(
             httpClient,
