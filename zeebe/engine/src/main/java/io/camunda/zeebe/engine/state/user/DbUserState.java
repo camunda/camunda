@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.immutable.UserState;
@@ -27,18 +28,18 @@ public class DbUserState implements UserState, MutableUserState {
 
   private final DbString username;
   private final DbLong userKey;
-  private final ColumnFamily<DbString, DbLong> userKeyByUsernameColumnFamily;
+  private final DbForeignKey<DbLong> fkUserKey;
+  private final ColumnFamily<DbString, DbForeignKey<DbLong>> userKeyByUsernameColumnFamily;
   private final ColumnFamily<DbKey, PersistedUser> userByUserKeyColumnFamily;
 
   public DbUserState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     username = new DbString();
     userKey = new DbLong();
-
+    fkUserKey = new DbForeignKey<>(userKey, ZbColumnFamilies.USERS);
     userKeyByUsernameColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.USER_KEY_BY_USERNAME, transactionContext, username, userKey);
-
+            ZbColumnFamilies.USER_KEY_BY_USERNAME, transactionContext, username, fkUserKey);
     userByUserKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.USERS, transactionContext, userKey, persistedUser);
@@ -50,8 +51,8 @@ public class DbUserState implements UserState, MutableUserState {
     userKey.wrapLong(key);
     persistedUser.setUser(user);
 
-    userKeyByUsernameColumnFamily.insert(username, userKey);
     userByUserKeyColumnFamily.insert(userKey, persistedUser);
+    userKeyByUsernameColumnFamily.insert(username, fkUserKey);
   }
 
   @Override
