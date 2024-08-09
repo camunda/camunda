@@ -5,21 +5,21 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.process.generator.element;
+package io.camunda.process.generator.template;
 
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 
-public abstract class BpmnNestingElementGenerator implements BpmnElementGenerator {
+public abstract class BpmnNestingElementTemplate implements BpmnTemplateGenerator {
 
   final GeneratorContext generatorContext;
 
-  protected BpmnNestingElementGenerator(final GeneratorContext generatorContext) {
+  protected BpmnNestingElementTemplate(final GeneratorContext generatorContext) {
     this.generatorContext = generatorContext;
   }
 
   @Override
-  public AbstractFlowNodeBuilder<?, ?> addElement(
+  public AbstractFlowNodeBuilder<?, ?> addElements(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
     generatorContext.incrementCurrentDepth();
 
@@ -27,11 +27,6 @@ public abstract class BpmnNestingElementGenerator implements BpmnElementGenerato
 
     generatorContext.decrementCurrentDepth();
     return builder;
-  }
-
-  @Override
-  public boolean addsDepth() {
-    return true;
   }
 
   abstract AbstractFlowNodeBuilder<?, ?> addNestingElement(

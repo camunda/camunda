@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.process.generator.element;
+package io.camunda.process.generator.template;
 
 import io.camunda.process.generator.BpmnFactories;
 import io.camunda.process.generator.BpmnFeature;
@@ -14,13 +14,12 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BpmnEmbeddedSubprocessGenerator extends BpmnNestingElementGenerator {
+public class BpmnEmbeddedSubprocessTemplate extends BpmnNestingElementTemplate {
 
-  private static final Logger LOG = LoggerFactory.getLogger(BpmnEmbeddedSubprocessGenerator.class);
-
+  private static final Logger LOG = LoggerFactory.getLogger(BpmnEmbeddedSubprocessTemplate.class);
   private final BpmnFactories bpmnFactories;
 
-  public BpmnEmbeddedSubprocessGenerator(
+  public BpmnEmbeddedSubprocessTemplate(
       final GeneratorContext generatorContext, final BpmnFactories bpmnFactories) {
     super(generatorContext);
     this.bpmnFactories = bpmnFactories;
@@ -29,8 +28,6 @@ public class BpmnEmbeddedSubprocessGenerator extends BpmnNestingElementGenerator
   @Override
   public AbstractFlowNodeBuilder<?, ?> addNestingElement(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
-    generatorContext.incrementCurrentDepth();
-
     final String elementId = generatorContext.createNewId();
 
     LOG.debug("Adding embedded subprocess with id {}", elementId);
@@ -46,8 +43,17 @@ public class BpmnEmbeddedSubprocessGenerator extends BpmnNestingElementGenerator
     subprocessBuilder =
         finalTemplateGenerator.addElements(subprocessBuilder, generateExecutionPath);
 
-    generatorContext.decrementCurrentDepth();
     return subprocessBuilder.subProcessDone();
+  }
+
+  @Override
+  public boolean addsBranches() {
+    return false;
+  }
+
+  @Override
+  public boolean addsDepth() {
+    return true;
   }
 
   @Override

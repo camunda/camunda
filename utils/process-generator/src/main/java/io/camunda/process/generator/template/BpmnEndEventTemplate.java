@@ -37,6 +37,11 @@ public class BpmnEndEventTemplate implements BpmnTemplateGenerator {
   }
 
   @Override
+  public boolean addsDepth() {
+    return false;
+  }
+
+  @Override
   public BpmnFeature getFeature() {
     return BpmnFeature.END_EVENT;
   }

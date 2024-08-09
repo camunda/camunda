@@ -53,6 +53,11 @@ public class BpmnElementSequenceGenerator implements BpmnTemplateGenerator {
   }
 
   @Override
+  public boolean addsDepth() {
+    return false;
+  }
+
+  @Override
   public BpmnFeature getFeature() {
     return BpmnFeature.NONE;
   }

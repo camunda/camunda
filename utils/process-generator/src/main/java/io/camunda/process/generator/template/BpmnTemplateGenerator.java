@@ -16,4 +16,6 @@ public interface BpmnTemplateGenerator extends BpmnFeatureGenerator {
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath);
 
   boolean addsBranches();
+
+  boolean addsDepth();
 }

@@ -79,6 +79,11 @@ public class ParallelGatewayGenerator implements BpmnTemplateGenerator {
   }
 
   @Override
+  public boolean addsDepth() {
+    return false;
+  }
+
+  @Override
   public BpmnFeature getFeature() {
     return BpmnFeature.PARALLEL_GATEWAY;
   }

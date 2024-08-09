@@ -29,14 +29,12 @@ public class BpmnElementGeneratorFactory {
             new UserTaskGenerator(generatorContext),
             new UndefinedTaskGenerator(generatorContext),
             new IntermediateCatchEventGenerator(
-                generatorContext, bpmnFactories.getCatchEventGeneratorFactory()),
-            new BpmnEmbeddedSubprocessGenerator(generatorContext, bpmnFactories));
+                generatorContext, bpmnFactories.getCatchEventGeneratorFactory()));
 
     activityForBoundaryEventGenerators =
         List.of(
-            new ServiceTaskGenerator(generatorContext),
-            new UserTaskGenerator(generatorContext),
-            new BpmnEmbeddedSubprocessGenerator(generatorContext, bpmnFactories));
+            new ServiceTaskGenerator(generatorContext), new UserTaskGenerator(generatorContext));
+    // TODO generate subprocess with boundary event
 
     activityForCompensationEventGenerators =
         List.of(

@@ -78,6 +78,11 @@ public class BpmnCompensationEventTemplate implements BpmnTemplateGenerator {
   }
 
   @Override
+  public boolean addsDepth() {
+    return false;
+  }
+
+  @Override
   public BpmnFeature getFeature() {
     return BpmnFeature.COMPENSATION_EVENT;
   }

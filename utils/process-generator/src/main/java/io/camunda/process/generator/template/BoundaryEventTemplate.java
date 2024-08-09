@@ -80,6 +80,11 @@ public class BoundaryEventTemplate implements BpmnTemplateGenerator {
   }
 
   @Override
+  public boolean addsDepth() {
+    return false;
+  }
+
+  @Override
   public BpmnFeature getFeature() {
     return BpmnFeature.BOUNDARY_EVENT;
   }
