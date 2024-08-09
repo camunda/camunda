@@ -178,7 +178,7 @@ public enum ZbColumnFamilies implements EnumValue {
   MESSAGE_CORRELATION(85),
 
   USERS(86),
-  USERNAME_BY_USER_KEY(87);
+  USER_KEY_BY_USERNAME(87);
 
   private final int value;
 

@@ -27,19 +27,19 @@ public class DbUserState implements UserState, MutableUserState {
 
   private final DbString username;
   private final DbLong userKey;
-  private final ColumnFamily<DbString, DbLong> usernameToKeyColumnFamily;
-  private final ColumnFamily<DbKey, PersistedUser> keyToUserColumnFamily;
+  private final ColumnFamily<DbString, DbLong> userKeyByUsernameColumnFamily;
+  private final ColumnFamily<DbKey, PersistedUser> userByUserKeyColumnFamily;
 
   public DbUserState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     username = new DbString();
     userKey = new DbLong();
 
-    usernameToKeyColumnFamily =
+    userKeyByUsernameColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.USERNAME_BY_USER_KEY, transactionContext, username, userKey);
+            ZbColumnFamilies.USER_KEY_BY_USERNAME, transactionContext, username, userKey);
 
-    keyToUserColumnFamily =
+    userByUserKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.USERS, transactionContext, userKey, persistedUser);
   }
@@ -50,20 +50,20 @@ public class DbUserState implements UserState, MutableUserState {
     userKey.wrapLong(key);
     persistedUser.setUser(user);
 
-    usernameToKeyColumnFamily.insert(username, userKey);
-    keyToUserColumnFamily.insert(userKey, persistedUser);
+    userKeyByUsernameColumnFamily.insert(username, userKey);
+    userByUserKeyColumnFamily.insert(userKey, persistedUser);
   }
 
   @Override
   public UserRecord getUser(final DirectBuffer username) {
     this.username.wrapBuffer(username);
-    final var key = usernameToKeyColumnFamily.get(this.username);
+    final var key = userKeyByUsernameColumnFamily.get(this.username);
 
     if (key == null) {
       return null;
     }
 
-    final var user = keyToUserColumnFamily.get(key);
+    final var user = userByUserKeyColumnFamily.get(key);
     return user == null ? null : user.getUser().copy();
   }
 
