@@ -11,6 +11,7 @@ import io.camunda.process.generator.BpmnFactories;
 import io.camunda.process.generator.BpmnFeature;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.process.generator.element.BpmnElementGenerator;
+import io.camunda.process.generator.execution.CompleteJobStep;
 import io.camunda.zeebe.model.bpmn.builder.AbstractActivityBuilder;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 
@@ -68,6 +69,10 @@ public class BpmnCompensationEventTemplate implements BpmnTemplateGenerator {
     final BpmnElementGenerator catchEventGenerator =
         bpmnFactories.getElementGeneratorFactory().getGeneratorForCompensationEvent();
     catchEventGenerator.addElement(branch, false);
+
+    if (generateExecutionPath) {
+      generatorContext.addExecutionStep(new CompleteJobStep(compensationHandlerId, compensationHandlerJobType));
+    }
 
     return element;
   }
