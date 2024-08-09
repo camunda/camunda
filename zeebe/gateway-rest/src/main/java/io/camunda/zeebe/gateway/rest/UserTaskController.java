@@ -46,7 +46,7 @@ public class UserTaskController {
       @RequestBody(required = false) final UserTaskCompletionRequest completionRequest) {
 
     return RequestMapper.toUserTaskCompletionRequest(completionRequest, userTaskKey, context)
-        .fold(this::sendBrokerRequest, UserTaskController::handleRequestMappingError);
+        .fold(UserTaskController::handleRequestMappingError, this::sendBrokerRequest);
   }
 
   @PostMapping(
@@ -59,7 +59,7 @@ public class UserTaskController {
       @RequestBody final UserTaskAssignmentRequest assignmentRequest) {
 
     return RequestMapper.toUserTaskAssignmentRequest(assignmentRequest, userTaskKey, context)
-        .fold(this::sendBrokerRequest, UserTaskController::handleRequestMappingError);
+        .fold(UserTaskController::handleRequestMappingError, this::sendBrokerRequest);
   }
 
   @DeleteMapping(path = "/user-tasks/{userTaskKey}/assignee")
@@ -67,7 +67,7 @@ public class UserTaskController {
       final ServerWebExchange context, @PathVariable final long userTaskKey) {
 
     return RequestMapper.toUserTaskUnassignmentRequest(userTaskKey, context)
-        .fold(this::sendBrokerRequest, UserTaskController::handleRequestMappingError);
+        .fold(UserTaskController::handleRequestMappingError, this::sendBrokerRequest);
   }
 
   @PatchMapping(
@@ -80,7 +80,7 @@ public class UserTaskController {
       @RequestBody(required = false) final UserTaskUpdateRequest updateRequest) {
 
     return RequestMapper.toUserTaskUpdateRequest(updateRequest, userTaskKey, context)
-        .fold(this::sendBrokerRequest, UserTaskController::handleRequestMappingError);
+        .fold(UserTaskController::handleRequestMappingError, this::sendBrokerRequest);
   }
 
   private CompletableFuture<ResponseEntity<Object>> sendBrokerRequest(
