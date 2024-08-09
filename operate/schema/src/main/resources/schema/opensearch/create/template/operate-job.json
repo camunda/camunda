@@ -1,0 +1,70 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "processInstanceKey": {
+        "type": "long"
+      },
+      "flowNodeInstanceId": {
+        "type": "long"
+      },
+      "flowNodeId": {
+        "type": "keyword"
+      },
+      "tenantId": {
+        "type": "keyword"
+      },
+      "type": {
+        "type": "keyword"
+      },
+      "worker": {
+        "type": "keyword"
+      },
+      "retries": {
+        "type": "integer"
+      },
+      "state": {
+        "type": "keyword"
+      },
+      "errorMessage": {
+        "type": "keyword"
+      },
+      "errorCode" : {
+        "type": "keyword"
+      },
+      "deadline" : {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "endTime" : {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "customHeaders": {
+        "type": "object",
+        "enabled": false
+      },
+      "jobKind": {
+        "type": "keyword"
+      },
+      "listenerEventType": {
+        "type": "keyword"
+      },
+      "key" : {
+        "type" : "long"
+      },
+      "partitionId" : {
+        "type": "integer"
+      },
+      "jobFailedWithRetriesLeft" : {
+        "type" : "boolean"
+      },
+      "position" : {
+        "type": "long"
+      }
+    }
+  }
+}

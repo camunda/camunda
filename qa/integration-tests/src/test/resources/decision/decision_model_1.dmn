@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/DMN/20151101/dmn.xsd"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://www.omg.org/spec/DMN/20151101/dmn.xsd DMN13.xsd"
+             id="definitions_test"
+             name="definitions_test"
+             namespace="http://camunda.org/schema/1.0/dmn">
+  <decision id="test_qa" name="Test QA Decision">
+    <decisionTable id="decisionTable" hitPolicy="FIRST">
+      <input id="input1" label="Input1">
+        <inputExpression id="inputExpression1" typeRef="string">
+          <text>input1</text>
+        </inputExpression>
+      </input>
+      <output id="output1" label="Output1" name="output1" typeRef="string"/>
+
+      <rule id="rule1">
+        <inputEntry id="inputEntry1_1">
+          <text>"A"</text>
+        </inputEntry>
+        <outputEntry id="outputEntry1_1">
+          <text>"Result A"</text>
+        </outputEntry>
+      </rule>
+
+      <rule id="rule2">
+        <inputEntry id="inputEntry2_1">
+          <text>"B"</text>
+        </inputEntry>
+        <outputEntry id="outputEntry2_1">
+          <text>"Result B"</text>
+        </outputEntry>
+      </rule>
+
+      <rule id="rule3">
+        <inputEntry id="inputEntry3_1">
+          <text>"C"</text>
+        </inputEntry>
+        <outputEntry id="outputEntry3_1">
+          <text>"Result C"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>

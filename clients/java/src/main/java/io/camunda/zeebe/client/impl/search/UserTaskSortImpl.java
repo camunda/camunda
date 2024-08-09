@@ -21,12 +21,12 @@ public class UserTaskSortImpl extends SearchQuerySortBase<UserTaskSort> implemen
 
   @Override
   public UserTaskSort creationDate() {
-    return field("creationTime");
+    return field("creationDate");
   }
 
   @Override
   public UserTaskSort completionDate() {
-    return field("completionTime");
+    return field("completionDate");
   }
 
   @Override

@@ -31,7 +31,6 @@ public final class JobEventProcessors {
       final JobMetrics jobMetrics,
       final EngineConfiguration config) {
 
-    final var jobState = processingState.getJobState();
     final var keyGenerator = processingState.getKeyGenerator();
 
     final EventHandle eventHandle =
@@ -78,13 +77,17 @@ public final class JobEventProcessors {
             new JobTimeOutProcessor(
                 processingState, writers, jobMetrics, bpmnBehaviors.jobActivationBehavior()))
         .onCommand(
-            ValueType.JOB, JobIntent.UPDATE_RETRIES, new JobUpdateRetriesProcessor(processingState))
+            ValueType.JOB,
+            JobIntent.UPDATE_RETRIES,
+            new JobUpdateRetriesProcessor(bpmnBehaviors.jobUpdateBehaviour(), writers))
         .onCommand(
             ValueType.JOB,
             JobIntent.UPDATE_TIMEOUT,
-            new JobUpdateTimeoutProcessor(processingState, writers))
+            new JobUpdateTimeoutProcessor(bpmnBehaviors.jobUpdateBehaviour(), writers))
         .onCommand(
-            ValueType.JOB, JobIntent.UPDATE, new JobUpdateProcessor(processingState, writers))
+            ValueType.JOB,
+            JobIntent.UPDATE,
+            new JobUpdateProcessor(bpmnBehaviors.jobUpdateBehaviour(), writers))
         .onCommand(
             ValueType.JOB, JobIntent.CANCEL, new JobCancelProcessor(processingState, jobMetrics))
         .onCommand(

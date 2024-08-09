@@ -36,7 +36,7 @@ public class DecisionDefinitionQueryController {
   public ResponseEntity<DecisionDefinitionSearchQueryResponse> searchDecisionDefinitions(
       @RequestBody(required = false) final DecisionDefinitionSearchQueryRequest query) {
     return SearchQueryRequestMapper.toDecisionDefinitionQuery(query)
-        .fold(this::search, RestErrorMapper::mapProblemToResponse);
+        .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
   private ResponseEntity<DecisionDefinitionSearchQueryResponse> search(

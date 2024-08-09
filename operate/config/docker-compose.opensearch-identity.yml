@@ -3,7 +3,7 @@ version: "3.6"
 
 services:
   opensearch:
-    image: opensearchproject/opensearch:2.15.0
+    image: opensearchproject/opensearch:2.16.0
     depends_on:
       - opensearch-init
     container_name: opensearch
@@ -34,7 +34,7 @@ services:
 
   postgres:
     container_name: postgres
-    image: postgres:16.3-alpine
+    image: postgres:16.4-alpine
     ports:
       - "5432:5432"
     environment:

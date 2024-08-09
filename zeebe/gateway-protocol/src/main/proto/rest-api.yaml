@@ -531,8 +531,11 @@ paths:
       description: |
         Search for user tasks based on given criteria.
 
-        **Note**: This endpoint is experimental and not enabled on Camunda clusters
-        out of the box. It has to be enabled explicitly for a cluster.
+        :::note
+        This endpoint is experimental and not enabled on Camunda clusters out of the box.
+        See [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
       requestBody:
         required: false
         content:
@@ -570,8 +573,11 @@ paths:
       description: |
         Search for process instances based on given criteria.
 
-        **Note**: This endpoint is experimental and not enabled on Camunda clusters
-        out of the box. It has to be enabled explicitly for a cluster.
+        :::note
+        This endpoint is experimental and not enabled on Camunda clusters out of the box.
+        See [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
       requestBody:
         required: false
         content:
@@ -609,8 +615,11 @@ paths:
       description: |
         Search for decision definitions based on given criteria.
 
-        **Note**: This endpoint is experimental and not enabled on Camunda clusters
-        out of the box. It has to be enabled explicitly for a cluster.
+        :::note
+        This endpoint is experimental and not enabled on Camunda clusters out of the box.
+        See [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
       requestBody:
         required: false
         content:
@@ -645,6 +654,14 @@ paths:
       tags:
         - Decision Requirements
       summary: Query decision requirements (experimental)
+      description: |
+        Search for decision requirements based on given criteria.
+
+        :::note
+        This endpoint is experimental and not enabled on Camunda clusters out of the box.
+        See [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
       requestBody:
         required: false
         content:

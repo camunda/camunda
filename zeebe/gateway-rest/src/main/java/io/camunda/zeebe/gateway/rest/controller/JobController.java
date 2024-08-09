@@ -53,7 +53,7 @@ public class JobController {
   public CompletableFuture<ResponseEntity<Object>> activateJobs(
       @RequestBody final JobActivationRequest activationRequest) {
     return RequestMapper.toJobsActivationRequest(activationRequest)
-        .fold(this::activateJobs, RestErrorMapper::mapProblemToCompletedResponse);
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::activateJobs);
   }
 
   @PostMapping(
@@ -73,7 +73,7 @@ public class JobController {
   public CompletableFuture<ResponseEntity<Object>> errorJob(
       @PathVariable final long jobKey, @RequestBody final JobErrorRequest errorRequest) {
     return RequestMapper.toJobErrorRequest(errorRequest, jobKey)
-        .fold(this::errorJob, RestErrorMapper::mapProblemToCompletedResponse);
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::errorJob);
   }
 
   @PostMapping(
@@ -93,7 +93,7 @@ public class JobController {
   public CompletableFuture<ResponseEntity<Object>> updateJob(
       @PathVariable final long jobKey, @RequestBody final JobUpdateRequest jobUpdateRequest) {
     return RequestMapper.toJobUpdateRequest(jobUpdateRequest, jobKey)
-        .fold(this::updateJob, RestErrorMapper::mapProblemToCompletedResponse);
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateJob);
   }
 
   private CompletableFuture<ResponseEntity<Object>> activateJobs(
