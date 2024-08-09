@@ -23,9 +23,11 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
+@WebMvcTest(IncidentController.class)
 public class IncidentControllerTest extends RestControllerTest {
 
   static final String INCIDENT_BASE_URL = "/v2/incidents";
