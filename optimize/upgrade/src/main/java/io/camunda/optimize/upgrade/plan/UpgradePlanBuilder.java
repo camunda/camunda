@@ -63,7 +63,7 @@ public class UpgradePlanBuilder {
       return this;
     }
 
-    public AddUpgradeStepBuilder addUpgradeSteps(List<UpgradeStep> upgradeSteps) {
+    public AddUpgradeStepBuilder addUpgradeSteps(List<? extends UpgradeStep> upgradeSteps) {
       upgradePlan.addUpgradeSteps(upgradeSteps);
       return this;
     }

@@ -25,10 +25,10 @@ public class UpgradePlan {
   @Getter @Setter private Semver fromVersion;
 
   public void addUpgradeStep(UpgradeStep upgradeStep) {
-    this.upgradeSteps.add(upgradeStep);
+    upgradeSteps.add(upgradeStep);
   }
 
-  public void addUpgradeSteps(List<UpgradeStep> upgradeSteps) {
+  public void addUpgradeSteps(List<? extends UpgradeStep> upgradeSteps) {
     this.upgradeSteps.addAll(upgradeSteps);
   }
 }
