@@ -53,30 +53,34 @@ public class CreateUserMultiPartitionTest {
             Record::getIntent,
             Record::getRecordType,
             r ->
-                // We want to verify the partition id where the deletion was distributing to and
+                // We want to verify the partition id where the creation was distributing to and
                 // where it was completed. Since only the CommandDistribution records have a
                 // value that contains the partition id, we use the partition id the record was
                 // written on for the other records.
                 r.getValue() instanceof CommandDistributionRecordValue
                     ? ((CommandDistributionRecordValue) r.getValue()).getPartitionId()
                     : r.getPartitionId())
-        .startsWith(tuple(UserIntent.CREATE, RecordType.COMMAND, 1))
+        .startsWith(
+            tuple(UserIntent.CREATE, RecordType.COMMAND, 1),
+            tuple(UserIntent.CREATED, RecordType.EVENT, 1),
+            tuple(CommandDistributionIntent.STARTED, RecordType.EVENT, 1))
+        .containsSubsequence(
+            tuple(CommandDistributionIntent.DISTRIBUTING, RecordType.EVENT, 2),
+            tuple(CommandDistributionIntent.ACKNOWLEDGE, RecordType.COMMAND, 2),
+            tuple(CommandDistributionIntent.ACKNOWLEDGED, RecordType.EVENT, 2))
+        .containsSubsequence(
+            tuple(CommandDistributionIntent.DISTRIBUTING, RecordType.EVENT, 3),
+            tuple(CommandDistributionIntent.ACKNOWLEDGE, RecordType.COMMAND, 3),
+            tuple(CommandDistributionIntent.ACKNOWLEDGED, RecordType.EVENT, 3))
         .endsWith(tuple(CommandDistributionIntent.FINISHED, RecordType.EVENT, 1));
-
-    assertThat(
-            RecordingExporter.records()
-                .withPartitionId(2)
-                .limit(record -> record.getIntent().equals(UserIntent.CREATED))
-                .collect(Collectors.toList()))
-        .extracting(Record::getIntent)
-        .containsExactly(UserIntent.CREATE, UserIntent.CREATED);
-
-    assertThat(
-            RecordingExporter.records()
-                .withPartitionId(3)
-                .limit(record -> record.getIntent().equals(UserIntent.CREATED))
-                .collect(Collectors.toList()))
-        .extracting(Record::getIntent)
-        .containsExactly(UserIntent.CREATE, UserIntent.CREATED);
+    for (int partitionId = 2; partitionId < PARTITION_COUNT; partitionId++) {
+      assertThat(
+              RecordingExporter.records()
+                  .withPartitionId(partitionId)
+                  .limit(record -> record.getIntent().equals(UserIntent.CREATED))
+                  .collect(Collectors.toList()))
+          .extracting(Record::getIntent)
+          .containsExactly(UserIntent.CREATE, UserIntent.CREATED);
+    }
   }
 }
