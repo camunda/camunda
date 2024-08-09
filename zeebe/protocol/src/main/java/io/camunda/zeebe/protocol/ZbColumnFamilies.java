@@ -175,7 +175,10 @@ public enum ZbColumnFamilies implements EnumValue {
   DMN_DECISION_KEY_BY_DECISION_ID_AND_DEPLOYMENT_KEY(83),
   FORM_KEY_BY_FORM_ID_AND_DEPLOYMENT_KEY(84),
 
-  MESSAGE_CORRELATION(85);
+  MESSAGE_CORRELATION(85),
+
+  USERS(86),
+  USER_KEY_BY_USERNAME(87);
 
   private final int value;
 

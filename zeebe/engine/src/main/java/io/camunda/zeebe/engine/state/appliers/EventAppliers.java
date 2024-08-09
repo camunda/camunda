@@ -45,6 +45,7 @@ import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -104,6 +105,8 @@ public final class EventAppliers implements EventApplier {
     registerCommandDistributionAppliers(state);
     registerEscalationAppliers();
     registerResourceDeletionAppliers();
+
+    registerUserAppliers(state);
     return this;
   }
 
@@ -229,6 +232,10 @@ public final class EventAppliers implements EventApplier {
     register(MessageCorrelationIntent.CORRELATING, new MessageCorrelationCorrelatingApplier(state));
     register(MessageCorrelationIntent.CORRELATED, new MessageCorrelationCorrelatedApplier(state));
     register(MessageCorrelationIntent.NOT_CORRELATED, NOOP_EVENT_APPLIER);
+  }
+
+  private void registerUserAppliers(final MutableProcessingState state) {
+    register(UserIntent.CREATED, new UserCreatedApplier(state));
   }
 
   private void registerMessageSubscriptionAppliers(final MutableProcessingState state) {

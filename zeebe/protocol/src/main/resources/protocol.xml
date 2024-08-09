@@ -55,6 +55,7 @@
       <validValue name="PROCESS_INSTANCE_MIGRATION">38</validValue>
       <validValue name="COMPENSATION_SUBSCRIPTION">39</validValue>
       <validValue name="MESSAGE_CORRELATION">40</validValue>
+      <validValue name="USER">41</validValue>
 
       <!-- Management records / record not related to process automation -->
       <validValue name="CHECKPOINT">254</validValue>
