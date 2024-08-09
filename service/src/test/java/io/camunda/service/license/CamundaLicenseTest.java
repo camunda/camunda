@@ -24,39 +24,33 @@ import org.mockito.Mockito;
 public class CamundaLicenseTest {
 
   @Test
-  public void shouldReturnTrueFromIsValidWhenLicenseIsValid() throws InvalidLicenseException {
-    // given
+  public void isValidShouldReturnTrueWhenLicenseIsValid() throws InvalidLicenseException {
     final CamundaLicense testLicense = spy(CamundaLicense.class);
     final LicenseKey mockKey = mock(LicenseKey.class);
 
     Mockito.doReturn(mockKey).when(testLicense).getLicenseKey(anyString());
 
-    // when
     testLicense.initializeWithLicense("whatever");
 
-    // then
     assertTrue(testLicense.isValid());
   }
 
   @Test
-  public void shouldReturnFalseFromIsValidWhenLicenseIsInvalid() throws InvalidLicenseException {
+  public void isValidShouldReturnFalseWhenLicenseIsInvalid() throws InvalidLicenseException {
     final CamundaLicense testLicense = spy(CamundaLicense.class);
-    // given
+
     Mockito.doThrow(new InvalidLicenseException("test exception"))
         .when(testLicense)
         .getLicenseKey(anyString());
 
-    // when
     testLicense.initializeWithLicense("whatever");
 
-    // then
     assertFalse(testLicense.isValid());
   }
 
   @Test
-  public void shouldReturnTrueFromIsSelfManagedWhenPropertyIsSetToSelfManaged()
+  public void isSelfManagedShouldReturnTrueWhenPropertyIsSetToSelfManaged()
       throws InvalidLicenseException {
-    // given
     final CamundaLicense testLicense = spy(CamundaLicense.class);
     final LicenseKey mockKey = mock(LicenseKey.class);
 
@@ -66,17 +60,14 @@ public class CamundaLicenseTest {
 
     Mockito.doReturn(mockKey).when(testLicense).getLicenseKey(anyString());
 
-    // when
     testLicense.initializeWithLicense("whatever");
 
-    // then
     assertTrue(testLicense.isSelfManaged());
   }
 
   @Test
-  public void shouldReturnTrueFromIsSelfManagedWhenPropertyDoesNotExist()
+  public void isSelfManagedShouldReturnTrueWhenPropertyDoesNotExist()
       throws InvalidLicenseException {
-    // given
     final CamundaLicense testLicense = spy(CamundaLicense.class);
     final LicenseKey mockKey = mock(LicenseKey.class);
 
@@ -85,30 +76,24 @@ public class CamundaLicenseTest {
 
     Mockito.doReturn(mockKey).when(testLicense).getLicenseKey(anyString());
 
-    // when
     testLicense.initializeWithLicense("whatever");
 
-    // then
     assertTrue(testLicense.isSelfManaged());
   }
 
   @Test
-  public void shouldReturnProperValidValuesWhenLicenseIsSaas() throws InvalidLicenseException {
-    // given
+  public void isSelfManagedShouldReturnFalseWhenPropertyIsSaaS() throws InvalidLicenseException {
     final CamundaLicense testLicense = spy(CamundaLicense.class);
     final LicenseKey mockKey = mock(LicenseKey.class);
 
     final Map<String, String> testProperties = new HashMap<>();
-    testProperties.put("licenseType", "saas");
+    testProperties.put("environmentMode", "saas");
     when(mockKey.getProperties()).thenReturn(testProperties);
 
     Mockito.doReturn(mockKey).when(testLicense).getLicenseKey(anyString());
 
-    // when
     testLicense.initializeWithLicense("whatever");
 
-    // then
     assertFalse(testLicense.isSelfManaged());
-    assertTrue(testLicense.isValid());
   }
 }
