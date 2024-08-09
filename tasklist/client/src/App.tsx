@@ -88,7 +88,8 @@ const App: React.FC = () => {
   useEffect(() => {
     tracking.track({
       eventName: 'app-loaded',
-      osNotificationPermission: Notification.permission,
+      osNotificationPermission:
+        'Notification' in window ? Notification.permission : 'default',
     });
   }, []);
 

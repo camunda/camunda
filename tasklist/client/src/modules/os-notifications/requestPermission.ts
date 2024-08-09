@@ -9,6 +9,10 @@
 import {tracking} from 'modules/tracking';
 
 async function requestPermission() {
+  if (!('Notification' in window)) {
+    return;
+  }
+
   const permission = await Notification.requestPermission();
 
   tracking.track({

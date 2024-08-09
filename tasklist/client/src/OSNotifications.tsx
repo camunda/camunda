@@ -115,67 +115,70 @@ function useStateMachine(enable: boolean) {
   return state;
 }
 
-const OSNotifications: React.FC = () => {
-  const state = useStateMachine(Notification.permission === 'granted');
-  const tasks = useTasks(
-    {
-      filter: FILTER,
-      state: 'CREATED',
-      sortBy: SORT_BY,
-      sortOrder: 'asc',
-    },
-    {
-      refetchInterval: false,
-    },
-  );
-  const navigate = useNavigate();
-  const notification = useRef<Notification | undefined>();
-  useBeforeUnload(
-    useCallback(() => {
-      if (notification.current) {
-        notification.current.close();
-        notification.current = undefined;
+const OSNotifications: React.FC =
+  'Notification' in window
+    ? () => {
+        const state = useStateMachine(Notification.permission === 'granted');
+        const tasks = useTasks(
+          {
+            filter: FILTER,
+            state: 'CREATED',
+            sortBy: SORT_BY,
+            sortOrder: 'asc',
+          },
+          {
+            refetchInterval: false,
+          },
+        );
+        const navigate = useNavigate();
+        const notification = useRef<Notification | undefined>();
+        useBeforeUnload(
+          useCallback(() => {
+            if (notification.current) {
+              notification.current.close();
+              notification.current = undefined;
+            }
+          }, []),
+        );
+
+        const tick = useCallback(async () => {
+          const result = await tasks.refetch();
+          const data = result.data ?? {pages: []};
+          const numTasks = data.pages.flat().length;
+          if (numTasks > 0) {
+            notification.current = createNotification(numTasks, navigate);
+          }
+        }, [navigate, tasks]);
+
+        const [start, stop] = useInterval(tick, FIFTEEN_MINUTES_IN_MS);
+
+        useEffect(() => {
+          switch (state) {
+            case 'stopped':
+              if (notification.current) {
+                notification.current.close();
+                notification.current = undefined;
+              }
+              stop();
+              break;
+            case 'focused':
+              if (notification.current) {
+                notification.current.close();
+                notification.current = undefined;
+              }
+              stop();
+              break;
+            case 'offline':
+              stop();
+              break;
+            case 'blurred':
+              start();
+              break;
+          }
+        }, [state, start, stop]);
+
+        return null;
       }
-    }, []),
-  );
-
-  const tick = useCallback(async () => {
-    const result = await tasks.refetch();
-    const data = result.data ?? {pages: []};
-    const numTasks = data.pages.flat().length;
-    if (numTasks > 0) {
-      notification.current = createNotification(numTasks, navigate);
-    }
-  }, [navigate, tasks]);
-
-  const [start, stop] = useInterval(tick, FIFTEEN_MINUTES_IN_MS);
-
-  useEffect(() => {
-    switch (state) {
-      case 'stopped':
-        if (notification.current) {
-          notification.current.close();
-          notification.current = undefined;
-        }
-        stop();
-        break;
-      case 'focused':
-        if (notification.current) {
-          notification.current.close();
-          notification.current = undefined;
-        }
-        stop();
-        break;
-      case 'offline':
-        stop();
-        break;
-      case 'blurred':
-        start();
-        break;
-    }
-  }, [state, start, stop]);
-
-  return null;
-};
+    : () => null;
 
 export {OSNotifications};
