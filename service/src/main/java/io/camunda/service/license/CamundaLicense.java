@@ -8,50 +8,40 @@
 package io.camunda.service.license;
 
 import org.apache.commons.lang3.StringUtils;
-import org.camunda.bpm.licensecheck.InvalidLicenseException;
-import org.camunda.bpm.licensecheck.LicenseKey;
-import org.camunda.bpm.licensecheck.LicenseKeyImpl;
 
 public class CamundaLicense {
 
   public static final String LICENSE_ENV_VAR_KEY = "CAMUNDA_LICENSE_KEY";
   public static String licenseStr;
-  public static boolean isLicenseValid;
+  private final EnvironmentVariableReader environmentVariableReader;
 
-  public CamundaLicense() {}
+  public CamundaLicense() {
+    environmentVariableReader = new EnvironmentVariableReader();
+  }
+
+  /**
+   * Used for testing. Test can mock EnvironmentVariableReader to test out different environment
+   * variable values
+   */
+  public CamundaLicense(final EnvironmentVariableReader environmentVariableReader) {
+    this.environmentVariableReader = environmentVariableReader;
+  }
 
   public boolean isValid() {
     if (!isLicenseInitialized()) {
-      initializeStoredLicense();
+      initializeLicenseCache();
     }
 
-    return isLicenseValid;
+    // TODO - return a real computed value, but always return true for now
+    return true;
   }
 
-  protected boolean isLicenseInitialized() {
+  private boolean isLicenseInitialized() {
     return StringUtils.isNotBlank(licenseStr);
   }
 
-  public void initializeStoredLicense() {
-    licenseStr = getEnvironmentVariableValue(LICENSE_ENV_VAR_KEY);
-    isLicenseValid = determineLicenseValidity(licenseStr);
-  }
-
-  protected boolean determineLicenseValidity(final String licenseStr) {
-    try {
-      final LicenseKey license = getLicenseKey(licenseStr);
-      license.validate();
-      return true;
-    } catch (final Exception e) {
-      return false;
-    }
-  }
-
-  protected LicenseKey getLicenseKey(final String licenseStr) throws InvalidLicenseException {
-    return new LicenseKeyImpl(licenseStr);
-  }
-
-  protected String getEnvironmentVariableValue(final String envVarName) {
-    return System.getenv().getOrDefault(envVarName, "");
+  private void initializeLicenseCache() {
+    licenseStr = environmentVariableReader.getEnvironmentVariableValue(LICENSE_ENV_VAR_KEY);
+    // TODO - some license computation here
   }
 }

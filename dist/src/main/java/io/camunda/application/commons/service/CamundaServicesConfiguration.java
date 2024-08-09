@@ -13,7 +13,6 @@ import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
-import io.camunda.service.ManagementService;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -51,11 +50,6 @@ public class CamundaServicesConfiguration {
   @Bean
   public UserTaskServices userTaskServices(final CamundaServices camundaServices) {
     return camundaServices.userTaskServices();
-  }
-
-  @Bean
-  public ManagementService managementService(final CamundaServices camundaServices) {
-    return camundaServices.managementService();
   }
 
   @Bean

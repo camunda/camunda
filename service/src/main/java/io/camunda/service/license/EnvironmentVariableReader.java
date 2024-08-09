@@ -5,19 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service;
+package io.camunda.service.license;
 
-import io.camunda.service.license.CamundaLicense;
-
-public final class ManagementService {
-
-  private final CamundaLicense camundaLicense;
-
-  public ManagementService() {
-    camundaLicense = new CamundaLicense();
-  }
-
-  public boolean isCamundaLicenseValid() {
-    return camundaLicense.isValid();
+public class EnvironmentVariableReader {
+  public String getEnvironmentVariableValue(final String envVarName) {
+    return System.getenv().getOrDefault(envVarName, "");
   }
 }
