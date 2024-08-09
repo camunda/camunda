@@ -156,12 +156,20 @@ public final class SearchQueryResponseMapper {
 
   private static IncidentItem toIncident(final IncidentEntity t) {
     return new IncidentItem()
-        .tenantId(t.tenantId())
         .key(t.key())
-        .processInstanceKey(t.processInstanceKey())
         .processDefinitionKey(t.processDefinitionKey())
+        .processInstanceKey(t.processInstanceKey())
+        .type(t.type())
+        .flowNodeId(t.flowNodeId())
+        .flowNodeInstanceId(t.flowNodeInstanceId())
+        .creationTime(t.creationTime())
         .state(t.state())
-        .creationTime(t.creationTime());
+        .jobKey(t.jobKey())
+        .tenantId(t.tenantId())
+        .hasActiveOperation(t.hasActiveOperation())
+        .lastOperation(null /*new OperationItem()*/)
+        .rootCauseInstance(null /*new ProcessInstanceReferenceItem()*/)
+        .rootCauseDecision(null /*new DecisionInstanceReferenceItem()*/);
   }
 
   private static UserTaskItem toUserTask(final UserTaskEntity t) {
