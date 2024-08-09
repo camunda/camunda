@@ -19,6 +19,7 @@ jobs:
     with:
       branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
       pushDocker: false
+      commitSha: ${{ github.sha }}
 
   run-fe-ci:
     name: run-frontend-tests

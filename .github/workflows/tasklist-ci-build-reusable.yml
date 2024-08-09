@@ -23,6 +23,14 @@ on:
         description: "whether the built docker images are pushed to camunda registry"
         type: boolean
         default: true
+      previewEnv:
+        description: "Defines whether this is a preview environment build or not. If true, the image will be pushed to the Harbor Docker registry."
+        type: boolean
+        default: false
+      commitSha:
+        description: "The sha of the commit that triggered the workflow"
+        type: string
+        required: true
 
 defaults:
   run:
@@ -53,11 +61,10 @@ jobs:
       # Setup: define env variables
       - name: Set GitHub environment variables
         run: |
-          GIT_COMMIT_HASH=$(git rev-parse ${{ inputs.branch }})
           BRANCH_SLUG=$(echo "${{ inputs.branch }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
-          echo "IMAGE_TAG=$(if [ "${{ inputs.branch }}" = "main" ]; then echo $GIT_COMMIT_HASH; else echo "branch-$BRANCH_SLUG"; fi)" >> $GITHUB_ENV
-          echo "CI_IMAGE_TAG=ci-$GIT_COMMIT_HASH" >> $GITHUB_ENV
-          echo "PR_IMAGE_TAG=pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
+          echo "IMAGE_TAG=$(if [ "${{ inputs.branch }}" = "main" ]; then echo ${{ inputs.commitSha  }}; else echo "branch-$BRANCH_SLUG"; fi)" >> $GITHUB_ENV
+          echo "CI_IMAGE_TAG=ci-${{ inputs.commitSha  }}" >> $GITHUB_ENV
+          echo "PR_IMAGE_TAG=pr-${{ inputs.commitSha  }}" >> $GITHUB_ENV
 
       #########################################################################
       # Setup: import secrets from vault
@@ -108,7 +115,7 @@ jobs:
       - name: Build Docker image
         uses: ./.github/actions/build-platform-docker
         with:
-          repository: registry.camunda.cloud/team-hto/tasklist
+          repository: ${{ inputs.previewEnv && 'registry.camunda.cloud/team-camunda/tasklist' || 'registry.camunda.cloud/team-hto/tasklist' }}
           version: |
             ${{ env.IMAGE_TAG }}
             ${{ env.CI_IMAGE_TAG }}

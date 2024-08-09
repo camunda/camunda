@@ -64,6 +64,7 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
+      commitSha: ${{ github.sha }}
 
   run-tests:
     name: run-tests
