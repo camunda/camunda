@@ -88,6 +88,10 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     this.ownerType.wrapString(ownerType);
     this.resourceKey.wrapString(resourceKey);
     this.resourceType.wrapString(resourceType);
-    return ownerAuthorizationColumnFamily.get(ownerAndResourceCompositeKey).copy();
+
+    final var persistedPermissions =
+        ownerAuthorizationColumnFamily.get(ownerAndResourceCompositeKey);
+
+    return persistedPermissions == null ? null : persistedPermissions.copy();
   }
 }
