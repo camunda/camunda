@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -341,7 +342,7 @@ public class JobControllerTest extends RestControllerTest {
   @Test
   void shouldUpdateJob() {
     // given
-    when(jobServices.updateJob(anyLong(), anyInt(), anyLong()))
+    when(jobServices.updateJob(anyLong(), anyMap()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -363,13 +364,13 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(jobServices).updateJob(1L, 5, 1000L);
+    Mockito.verify(jobServices).updateJob(1L, Map.of("retries", 5, "timeout", 1000L));
   }
 
   @Test
   void shouldUpdateJobWithOnlyRetries() {
     // given
-    when(jobServices.updateJob(anyLong(), anyInt(), anyLong()))
+    when(jobServices.updateJob(anyLong(), anyMap()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -390,13 +391,13 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(jobServices).updateJob(1L, 5, 0L);
+    Mockito.verify(jobServices).updateJob(1L, Map.of("retries", 5));
   }
 
   @Test
   void shouldUpdateJobWithOnlyTimeout() {
     // given
-    when(jobServices.updateJob(anyLong(), anyInt(), anyLong()))
+    when(jobServices.updateJob(anyLong(), anyMap()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -417,7 +418,7 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(jobServices).updateJob(1L, 0, 1000L);
+    Mockito.verify(jobServices).updateJob(1L, Map.of("timeout", 1000L));
   }
 
   @Test
@@ -436,45 +437,6 @@ public class JobControllerTest extends RestControllerTest {
           "status": 400,
           "title": "INVALID_ARGUMENT",
           "detail": "At least one of [retries, timeout] is required.",
-          "instance": "%s"
-        }"""
-            .formatted(JOBS_BASE_URL + "/1");
-
-    // when/then
-    webClient
-        .patch()
-        .uri(JOBS_BASE_URL + "/1")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedBody);
-  }
-
-  @Test
-  void shouldRejectUpdateJobWithValues0() {
-    // given
-    final var request =
-        """
-        {
-          "changeset": {
-            "retries": 0,
-            "timeout": 0
-          }
-        }""";
-
-    final var expectedBody =
-        """
-        {
-          "type": "about:blank",
-          "status": 400,
-          "title": "INVALID_ARGUMENT",
-          "detail": "The value for retries is '0' but must be greater than 0. The value for timeout is '0' but must be greater than 0.",
           "instance": "%s"
         }"""
             .formatted(JOBS_BASE_URL + "/1");

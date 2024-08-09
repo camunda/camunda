@@ -18,6 +18,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -42,14 +43,16 @@ public class JobUpdateTest {
   public void shouldUpdateJob() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
-    final int retries = 5;
-    final long timeout = Duration.ofMinutes(5).toMillis();
 
     final var batchRecord = ENGINE.jobs().withType(jobType).activate();
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     // when
-    ENGINE.job().withKey(jobKey).withRetries(retries).withTimeout(timeout).update();
+    ENGINE
+        .job()
+        .withKey(jobKey)
+        .withChangeset(Map.of("retries", 5, "timeout", Duration.ofMinutes(5).toMillis()))
+        .update();
 
     // then
     assertThat(RecordingExporter.jobRecords().limit(4))
@@ -65,13 +68,12 @@ public class JobUpdateTest {
   public void shouldUpdateJobWithOnlyRetries() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
-    final int retries = 5;
 
     final var batchRecord = ENGINE.jobs().withType(jobType).activate();
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     // when
-    ENGINE.job().withKey(jobKey).withRetries(retries).update();
+    ENGINE.job().withKey(jobKey).withChangeset(Map.of("retries", 5)).update();
 
     // then
     assertThat(RecordingExporter.jobRecords().limit(4))
@@ -84,13 +86,16 @@ public class JobUpdateTest {
   public void shouldUpdateJobWithOnlyTimeout() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
-    final long timeout = Duration.ofMinutes(5).toMillis();
 
     final var batchRecord = ENGINE.jobs().withType(jobType).activate();
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     // when
-    ENGINE.job().withKey(jobKey).withTimeout(timeout).update();
+    ENGINE
+        .job()
+        .withKey(jobKey)
+        .withChangeset(Map.of("timeout", Duration.ofMinutes(5).toMillis()))
+        .update();
 
     // then
     assertThat(RecordingExporter.jobRecords().limit(4))
@@ -103,16 +108,13 @@ public class JobUpdateTest {
   public void shouldRejectUpdateTimoutIfJobNotFound() {
     // given
     final long jobKey = 123L;
-    final int retries = 3;
-    final long timeout = Duration.ofMinutes(10).toMillis();
 
     // when
     final var jobRecord =
         ENGINE
             .job()
             .withKey(jobKey)
-            .withRetries(retries)
-            .withTimeout(timeout)
+            .withChangeset(Map.of("retries", 5, "timeout", Duration.ofMinutes(5).toMillis()))
             .expectRejection()
             .update();
 
