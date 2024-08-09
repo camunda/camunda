@@ -385,9 +385,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/react@npm:1.63.1":
-  version: 1.63.1
-  resolution: "@carbon/react@npm:1.63.1"
+"@carbon/react@npm:1.63.2":
+  version: 1.63.2
+  resolution: "@carbon/react@npm:1.63.2"
   dependencies:
     "@babel/runtime": "npm:^7.24.7"
     "@carbon/feature-flags": "npm:^0.21.0"
@@ -415,7 +415,7 @@ __metadata:
     react: ^16.8.6 || ^17.0.1 || ^18.2.0
     react-dom: ^16.8.6 || ^17.0.1 || ^18.2.0
     sass: ^1.33.0
-  checksum: 10c0/99237170f1be35088f6653b16d34b57628e34f130281e70908df4369dc0e91ecac6813bb7473556a9907ba929c2c14172caf1b424b1db856c1d1dcdd5f7bbfe1
+  checksum: 10c0/32ecd5a80aa6076e6989b9b10e627a9560560ae42139b360cae259a9bb00a0a2568d17feef0c401331f4af5be82fcfa3d9c4427e7fd6e7e36b53a987cb47d6cb
   languageName: node
   linkType: hard
 
@@ -2500,7 +2500,7 @@ __metadata:
   resolution: "identity-frontend@workspace:."
   dependencies:
     "@camunda/camunda-composite-components": "npm:0.8.1"
-    "@carbon/react": "npm:1.63.1"
+    "@carbon/react": "npm:1.63.2"
     "@types/event-source-polyfill": "npm:1.0.5"
     "@types/node": "npm:20.14.14"
     "@types/react": "npm:18.3.3"
