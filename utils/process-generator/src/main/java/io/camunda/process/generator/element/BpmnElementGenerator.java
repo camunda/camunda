@@ -7,10 +7,10 @@
  */
 package io.camunda.process.generator.element;
 
-import io.camunda.process.generator.BpmnFeature;
+import io.camunda.process.generator.BpmnGenerator;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 
-public interface BpmnElementGenerator extends BpmnFeature {
+public interface BpmnElementGenerator extends BpmnGenerator {
 
   AbstractFlowNodeBuilder<?, ?> addElement(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath);
