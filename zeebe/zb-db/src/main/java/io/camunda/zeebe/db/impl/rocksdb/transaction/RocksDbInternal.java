@@ -73,9 +73,7 @@ public final class RocksDbInternal {
             Long.TYPE,
             byte[].class,
             Integer.TYPE,
-            Integer.TYPE,
             byte[].class,
-            Integer.TYPE,
             Integer.TYPE,
             Long.TYPE,
             Boolean.TYPE);
@@ -95,7 +93,7 @@ public final class RocksDbInternal {
   private static void getWithHandle() throws NoSuchMethodException {
     final var method =
         Transaction.class.getDeclaredMethod(
-            "get", Long.TYPE, Long.TYPE, byte[].class, Integer.TYPE, Integer.TYPE, Long.TYPE);
+            "get", Long.TYPE, Long.TYPE, byte[].class, Integer.TYPE, Long.TYPE);
     method.setAccessible(true);
     try {
       getWithHandle = MethodHandles.lookup().unreflect(method);
