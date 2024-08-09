@@ -62,11 +62,15 @@ public class AuthorizationCreateProcessor
       rejectionWriter.appendRejection(
           command,
           RejectionType.ALREADY_EXISTS,
-          "Expected to create authorization with owner key: %s and resource key %s, but an authorization with these values already exists");
+          "Expected to create authorization with owner key: %s and resource key %s, but an authorization with these values already exists"
+              .formatted(
+                  authorizationToCreate.getOwnerKey(), authorizationToCreate.getResourceKey()));
       responseWriter.writeRejectionOnCommand(
           command,
           RejectionType.ALREADY_EXISTS,
-          "Expected to create authorization with owner key: %s and resource key %s, but an authorization with these values already exists");
+          "Expected to create authorization with owner key: %s and resource key %s, but an authorization with these values already exists"
+              .formatted(
+                  authorizationToCreate.getOwnerKey(), authorizationToCreate.getResourceKey()));
       return;
     }
 
@@ -79,6 +83,8 @@ public class AuthorizationCreateProcessor
     stateWriter.appendFollowUpEvent(key, AuthorizationIntent.CREATED, newAuthorizationRecord);
     responseWriter.writeEventOnCommand(
         key, AuthorizationIntent.CREATED, newAuthorizationRecord, command);
+
+    distributionBehavior.distributeCommand(key, command);
   }
 
   @Override
