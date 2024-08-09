@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
@@ -34,12 +33,13 @@ public class AuthorizationCreateProcessor
   private final CommandDistributionBehavior distributionBehavior;
 
   public AuthorizationCreateProcessor(
+      final KeyGenerator keyGenerator,
       final ProcessingState processingState,
       final Writers writers,
       final CommandDistributionBehavior distributionBehavior) {
     authorizationState = processingState.getAuthorizationState();
     stateWriter = writers.state();
-    keyGenerator = ((MutableProcessingState) processingState).getKeyGenerator();
+    this.keyGenerator = keyGenerator;
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.distributionBehavior = distributionBehavior;
