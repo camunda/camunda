@@ -6,7 +6,8 @@
     </startEvent>
     <userTask id="task" name="task">
       <extensionElements>
-        <zeebe:userTask/>
+        <zeebe:userTask />
+        <zeebe:priorityDefinition priority="22"/>
       </extensionElements>
       <incoming>sequenceFlow_f87da8da-ce50-40f9-abb9-21efc2b81703</incoming>
       <outgoing>sequenceFlow_839d6cf7-456e-493a-b24c-e8b61e72b60c</outgoing>

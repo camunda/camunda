@@ -28,13 +28,16 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.protocol.Protocol;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.commons.text.StringEscapeUtils;
@@ -153,45 +156,17 @@ public class TasklistTester {
   //    return processInstanceKey;
   //  }
   //
-  public TasklistTester createAndDeploySimpleProcess(
-      final String processId, final String flowNodeBpmnId) {
+  @SafeVarargs
+  public final TasklistTester createAndDeploySimpleProcess(
+      final String processId,
+      final String flowNodeBpmnId,
+      final Consumer<UserTaskBuilder>... taskModifiers) {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
-            .userTask(flowNodeBpmnId)
-            .endEvent()
-            .done();
-    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
-    return this;
-  }
-
-  public TasklistTester createAndDeploySimpleProcessZeebeUserTask(
-      final String processId, final String flowNodeBpmnId) {
-    return createAndDeploySimpleProcessZeebeUserTask(processId, flowNodeBpmnId, null);
-  }
-
-  public TasklistTester createAndDeploySimpleProcessZeebeUserTask(
-      final String processId, final String flowNodeBpmnId, final String assignee) {
-
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess(processId)
-            .startEvent("start")
-            .userTask(flowNodeBpmnId)
-            .zeebeAssignee(assignee)
-            .zeebeUserTask()
-            .endEvent("end")
-            .done();
-    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
-    return this;
-  }
-
-  public TasklistTester createAndDeploySimpleProcessWithZeebeUserTask(
-      final String processId, final String flowNodeBpmnId) {
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess(processId)
-            .startEvent("start")
-            .userTask(flowNodeBpmnId)
-            .zeebeUserTask()
+            .userTask(
+                flowNodeBpmnId,
+                task -> Arrays.stream(taskModifiers).forEach(modifier -> modifier.accept(task)))
             .endEvent()
             .done();
     processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
@@ -216,45 +191,6 @@ public class TasklistTester {
                 .build())
         .send()
         .join();
-    return this;
-  }
-
-  public TasklistTester createAndDeploySimpleProcessWithCandidateGroup(
-      final String processId, final String flowNodeBpmnId, final String candidateGroup) {
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess(processId)
-            .startEvent("start")
-            .userTask(flowNodeBpmnId)
-            .zeebeCandidateGroups(candidateGroup)
-            .endEvent()
-            .done();
-    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
-    return this;
-  }
-
-  public TasklistTester createAndDeploySimpleProcessWithCandidateUser(
-      final String processId, final String flowNodeBpmnId, final String candidateUser) {
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess(processId)
-            .startEvent("start")
-            .userTask(flowNodeBpmnId)
-            .zeebeCandidateUsers(candidateUser)
-            .endEvent()
-            .done();
-    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
-    return this;
-  }
-
-  public TasklistTester createAndDeploySimpleProcessWithAssignee(
-      final String processId, final String flowNodeBpmnId, final String user) {
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess(processId)
-            .startEvent("start")
-            .userTask(flowNodeBpmnId)
-            .zeebeAssignee(user)
-            .endEvent()
-            .done();
-    processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, process, processId + ".bpmn");
     return this;
   }
 
@@ -581,24 +517,6 @@ public class TasklistTester {
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
     return this;
-  }
-
-  public TasklistTester createZeebeUserTask(
-      final String bpmnProcessId,
-      final String flowNodeBpmnId,
-      final String assignee,
-      final int numberOfInstances) {
-    return createAndDeploySimpleProcessZeebeUserTask(bpmnProcessId, flowNodeBpmnId, assignee)
-        .processIsDeployed()
-        .then()
-        .startProcessInstances(bpmnProcessId, numberOfInstances)
-        .then()
-        .taskIsCreated(flowNodeBpmnId);
-  }
-
-  public TasklistTester createZeebeUserTask(
-      final String bpmnProcessId, final String flowNodeBpmnId, final int numberOfInstances) {
-    return createZeebeUserTask(bpmnProcessId, flowNodeBpmnId, null, numberOfInstances);
   }
 
   public TasklistTester tasksAreCreated(final String flowNodeBpmnId, final int taskCount) {

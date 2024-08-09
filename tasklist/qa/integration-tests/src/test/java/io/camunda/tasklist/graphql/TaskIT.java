@@ -35,6 +35,7 @@ import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -1139,8 +1140,16 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     @Test
     public void shouldAssignUserTask() {
       final String user = "demo";
-
-      final String taskId = tester.createZeebeUserTask(BPMN_PROCESS_ID, ELEMENT_ID, 1).getTaskId();
+      final String taskId =
+          tester
+              .createAndDeploySimpleProcess(
+                  BPMN_PROCESS_ID, ELEMENT_ID, AbstractUserTaskBuilder::zeebeUserTask)
+              .processIsDeployed()
+              .then()
+              .startProcessInstance(BPMN_PROCESS_ID)
+              .then()
+              .taskIsCreated(ELEMENT_ID)
+              .getTaskId();
 
       zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(user).send().join();
 
@@ -1165,7 +1174,16 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
     @Test
     public void shouldUpdateUserTask() {
-      final String taskId = tester.createZeebeUserTask(BPMN_PROCESS_ID, ELEMENT_ID, 1).getTaskId();
+      final String taskId =
+          tester
+              .createAndDeploySimpleProcess(
+                  BPMN_PROCESS_ID, ELEMENT_ID, AbstractUserTaskBuilder::zeebeUserTask)
+              .processIsDeployed()
+              .then()
+              .startProcessInstance(BPMN_PROCESS_ID)
+              .then()
+              .taskIsCreated(ELEMENT_ID)
+              .getTaskId();
       final List<String> candidateGroups = new ArrayList<>();
       candidateGroups.add("candidateGroupA");
       candidateGroups.add("candidateGroupB");
@@ -1211,7 +1229,16 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
     @Test
     public void shouldCompleteUserTaskWithVariables() {
-      final String taskId = tester.createZeebeUserTask(BPMN_PROCESS_ID, ELEMENT_ID, 1).getTaskId();
+      final String taskId =
+          tester
+              .createAndDeploySimpleProcess(
+                  BPMN_PROCESS_ID, ELEMENT_ID, AbstractUserTaskBuilder::zeebeUserTask)
+              .processIsDeployed()
+              .then()
+              .startProcessInstance(BPMN_PROCESS_ID)
+              .then()
+              .taskIsCreated(ELEMENT_ID)
+              .getTaskId();
       final Map<String, Object> variables = new HashMap<>();
       variables.put("varA", "value Var A");
       variables.put("varB", 123);

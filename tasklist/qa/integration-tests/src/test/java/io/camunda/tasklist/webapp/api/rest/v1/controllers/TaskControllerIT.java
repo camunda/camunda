@@ -32,6 +32,7 @@ import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -95,11 +96,10 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final int numberOfInstances,
       final String candidateGroup) {
     return tester
-        .createAndDeploySimpleProcessWithCandidateGroup(
-            bpmnProcessId, flowNodeBpmnId, candidateGroup)
-        .then()
+        .createAndDeploySimpleProcess(
+            bpmnProcessId, flowNodeBpmnId, b -> b.zeebeCandidateGroups(candidateGroup))
         .processIsDeployed()
-        .and()
+        .then()
         .startProcessInstances(bpmnProcessId, numberOfInstances)
         .then()
         .taskIsCreated(flowNodeBpmnId);
@@ -111,7 +111,8 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final int numberOfInstances,
       final String candidateUser) {
     return tester
-        .createAndDeploySimpleProcessWithCandidateUser(bpmnProcessId, flowNodeBpmnId, candidateUser)
+        .createAndDeploySimpleProcess(
+            bpmnProcessId, flowNodeBpmnId, t -> t.zeebeCandidateUsers(candidateUser))
         .then()
         .processIsDeployed()
         .and()
@@ -126,7 +127,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final int numberOfInstances,
       final String assignee) {
     return tester
-        .createAndDeploySimpleProcessWithAssignee(bpmnProcessId, flowNodeBpmnId, assignee)
+        .createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId, t -> t.zeebeAssignee(assignee))
         .then()
         .processIsDeployed()
         .and()
@@ -240,10 +241,32 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final String bpmnProcessId = "testProcess";
       final String flowNodeBpmnId = "taskA_".concat(UUID.randomUUID().toString());
       final int numberOfInstances = 3;
+      tester
+          .createAndDeploySimpleProcess(
+              bpmnProcessId, flowNodeBpmnId, b -> b.zeebeCandidateUsers("demo"))
+          .processIsDeployed()
+          .then()
+          .startProcessInstances(bpmnProcessId, numberOfInstances)
+          .then()
+          .taskIsCreated(flowNodeBpmnId);
 
-      createTaskWithCandidateUser(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "demo");
-      createTaskWithCandidateUser(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "admin");
-      createTaskWithCandidateUser(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "john");
+      tester
+          .createAndDeploySimpleProcess(
+              bpmnProcessId, flowNodeBpmnId, b -> b.zeebeCandidateUsers("admin"))
+          .processIsDeployed()
+          .then()
+          .startProcessInstances(bpmnProcessId, numberOfInstances)
+          .then()
+          .taskIsCreated(flowNodeBpmnId);
+
+      tester
+          .createAndDeploySimpleProcess(
+              bpmnProcessId, flowNodeBpmnId, b -> b.zeebeCandidateUsers("john"))
+          .processIsDeployed()
+          .then()
+          .startProcessInstances(bpmnProcessId, numberOfInstances)
+          .then()
+          .taskIsCreated(flowNodeBpmnId);
       // when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins", "Users",
       // "Sales"));
 
@@ -786,7 +809,15 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final String bpmnProcessId = "testProcess";
       final String flowNodeBpmnId = "taskA";
       final String taskId =
-          tester.createZeebeUserTask(bpmnProcessId, flowNodeBpmnId, numberOfTasks).getTaskId();
+          tester
+              .createAndDeploySimpleProcess(
+                  bpmnProcessId, flowNodeBpmnId, AbstractUserTaskBuilder::zeebeUserTask)
+              .processIsDeployed()
+              .then()
+              .startProcessInstance(bpmnProcessId)
+              .then()
+              .taskIsCreated(flowNodeBpmnId)
+              .getTaskId();
       final var result =
           mockMvcHelper.doRequest(
               patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/assign"), taskId));
@@ -1133,8 +1164,19 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final String bpmnProcessId = "simpleTestProcess";
       final String flowNodeBpmnId = "taskE_".concat(UUID.randomUUID().toString());
 
-      final var taskId =
-          tester.createZeebeUserTask(bpmnProcessId, flowNodeBpmnId, "demo", 1).getTaskId();
+      final String taskId =
+          tester
+              .createAndDeploySimpleProcess(
+                  bpmnProcessId,
+                  flowNodeBpmnId,
+                  AbstractUserTaskBuilder::zeebeUserTask,
+                  task -> task.zeebeAssignee("demo"))
+              .processIsDeployed()
+              .then()
+              .startProcessInstance(bpmnProcessId)
+              .then()
+              .taskIsCreated(flowNodeBpmnId)
+              .getTaskId();
 
       final var saveVariablesRequest =
           new SaveVariablesRequest()

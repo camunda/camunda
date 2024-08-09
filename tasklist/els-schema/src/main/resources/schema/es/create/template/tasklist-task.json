@@ -84,7 +84,10 @@
       "customHeaders": {
         "type": "object",
         "dynamic": true
+      },
+      "priority": {
+        "type": "integer"
       }
-		}
+    }
 	}
 }

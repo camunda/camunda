@@ -56,7 +56,7 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
             .waitUntil()
             .processIsDeployed()
             .and()
-            .startProcessInstances(bpmnProcessId, 1)
+            .startProcessInstance(bpmnProcessId)
             .waitUntil()
             .tasksAreCreated(flowNodeBpmnId, 1);
         initializedEmbeddedTests = true;
@@ -132,7 +132,7 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
             .waitUntil()
             .processIsDeployed()
             .and()
-            .startProcessInstances(bpmnProcessId, 1)
+            .startProcessInstance(bpmnProcessId)
             .waitUntil()
             .taskIsCreated(flowNodeBpmnId);
 

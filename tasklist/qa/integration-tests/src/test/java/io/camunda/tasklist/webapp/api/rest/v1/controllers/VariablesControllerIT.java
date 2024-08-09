@@ -53,7 +53,7 @@ public class VariablesControllerIT extends TasklistZeebeIntegrationTest {
             .then()
             .processIsDeployed()
             .and()
-            .startProcessInstances(bpmnProcessId, 1)
+            .startProcessInstance(bpmnProcessId)
             .and()
             .taskIsCreated(flowNodeBpmnId)
             .and()

@@ -18,8 +18,12 @@ package io.camunda.zeebe.model.bpmn.instance.zeebe;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 
 public interface ZeebePriorityDefinition extends BpmnModelElementInstance {
-
+  /**
+   * Zeebe User Task priority is defined as a number between 0 and 100. The default assigned
+   * priority is 50.
+   */
   String DEFAULT_LITERAL_PRIORITY = "50";
+
   Integer DEFAULT_NUMBER_PRIORITY = Integer.parseInt(DEFAULT_LITERAL_PRIORITY);
 
   String getPriority();

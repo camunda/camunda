@@ -37,12 +37,13 @@ public class TaskQuery {
   private TaskOrderBy[] sort;
   private TaskByCandidateUserOrGroup taskByCandidateUserOrGroups;
   private TaskImplementation implementation;
+  private RangeValueFilter priority;
 
   public TaskState getState() {
     return state;
   }
 
-  public TaskQuery setState(TaskState state) {
+  public TaskQuery setState(final TaskState state) {
     this.state = state;
     return this;
   }
@@ -51,7 +52,7 @@ public class TaskQuery {
     return assigned;
   }
 
-  public TaskQuery setAssigned(Boolean assigned) {
+  public TaskQuery setAssigned(final Boolean assigned) {
     this.assigned = assigned;
     return this;
   }
@@ -60,7 +61,7 @@ public class TaskQuery {
     return assignee;
   }
 
-  public TaskQuery setAssignee(String assignee) {
+  public TaskQuery setAssignee(final String assignee) {
     this.assignee = assignee;
     return this;
   }
@@ -69,7 +70,7 @@ public class TaskQuery {
     return taskDefinitionId;
   }
 
-  public TaskQuery setTaskDefinitionId(String taskDefinitionId) {
+  public TaskQuery setTaskDefinitionId(final String taskDefinitionId) {
     this.taskDefinitionId = taskDefinitionId;
     return this;
   }
@@ -78,7 +79,7 @@ public class TaskQuery {
     return candidateGroup;
   }
 
-  public TaskQuery setCandidateGroup(String candidateGroup) {
+  public TaskQuery setCandidateGroup(final String candidateGroup) {
     this.candidateGroup = candidateGroup;
     return this;
   }
@@ -87,7 +88,7 @@ public class TaskQuery {
     return candidateUser;
   }
 
-  public TaskQuery setCandidateUser(String candidateUser) {
+  public TaskQuery setCandidateUser(final String candidateUser) {
     this.candidateUser = candidateUser;
     return this;
   }
@@ -96,7 +97,7 @@ public class TaskQuery {
     return processDefinitionId;
   }
 
-  public TaskQuery setProcessDefinitionId(String processDefinitionId) {
+  public TaskQuery setProcessDefinitionId(final String processDefinitionId) {
     this.processDefinitionId = processDefinitionId;
     return this;
   }
@@ -105,7 +106,7 @@ public class TaskQuery {
     return processInstanceId;
   }
 
-  public TaskQuery setProcessInstanceId(String processInstanceId) {
+  public TaskQuery setProcessInstanceId(final String processInstanceId) {
     this.processInstanceId = processInstanceId;
     return this;
   }
@@ -114,7 +115,7 @@ public class TaskQuery {
     return taskVariables;
   }
 
-  public TaskQuery setTaskVariables(TaskByVariables[] taskVariables) {
+  public TaskQuery setTaskVariables(final TaskByVariables[] taskVariables) {
     this.taskVariables = taskVariables;
     return this;
   }
@@ -123,7 +124,7 @@ public class TaskQuery {
     return tenantIds;
   }
 
-  public TaskQuery setTenantIds(String[] tenantIds) {
+  public TaskQuery setTenantIds(final String[] tenantIds) {
     this.tenantIds = tenantIds;
     return this;
   }
@@ -132,7 +133,7 @@ public class TaskQuery {
     return pageSize;
   }
 
-  public TaskQuery setPageSize(int pageSize) {
+  public TaskQuery setPageSize(final int pageSize) {
     this.pageSize = pageSize;
     return this;
   }
@@ -141,7 +142,7 @@ public class TaskQuery {
     return searchAfter;
   }
 
-  public TaskQuery setSearchAfter(String[] searchAfter) {
+  public TaskQuery setSearchAfter(final String[] searchAfter) {
     this.searchAfter = searchAfter;
     return this;
   }
@@ -150,7 +151,7 @@ public class TaskQuery {
     return searchAfterOrEqual;
   }
 
-  public TaskQuery setSearchAfterOrEqual(String[] searchAfterOrEqual) {
+  public TaskQuery setSearchAfterOrEqual(final String[] searchAfterOrEqual) {
     this.searchAfterOrEqual = searchAfterOrEqual;
     return this;
   }
@@ -159,7 +160,7 @@ public class TaskQuery {
     return searchBefore;
   }
 
-  public TaskQuery setSearchBefore(String[] searchBefore) {
+  public TaskQuery setSearchBefore(final String[] searchBefore) {
     this.searchBefore = searchBefore;
     return this;
   }
@@ -168,7 +169,7 @@ public class TaskQuery {
     return searchBeforeOrEqual;
   }
 
-  public TaskQuery setSearchBeforeOrEqual(String[] searchBeforeOrEqual) {
+  public TaskQuery setSearchBeforeOrEqual(final String[] searchBeforeOrEqual) {
     this.searchBeforeOrEqual = searchBeforeOrEqual;
     return this;
   }
@@ -177,7 +178,7 @@ public class TaskQuery {
     return followUpDate;
   }
 
-  public TaskQuery setFollowUpDate(DateFilter followUpDate) {
+  public TaskQuery setFollowUpDate(final DateFilter followUpDate) {
     this.followUpDate = followUpDate;
     return this;
   }
@@ -186,7 +187,7 @@ public class TaskQuery {
     return dueDate;
   }
 
-  public TaskQuery setDueDate(DateFilter dueDate) {
+  public TaskQuery setDueDate(final DateFilter dueDate) {
     this.dueDate = dueDate;
     return this;
   }
@@ -195,7 +196,7 @@ public class TaskQuery {
     return sort;
   }
 
-  public TaskQuery setSort(TaskOrderBy[] sort) {
+  public TaskQuery setSort(final TaskOrderBy[] sort) {
     this.sort = sort;
     return this;
   }
@@ -204,7 +205,7 @@ public class TaskQuery {
     return assignees;
   }
 
-  public TaskQuery setAssignees(String[] assignees) {
+  public TaskQuery setAssignees(final String[] assignees) {
     this.assignees = assignees;
     return this;
   }
@@ -213,7 +214,7 @@ public class TaskQuery {
     return candidateGroups;
   }
 
-  public TaskQuery setCandidateGroups(String[] candidateGroups) {
+  public TaskQuery setCandidateGroups(final String[] candidateGroups) {
     this.candidateGroups = candidateGroups;
     return this;
   }
@@ -222,7 +223,7 @@ public class TaskQuery {
     return candidateUsers;
   }
 
-  public TaskQuery setCandidateUsers(String[] candidateUsers) {
+  public TaskQuery setCandidateUsers(final String[] candidateUsers) {
     this.candidateUsers = candidateUsers;
     return this;
   }
@@ -232,7 +233,7 @@ public class TaskQuery {
   }
 
   public TaskQuery setTaskByCandidateUserOrGroups(
-      TaskByCandidateUserOrGroup taskByCandidateUserOrGroups) {
+      final TaskByCandidateUserOrGroup taskByCandidateUserOrGroups) {
     this.taskByCandidateUserOrGroups = taskByCandidateUserOrGroups;
     return this;
   }
@@ -241,34 +242,76 @@ public class TaskQuery {
     return implementation;
   }
 
-  public TaskQuery setImplementation(TaskImplementation implementation) {
+  public TaskQuery setImplementation(final TaskImplementation implementation) {
     this.implementation = implementation;
+    return this;
+  }
+
+  public RangeValueFilter getPriority() {
+    return priority;
+  }
+
+  public TaskQuery setPriority(final RangeValueFilter priority) {
+    this.priority = priority;
     return this;
   }
 
   public TaskQuery createCopy() {
     return new TaskQuery()
-        .setAssigned(this.assigned)
-        .setAssignee(this.assignee)
-        .setTaskDefinitionId(this.taskDefinitionId)
-        .setPageSize(this.pageSize)
-        .setSearchAfter(this.searchAfter)
-        .setSearchAfterOrEqual(this.searchAfterOrEqual)
-        .setSearchBefore(this.searchBefore)
-        .setSearchBeforeOrEqual(this.searchBeforeOrEqual)
-        .setState(this.state)
-        .setTaskVariables(this.taskVariables)
-        .setTenantIds(this.tenantIds)
-        .setCandidateGroup(this.candidateGroup)
-        .setTaskByCandidateUserOrGroups(this.taskByCandidateUserOrGroups)
-        .setImplementation(this.implementation)
-        .setAssignees(this.assignees)
-        .setCandidateGroups(this.candidateGroups)
-        .setCandidateUsers(this.candidateUsers);
+        .setAssigned(assigned)
+        .setAssignee(assignee)
+        .setTaskDefinitionId(taskDefinitionId)
+        .setPageSize(pageSize)
+        .setSearchAfter(searchAfter)
+        .setSearchAfterOrEqual(searchAfterOrEqual)
+        .setSearchBefore(searchBefore)
+        .setSearchBeforeOrEqual(searchBeforeOrEqual)
+        .setState(state)
+        .setTaskVariables(taskVariables)
+        .setTenantIds(tenantIds)
+        .setCandidateGroup(candidateGroup)
+        .setTaskByCandidateUserOrGroups(taskByCandidateUserOrGroups)
+        .setImplementation(implementation)
+        .setAssignees(assignees)
+        .setCandidateGroups(candidateGroups)
+        .setCandidateUsers(candidateUsers)
+        .setPriority(priority);
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    int result =
+        Objects.hash(
+            state,
+            assigned,
+            assignee,
+            taskDefinitionId,
+            candidateGroup,
+            candidateUser,
+            processDefinitionId,
+            processInstanceId,
+            pageSize,
+            followUpDate,
+            dueDate,
+            taskByCandidateUserOrGroups,
+            implementation,
+            priority);
+    result = 31 * result + Arrays.hashCode(tenantIds);
+    result = 31 * result + Arrays.hashCode(assignees);
+    result = 31 * result + Arrays.hashCode(candidateGroups);
+    result = 31 * result + Arrays.hashCode(candidateUsers);
+    result = 31 * result + Arrays.hashCode(taskVariables);
+    result = 31 * result + Arrays.hashCode(tenantIds);
+    result = 31 * result + Arrays.hashCode(searchAfter);
+    result = 31 * result + Arrays.hashCode(searchAfterOrEqual);
+    result = 31 * result + Arrays.hashCode(searchBefore);
+    result = 31 * result + Arrays.hashCode(searchBeforeOrEqual);
+    result = 31 * result + Arrays.hashCode(sort);
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -297,39 +340,9 @@ public class TaskQuery {
         && Arrays.equals(searchBeforeOrEqual, taskQuery.searchBeforeOrEqual)
         && Objects.equals(followUpDate, taskQuery.followUpDate)
         && Objects.equals(dueDate, taskQuery.dueDate)
-        && Arrays.equals(sort, taskQuery.sort)
-        && Objects.equals(taskByCandidateUserOrGroups, taskQuery.taskByCandidateUserOrGroups);
-  }
-
-  @Override
-  public int hashCode() {
-    int result =
-        Objects.hash(
-            state,
-            assigned,
-            assignee,
-            taskDefinitionId,
-            candidateGroup,
-            candidateUser,
-            processDefinitionId,
-            processInstanceId,
-            pageSize,
-            followUpDate,
-            dueDate,
-            taskByCandidateUserOrGroups,
-            implementation);
-    result = 31 * result + Arrays.hashCode(tenantIds);
-    result = 31 * result + Arrays.hashCode(assignees);
-    result = 31 * result + Arrays.hashCode(candidateGroups);
-    result = 31 * result + Arrays.hashCode(candidateUsers);
-    result = 31 * result + Arrays.hashCode(taskVariables);
-    result = 31 * result + Arrays.hashCode(tenantIds);
-    result = 31 * result + Arrays.hashCode(searchAfter);
-    result = 31 * result + Arrays.hashCode(searchAfterOrEqual);
-    result = 31 * result + Arrays.hashCode(searchBefore);
-    result = 31 * result + Arrays.hashCode(searchBeforeOrEqual);
-    result = 31 * result + Arrays.hashCode(sort);
-    return result;
+        && Objects.equals(priority, taskQuery.priority)
+        && Objects.equals(taskByCandidateUserOrGroups, taskQuery.taskByCandidateUserOrGroups)
+        && Arrays.equals(sort, taskQuery.sort);
   }
 
   @Override
@@ -387,6 +400,8 @@ public class TaskQuery {
         + taskByCandidateUserOrGroups
         + ", implementation="
         + implementation
+        + ", priority="
+        + priority
         + '}';
   }
 }

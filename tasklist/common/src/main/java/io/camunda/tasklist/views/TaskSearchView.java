@@ -41,6 +41,7 @@ public class TaskSearchView {
   private boolean first = false;
   private String[] sortValues;
   private TaskImplementation implementation;
+  private Integer priority;
 
   public String getId() {
     return id;
@@ -240,6 +241,46 @@ public class TaskSearchView {
     return this;
   }
 
+  public Integer getPriority() {
+    return priority;
+  }
+
+  public TaskSearchView setPriority(Integer priority) {
+    this.priority = priority;
+    return this;
+  }
+
+  @Override
+  public int hashCode() {
+    int result =
+        Objects.hash(
+            super.hashCode(),
+            id,
+            bpmnProcessId,
+            processDefinitionId,
+            flowNodeBpmnId,
+            flowNodeInstanceId,
+            processInstanceId,
+            creationTime,
+            completionTime,
+            state,
+            assignee,
+            formKey,
+            formId,
+            formVersion,
+            isFormEmbedded,
+            tenantId,
+            followUpDate,
+            dueDate,
+            first,
+            implementation,
+            priority);
+    result = 31 * result + Arrays.hashCode(candidateGroups);
+    result = 31 * result + Arrays.hashCode(candidateUsers);
+    result = 31 * result + Arrays.hashCode(sortValues);
+    return result;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -273,37 +314,8 @@ public class TaskSearchView {
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(followUpDate, that.followUpDate)
         && Objects.equals(dueDate, that.dueDate)
+        && Objects.equals(priority, that.priority)
         && Arrays.equals(sortValues, that.sortValues);
-  }
-
-  @Override
-  public int hashCode() {
-    int result =
-        Objects.hash(
-            super.hashCode(),
-            id,
-            bpmnProcessId,
-            processDefinitionId,
-            flowNodeBpmnId,
-            flowNodeInstanceId,
-            processInstanceId,
-            creationTime,
-            completionTime,
-            state,
-            assignee,
-            formKey,
-            formId,
-            formVersion,
-            isFormEmbedded,
-            tenantId,
-            followUpDate,
-            dueDate,
-            first,
-            implementation);
-    result = 31 * result + Arrays.hashCode(candidateGroups);
-    result = 31 * result + Arrays.hashCode(candidateUsers);
-    result = 31 * result + Arrays.hashCode(sortValues);
-    return result;
   }
 
   @Override
@@ -331,6 +343,7 @@ public class TaskSearchView {
         .add("first=" + first)
         .add("sortValues=" + Arrays.toString(sortValues))
         .add("implementation=" + implementation)
+        .add("priority=" + priority)
         .toString();
   }
 
@@ -356,7 +369,8 @@ public class TaskSearchView {
             .setDueDate(taskEntity.getDueDate())
             .setCandidateGroups(taskEntity.getCandidateGroups())
             .setCandidateUsers(taskEntity.getCandidateUsers())
-            .setImplementation(taskEntity.getImplementation());
+            .setImplementation(taskEntity.getImplementation())
+            .setPriority(taskEntity.getPriority());
     if (sortValues != null) {
       taskSearchView.setSortValues(toArrayOfStrings(sortValues));
     }

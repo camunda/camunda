@@ -36,6 +36,7 @@ public class TaskTemplate extends AbstractTemplateDescriptor
   public static final String FOLLOW_UP_DATE = "followUpDate";
   public static final String TENANT_ID = "tenantId";
   public static final String IMPLEMENTATION = "implementation";
+  public static final String PRIORITY = "priority";
 
   @Override
   public String getIndexName() {
