@@ -45,7 +45,7 @@ public class OperateElasticsearchExporter implements Exporter {
   private long lastPosition = -1;
   private int batchSize;
 
-  // FIXME - must come from importStore.getConcurrencyMode()
+  // TODO this is hardcoded, but must come from importStore.getConcurrencyMode()
   private final boolean concurrencyMode = false;
 
   @Override

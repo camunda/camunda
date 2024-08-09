@@ -51,6 +51,7 @@ public class UserTaskHandler implements ExportHandler<UserTaskEntity, UserTaskRe
           UserTaskIntent.COMPLETED, UserTaskHandler::getCompletedFields,
           UserTaskIntent.CANCELED, UserTaskHandler::getCanceledFields);
 
+  // TODO elements in this map must also be removed at some point, but when ?
   private final Map<String, Record<UserTaskRecordValue>> recordsMap = new HashMap<>();
 
   private final UserTaskTemplate userTaskTemplate;

@@ -35,6 +35,7 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentHandler.class);
 
+  // TODO elements in this map must also be removed at some point, but when ?
   private final Map<String, Record<IncidentRecordValue>> recordsMap = new HashMap<>();
 
   private final IncidentTemplate incidentTemplate;
