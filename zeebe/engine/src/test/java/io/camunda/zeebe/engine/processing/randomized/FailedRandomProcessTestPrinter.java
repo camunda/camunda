@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.randomized;
 
-import io.camunda.process.generator.BpmnGenerator.GeneratedProcess;
+import io.camunda.process.generator.BpmnProcessGenerator.GeneratedProcess;
 import java.util.function.Supplier;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;

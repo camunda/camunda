@@ -7,7 +7,7 @@
  */
 package io.camunda.process.generator;
 
-import io.camunda.process.generator.BpmnGenerator.GeneratedProcess;
+import io.camunda.process.generator.BpmnProcessGenerator.GeneratedProcess;
 import io.camunda.process.generator.execution.CreateProcessInstanceStep;
 import io.camunda.process.generator.template.BpmnTemplateGenerator;
 import io.camunda.process.generator.template.BpmnTemplateGeneratorFactory;

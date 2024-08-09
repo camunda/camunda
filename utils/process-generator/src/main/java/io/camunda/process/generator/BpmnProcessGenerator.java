@@ -20,22 +20,22 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class BpmnGenerator {
+public class BpmnProcessGenerator {
 
   public static final String CAMUNDA_VERSION = "8.5.0";
 
   public static GeneratorConfiguration DEFAULT_CONFIGURATION = new GeneratorConfiguration();
   private final GeneratorConfiguration generatorConfiguration;
 
-  public BpmnGenerator() {
+  public BpmnProcessGenerator() {
     this(DEFAULT_CONFIGURATION);
   }
 
-  public BpmnGenerator(final GeneratorConfiguration generatorConfiguration) {
+  public BpmnProcessGenerator(final GeneratorConfiguration generatorConfiguration) {
     this.generatorConfiguration = generatorConfiguration;
   }
 
-    public GeneratedProcess generateProcess() {
+  public GeneratedProcess generateProcess() {
     return generateProcess(ThreadLocalRandom.current().nextLong());
   }
 

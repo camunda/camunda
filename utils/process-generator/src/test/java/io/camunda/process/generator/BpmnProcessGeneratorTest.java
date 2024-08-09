@@ -23,12 +23,12 @@ import java.io.File;
 import java.io.FileWriter;
 import org.junit.jupiter.api.Test;
 
-public class BpmnGeneratorTest {
+public class BpmnProcessGeneratorTest {
 
   @Test
   void shouldGenerateProcess() throws Exception {
     // given
-    final var generator = new BpmnGenerator();
+    final var generator = new BpmnProcessGenerator();
 
     // when
     final var generatedProcess = generator.generateProcess();
@@ -62,7 +62,7 @@ public class BpmnGeneratorTest {
                 BpmnFeature.BOUNDARY_EVENT,
                 BpmnFeature.EMBEDDED_SUBPROCESS,
                 BpmnFeature.MULTIPLE_OUTGOING_SEQUENCE_FLOWS);
-    final var generator = new BpmnGenerator(configuration);
+    final var generator = new BpmnProcessGenerator(configuration);
 
     // when
     final var generatedProcess = generator.generateProcess();
