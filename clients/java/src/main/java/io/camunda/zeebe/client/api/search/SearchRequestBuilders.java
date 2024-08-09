@@ -15,16 +15,25 @@
  */
 package io.camunda.zeebe.client.api.search;
 
-import io.camunda.zeebe.client.impl.search.DecisionDefinitionFilterImpl;
-import io.camunda.zeebe.client.impl.search.DecisionDefinitionSortImpl;
-import io.camunda.zeebe.client.impl.search.DecisionRequirementsFilterImpl;
-import io.camunda.zeebe.client.impl.search.DecisionRequirementsSortImpl;
-import io.camunda.zeebe.client.impl.search.ProcessInstanceFilterImpl;
-import io.camunda.zeebe.client.impl.search.ProcessInstanceSortImpl;
+import io.camunda.zeebe.client.api.search.filter.DecisionDefinitionFilter;
+import io.camunda.zeebe.client.api.search.filter.DecisionRequirementsFilter;
+import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
+import io.camunda.zeebe.client.api.search.filter.VariableValueFilter;
+import io.camunda.zeebe.client.api.search.sort.DecisionDefinitionSort;
+import io.camunda.zeebe.client.api.search.sort.DecisionRequirementsSort;
+import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
+import io.camunda.zeebe.client.api.search.sort.UserTaskSort;
 import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;
-import io.camunda.zeebe.client.impl.search.UserTaskFilterImpl;
-import io.camunda.zeebe.client.impl.search.UserTaskSortImpl;
-import io.camunda.zeebe.client.impl.search.VariableValueFilterImpl;
+import io.camunda.zeebe.client.impl.search.filter.DecisionDefinitionFilterImpl;
+import io.camunda.zeebe.client.impl.search.filter.DecisionRequirementsFilterImpl;
+import io.camunda.zeebe.client.impl.search.filter.ProcessInstanceFilterImpl;
+import io.camunda.zeebe.client.impl.search.filter.UserTaskFilterImpl;
+import io.camunda.zeebe.client.impl.search.filter.VariableValueFilterImpl;
+import io.camunda.zeebe.client.impl.search.sort.DecisionDefinitionSortImpl;
+import io.camunda.zeebe.client.impl.search.sort.DecisionRequirementsSortImpl;
+import io.camunda.zeebe.client.impl.search.sort.ProcessInstanceSortImpl;
+import io.camunda.zeebe.client.impl.search.sort.UserTaskSortImpl;
 import java.util.function.Consumer;
 
 public final class SearchRequestBuilders {

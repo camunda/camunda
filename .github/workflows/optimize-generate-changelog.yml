@@ -1,0 +1,29 @@
+name: Optimize generate changelog
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to use"
+        required: true
+        default: "main"
+      from:
+        description: "Tag Name or Commit SHA of previous release (optional)"
+jobs:
+  generate-changelog:
+    name: Generate changelog
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        with:
+          ref: ${{ github.event.inputs.branch || 'main' }}
+      - name: Calculate changelog
+        uses: ./.github/actions/generate-changelog
+        id: changelog
+        with:
+          branch: ${{ inputs.branch }}
+          from: ${{ github.event.inputs.from }}
+      - name: Print changelog
+        run: |
+          echo "${{ steps.changelog.outputs.changelog }}"
