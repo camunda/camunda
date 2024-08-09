@@ -35,6 +35,7 @@ let dockerProcess;
 let backendVersion;
 let elasticSearchVersion;
 let zeebeVersion;
+let identityVersion;
 
 const commonEnv = {
   OPTIMIZE_API_ACCESS_TOKEN: 'secret',
@@ -189,6 +190,7 @@ function startDocker() {
         ...process.env, // https://github.com/nodejs/node/issues/12986#issuecomment-301101354
         ES_VERSION: elasticSearchVersion,
         ZEEBE_VERSION: zeebeVersion,
+        IDENTITY_VERSION: identityVersion,
         COMPOSE_PROFILES: mode,
       },
     });
@@ -216,6 +218,7 @@ function setVersionInfo() {
         const properties = data.project.properties;
         elasticSearchVersion = properties['elasticsearch8.test.version'];
         zeebeVersion = properties['zeebe.version'];
+        identityVersion = properties['identity.version'];
         resolve();
       });
     });
