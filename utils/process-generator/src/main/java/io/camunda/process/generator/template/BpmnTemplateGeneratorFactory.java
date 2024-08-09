@@ -43,6 +43,8 @@ public class BpmnTemplateGeneratorFactory {
 
     if (!generatorContext.canAddBranches() && generator.addsBranches()) {
       return getMiddleGenerator();
+    } else if (!generatorContext.canGoDeeper() && generator.addsDepth()) {
+      return getMiddleGenerator();
     }
 
     return generator;
