@@ -21,9 +21,6 @@ public class CamundaLicense {
     this.license = license;
   }
 
-  // for testing
-  public CamundaLicense() {}
-
   public boolean isValid() {
     initializeLicenseKey();
     return isValid;
