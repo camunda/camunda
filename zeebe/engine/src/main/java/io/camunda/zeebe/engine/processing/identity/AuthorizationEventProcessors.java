@@ -7,21 +7,26 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public final class IdentityEventProcessors {
+public final class AuthorizationEventProcessors {
 
   public static void addAuthorizationProcessors(
+      final KeyGenerator keyGenerator,
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessingState processingState,
-      final Writers writers) {
+      final Writers writers,
+      final CommandDistributionBehavior distributionBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.AUTHORIZATION,
         AuthorizationIntent.CREATE,
-        new AuthorizationCreateProcessor(processingState, writers));
+        new AuthorizationCreateProcessor(
+            keyGenerator, processingState, writers, distributionBehavior));
   }
 }
