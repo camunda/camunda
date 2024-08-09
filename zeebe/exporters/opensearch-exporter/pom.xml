@@ -27,6 +27,12 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-plugins</artifactId>
+      <version>8.6.0-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-rest-client</artifactId>
     </dependency>
@@ -99,6 +105,12 @@
     <dependency>
       <groupId>io.github.acm19</groupId>
       <artifactId>aws-request-signing-apache-interceptor</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.16.0</version>
     </dependency>
 
     <!-- Test dependencies -->

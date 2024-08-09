@@ -10,17 +10,23 @@ package io.camunda.tasklist.os;
 import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.InterceptorPluginProperties;
 import io.camunda.tasklist.property.OpenSearchProperties;
 import io.camunda.tasklist.property.SslProperties;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.zeebe.util.jar.ExternalJarClassLoader;
 import io.github.acm19.aws.interceptor.http.AwsRequestSigningApacheInterceptor;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -242,6 +248,23 @@ public class OpenSearchConnector {
     return openSearchClient;
   }
 
+  Class<?> createInterceptorClass(final InterceptorPluginProperties interceptorPlugin) {
+    // File type and path are checked by class loader
+    try (final var classLoader =
+        ExternalJarClassLoader.ofPath(Paths.get(interceptorPlugin.getJarPath()))) {
+      return classLoader.loadClass(interceptorPlugin.getClassName());
+    } catch (final IOException | ClassNotFoundException e) {
+      LOGGER.error(
+          "IGPETROV Plugin {} failed to register due to exception. Ignoring",
+          interceptorPlugin.getId(),
+          e);
+      return null;
+    }
+
+    // TODO other validations?
+
+  }
+
   private HttpHost getHttpHostForClient5(final OpenSearchProperties osConfig) {
     final URI uri = getOsUri(osConfig);
     return new HttpHost(uri.getScheme(), uri.getHost(), uri.getPort());
@@ -361,6 +384,40 @@ public class OpenSearchConnector {
   private HttpAsyncClientBuilder configureApacheHttpClient5(
       final HttpAsyncClientBuilder httpAsyncClientBuilder, final OpenSearchProperties osConfig) {
     setupAuthentication(httpAsyncClientBuilder, osConfig);
+
+    LOGGER.error("IGPETROV Attempt to load plugins");
+    if (osConfig.getInterceptorPlugin() != null) {
+      LOGGER.error("IGPETROV Plugins detected to be not empty {}", osConfig.getInterceptorPlugin());
+
+      final InterceptorPluginProperties interceptor = osConfig.getInterceptorPlugin();
+      LOGGER.error("IGPETROV Attempting to register {}", interceptor.getId());
+      final var interceptorClazz = createInterceptorClass(interceptor);
+      if (interceptorClazz != null) {
+        // TODO: only default constructor
+        final Constructor<?> constructor = interceptorClazz.getConstructors()[0];
+        try {
+          final var createdInterceptor = constructor.newInstance();
+          if (createdInterceptor instanceof final DatabaseCustomHeaderSupplier dchs) {
+            LOGGER.error(
+                "IGPETROV Plugin {} appears to be a DB Header Provider. Registering with interceptor",
+                interceptor.getId());
+            httpAsyncClientBuilder.addRequestInterceptorFirst(
+                (httpRequest, entityDetails, httpContext) ->
+                    httpRequest.addHeader(
+                        dchs.getElasticsearchCustomHeader().key(),
+                        dchs.getElasticsearchCustomHeader().value()));
+          }
+        } catch (final InstantiationException
+            | IllegalAccessException
+            | InvocationTargetException e) {
+          LOGGER.error(
+              "IGPETROV Plugin {} failed to register due to exception. Ignoring",
+              interceptor.getId(),
+              e);
+        }
+      }
+    }
+
     if (osConfig.getSsl() != null) {
       setupSSLContext(httpAsyncClientBuilder, osConfig.getSsl());
     }
@@ -441,6 +498,7 @@ public class OpenSearchConnector {
     }
   }
 
+  // TODO: Do we need header plugin for AWS?
   private OpenSearchAsyncClient getAwsAsyncClient(final OpenSearchProperties osConfig) {
     final String region = new DefaultAwsRegionProviderChain().getRegion();
     final SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder().build();
@@ -455,6 +513,7 @@ public class OpenSearchConnector {
     return new OpenSearchAsyncClient(transport);
   }
 
+  // TODO: Do we need header plugin for AWS?
   private OpenSearchClient getAwsClient(final OpenSearchProperties osConfig) {
     final String region = new DefaultAwsRegionProviderChain().getRegion();
     final SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder().build();

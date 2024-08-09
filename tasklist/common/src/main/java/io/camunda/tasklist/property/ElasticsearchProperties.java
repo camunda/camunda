@@ -43,11 +43,13 @@ public class ElasticsearchProperties {
 
   @NestedConfigurationProperty private SslProperties ssl;
 
+  @NestedConfigurationProperty private InterceptorPluginProperties interceptorPlugin;
+
   public String getClusterName() {
     return clusterName;
   }
 
-  public void setClusterName(String clusterName) {
+  public void setClusterName(final String clusterName) {
     this.clusterName = clusterName;
   }
 
@@ -57,7 +59,7 @@ public class ElasticsearchProperties {
   }
 
   @Deprecated
-  public void setHost(String host) {
+  public void setHost(final String host) {
     this.host = host;
   }
 
@@ -67,15 +69,15 @@ public class ElasticsearchProperties {
   }
 
   @Deprecated
-  public void setPort(int port) {
+  public void setPort(final int port) {
     this.port = port;
   }
 
-  private <T> T getFromURIorDefault(Function<URI, T> valueFromURI, T defaultValue) {
+  private <T> T getFromURIorDefault(final Function<URI, T> valueFromURI, final T defaultValue) {
     if (!stringIsEmpty(url)) {
       try {
         return valueFromURI.apply(new URI(url));
-      } catch (URISyntaxException e) {
+      } catch (final URISyntaxException e) {
         return defaultValue;
       }
     }
@@ -86,7 +88,7 @@ public class ElasticsearchProperties {
     return dateFormat;
   }
 
-  public void setDateFormat(String dateFormat) {
+  public void setDateFormat(final String dateFormat) {
     this.dateFormat = dateFormat;
   }
 
@@ -94,7 +96,7 @@ public class ElasticsearchProperties {
     return elsDateFormat;
   }
 
-  public void setElsDateFormat(String elsDateFormat) {
+  public void setElsDateFormat(final String elsDateFormat) {
     this.elsDateFormat = elsDateFormat;
   }
 
@@ -102,7 +104,7 @@ public class ElasticsearchProperties {
     return batchSize;
   }
 
-  public void setBatchSize(int batchSize) {
+  public void setBatchSize(final int batchSize) {
     this.batchSize = batchSize;
   }
 
@@ -110,7 +112,7 @@ public class ElasticsearchProperties {
     return createSchema;
   }
 
-  public void setCreateSchema(boolean createSchema) {
+  public void setCreateSchema(final boolean createSchema) {
     this.createSchema = createSchema;
   }
 
@@ -118,7 +120,7 @@ public class ElasticsearchProperties {
     return password;
   }
 
-  public void setPassword(String password) {
+  public void setPassword(final String password) {
     this.password = password;
   }
 
@@ -126,7 +128,7 @@ public class ElasticsearchProperties {
     return username;
   }
 
-  public void setUsername(String username) {
+  public void setUsername(final String username) {
     this.username = username;
   }
 
@@ -137,7 +139,7 @@ public class ElasticsearchProperties {
     return url;
   }
 
-  public void setUrl(String url) {
+  public void setUrl(final String url) {
     this.url = url;
   }
 
@@ -145,7 +147,7 @@ public class ElasticsearchProperties {
     return socketTimeout;
   }
 
-  public void setSocketTimeout(Integer socketTimeout) {
+  public void setSocketTimeout(final Integer socketTimeout) {
     this.socketTimeout = socketTimeout;
   }
 
@@ -153,7 +155,7 @@ public class ElasticsearchProperties {
     return connectTimeout;
   }
 
-  public void setConnectTimeout(Integer connectTimeout) {
+  public void setConnectTimeout(final Integer connectTimeout) {
     this.connectTimeout = connectTimeout;
   }
 
@@ -161,7 +163,15 @@ public class ElasticsearchProperties {
     return ssl;
   }
 
-  public void setSsl(SslProperties ssl) {
+  public void setSsl(final SslProperties ssl) {
     this.ssl = ssl;
+  }
+
+  public InterceptorPluginProperties getInterceptorPlugin() {
+    return interceptorPlugin;
+  }
+
+  public void setInterceptorPlugin(final InterceptorPluginProperties interceptorPlugin) {
+    this.interceptorPlugin = interceptorPlugin;
   }
 }

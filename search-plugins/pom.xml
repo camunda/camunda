@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.camunda</groupId>
+    <artifactId>camunda-release-parent</artifactId>
+    <version>3.9.1</version>
+    <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
+    <relativePath></relativePath>
+  </parent>
+
+  <groupId>io.camunda</groupId>
+  <artifactId>camunda-search-plugins</artifactId>
+  <version>8.6.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>Camunda Search Plugins</name>
+  <description>${project.name}</description>
+  <inceptionYear>2024</inceptionYear>
+
+  <scm>
+    <connection>scm:git:git@github.com:camunda/camunda.git</connection>
+    <developerConnection>scm:git:git@github.com:camunda/camunda.git</developerConnection>
+    <tag>HEAD</tag>
+    <url>https://github.com/camunda/camunda</url>
+  </scm>
+
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/camunda/camunda/issues</url>
+  </issueManagement>
+
+  <properties>
+    <version.java>21</version.java>
+
+    <project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
+
+    <!-- release parent settings -->
+    <nexus.snapshot.repository>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/</nexus.snapshot.repository>
+    <nexus.release.repository>https://artifacts.camunda.com/artifactory/zeebe-io/</nexus.release.repository>
+    <nexus.sonatype.url>https://s01.oss.sonatype.org</nexus.sonatype.url>
+
+    <!-- Camunda License v1.0 header -->
+    <license.header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header>
+
+    <plugin.version.flatten>1.6.0</plugin.version.flatten>
+    <plugin.version.javadoc>3.8.0</plugin.version.javadoc>
+    <plugin.version.license>4.5</plugin.version.license>
+    <plugin.version.spotless>2.43.0</plugin.version.spotless>
+
+    <!--
+      Define the skipChecks property here ONLY for the plugins defined in this module;
+      for all others, they should be defined in the parent POM
+    -->
+    <skipChecks>false</skipChecks>
+    <license.skip>${skipChecks}</license.skip>
+    <spotless.apply.skip>${skipChecks}</spotless.apply.skip>
+    <spotless.checks.skip>${skipChecks}</spotless.checks.skip>
+  </properties>
+
+  <repositories>
+    <!-- This entry for central makes sure that artifacts are first resolved via central. -->
+    <!-- This ensures traffic for non-camunda artifacts is not routed through camunda repos. -->
+    <repository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>central</id>
+      <name>Maven Central</name>
+      <url>https://repo1.maven.org/maven2</url>
+      <layout>default</layout>
+    </repository>
+
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>zeebe</id>
+      <name>Zeebe Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/zeebe-io/</url>
+    </repository>
+
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>zeebe-snapshots</id>
+      <name>Zeebe Snapshot Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/</url>
+    </repository>
+
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>camunda-identity</id>
+      <name>Camunda Identity Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/camunda-identity/</url>
+    </repository>
+
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>camunda-identity-snapshots</id>
+      <name>Camunda Identity Snapshot Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/camunda-identity-snapshots/</url>
+    </repository>
+
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>elasticsearch</id>
+      <name>Elasticsearch Repository</name>
+      <url>https://artifacts.elastic.co/maven/</url>
+    </repository>
+  </repositories>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${plugin.version.compiler}</version>
+          <configuration>
+            <parameters>true</parameters>
+            <release>${version.java}</release>
+            <compilerArgs>
+              <!-- ensure we generate a class file for package-info.java files to avoid recompiling every time -->
+              <arg>-Xpkginfo:always</arg>
+            </compilerArgs>
+            <useIncrementalCompilation>false</useIncrementalCompilation>
+          </configuration>
+        </plugin>
+        <!-- Formatting plugin -->
+<!--        <plugin>-->
+<!--          <groupId>com.diffplug.spotless</groupId>-->
+<!--          <artifactId>spotless-maven-plugin</artifactId>-->
+<!--          <version>${plugin.version.spotless}</version>-->
+<!--          <configuration>-->
+<!--            <pom>-->
+<!--              &lt;!&ndash; https://github.com/diffplug/spotless/blob/main/plugin-maven/README.md#sortpom &ndash;&gt;-->
+<!--              <sortPom></sortPom>-->
+<!--            </pom>-->
+<!--          </configuration>-->
+<!--        </plugin>-->
+
+        <!-- LICENSE PLUGIN -->
+        <plugin>
+          <groupId>com.mycila</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>${plugin.version.license}</version>
+          <configuration>
+            <header>${license.header}</header>
+            <properties>
+              <owner>camunda services GmbH</owner>
+              <email>info@camunda.com</email>
+            </properties>
+            <includes>
+              <include>**/*.java</include>
+              <include>**/*.scala</include>
+            </includes>
+            <excludes>
+              <exclude>zeebe/benchmarks/project/**/*</exclude>
+              <exclude>operate/**/*</exclude>
+              <exclude>tasklist/**/*</exclude>
+            </excludes>
+            <mapping>
+              <java>SLASHSTAR_STYLE</java>
+            </mapping>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <configuration>
+            <skip>false</skip>
+            <relocations>
+              <!-- common relocation for all OOTB connectors -->
+              <relocation>
+                <pattern>com.fasterxml.jackson</pattern>
+                <shadedPattern>connector.com.fasterxml.jackson</shadedPattern>
+              </relocation>
+            </relocations>
+          </configuration>
+          <executions>
+            <execution>
+              <!--This must be named-->
+              <id>shade</id>
+              <goals>
+                <goal>shade</goal>
+              </goals>
+              <phase>package</phase>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <!-- This declaration makes sure children get plugin in their lifecycle -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <!-- Configuration won't be propagated to children -->
+        <inherited>false</inherited>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+        <executions>
+          <execution>
+            <!--This matches and thus overrides execution defined above -->
+            <id>shade</id>
+            <!-- Unbind from lifecycle for this POM -->
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>flatten-maven-plugin</artifactId>
+        <version>${plugin.version.flatten}</version>
+        <configuration combine.children="append">
+          <flattenMode>bom</flattenMode>
+          <!--
+            do not change the outputDirectory; it must remain the same one as the relative project
+            directory, as many plugins expect to resolve the project directory from the current POM
+            file's parent, and any plugin which would run post flatten would resolve the project
+            directory to the wrong one. For example, if you configure it to
+            ${project.build.directory}, then any plugin after will think that the project's
+            directory is not /parent/ but /parent/target, which may affect the execution of plugins
+            (e.g. resource file resolution)
+            -->
+        </configuration>
+        <executions>
+          <execution>
+            <id>flatten</id>
+            <goals>
+              <goal>flatten</goal>
+            </goals>
+            <phase>process-resources</phase>
+          </execution>
+          <execution>
+            <id>flatten.clean</id>
+            <goals>
+              <goal>clean</goal>
+            </goals>
+            <phase>clean</phase>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <configuration>
+          <stagingProgressTimeoutMinutes>40</stagingProgressTimeoutMinutes>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>5</source>
+          <target>5</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <!-- profile to auto format -->
+    <profile>
+      <id>autoFormat</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.diffplug.spotless</groupId>
+            <artifactId>spotless-maven-plugin</artifactId>
+            <configuration>
+              <ratchetFrom>origin/main</ratchetFrom>
+            </configuration>
+            <executions>
+              <execution>
+                <id>spotless-format</id>
+                <goals>
+                  <goal>apply</goal>
+                </goals>
+                <phase>process-sources</phase>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>com.mycila</groupId>
+            <artifactId>license-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>add-license</id>
+                <goals>
+                  <goal>format</goal>
+                </goals>
+                <phase>process-sources</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- profile to perform strict validation checks -->
+<!--    <profile>-->
+<!--      <id>checkFormat</id>-->
+<!--      <build>-->
+<!--        <plugins>-->
+<!--          <plugin>-->
+<!--            <groupId>com.diffplug.spotless</groupId>-->
+<!--            <artifactId>spotless-maven-plugin</artifactId>-->
+<!--            <executions>-->
+<!--              <execution>-->
+<!--                <id>spotless-check</id>-->
+<!--                <goals>-->
+<!--                  <goal>check</goal>-->
+<!--                </goals>-->
+<!--                <phase>validate</phase>-->
+<!--              </execution>-->
+<!--            </executions>-->
+<!--          </plugin>-->
+
+<!--          <plugin>-->
+<!--            <groupId>com.mycila</groupId>-->
+<!--            <artifactId>license-maven-plugin</artifactId>-->
+<!--            <executions>-->
+<!--              <execution>-->
+<!--                <id>check-license</id>-->
+<!--                <goals>-->
+<!--                  <goal>check</goal>-->
+<!--                </goals>-->
+<!--                <phase>validate</phase>-->
+<!--              </execution>-->
+<!--            </executions>-->
+<!--          </plugin>-->
+<!--        </plugins>-->
+<!--      </build>-->
+<!--    </profile>-->
+
+<!--    <profile>-->
+<!--      <id>sonatype-oss-release</id>-->
+<!--      <properties>-->
+<!--        <plugin.version.gpg>1.6</plugin.version.gpg>-->
+<!--      </properties>-->
+<!--      <build>-->
+<!--        <pluginManagement>-->
+<!--          <plugins>-->
+<!--            <plugin>-->
+<!--              <groupId>org.apache.maven.plugins</groupId>-->
+<!--              <artifactId>maven-gpg-plugin</artifactId>-->
+<!--              <configuration>-->
+<!--                <gpgArguments>-->
+<!--                  <arg>&#45;&#45;pinentry-mode</arg>-->
+<!--                  <arg>loopback</arg>-->
+<!--                </gpgArguments>-->
+<!--              </configuration>-->
+<!--            </plugin>-->
+<!--          </plugins>-->
+<!--        </pluginManagement>-->
+<!--      </build>-->
+<!--    </profile>-->
+  </profiles>
+
+</project>

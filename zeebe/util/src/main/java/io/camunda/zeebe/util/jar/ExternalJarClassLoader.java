@@ -28,7 +28,7 @@ public final class ExternalJarClassLoader extends URLClassLoader {
     super(urls);
   }
 
-  static ExternalJarClassLoader ofPath(final Path jarPath) throws ExternalJarLoadException {
+  public static ExternalJarClassLoader ofPath(final Path jarPath) throws ExternalJarLoadException {
     final URL jarUrl;
 
     try {

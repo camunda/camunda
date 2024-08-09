@@ -34,8 +34,12 @@ import java.util.stream.Collectors;
 import org.apache.http.entity.EntityTemplate;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class ElasticsearchClient implements AutoCloseable {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchClient.class);
+
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final RestClient client;
@@ -250,6 +254,8 @@ class ElasticsearchClient implements AutoCloseable {
 
   private <T> T sendRequest(final Request request, final Class<T> responseType) throws IOException {
     final var response = client.performRequest(request);
+    LOGGER.error("IGPETROV Sending request {}", request);
+    LOGGER.error("IGPETROV Got response {}", response);
     // buffer the complete response in memory before parsing it; this will give us a better error
     // message which contains the raw response should the deserialization fail
     final var responseBody = response.getEntity().getContent().readAllBytes();
