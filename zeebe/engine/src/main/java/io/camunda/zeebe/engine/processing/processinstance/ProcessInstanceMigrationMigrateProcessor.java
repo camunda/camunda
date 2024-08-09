@@ -343,7 +343,7 @@ public class ProcessInstanceMigrationMigrateProcessor
       // elements to events during migration either. For elements that have been ACTIVATED, a
       // subscription would already exist if needed. So, we want to deal with the expected event
       // subscriptions. See: https://github.com/camunda/camunda/issues/19212
-      handleBoundaryCatchEvents(
+      handleElementCatchEvents(
           elementInstance,
           targetProcessDefinition,
           sourceElementIdToTargetElementId,
@@ -375,7 +375,7 @@ public class ProcessInstanceMigrationMigrateProcessor
    *
    * <p>It also migrates event subscriptions for mapped catch events.
    */
-  private void handleBoundaryCatchEvents(
+  private void handleElementCatchEvents(
       final ElementInstance elementInstance,
       final DeployedProcess targetProcessDefinition,
       final Map<String, String> sourceElementIdToTargetElementId,
