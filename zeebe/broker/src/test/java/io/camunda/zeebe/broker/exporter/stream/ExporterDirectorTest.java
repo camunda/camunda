@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
@@ -50,6 +51,7 @@ import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.InOrder;
 import org.mockito.verification.VerificationWithTimeout;
 
 public final class ExporterDirectorTest {
@@ -215,6 +217,24 @@ public final class ExporterDirectorTest {
                 assertThat(exporter.getExportedRecords())
                     .extracting(Record::getPosition)
                     .containsExactly(eventPosition1, eventPosition2));
+
+    rule.closeExporterDirector();
+  }
+
+  @Test
+  public void shouldNotStartExportingUntilExportersFinishOpening() throws Exception {
+    writeEvent();
+
+    final var exporter = startExporterWithFaultyOpenCall();
+
+    Awaitility.await("Record has been exported")
+        .until(() -> !exporter.getExportedRecords().isEmpty());
+
+    final InOrder inOrder = inOrder(exporter);
+
+    inOrder.verify(exporter).open(any());
+    inOrder.verify(exporter).open(any());
+    inOrder.verify(exporter, timeout(5000)).export(any());
 
     rule.closeExporterDirector();
   }
@@ -750,7 +770,6 @@ public final class ExporterDirectorTest {
   }
 
   private ControlledTestExporter startExporterWithFaultyOpenCall() {
-    // given
     final ControlledTestExporter exporter = spy(new ControlledTestExporter());
 
     doThrow(new RuntimeException("open failed")).doCallRealMethod().when(exporter).open(any());
@@ -761,7 +780,6 @@ public final class ExporterDirectorTest {
                 "exporter-failing", exporter.getClass(), Collections.singletonMap("x", 1)));
     doAnswer(c -> exporter).when(descriptor).newInstance();
 
-    // when
     startExporterDirector(List.of(descriptor));
 
     return exporter;
