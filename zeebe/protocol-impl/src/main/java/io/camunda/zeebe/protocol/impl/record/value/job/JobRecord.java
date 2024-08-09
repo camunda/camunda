@@ -32,8 +32,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 public final class JobRecord extends UnifiedRecordValue implements JobRecordValue {
 
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
+  public static final String RETRIES = "retries";
+  public static final String TIMEOUT = "timeout";
   private static final String EMPTY_STRING = "";
-  private static final String RETRIES = "retries";
   private static final String TYPE = "type";
   private static final String CUSTOM_HEADERS = "customHeaders";
   private static final String VARIABLES = "variables";
@@ -43,7 +44,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   private final StringProperty workerProp = new StringProperty("worker", EMPTY_STRING);
   private final LongProperty deadlineProp = new LongProperty("deadline", -1);
-  private final LongProperty timeoutProp = new LongProperty("timeout", -1);
+  private final LongProperty timeoutProp = new LongProperty(TIMEOUT, -1);
   private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
   private final LongProperty retryBackoffProp = new LongProperty("retryBackoff", 0);
   private final LongProperty recurringTimeProp = new LongProperty("recurringTime", -1);
@@ -71,6 +72,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final DocumentProperty changedAttributesProp = new DocumentProperty("changedAttributes");
 
   public JobRecord() {
     super(20);
@@ -93,7 +95,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(jobListenerEventTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(changedAttributesProp);
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
@@ -117,6 +120,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     elementIdProp.setValue(record.getElementIdBuffer());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
+    setChangedAttributes(record.getChangedAttributes());
   }
 
   public void wrap(final JobRecord record) {
@@ -239,11 +243,6 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return jobListenerEventTypeProp.getValue();
   }
 
-  public JobRecord setListenerEventType(final JobListenerEventType jobListenerEventType) {
-    jobListenerEventTypeProp.setValue(jobListenerEventType);
-    return this;
-  }
-
   public JobRecord setProcessDefinitionVersion(final int version) {
     processDefinitionVersionProp.setValue(version);
     return this;
@@ -335,6 +334,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return setType(buf, 0, buf.capacity());
   }
 
+  public JobRecord setListenerEventType(final JobListenerEventType jobListenerEventType) {
+    jobListenerEventTypeProp.setValue(jobListenerEventType);
+    return this;
+  }
+
   @JsonIgnore
   public Map<String, Object> getCustomHeadersObjectMap() {
     return MsgPackConverter.convertToMap(customHeadersProp.getValue());
@@ -412,6 +416,17 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @JsonIgnore
+  public Map<String, Number> getChangedAttributes() {
+    return MsgPackConverter.convertToNumberMap(changedAttributesProp.getValue());
+  }
+
+  public JobRecord setChangedAttributes(final Map<String, Number> changedAttributes) {
+    changedAttributesProp.setValue(
+        new UnsafeBuffer(MsgPackConverter.convertToMsgPack(changedAttributes)));
     return this;
   }
 }

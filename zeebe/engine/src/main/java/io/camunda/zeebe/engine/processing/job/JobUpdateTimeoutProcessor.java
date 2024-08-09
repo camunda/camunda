@@ -38,7 +38,7 @@ public class JobUpdateTimeoutProcessor implements TypedRecordProcessor<JobRecord
         .ifRightOrLeft(
             job ->
                 jobUpdateBehaviour
-                    .updateJobTimeout(jobKey, job, command)
+                    .updateJobTimeout(jobKey, command.getValue().getTimeout(), job, command)
                     .ifPresentOrElse(
                         errorMessage -> {
                           rejectionWriter.appendRejection(

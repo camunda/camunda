@@ -12,17 +12,17 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public class BrokerUpdateJobRequest extends BrokerExecuteCommand<JobRecord> {
 
   private final JobRecord requestDto = new JobRecord();
 
-  public BrokerUpdateJobRequest(final long jobKey, final int retries, final long timeout) {
+  public BrokerUpdateJobRequest(final long jobKey, final Map<String, Number> changeset) {
     super(ValueType.JOB, JobIntent.UPDATE);
     request.setKey(jobKey);
-    requestDto.setRetries(retries);
-    requestDto.setTimeout(timeout);
+    requestDto.setChangedAttributes(changeset);
   }
 
   @Override

@@ -54,8 +54,10 @@ public class JobUpdateBehaviour {
   }
 
   public Optional<String> updateJobRetries(
-      final long jobKey, final JobRecord jobRecord, final TypedRecord<JobRecord> command) {
-    final int retries = command.getValue().getRetries();
+      final long jobKey,
+      final int retries,
+      final JobRecord jobRecord,
+      final TypedRecord<JobRecord> command) {
     if (retries < 1) {
       return Optional.of(NEGATIVE_RETRIES_MESSAGE.formatted(jobKey, retries));
     }
@@ -66,13 +68,15 @@ public class JobUpdateBehaviour {
   }
 
   public Optional<String> updateJobTimeout(
-      final long jobKey, final JobRecord jobRecord, final TypedRecord<JobRecord> command) {
+      final long jobKey,
+      final long timeout,
+      final JobRecord jobRecord,
+      final TypedRecord<JobRecord> command) {
     final long oldDeadline = jobRecord.getDeadline();
 
     if (!jobState.jobDeadlineExists(jobKey, oldDeadline)) {
       return Optional.of(NO_DEADLINE_FOUND_MESSAGE.formatted(jobKey));
     }
-    final long timeout = command.getValue().getTimeout();
     final long newDeadline = clock.millis() + timeout;
     jobRecord.setDeadline(newDeadline);
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMEOUT_UPDATED, jobRecord);

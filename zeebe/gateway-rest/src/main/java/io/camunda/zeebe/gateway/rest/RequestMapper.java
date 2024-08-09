@@ -24,6 +24,7 @@ import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
@@ -32,8 +33,10 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.util.Either;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -166,11 +169,7 @@ public class RequestMapper {
     final var validationJobUpdateResponse = validateJobUpdateRequest(updateRequest);
     return getResult(
         validationJobUpdateResponse,
-        () ->
-            new UpdateJobRequest(
-                jobKey,
-                getIntOrZero(updateRequest, r -> updateRequest.getChangeset().getRetries()),
-                getLongOrZero(updateRequest, r -> updateRequest.getChangeset().getTimeout())));
+        () -> new UpdateJobRequest(jobKey, buildJobChangeset(updateRequest.getChangeset())));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
@@ -260,6 +259,15 @@ public class RequestMapper {
     return value == null ? 0 : value;
   }
 
+  private static Map<String, Number> buildJobChangeset(final JobChangeset jobChangeset) {
+    final Map<String, Number> changeset = new HashMap<>();
+    Optional.ofNullable(jobChangeset.getRetries())
+        .ifPresent(retries -> changeset.put(JobRecord.RETRIES, retries));
+    Optional.ofNullable(jobChangeset.getTimeout())
+        .ifPresent(timeout -> changeset.put(JobRecord.TIMEOUT, timeout));
+    return changeset;
+  }
+
   public record CompleteUserTaskRequest(
       long userTaskKey, Map<String, Object> variables, String action) {}
 
@@ -280,5 +288,5 @@ public class RequestMapper {
 
   public record CompleteJobRequest(long jobKey, Map<String, Object> variables) {}
 
-  public record UpdateJobRequest(long jobKey, Integer retries, Long timeout) {}
+  public record UpdateJobRequest(long jobKey, Map<String, Number> changeset) {}
 }
