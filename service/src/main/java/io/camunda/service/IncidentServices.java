@@ -8,14 +8,22 @@
 package io.camunda.service;
 
 import io.camunda.search.clients.CamundaSearchClient;
+import io.camunda.service.entities.IncidentEntity;
+import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.search.query.IncidentQuery;
+import io.camunda.service.search.query.SearchQueryBuilders;
+import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
+import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
-public class IncidentServices extends ApiServices<IncidentServices> {
+public class IncidentServices
+    extends SearchQueryService<IncidentServices, IncidentQuery, IncidentEntity> {
 
   public IncidentServices(
       final BrokerClient brokerClient,
@@ -32,5 +40,15 @@ public class IncidentServices extends ApiServices<IncidentServices> {
 
   public CompletableFuture<IncidentRecord> resolveIncident(final long incidentKey) {
     return sendBrokerRequest(new BrokerResolveIncidentRequest(incidentKey));
+  }
+
+  @Override
+  public SearchQueryResult<IncidentEntity> search(final IncidentQuery query) {
+    return executor.search(query, IncidentEntity.class);
+  }
+
+  public SearchQueryResult<IncidentEntity> search(
+      final Function<IncidentQuery.Builder, ObjectBuilder<IncidentQuery>> fn) {
+    return search(SearchQueryBuilders.incidentSearchQuery(fn));
   }
 }

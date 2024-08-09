@@ -87,4 +87,13 @@ public final class FilterBuilders {
       final Function<ComparableValueFilter.Builder, ObjectBuilder<ComparableValueFilter>> fn) {
     return fn.apply(comparableValue()).build();
   }
+
+  public static IncidentFilter.Builder incident() {
+    return new IncidentFilter.Builder();
+  }
+
+  public static IncidentFilter incident(
+      final Function<IncidentFilter.Builder, ObjectBuilder<IncidentFilter>> fn) {
+    return fn.apply(incident()).build();
+  }
 }
