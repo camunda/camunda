@@ -7,8 +7,10 @@
  */
 package io.camunda.process.generator;
 
+import io.camunda.process.generator.template.BpmnTemplateGenerator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Predicate;
 
 public class FactoryUtil {
 
@@ -23,6 +25,8 @@ public class FactoryUtil {
                         .getGeneratorConfiguration()
                         .getExcludeFeatures()
                         .contains(generator.getFeature()))
+            .filter(addsDepthAndIsAllowedTo(generatorContext))
+            .filter(addsBranchesAndIsAllowedTo(generatorContext))
             .toList();
 
     final HashSet<BpmnFeatureType> missingFeatures =
@@ -46,5 +50,26 @@ public class FactoryUtil {
     }
 
     return selectedGenerator;
+  }
+
+  private static <T extends BpmnFeature> Predicate<T> addsDepthAndIsAllowedTo(
+      final GeneratorContext generatorContext) {
+    return generator -> {
+      if (!(generator instanceof BpmnTemplateGenerator)) {
+        return true;
+      }
+      return generatorContext.canGoDeeper() || !((BpmnTemplateGenerator) generator).addsDepth();
+    };
+  }
+
+  private static <T extends BpmnFeature> Predicate<T> addsBranchesAndIsAllowedTo(
+      final GeneratorContext generatorContext) {
+    return generator -> {
+      if (!(generator instanceof BpmnTemplateGenerator)) {
+        return true;
+      }
+      return generatorContext.canAddBranches()
+          || !((BpmnTemplateGenerator) generator).addsBranches();
+    };
   }
 }

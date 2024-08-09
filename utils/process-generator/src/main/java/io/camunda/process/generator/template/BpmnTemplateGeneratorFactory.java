@@ -39,15 +39,7 @@ public class BpmnTemplateGeneratorFactory {
   }
 
   public BpmnTemplateGenerator getMiddleGenerator() {
-    final var generator = FactoryUtil.getGenerator(middleTemplateGenerators, generatorContext);
-
-    if (!generatorContext.canAddBranches() && generator.addsBranches()) {
-      return getMiddleGenerator();
-    } else if (!generatorContext.canGoDeeper() && generator.addsDepth()) {
-      return getMiddleGenerator();
-    }
-
-    return generator;
+    return FactoryUtil.getGenerator(middleTemplateGenerators, generatorContext);
   }
 
   public BpmnTemplateGenerator getFinalGenerator() {
