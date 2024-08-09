@@ -961,58 +961,40 @@ public class TaskStoreOpenSearch implements TaskStore {
   }
 
   private Query.Builder buildPriorityQuery(final TaskQuery query) {
-    Query.Builder priorityQ = null;
     if (query.getPriority() != null) {
-      if (query.getPriority().getValue() != null) {
-        if (query.getPriority().getOperator() != null) {
-          switch (query.getPriority().getOperator()) {
-            case eq:
-              priorityQ.term(
-                  r ->
-                      r.field(TaskTemplate.PRIORITY)
-                          .value(FieldValue.of((Integer) query.getPriority().getValue())));
-              break;
-            case gt:
-              priorityQ.range(
-                  r ->
-                      r.field(TaskTemplate.PRIORITY)
-                          .gt(JsonData.of(query.getPriority().getValue())));
-              break;
-            case gte:
-              priorityQ.range(
-                  r ->
-                      r.field(TaskTemplate.PRIORITY)
-                          .gte(JsonData.of(query.getPriority().getValue())));
-              break;
-            case lt:
-              priorityQ.range(
-                  r ->
-                      r.field(TaskTemplate.PRIORITY)
-                          .lt(JsonData.of(query.getPriority().getValue())));
-              break;
-            case lte:
-              priorityQ.range(
-                  r ->
-                      r.field(TaskTemplate.PRIORITY)
-                          .lte(JsonData.of(query.getPriority().getValue())));
-              break;
-            default:
-              break;
-          }
-        }
+      final var priority = query.getPriority();
+      if (priority.getEq() != null) {
+        return new Query.Builder()
+                .term(
+                    t ->
+                        t.field(TaskTemplate.PRIORITY)
+                            .value(FieldValue.of(((Integer) priority.getEq()))))
+                .build()
+                .toBuilder();
       } else {
-        priorityQ =
-            priorityQ
+        return new Query.Builder()
                 .range(
-                    r ->
-                        r.field(TaskTemplate.PRIORITY)
-                            .from(JsonData.of(query.getPriority().getFrom()))
-                            .to(JsonData.of(query.getPriority().getTo())))
+                    r -> {
+                      r = r.field(TaskTemplate.PRIORITY);
+                      if (priority.getGt() != null) {
+                        r = r.gt(JsonData.of(priority.getGt()));
+                      }
+                      if (priority.getGte() != null) {
+                        r = r.gte(JsonData.of(priority.getGte()));
+                      }
+                      if (priority.getLt() != null) {
+                        r = r.lt(JsonData.of(priority.getLt()));
+                      }
+                      if (priority.getLte() != null) {
+                        r = r.lte(JsonData.of(priority.getLte()));
+                      }
+                      return r;
+                    })
                 .build()
                 .toBuilder();
       }
     }
-    return priorityQ;
+    return null;
   }
 
   private Function<SortOptions.Builder, ObjectBuilder<SortOptions>> mapNullInSort(

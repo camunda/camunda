@@ -65,6 +65,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -818,50 +819,28 @@ public class TaskStoreElasticSearch implements TaskStore {
   }
 
   private QueryBuilder buildPriorityQuery(final TaskQuery query) {
-    QueryBuilder priorityQ = null;
     if (query.getPriority() != null) {
-      if (query.getPriority().getValue() != null) {
-        final BoolQueryBuilder priorityQBuilder = QueryBuilders.boolQuery();
-        if (query.getPriority().getOperator() != null) {
-          switch (query.getPriority().getOperator()) {
-            case eq:
-              priorityQ =
-                  priorityQBuilder.must(
-                      QueryBuilders.termQuery(
-                          TaskTemplate.PRIORITY, query.getPriority().getValue()));
-              break;
-            case gt:
-              priorityQ =
-                  QueryBuilders.rangeQuery(TaskTemplate.PRIORITY)
-                      .gt(query.getPriority().getValue());
-              break;
-            case gte:
-              priorityQ =
-                  QueryBuilders.rangeQuery(TaskTemplate.PRIORITY)
-                      .gte(query.getPriority().getValue());
-              break;
-            case lt:
-              priorityQ =
-                  QueryBuilders.rangeQuery(TaskTemplate.PRIORITY)
-                      .lt(query.getPriority().getValue());
-              break;
-            case lte:
-              priorityQ =
-                  QueryBuilders.rangeQuery(TaskTemplate.PRIORITY)
-                      .lte(query.getPriority().getValue());
-              break;
-            default:
-              break;
-          }
-        }
+      final var priority = query.getPriority();
+      if (priority.getEq() != null) {
+        return QueryBuilders.termQuery(TaskTemplate.PRIORITY, priority.getEq());
       } else {
-        priorityQ =
-            QueryBuilders.rangeQuery(TaskTemplate.PRIORITY)
-                .from(query.getPriority().getFrom())
-                .to(query.getPriority().getTo());
+        RangeQueryBuilder rangeBuilder = QueryBuilders.rangeQuery(TaskTemplate.PRIORITY);
+        if (priority.getGt() != null) {
+          rangeBuilder = rangeBuilder.gt(priority.getGt());
+        }
+        if (priority.getGte() != null) {
+          rangeBuilder = rangeBuilder.gte(priority.getGte());
+        }
+        if (priority.getLt() != null) {
+          rangeBuilder = rangeBuilder.lt(priority.getLt());
+        }
+        if (priority.getLte() != null) {
+          rangeBuilder = rangeBuilder.lte(priority.getLte());
+        }
+        return rangeBuilder;
       }
     }
-    return priorityQ;
+    return null;
   }
 
   private SortBuilder<?> mapNullInSort(

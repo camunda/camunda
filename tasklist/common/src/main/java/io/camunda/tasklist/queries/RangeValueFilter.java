@@ -7,85 +7,92 @@
  */
 package io.camunda.tasklist.queries;
 
-import graphql.annotations.annotationTypes.GraphQLConstructor;
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-public class RangeValueFilter {
+public final class RangeValueFilter {
 
-  @Schema(description = "Start value range to search from.")
-  @GraphQLField
-  private Object from;
+  @Schema(description = "Value equals to.")
+  private Object eq;
 
-  @Schema(description = "End value range to search to.")
-  @GraphQLField
-  private Object to;
+  @Schema(description = "Value greater than.")
+  private Object gt;
 
-  @Schema(description = "Value to compare to.")
-  @GraphQLField
-  private Object value;
+  @Schema(description = "Value greater than or equals to.")
+  private Object gte;
 
-  @Schema(description = "Comparison operator")
-  @GraphQLField
-  @GraphQLNonNull
-  private ComparisonOperator operator;
+  @Schema(description = "Value less than.")
+  private Object lt;
 
-  @GraphQLConstructor
-  public RangeValueFilter(
-      final Object from, final Object to, final Object value, final ComparisonOperator operator) {
-    this.from = from;
-    this.to = to;
-    this.value = value;
-    this.operator = operator;
+  @Schema(description = "Value less than or equals to.")
+  private Object lte;
+
+  private RangeValueFilter(
+      final Object eq, final Object gt, final Object gte, final Object lt, final Object lte) {
+    this.eq = eq;
+    this.gt = gt;
+    this.gte = gte;
+    this.lt = lt;
+    this.lte = lte;
   }
 
-  public RangeValueFilter() {}
-
-  public Object getFrom() {
-    return from;
+  public Object getEq() {
+    return eq;
   }
 
-  public Object getTo() {
-    return to;
+  public Object getGt() {
+    return gt;
   }
 
-  public Object getValue() {
-    return value;
+  public Object getGte() {
+    return gte;
   }
 
-  public @GraphQLNonNull ComparisonOperator getOperator() {
-    return operator;
+  public Object getLt() {
+    return lt;
+  }
+
+  public Object getLte() {
+    return lte;
   }
 
   public static class RangeValueFilterBuilder {
-    private Object from;
-    private Object to;
-    private ComparisonOperator operator;
-    private Object value;
+    private Object eq;
 
-    public RangeValueFilterBuilder from(final Object from) {
-      this.from = from;
+    private Object gt;
+
+    private Object gte;
+
+    private Object lt;
+
+    private Object lte;
+
+    public RangeValueFilterBuilder eq(final Object eq) {
+      this.eq = eq;
       return this;
     }
 
-    public RangeValueFilterBuilder to(final Object to) {
-      this.to = to;
+    public RangeValueFilterBuilder gt(final Object gt) {
+      this.gt = gt;
       return this;
     }
 
-    public RangeValueFilterBuilder operator(final ComparisonOperator operator) {
-      this.operator = operator;
+    public RangeValueFilterBuilder gte(final Object gte) {
+      this.gte = gte;
       return this;
     }
 
-    public RangeValueFilterBuilder value(final Object value) {
-      this.value = value;
+    public RangeValueFilterBuilder lt(final Object lt) {
+      this.lt = lt;
+      return this;
+    }
+
+    public RangeValueFilterBuilder lte(final Object lte) {
+      this.lte = lte;
       return this;
     }
 
     public RangeValueFilter build() {
-      return new RangeValueFilter(from, to, value, operator);
+      return new RangeValueFilter(eq, gt, gte, lt, lte);
     }
   }
 }
