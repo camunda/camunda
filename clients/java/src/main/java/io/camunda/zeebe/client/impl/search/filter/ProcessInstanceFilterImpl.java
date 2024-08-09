@@ -15,11 +15,11 @@
  */
 package io.camunda.zeebe.client.impl.search.filter;
 
-import static io.camunda.zeebe.client.api.search.query.SearchRequestBuilders.variableValueFilter;
+import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.variableValueFilter;
 
 import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.client.api.search.filter.VariableValueFilter;
-import io.camunda.zeebe.client.impl.search.query.TypedSearchRequestPropertyProvider;
+import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.impl.util.CollectionUtil;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.VariableValueFilterRequest;

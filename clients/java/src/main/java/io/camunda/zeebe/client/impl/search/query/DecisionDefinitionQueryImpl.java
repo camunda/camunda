@@ -15,21 +15,23 @@
  */
 package io.camunda.zeebe.client.impl.search.query;
 
-import static io.camunda.zeebe.client.api.search.query.SearchRequestBuilders.decisionDefinitionFilter;
-import static io.camunda.zeebe.client.api.search.query.SearchRequestBuilders.decisionDefinitionSort;
-import static io.camunda.zeebe.client.api.search.query.SearchRequestBuilders.searchRequestPage;
+import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.decisionDefinitionFilter;
+import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.decisionDefinitionSort;
+import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.search.SearchRequestPage;
 import io.camunda.zeebe.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.FinalSearchQueryStep;
-import io.camunda.zeebe.client.api.search.query.SearchRequestPage;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.api.search.sort.DecisionDefinitionSort;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
+import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
+import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQueryResponse;

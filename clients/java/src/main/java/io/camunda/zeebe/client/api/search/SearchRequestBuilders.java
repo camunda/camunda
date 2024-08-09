@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.search.query;
+package io.camunda.zeebe.client.api.search;
 
 import io.camunda.zeebe.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.zeebe.client.api.search.filter.DecisionRequirementsFilter;
@@ -24,12 +24,12 @@ import io.camunda.zeebe.client.api.search.sort.DecisionDefinitionSort;
 import io.camunda.zeebe.client.api.search.sort.DecisionRequirementsSort;
 import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.zeebe.client.api.search.sort.UserTaskSort;
+import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;
 import io.camunda.zeebe.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.UserTaskFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.VariableValueFilterImpl;
-import io.camunda.zeebe.client.impl.search.query.SearchRequestPageImpl;
 import io.camunda.zeebe.client.impl.search.sort.DecisionDefinitionSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.DecisionRequirementsSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.ProcessInstanceSortImpl;

@@ -15,21 +15,23 @@
  */
 package io.camunda.zeebe.client.impl.search.query;
 
-import static io.camunda.zeebe.client.api.search.query.SearchRequestBuilders.processInstanceFilter;
-import static io.camunda.zeebe.client.api.search.query.SearchRequestBuilders.processInstanceSort;
-import static io.camunda.zeebe.client.api.search.query.SearchRequestBuilders.searchRequestPage;
+import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.processInstanceFilter;
+import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.processInstanceSort;
+import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.search.SearchRequestPage;
 import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.client.api.search.query.FinalSearchQueryStep;
 import io.camunda.zeebe.client.api.search.query.ProcessInstanceQuery;
-import io.camunda.zeebe.client.api.search.query.SearchRequestPage;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
+import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
+import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryResponse;
