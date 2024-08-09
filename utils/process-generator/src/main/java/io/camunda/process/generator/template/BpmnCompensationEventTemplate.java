@@ -27,7 +27,7 @@ public class BpmnCompensationEventTemplate implements BpmnTemplateGenerator {
   }
 
   @Override
-  public AbstractFlowNodeBuilder<?, ?> addElements(
+  public AbstractFlowNodeBuilder<?, ?> addElement(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
 
     final var compensationHandlerId = "compensation_handler_" + generatorContext.createNewId();
@@ -62,7 +62,7 @@ public class BpmnCompensationEventTemplate implements BpmnTemplateGenerator {
 
     for (int i = 0; i < numberOfElement; i++) {
       final BpmnTemplateGenerator branchGenerator = templateGeneratorFactory.getMiddleGenerator();
-      branch = branchGenerator.addElements(branch, generateExecutionPath);
+      branch = branchGenerator.addElement(branch, generateExecutionPath);
     }
 
     final BpmnElementGenerator catchEventGenerator =

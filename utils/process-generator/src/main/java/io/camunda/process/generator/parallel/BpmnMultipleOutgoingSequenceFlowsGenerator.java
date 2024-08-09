@@ -59,7 +59,7 @@ public class BpmnMultipleOutgoingSequenceFlowsGenerator implements BpmnParallelF
     return bpmnFactories
         .getTemplateGeneratorFactory()
         .getMiddleGenerator()
-        .addElements(builder, generateExecutionPath);
+        .addElement(builder, generateExecutionPath);
   }
 
   @Override

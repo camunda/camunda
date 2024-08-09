@@ -31,7 +31,7 @@ public class BpmnExclusiveGatewayGenerator implements BpmnTemplateGenerator {
   }
 
   @Override
-  public AbstractFlowNodeBuilder<?, ?> addElements(
+  public AbstractFlowNodeBuilder<?, ?> addElement(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
 
     final var amountOfBranches =
@@ -54,7 +54,7 @@ public class BpmnExclusiveGatewayGenerator implements BpmnTemplateGenerator {
     // TODO generate more complex branches
     final AbstractFlowNodeBuilder<?, ?> joiningGatewayBuilder =
         elementSequenceGenerator
-            .addElements(
+            .addElement(
                 exclusiveGatewayBuilder
                     .defaultFlow()
                     .sequenceFlowId(generatorContext.createNewId()),
@@ -72,7 +72,7 @@ public class BpmnExclusiveGatewayGenerator implements BpmnTemplateGenerator {
               .conditionExpression(String.valueOf(branchShouldGenerateExecutionPath));
       // TODO generate more complex branches
       elementSequenceGenerator
-          .addElements(branchBuilder, branchShouldGenerateExecutionPath)
+          .addElement(branchBuilder, branchShouldGenerateExecutionPath)
           .connectTo(joiningGatewayId);
     }
 

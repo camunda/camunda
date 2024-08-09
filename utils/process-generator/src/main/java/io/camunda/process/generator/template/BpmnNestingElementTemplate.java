@@ -19,7 +19,7 @@ public abstract class BpmnNestingElementTemplate implements BpmnTemplateGenerato
   }
 
   @Override
-  public AbstractFlowNodeBuilder<?, ?> addElements(
+  public AbstractFlowNodeBuilder<?, ?> addElement(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
     generatorContext.incrementCurrentDepth();
 

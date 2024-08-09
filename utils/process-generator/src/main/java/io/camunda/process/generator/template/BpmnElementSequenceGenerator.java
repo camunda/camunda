@@ -30,7 +30,7 @@ public class BpmnElementSequenceGenerator implements BpmnTemplateGenerator {
   }
 
   @Override
-  public AbstractFlowNodeBuilder<?, ?> addElements(
+  public AbstractFlowNodeBuilder<?, ?> addElement(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
     AbstractFlowNodeBuilder<?, ?> builder = processBuilder;
 

@@ -23,7 +23,7 @@ public class BpmnEndEventTemplate implements BpmnTemplateGenerator {
   }
 
   @Override
-  public AbstractFlowNodeBuilder<?, ?> addElements(
+  public AbstractFlowNodeBuilder<?, ?> addElement(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
 
     LOG.debug("Adding regular end event");

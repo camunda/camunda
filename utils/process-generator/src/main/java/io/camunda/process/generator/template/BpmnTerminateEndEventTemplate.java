@@ -31,7 +31,7 @@ public class BpmnTerminateEndEventTemplate implements BpmnTemplateGenerator {
   }
 
   @Override
-  public AbstractFlowNodeBuilder<?, ?> addElements(
+  public AbstractFlowNodeBuilder<?, ?> addElement(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
 
     final var elementId = "terminate_%s".formatted(generatorContext.createNewId());

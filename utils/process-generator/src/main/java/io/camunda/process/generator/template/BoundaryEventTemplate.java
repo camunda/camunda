@@ -10,7 +10,6 @@ package io.camunda.process.generator.template;
 import io.camunda.process.generator.BpmnFactories;
 import io.camunda.process.generator.BpmnFeatureType;
 import io.camunda.process.generator.GeneratorContext;
-import io.camunda.process.generator.element.BpmnElementGenerator;
 import io.camunda.process.generator.event.BpmnCatchEventGenerator;
 import io.camunda.zeebe.model.bpmn.builder.AbstractActivityBuilder;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
@@ -27,14 +26,14 @@ public class BoundaryEventTemplate implements BpmnTemplateGenerator {
   }
 
   @Override
-  public AbstractFlowNodeBuilder<?, ?> addElements(
+  public AbstractFlowNodeBuilder<?, ?> addElement(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
 
     final String boundaryEventElementId = generatorContext.createNewId();
 
     final boolean shouldTriggerBoundaryEvent = generatorContext.getRandomBoolean();
 
-    final BpmnElementGenerator elementGenerator =
+    final var elementGenerator =
         bpmnFactories.getElementGeneratorFactory().getGeneratorForActivityWithBoundaryEvent();
 
     final var element =
@@ -62,7 +61,7 @@ public class BoundaryEventTemplate implements BpmnTemplateGenerator {
       final BpmnTemplateGenerator branchGenerator =
           bpmnFactories.getTemplateGeneratorFactory().getMiddleGenerator();
       final AbstractFlowNodeBuilder<?, ?> branch =
-          branchGenerator.addElements(
+          branchGenerator.addElement(
               boundaryEvent, generateExecutionPath && shouldTriggerBoundaryEvent);
 
       branch.connectTo(joiningGatewayId);

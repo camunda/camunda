@@ -8,15 +8,18 @@
 package io.camunda.process.generator.element;
 
 import io.camunda.process.generator.BpmnFactories;
+import io.camunda.process.generator.BpmnGenerator;
 import io.camunda.process.generator.FactoryUtil;
 import io.camunda.process.generator.GeneratorContext;
+import io.camunda.process.generator.template.BpmnEmbeddedSubprocessTemplate;
+import io.camunda.process.generator.template.BpmnTemplateGenerator;
 import java.util.List;
 
 public class BpmnElementGeneratorFactory {
 
   private final GeneratorContext generatorContext;
   private final List<BpmnElementGenerator> bpmnElementGenerators;
-  private final List<BpmnElementGenerator> activityForBoundaryEventGenerators;
+  private final List<BpmnGenerator> activityForBoundaryEventGenerators;
   private final List<BpmnElementGenerator> activityForCompensationEventGenerators;
   private final List<BpmnElementGenerator> compensationEventGenerators;
 
@@ -33,8 +36,9 @@ public class BpmnElementGeneratorFactory {
 
     activityForBoundaryEventGenerators =
         List.of(
-            new ServiceTaskGenerator(generatorContext), new UserTaskGenerator(generatorContext));
-    // TODO generate subprocess with boundary event
+            new ServiceTaskGenerator(generatorContext),
+            new UserTaskGenerator(generatorContext),
+            new BpmnEmbeddedSubprocessTemplate(generatorContext, bpmnFactories));
 
     activityForCompensationEventGenerators =
         List.of(
@@ -48,13 +52,15 @@ public class BpmnElementGeneratorFactory {
 
     // If we are at the maximum depth we should not go deeper. Instead, we use a different
     // generator.
-    if (!generatorContext.canGoDeeper() && generator.addsDepth()) {
+    if (!generatorContext.canGoDeeper()
+        && generator instanceof BpmnTemplateGenerator
+        && ((BpmnTemplateGenerator) generator).addsDepth()) {
       return getGenerator();
     }
     return generator;
   }
 
-  public BpmnElementGenerator getGeneratorForActivityWithBoundaryEvent() {
+  public BpmnGenerator getGeneratorForActivityWithBoundaryEvent() {
     return FactoryUtil.getGenerator(activityForBoundaryEventGenerators, generatorContext);
   }
 
