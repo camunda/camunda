@@ -29,7 +29,7 @@ public class CreateAuthorizationTest {
       new RecordingExporterTestWatcher();
 
   @DisplayName(
-      "should create authorization if no authorization for owner and resource does not exist")
+      "should create an authorization if no authorization for owner and resource pair exists")
   @Test
   public void shouldCreateAuthorization() {
     // when
@@ -57,7 +57,8 @@ public class CreateAuthorizationTest {
         .hasFieldOrPropertyWithValue("permissions", permissions);
   }
 
-  @DisplayName("should create user throws exception when username already exists")
+  @DisplayName(
+      "should reject authorization create command when an authorization with owner and resource pair exists")
   @Test
   public void shouldNotDuplicate() {
     // given
@@ -90,6 +91,9 @@ public class CreateAuthorizationTest {
     assertThat(createdAuthorization).isNotNull().hasFieldOrPropertyWithValue("ownerKey", owner);
 
     io.camunda.zeebe.protocol.record.Assertions.assertThat(duplicatedAuthorizationRecord)
-        .hasRejectionType(RejectionType.ALREADY_EXISTS);
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to create authorization with owner key: %s and resource key %s, but an authorization with these values already exists"
+                .formatted(owner, "resource"));
   }
 }
