@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
-import com.esotericsoftware.minlog.Log;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
@@ -509,13 +508,10 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       containerOpenFutures.add(openFuture);
     }
 
+    // Don't need to handle error as any are caught within the runWithRetry try catch
     actor.runOnCompletion(
         containerOpenFutures,
         (error) -> {
-          if (error != null) {
-            Log.error("Failed to open exporters", error);
-            return;
-          }
           if (state.hasExporters()) {
             final long snapshotPosition = state.getLowestPosition();
             // start reading and exporting
