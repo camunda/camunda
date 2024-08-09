@@ -250,8 +250,12 @@ jobs:
         --set global.image.tag=${{ needs.build-benchmark-images.outputs.image-tag }}
         --set camunda-platform.zeebe.image.repository=gcr.io/zeebe-io/zeebe
         --set camunda-platform.zeebe.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
+        # To support old versions
         --set camunda-platform.zeebe-gateway.image.repository=gcr.io/zeebe-io/zeebe
         --set camunda-platform.zeebe-gateway.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
+        # To support new versions
+        --set camunda-platform.zeebeGateway.image.repository=gcr.io/zeebe-io/zeebe
+        --set camunda-platform.zeebeGateway.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
         ${{ inputs.benchmark-load }}
   deploy-benchmark-cluster:
     name: Deploy
@@ -293,8 +297,12 @@ jobs:
           --set global.image.tag=${{ needs.build-benchmark-images.outputs.image-tag }}
           --set camunda-platform.zeebe.image.repository=gcr.io/zeebe-io/zeebe
           --set camunda-platform.zeebe.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
+          # To support old versions
           --set camunda-platform.zeebe-gateway.image.repository=gcr.io/zeebe-io/zeebe
           --set camunda-platform.zeebe-gateway.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
+          # To support new versions
+          --set camunda-platform.zeebeGateway.image.repository=gcr.io/zeebe-io/zeebe
+          --set camunda-platform.zeebeGateway.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && '-f zeebe/benchmarks/setup/default/values-stable.yaml' || '' }}
           ${{ inputs.benchmark-load }}

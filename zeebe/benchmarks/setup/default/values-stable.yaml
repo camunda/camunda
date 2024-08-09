@@ -12,6 +12,7 @@ camunda-platform:
         effect: NoSchedule
         value: 'false'
 
+  # Support of -9.x camunda platform
   zeebe-gateway:
     # Prefer scheduling on any non-spot VM
     # GKE does not let us add the cloud.google.com/gke-spot label manually, so when an instance is
@@ -24,6 +25,27 @@ camunda-platform:
             - matchExpressions:
               - key: cloud.google.com/gke-spot
                 operator: DoesNotExist
+
+    # Ignore the stable VM node taints
+    tolerations:
+      - key: cloud.google.com/gke-spot
+        operator: Equal
+        effect: NoSchedule
+        value: 'false'
+
+  # Support of 10.x camunda platform
+  zeebeGateway:
+    # Prefer scheduling on any non-spot VM
+    # GKE does not let us add the cloud.google.com/gke-spot label manually, so when an instance is
+    # not a spot VM, that node label simply is not present. When it is a spot VM, then the value is
+    # set to true.
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: cloud.google.com/gke-spot
+                  operator: DoesNotExist
 
     # Ignore the stable VM node taints
     tolerations:
