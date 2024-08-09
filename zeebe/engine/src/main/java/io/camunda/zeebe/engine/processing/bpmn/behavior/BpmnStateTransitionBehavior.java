@@ -314,14 +314,17 @@ public final class BpmnStateTransitionBehavior {
    * @param amount the amount of children for which we will write an activate command
    */
   public void activateChildInstancesInBatches(final BpmnElementContext context, final int amount) {
+    final long elementInstanceKey = context.getElementInstanceKey();
     final var record =
         new ProcessInstanceBatchRecord()
             .setProcessInstanceKey(context.getProcessInstanceKey())
-            .setBatchElementInstanceKey(context.getElementInstanceKey())
+            .setBatchElementInstanceKey(elementInstanceKey)
             .setIndex(amount);
 
     final var key = keyGenerator.nextKey();
     commandWriter.appendFollowUpCommand(key, ProcessInstanceBatchIntent.ACTIVATE, record);
+    stateWriter.appendFollowUpEvent(
+        elementInstanceKey, ProcessInstanceBatchIntent.ACTIVATING, record);
   }
 
   public void activateElementInstanceInFlowScope(

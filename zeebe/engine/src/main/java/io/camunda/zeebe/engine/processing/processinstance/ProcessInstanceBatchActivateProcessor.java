@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -27,6 +28,7 @@ public final class ProcessInstanceBatchActivateProcessor
   private final KeyGenerator keyGenerator;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
+  private final StateWriter stateWriter;
 
   public ProcessInstanceBatchActivateProcessor(
       final Writers writers,
@@ -34,6 +36,7 @@ public final class ProcessInstanceBatchActivateProcessor
       final ElementInstanceState elementInstanceState,
       final ProcessState processState) {
     commandWriter = writers.command();
+    stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
@@ -55,6 +58,12 @@ public final class ProcessInstanceBatchActivateProcessor
         writeFollowupBatchCommand(recordValue, amountOfChildInstancesToActivate);
         break;
       }
+    }
+    if (amountOfChildInstancesToActivate == 0) {
+      stateWriter.appendFollowUpEvent(
+          recordValue.getBatchElementInstanceKey(),
+          ProcessInstanceBatchIntent.ACTIVATED,
+          recordValue);
     }
   }
 
