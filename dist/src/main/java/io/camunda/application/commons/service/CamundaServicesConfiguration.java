@@ -13,6 +13,7 @@ import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
+import io.camunda.service.ManagementService;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -26,6 +27,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnRestGatewayEnabled
 public class CamundaServicesConfiguration {
+
   private final BrokerClient brokerClient;
   private final CamundaSearchClient camundaSearchClient;
 
@@ -49,6 +51,11 @@ public class CamundaServicesConfiguration {
   @Bean
   public UserTaskServices userTaskServices(final CamundaServices camundaServices) {
     return camundaServices.userTaskServices();
+  }
+
+  @Bean
+  public ManagementService managementService(final CamundaServices camundaServices) {
+    return camundaServices.managementService();
   }
 
   @Bean
