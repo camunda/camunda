@@ -46,7 +46,7 @@ jobs:
       backend-changes: ${{ steps.filter.outputs.backend-changes }}
     steps:
     - name: Checkout repository
-      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
     - name: Get list of changed directories
       id: filter
       uses: ./.github/actions/optimize-paths-filter
@@ -62,7 +62,7 @@ jobs:
     timeout-minutes: 30
     steps:
     - name: Checkout repository
-      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
     - name: Fetch main branch
       run: git fetch origin main:refs/remote/origin/main
@@ -117,7 +117,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
     - name: Fetch main branch
       run: git fetch origin main:refs/remote/origin/main
@@ -197,7 +197,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
       - name: Fetch main branch
         run: git fetch origin main:refs/remote/origin/main
@@ -278,7 +278,7 @@ jobs:
             profiles: 'it,engine-latest'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
       - name: Fetch main branch
         run: git fetch origin main:refs/remote/origin/main
