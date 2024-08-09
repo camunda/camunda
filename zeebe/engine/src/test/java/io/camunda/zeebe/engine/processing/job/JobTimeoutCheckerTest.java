@@ -30,6 +30,7 @@ import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
+import java.time.InstantSource;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -87,7 +88,8 @@ public class JobTimeoutCheckerTest {
     final Duration pollingInterval = EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
     final int batchLimit = Integer.MAX_VALUE;
 
-    final var task = new JobTimeoutChecker(jobState, pollingInterval, batchLimit);
+    final var task =
+        new JobTimeoutChecker(jobState, pollingInterval, batchLimit, InstantSource.system());
     task.setProcessingContext(mockContext);
     task.setShouldReschedule(true);
 
@@ -117,7 +119,8 @@ public class JobTimeoutCheckerTest {
     final Duration pollingInterval = EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
     final int batchLimit = 3;
 
-    final var task = new JobTimeoutChecker(jobState, pollingInterval, batchLimit);
+    final var task =
+        new JobTimeoutChecker(jobState, pollingInterval, batchLimit, InstantSource.system());
     task.setProcessingContext(mockContext);
     task.setShouldReschedule(true);
 
@@ -160,7 +163,8 @@ public class JobTimeoutCheckerTest {
     final Duration pollingInterval = EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
     final int batchLimit = Integer.MAX_VALUE;
 
-    final var task = new JobTimeoutChecker(jobState, pollingInterval, batchLimit);
+    final var task =
+        new JobTimeoutChecker(jobState, pollingInterval, batchLimit, InstantSource.system());
     task.setProcessingContext(mockContext);
     task.setShouldReschedule(true);
 

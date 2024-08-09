@@ -10,10 +10,10 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.function.Supplier;
 
 public final class MessageObserver implements StreamProcessorLifecycleAware {
@@ -27,6 +27,7 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
   private final int messagesTtlCheckerBatchLimit;
   private final Duration messagesTtlCheckerInterval;
   private final boolean enableMessageTtlCheckerAsync;
+  private final InstantSource clock;
 
   public MessageObserver(
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
@@ -34,13 +35,15 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
       final SubscriptionCommandSender subscriptionCommandSender,
       final Duration messagesTtlCheckerInterval,
       final int messagesTtlCheckerBatchLimit,
-      final boolean enableMessageTtlCheckerAsync) {
+      final boolean enableMessageTtlCheckerAsync,
+      final InstantSource clock) {
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.scheduledTaskStateFactory = scheduledTaskStateFactory;
     this.pendingState = pendingState;
     this.messagesTtlCheckerInterval = messagesTtlCheckerInterval;
     this.messagesTtlCheckerBatchLimit = messagesTtlCheckerBatchLimit;
     this.enableMessageTtlCheckerAsync = enableMessageTtlCheckerAsync;
+    this.clock = clock;
   }
 
   @Override
@@ -52,14 +55,15 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
   private void scheduleMessageTtlChecker(final ReadonlyStreamProcessorContext context) {
     final var scheduleService = context.getScheduleService();
     final var messageState = scheduledTaskStateFactory.get().getMessageState();
-    final var timestamp = ActorClock.currentTimeMillis() + messagesTtlCheckerInterval.toMillis();
+    final var timestamp = clock.millis() + messagesTtlCheckerInterval.toMillis();
     final var timeToLiveChecker =
         new MessageTimeToLiveChecker(
             messagesTtlCheckerInterval,
             messagesTtlCheckerBatchLimit,
             enableMessageTtlCheckerAsync,
             scheduleService,
-            messageState);
+            messageState,
+            context.getClock());
     if (enableMessageTtlCheckerAsync) {
       scheduleService.runAtAsync(timestamp, timeToLiveChecker);
     } else {
@@ -72,7 +76,10 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
     final var scheduleService = context.getScheduleService();
     final var pendingSubscriptionChecker =
         new PendingMessageSubscriptionChecker(
-            subscriptionCommandSender, pendingState, SUBSCRIPTION_TIMEOUT.toMillis());
+            subscriptionCommandSender,
+            pendingState,
+            SUBSCRIPTION_TIMEOUT.toMillis(),
+            context.getClock());
     scheduleService.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, pendingSubscriptionChecker);
   }
 }

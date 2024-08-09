@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.time.Duration;
+import java.time.InstantSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,9 +21,12 @@ public final class JobTimeoutCheckerScheduler implements StreamProcessorLifecycl
   private final JobTimeoutChecker jobTimeoutChecker;
 
   public JobTimeoutCheckerScheduler(
-      final JobState state, final Duration pollingInterval, final int batchLimit) {
+      final JobState state,
+      final Duration pollingInterval,
+      final int batchLimit,
+      final InstantSource clock) {
     this.pollingInterval = pollingInterval;
-    jobTimeoutChecker = new JobTimeoutChecker(state, pollingInterval, batchLimit);
+    jobTimeoutChecker = new JobTimeoutChecker(state, pollingInterval, batchLimit, clock);
   }
 
   @Override

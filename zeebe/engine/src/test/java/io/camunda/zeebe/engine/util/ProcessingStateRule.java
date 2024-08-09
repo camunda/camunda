@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
+import java.time.InstantSource;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 
@@ -49,7 +50,8 @@ public final class ProcessingStateRule extends ExternalResource {
             keyGenerator,
             new TransientPendingSubscriptionState(),
             new TransientPendingSubscriptionState(),
-            new EngineConfiguration());
+            new EngineConfiguration(),
+            InstantSource.system());
   }
 
   @Override

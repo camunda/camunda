@@ -24,9 +24,9 @@ import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
-import java.time.Duration;
+import java.time.Instant;
+import java.time.InstantSource;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -178,7 +178,7 @@ class DueDateTimerCheckerTest {
     }
   }
 
-  private final class TestActorClock implements ActorClock {
+  private final class TestActorClock implements InstantSource {
 
     private long time = 0;
 
@@ -186,25 +186,19 @@ class DueDateTimerCheckerTest {
       this.time = time;
     }
 
-    @Override
     public boolean update() {
       time = time + 10;
       return true;
     }
 
     @Override
-    public long getTimeMillis() {
+    public Instant instant() {
+      return Instant.ofEpochMilli(time);
+    }
+
+    @Override
+    public long millis() {
       return time;
-    }
-
-    @Override
-    public long getNanosSinceLastMillisecond() {
-      return 0;
-    }
-
-    @Override
-    public long getNanoTime() {
-      return Duration.ofMillis(getTimeMillis()).toNanos();
     }
   }
 

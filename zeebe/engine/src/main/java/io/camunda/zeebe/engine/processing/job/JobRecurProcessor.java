@@ -18,8 +18,8 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.time.InstantSource;
 
 public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
 
@@ -29,15 +29,18 @@ public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final BpmnJobActivationBehavior jobActivationBehavior;
+  private final InstantSource clock;
 
   public JobRecurProcessor(
       final ProcessingState processingState,
       final Writers writers,
-      final BpmnJobActivationBehavior jobActivationBehavior) {
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final InstantSource clock) {
     jobState = processingState.getJobState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.jobActivationBehavior = jobActivationBehavior;
+    this.clock = clock;
   }
 
   @Override
@@ -76,6 +79,6 @@ public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
   }
 
   private boolean hasRecurred(final JobRecord job) {
-    return job.getRecurringTime() < ActorClock.currentTimeMillis();
+    return job.getRecurringTime() < clock.millis();
   }
 }

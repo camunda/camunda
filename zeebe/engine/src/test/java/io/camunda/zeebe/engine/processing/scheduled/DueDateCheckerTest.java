@@ -14,12 +14,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
+import java.time.InstantSource;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -30,7 +30,8 @@ public class DueDateCheckerTest {
   public void shouldNotScheduleTwoTasks() {
     // given
     final var timerResolution = 100;
-    final var dueDateChecker = new DueDateChecker(timerResolution, false, (builder) -> 0L);
+    final var dueDateChecker =
+        new DueDateChecker(timerResolution, false, (builder) -> 0L, InstantSource.system());
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
     when(mockContext.getScheduleService()).thenReturn(mockScheduleService);
@@ -52,7 +53,8 @@ public class DueDateCheckerTest {
   public void shouldScheduleForAnEarlierTasks() {
     // given
     final var timerResolution = 100;
-    final var dueDateChecker = new DueDateChecker(timerResolution, false, (builder) -> 0L);
+    final var dueDateChecker =
+        new DueDateChecker(timerResolution, false, (builder) -> 0L, InstantSource.system());
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
     final var mockScheduledTask = mock(ScheduledTask.class);
@@ -78,10 +80,11 @@ public class DueDateCheckerTest {
   public void shouldRescheduleAutomatically() {
     // given
     final Function<TaskResultBuilder, Long> visitor =
-        (builder) -> ActorClock.currentTimeMillis() + 1000L;
+        (builder) -> InstantSource.system().millis() + 1000L;
 
     final var timerResolution = 100;
-    final var dueDateChecker = new DueDateChecker(timerResolution, false, visitor);
+    final var dueDateChecker =
+        new DueDateChecker(timerResolution, false, visitor, InstantSource.system());
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
     final var mockScheduledTask = mock(ScheduledTask.class);
@@ -103,10 +106,11 @@ public class DueDateCheckerTest {
   public void shouldScheduleEarlierIfRescheduledAutomatically() {
     // given
     final Function<TaskResultBuilder, Long> visitor =
-        (builder) -> ActorClock.currentTimeMillis() + 1000L;
+        (builder) -> InstantSource.system().millis() + 1000L;
 
     final var timerResolution = 100;
-    final var dueDateChecker = new DueDateChecker(timerResolution, false, visitor);
+    final var dueDateChecker =
+        new DueDateChecker(timerResolution, false, visitor, InstantSource.system());
     final var mockContext = mock(ReadonlyStreamProcessorContext.class);
     final var mockScheduleService = mock(ProcessingScheduleService.class);
     final var mockScheduledTask = mock(ScheduledTask.class);
@@ -123,7 +127,7 @@ public class DueDateCheckerTest {
     Mockito.clearInvocations(mockScheduleService);
 
     // when
-    dueDateChecker.schedule(ActorClock.currentTimeMillis() + 100); // in one second
+    dueDateChecker.schedule(InstantSource.system().millis() + 100); // in one second
 
     // then
     verify(mockScheduleService).runAt(anyLong(), any(Task.class));

@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.scheduled;
 
 import io.camunda.zeebe.engine.processing.scheduled.DueDateChecker.NextExecution.None;
 import io.camunda.zeebe.engine.processing.scheduled.DueDateChecker.NextExecution.Scheduled;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
@@ -17,6 +16,7 @@ import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.util.AtomicUtil;
+import java.time.InstantSource;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -49,6 +49,8 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
    */
   private final AtomicReference<NextExecution> nextExecution = new AtomicReference<>(new None());
 
+  private final InstantSource clock;
+
   /**
    * @param timerResolution The resolution in ms for the timer
    * @param scheduleAsync Whether to schedule the execution happens asynchronously or not
@@ -57,10 +59,12 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   public DueDateChecker(
       final long timerResolution,
       final boolean scheduleAsync,
-      final Function<TaskResultBuilder, Long> visitor) {
+      final Function<TaskResultBuilder, Long> visitor,
+      final InstantSource clock) {
     this.timerResolution = timerResolution;
     this.scheduleAsync = scheduleAsync;
     this.visitor = visitor;
+    this.clock = clock;
   }
 
   TaskResult execute(final TaskResultBuilder taskResultBuilder) {
@@ -111,7 +115,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
         AtomicUtil.replace(
             nextExecution,
             currentlyPlanned -> {
-              final var now = ActorClock.currentTimeMillis();
+              final var now = clock.millis();
               final long scheduleFor = now + Math.max(dueDate - now, timerResolution);
               if (!(currentlyPlanned instanceof final Scheduled currentlyScheduled)
                   || (currentlyScheduled.scheduledFor() - scheduleFor > timerResolution)) {

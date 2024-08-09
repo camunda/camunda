@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 
 public final class MessageSubscriptionCorrelateProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
@@ -46,7 +47,8 @@ public final class MessageSubscriptionCorrelateProcessor
       final MessageCorrelationState messageCorrelationState,
       final MessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender,
-      final Writers writers) {
+      final Writers writers,
+      final InstantSource clock) {
     this.subscriptionState = subscriptionState;
     this.messageCorrelationState = messageCorrelationState;
     stateWriter = writers.state();
@@ -54,7 +56,7 @@ public final class MessageSubscriptionCorrelateProcessor
     responseWriter = writers.response();
     messageCorrelator =
         new MessageCorrelator(
-            partitionId, messageState, commandSender, stateWriter, writers.sideEffect());
+            partitionId, messageState, commandSender, stateWriter, writers.sideEffect(), clock);
   }
 
   @Override
