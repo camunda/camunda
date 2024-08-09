@@ -5,12 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.bpmn.activity;
+package io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution;
 
-import static io.camunda.zeebe.engine.processing.bpmn.activity.ExecutionListenerTest.END_EL_TYPE;
-import static io.camunda.zeebe.engine.processing.bpmn.activity.ExecutionListenerTest.PROCESS_ID;
-import static io.camunda.zeebe.engine.processing.bpmn.activity.ExecutionListenerTest.START_EL_TYPE;
-import static io.camunda.zeebe.engine.processing.bpmn.activity.ExecutionListenerTest.createProcessInstance;
+import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.END_EL_TYPE;
+import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.PROCESS_ID;
+import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.START_EL_TYPE;
+import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.createProcessInstance;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -229,6 +229,43 @@ public class ExecutionListenerIntermediateThrowEventElementTest {
               job ->
                   assertThat(job.getVariables())
                       .contains(entry("counter", 1), entry("updatedCounter", 2)));
+    }
+
+    @Test
+    public void shouldAllowSubsequentElementToAccessVariableProducedByThrowEventEndListenerJob() {
+      // given: deploy process with throw event having end EL and service task following it
+      final long processInstanceKey =
+          createProcessInstance(
+              ENGINE,
+              Bpmn.createExecutableProcess(PROCESS_ID)
+                  .startEvent()
+                  .intermediateThrowEvent(scenario.name, e -> scenario.builderFunction.apply(e))
+                  .zeebeEndExecutionListener(END_EL_TYPE)
+                  .serviceTask("subsequent_task", tb -> tb.zeebeJobType("subsequent_service_task"))
+                  .endEvent()
+                  .done());
+
+      // process intermediate throw event element
+      scenario.eventElementProcessor.accept(processInstanceKey);
+
+      // when: complete the end EL job with a variable 'end_el_var'
+      ENGINE
+          .job()
+          .ofInstance(processInstanceKey)
+          .withType(END_EL_TYPE)
+          .withVariable("end_el_var", "baz")
+          .complete();
+
+      // then: assert the variable 'end_el_var' is accessible by the subsequent service task element
+      final var subsequentServiceTaskJob =
+          ENGINE.jobs().withType("subsequent_service_task").activate().getValue().getJobs().stream()
+              .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
+              .findFirst();
+
+      assertThat(subsequentServiceTaskJob)
+          .hasValueSatisfying(
+              job -> assertThat(job.getVariables()).contains(entry("end_el_var", "baz")));
+      ENGINE.job().ofInstance(processInstanceKey).withType("subsequent_service_task").complete();
     }
 
     private record IntermediateThrowEventTestScenario(
