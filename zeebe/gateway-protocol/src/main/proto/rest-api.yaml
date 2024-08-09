@@ -949,8 +949,8 @@ components:
           description: True if the Camunda License is valid, false if otherwise
           type: boolean
           nullable: false
-        isSelfManaged:
-          description: True if Camunda is running in Self-Managed mode, false if otherwise
+        licenseType:
+          description: Will return the license type property of the Camunda License
     BrokerInfo:
       description: Provides information on a broker node.
       type: object

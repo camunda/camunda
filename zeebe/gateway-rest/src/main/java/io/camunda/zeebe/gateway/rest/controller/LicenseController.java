@@ -24,7 +24,7 @@ public class LicenseController {
   public LicenseResponse get() {
     final LicenseResponse response = new LicenseResponse();
     response.setValidLicense(managementServices.isCamundaLicenseValid());
-    response.setIsSelfManaged(managementServices.getCamundaLicenseType());
+    response.setLicenseType(managementServices.getCamundaLicenseType());
 
     return response;
   }
