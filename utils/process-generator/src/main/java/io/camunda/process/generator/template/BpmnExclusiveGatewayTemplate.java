@@ -13,19 +13,19 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BpmnExclusiveGatewayGenerator implements BpmnTemplateGenerator {
+public class BpmnExclusiveGatewayTemplate implements BpmnTemplateGenerator {
 
-  private static final Logger LOG = LoggerFactory.getLogger(BpmnExclusiveGatewayGenerator.class);
+  private static final Logger LOG = LoggerFactory.getLogger(BpmnExclusiveGatewayTemplate.class);
 
   private static final int MIN_AMOUNT_OF_BRANCHES = 2;
   private static final int MAX_AMOUNT_OF_BRANCHES = 3;
 
   private final GeneratorContext generatorContext;
-  private final BpmnElementSequenceGenerator elementSequenceGenerator;
+  private final BpmnElementSequenceTemplate elementSequenceGenerator;
 
-  public BpmnExclusiveGatewayGenerator(
+  public BpmnExclusiveGatewayTemplate(
       final GeneratorContext generatorContext,
-      final BpmnElementSequenceGenerator elementSequenceGenerator) {
+      final BpmnElementSequenceTemplate elementSequenceGenerator) {
     this.generatorContext = generatorContext;
     this.elementSequenceGenerator = elementSequenceGenerator;
   }

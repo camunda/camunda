@@ -14,14 +14,14 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BpmnElementSequenceGenerator implements BpmnTemplateGenerator {
+public class BpmnElementSequenceTemplate implements BpmnTemplateGenerator {
 
-  private static final Logger LOG = LoggerFactory.getLogger(BpmnElementSequenceGenerator.class);
+  private static final Logger LOG = LoggerFactory.getLogger(BpmnElementSequenceTemplate.class);
 
   private final GeneratorContext generatorContext;
   private final BpmnElementGeneratorFactory elementGeneratorFactory;
 
-  public BpmnElementSequenceGenerator(
+  public BpmnElementSequenceTemplate(
       final GeneratorContext generatorContext,
       final BpmnElementGeneratorFactory elementGeneratorFactory) {
     this.generatorContext = generatorContext;

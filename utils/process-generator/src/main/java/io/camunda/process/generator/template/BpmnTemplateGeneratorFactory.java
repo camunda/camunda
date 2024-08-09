@@ -22,13 +22,13 @@ public class BpmnTemplateGeneratorFactory {
       final GeneratorContext generatorContext, final BpmnFactories bpmnFactories) {
     this.generatorContext = generatorContext;
     final var elementSequenceGenerator =
-        new BpmnElementSequenceGenerator(
+        new BpmnElementSequenceTemplate(
             generatorContext, bpmnFactories.getElementGeneratorFactory());
     middleTemplateGenerators =
         List.of(
             elementSequenceGenerator,
-            new BpmnExclusiveGatewayGenerator(generatorContext, elementSequenceGenerator),
-            new ParallelGatewayGenerator(generatorContext, bpmnFactories),
+            new BpmnExclusiveGatewayTemplate(generatorContext, elementSequenceGenerator),
+            new ParallelGatewayTemplate(generatorContext, bpmnFactories),
             new BoundaryEventTemplate(generatorContext, bpmnFactories),
             new BpmnEmbeddedSubprocessTemplate(generatorContext, bpmnFactories));
     finalTemplateGenerators =

@@ -16,14 +16,14 @@ import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ParallelGatewayGenerator implements BpmnTemplateGenerator {
+public class ParallelGatewayTemplate implements BpmnTemplateGenerator {
 
   public static final int BRANCH_LIMIT = 3;
-  private static final Logger LOG = LoggerFactory.getLogger(ParallelGatewayGenerator.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ParallelGatewayTemplate.class);
   private final GeneratorContext generatorContext;
   private final BpmnFactories bpmnFactories;
 
-  public ParallelGatewayGenerator(
+  public ParallelGatewayTemplate(
       final GeneratorContext generatorContext, final BpmnFactories bpmnFactories) {
     this.generatorContext = generatorContext;
     this.bpmnFactories = bpmnFactories;
