@@ -54,13 +54,12 @@ public class BpmnProcessGeneratorTest {
     // given
     final GeneratorConfiguration configuration =
         new GeneratorConfiguration()
-            .withFeatures(BpmnFeatureType.USER_TASK, BpmnFeatureType.COMPENSATION_EVENT)
+            .withFeatures(BpmnFeatureType.EMBEDDED_SUBPROCESS)
             .excludeFeatures(
                 BpmnFeatureType.TERMINATE_EVENT,
                 BpmnFeatureType.UNDEFINED_TASK,
                 BpmnFeatureType.PARALLEL_GATEWAY,
                 BpmnFeatureType.BOUNDARY_EVENT,
-                BpmnFeatureType.EMBEDDED_SUBPROCESS,
                 BpmnFeatureType.MULTIPLE_OUTGOING_SEQUENCE_FLOWS);
     final var generator = new BpmnProcessGenerator(configuration);
 
@@ -71,6 +70,8 @@ public class BpmnProcessGeneratorTest {
     assertThat(generatedProcess).isNotNull();
 
     System.out.println(Bpmn.convertToString(generatedProcess.process()));
+    System.out.println("----------");
+    System.out.printf("Seed: %nL", generatedProcess.seed());
 
     //    Uncomment to open the generated process in the modeler automatically
 
