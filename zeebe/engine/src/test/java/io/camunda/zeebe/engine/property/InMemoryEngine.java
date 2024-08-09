@@ -124,7 +124,8 @@ public final class InMemoryEngine implements TestEngines {
             zeebeDb,
             transactionContext,
             interPartitionCommandSender,
-            keyGeneratorControls));
+            keyGeneratorControls,
+            clock));
   }
 
   public static InMemoryEngine createEngine() {
@@ -181,9 +182,7 @@ public final class InMemoryEngine implements TestEngines {
           }
         }
       }
-      case final ExecuteScheduledTask scheduledTask -> {
-        scheduleService.runNext();
-      }
+      case final ExecuteScheduledTask scheduledTask -> scheduleService.runNext();
 
       case null, default -> throw new UnsupportedOperationException();
     }
@@ -291,6 +290,16 @@ public final class InMemoryEngine implements TestEngines {
       final var queuedTask = new QueuedTask(timestamp, task, taskQueue);
       taskQueue.add(queuedTask);
       return queuedTask;
+    }
+
+    @Override
+    public ScheduledTask runAt(final long timestamp, final Runnable task) {
+      return runAt(
+          timestamp,
+          taskResultBuilder -> {
+            task.run();
+            return taskResultBuilder.build();
+          });
     }
 
     @Override
