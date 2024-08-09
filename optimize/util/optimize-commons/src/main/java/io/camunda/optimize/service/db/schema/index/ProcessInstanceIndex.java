@@ -26,7 +26,7 @@ import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import io.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
 import io.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
-import io.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import java.io.IOException;
 import java.util.Locale;
@@ -118,6 +118,7 @@ public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceInd
   public static final String INCIDENT_DEFINITION_KEY = IncidentDto.Fields.definitionKey;
   public static final String INCIDENT_DEFINITION_VERSION = IncidentDto.Fields.definitionVersion;
   public static final String INCIDENT_TENANT_ID = IncidentDto.Fields.tenantId;
+  private final String indexName;
 
   protected ProcessInstanceIndex(final String processInstanceIndexKey) {
     indexName = getIndexPrefix() + processInstanceIndexKey.toLowerCase(Locale.ENGLISH);
@@ -129,8 +130,6 @@ public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceInd
   public static String constructIndexName(final String processInstanceIndexKey) {
     return PROCESS_INSTANCE_INDEX_PREFIX + processInstanceIndexKey.toLowerCase(Locale.ENGLISH);
   }
-
-  private final String indexName;
 
   @Override
   public String getIndexName() {
@@ -158,9 +157,9 @@ public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceInd
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder builder) throws IOException {
+  public XContentBuilder addProperties(final XContentBuilder builder) throws IOException {
     // @formatter:off
-    XContentBuilder newBuilder =
+    final XContentBuilder newBuilder =
         builder
             .startObject(PROCESS_DEFINITION_KEY)
             .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
@@ -225,7 +224,7 @@ public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceInd
     return PROCESS_INSTANCE_INDEX_PREFIX;
   }
 
-  private XContentBuilder addNestedFlowNodeInstancesField(XContentBuilder builder)
+  private XContentBuilder addNestedFlowNodeInstancesField(final XContentBuilder builder)
       throws IOException {
     // @formatter:off
     builder
@@ -302,7 +301,7 @@ public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceInd
     return builder;
   }
 
-  private XContentBuilder addNestedVariableField(XContentBuilder builder) throws IOException {
+  private XContentBuilder addNestedVariableField(final XContentBuilder builder) throws IOException {
     // @formatter:off
     builder
         .startObject(VARIABLE_ID)
@@ -370,7 +369,7 @@ public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceInd
     // @formatter:on
   }
 
-  private XContentBuilder addNestedIncidentField(XContentBuilder builder) throws IOException {
+  private XContentBuilder addNestedIncidentField(final XContentBuilder builder) throws IOException {
     // @formatter:off
     return builder
         .startObject(INCIDENT_ID)

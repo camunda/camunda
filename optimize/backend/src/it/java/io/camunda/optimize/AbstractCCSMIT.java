@@ -13,7 +13,7 @@ import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.ASSIGNED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import io.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionRecordDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;

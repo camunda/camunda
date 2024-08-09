@@ -23,7 +23,6 @@ import io.camunda.optimize.test.optimize.CollectionClient;
 import io.camunda.optimize.test.optimize.DashboardClient;
 import io.camunda.optimize.test.optimize.DefinitionClient;
 import io.camunda.optimize.test.optimize.EntitiesClient;
-import io.camunda.optimize.test.optimize.EventProcessClient;
 import io.camunda.optimize.test.optimize.ExportClient;
 import io.camunda.optimize.test.optimize.FlowNodeNamesClient;
 import io.camunda.optimize.test.optimize.IdentityClient;
@@ -34,7 +33,6 @@ import io.camunda.optimize.test.optimize.ProcessOverviewClient;
 import io.camunda.optimize.test.optimize.PublicApiClient;
 import io.camunda.optimize.test.optimize.ReportClient;
 import io.camunda.optimize.test.optimize.SharingClient;
-import io.camunda.optimize.test.optimize.StatusClient;
 import io.camunda.optimize.test.optimize.UiConfigurationClient;
 import io.camunda.optimize.test.optimize.VariablesClient;
 import java.util.Collections;
@@ -77,11 +75,45 @@ public abstract class AbstractIT {
 
   private final Supplier<OptimizeRequestExecutor> optimizeRequestExecutorSupplier =
       () -> embeddedOptimizeExtension.getRequestExecutor();
+  // optimize test helpers
+  protected CollectionClient collectionClient =
+      new CollectionClient(optimizeRequestExecutorSupplier);
+  protected ReportClient reportClient = new ReportClient(optimizeRequestExecutorSupplier);
+  protected AlertClient alertClient = new AlertClient(optimizeRequestExecutorSupplier);
+  protected DashboardClient dashboardClient = new DashboardClient(optimizeRequestExecutorSupplier);
+  protected SharingClient sharingClient = new SharingClient(optimizeRequestExecutorSupplier);
+  protected AnalysisClient analysisClient = new AnalysisClient(optimizeRequestExecutorSupplier);
+  protected UiConfigurationClient uiConfigurationClient =
+      new UiConfigurationClient(optimizeRequestExecutorSupplier);
+  protected EntitiesClient entitiesClient = new EntitiesClient(optimizeRequestExecutorSupplier);
+  protected ExportClient exportClient = new ExportClient(optimizeRequestExecutorSupplier);
+  protected ImportClient importClient = new ImportClient(optimizeRequestExecutorSupplier);
+  protected PublicApiClient publicApiClient = new PublicApiClient(optimizeRequestExecutorSupplier);
+  protected DefinitionClient definitionClient =
+      new DefinitionClient(optimizeRequestExecutorSupplier);
+  protected VariablesClient variablesClient = new VariablesClient(optimizeRequestExecutorSupplier);
+  protected AssigneesClient assigneesClient = new AssigneesClient(optimizeRequestExecutorSupplier);
+  protected FlowNodeNamesClient flowNodeNamesClient =
+      new FlowNodeNamesClient(optimizeRequestExecutorSupplier);
+  protected LocalizationClient localizationClient =
+      new LocalizationClient(optimizeRequestExecutorSupplier);
+  protected IdentityClient identityClient = new IdentityClient(optimizeRequestExecutorSupplier);
+  protected IngestionClient ingestionClient =
+      new IngestionClient(
+          optimizeRequestExecutorSupplier,
+          () ->
+              embeddedOptimizeExtension
+                  .getConfigurationService()
+                  .getOptimizeApiConfiguration()
+                  .getAccessToken());
+  protected ProcessOverviewClient processOverviewClient =
+      new ProcessOverviewClient(optimizeRequestExecutorSupplier);
 
   protected abstract void startAndUseNewOptimizeInstance();
 
-  protected void startAndUseNewOptimizeInstance(Map<String, String> argMap, String activeProfile) {
-    String[] arguments = prepareArgs(argMap);
+  protected void startAndUseNewOptimizeInstance(
+      final Map<String, String> argMap, final String activeProfile) {
+    final String[] arguments = prepareArgs(argMap);
 
     // run after-test cleanups with the old context
     embeddedOptimizeExtension.afterTest();
@@ -123,51 +155,14 @@ public abstract class AbstractIT {
     return argList.toArray(String[]::new);
   }
 
-  private String getPortArg(String portKey) {
+  private String getPortArg(final String portKey) {
     return getArg(
         portKey,
         String.valueOf(
             embeddedOptimizeExtension.getBean(JettyConfig.class).getPort(portKey) + 100));
   }
 
-  private String getArg(String key, String value) {
+  private String getArg(final String key, final String value) {
     return String.format("--%s=%s", key, value);
   }
-
-  // optimize test helpers
-  protected CollectionClient collectionClient =
-      new CollectionClient(optimizeRequestExecutorSupplier);
-  protected ReportClient reportClient = new ReportClient(optimizeRequestExecutorSupplier);
-  protected AlertClient alertClient = new AlertClient(optimizeRequestExecutorSupplier);
-  protected DashboardClient dashboardClient = new DashboardClient(optimizeRequestExecutorSupplier);
-  protected EventProcessClient eventProcessClient =
-      new EventProcessClient(optimizeRequestExecutorSupplier);
-  protected SharingClient sharingClient = new SharingClient(optimizeRequestExecutorSupplier);
-  protected AnalysisClient analysisClient = new AnalysisClient(optimizeRequestExecutorSupplier);
-  protected UiConfigurationClient uiConfigurationClient =
-      new UiConfigurationClient(optimizeRequestExecutorSupplier);
-  protected EntitiesClient entitiesClient = new EntitiesClient(optimizeRequestExecutorSupplier);
-  protected ExportClient exportClient = new ExportClient(optimizeRequestExecutorSupplier);
-  protected ImportClient importClient = new ImportClient(optimizeRequestExecutorSupplier);
-  protected PublicApiClient publicApiClient = new PublicApiClient(optimizeRequestExecutorSupplier);
-  protected DefinitionClient definitionClient =
-      new DefinitionClient(optimizeRequestExecutorSupplier);
-  protected VariablesClient variablesClient = new VariablesClient(optimizeRequestExecutorSupplier);
-  protected AssigneesClient assigneesClient = new AssigneesClient(optimizeRequestExecutorSupplier);
-  protected FlowNodeNamesClient flowNodeNamesClient =
-      new FlowNodeNamesClient(optimizeRequestExecutorSupplier);
-  protected StatusClient statusClient = new StatusClient(optimizeRequestExecutorSupplier);
-  protected LocalizationClient localizationClient =
-      new LocalizationClient(optimizeRequestExecutorSupplier);
-  protected IdentityClient identityClient = new IdentityClient(optimizeRequestExecutorSupplier);
-  protected IngestionClient ingestionClient =
-      new IngestionClient(
-          optimizeRequestExecutorSupplier,
-          () ->
-              embeddedOptimizeExtension
-                  .getConfigurationService()
-                  .getOptimizeApiConfiguration()
-                  .getAccessToken());
-  protected ProcessOverviewClient processOverviewClient =
-      new ProcessOverviewClient(optimizeRequestExecutorSupplier);
 }

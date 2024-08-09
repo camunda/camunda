@@ -8,45 +8,17 @@
 package io.camunda.optimize.service.db.repository;
 
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
-import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import io.camunda.optimize.dto.optimize.importing.EventProcessGatewayDto;
 import io.camunda.optimize.dto.optimize.query.PageResultDto;
-import io.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Supplier;
 
 public interface ProcessInstanceRepository {
-  void bulkImportProcessInstances(
-      final String importItemName, final List<ProcessInstanceDto> processInstanceDtos);
-
-  void updateProcessInstanceStateForProcessDefinitionId(
-      final String importItemName,
-      final String definitionKey,
-      final String processDefinitionId,
-      final String state);
-
-  void updateAllProcessInstancesStates(
-      final String importItemName, final String definitionKey, final String state);
 
   void deleteByIds(
       final String index, final String itemName, final List<String> processInstanceIds);
 
   void bulkImport(final String bulkRequestName, final List<ImportRequestDto> importRequests);
-
-  void bulkImportEvents(
-      String index,
-      String importItemName,
-      List<EventProcessInstanceDto> processInstanceDtos,
-      List<EventProcessGatewayDto> gatewayLookup);
-
-  void deleteEndedBefore(String index, OffsetDateTime endDate, String deletedItemIdentifier);
-
-  void deleteVariablesOfInstancesThatEndedBefore(
-      String index, OffsetDateTime endDate, String updateItem);
-
-  void deleteEventsWithIdsInFromAllInstances(
-      String index, List<String> eventIdsToDelete, String updateItem);
 
   boolean processDefinitionHasStartedInstances(String processDefinitionKey);
 

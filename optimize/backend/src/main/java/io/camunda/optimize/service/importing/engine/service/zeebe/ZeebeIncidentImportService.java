@@ -17,7 +17,7 @@ import io.camunda.optimize.dto.zeebe.incident.ZeebeIncidentDataDto;
 import io.camunda.optimize.dto.zeebe.incident.ZeebeIncidentRecordDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
-import io.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
+import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import java.time.Instant;
@@ -41,7 +41,7 @@ public class ZeebeIncidentImportService
 
   public ZeebeIncidentImportService(
       final ConfigurationService configurationService,
-      final ZeebeProcessInstanceWriter processInstanceWriter,
+      final ProcessInstanceWriter processInstanceWriter,
       final int partitionId,
       final ProcessDefinitionReader processDefinitionReader,
       final DatabaseClient databaseClient) {

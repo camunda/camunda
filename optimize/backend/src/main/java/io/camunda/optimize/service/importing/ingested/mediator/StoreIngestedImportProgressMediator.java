@@ -7,12 +7,12 @@
  */
 package io.camunda.optimize.service.importing.ingested.mediator;
 
-import io.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
+import io.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import io.camunda.optimize.service.importing.ImportIndexHandler;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.mediator.AbstractStoreIndexesImportMediator;
-import io.camunda.optimize.service.importing.engine.service.StoreIndexesEngineImportService;
+import io.camunda.optimize.service.importing.engine.service.StoreTimestampBasedImportIndexImportService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
 import java.util.Objects;
@@ -27,14 +27,14 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Slf4j
 public class StoreIngestedImportProgressMediator
-    extends AbstractStoreIndexesImportMediator<StoreIndexesEngineImportService>
+    extends AbstractStoreIndexesImportMediator<StoreTimestampBasedImportIndexImportService>
     implements ImportMediator {
 
   private final ImportIndexHandlerRegistry importIndexHandlerRegistry;
 
   public StoreIngestedImportProgressMediator(
       final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-      final StoreIndexesEngineImportService importService,
+      final StoreTimestampBasedImportIndexImportService importService,
       final ConfigurationService configurationService) {
     super(importService, configurationService);
     this.importIndexHandlerRegistry = importIndexHandlerRegistry;
@@ -45,11 +45,11 @@ public class StoreIngestedImportProgressMediator
     final CompletableFuture<Void> importCompleted = new CompletableFuture<>();
     dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
     try {
-      final List<EngineImportIndexDto> importIndexes =
+      final List<TimestampBasedImportIndexDto> importIndexes =
           importIndexHandlerRegistry.getAllIngestedImportHandlers().stream()
               .map(ImportIndexHandler::getIndexStateDto)
               .filter(Objects::nonNull)
-              .map(EngineImportIndexDto.class::cast)
+              .map(TimestampBasedImportIndexDto.class::cast)
               .collect(Collectors.toList());
 
       importService.executeImport(importIndexes, () -> importCompleted.complete(null));

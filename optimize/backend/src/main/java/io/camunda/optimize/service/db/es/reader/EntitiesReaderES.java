@@ -10,7 +10,6 @@ package io.camunda.optimize.service.db.es.reader;
 import static io.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
@@ -123,12 +122,12 @@ public class EntitiesReaderES implements EntitiesReader {
       query.must(termQuery(OWNER, ownerId));
     }
 
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(query)
             .size(LIST_FETCH_LIMIT)
             .fetchSource(null, ENTITY_LIST_EXCLUDES);
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         createReportAndDashboardSearchRequest()
             .source(searchSourceBuilder)
             .scroll(
@@ -137,10 +136,10 @@ public class EntitiesReaderES implements EntitiesReader {
                         .getElasticSearchConfiguration()
                         .getScrollTimeoutInSeconds()));
 
-    SearchResponse scrollResp;
+    final SearchResponse scrollResp;
     try {
       scrollResp = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Was not able to retrieve private entities!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve private entities!", e);
     }
@@ -196,7 +195,7 @@ public class EntitiesReaderES implements EntitiesReader {
                       collectionFilterAggregation.getName(),
                       extractEntityIndexCounts(collectionFilterAggregation)))
           .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("Was not able to count collection entities!", e);
     }
   }
@@ -216,18 +215,18 @@ public class EntitiesReaderES implements EntitiesReader {
       final EntityNameRequestDto requestDto, final String locale) {
     log.debug(
         String.format("Performing get entity names search request %s", requestDto.toString()));
-    MultiGetResponse multiGetItemResponse = runGetEntityNamesRequest(requestDto);
+    final MultiGetResponse multiGetItemResponse = runGetEntityNamesRequest(requestDto);
 
     if (!atLeastOneResponseExistsForMultiGet(multiGetItemResponse)) {
       return Optional.empty();
     }
 
-    EntityNameResponseDto result = new EntityNameResponseDto();
-    for (MultiGetItemResponse itemResponse : multiGetItemResponse) {
-      GetResponse response = itemResponse.getResponse();
+    final EntityNameResponseDto result = new EntityNameResponseDto();
+    for (final MultiGetItemResponse itemResponse : multiGetItemResponse) {
+      final GetResponse response = itemResponse.getResponse();
       if (response.isExists()) {
-        String entityId = response.getId();
-        CollectionEntity entity = readCollectionEntity(response, entityId);
+        final String entityId = response.getId();
+        final CollectionEntity entity = readCollectionEntity(response, entityId);
         if (entityId.equals(requestDto.getCollectionId())) {
           result.setCollectionName(entity.getName());
         }
@@ -237,8 +236,6 @@ public class EntitiesReaderES implements EntitiesReader {
               getLocalizedDashboardName((DashboardDefinitionRestDto) entity, locale));
         } else if (entityId.equals(requestDto.getReportId())) {
           result.setReportName(getLocalizedReportName(localizationService, entity, locale));
-        } else if (entityId.equals(requestDto.getEventBasedProcessId())) {
-          result.setEventBasedProcessName(entity.getName());
         }
       }
     }
@@ -277,34 +274,33 @@ public class EntitiesReaderES implements EntitiesReader {
   }
 
   private CollectionEntity readCollectionEntity(final GetResponse response, final String entityId) {
-    CollectionEntity entity;
+    final CollectionEntity entity;
     try {
       entity = objectMapper.readValue(response.getSourceAsString(), CollectionEntity.class);
-    } catch (IOException e) {
-      String reason = String.format("Can't read collection entity with id [%s].", entityId);
+    } catch (final IOException e) {
+      final String reason = String.format("Can't read collection entity with id [%s].", entityId);
       throw new OptimizeRuntimeException(reason, e);
     }
     return entity;
   }
 
-  private MultiGetResponse runGetEntityNamesRequest(EntityNameRequestDto requestDto) {
-    MultiGetRequest request = new MultiGetRequest();
+  private MultiGetResponse runGetEntityNamesRequest(final EntityNameRequestDto requestDto) {
+    final MultiGetRequest request = new MultiGetRequest();
     addGetEntityToRequest(request, requestDto.getReportId(), SINGLE_PROCESS_REPORT_INDEX_NAME);
     addGetEntityToRequest(request, requestDto.getReportId(), SINGLE_DECISION_REPORT_INDEX_NAME);
     addGetEntityToRequest(request, requestDto.getReportId(), COMBINED_REPORT_INDEX_NAME);
     addGetEntityToRequest(request, requestDto.getDashboardId(), DASHBOARD_INDEX_NAME);
     addGetEntityToRequest(request, requestDto.getCollectionId(), COLLECTION_INDEX_NAME);
-    addGetEntityToRequest(
-        request, requestDto.getEventBasedProcessId(), EVENT_PROCESS_MAPPING_INDEX_NAME);
     if (request.getItems().isEmpty()) {
       throw new BadRequestException("No ids for entity name request provided");
     }
 
-    MultiGetResponse multiGetItemResponses;
+    final MultiGetResponse multiGetItemResponses;
     try {
       multiGetItemResponses = esClient.mget(request);
-    } catch (IOException e) {
-      String reason = String.format("Could not get entity names search request %s", requestDto);
+    } catch (final IOException e) {
+      final String reason =
+          String.format("Could not get entity names search request %s", requestDto);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
@@ -320,7 +316,7 @@ public class EntitiesReaderES implements EntitiesReader {
 
   private List<CollectionEntity> runEntitiesSearchRequest(
       final SearchSourceBuilder searchSourceBuilder) {
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         createReportAndDashboardSearchRequest()
             .source(searchSourceBuilder)
             .scroll(
@@ -329,10 +325,10 @@ public class EntitiesReaderES implements EntitiesReader {
                         .getElasticSearchConfiguration()
                         .getScrollTimeoutInSeconds()));
 
-    SearchResponse scrollResp;
+    final SearchResponse scrollResp;
     try {
       scrollResp = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Was not able to retrieve collection entities!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve entities!", e);
     }

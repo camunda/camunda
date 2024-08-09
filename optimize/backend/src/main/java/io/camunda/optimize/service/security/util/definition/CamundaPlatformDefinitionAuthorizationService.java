@@ -19,11 +19,9 @@ import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import io.camunda.optimize.dto.optimize.TenantDto;
 import io.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
-import io.camunda.optimize.service.security.EventProcessAuthorizationService;
 import io.camunda.optimize.service.tenant.TenantService;
 import io.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -43,50 +41,7 @@ public class CamundaPlatformDefinitionAuthorizationService
     implements DataSourceDefinitionAuthorizationService {
 
   private final EngineDefinitionAuthorizationService engineDefinitionAuthorizationService;
-  private final EventProcessAuthorizationService eventProcessAuthorizationService;
   private final TenantService tenantService;
-
-  @Override
-  public List<TenantDto> resolveAuthorizedTenantsForProcess(
-      final String userId,
-      final SimpleDefinitionDto definitionDto,
-      final List<String> tenantIds,
-      final Set<String> engines) {
-    if (Boolean.TRUE.equals(definitionDto.getIsEventProcess())) {
-      return eventProcessAuthorizationService
-              .isAuthorizedToEventProcess(userId, definitionDto.getKey())
-              .orElse(false)
-          ? Collections.singletonList(TENANT_NOT_DEFINED)
-          : Collections.emptyList();
-    } else {
-      // load all authorized tenants at once to speedup mapping
-      final Map<String, TenantDto> allAuthorizedTenants = getAuthorizedTenantDtosForUser(userId);
-
-      List<String> tenantIdsToCheck = tenantIds;
-      // we want all tenants to be available for shared engine definitions,
-      // as technically there can be data for any of them
-      final boolean hasNotDefinedTenant = tenantIds.contains(TENANT_NOT_DEFINED.getId());
-      if (hasNotDefinedTenant) {
-        tenantIdsToCheck =
-            mergeTwoCollectionsWithDistinctValues(allAuthorizedTenants.keySet(), tenantIds);
-      }
-
-      return engineDefinitionAuthorizationService
-          .filterAuthorizedTenantsForDefinition(
-              userId,
-              IdentityType.USER,
-              definitionDto.getKey(),
-              definitionDto.getType(),
-              tenantIdsToCheck,
-              engines)
-          .stream()
-          // resolve tenantDto for authorized tenantId
-          .map(allAuthorizedTenants::get)
-          .filter(Objects::nonNull)
-          .sorted(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())))
-          .toList();
-    }
-  }
 
   @Override
   public boolean isAuthorizedToAccessDefinition(
@@ -100,12 +55,8 @@ public class CamundaPlatformDefinitionAuthorizationService
     }
     switch (definitionType) {
       case PROCESS:
-        return eventProcessAuthorizationService
-            .isAuthorizedToEventProcess(identityId, definitionKey)
-            .orElseGet(
-                () ->
-                    engineDefinitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
-                        identityId, identityType, definitionKey, tenantIds));
+        return engineDefinitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
+            identityId, identityType, definitionKey, tenantIds);
       case DECISION:
         return engineDefinitionAuthorizationService.isAuthorizedToSeeDecisionDefinition(
             identityId, identityType, definitionKey, tenantIds);
@@ -115,21 +66,49 @@ public class CamundaPlatformDefinitionAuthorizationService
   }
 
   @Override
+  public List<TenantDto> resolveAuthorizedTenantsForProcess(
+      final String userId,
+      final SimpleDefinitionDto definitionDto,
+      final List<String> tenantIds,
+      final Set<String> engines) {
+    // load all authorized tenants at once to speedup mapping
+    final Map<String, TenantDto> allAuthorizedTenants = getAuthorizedTenantDtosForUser(userId);
+
+    List<String> tenantIdsToCheck = tenantIds;
+    // we want all tenants to be available for shared engine definitions,
+    // as technically there can be data for any of them
+    final boolean hasNotDefinedTenant = tenantIds.contains(TENANT_NOT_DEFINED.getId());
+    if (hasNotDefinedTenant) {
+      tenantIdsToCheck =
+          mergeTwoCollectionsWithDistinctValues(allAuthorizedTenants.keySet(), tenantIds);
+    }
+
+    return engineDefinitionAuthorizationService
+        .filterAuthorizedTenantsForDefinition(
+            userId,
+            IdentityType.USER,
+            definitionDto.getKey(),
+            definitionDto.getType(),
+            tenantIdsToCheck,
+            engines)
+        .stream()
+        // resolve tenantDto for authorized tenantId
+        .map(allAuthorizedTenants::get)
+        .filter(Objects::nonNull)
+        .sorted(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())))
+        .toList();
+  }
+
+  @Override
   public boolean isAuthorizedToAccessDefinition(
       final String userId, final String tenantId, final SimpleDefinitionDto definition) {
-    if (Boolean.TRUE.equals(definition.getIsEventProcess())) {
-      return eventProcessAuthorizationService
-          .isAuthorizedToEventProcess(userId, definition.getKey())
-          .orElse(false);
-    } else {
-      return engineDefinitionAuthorizationService.isAuthorizedToSeeDefinition(
-          userId,
-          IdentityType.USER,
-          definition.getKey(),
-          definition.getType(),
-          tenantId,
-          definition.getEngines());
-    }
+    return engineDefinitionAuthorizationService.isAuthorizedToSeeDefinition(
+        userId,
+        IdentityType.USER,
+        definition.getKey(),
+        definition.getType(),
+        tenantId,
+        definition.getEngines());
   }
 
   @Override
@@ -149,18 +128,12 @@ public class CamundaPlatformDefinitionAuthorizationService
 
   private boolean isAuthorizedToAccessProcessDefinition(
       final String userId, final ProcessDefinitionOptimizeDto processDefinition) {
-    if (processDefinition.isEventBased()) {
-      return eventProcessAuthorizationService
-          .isAuthorizedToEventProcess(userId, processDefinition.getKey())
-          .orElse(false);
-    } else {
-      if (processDefinition.getDataSource() instanceof EngineDataSourceDto) {
-        return engineDefinitionAuthorizationService.isUserAuthorizedToSeeProcessDefinition(
-            userId,
-            processDefinition.getKey(),
-            processDefinition.getTenantId(),
-            processDefinition.getDataSource().getName());
-      }
+    if (processDefinition.getDataSource() instanceof EngineDataSourceDto) {
+      return engineDefinitionAuthorizationService.isUserAuthorizedToSeeProcessDefinition(
+          userId,
+          processDefinition.getKey(),
+          processDefinition.getTenantId(),
+          processDefinition.getDataSource().getName());
     }
     return false;
   }

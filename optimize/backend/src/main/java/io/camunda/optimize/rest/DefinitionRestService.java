@@ -65,7 +65,7 @@ public class DefinitionRestService {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public List<DefinitionResponseDto> getDefinitions(
-      @Context ContainerRequestContext requestContext) {
+      @Context final ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return definitionService.getFullyImportedDefinitions(userId);
   }
@@ -74,9 +74,9 @@ public class DefinitionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/{type}")
   public List<DefinitionOptimizeResponseDto> getDefinitions(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("type") DefinitionType type,
-      @QueryParam("includeXml") boolean includeXml) {
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("type") final DefinitionType type,
+      @QueryParam("includeXml") final boolean includeXml) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return definitionService.getFullyImportedDefinitions(type, userId, includeXml);
   }
@@ -114,9 +114,9 @@ public class DefinitionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/{type}/{key}")
   public DefinitionResponseDto getDefinition(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("type") DefinitionType type,
-      @PathParam("key") String key) {
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("type") final DefinitionType type,
+      @PathParam("key") final String key) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return definitionService
         .getDefinitionWithAvailableTenants(type, key, userId)
@@ -178,12 +178,10 @@ public class DefinitionRestService {
   public List<DefinitionKeyResponseDto> getDefinitionKeys(
       @Context final ContainerRequestContext requestContext,
       @PathParam("type") final DefinitionType type,
-      @QueryParam("filterByCollectionScope") final String collectionId,
-      @QueryParam("camundaEventImportedOnly") final boolean camundaEventImportedOnly) {
+      @QueryParam("filterByCollectionScope") final String collectionId) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
-    List<DefinitionResponseDto> definitions =
-        getDefinitions(type, collectionId, camundaEventImportedOnly, userId);
+    final List<DefinitionResponseDto> definitions = getDefinitions(type, collectionId, userId);
     return definitions.stream()
         .map(definition -> new DefinitionKeyResponseDto(definition.getKey(), definition.getName()))
         .collect(Collectors.toList());
@@ -193,7 +191,7 @@ public class DefinitionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/_groupByTenant")
   public List<TenantWithDefinitionsResponseDto> getDefinitionsGroupedByTenant(
-      @Context ContainerRequestContext requestContext) {
+      @Context final ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return definitionService.getDefinitionsGroupedByTenant(userId);
   }
@@ -212,11 +210,11 @@ public class DefinitionRestService {
   @Path("/{type}/xml")
   @CacheRequest
   public Response getDefinitionXml(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("type") DefinitionType type,
-      @QueryParam("key") String key,
-      @QueryParam("version") String version,
-      @QueryParam("tenantId") String tenantId) {
+      @Context final ContainerRequestContext requestContext,
+      @PathParam("type") final DefinitionType type,
+      @QueryParam("key") final String key,
+      @QueryParam("version") final String version,
+      @QueryParam("tenantId") final String tenantId) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final Optional<DefinitionOptimizeResponseDto> definitionDto =
         definitionService.getDefinitionWithXml(type, userId, key, version, tenantId);
@@ -233,9 +231,6 @@ public class DefinitionRestService {
         final ProcessDefinitionOptimizeDto processDef =
             (ProcessDefinitionOptimizeDto) definitionDto.get();
         responseBuilder.entity(processDef.getBpmn20Xml());
-        if (processDef.isEventBased()) {
-          addNoStoreCacheHeader(responseBuilder);
-        }
         break;
       case DECISION:
         final DecisionDefinitionOptimizeDto decisionDef =
@@ -279,40 +274,12 @@ public class DefinitionRestService {
   }
 
   private List<DefinitionResponseDto> getDefinitions(
-      final DefinitionType type,
-      final String collectionId,
-      final boolean camundaEventImportedOnly,
-      final String userId) {
+      final DefinitionType type, final String collectionId, final String userId) {
     if (collectionId != null) {
-      return getDefinitionKeysForCollection(type, camundaEventImportedOnly, userId, collectionId);
-    } else {
-      return getDefinitionKeys(type, camundaEventImportedOnly, userId);
-    }
-  }
-
-  private List<DefinitionResponseDto> getDefinitionKeys(
-      final DefinitionType type, final boolean camundaEventImportedOnly, final String userId) {
-    if (camundaEventImportedOnly) {
-      if (!DefinitionType.PROCESS.equals(type)) {
-        throw new BadRequestException(
-            "Cannot apply \"camundaEventImportedOnly\" when requesting decision definitions");
-      }
-      return definitionService.getFullyImportedCamundaEventImportedDefinitions(userId);
+      return collectionScopeService.getCollectionDefinitions(type, userId, collectionId);
     } else {
       return definitionService.getFullyImportedDefinitions(type, userId);
     }
-  }
-
-  private List<DefinitionResponseDto> getDefinitionKeysForCollection(
-      final DefinitionType type,
-      final boolean camundaEventImportedOnly,
-      final String userId,
-      final String collectionId) {
-    if (camundaEventImportedOnly) {
-      throw new BadRequestException(
-          "Cannot apply \"camundaEventImportedOnly\" in the context of a collection");
-    }
-    return collectionScopeService.getCollectionDefinitions(type, userId, collectionId);
   }
 
   private void addNoStoreCacheHeader(final Response.ResponseBuilder processResponse) {

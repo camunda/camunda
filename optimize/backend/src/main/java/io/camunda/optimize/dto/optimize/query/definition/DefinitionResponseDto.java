@@ -31,10 +31,9 @@ public class DefinitionResponseDto extends SimpleDefinitionDto {
       @NonNull final String key,
       final String name,
       @NonNull final DefinitionType type,
-      final Boolean isEventProcess,
       @NonNull final List<TenantDto> tenants,
       @NonNull final String engine) {
-    super(key, name, type, isEventProcess, Collections.singleton(engine));
+    super(key, name, type, Collections.singleton(engine));
     this.tenants = tenants;
   }
 
@@ -42,20 +41,9 @@ public class DefinitionResponseDto extends SimpleDefinitionDto {
       @NonNull final String key,
       final String name,
       @NonNull final DefinitionType type,
-      final Boolean isEventProcess,
       @NonNull final List<TenantDto> tenants,
       @NonNull final Set<String> engines) {
-    super(key, name, type, isEventProcess, engines);
-    this.tenants = tenants;
-  }
-
-  public DefinitionResponseDto(
-      @NonNull final String key,
-      final String name,
-      @NonNull final DefinitionType type,
-      @NonNull final List<TenantDto> tenants,
-      @NonNull final String engine) {
-    super(key, name, type, false, Collections.singleton(engine));
+    super(key, name, type, engines);
     this.tenants = tenants;
   }
 
@@ -66,7 +54,6 @@ public class DefinitionResponseDto extends SimpleDefinitionDto {
         definitionWithTenantIdsDto.getKey(),
         definitionWithTenantIdsDto.getName(),
         definitionWithTenantIdsDto.getType(),
-        definitionWithTenantIdsDto.getIsEventProcess(),
         authorizedTenants,
         definitionWithTenantIdsDto.getEngines());
   }

@@ -8,7 +8,6 @@
 package io.camunda.optimize.dto.optimize;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.ENGINE_DATA_SOURCE;
-import static io.camunda.optimize.service.db.DatabaseConstants.EVENTS_DATA_SOURCE;
 import static io.camunda.optimize.service.db.DatabaseConstants.INGESTED_DATA_SOURCE;
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURCE;
 
@@ -17,7 +16,6 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public enum DataImportSourceType {
   ENGINE(ENGINE_DATA_SOURCE),
   ZEEBE(ZEEBE_DATA_SOURCE),
-  EVENTS(EVENTS_DATA_SOURCE),
   INGESTED_DATA(INGESTED_DATA_SOURCE),
   ;
 
