@@ -127,6 +127,8 @@ public class OpensearchExporterConfiguration {
         return index.compensationSubscription;
       case MESSAGE_CORRELATION:
         return index.messageCorrelation;
+      case USER:
+        return index.user;
       default:
         return false;
     }
@@ -193,6 +195,7 @@ public class OpensearchExporterConfiguration {
     public boolean userTask = true;
     public boolean compensationSubscription = true;
     public boolean messageCorrelation = true;
+    public boolean user = true;
 
     // index settings
     private Integer numberOfShards = null;
@@ -294,6 +297,8 @@ public class OpensearchExporterConfiguration {
           + compensationSubscription
           + ", messageCorrelation="
           + messageCorrelation
+          + ", user="
+          + user
           + '}';
     }
   }

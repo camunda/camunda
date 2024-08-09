@@ -53,6 +53,7 @@ import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionReco
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
@@ -2457,6 +2458,28 @@ final class JsonSerializableToJsonTest {
           "messageKey": 2,
           "requestId": 3,
           "requestStreamId": 4
+        }
+        """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////// UserRecord /////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "UserRecord",
+        (Supplier<UserRecord>)
+            () ->
+                new UserRecord()
+                    .setUsername("foobar")
+                    .setName("Foo Bar")
+                    .setEmail("foo@bar")
+                    .setPassword("f00b4r"),
+        """
+        {
+          "username": "foobar",
+          "name": "Foo Bar",
+          "email": "foo@bar",
+          "password": "f00b4r"
         }
         """
       },
