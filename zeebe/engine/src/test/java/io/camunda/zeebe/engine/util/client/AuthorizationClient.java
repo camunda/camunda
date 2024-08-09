@@ -32,11 +32,15 @@ public final class AuthorizationClient {
 
     private static final Function<Long, Record<AuthorizationRecordValue>> SUCCESS_SUPPLIER =
         (position) ->
-            RecordingExporter.authorizationRecords().withSourceRecordPosition(position).getFirst();
+            RecordingExporter.authorizationRecords()
+                .withIntent(AuthorizationIntent.CREATED)
+                .withSourceRecordPosition(position)
+                .getFirst();
     private static final Function<Long, Record<AuthorizationRecordValue>> REJECTION_SUPPLIER =
         (position) ->
             RecordingExporter.authorizationRecords()
                 .onlyCommandRejections()
+                .withIntent(AuthorizationIntent.CREATE)
                 .withSourceRecordPosition(position)
                 .getFirst();
     private final CommandWriter writer;
