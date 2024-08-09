@@ -25,7 +25,7 @@ public class TasklistIndexController {
 
   @Autowired private WebappsRequestForwardManager webappsRequestForwardManager;
 
-  @GetMapping("/tasklist")
+  @GetMapping({"/tasklist", "/tasklist/index.html"})
   public String tasklist(final Model model) {
     model.addAttribute("contextPath", context.getContextPath() + "/tasklist/");
     return "tasklist/index";
