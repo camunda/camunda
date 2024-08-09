@@ -12,7 +12,6 @@
 // io.camunda.optimize.service.util.ProcessReportDataType.VARIABLE_AGGREGATION_GROUP_BY_NONE;
 // import static
 // io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTP_PORT_KEY;
-// import static io.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_NAME;
 // import static io.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 // import static org.assertj.core.api.Assertions.assertThat;
 //
@@ -83,7 +82,6 @@
 //   public void changeNotificationIsNotSentByDefault(MockServerClient client) throws Exception {
 //     // given
 //     setEmailConfiguration();
-//     setWebhookConfiguration(client.getPort());
 //     long daysToShift = 0L;
 //     long durationInSec = 2L;
 //
@@ -92,7 +90,6 @@
 //     // when
 //     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
 //     AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
-//     simpleAlert.setWebhook(TEST_WEBHOOK_NAME);
 //     addReminderToAlert(simpleAlert);
 //     String id = alertClient.createAlert(simpleAlert);
 //
@@ -102,21 +99,18 @@
 //     engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
 //     importAllEngineEntitiesFromScratch();
 //     greenMail.purgeEmailFromAllMailboxes();
-//     clearWebhookRequestsFromClient(client);
 //
 //     // then
 //     triggerAndCompleteReminderJob(id);
 //
 //     MimeMessage[] emails = greenMail.getReceivedMessages();
 //     assertThat(emails).hasSize(0);
-//     assertWebhookRequestReceived(client, 0);
 //   }
 //
 //   @Test
 //   public void changeNotificationIsSent(MockServerClient client) throws Exception {
 //     // given
 //     setEmailConfiguration();
-//     setWebhookConfiguration(client.getPort());
 //
 //     long daysToShift = 0L;
 //     long durationInSec = 2L;
@@ -129,7 +123,6 @@
 //             processInstance.getProcessDefinitionKey(),
 //             processInstance.getProcessDefinitionVersion());
 //     AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
-//     simpleAlert.setWebhook(TEST_WEBHOOK_NAME);
 //     simpleAlert.setFixNotification(true);
 //     addReminderToAlert(simpleAlert);
 //     String alertId = alertClient.createAlert(simpleAlert);
@@ -141,11 +134,9 @@
 //     importAllEngineEntitiesFromScratch();
 //
 //     greenMail.purgeEmailFromAllMailboxes();
-//     clearWebhookRequestsFromClient(client);
 //     triggerAndCompleteReminderJob(alertId);
 //     // then
 //
-//     assertWebhookRequestReceived(client, 1);
 //     MimeMessage[] emails = greenMail.getReceivedMessages();
 //     assertThat(emails).hasSize(1);
 //     String branding =
@@ -166,28 +157,6 @@
 //                 reportId));
 //   }
 //
-//   @Test
-//   public void emailNotificationStillSentWhenWebhookFails() {
-//     // given
-//     setEmailConfiguration();
-//     setWebhookConfiguration(88992);
-//
-//     long daysToShift = 0L;
-//     long durationInSec = 2L;
-//     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
-//     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
-//     AlertCreationRequestDto simpleAlert = alertClient.createSimpleAlert(reportId);
-//     simpleAlert.setWebhook(TEST_WEBHOOK_NAME);
-//     addReminderToAlert(simpleAlert);
-//     String alertId = alertClient.createAlert(simpleAlert);
-//
-//     // when
-//     triggerAndCompleteCheckJob(alertId);
-//
-//     // then
-//     MimeMessage[] emails = greenMail.getReceivedMessages();
-//     assertThat(emails).hasSize(1);
-//   }
 //
 //   @Test
 //   public void notificationFormatsDurationThresholdCorrectly() throws Exception {

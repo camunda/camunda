@@ -11,7 +11,6 @@ import static io.camunda.optimize.service.util.configuration.OptimizeProfile.CCS
 import static io.camunda.optimize.service.util.configuration.OptimizeProfile.CLOUD;
 import static io.camunda.optimize.service.util.configuration.OptimizeProfile.PLATFORM;
 
-import com.google.common.collect.Lists;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.optimize.dto.optimize.query.ui_configuration.MixpanelConfigResponseDto;
 import io.camunda.optimize.dto.optimize.query.ui_configuration.OnboardingResponseDto;
@@ -26,7 +25,6 @@ import io.camunda.optimize.service.util.configuration.OptimizeProfile;
 import io.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -64,7 +62,6 @@ public class UIConfigurationService {
         configurationService.getUiConfiguration().isUserTaskAssigneeAnalyticsEnabled());
     uiConfigurationDto.setOptimizeProfile(optimizeProfile);
     uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
-    uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
     uiConfigurationDto.setExportCsvLimit(
         configurationService.getCsvConfiguration().getExportCsvLimit());
     uiConfigurationDto.setMaxNumDataSourcesForReport(
@@ -127,13 +124,6 @@ public class UIConfigurationService {
       engineNameToEndpoints.put(entry.getKey(), webappsEndpoint);
     }
     return engineNameToEndpoints;
-  }
-
-  private List<String> getConfiguredWebhooks() {
-    final List<String> sortedWebhooksList =
-        Lists.newArrayList(configurationService.getConfiguredWebhooks().keySet());
-    sortedWebhooksList.sort(String.CASE_INSENSITIVE_ORDER);
-    return sortedWebhooksList;
   }
 
   private boolean isUserSearchAvailable(final OptimizeProfile optimizeProfile) {
