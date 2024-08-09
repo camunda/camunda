@@ -40,7 +40,7 @@ public class CamundaLicense {
   protected boolean determineLicenseValidity(final String licenseStr) {
     try {
       final LicenseKey license = getLicenseKey(licenseStr);
-      license.validate(); // this method logs the license status
+      license.validate();
       return true;
     } catch (final Exception e) {
       return false;
