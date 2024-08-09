@@ -264,6 +264,12 @@
       <artifactId>jackson-databind</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-process-generator</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
