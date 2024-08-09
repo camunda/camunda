@@ -38,10 +38,16 @@
       <artifactId>agrona</artifactId>
     </dependency>
 
+<!--    <dependency>-->
+<!--      <groupId>org.rocksdb</groupId>-->
+<!--      <artifactId>rocksdbjni</artifactId>-->
+<!--    </dependency>-->
+
     <dependency>
-      <groupId>org.rocksdb</groupId>
-      <artifactId>rocksdbjni</artifactId>
+      <groupId>io.github.speedb-io</groupId>
+      <artifactId>speedbjni</artifactId>
     </dependency>
+
 
     <dependency>
       <groupId>org.slf4j</groupId>

@@ -81,6 +81,7 @@
     <version.protobuf-common>2.42.0</version.protobuf-common>
     <version.micrometer>1.13.2</version.micrometer>
     <version.rocksdbjni>9.4.0</version.rocksdbjni>
+    <version.speedbjni>2.8.0</version.speedbjni>
     <version.sbe>1.31.1</version.sbe>
     <version.scala>2.13.14</version.scala>
     <version.slf4j>2.0.13</version.slf4j>
@@ -1178,10 +1179,16 @@
         <version>${version.camunda}</version>
       </dependency>
 
+      <!--      <dependency>-->
+      <!--        <groupId>org.rocksdb</groupId>-->
+      <!--        <artifactId>rocksdbjni</artifactId>-->
+      <!--        <version>${version.rocksdbjni}</version>-->
+      <!--      </dependency>-->
+
       <dependency>
-        <groupId>org.rocksdb</groupId>
-        <artifactId>rocksdbjni</artifactId>
-        <version>${version.rocksdbjni}</version>
+        <groupId>io.github.speedb-io</groupId>
+        <artifactId>speedbjni</artifactId>
+        <version>${version.speedbjni}</version>
       </dependency>
 
       <dependency>
