@@ -203,8 +203,6 @@ public class ConfigurationServiceConstants {
 
   public static final String OPTIMIZE_API_CONFIGURATION = "$.api";
 
-  public static final String TELEMETRY_CONFIGURATION = "$.telemetry";
-
   public static final String EXTERNAL_VARIABLE_CONFIGURATION = "$.externalVariable";
 
   public static final String CACHES_CONFIGURATION = "$.caches";

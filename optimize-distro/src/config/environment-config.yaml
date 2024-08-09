@@ -282,8 +282,3 @@ eventBasedProcess:
   eventImport:
     # Determines whether this Optimize instance performs event based process instance import.
     enabled: false
-
-telemetry:
-  # Sets the initial property value of telemetry configuration once when it has never been enabled/disabled before.
-  # Telemetry can later be enabled/disabled in the UI by superusers
-  initializeTelemetry: false
