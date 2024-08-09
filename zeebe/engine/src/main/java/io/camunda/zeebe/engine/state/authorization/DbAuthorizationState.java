@@ -19,9 +19,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 
 public class DbAuthorizationState implements AuthorizationState, MutableAuthorizationState {
-  private final AuthorizationRecordValue authorizationRecordToRead = new AuthorizationRecordValue();
-  private final AuthorizationRecordValue authorizationRecordToWrite =
-      new AuthorizationRecordValue();
+  private final PersistedAuthorization persistedAuthorization = new PersistedAuthorization();
 
   private final PersistedPermissions persistedPermissions = new PersistedPermissions();
 
@@ -34,7 +32,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   private final DbCompositeKey<
           DbCompositeKey<DbString, DbString>, DbCompositeKey<DbString, DbString>>
       ownerAndResourceCompositeKey;
-  private final ColumnFamily<DbLong, AuthorizationRecordValue> authorizationColumnFamily;
+  private final ColumnFamily<DbLong, PersistedAuthorization> authorizationColumnFamily;
   private final ColumnFamily<
           DbCompositeKey<DbCompositeKey<DbString, DbString>, DbCompositeKey<DbString, DbString>>,
           PersistedPermissions>
@@ -48,7 +46,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
             ZbColumnFamilies.AUTHORIZATIONS,
             transactionContext,
             authorizationKey,
-            authorizationRecordToRead);
+            persistedAuthorization);
 
     ownerKey = new DbString();
     ownerType = new DbString();
@@ -69,8 +67,8 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   @Override
   public void createAuthorization(final AuthorizationRecord authorizationRecord) {
     authorizationKey.wrapLong(authorizationRecord.getAuthorizationKey());
-    authorizationRecordToWrite.setRecord(authorizationRecord);
-    authorizationColumnFamily.insert(authorizationKey, authorizationRecordToWrite);
+    persistedAuthorization.setAuthorization(authorizationRecord);
+    authorizationColumnFamily.insert(authorizationKey, persistedAuthorization);
 
     ownerKey.wrapString(authorizationRecord.getOwnerKey());
     ownerType.wrapString(authorizationRecord.getOwnerType());
@@ -78,14 +76,6 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     resourceType.wrapString(authorizationRecord.getResourceType());
     persistedPermissions.setPermissions(authorizationRecord.getPermissions());
     ownerAuthorizationColumnFamily.insert(ownerAndResourceCompositeKey, persistedPermissions);
-  }
-
-  @Override
-  public AuthorizationRecord getAuthorization(final Long key) {
-    authorizationKey.wrapLong(key);
-    final AuthorizationRecordValue authorizationRecordValue =
-        authorizationColumnFamily.get(authorizationKey);
-    return authorizationRecordValue == null ? null : authorizationRecordToRead.getRecord().copy();
   }
 
   @Override
