@@ -19,6 +19,8 @@ import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -2525,6 +2527,31 @@ final class JsonSerializableToJsonTest {
         """
         {
           "time": 0
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// AuthorizationRecord ////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Authorization record",
+        (Supplier<AuthorizationRecord>)
+            () ->
+                new AuthorizationRecord()
+                    .setAuthorizationKey(1L)
+                    .setOwnerKey("owner")
+                    .setOwnerType(AuthorizationOwnerType.USER)
+                    .setResourceKey("resource")
+                    .setResourceType("type")
+                    .setPermissions(List.of("permission")),
+        """
+        {
+          "authorizationKey": 1,
+          "ownerKey": "owner",
+          "ownerType": "USER",
+          "resourceKey": "resource",
+          "resourceType": "type",
+          "permissions": ["permission"]
         }
         """
       },
