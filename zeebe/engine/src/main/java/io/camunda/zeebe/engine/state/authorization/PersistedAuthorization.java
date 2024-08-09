@@ -12,20 +12,20 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 
-public class AuthorizationRecordValue extends UnpackedObject implements DbValue {
-  private final ObjectProperty<AuthorizationRecord> recordProp =
+public class PersistedAuthorization extends UnpackedObject implements DbValue {
+  private final ObjectProperty<AuthorizationRecord> authorizationRecord =
       new ObjectProperty<>("authorizationRecord", new AuthorizationRecord());
 
-  public AuthorizationRecordValue() {
+  public PersistedAuthorization() {
     super(1);
-    declareProperty(recordProp);
+    declareProperty(authorizationRecord);
   }
 
-  public AuthorizationRecord getRecord() {
-    return recordProp.getValue();
+  public AuthorizationRecord getAuthorization() {
+    return authorizationRecord.getValue();
   }
 
-  public void setRecord(final AuthorizationRecord record) {
-    recordProp.getValue().wrap(record);
+  public void setAuthorization(final AuthorizationRecord record) {
+    authorizationRecord.getValue().wrap(record);
   }
 }
