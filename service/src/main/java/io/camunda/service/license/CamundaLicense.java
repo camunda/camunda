@@ -32,14 +32,14 @@ public class CamundaLicense {
     return isValid;
   }
 
-  public synchronized String getLicenseTypePropertyFromLicense() {
+  public synchronized String getLicenseType() {
     return licenseType;
   }
 
   public synchronized void initializeWithLicense(final String license) {
     if (!isInitialized) {
       isValid = determineLicenseValidity(license);
-      licenseType = getLicenseTypePropertyFromLicense(license);
+      licenseType = getLicenseTypeFromProperty(license);
 
       isInitialized = true;
     }
@@ -51,7 +51,7 @@ public class CamundaLicense {
    *
    * <p>Self-managed mode is any other possibility. (ex, blank license, prop missing, etc)
    */
-  private String getLicenseTypePropertyFromLicense(final String licenseStr) {
+  private String getLicenseTypeFromProperty(final String licenseStr) {
     try {
       final LicenseKey licenseKey = getLicenseKey(licenseStr);
       if (licenseKey.getProperties().containsKey("licenseType")) {

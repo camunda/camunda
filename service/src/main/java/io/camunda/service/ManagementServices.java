@@ -22,6 +22,6 @@ public final class ManagementServices {
   }
 
   public String getCamundaLicenseType() {
-    return license.getLicenseTypePropertyFromLicense();
+    return license.getLicenseType();
   }
 }

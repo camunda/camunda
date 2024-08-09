@@ -70,7 +70,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense("whatever");
 
     // then
-    assertEquals("self-managed", testLicense.getLicenseTypePropertyFromLicense());
+    assertEquals("self-managed", testLicense.getLicenseType());
   }
 
   @Test
@@ -88,7 +88,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense("whatever");
 
     // then
-    assertEquals("unknown", testLicense.getLicenseTypePropertyFromLicense());
+    assertEquals("unknown", testLicense.getLicenseType());
   }
 
   @Test
@@ -107,7 +107,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense("whatever");
 
     // then
-    assertEquals("saas", testLicense.getLicenseTypePropertyFromLicense());
+    assertEquals("saas", testLicense.getLicenseType());
     assertTrue(testLicense.isValid());
   }
 }
