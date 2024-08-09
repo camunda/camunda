@@ -7,87 +7,41 @@
  */
 package io.camunda.service.license;
 
-import io.camunda.zeebe.util.VisibleForTesting;
-import org.camunda.bpm.licensecheck.InvalidLicenseException;
-import org.camunda.bpm.licensecheck.LicenseKey;
-import org.camunda.bpm.licensecheck.LicenseKeyImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.lang3.StringUtils;
 
 public class CamundaLicense {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(CamundaLicense.class);
-  private boolean isValid;
-  private boolean isSelfManaged;
-  private boolean isInitialized;
+  public static final String LICENSE_ENV_VAR_KEY = "CAMUNDA_LICENSE_KEY";
+  public static String licenseStr;
+  private final EnvironmentVariableReader environmentVariableReader;
 
-  @VisibleForTesting
-  protected CamundaLicense() {}
-
-  public CamundaLicense(final String license) {
-    initializeWithLicense(license);
-  }
-
-  public synchronized boolean isValid() {
-    return isValid;
-  }
-
-  public synchronized boolean isSelfManaged() {
-    return isSelfManaged;
-  }
-
-  public synchronized void initializeWithLicense(final String license) {
-    if (!isInitialized) {
-      isValid = determineLicenseValidity(license);
-      isSelfManaged = determineIfLicenseEnvModeIsSelfManaged(license);
-
-      isInitialized = true;
-    }
+  public CamundaLicense() {
+    environmentVariableReader = new EnvironmentVariableReader();
   }
 
   /**
-   * SaaS mode is determined through the properties of the passed in license.
-   *
-   * <p>Self-managed mode is any other possibility. (ex, blank license, prop missing, etc)
+   * Used for testing. Test can mock EnvironmentVariableReader to test out different environment
+   * variable values
    */
-  private boolean determineIfLicenseEnvModeIsSelfManaged(final String licenseStr) {
-    try {
-      final LicenseKey licenseKey = getLicenseKey(licenseStr);
-      return licenseKey.getProperties().entrySet().stream()
-          .noneMatch(x -> x.getKey().equals("licenseType") && x.getValue().equals("saas"));
-    } catch (final InvalidLicenseException e) {
-      LOGGER.error(
-          "Expected a valid license when determining the type of license, but encountered an invalid one instead. ",
-          e);
-      return true;
-    } catch (final Exception e) {
-      LOGGER.error(
-          "Expected to determine the license type of the license, but the following unexpected error was encountered: ",
-          e);
-      return true;
-    }
+  public CamundaLicense(final EnvironmentVariableReader environmentVariableReader) {
+    this.environmentVariableReader = environmentVariableReader;
   }
 
-  private boolean determineLicenseValidity(final String licenseStr) {
-    try {
-      final LicenseKey license = getLicenseKey(licenseStr);
-      license.validate(); // this method logs the license status
-      return true;
-    } catch (final InvalidLicenseException e) {
-      LOGGER.error(
-          "Expected a valid license when determining license validity, but encountered an invalid one instead. ",
-          e);
-      return false;
-    } catch (final Exception e) {
-      LOGGER.error(
-          "Expected to validate a the Camunda license, but the following unexpected error was encountered: ",
-          e);
-      return false;
+  public boolean isValid() {
+    if (!isLicenseInitialized()) {
+      initializeLicenseCache();
     }
+
+    // TODO - return a real computed value, but always return true for now
+    return true;
   }
 
-  @VisibleForTesting
-  protected LicenseKey getLicenseKey(final String licenseStr) throws InvalidLicenseException {
-    return new LicenseKeyImpl(licenseStr);
+  private boolean isLicenseInitialized() {
+    return StringUtils.isNotBlank(licenseStr);
+  }
+
+  private void initializeLicenseCache() {
+    licenseStr = environmentVariableReader.getEnvironmentVariableValue(LICENSE_ENV_VAR_KEY);
+    // TODO - some license computation here
   }
 }

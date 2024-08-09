@@ -58,13 +58,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.camunda.bpm</groupId>
-      <artifactId>camunda-license-check</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
     </dependency>
 
     <dependency>
@@ -94,12 +89,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-scheduler</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
 
