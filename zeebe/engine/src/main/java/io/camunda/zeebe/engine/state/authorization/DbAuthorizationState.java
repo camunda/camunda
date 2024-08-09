@@ -88,6 +88,6 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     this.ownerType.wrapString(ownerType);
     this.resourceKey.wrapString(resourceKey);
     this.resourceType.wrapString(resourceType);
-    return ownerAuthorizationColumnFamily.get(ownerAndResourceCompositeKey);
+    return ownerAuthorizationColumnFamily.get(ownerAndResourceCompositeKey).copy();
   }
 }
