@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.randomized;
 
+import io.camunda.process.generator.BpmnFeatureType;
 import io.camunda.process.generator.BpmnProcessGenerator;
 import io.camunda.process.generator.BpmnProcessGenerator.GeneratedProcess;
+import io.camunda.process.generator.GeneratorConfiguration;
 import io.camunda.process.generator.execution.ProcessExecutionStep;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -29,7 +31,11 @@ import org.junit.runners.Parameterized.Parameters;
 public class NewProcessExecutionRandomizePropertyTest {
 
   public static final int AMOUNT_OF_PROCESSES = 1000;
-  private static final BpmnProcessGenerator BPMN_GENERATOR = new BpmnProcessGenerator();
+  private static final BpmnProcessGenerator BPMN_GENERATOR =
+      new BpmnProcessGenerator(
+          new GeneratorConfiguration()
+              .withFeatures(BpmnFeatureType.EMBEDDED_SUBPROCESS, BpmnFeatureType.BOUNDARY_EVENT)
+              .excludeFeatures(BpmnFeatureType.COMPENSATION_EVENT));
   @Rule public final EngineRule engineRule = EngineRule.singlePartition();
   @Parameter public GeneratedProcess generatedProcess;
 

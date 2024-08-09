@@ -18,10 +18,10 @@ import java.util.List;
 public class BpmnElementGeneratorFactory {
 
   private final GeneratorContext generatorContext;
-  private final List<BpmnElementGenerator> bpmnElementGenerators;
+  private final List<BpmnGenerator> bpmnElementGenerators;
   private final List<BpmnGenerator> activityForBoundaryEventGenerators;
-  private final List<BpmnElementGenerator> activityForCompensationEventGenerators;
-  private final List<BpmnElementGenerator> compensationEventGenerators;
+  private final List<BpmnGenerator> activityForCompensationEventGenerators;
+  private final List<BpmnGenerator> compensationEventGenerators;
 
   public BpmnElementGeneratorFactory(
       final GeneratorContext generatorContext, final BpmnFactories bpmnFactories) {
@@ -47,7 +47,7 @@ public class BpmnElementGeneratorFactory {
     compensationEventGenerators = List.of(new CompensationThrowEventGenerator(generatorContext));
   }
 
-  public BpmnElementGenerator getGenerator() {
+  public BpmnGenerator getGenerator() {
     final var generator = FactoryUtil.getGenerator(bpmnElementGenerators, generatorContext);
 
     // If we are at the maximum depth we should not go deeper. Instead, we use a different
@@ -64,11 +64,11 @@ public class BpmnElementGeneratorFactory {
     return FactoryUtil.getGenerator(activityForBoundaryEventGenerators, generatorContext);
   }
 
-  public BpmnElementGenerator getGeneratorForActivityWithCompensationEvent() {
+  public BpmnGenerator getGeneratorForActivityWithCompensationEvent() {
     return FactoryUtil.getGenerator(activityForCompensationEventGenerators, generatorContext);
   }
 
-  public BpmnElementGenerator getGeneratorForCompensationEvent() {
+  public BpmnGenerator getGeneratorForCompensationEvent() {
     final var randomIndex = generatorContext.getRandomNumber(compensationEventGenerators.size());
     return compensationEventGenerators.get(randomIndex);
   }
