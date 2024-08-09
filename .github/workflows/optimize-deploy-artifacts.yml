@@ -34,7 +34,7 @@ jobs:
           echo "DOCKER_LATEST_TAG=${{ steps.define-values.outputs.latest_tag }}"
           echo "DOCKER_TAG=${{ steps.define-values.outputs.image_tag }}"
           echo "VERSION=${{ steps.pom-info.outputs.project_version }}"
-          echo "PUSH_LATEST_TAG=${{ steps.define-values.outputs.is_main_or_maintenance_branch }}"
+          echo "PUSH_LATEST_TAG=${{ steps.define-values.outputs.is_main_or_stable_branch }}"
           echo "IS_MAIN=${{ steps.define-values.outputs.is_main_branch }}"
           echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
         } >> "$GITHUB_ENV"
@@ -91,7 +91,7 @@ jobs:
         version: ${{ env.VERSION }}
         date: ${{ env.DATE }}
         revision: ${{ env.REVISION }}
-    # We're running under the same condition of main / maintenance
+    # We're running under the same condition of main / stable
     # We have all dependencies presents, therefore doesn't justify another job
     - name: Deploy to Artifactory
       uses: ./.github/actions/run-maven

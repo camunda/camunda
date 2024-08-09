@@ -30,7 +30,7 @@ async function createHealthStatusConfig() {
   const ciBranches = [...releaseBranches, ...renovateStringBranches].sort(
     githubService.sortBranches,
   );
-  const maintenanceBranches = ciBranches.filter((branch) => branch.includes('maintenance'));
+  const stableBranches = ciBranches.filter((branch) => branch.includes('stable'));
 
   const config: Partial<Config> = {
     argoCd: {
@@ -40,7 +40,7 @@ async function createHealthStatusConfig() {
     github: {
       organization: GITHUB_ORG,
       repository: GITHUB_REPO,
-      defaultBranch: 'master',
+      defaultBranch: 'main',
       workflows: [
         {
           name: 'optimize-ci',
@@ -48,7 +48,7 @@ async function createHealthStatusConfig() {
         },
         {
           name: 'ci',
-          branches: maintenanceBranches,
+          branches: stableBranches,
         },
         'optimize-zeebe-compatibility',
         'optimize-java-compatibility',
