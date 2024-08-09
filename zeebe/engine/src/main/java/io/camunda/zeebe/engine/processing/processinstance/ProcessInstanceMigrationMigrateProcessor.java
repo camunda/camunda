@@ -34,6 +34,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
@@ -41,6 +42,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRe
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -50,6 +52,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
@@ -222,12 +225,14 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireUnchangedFlowScope(
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
     requireNoBoundaryEventInSource(
-        sourceProcessDefinition, elementInstanceRecord, EnumSet.of(BpmnEventType.MESSAGE));
+        sourceProcessDefinition,
+        elementInstanceRecord,
+        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER));
     requireNoBoundaryEventInTarget(
         targetProcessDefinition,
         targetElementId,
         elementInstanceRecord,
-        EnumSet.of(BpmnEventType.MESSAGE));
+        EnumSet.of(BpmnEventType.MESSAGE, BpmnEventType.TIMER));
     requireMappedBoundaryEventsToStayAttachedToSameElement(
         processInstanceKey,
         sourceProcessDefinition,
@@ -475,6 +480,55 @@ public class ProcessInstanceMigrationMigrateProcessor
                 messageSubscription,
                 List.of(processMessageSubscriptionRecord.getSubscriptionPartitionId()));
           }
+        });
+
+    final ArrayList<TimerInstance> timerInstancesToMigrate = new ArrayList<>();
+    catchEventBehavior.unsubscribeFromTimerEventsByInstanceFilter(
+        elementInstance.getKey(),
+        timerInstance -> {
+          if (timerInstance.getProcessDefinitionKey() == targetProcessDefinition.getKey()) {
+            // we recently subscribed to this timer for this migration, we don't want to undo that
+            return false;
+          }
+          if (sourceElementIdToTargetElementId.containsKey(
+              BufferUtil.bufferAsString(timerInstance.getHandlerNodeId()))) {
+            // We will migrate this mapped catch event, so we don't want to unsubscribe from it.
+            // Avoid reusing the subscription directly as any access to the state (e.g. #get) will
+            // overwrite it
+            final TimerInstance copyTimerInstance = new TimerInstance();
+            copyTimerInstance.setProcessInstanceKey(timerInstance.getProcessInstanceKey());
+            copyTimerInstance.setElementInstanceKey(timerInstance.getElementInstanceKey());
+            copyTimerInstance.setKey(timerInstance.getKey());
+            copyTimerInstance.setDueDate(timerInstance.getDueDate());
+            copyTimerInstance.setHandlerNodeId(timerInstance.getHandlerNodeId());
+            copyTimerInstance.setRepetitions(timerInstance.getRepetitions());
+            copyTimerInstance.setProcessDefinitionKey(timerInstance.getProcessDefinitionKey());
+            copyTimerInstance.setTenantId(timerInstance.getTenantId());
+            timerInstancesToMigrate.add(copyTimerInstance);
+
+            return false;
+          }
+
+          return true;
+        });
+
+    timerInstancesToMigrate.forEach(
+        timerInstance -> {
+          final var sourceCatchEventId =
+              BufferUtil.bufferAsString(timerInstance.getHandlerNodeId());
+          final var targetCatchEventId = sourceElementIdToTargetElementId.get(sourceCatchEventId);
+
+          final TimerRecord timerRecord = new TimerRecord();
+          timerRecord.setElementInstanceKey(timerInstance.getElementInstanceKey());
+          timerRecord.setProcessInstanceKey(timerInstance.getProcessInstanceKey());
+          timerRecord.setDueDate(timerInstance.getDueDate());
+          timerRecord.setTargetElementId(BufferUtil.wrapString(targetCatchEventId));
+          timerRecord.setRepetitions(timerInstance.getRepetitions());
+          timerRecord.setProcessDefinitionKey(targetProcessDefinition.getKey());
+          timerRecord.setTenantId(timerInstance.getTenantId());
+
+          stateWriter.appendFollowUpEvent(
+              timerInstance.getKey(), TimerIntent.MIGRATED, timerRecord);
         });
   }
 

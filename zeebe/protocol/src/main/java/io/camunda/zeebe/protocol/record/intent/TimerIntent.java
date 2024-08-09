@@ -27,7 +27,9 @@ public enum TimerIntent implements ProcessInstanceRelatedIntent {
    */
   @Deprecated
   CANCEL((short) 3),
-  CANCELED((short) 4);
+  CANCELED((short) 4),
+
+  MIGRATED((short) 5);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -52,6 +54,7 @@ public enum TimerIntent implements ProcessInstanceRelatedIntent {
       case CREATED:
       case TRIGGERED:
       case CANCELED:
+      case MIGRATED:
         return true;
       default:
         return false;
@@ -70,6 +73,8 @@ public enum TimerIntent implements ProcessInstanceRelatedIntent {
         return CANCEL;
       case 4:
         return CANCELED;
+      case 5:
+        return MIGRATED;
       default:
         return Intent.UNKNOWN;
     }

@@ -404,15 +404,21 @@ public final class CatchEventBehavior {
         });
   }
 
-  private void unsubscribeFromTimerEvents(
-      final long elementInstanceKey, final Predicate<DirectBuffer> elementIdFilter) {
+  public void unsubscribeFromTimerEventsByInstanceFilter(
+      final long elementInstanceKey, final Predicate<TimerInstance> timerInstanceFilter) {
     timerInstanceState.forEachTimerForElementInstance(
         elementInstanceKey,
         timer -> {
-          if (elementIdFilter.test(timer.getHandlerNodeId())) {
+          if (timerInstanceFilter.test(timer)) {
             unsubscribeFromTimerEvent(timer);
           }
         });
+  }
+
+  private void unsubscribeFromTimerEvents(
+      final long elementInstanceKey, final Predicate<DirectBuffer> elementIdFilter) {
+    unsubscribeFromTimerEventsByInstanceFilter(
+        elementInstanceKey, timer -> elementIdFilter.test(timer.getHandlerNodeId()));
   }
 
   public void unsubscribeFromTimerEvent(final TimerInstance timer) {
@@ -488,10 +494,10 @@ public final class CatchEventBehavior {
         tenantId);
   }
 
-  public record CatchEvent(ExecutableCatchEvent element, DirectBuffer messageName) {
+  public record CatchEvent(ExecutableCatchEvent element, DirectBuffer messageName, Timer timer) {
 
     private CatchEvent(final EvalResult result) {
-      this(result.event(), result.messageName());
+      this(result.event(), result.messageName(), result.timer());
     }
   }
 

@@ -15,4 +15,6 @@ public interface MutableTimerInstanceState extends TimerInstanceState {
   void store(TimerInstance timer);
 
   void remove(TimerInstance timer);
+
+  void update(TimerInstance timer);
 }
