@@ -1,6 +1,6 @@
 {
   "name": "camunda-operate",
-  "version": "8.6.0-SNAPSHOT",
+  "version": "8.6.0-alpha4",
   "private": true,
   "dependencies": {
     "@axe-core/playwright": "4.9.1",
