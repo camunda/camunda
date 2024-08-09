@@ -19,6 +19,9 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 
 public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
 
@@ -42,26 +45,48 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
         .ifRightOrLeft(
             job -> {
               final List<String> errors = new ArrayList<>();
-              jobUpdateBehaviour.updateJobRetries(jobKey, job, command).ifPresent(errors::add);
-              final long timeout = command.getValue().getTimeout();
-              // if no timeout is provided (the default value is -1L), no update
-              if (timeout > 0) {
-                jobUpdateBehaviour.updateJobTimeout(jobKey, job, command).ifPresent(errors::add);
-              }
+              final Map<String, Number> changeset = command.getValue().getChangedAttributes();
+              jobChange(
+                  changeset,
+                  JobRecord.RETRIES,
+                  Number::intValue,
+                  (retries) -> jobUpdateBehaviour.updateJobRetries(jobKey, retries, job, command),
+                  errors);
+              jobChange(
+                  changeset,
+                  JobRecord.TIMEOUT,
+                  Number::longValue,
+                  (timeout) -> jobUpdateBehaviour.updateJobTimeout(jobKey, timeout, job, command),
+                  errors);
               if (errors.isEmpty()) {
                 stateWriter.appendFollowUpEvent(jobKey, JobIntent.UPDATED, job);
                 responseWriter.writeEventOnCommand(jobKey, JobIntent.UPDATED, job, command);
               } else {
-                final String errorMessage = String.join(", ", errors);
-                rejectionWriter.appendRejection(
-                    command, RejectionType.INVALID_ARGUMENT, errorMessage);
-                responseWriter.writeRejectionOnCommand(
-                    command, RejectionType.INVALID_ARGUMENT, errorMessage);
+                handleRejection(errors, command);
               }
             },
             errorMessage -> {
               responseWriter.writeRejectionOnCommand(
                   command, RejectionType.NOT_FOUND, errorMessage);
             });
+  }
+
+  private <T extends Number> void jobChange(
+      final Map<String, Number> changeset,
+      final String key,
+      final Function<Number, T> converter,
+      final Function<T, Optional<String>> updateFunction,
+      final List<String> errors) {
+    if (changeset.containsKey(key)) {
+      final T value = converter.apply(changeset.get(key));
+      updateFunction.apply(value).ifPresent(errors::add);
+    }
+  }
+
+  // Helper method to handle rejections
+  private void handleRejection(final List<String> errors, final TypedRecord<JobRecord> command) {
+    final String errorMessage = String.join(", ", errors);
+    rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, errorMessage);
+    responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, errorMessage);
   }
 }
