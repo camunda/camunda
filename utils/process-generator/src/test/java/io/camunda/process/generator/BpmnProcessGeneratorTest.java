@@ -54,14 +54,14 @@ public class BpmnProcessGeneratorTest {
     // given
     final GeneratorConfiguration configuration =
         new GeneratorConfiguration()
-            .withFeatures(BpmnFeature.USER_TASK, BpmnFeature.COMPENSATION_EVENT)
+            .withFeatures(BpmnFeatureType.USER_TASK, BpmnFeatureType.COMPENSATION_EVENT)
             .excludeFeatures(
-                BpmnFeature.TERMINATE_EVENT,
-                BpmnFeature.UNDEFINED_TASK,
-                BpmnFeature.PARALLEL_GATEWAY,
-                BpmnFeature.BOUNDARY_EVENT,
-                BpmnFeature.EMBEDDED_SUBPROCESS,
-                BpmnFeature.MULTIPLE_OUTGOING_SEQUENCE_FLOWS);
+                BpmnFeatureType.TERMINATE_EVENT,
+                BpmnFeatureType.UNDEFINED_TASK,
+                BpmnFeatureType.PARALLEL_GATEWAY,
+                BpmnFeatureType.BOUNDARY_EVENT,
+                BpmnFeatureType.EMBEDDED_SUBPROCESS,
+                BpmnFeatureType.MULTIPLE_OUTGOING_SEQUENCE_FLOWS);
     final var generator = new BpmnProcessGenerator(configuration);
 
     // when

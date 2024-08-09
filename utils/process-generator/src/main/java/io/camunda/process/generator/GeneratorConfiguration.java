@@ -13,23 +13,23 @@ import java.util.List;
 
 public class GeneratorConfiguration {
 
-  private final List<BpmnFeature> includeFeatures = new ArrayList<>();
-  private final List<BpmnFeature> excludeFeatures = new ArrayList<>();
+  private final List<BpmnFeatureType> includeFeatures = new ArrayList<>();
+  private final List<BpmnFeatureType> excludeFeatures = new ArrayList<>();
 
-  public List<BpmnFeature> getIncludeFeatures() {
+  public List<BpmnFeatureType> getIncludeFeatures() {
     return includeFeatures;
   }
 
-  public List<BpmnFeature> getExcludeFeatures() {
+  public List<BpmnFeatureType> getExcludeFeatures() {
     return excludeFeatures;
   }
 
-  public GeneratorConfiguration withFeatures(final BpmnFeature... features) {
+  public GeneratorConfiguration withFeatures(final BpmnFeatureType... features) {
     includeFeatures.addAll(Arrays.asList(features));
     return this;
   }
 
-  public GeneratorConfiguration excludeFeatures(final BpmnFeature... features) {
+  public GeneratorConfiguration excludeFeatures(final BpmnFeatureType... features) {
     excludeFeatures.addAll(Arrays.asList(features));
     return this;
   }

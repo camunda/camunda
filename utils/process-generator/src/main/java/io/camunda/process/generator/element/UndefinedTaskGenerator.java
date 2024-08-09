@@ -7,7 +7,7 @@
  */
 package io.camunda.process.generator.element;
 
-import io.camunda.process.generator.BpmnFeature;
+import io.camunda.process.generator.BpmnFeatureType;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import org.slf4j.Logger;
@@ -34,7 +34,7 @@ public class UndefinedTaskGenerator implements BpmnElementGenerator {
   }
 
   @Override
-  public BpmnFeature getFeature() {
-    return BpmnFeature.UNDEFINED_TASK;
+  public BpmnFeatureType getFeature() {
+    return BpmnFeatureType.UNDEFINED_TASK;
   }
 }

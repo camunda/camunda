@@ -7,7 +7,7 @@
  */
 package io.camunda.process.generator.event;
 
-import io.camunda.process.generator.BpmnFeature;
+import io.camunda.process.generator.BpmnFeatureType;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.process.generator.execution.PublishMessageStep;
 import io.camunda.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
@@ -42,7 +42,7 @@ public class MessageCatchEventGenerator implements BpmnCatchEventGenerator {
   }
 
   @Override
-  public BpmnFeature getFeature() {
-    return BpmnFeature.MESSAGE_EVENT;
+  public BpmnFeatureType getFeature() {
+    return BpmnFeatureType.MESSAGE_EVENT;
   }
 }

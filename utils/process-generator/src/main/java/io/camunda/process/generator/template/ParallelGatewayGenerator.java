@@ -8,7 +8,7 @@
 package io.camunda.process.generator.template;
 
 import io.camunda.process.generator.BpmnFactories;
-import io.camunda.process.generator.BpmnFeature;
+import io.camunda.process.generator.BpmnFeatureType;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ParallelGatewayBuilder;
@@ -84,7 +84,7 @@ public class ParallelGatewayGenerator implements BpmnTemplateGenerator {
   }
 
   @Override
-  public BpmnFeature getFeature() {
-    return BpmnFeature.PARALLEL_GATEWAY;
+  public BpmnFeatureType getFeature() {
+    return BpmnFeatureType.PARALLEL_GATEWAY;
   }
 }

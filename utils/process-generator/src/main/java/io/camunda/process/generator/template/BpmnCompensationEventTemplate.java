@@ -8,7 +8,7 @@
 package io.camunda.process.generator.template;
 
 import io.camunda.process.generator.BpmnFactories;
-import io.camunda.process.generator.BpmnFeature;
+import io.camunda.process.generator.BpmnFeatureType;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.process.generator.element.BpmnElementGenerator;
 import io.camunda.zeebe.model.bpmn.builder.AbstractActivityBuilder;
@@ -83,7 +83,7 @@ public class BpmnCompensationEventTemplate implements BpmnTemplateGenerator {
   }
 
   @Override
-  public BpmnFeature getFeature() {
-    return BpmnFeature.COMPENSATION_EVENT;
+  public BpmnFeatureType getFeature() {
+    return BpmnFeatureType.COMPENSATION_EVENT;
   }
 }

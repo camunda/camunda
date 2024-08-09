@@ -27,7 +27,7 @@ public class GeneratorContext {
   private final List<ProcessExecutionStep> executionPath = new ArrayList<>();
   private int currentAmountOfBranches = 1;
 
-  private final Set<BpmnFeature> processFeatures = new HashSet<>();
+  private final Set<BpmnFeatureType> processFeatures = new HashSet<>();
 
   public GeneratorContext(final long seed, final GeneratorConfiguration generatorConfiguration) {
     this.seed = seed;
@@ -97,15 +97,15 @@ public class GeneratorContext {
     return random.nextBoolean();
   }
 
-  public void addProcessFeature(final BpmnFeature feature) {
+  public void addProcessFeature(final BpmnFeatureType feature) {
     processFeatures.add(feature);
   }
 
-  public boolean hasProcessFeature(final BpmnFeature feature) {
+  public boolean hasProcessFeature(final BpmnFeatureType feature) {
     return processFeatures.contains(feature);
   }
 
-  public Set<BpmnFeature> getProcessFeatures() {
+  public Set<BpmnFeatureType> getProcessFeatures() {
     return processFeatures;
   }
 

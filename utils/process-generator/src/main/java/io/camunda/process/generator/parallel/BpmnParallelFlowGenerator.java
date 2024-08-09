@@ -7,12 +7,12 @@
  */
 package io.camunda.process.generator.parallel;
 
-import io.camunda.process.generator.BpmnFeatureGenerator;
+import io.camunda.process.generator.BpmnFeature;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import java.util.List;
 import java.util.function.IntPredicate;
 
-public interface BpmnParallelFlowGenerator extends BpmnFeatureGenerator {
+public interface BpmnParallelFlowGenerator extends BpmnFeature {
 
   /**
    * Add parallel flows to the given process builder. The flows are open-ended, i.e., they are not
