@@ -115,6 +115,11 @@ public final class JobClient {
     return this;
   }
 
+  public JobClient withChangeset(final Map<String, Number> changeset) {
+    jobRecord.setChangedAttributes(changeset);
+    return this;
+  }
+
   public JobClient expectRejection() {
     expectation = REJECTION_SUPPLIER;
     return this;

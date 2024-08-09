@@ -38,7 +38,7 @@ public final class JobUpdateRetriesProcessor implements TypedRecordProcessor<Job
         .ifRightOrLeft(
             job ->
                 jobUpdateBehaviour
-                    .updateJobRetries(jobKey, job, command)
+                    .updateJobRetries(jobKey, command.getValue().getRetries(), job, command)
                     .ifPresentOrElse(
                         errorMessage -> {
                           rejectionWriter.appendRejection(

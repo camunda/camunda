@@ -63,16 +63,6 @@ public final class JobRequestValidator {
     if (changeset.getRetries() == null && changeset.getTimeout() == null) {
       violations.add(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(List.of("retries", "timeout")));
     }
-    if (changeset.getRetries() != null && changeset.getRetries() < 1) {
-      violations.add(
-          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-              "retries", changeset.getRetries(), "greater than 0"));
-    }
-    if (changeset.getTimeout() != null && changeset.getTimeout() < 1) {
-      violations.add(
-          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-              "timeout", changeset.getTimeout(), "greater than 0"));
-    }
     return createProblemDetail(violations);
   }
 }
