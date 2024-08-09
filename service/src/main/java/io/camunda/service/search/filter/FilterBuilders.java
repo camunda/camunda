@@ -78,4 +78,13 @@ public final class FilterBuilders {
       final Function<DateValueFilter.Builder, ObjectBuilder<DateValueFilter>> fn) {
     return fn.apply(dateValue()).build();
   }
+
+  public static IncidentFilter.Builder incident() {
+    return new IncidentFilter.Builder();
+  }
+
+  public static IncidentFilter incident(
+      final Function<IncidentFilter.Builder, ObjectBuilder<IncidentFilter>> fn) {
+    return fn.apply(incident()).build();
+  }
 }

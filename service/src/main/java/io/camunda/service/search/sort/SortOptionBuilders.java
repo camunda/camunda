@@ -59,4 +59,13 @@ public final class SortOptionBuilders {
           fn) {
     return fn.apply(decisionRequirements()).build();
   }
+
+  public static IncidentSort.Builder incident() {
+    return new IncidentSort.Builder();
+  }
+
+  public static IncidentSort incident(
+      final Function<IncidentSort.Builder, ObjectBuilder<IncidentSort>> fn) {
+    return fn.apply(incident()).build();
+  }
 }
