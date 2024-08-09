@@ -25,8 +25,8 @@ public class FactoryUtil {
                         .getGeneratorConfiguration()
                         .getExcludeFeatures()
                         .contains(generator.getFeature()))
-            .filter(addsDepthAndIsAllowedTo(generatorContext))
-            .filter(addsBranchesAndIsAllowedTo(generatorContext))
+            .filter(allowedToAddDepthOrDoesntAddDepth(generatorContext))
+            .filter(allowedToAddBranchesOrDoesntAddBranches(generatorContext))
             .toList();
 
     final HashSet<BpmnFeatureType> missingFeatures =
@@ -52,7 +52,7 @@ public class FactoryUtil {
     return selectedGenerator;
   }
 
-  private static <T extends BpmnFeature> Predicate<T> addsDepthAndIsAllowedTo(
+  private static <T extends BpmnFeature> Predicate<T> allowedToAddDepthOrDoesntAddDepth(
       final GeneratorContext generatorContext) {
     return generator -> {
       if (!(generator instanceof BpmnTemplateGenerator)) {
@@ -62,7 +62,7 @@ public class FactoryUtil {
     };
   }
 
-  private static <T extends BpmnFeature> Predicate<T> addsBranchesAndIsAllowedTo(
+  private static <T extends BpmnFeature> Predicate<T> allowedToAddBranchesOrDoesntAddBranches(
       final GeneratorContext generatorContext) {
     return generator -> {
       if (!(generator instanceof BpmnTemplateGenerator)) {
