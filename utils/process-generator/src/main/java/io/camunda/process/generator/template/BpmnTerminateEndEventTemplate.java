@@ -8,7 +8,7 @@
 package io.camunda.process.generator.template;
 
 import io.camunda.process.generator.BpmnFactories;
-import io.camunda.process.generator.BpmnFeature;
+import io.camunda.process.generator.BpmnFeatureType;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.zeebe.model.bpmn.builder.AbstractEndEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
@@ -31,7 +31,7 @@ public class BpmnTerminateEndEventTemplate implements BpmnTemplateGenerator {
   }
 
   @Override
-  public AbstractFlowNodeBuilder<?, ?> addElements(
+  public AbstractFlowNodeBuilder<?, ?> addElement(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
 
     final var elementId = "terminate_%s".formatted(generatorContext.createNewId());
@@ -77,7 +77,12 @@ public class BpmnTerminateEndEventTemplate implements BpmnTemplateGenerator {
   }
 
   @Override
-  public BpmnFeature getFeature() {
-    return BpmnFeature.TERMINATE_EVENT;
+  public boolean addsDepth() {
+    return false;
+  }
+
+  @Override
+  public BpmnFeatureType getFeature() {
+    return BpmnFeatureType.TERMINATE_EVENT;
   }
 }

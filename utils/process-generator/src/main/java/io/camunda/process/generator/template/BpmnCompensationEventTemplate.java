@@ -8,9 +8,8 @@
 package io.camunda.process.generator.template;
 
 import io.camunda.process.generator.BpmnFactories;
-import io.camunda.process.generator.BpmnFeature;
+import io.camunda.process.generator.BpmnFeatureType;
 import io.camunda.process.generator.GeneratorContext;
-import io.camunda.process.generator.element.BpmnElementGenerator;
 import io.camunda.process.generator.execution.CompleteJobStep;
 import io.camunda.zeebe.model.bpmn.builder.AbstractActivityBuilder;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
@@ -28,7 +27,7 @@ public class BpmnCompensationEventTemplate implements BpmnTemplateGenerator {
   }
 
   @Override
-  public AbstractFlowNodeBuilder<?, ?> addElements(
+  public AbstractFlowNodeBuilder<?, ?> addElement(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
 
     final var compensationHandlerId = "compensation_handler_" + generatorContext.createNewId();
@@ -37,7 +36,7 @@ public class BpmnCompensationEventTemplate implements BpmnTemplateGenerator {
     final BpmnTemplateGeneratorFactory templateGeneratorFactory =
         bpmnFactories.getTemplateGeneratorFactory();
 
-    final BpmnElementGenerator elementGenerator =
+    final var elementGenerator =
         bpmnFactories.getElementGeneratorFactory().getGeneratorForActivityWithCompensationEvent();
 
     final var element = elementGenerator.addElement(processBuilder, generateExecutionPath);
@@ -63,10 +62,10 @@ public class BpmnCompensationEventTemplate implements BpmnTemplateGenerator {
 
     for (int i = 0; i < numberOfElement; i++) {
       final BpmnTemplateGenerator branchGenerator = templateGeneratorFactory.getMiddleGenerator();
-      branch = branchGenerator.addElements(branch, generateExecutionPath);
+      branch = branchGenerator.addElement(branch, generateExecutionPath);
     }
 
-    final BpmnElementGenerator catchEventGenerator =
+    final var catchEventGenerator =
         bpmnFactories.getElementGeneratorFactory().getGeneratorForCompensationEvent();
     catchEventGenerator.addElement(branch, false);
 
@@ -83,7 +82,12 @@ public class BpmnCompensationEventTemplate implements BpmnTemplateGenerator {
   }
 
   @Override
-  public BpmnFeature getFeature() {
-    return BpmnFeature.COMPENSATION_EVENT;
+  public boolean addsDepth() {
+    return false;
+  }
+
+  @Override
+  public BpmnFeatureType getFeature() {
+    return BpmnFeatureType.COMPENSATION_EVENT;
   }
 }

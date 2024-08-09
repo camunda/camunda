@@ -7,7 +7,7 @@
  */
 package io.camunda.process.generator;
 
-import io.camunda.process.generator.BpmnGenerator.GeneratedProcess;
+import io.camunda.process.generator.BpmnProcessGenerator.GeneratedProcess;
 import io.camunda.process.generator.execution.CreateProcessInstanceStep;
 import io.camunda.process.generator.template.BpmnTemplateGenerator;
 import io.camunda.process.generator.template.BpmnTemplateGeneratorFactory;
@@ -39,11 +39,11 @@ public class ProcessGenerator {
     final var templateLimit = 3;
     for (int i = 0; i < templateLimit; i++) {
       final BpmnTemplateGenerator templateGenerator = templateGeneratorFactory.getMiddleGenerator();
-      processBuilder = templateGenerator.addElements(processBuilder, true);
+      processBuilder = templateGenerator.addElement(processBuilder, true);
     }
 
     final BpmnModelInstance process =
-        templateGeneratorFactory.getFinalGenerator().addElements(processBuilder, true).done();
+        templateGeneratorFactory.getFinalGenerator().addElement(processBuilder, true).done();
 
     // modify the version so I can open the process in the Camunda Modeler
     final Definitions definitions = process.getDefinitions();

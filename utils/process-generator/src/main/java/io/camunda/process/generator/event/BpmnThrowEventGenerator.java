@@ -7,11 +7,11 @@
  */
 package io.camunda.process.generator.event;
 
-import io.camunda.process.generator.BpmnFeatureGenerator;
+import io.camunda.process.generator.BpmnFeature;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.zeebe.model.bpmn.builder.AbstractThrowEventBuilder;
 
-public interface BpmnThrowEventGenerator extends BpmnFeatureGenerator {
+public interface BpmnThrowEventGenerator extends BpmnFeature {
 
   void addEventDefinition(
       final String elementId,

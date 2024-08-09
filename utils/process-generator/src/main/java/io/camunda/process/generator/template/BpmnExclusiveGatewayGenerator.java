@@ -7,7 +7,7 @@
  */
 package io.camunda.process.generator.template;
 
-import io.camunda.process.generator.BpmnFeature;
+import io.camunda.process.generator.BpmnFeatureType;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import org.slf4j.Logger;
@@ -31,7 +31,7 @@ public class BpmnExclusiveGatewayGenerator implements BpmnTemplateGenerator {
   }
 
   @Override
-  public AbstractFlowNodeBuilder<?, ?> addElements(
+  public AbstractFlowNodeBuilder<?, ?> addElement(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
 
     final var amountOfBranches =
@@ -54,7 +54,7 @@ public class BpmnExclusiveGatewayGenerator implements BpmnTemplateGenerator {
     // TODO generate more complex branches
     final AbstractFlowNodeBuilder<?, ?> joiningGatewayBuilder =
         elementSequenceGenerator
-            .addElements(
+            .addElement(
                 exclusiveGatewayBuilder
                     .defaultFlow()
                     .sequenceFlowId(generatorContext.createNewId()),
@@ -72,7 +72,7 @@ public class BpmnExclusiveGatewayGenerator implements BpmnTemplateGenerator {
               .conditionExpression(String.valueOf(branchShouldGenerateExecutionPath));
       // TODO generate more complex branches
       elementSequenceGenerator
-          .addElements(branchBuilder, branchShouldGenerateExecutionPath)
+          .addElement(branchBuilder, branchShouldGenerateExecutionPath)
           .connectTo(joiningGatewayId);
     }
 
@@ -86,7 +86,12 @@ public class BpmnExclusiveGatewayGenerator implements BpmnTemplateGenerator {
   }
 
   @Override
-  public BpmnFeature getFeature() {
-    return BpmnFeature.EXCLUSIVE_GATEWAY;
+  public boolean addsDepth() {
+    return false;
+  }
+
+  @Override
+  public BpmnFeatureType getFeature() {
+    return BpmnFeatureType.EXCLUSIVE_GATEWAY;
   }
 }

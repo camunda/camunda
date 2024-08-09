@@ -7,9 +7,8 @@
  */
 package io.camunda.process.generator.template;
 
-import io.camunda.process.generator.BpmnFeature;
+import io.camunda.process.generator.BpmnFeatureType;
 import io.camunda.process.generator.GeneratorContext;
-import io.camunda.process.generator.element.BpmnElementGenerator;
 import io.camunda.process.generator.element.BpmnElementGeneratorFactory;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import org.slf4j.Logger;
@@ -30,7 +29,7 @@ public class BpmnElementSequenceGenerator implements BpmnTemplateGenerator {
   }
 
   @Override
-  public AbstractFlowNodeBuilder<?, ?> addElements(
+  public AbstractFlowNodeBuilder<?, ?> addElement(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
     AbstractFlowNodeBuilder<?, ?> builder = processBuilder;
 
@@ -40,7 +39,7 @@ public class BpmnElementSequenceGenerator implements BpmnTemplateGenerator {
     LOG.debug("Adding sequence of {} elements", numberOfElements);
 
     for (int i = 0; i < numberOfElements; i++) {
-      final BpmnElementGenerator elementGenerator = elementGeneratorFactory.getGenerator();
+      final var elementGenerator = elementGeneratorFactory.getGenerator();
       builder = elementGenerator.addElement(builder, generateExecutionPath);
     }
 
@@ -53,7 +52,12 @@ public class BpmnElementSequenceGenerator implements BpmnTemplateGenerator {
   }
 
   @Override
-  public BpmnFeature getFeature() {
-    return BpmnFeature.NONE;
+  public boolean addsDepth() {
+    return false;
+  }
+
+  @Override
+  public BpmnFeatureType getFeature() {
+    return BpmnFeatureType.NONE;
   }
 }

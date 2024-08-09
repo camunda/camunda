@@ -1,62 +1,16 @@
 /*
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.process.generator;
 
-import io.camunda.process.generator.execution.ProcessExecutionStep;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 
-public class BpmnGenerator {
+public interface BpmnGenerator extends BpmnFeature {
 
-  public static final String CAMUNDA_VERSION = "8.5.0";
-
-  public static GeneratorConfiguration DEFAULT_CONFIGURATION = new GeneratorConfiguration();
-  private final GeneratorConfiguration generatorConfiguration;
-
-  public BpmnGenerator() {
-    this(DEFAULT_CONFIGURATION);
-  }
-
-  public BpmnGenerator(final GeneratorConfiguration generatorConfiguration) {
-    this.generatorConfiguration = generatorConfiguration;
-  }
-
-    public GeneratedProcess generateProcess() {
-    return generateProcess(ThreadLocalRandom.current().nextLong());
-  }
-
-  public GeneratedProcess generateProcess(final long seed) {
-    final var generatorContext = new GeneratorContext(seed, generatorConfiguration);
-    final var factories = new BpmnFactories(generatorContext);
-    final ProcessGenerator processGenerator = new ProcessGenerator(CAMUNDA_VERSION, factories);
-    return processGenerator.generateProcess(generatorContext);
-  }
-
-  public record GeneratedProcess(
-      BpmnModelInstance process,
-      List<ProcessExecutionStep> executionPath,
-      String processId,
-      long seed) {
-
-    @Override
-    public String toString() {
-      return "GeneratedProcess{seed='%d'}".formatted(seed);
-    }
-  }
-
-  public class Builder {}
+  AbstractFlowNodeBuilder<?, ?> addElement(
+      final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath);
 }

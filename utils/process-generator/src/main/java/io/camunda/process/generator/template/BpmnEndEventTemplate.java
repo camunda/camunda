@@ -7,7 +7,7 @@
  */
 package io.camunda.process.generator.template;
 
-import io.camunda.process.generator.BpmnFeature;
+import io.camunda.process.generator.BpmnFeatureType;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import org.slf4j.Logger;
@@ -23,7 +23,7 @@ public class BpmnEndEventTemplate implements BpmnTemplateGenerator {
   }
 
   @Override
-  public AbstractFlowNodeBuilder<?, ?> addElements(
+  public AbstractFlowNodeBuilder<?, ?> addElement(
       final AbstractFlowNodeBuilder<?, ?> processBuilder, final boolean generateExecutionPath) {
 
     LOG.debug("Adding regular end event");
@@ -37,7 +37,12 @@ public class BpmnEndEventTemplate implements BpmnTemplateGenerator {
   }
 
   @Override
-  public BpmnFeature getFeature() {
-    return BpmnFeature.END_EVENT;
+  public boolean addsDepth() {
+    return false;
+  }
+
+  @Override
+  public BpmnFeatureType getFeature() {
+    return BpmnFeatureType.END_EVENT;
   }
 }

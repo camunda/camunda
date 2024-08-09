@@ -12,7 +12,7 @@ import java.util.List;
 
 public class FactoryUtil {
 
-  public static <T extends BpmnFeatureGenerator> T getGenerator(
+  public static <T extends BpmnFeature> T getGenerator(
       final List<T> generators, final GeneratorContext generatorContext) {
 
     final List<T> allowedGenerators =
@@ -25,7 +25,7 @@ public class FactoryUtil {
                         .contains(generator.getFeature()))
             .toList();
 
-    final HashSet<BpmnFeature> missingFeatures =
+    final HashSet<BpmnFeatureType> missingFeatures =
         new HashSet<>(generatorContext.getGeneratorConfiguration().getIncludeFeatures());
     missingFeatures.removeAll(generatorContext.getProcessFeatures());
 
@@ -40,8 +40,8 @@ public class FactoryUtil {
     final var randomIndex = generatorContext.getRandomNumber(possibleGenerators.size());
     final var selectedGenerator = possibleGenerators.get(randomIndex);
 
-    final BpmnFeature feature = selectedGenerator.getFeature();
-    if (feature != BpmnFeature.NONE) {
+    final BpmnFeatureType feature = selectedGenerator.getFeature();
+    if (feature != BpmnFeatureType.NONE) {
       generatorContext.addProcessFeature(feature);
     }
 

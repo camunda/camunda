@@ -7,7 +7,7 @@
  */
 package io.camunda.process.generator.element;
 
-import io.camunda.process.generator.BpmnFeature;
+import io.camunda.process.generator.BpmnFeatureType;
 import io.camunda.process.generator.GeneratorContext;
 import io.camunda.process.generator.execution.CompleteUserTaskStep;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
@@ -43,7 +43,7 @@ public class UserTaskGenerator implements BpmnElementGenerator {
   }
 
   @Override
-  public BpmnFeature getFeature() {
-    return BpmnFeature.USER_TASK;
+  public BpmnFeatureType getFeature() {
+    return BpmnFeatureType.USER_TASK;
   }
 }

@@ -8,17 +8,20 @@
 package io.camunda.process.generator.element;
 
 import io.camunda.process.generator.BpmnFactories;
+import io.camunda.process.generator.BpmnGenerator;
 import io.camunda.process.generator.FactoryUtil;
 import io.camunda.process.generator.GeneratorContext;
+import io.camunda.process.generator.template.BpmnEmbeddedSubprocessTemplate;
+import io.camunda.process.generator.template.BpmnTemplateGenerator;
 import java.util.List;
 
 public class BpmnElementGeneratorFactory {
 
   private final GeneratorContext generatorContext;
-  private final List<BpmnElementGenerator> bpmnElementGenerators;
-  private final List<BpmnElementGenerator> activityForBoundaryEventGenerators;
-  private final List<BpmnElementGenerator> activityForCompensationEventGenerators;
-  private final List<BpmnElementGenerator> compensationEventGenerators;
+  private final List<BpmnGenerator> bpmnElementGenerators;
+  private final List<BpmnGenerator> activityForBoundaryEventGenerators;
+  private final List<BpmnGenerator> activityForCompensationEventGenerators;
+  private final List<BpmnGenerator> compensationEventGenerators;
 
   public BpmnElementGeneratorFactory(
       final GeneratorContext generatorContext, final BpmnFactories bpmnFactories) {
@@ -29,14 +32,13 @@ public class BpmnElementGeneratorFactory {
             new UserTaskGenerator(generatorContext),
             new UndefinedTaskGenerator(generatorContext),
             new IntermediateCatchEventGenerator(
-                generatorContext, bpmnFactories.getCatchEventGeneratorFactory()),
-            new BpmnEmbeddedSubprocessGenerator(generatorContext, bpmnFactories));
+                generatorContext, bpmnFactories.getCatchEventGeneratorFactory()));
 
     activityForBoundaryEventGenerators =
         List.of(
             new ServiceTaskGenerator(generatorContext),
             new UserTaskGenerator(generatorContext),
-            new BpmnEmbeddedSubprocessGenerator(generatorContext, bpmnFactories));
+            new BpmnEmbeddedSubprocessTemplate(generatorContext, bpmnFactories));
 
     activityForCompensationEventGenerators =
         List.of(
@@ -45,26 +47,28 @@ public class BpmnElementGeneratorFactory {
     compensationEventGenerators = List.of(new CompensationThrowEventGenerator(generatorContext));
   }
 
-  public BpmnElementGenerator getGenerator() {
+  public BpmnGenerator getGenerator() {
     final var generator = FactoryUtil.getGenerator(bpmnElementGenerators, generatorContext);
 
     // If we are at the maximum depth we should not go deeper. Instead, we use a different
     // generator.
-    if (!generatorContext.canGoDeeper() && generator.addsDepth()) {
+    if (!generatorContext.canGoDeeper()
+        && generator instanceof BpmnTemplateGenerator
+        && ((BpmnTemplateGenerator) generator).addsDepth()) {
       return getGenerator();
     }
     return generator;
   }
 
-  public BpmnElementGenerator getGeneratorForActivityWithBoundaryEvent() {
+  public BpmnGenerator getGeneratorForActivityWithBoundaryEvent() {
     return FactoryUtil.getGenerator(activityForBoundaryEventGenerators, generatorContext);
   }
 
-  public BpmnElementGenerator getGeneratorForActivityWithCompensationEvent() {
+  public BpmnGenerator getGeneratorForActivityWithCompensationEvent() {
     return FactoryUtil.getGenerator(activityForCompensationEventGenerators, generatorContext);
   }
 
-  public BpmnElementGenerator getGeneratorForCompensationEvent() {
+  public BpmnGenerator getGeneratorForCompensationEvent() {
     final var randomIndex = generatorContext.getRandomNumber(compensationEventGenerators.size());
     return compensationEventGenerators.get(randomIndex);
   }
