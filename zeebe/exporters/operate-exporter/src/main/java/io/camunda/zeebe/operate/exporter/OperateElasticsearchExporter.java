@@ -45,7 +45,7 @@ public class OperateElasticsearchExporter implements Exporter {
   private long lastPosition = -1;
   private int batchSize;
 
-  // FIXME - must come from importStore.getConcurrencyMode()
+  // TODO this is hardcoded, but must come from importStore.getConcurrencyMode()
   private final boolean concurrencyMode = false;
 
   @Override
@@ -216,6 +216,10 @@ public class OperateElasticsearchExporter implements Exporter {
             new PostImporterQueueFromIncidentHandler(
                 (PostImporterQueueTemplate)
                     (new PostImporterQueueTemplate().setIndexPrefix(indexPrefix))))
+        .withHandler(
+            new UserTaskHandler(
+                (UserTaskTemplate) (new UserTaskTemplate().setIndexPrefix(indexPrefix)),
+                configuration.newObjectMapper()))
         .build();
   }
 
@@ -229,10 +233,10 @@ public class OperateElasticsearchExporter implements Exporter {
             DECISION_REQUIREMENTS,
             DECISION_EVALUATION,
             JOB,
-            INCIDENT
+            INCIDENT,
+            PROCESS_MESSAGE_SUBSCRIPTION,
+            USER_TASK
             //            VARIABLE_DOCUMENT,
-            //            PROCESS_MESSAGE_SUBSCRIPTION,
-            //            USER_TASK
             );
 
     @Override

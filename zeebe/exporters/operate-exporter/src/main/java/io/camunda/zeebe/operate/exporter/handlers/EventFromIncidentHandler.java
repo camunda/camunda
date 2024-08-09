@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.StringUtils;
 
 public class EventFromIncidentHandler implements ExportHandler<EventEntity, IncidentRecordValue> {
 
@@ -102,7 +101,7 @@ public class EventFromIncidentHandler implements ExportHandler<EventEntity, Inci
 
     final EventMetadataEntity eventMetadata = new EventMetadataEntity();
     eventMetadata.setIncidentErrorMessage(
-        StringUtils.trimWhitespace(recordValue.getErrorMessage()));
+        OperateExportUtil.trimWhitespace(recordValue.getErrorMessage()));
     eventMetadata.setIncidentErrorType(
         ErrorType.fromZeebeErrorType(
             recordValue.getErrorType() == null ? null : recordValue.getErrorType().name()));
