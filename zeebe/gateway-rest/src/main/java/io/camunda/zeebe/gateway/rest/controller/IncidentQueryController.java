@@ -39,7 +39,7 @@ public class IncidentQueryController {
   public ResponseEntity<IncidentSearchQueryResponse> searchIncidents(
       @RequestBody(required = false) final IncidentSearchQueryRequest query) {
     return SearchQueryRequestMapper.toIncidentQuery(query)
-        .fold(this::search, RestErrorMapper::mapProblemToResponse);
+        .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
   private ResponseEntity<IncidentSearchQueryResponse> search(final IncidentQuery query) {
