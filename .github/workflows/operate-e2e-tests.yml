@@ -73,15 +73,8 @@ jobs:
           secrets: |
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Setup yarn
-        run: npm install -g yarn
-      - name: Install node dependencies
-        working-directory: ./operate/client
-        run: yarn install
+      - name: Build frontend
+        uses: ./.github/actions/build-operate-fe
       - name: Add Yarn binaries to Path
         working-directory: ./operate/client
         run: |
@@ -90,9 +83,6 @@ jobs:
       - name: Install Playwright
         run: yarn exec playwright install -- --with-deps chromium
         working-directory: ./operate/client
-      - name: Build frontend
-        working-directory: ./operate/client
-        run: yarn build
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
