@@ -25,6 +25,12 @@ public class PersistedPermissions extends UnpackedObject implements DbValue {
     declareProperty(permissionsProp);
   }
 
+  public PersistedPermissions copy() {
+    final PersistedPermissions copy = new PersistedPermissions();
+    copy.setPermissions(getPermissions());
+    return copy;
+  }
+
   public List<String> getPermissions() {
     return StreamSupport.stream(permissionsProp.spliterator(), false)
         .map(StringValue::getValue)

@@ -48,7 +48,7 @@ public class AuthorizationStateTest {
   }
 
   @DisplayName(
-      "should create authorization if no authorization for owner and resource does not exist")
+      "should create authorization if an authorization for the owner and resource pair does not exist")
   @Test
   void shouldCreateIfUsernameDoesNotExist() {
     // when
@@ -73,12 +73,13 @@ public class AuthorizationStateTest {
   }
 
   @DisplayName(
-      "should create authorization throws exception when authorization for owner and resource already exist")
+      "should throw an exception when an authorization for owner and resource pair already exist")
   @Test
   void shouldThrowExceptionInCreateIfUsernameDoesNotExist() {
     // given
     final AuthorizationRecord authorizationRecord =
         new AuthorizationRecord()
+            .setAuthorizationKey(1L)
             .setOwnerKey("owner" + UUID.randomUUID())
             .setOwnerType(AuthorizationOwnerType.GROUP)
             .setResourceKey("resource")
@@ -88,6 +89,52 @@ public class AuthorizationStateTest {
 
     // when/then
     assertThatThrownBy(() -> authorizationState.createAuthorization(authorizationRecord))
-        .isInstanceOf(ZeebeDbInconsistentException.class);
+        .isInstanceOf(ZeebeDbInconsistentException.class)
+        .hasMessageContaining("Key DbLong{1} in ColumnFamily AUTHORIZATIONS already exists");
+  }
+
+  @DisplayName("should return the correct authorization")
+  @Test
+  void shouldReturnCorrectAuthorization() {
+    // given
+    final AuthorizationRecord authorizationRecordOne =
+        new AuthorizationRecord()
+            .setAuthorizationKey(1L)
+            .setOwnerKey("owner" + UUID.randomUUID())
+            .setOwnerType(AuthorizationOwnerType.GROUP)
+            .setResourceKey("resource")
+            .setResourceType("resourceType")
+            .setPermissions(List.of("read:*"));
+    authorizationState.createAuthorization(authorizationRecordOne);
+
+    final AuthorizationRecord authorizationRecordTwo =
+        new AuthorizationRecord()
+            .setAuthorizationKey(2L)
+            .setOwnerKey("owner" + UUID.randomUUID())
+            .setOwnerType(AuthorizationOwnerType.GROUP)
+            .setResourceKey("resource")
+            .setResourceType("resourceType")
+            .setPermissions(List.of("write:*"));
+    authorizationState.createAuthorization(authorizationRecordTwo);
+
+    final var authorizationOne =
+        authorizationState.getAuthorization(
+            authorizationRecordOne.getOwnerKey(),
+            authorizationRecordOne.getOwnerType(),
+            authorizationRecordOne.getResourceKey(),
+            authorizationRecordOne.getResourceType());
+
+    final var authorizationTwo =
+        authorizationState.getAuthorization(
+            authorizationRecordTwo.getOwnerKey(),
+            authorizationRecordTwo.getOwnerType(),
+            authorizationRecordTwo.getResourceKey(),
+            authorizationRecordTwo.getResourceType());
+
+    assertThat(authorizationOne).isNotEqualTo(authorizationTwo);
+    assertThat(authorizationOne.getPermissions())
+        .isEqualTo(authorizationRecordOne.getPermissions());
+    assertThat(authorizationTwo.getPermissions())
+        .isEqualTo(authorizationRecordTwo.getPermissions());
   }
 }
