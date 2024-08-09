@@ -26,7 +26,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnRestGatewayEnabled
 public class CamundaServicesConfiguration {
-
   private final BrokerClient brokerClient;
   private final CamundaSearchClient camundaSearchClient;
 
