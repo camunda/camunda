@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -21,7 +22,8 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public class AuthorizationCreateProcessor implements TypedRecordProcessor<AuthorizationRecord> {
+public class AuthorizationCreateProcessor
+    implements DistributedTypedRecordProcessor<AuthorizationRecord> {
   private final AuthorizationRecord newAuthorizationRecord = new AuthorizationRecord();
 
   private final AuthorizationState authorizationState;
@@ -29,18 +31,22 @@ public class AuthorizationCreateProcessor implements TypedRecordProcessor<Author
   private final KeyGenerator keyGenerator;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final CommandDistributionBehavior distributionBehavior;
 
   public AuthorizationCreateProcessor(
-      final ProcessingState processingState, final Writers writers) {
+      final ProcessingState processingState,
+      final Writers writers,
+      final CommandDistributionBehavior distributionBehavior) {
     authorizationState = processingState.getAuthorizationState();
     stateWriter = writers.state();
     keyGenerator = ((MutableProcessingState) processingState).getKeyGenerator();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    this.distributionBehavior = distributionBehavior;
   }
 
   @Override
-  public void processRecord(final TypedRecord<AuthorizationRecord> command) {
+  public void processNewCommand(final TypedRecord<AuthorizationRecord> command) {
     final var authorizationToCreate = command.getValue();
 
     // TODO check permissions of command.getAuthorizations().get("user")
@@ -54,9 +60,13 @@ public class AuthorizationCreateProcessor implements TypedRecordProcessor<Author
 
     if (authorization != null) {
       rejectionWriter.appendRejection(
-          command, RejectionType.ALREADY_EXISTS, "authorization already exists");
+          command,
+          RejectionType.ALREADY_EXISTS,
+          "Expected to create authorization with owner key: %s and resource key %s, but an authorization with these values already exists");
       responseWriter.writeRejectionOnCommand(
-          command, RejectionType.ALREADY_EXISTS, "authorization already exists");
+          command,
+          RejectionType.ALREADY_EXISTS,
+          "Expected to create authorization with owner key: %s and resource key %s, but an authorization with these values already exists");
       return;
     }
 
@@ -69,5 +79,13 @@ public class AuthorizationCreateProcessor implements TypedRecordProcessor<Author
     stateWriter.appendFollowUpEvent(key, AuthorizationIntent.CREATED, newAuthorizationRecord);
     responseWriter.writeEventOnCommand(
         key, AuthorizationIntent.CREATED, newAuthorizationRecord, command);
+  }
+
+  @Override
+  public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
+    stateWriter.appendFollowUpEvent(
+        command.getKey(), AuthorizationIntent.CREATED, command.getValue());
+
+    distributionBehavior.acknowledgeCommand(command);
   }
 }
