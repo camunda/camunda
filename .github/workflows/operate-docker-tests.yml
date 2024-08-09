@@ -37,8 +37,8 @@ concurrency:
 jobs:
   integration-tests:
     name: Docker container tests
-    runs-on: gcp-core-2-default
-    timeout-minutes: 20
+    runs-on: gcp-core-4-default
+    timeout-minutes: 40
     env:
       OPERATE_TEST_DOCKER_IMAGE: localhost:5000/camunda/operate:current-test
     services:

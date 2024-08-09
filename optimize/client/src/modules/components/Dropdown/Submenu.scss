@@ -1,0 +1,61 @@
+@import 'shared-styles/shared-styles.scss';
+
+.dark .Submenu {
+  .childrenContainer {
+    background-color: var(--grey-darken-33);
+  }
+}
+
+.Submenu {
+  padding-right: 26px;
+
+  &.leftCheckMark > .Icon.checkMark {
+    position: absolute;
+    right: 0;
+  }
+
+  &.open {
+    background-color: var(--blue-darken-55);
+    color: var(--white);
+    border: none;
+    transition: none;
+  }
+
+  .Icon.submenuArrow {
+    display: inline-block;
+    position: absolute;
+    right: 6px;
+    margin-right: 0;
+
+    &.left {
+      left: 3px;
+    }
+  }
+
+  .childrenContainer {
+    position: absolute;
+    top: -5px;
+    margin: 0 3px;
+    min-width: 130px;
+    background-color: var(--white);
+    padding: 5px 0;
+    border-radius: 3px;
+    box-shadow: 0 2px 7px 0 rgba(0, 0, 0, 0.2);
+    @include scrollable;
+    overflow-x: hidden;
+
+    .hoverGuard {
+      position: absolute;
+      top: 0;
+      left: -3px;
+      height: 100%;
+      width: calc(100% + 6px);
+    }
+
+    .DropdownOption:not(.Submenu) {
+      overflow: hidden;
+      max-width: 400px;
+      text-overflow: ellipsis;
+    }
+  }
+}
