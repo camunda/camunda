@@ -11,11 +11,11 @@ import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
-import io.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
+import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.importing.DatabaseImportJob;
 import io.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import io.camunda.optimize.service.importing.engine.service.ImportService;
-import io.camunda.optimize.service.importing.job.ZeebeProcessInstanceDatabaseImportJob;
+import io.camunda.optimize.service.importing.job.ProcessInstanceDatabaseImportJob;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -24,21 +24,21 @@ import lombok.extern.slf4j.Slf4j;
 public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements ImportService<T> {
 
   protected final DatabaseImportJobExecutor databaseImportJobExecutor;
-  private final ZeebeProcessInstanceWriter processInstanceWriter;
   protected final ConfigurationService configurationService;
   protected final ProcessDefinitionReader processDefinitionReader;
   protected final int partitionId;
+  private final ProcessInstanceWriter processInstanceWriter;
   private final DatabaseClient databaseClient;
   private final String sourceExportIndex;
 
   protected ZeebeProcessInstanceSubEntityImportService(
       final ConfigurationService configurationService,
-      final ZeebeProcessInstanceWriter processInstanceWriter,
+      final ProcessInstanceWriter processInstanceWriter,
       final int partitionId,
       final ProcessDefinitionReader processDefinitionReader,
       final DatabaseClient databaseClient,
       final String sourceExportIndex) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.processInstanceWriter = processInstanceWriter;
     this.partitionId = partitionId;
@@ -89,8 +89,8 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
 
   private DatabaseImportJob<ProcessInstanceDto> createDatabaseImportJob(
       final List<ProcessInstanceDto> processInstanceDtos, final Runnable importCompleteCallback) {
-    ZeebeProcessInstanceDatabaseImportJob processInstanceImportJob =
-        new ZeebeProcessInstanceDatabaseImportJob(
+    ProcessInstanceDatabaseImportJob processInstanceImportJob =
+        new ProcessInstanceDatabaseImportJob(
             processInstanceWriter,
             configurationService,
             importCompleteCallback,

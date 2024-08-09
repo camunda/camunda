@@ -19,7 +19,7 @@ import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
-import io.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
+import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -50,7 +50,7 @@ public class ZeebeProcessInstanceImportService
 
   public ZeebeProcessInstanceImportService(
       final ConfigurationService configurationService,
-      final ZeebeProcessInstanceWriter processInstanceWriter,
+      final ProcessInstanceWriter processInstanceWriter,
       final int partitionId,
       final ProcessDefinitionReader processDefinitionReader,
       final DatabaseClient databaseClient) {

@@ -63,7 +63,7 @@ public class ZeebeImportIndexHandlerProvider {
         });
   }
 
-  public List<PositionBasedImportIndexHandler> getPositionBasedEngineHandlers() {
+  public List<PositionBasedImportIndexHandler> getPositionBasedImportHandlers() {
     return new ArrayList<>(positionBasedHandlersByName.values());
   }
 

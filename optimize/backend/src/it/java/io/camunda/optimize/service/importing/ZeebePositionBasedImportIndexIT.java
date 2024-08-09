@@ -137,7 +137,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    embeddedOptimizeExtension.resetImportStartIndexes();
+    embeddedOptimizeExtension.resetPositionBasedImportStartIndexes();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 

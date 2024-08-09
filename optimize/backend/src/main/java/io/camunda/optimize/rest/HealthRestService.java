@@ -26,7 +26,7 @@ public class HealthRestService {
   private final StatusCheckingService statusCheckingService;
 
   @GET
-  public Response getImportStatus() {
+  public Response getConnectionStatus() {
     if (statusCheckingService.isConnectedToDatabase()
         && statusCheckingService.isConnectedToAtLeastOnePlatformEngineOrCloud()) {
       return Response.ok().build();

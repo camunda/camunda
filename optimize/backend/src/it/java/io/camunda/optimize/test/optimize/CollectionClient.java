@@ -15,7 +15,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.optimize.OptimizeRequestExecutor;
-import io.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
@@ -92,16 +91,17 @@ public class CollectionClient {
     return collectionId;
   }
 
-  public String createNewCollectionWithProcessScope(
-      final ProcessDefinitionEngineDto definitionEngineDto) {
-    final String collectionId = createNewCollection();
-    createScopeWithTenants(
-        collectionId,
-        definitionEngineDto.getKey(),
-        singletonList(definitionEngineDto.getTenantId().orElse(null)),
-        PROCESS);
-    return collectionId;
-  }
+  // TODO recreate C8 IT equivalent helpers of these with #13337
+  //  public String createNewCollectionWithProcessScope(
+  //      final ProcessDefinitionEngineDto definitionEngineDto) {
+  //    final String collectionId = createNewCollection();
+  //    createScopeWithTenants(
+  //        collectionId,
+  //        definitionEngineDto.getKey(),
+  //        singletonList(definitionEngineDto.getTenantId().orElse(null)),
+  //        PROCESS);
+  //    return collectionId;
+  //  }
 
   public String createNewCollection() {
     return getRequestExecutor()

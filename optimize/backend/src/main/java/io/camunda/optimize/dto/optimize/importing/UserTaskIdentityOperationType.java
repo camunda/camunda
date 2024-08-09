@@ -9,15 +9,14 @@ package io.camunda.optimize.dto.optimize.importing;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public enum IdentityLinkLogType {
-  CANDIDATE("candidate"),
-  ASSIGNEE("assignee"),
-  OWNER("owner"),
+public enum UserTaskIdentityOperationType {
+  CLAIM_OPERATION_TYPE("add"),
+  UNCLAIM_OPERATION_TYPE("delete"),
   ;
 
   private final String id;
 
-  IdentityLinkLogType(final String id) {
+  UserTaskIdentityOperationType(final String id) {
     this.id = id;
   }
 
@@ -29,9 +28,5 @@ public enum IdentityLinkLogType {
   @Override
   public String toString() {
     return getId();
-  }
-
-  public static IdentityLinkLogType fromString(final String id) {
-    return valueOf(id.toUpperCase());
   }
 }

@@ -10,8 +10,6 @@ package io.camunda.optimize.service.importing.event.mediator;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.events.EventTraceStateServiceFactory;
-import io.camunda.optimize.service.events.CamundaEventService;
-import io.camunda.optimize.service.events.CamundaTraceableEventFetcherService;
 import io.camunda.optimize.service.events.ExternalEventService;
 import io.camunda.optimize.service.importing.event.handler.EventImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.event.service.EventTraceImportService;
@@ -29,26 +27,9 @@ public class EventTraceImportMediatorFactory {
   private final EventImportIndexHandlerRegistry eventImportIndexHandlerRegistry;
   private final EventTraceStateServiceFactory eventTraceStateServiceFactory;
   private final BeanFactory beanFactory;
-  private final CamundaEventService camundaEventService;
   private final ExternalEventService externalEventService;
   private final BackoffCalculator idleBackoffCalculator;
   private final DatabaseClient databaseClient;
-
-  public EventTraceImportMediator createCamundaEventTraceImportMediator(
-      final String processDefinitionKey) {
-    return beanFactory.getBean(
-        EventTraceImportMediator.class,
-        beanFactory.getBean(
-            CamundaTraceableEventFetcherService.class, camundaEventService, processDefinitionKey),
-        eventImportIndexHandlerRegistry.getCamundaEventTraceImportIndexHandler(
-            processDefinitionKey),
-        new EventTraceImportService(
-            configurationService,
-            eventTraceStateServiceFactory.createEventTraceStateService(processDefinitionKey),
-            databaseClient),
-        configurationService,
-        idleBackoffCalculator);
-  }
 
   public EventTraceImportMediator createExternalEventTraceImportMediator() {
     return beanFactory.getBean(
