@@ -117,20 +117,14 @@ it('should display a loading indicator', () => {
 it('should initially load all definitions', () => {
   shallow(<DefinitionSelection {...props} />);
 
-  expect(loadDefinitions).toHaveBeenCalledWith(props.type, undefined, undefined);
+  expect(loadDefinitions).toHaveBeenCalledWith(props.type, undefined);
 });
 
 it('should load defintions in scope of collection', () => {
   getCollection.mockReturnValue('123');
   shallow(<DefinitionSelection {...props} />);
 
-  expect(loadDefinitions).toHaveBeenCalledWith(props.type, '123', undefined);
-});
-
-it('should only load definitions for which camunda events were imported', () => {
-  shallow(<DefinitionSelection {...props} camundaEventImportedOnly />);
-
-  expect(loadDefinitions).toHaveBeenCalledWith(props.type, undefined, true);
+  expect(loadDefinitions).toHaveBeenCalledWith(props.type, '123');
 });
 
 it('should load versions and tenants when key is selected', async () => {
