@@ -3,15 +3,15 @@ description: |
   Exposes common values for consumption in conditions of other jobs in a workflow.
 inputs:
   maintenance_branch_regex:
-    description: 'A bash regex provided to determine the maintenance branch'
-    default: ^maintenance\/([0-9]+\.[0-9]+)$
+    description: "A bash regex provided to determine the maintenance branch"
+    default: ^stable\/([0-9]+\.[0-9]+)$
     required: false
   main_branch_regex:
-    description: 'A bash regex provided to determine the main branch'
-    default: ^master$
+    description: "A bash regex provided to determine the main branch"
+    default: ^main$
     required: false
   branch:
-    description: 'Defaults to github.ref_name'
+    description: "Defaults to github.ref_name"
     required: false
 outputs:
   maintenance_version:
@@ -42,12 +42,12 @@ outputs:
 runs:
   using: composite
   steps:
-  - name: Get environment values
-    id: define-values
-    shell: bash
-    run: |
-      ${{ github.action_path }}/env.sh
-    env:
-      branch: ${{ inputs.branch || github.ref_name }}
-      maintenance_branch_regex: ${{ inputs.maintenance_branch_regex }}
-      main_branch_regex: ${{ inputs.main_branch_regex }}
+    - name: Get environment values
+      id: define-values
+      shell: bash
+      run: |
+        ${{ github.action_path }}/env.sh
+      env:
+        branch: ${{ inputs.branch || github.ref_name }}
+        maintenance_branch_regex: ${{ inputs.maintenance_branch_regex }}
+        main_branch_regex: ${{ inputs.main_branch_regex }}

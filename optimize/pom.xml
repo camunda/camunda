@@ -546,24 +546,6 @@
 
     <plugins>
       <plugin>
-        <groupId>com.amashchenko.maven.plugin</groupId>
-        <artifactId>gitflow-maven-plugin</artifactId>
-        <version>1.21.0</version>
-        <configuration>
-          <gitFlowConfig>
-            <productionBranch>optimize-latest</productionBranch>
-            <developmentBranch>test-optimize-release</developmentBranch>
-            <supportBranchPrefix>maintenance/</supportBranchPrefix>
-            <releaseBranchPrefix>release/optimize-</releaseBranchPrefix>
-          </gitFlowConfig>
-          <commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>
-          <useSnapshotInRelease>true</useSnapshotInRelease>
-          <useSnapshotInSupport>true</useSnapshotInSupport>
-          <skipTestProject>true</skipTestProject>
-          <skipTag>true</skipTag>
-        </configuration>
-      </plugin>
-      <plugin>
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
       </plugin>
