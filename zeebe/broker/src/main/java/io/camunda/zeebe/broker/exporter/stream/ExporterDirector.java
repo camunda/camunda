@@ -488,18 +488,38 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void startActiveExportingMode() {
+    final var containerOpenFutures = new ArrayList<ActorFuture<Boolean>>();
     for (final ExporterContainer container : containers) {
       container.initMetadata();
-      container.openExporter();
+      final var openFuture =
+          new BackOffRetryStrategy(actor, Duration.ofSeconds(10))
+              .runWithRetry(
+                  () -> {
+                    try {
+                      container.openExporter();
+                      return true;
+                    } catch (final Exception e) {
+                      LOG.error("Failed to open exporter '{}'. Retrying...", container.getId(), e);
+                      return false;
+                    }
+                  },
+                  this::isClosed);
+
+      containerOpenFutures.add(openFuture);
     }
 
-    if (state.hasExporters()) {
-      final long snapshotPosition = state.getLowestPosition();
-      // start reading and exporting
-      startActiveExportingFrom(snapshotPosition);
-    } else {
-      becomeIdle();
-    }
+    // Don't need to handle error as any are caught within the runWithRetry try catch
+    actor.runOnCompletion(
+        containerOpenFutures,
+        (error) -> {
+          if (state.hasExporters()) {
+            final long snapshotPosition = state.getLowestPosition();
+            // start reading and exporting
+            startActiveExportingFrom(snapshotPosition);
+          } else {
+            becomeIdle();
+          }
+        });
   }
 
   private void restartActiveExportingMode() {
