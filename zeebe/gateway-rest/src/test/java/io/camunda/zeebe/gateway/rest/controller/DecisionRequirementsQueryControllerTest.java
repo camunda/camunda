@@ -58,7 +58,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
   static final SearchQueryResult<DecisionRequirementsEntity> SEARCH_QUERY_RESULT =
       new Builder<DecisionRequirementsEntity>()
           .total(1L)
-          .items(List.of(new DecisionRequirementsEntity("t", 0L, "id", "name", 1, "rN")))
+          .items(List.of(new DecisionRequirementsEntity("t", 0L, "id", "name", 1, "rN", null)))
           .sortValues(new Object[] {"v"})
           .build();
 
