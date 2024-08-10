@@ -2250,19 +2250,19 @@
     "@carbon/layout" "^11.21.0"
     "@ibm/telemetry-js" "^1.2.1"
 
-"@carbon/icon-helpers@^10.48.0":
-  version "10.48.0"
-  resolved "https://registry.yarnpkg.com/@carbon/icon-helpers/-/icon-helpers-10.48.0.tgz#582686ef1d407de83afcf8b0fe202aefd2198904"
-  integrity sha512-umCh4iBDKYF0+SB2yu8CqLDek2A9/Bv71YBFxngh77H20KiAheP8Zt7BZjSfI8vbm+q9zbIkBLMF8P5Da8i25w==
+"@carbon/icon-helpers@^10.50.0":
+  version "10.50.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icon-helpers/-/icon-helpers-10.50.0.tgz#99c2e8a4c386fffbeb0bd0f3ee09170c776f440b"
+  integrity sha512-R+RnTIQCvrLuWBdiEyzr6zqluLpzMTawmYO97prAJ59OCoo3+mMgWjhKuggb1s0dW1zRVplrUkKusGKH+0pDnQ==
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
 "@carbon/icons-react@^11.40.0", "@carbon/icons-react@^11.41.0":
-  version "11.42.0"
-  resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.42.0.tgz#a02b5f7a728adce403b64edf98fe159e250d2e54"
-  integrity sha512-tQDV9qqa3wcOgd8IIyXT/MN2ltJ1DfxsRF6H2HHsCs5I8uHQ5W+bNF9sKxdh6J+LzJAC8pNRAwLatguWpNwACg==
+  version "11.46.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.46.0.tgz#46213b60de49b9d5fd908c2b0958eb54efafd61e"
+  integrity sha512-LgQy/nt2ORu1XOL7Lt6KmfpBTxBILHiX69ogpJKWR8SWSKRlzb6DB41TtfRtes1f8ViJ1sG7xE4qcWOj4QfVHQ==
   dependencies:
-    "@carbon/icon-helpers" "^10.48.0"
+    "@carbon/icon-helpers" "^10.50.0"
     "@ibm/telemetry-js" "^1.5.0"
     prop-types "^15.7.2"
 
@@ -2660,9 +2660,9 @@
   integrity sha512-RwOohLaWw97vEEwhPnlDJlORuworVOjC2R6WzSVlG7suG08qTMLVRVpnnunUCSQHyxP1Y30V9IF5vsxVrMBOHg==
 
 "@ibm/telemetry-js@^1.5.0":
-  version "1.5.2"
-  resolved "https://registry.yarnpkg.com/@ibm/telemetry-js/-/telemetry-js-1.5.2.tgz#a0ccab518bad34a6e61faad64011b7a533f2b9c0"
-  integrity sha512-KyvaHbiNMDtz2k/9DltkK3YkWTyvz8y7Pq1sQ4cnXDMzHiEatOyxw3zZgK9li80tgUOYMQLck9DLewEuhvtg7w==
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/@ibm/telemetry-js/-/telemetry-js-1.6.0.tgz#bab4eaac0d94b9604c120a9e3062ab1b3a1a76f7"
+  integrity sha512-XXdsXhoZwKaJ1/24w/uCqx/YeDQeTu8SAl+7bHQxn62yiFUQ6/D20HhpQVdlG9/Jpv3nYJHFiDH0vGkQbXNFWg==
 
 "@istanbuljs/load-nyc-config@^1.0.0":
   version "1.1.0"
