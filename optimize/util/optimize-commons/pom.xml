@@ -83,7 +83,7 @@
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.172</version>
+      <version>4.8.174</version>
     </dependency>
 
     <!-- Logging -->
