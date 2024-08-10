@@ -26,7 +26,7 @@
     <surefire-plugin.version>3.2.5</surefire-plugin.version>
 
     <!-- database config -->
-    <elasticsearch.version>7.17.21</elasticsearch.version>
+    <elasticsearch.version>7.17.23</elasticsearch.version>
     <opensearch.version>2.10.1</opensearch.version>
     <awssdk.version>2.27.2</awssdk.version>
     <!-- The default es 8 version we are going to be testing with-->
