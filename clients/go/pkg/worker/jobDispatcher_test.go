@@ -15,11 +15,11 @@
 package worker
 
 import (
+	"github.com/camunda/camunda/clients/go/v8/internal/utils"
+	"github.com/camunda/camunda/clients/go/v8/pkg/commands"
+	"github.com/camunda/camunda/clients/go/v8/pkg/entities"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 	"github.com/stretchr/testify/suite"
-	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"sync"
 	"testing"
 	"time"
@@ -133,7 +133,7 @@ func (suite *JobDispatcherSuite) TestShouldPassClientAndJobToHandler() {
 	go suite.dispatcher.run(&suite.client, handler, 1, &suite.waitGroup)
 
 	// when
-	suite.dispatcher.jobQueue <- entities.Job{ActivatedJob: pb.ActivatedJob{Key: jobKey}}
+	suite.dispatcher.jobQueue <- entities.Job{ActivatedJob: &pb.ActivatedJob{Key: jobKey}}
 
 	// then
 	select {
@@ -193,6 +193,10 @@ type jobClientStub struct {
 func (stub *jobClientStub) NewCompleteJobCommand() commands.CompleteJobCommandStep1 {
 	stub.invoked = true
 	return nil
+}
+
+func (stub *jobClientStub) NewThrowErrorCommand() commands.ThrowErrorCommandStep1 {
+	panic("implement me")
 }
 
 func (jobClientStub) NewFailJobCommand() commands.FailJobCommandStep1 {

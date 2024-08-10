@@ -1,0 +1,48 @@
+.RenameVariablesModal {
+  .cds--modal-container {
+    height: 100%;
+  }
+
+  .cds--modal-content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    .header {
+      display: flex;
+
+      .guidelines {
+        list-style: initial;
+        padding-left: 40px;
+      }
+
+      .searchInputContainer {
+        position: relative;
+        margin-left: auto;
+        align-self: flex-end;
+        margin-bottom: 10px;
+
+        .Input {
+          padding: 6px 30px 6px 15px;
+          min-width: 300px;
+        }
+
+        .Input:valid ~ .searchIcon {
+          display: none;
+        }
+
+        .searchIcon {
+          position: absolute;
+          right: 10px;
+          top: calc(50% - 2px);
+          transform: translateY(-50%);
+          color: var(--silver-darken-80);
+        }
+
+        .Input[type='text'] {
+          border-radius: 15px;
+        }
+      }
+    }
+  }
+}

@@ -18,32 +18,36 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/spf13/cobra"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/worker"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 	"io"
 	"log"
 	"os/exec"
 	"strings"
+	"sync/atomic"
 	"time"
+
+	"github.com/camunda/camunda/clients/go/v8/pkg/commands"
+	"github.com/camunda/camunda/clients/go/v8/pkg/entities"
+	"github.com/camunda/camunda/clients/go/v8/pkg/worker"
+	"github.com/spf13/cobra"
 )
 
 var (
-	createWorkerHandlerFlag        string
-	createWorkerNameFlag           string
-	createWorkerTimeoutFlag        time.Duration
-	createWorkerRequestTimeoutFlag time.Duration
-	createWorkerMaxJobsActiveFlag  int
-	createWorkerConcurrencyFlag    int
-	createWorkerPollIntervalFlag   time.Duration
-	createWorkerPollThresholdFlag  float64
+	createWorkerHandlerFlag       string
+	createWorkerNameFlag          string
+	createWorkerTimeoutFlag       time.Duration
+	createWorkerMaxJobsActiveFlag int
+	createWorkerConcurrencyFlag   int
+	createWorkerPollIntervalFlag  time.Duration
+	createWorkerPollThresholdFlag float64
+	createWorkerMaxJobsHandleFlag int
+	createWorkerStreamEnabled     bool
 
 	createWorkerHandlerArgs []string
 )
 
 // createWorkerCmd represents the createWorker command
+var jobsHandled int64
+var workerDoneChannel = make(chan struct{})
 var createWorkerCmd = &cobra.Command{
 	Use:   "worker <type>",
 	Short: "Create a polling job worker",
@@ -62,14 +66,17 @@ If the handler exits with an none zero exit code the job will be failed, the han
 			Handler(handle).
 			Name(createWorkerNameFlag).
 			Timeout(createWorkerTimeoutFlag).
-			RequestTimeout(createWorkerRequestTimeoutFlag).
+			RequestTimeout(timeoutFlag).
 			MaxJobsActive(createWorkerMaxJobsActiveFlag).
 			Concurrency(createWorkerConcurrencyFlag).
 			PollInterval(createWorkerPollIntervalFlag).
 			PollThreshold(createWorkerPollThresholdFlag).
+			StreamEnabled(createWorkerStreamEnabled).
+			StreamRequestTimeout(1 * time.Hour).
 			Open()
 
-		jobWorker.AwaitClose()
+		<-workerDoneChannel
+		jobWorker.Close()
 	},
 }
 
@@ -120,6 +127,11 @@ func handle(jobClient worker.JobClient, job entities.Job) {
 	} else {
 		failJob(jobClient, job, stderr.String())
 	}
+
+	atomic.AddInt64(&jobsHandled, 1)
+	if createWorkerMaxJobsHandleFlag > 0 && jobsHandled >= int64(createWorkerMaxJobsHandleFlag) {
+		close(workerDoneChannel)
+	}
 }
 
 func completeJob(jobClient worker.JobClient, job entities.Job, variables string) {
@@ -128,13 +140,13 @@ func completeJob(jobClient worker.JobClient, job entities.Job, variables string)
 	if err != nil {
 		failJob(jobClient, job, fmt.Sprint("Unable to set variables", variables, "to complete job", key, err))
 	} else {
-		log.Println("Handler completed job", job.Key, "with variables", variables)
-
-		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 
 		_, err = request.Send(ctx)
-		if err != nil {
+		if err == nil {
+			log.Println("Handler completed job", job.Key, "with variables", variables)
+		} else {
 			log.Println("Unable to complete job", key, err)
 		}
 	}
@@ -143,7 +155,7 @@ func completeJob(jobClient worker.JobClient, job entities.Job, variables string)
 func failJob(jobClient worker.JobClient, job entities.Job, error string) {
 	log.Println("Command failed to handle job", job.Key, error)
 
-	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 	defer cancel()
 
 	_, err := jobClient.NewFailJobCommand().JobKey(job.Key).Retries(job.Retries - 1).ErrorMessage(error).Send(ctx)
@@ -161,10 +173,14 @@ func init() {
 	}
 
 	createWorkerCmd.Flags().StringVar(&createWorkerNameFlag, "name", DefaultJobWorkerName, "Specify the worker name")
-	createWorkerCmd.Flags().DurationVar(&createWorkerTimeoutFlag, "timeout", commands.DefaultJobTimeout, "Specify the duration no other worker should work on job activated by this worker")
-	createWorkerCmd.Flags().DurationVar(&createWorkerRequestTimeoutFlag, "requestTimeout", zbc.DefaultRequestTimeout, "Specify the timeout for a request")
+	createWorkerCmd.Flags().DurationVar(&createWorkerTimeoutFlag, "timeout", commands.DefaultJobTimeout, "Specify the duration no other worker should work on job activated by this worker. Example values: 300ms, 50s or 1m")
 	createWorkerCmd.Flags().IntVar(&createWorkerMaxJobsActiveFlag, "maxJobsActive", worker.DefaultJobWorkerMaxJobActive, "Specify the maximum number of jobs which will be activated for this worker at the same time")
 	createWorkerCmd.Flags().IntVar(&createWorkerConcurrencyFlag, "concurrency", worker.DefaultJobWorkerConcurrency, "Specify the maximum number of concurrent spawned goroutines to complete jobs")
-	createWorkerCmd.Flags().DurationVar(&createWorkerPollIntervalFlag, "pollInterval", worker.DefaultJobWorkerPollInterval, "Specify the maximal interval between polling for new jobs")
+	createWorkerCmd.Flags().DurationVar(&createWorkerPollIntervalFlag, "pollInterval", worker.DefaultJobWorkerPollInterval, "Specify the maximal interval between polling for new jobs. Example values: 300ms, 50s or 1m")
 	createWorkerCmd.Flags().Float64Var(&createWorkerPollThresholdFlag, "pollThreshold", worker.DefaultJobWorkerPollThreshold, "Specify the threshold of buffered activated jobs before polling for new jobs, i.e. pollThreshold * maxJobsActive")
+	createWorkerCmd.Flags().IntVar(&createWorkerMaxJobsHandleFlag, "maxJobsHandle", 0, "Specify the maximum number of jobs the worker should handle before exiting; pass 0 to handle an unlimited amount")
+	createWorkerCmd.Flags().BoolVar(&createWorkerStreamEnabled, "streamEnabled", false, "Specify whether to use job streaming")
+
+	// maxJobsHandle is mostly used for testing; we can make it public and documented if it proves useful for users as well
+	_ = createWorkerCmd.Flags().MarkHidden("maxJobsHandle")
 }

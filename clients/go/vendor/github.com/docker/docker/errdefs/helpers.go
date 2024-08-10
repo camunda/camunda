@@ -1,4 +1,4 @@
-package errdefs // import "github.com/docker/docker/errdefs"
+package errdefs
 
 import "context"
 
@@ -7,6 +7,10 @@ type errNotFound struct{ error }
 func (errNotFound) NotFound() {}
 
 func (e errNotFound) Cause() error {
+	return e.error
+}
+
+func (e errNotFound) Unwrap() error {
 	return e.error
 }
 
@@ -26,6 +30,10 @@ func (e errInvalidParameter) Cause() error {
 	return e.error
 }
 
+func (e errInvalidParameter) Unwrap() error {
+	return e.error
+}
+
 // InvalidParameter is a helper to create an error of the class with the same name from any error type
 func InvalidParameter(err error) error {
 	if err == nil || IsInvalidParameter(err) {
@@ -39,6 +47,10 @@ type errConflict struct{ error }
 func (errConflict) Conflict() {}
 
 func (e errConflict) Cause() error {
+	return e.error
+}
+
+func (e errConflict) Unwrap() error {
 	return e.error
 }
 
@@ -58,6 +70,10 @@ func (e errUnauthorized) Cause() error {
 	return e.error
 }
 
+func (e errUnauthorized) Unwrap() error {
+	return e.error
+}
+
 // Unauthorized is a helper to create an error of the class with the same name from any error type
 func Unauthorized(err error) error {
 	if err == nil || IsUnauthorized(err) {
@@ -71,6 +87,10 @@ type errUnavailable struct{ error }
 func (errUnavailable) Unavailable() {}
 
 func (e errUnavailable) Cause() error {
+	return e.error
+}
+
+func (e errUnavailable) Unwrap() error {
 	return e.error
 }
 
@@ -90,6 +110,10 @@ func (e errForbidden) Cause() error {
 	return e.error
 }
 
+func (e errForbidden) Unwrap() error {
+	return e.error
+}
+
 // Forbidden is a helper to create an error of the class with the same name from any error type
 func Forbidden(err error) error {
 	if err == nil || IsForbidden(err) {
@@ -103,6 +127,10 @@ type errSystem struct{ error }
 func (errSystem) System() {}
 
 func (e errSystem) Cause() error {
+	return e.error
+}
+
+func (e errSystem) Unwrap() error {
 	return e.error
 }
 
@@ -122,6 +150,10 @@ func (e errNotModified) Cause() error {
 	return e.error
 }
 
+func (e errNotModified) Unwrap() error {
+	return e.error
+}
+
 // NotModified is a helper to create an error of the class with the same name from any error type
 func NotModified(err error) error {
 	if err == nil || IsNotModified(err) {
@@ -135,6 +167,10 @@ type errNotImplemented struct{ error }
 func (errNotImplemented) NotImplemented() {}
 
 func (e errNotImplemented) Cause() error {
+	return e.error
+}
+
+func (e errNotImplemented) Unwrap() error {
 	return e.error
 }
 
@@ -154,6 +190,10 @@ func (e errUnknown) Cause() error {
 	return e.error
 }
 
+func (e errUnknown) Unwrap() error {
+	return e.error
+}
+
 // Unknown is a helper to create an error of the class with the same name from any error type
 func Unknown(err error) error {
 	if err == nil || IsUnknown(err) {
@@ -167,6 +207,10 @@ type errCancelled struct{ error }
 func (errCancelled) Cancelled() {}
 
 func (e errCancelled) Cause() error {
+	return e.error
+}
+
+func (e errCancelled) Unwrap() error {
 	return e.error
 }
 
@@ -186,6 +230,10 @@ func (e errDeadline) Cause() error {
 	return e.error
 }
 
+func (e errDeadline) Unwrap() error {
+	return e.error
+}
+
 // Deadline is a helper to create an error of the class with the same name from any error type
 func Deadline(err error) error {
 	if err == nil || IsDeadline(err) {
@@ -199,6 +247,10 @@ type errDataLoss struct{ error }
 func (errDataLoss) DataLoss() {}
 
 func (e errDataLoss) Cause() error {
+	return e.error
+}
+
+func (e errDataLoss) Unwrap() error {
 	return e.error
 }
 

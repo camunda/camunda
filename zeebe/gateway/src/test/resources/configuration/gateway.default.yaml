@@ -1,0 +1,133 @@
+# Zeebe standalone gateway configuration file.
+
+# ! ! ! ! ! ! ! ! ! !
+# In order to activate the settings in this file, rename this file to application.yaml
+# ! ! ! ! ! ! ! ! ! !
+
+# For the configuration of the embedded gateway that is deployed alongside a broker see the gateway section of broker.yaml.template
+
+# Overview -------------------------------------------
+
+# This file contains a complete list of available configuration options.
+
+# Conventions:
+#
+# Byte sizes
+# For buffers and others must be specified as strings and follow the following
+# format: "10U" where U (unit) must be replaced with KB = Kilobytes, MB = Megabytes or GB = Gigabytes.
+# If unit is omitted then the default unit is simply bytes.
+# Example:
+# sendBufferSize = "16MB" (creates a buffer of 16 Megabytes)
+#
+# Time units
+# Timeouts, intervals, and the likes, must be specified either in the standard ISO-8601 format used
+# by java.time.Duration, or as strings with the following format: "VU", where:
+#   - V is a numerical value (e.g. 1, 5, 10, etc.)
+#   - U is the unit, one of: ms = Millis, s = Seconds, m = Minutes, or h = Hours
+#
+# Paths:
+# Relative paths are resolved relative to the installation directory of the gateway.
+
+# ----------------------------------------------------
+
+# zeebe:
+# gateway:
+# network:
+# Sets the host the gateway binds to
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_NETWORK_HOST.
+# host: 0.0.0.0
+#
+# Sets the port the gateway binds to
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_NETWORK_PORT.
+# port: 26500
+#
+# Sets the minimum keep alive interval
+# This setting specifies the minimum accepted interval between keep alive pings. This value must
+# be specified as a positive integer followed by 's' for seconds, 'm' for minutes or 'h' for hours.
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_NETWORK_MINKEEPALIVEINTERVAL.
+# minKeepAliveInterval: 30s
+
+# cluster:
+# Sets initial contact points of brokers
+# The contact points of the internal network configuration must be specified.
+# The format is [HOST:PORT]
+# Example:
+# initialContactPoints : [ 192.168.1.22:26502, 192.168.1.32:26502 ]
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
+# specifying a comma-separated list of contact points.
+# Default is 127.0.0.1:26502
+# initialContactPoints : [127.0.0.1:26502]
+
+# WARNING: This setting is deprecated! Use initialContactPoints instead.
+# Sets the broker the gateway should initial contact
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT.
+# contactPoint: 127.0.0.1:26502
+
+# Sets the timeout of requests send to the broker cluster
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_REQUESTTIMEOUT.
+# requestTimeout: 15s
+
+# Sets name of the Zeebe cluster to connect to
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_CLUSTERNAME.
+# clusterName: zeebe-cluster
+
+# Sets the member id of the gateway in the cluster
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_MEMBERID.
+# memberId: gateway
+
+# Sets the host the gateway node binds to for internal cluster communication
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_HOST.
+# host: 0.0.0.0
+
+# Sets the port the gateway node binds to for internal cluster communication
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_PORT.
+# port: 26502
+
+# threads:
+# Sets the number of threads the gateway will use to communicate with the broker cluster
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_THREADS_MANAGEMENTTHREADS.
+# managementThreads: 1
+
+# monitoring:
+# Enables the metrics collection and exporting it over HTTP
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_MONITORING_ENABLED.
+# enabled: false
+
+# Sets the host the monitoring binds to
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_MONITORING_HOST.
+# host: 0.0.0.0
+
+# Sets the port the monitoring binds to
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_MONITOIRNG_PORT.
+# port: 9600
+
+# security:
+# Enables TLS authentication between clients and the gateway
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_SECURITY_ENABLED.
+# enabled: false
+
+# Sets the path to the certificate chain file
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_SECURITY_CERTIFICATECHAINPATH.
+# certificateChainPath:
+
+# Sets the path to the private key file location
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_SECURITY_PRIVATEKEYPATH.
+# privateKeyPath:
+
+# longPolling:
+# Enables long polling for available jobs
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_LONGPOLLING_ENABLED.
+# enabled: true
+
+# multiTenancy:
+# Enables multi tenancy for the gateway.
+# When enabled, the gateway enhances requests with the authorized tenant ids of the requester.
+# It also rejects requests that specify a tenant id that the requester is not authorized to access.
+# When disabled, the gateway enhances requests with the default tenant id '<default>'.
+#
+# The authorized tenants are retrieved from the configured tenant authorization provider.
+# For now, only Identity is supported as tenant authorization provider.
+# It is used when ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE is set to 'identity'.
+#
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_MULTITENANCY_ENABLED.
+# enabled: false

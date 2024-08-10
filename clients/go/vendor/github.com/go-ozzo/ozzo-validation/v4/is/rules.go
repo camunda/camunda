@@ -6,11 +6,11 @@
 package is
 
 import (
-	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"regexp"
 	"unicode"
 
-	"gopkg.in/asaskevich/govalidator.v9"
+	"github.com/asaskevich/govalidator"
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 var (
@@ -90,8 +90,8 @@ var (
 	ErrCountryCode2 = validation.NewError("validation_is_country_code_2_letter", "must be a valid two-letter country code")
 	// ErrCountryCode3 is the error that returns in case of an invalid three-letter country code.
 	ErrCountryCode3 = validation.NewError("validation_is_country_code_3_letter", "must be a valid three-letter country code")
-	// ErrCountryCode is the error that returns in case of an invalid country code.
-	ErrCountryCode = validation.NewError("validation_is_currency_code", "must be valid ISO 4217 currency code")
+	// ErrCurrencyCode is the error that returns in case of an invalid currency code.
+	ErrCurrencyCode = validation.NewError("validation_is_currency_code", "must be valid ISO 4217 currency code")
 	// ErrDialString is the error that returns in case of an invalid string.
 	ErrDialString = validation.NewError("validation_is_dial_string", "must be a valid dial string")
 	// ErrMac is the error that returns in case of an invalid mac address.
@@ -125,8 +125,10 @@ var (
 )
 
 var (
-	// Email validates if a string is an email or not.
-	Email = validation.NewStringRuleWithError(govalidator.IsEmail, ErrEmail)
+	// Email validates if a string is an email or not. It also checks if the MX record exists for the email domain.
+	Email = validation.NewStringRuleWithError(govalidator.IsExistingEmail, ErrEmail)
+	// EmailFormat validates if a string is an email or not. Note that it does NOT check if the MX record exists or not.
+	EmailFormat = validation.NewStringRuleWithError(govalidator.IsEmail, ErrEmail)
 	// URL validates if a string is a valid URL
 	URL = validation.NewStringRuleWithError(govalidator.IsURL, ErrURL)
 	// RequestURL validates if a string is a valid request URL
@@ -202,7 +204,7 @@ var (
 	// CountryCode3 validates if a string is a valid ISO3166 Alpha 3 country code
 	CountryCode3 = validation.NewStringRuleWithError(govalidator.IsISO3166Alpha3, ErrCountryCode3)
 	// CurrencyCode validates if a string is a valid IsISO4217 currency code.
-	CurrencyCode = validation.NewStringRuleWithError(govalidator.IsISO4217, ErrCountryCode)
+	CurrencyCode = validation.NewStringRuleWithError(govalidator.IsISO4217, ErrCurrencyCode)
 	// DialString validates if a string is a valid dial string that can be passed to Dial()
 	DialString = validation.NewStringRuleWithError(govalidator.IsDialString, ErrDialString)
 	// MAC validates if a string is a MAC address
@@ -244,7 +246,7 @@ var (
 	// Domain regex source: https://stackoverflow.com/a/7933253
 	// Slightly modified: Removed 255 max length validation since Go regex does not
 	// support lookarounds. More info: https://stackoverflow.com/a/38935027
-	reDomain = regexp.MustCompile(`^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{1,63}| xn--[a-z0-9]{1,59})$`)
+	reDomain = regexp.MustCompile(`^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-zA-Z]{1,63}| xn--[a-z0-9]{1,59})$`)
 )
 
 func isISBN(value string) bool {

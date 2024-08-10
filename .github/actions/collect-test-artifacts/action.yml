@@ -1,0 +1,23 @@
+---
+name: Collect test artifacts
+
+description: Collects test outputs and uploads them as artifact
+
+inputs:
+  name:
+    description: 'Name of the test artifact.'
+    required: true
+
+runs:
+  using: composite
+  steps:
+  - name: Archive Test Results
+    uses: actions/upload-artifact@v4
+    with:
+      name: Test results for ${{ inputs.name  }}
+      path: |
+        **/target/failsafe-reports/
+        **/target/surefire-reports/
+        **/*.log
+      retention-days: 7
+      if-no-files-found: ignore

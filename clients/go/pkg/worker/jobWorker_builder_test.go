@@ -16,17 +16,22 @@
 package worker
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
 	"testing"
 	"time"
+
+	"github.com/camunda/camunda/clients/go/v8/internal/mock_pb"
+	"github.com/camunda/camunda/clients/go/v8/pkg/commands"
+	"github.com/camunda/camunda/clients/go/v8/pkg/entities"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
 const testDuration = 12 * time.Minute
 const testDurationMs = int64(testDuration / time.Millisecond)
 
 func TestJobWorkerBuilder_JobType(t *testing.T) {
-	builder := JobWorkerBuilder{}
+	builder := JobWorkerBuilder{request: &pb.ActivateJobsRequest{}}
 	builder.JobType("foo")
 	assert.Equal(t, "foo", builder.request.Type)
 }
@@ -38,13 +43,13 @@ func TestJobWorkerBuilder_Handler(t *testing.T) {
 }
 
 func TestJobWorkerBuilder_Name(t *testing.T) {
-	builder := JobWorkerBuilder{}
+	builder := JobWorkerBuilder{request: &pb.ActivateJobsRequest{}}
 	builder.Name("foo")
 	assert.Equal(t, "foo", builder.request.Worker)
 }
 
 func TestJobWorkerBuilder_Timeout(t *testing.T) {
-	builder := JobWorkerBuilder{}
+	builder := JobWorkerBuilder{request: &pb.ActivateJobsRequest{}}
 	builder.Timeout(testDuration)
 	assert.Equal(t, testDurationMs, builder.request.Timeout)
 }
@@ -88,7 +93,41 @@ func TestJobWorkerBuilder_PollThreshold(t *testing.T) {
 func TestJobWorkerBuilder_FetchVariables(t *testing.T) {
 	fetchVariables := []string{"foo", "bar", "baz"}
 
-	builder := JobWorkerBuilder{}
+	builder := JobWorkerBuilder{request: &pb.ActivateJobsRequest{}}
 	builder.FetchVariables(fetchVariables...)
 	assert.Equal(t, fetchVariables, builder.request.FetchVariable)
+}
+
+func TestJobWorkerBuilder_TenantIds(t *testing.T) {
+	tenantIds := []string{"foo", "bar", "baz"}
+
+	builder := NewJobWorkerBuilder(nil, nil, nil).(*JobWorkerBuilder)
+	builder.TenantIds(tenantIds...)
+	assert.Equal(t, tenantIds, builder.request.TenantIds)
+}
+
+func TestJobWorkerBuilder_DefaultTenantIds(t *testing.T) {
+	builder := NewJobWorkerBuilder(nil, nil, nil).(*JobWorkerBuilder)
+	assert.Equal(t, []string{commands.DefaultJobTenantID}, builder.request.TenantIds)
+}
+
+func TestJobWorkerBuilder_Metrics(t *testing.T) {
+	builder := JobWorkerBuilder{}
+	workerMetrics := mock_pb.NewMockJobWorkerMetrics(gomock.NewController(t))
+	builder.Metrics(workerMetrics)
+
+	assert.Equal(t, workerMetrics, builder.metrics)
+}
+
+func TestJobWorkerBuilder_StreamEnabled(t *testing.T) {
+	builder := JobWorkerBuilder{request: &pb.ActivateJobsRequest{}}
+	builder.StreamEnabled(true)
+	assert.True(t, builder.streamEnabled)
+}
+
+func TestJobWorkerBuilder_StreamRequestTimeout(t *testing.T) {
+	builder := JobWorkerBuilder{request: &pb.ActivateJobsRequest{}}
+	requestTimeout := time.Second
+	builder.StreamRequestTimeout(requestTimeout)
+	assert.Equal(t, requestTimeout, builder.streamRequestTimeout)
 }

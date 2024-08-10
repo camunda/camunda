@@ -1,0 +1,104 @@
+# This workflow runs e2e tests weekly. It runs each test suite against the
+# development head (e.g. main).
+
+# As this is meant to be run via scheduling, the workflow itself only runs on the default branch
+# (e.g. main), so any changes you make will affect any other branches we test via this workflow.
+name: Zeebe Weekly E2E tests
+
+on:
+  workflow_dispatch: { }
+  schedule:
+    # Run at 7:00 on every monday
+    - cron: '0 7 * * 1'
+
+jobs:
+  # This job will figure out the last supported versions based on the latest tags.
+  #
+  # Versions around found by sorting the tags, removing any that doesn't match semantic version,
+  # and ignoring those with suffixes, and sort in natural order reversed. To get the second-highest
+  # minor branch, we do the same, but we also filter out any versions which match the minor version
+  # of the latest stable version.
+  get-versions:
+    name: Compute branch matrix
+    runs-on: ubuntu-latest
+    outputs:
+      latest-major-minor-version: ${{ env.LATEST_MAJOR_MINOR_VERSION }}
+      latest-major-minor-patch-version: ${{ env.LATEST_MAJOR_MINOR_PATCH_VERSION }}
+      previous-latest-major-minor-version: ${{ env.PREVIOUS_LATEST_MAJOR_MINOR_VERSION }}
+      previous-latest-major-minor-patch-version: ${{ env.PREVIOUS_LATEST_MAJOR_MINOR_PATCH_VERSION }}
+      previous-previous-latest-major-minor-version: ${{ env.PREVIOUS_PREVIOUS_LATEST_MINOR_VERSION }}
+      previous-previous-latest-major-minor-patch-version: ${{ env.PREVIOUS_PREVIOUS_LATEST_MINOR_PATCH_VERSION }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: git fetch --tags
+      - run: |
+          latest_major_minor_patch=$(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -Vr | head -n1)
+          latest_major_minor=$(echo $latest_major_minor_patch | sed -E -e 's/\.[0-9]+$//')
+          previous_major_minor_patch=$(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | grep -v "${latest_major_minor}" | sort -Vr | head -n1)
+          previous_major_minor=$(echo $previous_major_minor_patch | sed -E -e 's/\.[0-9]+$//')
+          previous_previous_major_minor_patch=$(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | grep -v "${latest_major_minor}" | grep -v "${previous_major_minor}" | sort -Vr | head -n1)
+          previous_previous_major_minor=$(echo $previous_previous_major_minor_patch | sed -E -e 's/\.[0-9]+$//')
+
+          if [ ! -z $latest_major_minor ] && [ ! -z $previous_major_minor ] && [ ! -z $previous_previous_major_minor ]; then
+            echo "Successfully computed latest versions: ${latest_major_minor_patch} and ${previous_major_minor_patch} and ${previous_previous_major_minor_patch}"
+          else
+            echo "Failed to compute latest versions"
+          fi
+
+          echo "LATEST_MAJOR_MINOR_VERSION=${latest_major_minor}" >> $GITHUB_ENV
+          echo "PREVIOUS_LATEST_MAJOR_MINOR_VERSION=${previous_major_minor}" >> $GITHUB_ENV
+          echo "PREVIOUS_PREVIOUS_LATEST_MINOR_VERSION=${previous_previous_major_minor}" >> $GITHUB_ENV
+
+  e2e:
+    needs:
+      - get-versions
+    strategy:
+      # do not cancel other jobs if one fails
+      fail-fast: false
+      matrix:
+        branch:
+          - 'main'
+          - ${{ format('stable/{0}', needs.get-versions.outputs.latest-major-minor-version) }}
+          - ${{ format('stable/{0}', needs.get-versions.outputs.previous-latest-major-minor-version) }}
+          - ${{ format('stable/{0}', needs.get-versions.outputs.previous-previous-latest-major-minor-version) }}
+        include:
+          - branch: 'main'
+            generation_template: 'Zeebe SNAPSHOT'
+          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.latest-major-minor-version) }}
+            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.latest-major-minor-version) }}
+          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.previous-latest-major-minor-version) }}
+            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.previous-latest-major-minor-version) }}
+          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.previous-previous-latest-major-minor-version) }}
+            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.previous-previous-latest-major-minor-version) }}
+    runs-on: ubuntu-latest
+    name: Weekly E2E
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trigger Weekly E2E on ${{ matrix.branch }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run --ref ${{ matrix.branch }} zeebe-e2e-testbench.yaml -F generation='${{ matrix.generation_template }}' -F branch=${{ matrix.branch }} -F maxTestDuration='P5D' -F maxInstanceDuration='40m' -F clusterPlan='Production - M'
+
+  e2e-multiregion-failover:
+    name: Multi-region failover with data loss
+    uses: ./.github/workflows/zeebe-e2e-testbench.yaml
+    with:
+      branch: main
+      generation: Zeebe SNAPSHOT
+      maxTestDuration: P1D
+      clusterPlan: Multiregion test simulation
+      fault: \"2-region-dataloss-failover\"
+      maxInstanceDuration: 40m
+    secrets: inherit
+
+  e2e-scaling-brokers:
+    name: Scaling brokers
+    uses: ./.github/workflows/zeebe-e2e-testbench.yaml
+    with:
+      branch: main
+      generation: Zeebe SNAPSHOT
+      maxTestDuration: PT4H
+      clusterPlan: Production - M
+      fault: \"scale-brokers\"
+      maxInstanceDuration: 40m
+    secrets: inherit

@@ -1,0 +1,17 @@
+[
+  {
+    "title": "Processes grouped",
+    "url": "/api/processes/grouped",
+    "method": "GET"
+  },
+  {
+    "title": "Process by id",
+    "url": "/api/processes/${processId}",
+    "method": "GET"
+  },
+  {
+    "title": "Process diagram",
+    "url": "/api/processes/${processId}/xml",
+    "method": "GET"
+  }
+]

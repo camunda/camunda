@@ -1,0 +1,8 @@
+{
+  "description": "Set default tenantId for 'form' index",
+  "@type": "processorStep",
+  "indexName": "form",
+  "version": "8.3.0",
+  "order": 2,
+  "content": "{\"set\": {\"field\": \"tenantId\", \"value\": \"<default>\"}}"
+}

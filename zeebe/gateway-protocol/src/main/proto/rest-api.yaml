@@ -1,0 +1,1487 @@
+openapi: "3.0.3"
+info:
+  title: Camunda 8 REST API
+  version: "0.1"
+  description: API for communicating with a Camunda 8 cluster.
+  license:
+    name: Camunda License Version 1.0
+    url: https://github.com/camunda/camunda/blob/main/licenses/CAMUNDA-LICENSE-1.0.txt
+externalDocs:
+  description: Find out more
+  url: https://docs.camunda.io/docs/apis-tools/camunda-api-rest/overview/
+
+servers:
+  - url: "{schema}://{host}:{port}/v2"
+    variables:
+      host:
+        default: localhost
+        description: The hostname of the Camunda 8 REST Gateway.
+      port:
+        default: "8080"
+        description: The port of the Camunda 8 REST API server.
+      schema:
+        default: http
+        description: The schema of the Camunda 8 REST API server.
+
+paths:
+  /topology:
+    get:
+      tags:
+        - Cluster
+      summary: Get cluster topology
+      description: Obtains the current topology of the cluster the gateway is part of.
+      responses:
+        '200':
+          description: Obtains the current topology of the cluster the gateway is part of.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TopologyResponse"
+  /jobs/activation:
+    post:
+      tags:
+        - Job
+      summary: Activate jobs
+      description: |
+        Iterate through all known partitions and activate jobs up to the requested maximum.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobActivationRequest"
+      responses:
+        '200':
+          description: The list of activated jobs.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobActivationResponse"
+        '400':
+          description: >
+            The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /jobs/{jobKey}/failure:
+    post:
+      tags:
+        - Job
+      summary: Fail job
+      description: |
+        Mark the job as failed
+      parameters:
+        - name: jobKey
+          in: path
+          required: true
+          description: The key of the job to fail.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobFailRequest"
+      responses:
+        '204':
+          description: The job is failed.
+        '400':
+          description: >
+            The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '404':
+          description: >
+            The job with the given jobKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '409':
+          description: >
+            The job with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /jobs/{jobKey}/error:
+    post:
+      tags:
+        - Job
+      summary: Report error for job
+      description: |
+        Reports a business error (i.e. non-technical) that occurs while processing a job.
+      parameters:
+        - name: jobKey
+          in: path
+          required: true
+          description: The key of the job.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobErrorRequest"
+      responses:
+        '204':
+          description: An error is thrown for the job.
+        '400':
+          description: >
+            The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '404':
+          description: >
+            The job with the given jobKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '409':
+          description: >
+            The job with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /jobs/{jobKey}/completion:
+    post:
+      tags:
+        - Job
+      summary: Complete job
+      description: |
+        Complete a job with the given payload, which allows completing the associated service task.
+      parameters:
+        - name: jobKey
+          in: path
+          required: true
+          description: The key of the job to complete.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobCompletionRequest"
+      responses:
+        '204':
+          description: The job was completed successfully.
+        '400':
+          description: >
+            The job with the given key cannot be completed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '404':
+          description: The job with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '409':
+          description: >
+            The job with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /jobs/{jobKey}:
+    patch:
+      tags:
+        - Job
+      summary: Update a job
+      description: Update a job with the given key.
+      parameters:
+        - name: jobKey
+          in: path
+          required: true
+          description: The key of the job to update.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobUpdateRequest"
+      responses:
+        '204':
+          description: The job was updated successfully.
+        '400':
+          description: >
+            The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '404':
+          description: The job with the jobKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '409':
+          description: >
+            The job with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
+  /incidents/{incidentKey}/resolution:
+    post:
+      tags:
+        - Incident
+      summary: Resolve incident
+      description: >
+        Marks the incident as resolved; most likely a call to Update job will be necessary
+        to reset the job’s retries, followed by this call.
+      parameters:
+        - name: incidentKey
+          in: path
+          required: true
+          description: Key of the incident to resolve.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: The incident is marked as resolved.
+        '400':
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '404':
+          description: The incident with the incidentKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
+  /user-tasks/{userTaskKey}/completion:
+    post:
+      tags:
+        - User task
+      summary: Complete user task
+      description: Completes a user task with the given key.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task to complete.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserTaskCompletionRequest"
+
+      responses:
+        '204':
+          description: The user task was completed successfully.
+        '400':
+          description: >
+            The user task with the given key cannot be completed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '404':
+          description: The user task with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '409':
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /user-tasks/{userTaskKey}/assignment:
+    post:
+      tags:
+        - User task
+      summary: Assign user task
+      description: Assigns a user task with the given key to the given assignee.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task to assign.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserTaskAssignmentRequest"
+      responses:
+        '204':
+          description: The user task's assignment was adjusted.
+        '400':
+          description: >
+            The assignment of the user task with the given key cannot be completed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '404':
+          description: The user task with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '409':
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /user-tasks/{userTaskKey}:
+    patch:
+      tags:
+        - User task
+      summary: Update user task
+      description: Update a user task with the given key.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task to update.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserTaskUpdateRequest"
+      responses:
+        '204':
+          description: The user task was updated successfully.
+        '400':
+          description: >
+            The user task with the given key cannot be updated.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '404':
+          description: The user task with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '409':
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /user-tasks/{userTaskKey}/assignee:
+    delete:
+      tags:
+        - User task
+      summary: Unassign user task
+      description: Removes the assignee of a task with the given key.
+      parameters:
+        - name: userTaskKey
+          in: path
+          required: true
+          description: The key of the user task.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: The user task was unassigned successfully.
+        '400':
+          description: >
+            The user task with the given key cannot be unassigned.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '404':
+          description: The user task with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '409':
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /user-tasks/search:
+    post:
+      tags:
+        - User task
+      summary: Query user tasks (experimental)
+      description: |
+        Search for user tasks based on given criteria.
+
+        :::note
+        This endpoint is experimental and not enabled on Camunda clusters out of the box.
+        See [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserTaskSearchQueryRequest"
+      responses:
+        '200':
+          description: >
+            The User Task Search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserTaskSearchQueryResponse"
+        '400':
+          description: >
+            The User Task Search Query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /process-instances/search:
+    post:
+      tags:
+        - Process Instance
+      summary: Query process instances (experimental)
+      description: |
+        Search for process instances based on given criteria.
+
+        :::note
+        This endpoint is experimental and not enabled on Camunda clusters out of the box.
+        See [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessInstanceSearchQueryRequest"
+      responses:
+        '200':
+          description: >
+            The Process Instance Search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessInstanceSearchQueryResponse"
+        '400':
+          description: >
+            The Process Instance Search Query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /decision-definitions/search:
+    post:
+      tags:
+        - Decision Definition
+      summary: Query decision definitions (experimental)
+      description: |
+        Search for decision definitions based on given criteria.
+
+        :::note
+        This endpoint is experimental and not enabled on Camunda clusters out of the box.
+        See [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionDefinitionSearchQueryRequest"
+      responses:
+        '200':
+          description: >
+            The Decision Definition Search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionDefinitionSearchQueryResponse"
+        '400':
+          description: >
+            The Decision Definition Search Query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /decision-requirements/search:
+    post:
+      tags:
+        - Decision Requirements
+      summary: Query decision requirements (experimental)
+      description: |
+        Search for decision requirements based on given criteria.
+
+        :::note
+        This endpoint is experimental and not enabled on Camunda clusters out of the box.
+        See [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        for further details.
+        :::
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionRequirementsSearchQueryRequest"
+      responses:
+        '200':
+          description: >
+            The Decision Requirements Search successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DecisionRequirementsSearchQueryResponse"
+        '400':
+          description: >
+            The Decision Requirements Search Query failed.
+            More details are provided in the response body.
+  /users:
+    post:
+      tags:
+        - User
+      summary: "Create a user"
+      operationId: "createUser"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CamundaUserWithPasswordRequest"
+        required: true
+      responses:
+        "204":
+          description: |
+            The User was created successfully.
+        "400":
+          description: |
+            The User could not be created.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: |
+            The request to create a user was unauthorized.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: |
+            The request to create a user was denied.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
+components:
+  schemas:
+    UserTaskSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      description: User task search query request.
+      type: object
+      properties:
+        filter:
+          $ref: "#/components/schemas/UserTaskFilterRequest"
+    UserTaskSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      description: User task search query response.
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserTaskItem"
+    UserTaskFilterRequest:
+      description: User task filter request.
+      type: object
+      properties:
+        key:
+          type: integer
+          format: int64
+        state:
+          type: string
+        assignee:
+          type: string
+        elementId:
+          type: string
+        candidateGroup:
+          type: string
+        candidateUser:
+          type: string
+        processDefinitionKey:
+          type: integer
+          format: int64
+        processInstanceKey:
+          type: integer
+          format: int64
+        tenantIds:
+          type: string
+        bpmnDefinitionId:
+          type: string
+    UserTaskItem:
+      type: object
+      properties:
+        key:
+          type: integer
+          format: int64
+        state:
+          type: string
+        assignee:
+          type: string
+        elementId:
+          type: string
+        elementInstanceKey:
+          type: integer
+          format: int64
+        candidateGroup:
+          type: array
+          items:
+            type: string
+        candidateUser:
+          type: array
+          items:
+            type: string
+        bpmnProcessId:
+          type: string
+        processDefinitionKey:
+          type: integer
+          format: int64
+        processInstanceKey:
+          type: integer
+          format: int64
+        formKey:
+          type: integer
+          format: int64
+        creationDate:
+          type: string
+          format: date-time
+        completionDate:
+          type: string
+          format: date-time
+        followUpDate:
+          type: string
+          format: date-time
+        dueDate:
+          type: string
+          format: date-time
+        tenantIds:
+          type: string
+        externalFormReference:
+          type: string
+        processDefinitionVersion:
+          type: integer
+          format: int32
+        customHeaders:
+          type: object
+          additionalProperties:
+            type: string
+    ProcessInstanceSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceFilterRequest"
+    ProcessInstanceFilterRequest:
+      type: object
+      properties:
+        key:
+          type: array
+          items:
+            type: integer
+            format: int64
+        variables:
+          type: array
+          items:
+            $ref: "#/components/schemas/VariableValueFilterRequest"
+    ProcessInstanceSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInstanceItem"
+    ProcessInstanceItem:
+      type: object
+      properties:
+        tenantId:
+          type: string
+        key:
+          type: integer
+          format: int64
+        processDefinitionKey:
+          type: integer
+          format: int64
+        processVersion:
+          type: integer
+          format: int32
+        bpmnProcessId:
+          type: string
+        parentKey:
+          type: integer
+          format: int64
+        parentFlowNodeInstanceKey:
+          type: integer
+          format: int64
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+    DecisionDefinitionSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          allOf:
+            - $ref: "#/components/schemas/DecisionDefinitionFilterRequest"
+    DecisionDefinitionFilterRequest:
+      type: object
+      properties:
+        decisionKey:
+          type: integer
+          format: int64
+        dmnDecisionId:
+          type: string
+        dmnDecisionName:
+          type: string
+        version:
+          type: integer
+          format: int32
+        dmnDecisionRequirementsId:
+          type: string
+        decisionRequirementsKey:
+          type: integer
+          format: int64
+        tenantId:
+          type: string
+    DecisionDefinitionSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionDefinitionItem"
+    DecisionDefinitionItem:
+      type: object
+      properties:
+        decisionKey:
+          type: integer
+          format: int64
+        dmnDecisionId:
+          type: string
+        dmnDecisionName:
+          type: string
+        version:
+          type: integer
+          format: int32
+        dmnDecisionRequirementsId:
+          type: string
+        decisionRequirementsKey:
+          type: integer
+          format: int64
+        tenantId:
+          type: string
+    CamundaUserWithPasswordRequest:
+      type: "object"
+      properties:
+        password:
+          type: "string"
+        id:
+          type: "integer"
+          format: "int64"
+        username:
+          type: "string"
+        name:
+          type: "string"
+        email:
+          type: "string"
+        enabled:
+          type: "boolean"
+    TopologyResponse:
+      description: The response of a topology request.
+      type: object
+      properties:
+        brokers:
+          description: A list of brokers that are part of this cluster.
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/BrokerInfo"
+        clusterSize:
+          description: The number of brokers in the cluster.
+          type: integer
+          format: int32
+          nullable: true
+        partitionsCount:
+          description: The number of partitions are spread across the cluster.
+          type: integer
+          format: int32
+          nullable: true
+        replicationFactor:
+          description: The configured replication factor for this cluster.
+          type: integer
+          format: int32
+          nullable: true
+        gatewayVersion:
+          description: The version of the Zeebe Gateway.
+          type: string
+          nullable: true
+    BrokerInfo:
+      description: Provides information on a broker node.
+      type: object
+      properties:
+        nodeId:
+          description: The unique (within a cluster) node ID for the broker.
+          type: integer
+          format: int32
+        host:
+          description: The hostname for reaching the broker.
+          type: string
+        port:
+          description: The port for reaching the broker.
+          type: integer
+          format: int32
+        partitions:
+          description: A list of partitions managed or replicated on this broker.
+          type: array
+          items:
+            $ref: "#/components/schemas/Partition"
+        version:
+          description: The broker version.
+          type: string
+    Partition:
+      description: Provides information on a partition within a broker node.
+      type: object
+      properties:
+        partitionId:
+          description: The unique ID of this partition.
+          type: integer
+          format: int32
+        role:
+          description: Describes the Raft role of the broker for a given partition.
+          type: string
+          enum:
+            - leader
+            - follower
+            - inactive
+        health:
+          description: Describes the current health of the partition.
+          type: string
+          enum:
+            - healthy
+            - unhealthy
+            - dead
+    UserTaskCompletionRequest:
+      type: object
+      properties:
+        variables:
+          additionalProperties: true
+          description: The variables to complete the user task with.
+          type: object
+          nullable: true
+        action:
+          description: >
+            A custom action value that will be accessible from user task events resulting
+            from this endpoint invocation. If not provided, it will default to "complete".
+          type: string
+          nullable: true
+    UserTaskAssignmentRequest:
+      type: object
+      properties:
+        assignee:
+          description: The assignee for the user task. The assignee must not be empty or `null`.
+          type: string
+          nullable: false
+        allowOverride:
+          description: >
+            By default, the task is reassigned if it was already assigned. Set this to `false`
+            to return an error in such cases. The task must then first be unassigned to
+            be assigned again. Use this when you have users picking from group task
+            queues to prevent race conditions.
+          type: boolean
+          nullable: true
+        action:
+          description: >
+            A custom action value that will be accessible from user task events resulting
+            from this endpoint invocation. If not provided, it will default to "assign".
+          type: string
+          nullable: true
+    UserTaskUpdateRequest:
+      type: object
+      properties:
+        changeset:
+          $ref: "#/components/schemas/Changeset"
+        action:
+          description: >
+            A custom action value that will be accessible from user task events resulting
+            from this endpoint invocation. If not provided, it will default to "update".
+          type: string
+          nullable: true
+    Changeset:
+      description: |
+        JSON object with changed task attribute values.
+
+        The following attributes can be adjusted with this endpoint, additional attributes
+        will be ignored:
+
+        * `candidateGroups` - reset by providing an empty list
+        * `candidateUsers` - reset by providing an empty list
+        * `dueDate` - reset by providing an empty String
+        * `followUpDate` - reset by providing an empty String
+
+        Providing any of those attributes with a `null` value or omitting it preserves
+        the persisted attribute's value.
+
+        The assignee cannot be adjusted with this endpoint, use the Assign task endpoint.
+        This ensures correct event emission for assignee changes.
+      type: object
+      nullable: true
+      additionalProperties: true
+      properties:
+        dueDate:
+          type: string
+          format: date-time
+          description: The due date of the task. Reset by providing an empty String.
+          nullable: true
+        followUpDate:
+          type: string
+          format: date-time
+          description: The follow-up date of the task. Reset by providing an empty String.
+          nullable: true
+        candidateUsers:
+          type: array
+          description: The list of candidate users of the task. Reset by providing an empty list.
+          items:
+            type: string
+          nullable: true
+        candidateGroups:
+          type: array
+          description: The list of candidate groups of the task. Reset by providing an empty list.
+          items:
+            type: string
+          nullable: true
+    JobActivationRequest:
+      type: object
+      properties:
+        type:
+          description: >
+            the job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition
+            type="payment-service" />)
+          type: string
+        worker:
+          description: the name of the worker activating the jobs, mostly used for logging purposes
+          type: string
+          nullable: true
+        timeout:
+          description: >
+            a job returned after this call will not be activated by another call until the
+            timeout (in ms) has been reached
+          type: integer
+          format: int64
+        maxJobsToActivate:
+          description: the maximum jobs to activate by this request
+          type: integer
+          format: int32
+        fetchVariable:
+          description: >
+            a list of variables to fetch as the job variables; if empty, all visible variables at
+            the time of activation for the scope of the job will be returned
+          type: array
+          nullable: true
+          items:
+            type: string
+        requestTimeout:
+          description: >
+            The request will be completed when at least one job is activated or after the
+            requestTimeout (in ms). If the requestTimeout = 0, a default timeout is used.
+            If the requestTimeout < 0, long polling is disabled and the request is completed
+            immediately, even when no job is activated.
+          type: integer
+          format: int64
+          default: 0
+          nullable: true
+        tenantIds:
+          description: a list of IDs of tenants for which to activate jobs
+          type: array
+          items:
+            type: string
+          nullable: true
+      required:
+        - type
+        - timeout
+        - maxJobsToActivate
+    JobActivationResponse:
+      description: The list of activated jobs
+      type: object
+      properties:
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivatedJob"
+    ActivatedJob:
+      type: object
+      properties:
+        key:
+          description: the key, a unique identifier for the job
+          type: integer
+          format: int64
+        type:
+          description: the type of the job (should match what was requested)
+          type: string
+        processInstanceKey:
+          description: the job's process instance key
+          type: integer
+          format: int64
+        bpmnProcessId:
+          description: the bpmn process ID of the job's process definition
+          type: string
+        processDefinitionVersion:
+          description: the version of the job's process definition
+          type: integer
+          format: int32
+        processDefinitionKey:
+          description: the key of the job's process definition
+          type: integer
+          format: int64
+        elementId:
+          description: the associated task element ID
+          type: string
+        elementInstanceKey:
+          description: >
+            the unique key identifying the associated task, unique within the scope of the
+            process instance
+          type: integer
+          format: int64
+        customHeaders:
+          description: a set of custom headers defined during modelling; returned as a serialized JSON document
+          type: object
+          additionalProperties: true
+        worker:
+          description: the name of the worker which activated this job
+          type: string
+        retries:
+          description: the amount of retries left to this job (should always be positive)
+          type: integer
+          format: int32
+        deadline:
+          description: when the job can be activated again, sent as a UNIX epoch timestamp
+          type: integer
+          format: int64
+        variables:
+          description: All variables visible to the task scope, computed at activation time
+          type: object
+          additionalProperties: true
+        tenantId:
+          description: the id of the tenant that owns the job
+          type: string
+    JobFailRequest:
+      type: object
+      properties:
+        retries:
+          description: >
+            The amount of retries the job should have left
+          type: integer
+          format: int32
+          default: 0
+        errorMessage:
+          description: >
+            An optional message describing why the job failed. This is particularly useful if a job
+            runs out of retries and an incident is raised, as this message can help explain why an
+            incident was raised.
+          type: string
+          nullable: true
+        retryBackOff:
+          description: >
+            The backoff timeout (in ms) for the next retry.
+          type: integer
+          format: int64
+          default: 0
+        variables:
+          additionalProperties: true
+          description: >
+            JSON object that will instantiate the variables at the local scope of the job's
+            associated task.
+          type: object
+          nullable: true
+    JobErrorRequest:
+      type: object
+      properties:
+        errorCode:
+          description: >
+            The error code that will be matched with an error catch event.
+          type: string
+        errorMessage:
+          description: >
+            An error message that provides additional context.
+          type: string
+          nullable: true
+        variables:
+          additionalProperties: true
+          description: >
+            JSON object that will instantiate the variables at the local scope of the error catch event that catches the thrown error.
+          type: object
+          nullable: true
+      required:
+        - errorCode
+    JobCompletionRequest:
+      type: object
+      properties:
+        variables:
+          additionalProperties: true
+          description: The variables to complete the job with.
+          type: object
+          nullable: true
+    JobUpdateRequest:
+      type: object
+      properties:
+        changeset:
+          $ref: "#/components/schemas/JobChangeset"
+      required:
+        - changeset
+    JobChangeset:
+      description: |
+        JSON object with changed job attribute values.
+
+        The following attributes can be adjusted with this endpoint, additional attributes
+        will be ignored:
+
+        * `retries` - The new amount of retries for the job; must be a positive number.
+        * `timeout` - The duration of the new timeout in ms, starting from the current moment.
+
+        Providing any of those attributes with a null value or omitting it preserves the persisted attribute’s value.
+
+        The job cannot be completed or failed with this endpoint, use the Complete job or Fail job endpoints instead.
+      type: object
+      additionalProperties: true
+      properties:
+        retries:
+          type: integer
+          format: int32
+          description: The new amount of retries for the job; must be a positive number.
+          nullable: true
+        timeout:
+          type: integer
+          format: int64
+          description: The duration of the new timeout in ms, starting from the current moment.
+          nullable: true
+
+    ProblemDetail:
+      description: >
+        A Problem detail object as described in [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457).
+        There may be additional properties specific to the problem type.
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+          description: A URI identifying the problem type.
+          default: about:blank
+        title:
+          type: string
+          description: A summary of the problem type.
+        status:
+          type: integer
+          format: int32
+          description: The HTTP status code for this problem.
+          minimum: 400
+          maximum: 600
+        detail:
+          type: string
+          description: An explanation of the problem in more detail.
+        instance:
+          type: string
+          format: uri
+          description: A URI identifying the origin of the problem.
+    SearchQueryRequest:
+      type: object
+      properties:
+        sort:
+          type: array
+          items:
+            allOf:
+              - $ref: "#/components/schemas/SearchQuerySortRequest"
+        page:
+          allOf:
+            - $ref: "#/components/schemas/SearchQueryPageRequest"
+          type: object
+    SearchQueryPageRequest:
+      type: object
+      properties:
+        from:
+          type: integer
+          format: int32
+        limit:
+          type: integer
+          format: int32
+        searchAfter:
+          type: array
+          items:
+            type: object
+        searchBefore:
+          type: array
+          items:
+            type: object
+    SearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          type: string
+        order:
+          type: string
+          default: asc
+      required:
+        - field
+    SearchQueryResponse:
+      type: object
+      properties:
+        page:
+          allOf:
+            - $ref: "#/components/schemas/SearchQueryPageResponse"
+          type: object
+    SearchQueryPageResponse:
+      type: object
+      properties:
+        totalItems:
+          type: integer
+          format: int64
+        firstSortValues:
+          type: array
+          items:
+            type: object
+        lastSortValues:
+          type: array
+          items:
+            type: object
+    VariableValueFilterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        eq:
+          type: object
+        gt:
+          type: object
+        gte:
+          type: object
+        lt:
+          type: object
+        lte:
+          type: object
+    DecisionRequirementsSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          allOf:
+            - $ref: "#/components/schemas/DecisionRequirementsFilterRequest"
+    DecisionRequirementsFilterRequest:
+      type: object
+      properties:
+        decisionRequirementsKey:
+          type: integer
+          format: int64
+        dmnDecisionRequirementsName:
+          type: string
+        version:
+          type: integer
+          format: int32
+        dmnDecisionRequirementsId:
+          type: string
+        tenantId:
+          type: string
+    DecisionRequirementsSearchQueryResponse:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionRequirementsItem"
+    DecisionRequirementsItem:
+      type: object
+      properties:
+        decisionRequirementsKey:
+          type: integer
+          format: int64
+        dmnDecisionRequirementsName:
+          type: string
+        version:
+          type: integer
+          format: int32
+        dmnDecisionRequirementsId:
+          type: string
+        resourceName:
+          type: string
+        tenantId:
+          type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -2,7 +2,6 @@ package ioutils // import "github.com/docker/docker/pkg/ioutils"
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -10,8 +9,9 @@ import (
 // NewAtomicFileWriter returns WriteCloser so that writing to it writes to a
 // temporary file and closing it atomically changes the temporary file to
 // destination path. Writing and closing concurrently is not allowed.
+// NOTE: umask is not considered for the file's permissions.
 func NewAtomicFileWriter(filename string, perm os.FileMode) (io.WriteCloser, error) {
-	f, err := ioutil.TempFile(filepath.Dir(filename), ".tmp-"+filepath.Base(filename))
+	f, err := os.CreateTemp(filepath.Dir(filename), ".tmp-"+filepath.Base(filename))
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,8 @@ func NewAtomicFileWriter(filename string, perm os.FileMode) (io.WriteCloser, err
 	}, nil
 }
 
-// AtomicWriteFile atomically writes data to a file named by filename.
+// AtomicWriteFile atomically writes data to a file named by filename and with the specified permission bits.
+// NOTE: umask is not considered for the file's permissions.
 func AtomicWriteFile(filename string, data []byte, perm os.FileMode) error {
 	f, err := NewAtomicFileWriter(filename, perm)
 	if err != nil {
@@ -94,7 +95,7 @@ type AtomicWriteSet struct {
 // commit. If no temporary directory is given the system
 // default is used.
 func NewAtomicWriteSet(tmpDir string) (*AtomicWriteSet, error) {
-	td, err := ioutil.TempDir(tmpDir, "write-set-")
+	td, err := os.MkdirTemp(tmpDir, "write-set-")
 	if err != nil {
 		return nil, err
 	}

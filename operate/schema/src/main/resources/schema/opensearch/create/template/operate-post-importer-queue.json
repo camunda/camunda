@@ -1,0 +1,32 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "key": {
+        "type": "long"
+      },
+      "actionType": {
+        "type": "keyword"
+      },
+      "intent": {
+        "type": "keyword"
+      },
+      "creationTime": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "partitionId": {
+        "type": "integer"
+      },
+      "processInstanceKey": {
+        "type": "long"
+      },
+      "position": {
+        "type": "long"
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "description": "Delete fields username, firstname, lastname ",
+  "@type": "processorStep",
+  "indexName": "user",
+  "version": "1.4.0",
+  "order": 1,
+  "content": "{ \"remove\": { \"field\": [\"username\", \"firstname\", \"lastname\"] } }"
+}

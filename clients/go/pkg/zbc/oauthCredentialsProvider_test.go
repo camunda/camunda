@@ -15,20 +15,25 @@
 package zbc
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/camunda/camunda/clients/go/v8/pkg/entities"
+	"github.com/camunda/camunda/clients/go/v8/pkg/worker"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/net/context"
+	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -48,8 +53,8 @@ func TestOAuthCredsProviderSuite(t *testing.T) {
 func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProvider() {
 	// given
 	truncateDefaultOAuthYamlCacheFile()
-	interceptor := newRecordingInterceptor(nil)
-	gatewayLis, grpcServer := createServerWithInterceptor(interceptor.unaryClientInterceptor)
+	interceptor := newInterceptor(nil)
+	gatewayLis, grpcServer := createServerWithUnaryInterceptor(interceptor.interceptUnary)
 
 	go grpcServer.Serve(gatewayLis)
 	defer func() {
@@ -84,7 +89,90 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProvider() {
 	if errorStatus, ok := status.FromError(err); ok {
 		s.Equal(codes.Unimplemented, errorStatus.Code())
 	}
-	s.Equal(tokenType+" "+accessToken, interceptor.authHeader)
+	s.Equal("Bearer "+accessToken, interceptor.authHeader)
+}
+
+func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderWithScope() {
+	// given
+	truncateDefaultOAuthYamlCacheFile()
+	interceptor := newInterceptor(nil)
+	gatewayLis, grpcServer := createServerWithUnaryInterceptor(interceptor.interceptUnary)
+
+	go grpcServer.Serve(gatewayLis)
+	defer func() {
+		grpcServer.Stop()
+		_ = gatewayLis.Close()
+	}()
+
+	testScope := "721aa3ee-24c9-4ab5-95bc-d921ecafdd6d/.default"
+
+	authzServer := mockAuthorizationServerWithScope(s.T(), &mutableToken{value: accessToken}, testScope)
+	defer authzServer.Close()
+
+	credsProvider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{
+		ClientID:               clientID,
+		ClientSecret:           clientSecret,
+		Audience:               audience,
+		Scope:                  testScope,
+		AuthorizationServerURL: authzServer.URL,
+	})
+
+	s.NoError(err)
+	parts := strings.Split(gatewayLis.Addr().String(), ":")
+	client, err := NewClient(&ClientConfig{
+		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		UsePlaintextConnection: true,
+		CredentialsProvider:    credsProvider,
+	})
+	s.NoError(err)
+
+	// when
+	_, err = client.NewTopologyCommand().Send(context.Background())
+
+	// then
+	s.Error(err)
+	if errorStatus, ok := status.FromError(err); ok {
+		s.Equal(codes.Unimplemented, errorStatus.Code())
+	}
+	s.Equal("Bearer "+accessToken, interceptor.authHeader)
+}
+
+func (s *oauthCredsProviderTestSuite) TestNoConfigSecureClient() {
+	// given
+	truncateDefaultOAuthYamlCacheFile()
+	interceptor := newInterceptor(nil)
+	gatewayLis, grpcServer := createServerWithUnaryInterceptor(interceptor.interceptUnary)
+
+	go grpcServer.Serve(gatewayLis)
+	defer func() {
+		grpcServer.Stop()
+		_ = gatewayLis.Close()
+	}()
+
+	authzServer := mockAuthorizationServer(s.T(), &mutableToken{value: accessToken})
+	defer authzServer.Close()
+
+	parts := strings.Split(gatewayLis.Addr().String(), ":")
+
+	env.set(GatewayAddressEnvVar, fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]))
+	env.set(InsecureEnvVar, "true")
+	env.set(OAuthClientIdEnvVar, clientID)
+	env.set(OAuthClientSecretEnvVar, clientSecret)
+	env.set(OAuthTokenAudienceEnvVar, audience)
+	env.set(OAuthAuthorizationUrlEnvVar, authzServer.URL)
+
+	// when
+	client, err := NewClient(&ClientConfig{})
+	s.NoError(err)
+
+	_, err = client.NewTopologyCommand().Send(context.Background())
+
+	// then
+	s.Error(err)
+	if errorStatus, ok := status.FromError(err); ok {
+		s.Equal(codes.Unimplemented, errorStatus.Code())
+	}
+	s.Equal("Bearer "+accessToken, interceptor.authHeader)
 }
 
 func (s *oauthCredsProviderTestSuite) TestOAuthProviderRetry() {
@@ -92,17 +180,17 @@ func (s *oauthCredsProviderTestSuite) TestOAuthProviderRetry() {
 	truncateDefaultOAuthYamlCacheFile()
 	token := &mutableToken{value: "firstToken"}
 	first := true
-	interceptor := newRecordingInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	interceptor := newInterceptor(func(ctx context.Context) (bool, error) {
 		if first {
 			first = false
 			token.value = accessToken
-			return nil, status.Error(codes.Unauthenticated, "UNAUTHENTICATED")
+			return false, status.Error(codes.Unauthenticated, "UNAUTHENTICATED")
 		}
 
-		return handler(ctx, req)
+		return true, nil
 	})
 
-	gatewayLis, grpcServer := createServerWithInterceptor(interceptor.unaryClientInterceptor)
+	gatewayLis, grpcServer := createServerWithUnaryInterceptor(interceptor.interceptUnary)
 
 	go grpcServer.Serve(gatewayLis)
 	defer func() {
@@ -145,11 +233,11 @@ func (s *oauthCredsProviderTestSuite) TestNotRetryWithSameCredentials() {
 	truncateDefaultOAuthYamlCacheFile()
 	token := &mutableToken{value: accessToken}
 
-	interceptor := newRecordingInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		return nil, status.Error(codes.Unauthenticated, "UNAUTHENTICATED")
+	interceptor := newInterceptor(func(ctx context.Context) (bool, error) {
+		return false, status.Error(codes.Unauthenticated, "UNAUTHENTICATED")
 	})
 
-	gatewayLis, grpcServer := createServerWithInterceptor(interceptor.unaryClientInterceptor)
+	gatewayLis, grpcServer := createServerWithUnaryInterceptor(interceptor.interceptUnary)
 
 	go grpcServer.Serve(gatewayLis)
 	defer func() {
@@ -182,7 +270,7 @@ func (s *oauthCredsProviderTestSuite) TestNotRetryWithSameCredentials() {
 	// then
 	s.Error(err)
 	if errorStatus, ok := status.FromError(err); ok {
-		s.Equal(codes.Unauthenticated, errorStatus.Code())
+		s.Equal(codes.Unauthenticated, errorStatus.Code(), fmt.Sprintf("unexpected '%s'", err.Error()))
 	}
 	s.EqualValues(1, interceptor.interceptCounter)
 }
@@ -236,7 +324,7 @@ func TestInvalidOAuthProviderConfigurations(t *testing.T) {
 			// when
 			_, err := NewOAuthCredentialsProvider(test.config)
 
-			//then
+			// then
 			require.Error(t, err)
 		})
 	}
@@ -377,11 +465,10 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderUsesCachedCred
 	truncateDefaultOAuthYamlCacheFile()
 	cache, err := NewOAuthYamlCredentialsCache(DefaultOauthYamlCachePath)
 	s.NoError(err)
-	err = cache.Update(audience, &OAuthCredentials{
+	err = cache.Update(audience, &oauth2.Token{
 		AccessToken: accessToken,
-		ExpiresIn:   3600,
+		Expiry:      time.Now().Add(time.Second * 3600),
 		TokenType:   "Bearer",
-		Scope:       "grpc",
 	})
 	s.NoError(err)
 
@@ -425,6 +512,72 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderUsesCachedCred
 	s.False(authServerCalled)
 }
 
+func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderUpdatesExpiredToken() {
+	// create fake gRPC server which returns UNAUTHENTICATED always except if we use the token `accessToken`
+	gatewayLis, grpcServer := createAuthenticatedGrpcServer(accessToken)
+	go grpcServer.Serve(gatewayLis)
+	defer grpcServer.Stop()
+
+	authServerCalled := false
+	// setup authorization server to return valid token
+	token := mutableToken{accessToken}
+	authzServer := mockAuthorizationServer(s.T(), &token)
+	defer authzServer.Close()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "application/json")
+		responsePayload := []byte("{\"access_token\": \"" + token.value + "\"," +
+			"\"expires_in\": 3600," +
+			"\"token_type\": \"bearer\"}")
+
+		_, err := writer.Write(responsePayload)
+		if err != nil {
+			panic(err)
+		}
+		authServerCalled = true
+	}))
+	defer ts.Close()
+
+	// setup cache with expired token
+	truncateDefaultOAuthYamlCacheFile()
+	cache, err := NewOAuthYamlCredentialsCache(DefaultOauthYamlCachePath)
+	s.NoError(err)
+	err = cache.Update(audience, &oauth2.Token{
+		AccessToken: accessToken,
+		Expiry:      time.Now().Add(time.Second * -1),
+		TokenType:   "Bearer",
+	})
+	s.NoError(err)
+
+	// use the mock authorization server
+	credsProvider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{
+		ClientID:               clientID,
+		ClientSecret:           clientSecret,
+		Audience:               audience,
+		AuthorizationServerURL: ts.URL,
+	})
+
+	s.NoError(err)
+	parts := strings.Split(gatewayLis.Addr().String(), ":")
+	client, err := NewClient(&ClientConfig{
+		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		UsePlaintextConnection: true,
+		CredentialsProvider:    credsProvider,
+	})
+	s.NoError(err)
+
+	// when
+	_, err = client.NewTopologyCommand().Send(context.Background())
+
+	// then
+	s.NoError(err)
+	if errorStatus, ok := status.FromError(err); ok {
+		s.Equal(codes.OK, errorStatus.Code())
+	}
+
+	s.True(authServerCalled)
+}
+
 func (s *oauthCredsProviderTestSuite) TestOAuthTimeout() {
 	// given
 	truncateDefaultOAuthYamlCacheFile()
@@ -465,7 +618,6 @@ func (s *oauthCredsProviderTestSuite) TestOAuthTimeout() {
 
 	finishCmd := make(chan struct{})
 	go func() {
-
 		_, err = client.NewTopologyCommand().Send(ctx)
 		finishCmd <- struct{}{}
 	}()
@@ -486,11 +638,11 @@ func (s *oauthCredsProviderTestSuite) TestOAuthTimeout() {
 func (s *oauthCredsProviderTestSuite) TestNoRequestIfOAuthFails() {
 	// given
 	truncateDefaultOAuthYamlCacheFile()
-	interceptor := newRecordingInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		return nil, nil
+	interceptor := newInterceptor(func(ctx context.Context) (bool, error) {
+		return false, nil
 	})
 
-	lis, grpcServer := createServerWithInterceptor(interceptor.unaryClientInterceptor)
+	lis, grpcServer := createServerWithUnaryInterceptor(interceptor.interceptUnary)
 	go grpcServer.Serve(lis)
 	defer grpcServer.Stop()
 
@@ -541,35 +693,180 @@ func (s *oauthCredsProviderTestSuite) TestNoRequestIfOAuthFails() {
 	s.EqualValues(0, interceptor.interceptCounter)
 }
 
+func (s *oauthCredsProviderTestSuite) TestJobPollerRetry() {
+	// given
+	truncateDefaultOAuthYamlCacheFile()
+	token := &mutableToken{value: "firstToken"}
+	first := true
+	interceptor := newInterceptor(func(ctx context.Context) (bool, error) {
+		if first {
+			first = false
+			token.value = accessToken
+			return false, status.Error(codes.Unauthenticated, "UNAUTHENTICATED")
+		}
+
+		return true, nil
+	})
+
+	gatewayLis, grpcServer := createServerWithStreamInterceptor(interceptor.interceptStream)
+
+	go grpcServer.Serve(gatewayLis)
+	defer func() {
+		grpcServer.Stop()
+		_ = gatewayLis.Close()
+	}()
+
+	authzServer := mockAuthorizationServer(s.T(), token)
+	defer authzServer.Close()
+
+	var credsProvider CredentialsProvider
+	credsProvider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{
+		ClientID:               clientID,
+		ClientSecret:           clientSecret,
+		Audience:               audience,
+		AuthorizationServerURL: authzServer.URL,
+	})
+	s.NoError(err)
+	credsProvider = &custom{provider: credsProvider}
+
+	parts := strings.Split(gatewayLis.Addr().String(), ":")
+	client, err := NewClient(&ClientConfig{
+		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		UsePlaintextConnection: true,
+		CredentialsProvider:    credsProvider,
+	})
+	s.NoError(err)
+
+	// when
+	var wg sync.WaitGroup
+	var done bool
+	wg.Add(1)
+
+	_ = client.NewJobWorker().JobType("test").Handler(func(client worker.JobClient, job entities.Job) {
+		if !done {
+			done = true
+			wg.Done()
+		}
+	}).Open()
+	wg.Wait()
+
+	// then
+	s.GreaterOrEqual(1, credsProvider.(*custom).shouldRetryCalls)
+}
+
+func (s *oauthCredsProviderTestSuite) TestJobActivateRetry() {
+	// given
+	truncateDefaultOAuthYamlCacheFile()
+	token := &mutableToken{value: "firstToken"}
+	first := true
+	interceptor := newInterceptor(func(ctx context.Context) (bool, error) {
+		if first {
+			first = false
+			token.value = accessToken
+			return false, status.Error(codes.Unauthenticated, "UNAUTHENTICATED")
+		}
+
+		return true, nil
+	})
+
+	gatewayLis, grpcServer := createServerWithStreamInterceptor(interceptor.interceptStream)
+
+	go grpcServer.Serve(gatewayLis)
+	defer func() {
+		grpcServer.Stop()
+		_ = gatewayLis.Close()
+	}()
+
+	authzServer := mockAuthorizationServer(s.T(), token)
+	defer authzServer.Close()
+
+	var credsProvider CredentialsProvider
+	credsProvider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{
+		ClientID:               clientID,
+		ClientSecret:           clientSecret,
+		Audience:               audience,
+		AuthorizationServerURL: authzServer.URL,
+	})
+	s.NoError(err)
+	credsProvider = &custom{provider: credsProvider}
+
+	parts := strings.Split(gatewayLis.Addr().String(), ":")
+	client, err := NewClient(&ClientConfig{
+		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		UsePlaintextConnection: true,
+		CredentialsProvider:    credsProvider,
+	})
+	s.NoError(err)
+
+	// when
+	jobs, err := client.NewActivateJobsCommand().JobType("test").MaxJobsToActivate(1).Send(context.Background())
+
+	// then
+	s.NoError(err)
+	s.GreaterOrEqual(1, credsProvider.(*custom).shouldRetryCalls)
+	s.NotEmpty(jobs)
+}
+
+type custom struct {
+	provider         CredentialsProvider
+	shouldRetryCalls int
+}
+
+func (c *custom) ApplyCredentials(ctx context.Context, headers map[string]string) error {
+	return c.provider.ApplyCredentials(ctx, headers)
+}
+
+func (c *custom) ShouldRetryRequest(ctx context.Context, err error) bool {
+	retry := c.provider.ShouldRetryRequest(ctx, err)
+	if retry {
+		c.shouldRetryCalls++
+	}
+
+	return retry
+}
+
 func mockAuthorizationServer(t *testing.T, token *mutableToken) *httptest.Server {
 	return mockAuthorizationServerWithAudience(t, token, audience)
 }
 
+func mockAuthorizationServerWithScope(t *testing.T, token *mutableToken, scope string) *httptest.Server {
+	return mockAuthorizationServerWithAudienceAndScope(t, token, audience, scope)
+}
+
 func mockAuthorizationServerWithAudience(t *testing.T, token *mutableToken, audience string) *httptest.Server {
+	return mockAuthorizationServerWithAudienceAndScope(t, token, audience, "")
+}
+
+func mockAuthorizationServerWithAudienceAndScope(t *testing.T, token *mutableToken, audience string, scope string) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		bytes, err := ioutil.ReadAll(request.Body)
+		bytes, err := io.ReadAll(request.Body)
 		if err != nil {
 			panic(err)
 		}
 
-		requestPayload := &oauthRequestPayload{}
-		err = json.Unmarshal(bytes, requestPayload)
+		query, err := url.ParseQuery(string(bytes))
 		if err != nil {
 			panic(err)
 		}
 
-		require.EqualValues(t, &oauthRequestPayload{
-			ClientID:     clientID,
-			ClientSecret: clientSecret,
-			Audience:     audience,
-			GrantType:    "client_credentials",
-		}, requestPayload)
+		require.Equal(t, "client_credentials", query.Get("grant_type"))
+		require.Equal(t, audience, query.Get("audience"))
+		require.Equal(t, clientID, query.Get("client_id"))
+		require.Equal(t, clientSecret, query.Get("client_secret"))
+		require.Regexp(t, regexp.MustCompile(`zeebe-client-go/\d+\.\d+\.\d+.*`),
+			request.Header.Get("User-Agent"))
 
-		writer.WriteHeader(200)
+		if scope != "" {
+			require.Equal(t, scope, query.Get("scope"))
+		} else {
+			// if the scope is empty the param should not be set at all
+			require.False(t, query.Has("scope"))
+		}
+
+		writer.Header().Set("Content-Type", "application/json")
 		responsePayload := []byte("{\"access_token\": \"" + token.value + "\"," +
 			"\"expires_in\": 3600," +
-			"\"token_type\": \"" + tokenType + "\"," +
-			"\"scope\": \"grpc\"}")
+			"\"token_type\": \"bearer\"}")
 
 		_, err = writer.Write(responsePayload)
 		if err != nil {
@@ -581,17 +878,17 @@ func mockAuthorizationServerWithAudience(t *testing.T, token *mutableToken, audi
 }
 
 func createAuthenticatedGrpcServer(validToken string) (net.Listener, *grpc.Server) {
-	interceptor := newRecordingInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	interceptor := newInterceptor(func(ctx context.Context) (bool, error) {
 		if meta, ok := metadata.FromIncomingContext(ctx); ok {
 			token := meta["authorization"]
 			expected := "Bearer " + validToken
 			if token != nil && token[0] == expected {
-				return nil, nil
+				return false, nil
 			}
 		}
 
-		return nil, status.Error(codes.Unauthenticated, "UNAUTHENTICATED")
+		return false, status.Error(codes.Unauthenticated, "UNAUTHENTICATED")
 	})
 
-	return createServerWithInterceptor(interceptor.unaryClientInterceptor)
+	return createServerWithUnaryInterceptor(interceptor.interceptUnary)
 }

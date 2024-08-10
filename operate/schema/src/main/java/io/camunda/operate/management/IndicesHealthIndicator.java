@@ -1,0 +1,38 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.operate.management;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.stereotype.Component;
+
+@Component("indicesCheck")
+public class IndicesHealthIndicator implements HealthIndicator {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(IndicesHealthIndicator.class);
+
+  @Autowired private IndicesCheck indicesCheck;
+
+  @Override
+  public Health getHealth(final boolean includeDetails) {
+    return health();
+  }
+
+  @Override
+  public Health health() {
+    LOGGER.debug("Indices check is called");
+    if (indicesCheck.isHealthy() && indicesCheck.indicesArePresent()) {
+      return Health.up().build();
+    } else {
+      return Health.down().build();
+    }
+  }
+}

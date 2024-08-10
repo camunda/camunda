@@ -1,0 +1,7 @@
+query getForm($id: String!, $processDefinitionId: String!){
+    form(id: $id, processDefinitionId: $processDefinitionId) {
+        id
+        processDefinitionId
+        schema
+    }
+}

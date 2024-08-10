@@ -1,3 +1,0 @@
-[network.commandApi]
-advertisedHost = "zeebe.io"
-advertisedPort = 8080

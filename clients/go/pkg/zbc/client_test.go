@@ -18,17 +18,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/suite"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/status"
+	"github.com/camunda/camunda/clients/go/v8/internal/utils"
+	"google.golang.org/grpc/metadata"
 	"net"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/suite"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
+
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 )
 
 type clientTestSuite struct {
@@ -41,7 +45,7 @@ func TestClientSuite(t *testing.T) {
 
 func (s *clientTestSuite) TestClientWithTls() {
 	// given
-	lis, grpcServer := createSecureServer()
+	lis, grpcServer := createSecureServer(false)
 
 	go grpcServer.Serve(lis)
 	defer func() {
@@ -52,7 +56,7 @@ func (s *clientTestSuite) TestClientWithTls() {
 	parts := strings.Split(lis.Addr().String(), ":")
 	client, err := NewClient(&ClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		CaCertificatePath: "testdata/ca.cert.pem",
+		CaCertificatePath: "testdata/chain.cert.pem",
 	})
 
 	s.NoError(err)
@@ -67,9 +71,49 @@ func (s *clientTestSuite) TestClientWithTls() {
 	}
 }
 
+func (s *clientTestSuite) TestClientWithOverrideAuthority() {
+	// given
+	lis, grpcServer := createSecureServer(true)
+	go grpcServer.Serve(lis)
+	defer func() {
+		grpcServer.Stop()
+		_ = lis.Close()
+	}()
+
+	parts := strings.Split(lis.Addr().String(), ":")
+	gatewayAddress := fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1])
+	validClient, err := NewClient(&ClientConfig{
+		GatewayAddress:    gatewayAddress,
+		CaCertificatePath: "testdata/chain.cert.san.pem",
+		OverrideAuthority: "gateway.net",
+	})
+	s.NoError(err)
+
+	invalidClient, err := NewClient(&ClientConfig{
+		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		CaCertificatePath: "testdata/chain.cert.san.pem",
+		OverrideAuthority: "wrong-host",
+	})
+	s.NoError(err)
+
+	// when - then with valid client, connection should succeed but the call is unimplemented
+	_, err = validClient.NewTopologyCommand().Send(context.Background())
+	s.Error(err)
+	if grpcStatus, ok := status.FromError(err); ok {
+		s.EqualValues(codes.Unimplemented, grpcStatus.Code())
+	}
+
+	// when - then with invalid client, connection should fail and the server appear unavailable
+	_, err = invalidClient.NewTopologyCommand().Send(context.Background())
+	s.Error(err)
+	if grpcStatus, ok := status.FromError(err); ok {
+		s.EqualValues(codes.Unavailable, grpcStatus.Code())
+	}
+}
+
 func (s *clientTestSuite) TestInsecureEnvVar() {
 	// given
-	lis, grpcServer := createSecureServer()
+	lis, grpcServer := createSecureServer(false)
 
 	go grpcServer.Serve(lis)
 	defer func() {
@@ -81,7 +125,7 @@ func (s *clientTestSuite) TestInsecureEnvVar() {
 	// when
 	config := &ClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		CaCertificatePath: "testdata/ca.cert.pem",
+		CaCertificatePath: "testdata/chain.cert.pem",
 	}
 	env.set(InsecureEnvVar, "true")
 
@@ -92,9 +136,94 @@ func (s *clientTestSuite) TestInsecureEnvVar() {
 	s.EqualValues(true, config.UsePlaintextConnection)
 }
 
+func (s *clientTestSuite) TestGatewayAddressEnvVar() {
+	// given
+	lis, grpcServer := createServerWithDefaultAddress()
+
+	go grpcServer.Serve(lis)
+	defer func() {
+		grpcServer.Stop()
+		_ = lis.Close()
+	}()
+	parts := strings.Split(lis.Addr().String(), ":")
+
+	// when
+	config := &ClientConfig{
+		UsePlaintextConnection: true,
+		GatewayAddress:         "wrong_address",
+	}
+	env.set(GatewayAddressEnvVar, fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]))
+
+	cli, err := NewClient(config)
+	s.NoError(err)
+
+	_, err = cli.NewTopologyCommand().Send(context.Background())
+
+	// then
+	if errStat, ok := status.FromError(err); ok {
+		s.EqualValues(codes.Unimplemented, errStat.Code())
+	}
+	s.EqualValues(fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]), config.GatewayAddress)
+}
+
+func (s *clientTestSuite) TestDefaultUserAgent() {
+	// given
+	var incomingContext = make(map[string][]string)
+	lis, server := createServerWithUnaryInterceptor(func(ctx context.Context, _ interface{}, _ *grpc.UnaryServerInfo, _ grpc.UnaryHandler) (interface{}, error) {
+		incomingContext, _ = metadata.FromIncomingContext(ctx)
+		return nil, nil
+	})
+	go server.Serve(lis)
+	defer server.Stop()
+
+	// when
+	client, err := NewClient(&ClientConfig{
+		GatewayAddress:         lis.Addr().String(),
+		UsePlaintextConnection: true,
+	})
+	s.Require().NoError(err)
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	_, _ = client.NewTopologyCommand().Send(ctx)
+	userAgent := incomingContext["user-agent"]
+
+	// then
+	s.Require().Len(userAgent, 1)
+	s.Require().Contains(userAgent[0], "zeebe-client-go/"+Version)
+}
+
+func (s *clientTestSuite) TestSpecificUserAgent() {
+	// given
+	var incomingContext = make(map[string][]string)
+	lis, server := createServerWithUnaryInterceptor(func(ctx context.Context, _ interface{}, _ *grpc.UnaryServerInfo, _ grpc.UnaryHandler) (interface{}, error) {
+		incomingContext, _ = metadata.FromIncomingContext(ctx)
+		return nil, nil
+	})
+	go server.Serve(lis)
+	defer server.Stop()
+
+	// when
+	client, err := NewClient(&ClientConfig{
+		GatewayAddress:         lis.Addr().String(),
+		UsePlaintextConnection: true,
+		UserAgent:              "anotherUserAgentLikeZbctl",
+	})
+	s.Require().NoError(err)
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	_, _ = client.NewTopologyCommand().Send(ctx)
+	userAgent := incomingContext["user-agent"]
+
+	// then
+	s.Require().Len(userAgent, 1)
+	s.Require().Contains(userAgent[0], "anotherUserAgentLikeZbctl")
+}
+
 func (s *clientTestSuite) TestCaCertificateEnvVar() {
 	// given
-	lis, grpcServer := createSecureServer()
+	lis, grpcServer := createSecureServer(false)
 
 	go grpcServer.Serve(lis)
 	defer func() {
@@ -108,18 +237,44 @@ func (s *clientTestSuite) TestCaCertificateEnvVar() {
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		CaCertificatePath: "testdata/wrong.cert",
 	}
-	env.set(CaCertificatePath, "testdata/ca.cert.pem")
+	env.set(CaCertificatePath, "testdata/chain.cert.pem")
 
 	_, err := NewClient(config)
 
 	// then
 	s.NoError(err)
-	s.EqualValues("testdata/ca.cert.pem", config.CaCertificatePath)
+	s.EqualValues("testdata/chain.cert.pem", config.CaCertificatePath)
+}
+
+func (s *clientTestSuite) TestOverrideAuthorityEnvVar() {
+	// given
+	lis, grpcServer := createSecureServer(true)
+
+	go grpcServer.Serve(lis)
+	defer func() {
+		grpcServer.Stop()
+		_ = lis.Close()
+	}()
+	parts := strings.Split(lis.Addr().String(), ":")
+
+	// when
+	config := &ClientConfig{
+		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		CaCertificatePath: "testdata/chain.cert.san.pem",
+		OverrideAuthority: "wrong-authority",
+	}
+	env.set(OverrideAuthorityEnvVar, "gateway.net")
+
+	_, err := NewClient(config)
+
+	// then
+	s.NoError(err)
+	s.EqualValues("gateway.net", config.OverrideAuthority)
 }
 
 func (s *clientTestSuite) TestClientWithoutTls() {
 	// given
-	lis, grpcServer := createServer()
+	lis, grpcServer := createServerWithDefaultAddress()
 
 	go grpcServer.Serve(lis)
 	defer func() {
@@ -131,7 +286,7 @@ func (s *clientTestSuite) TestClientWithoutTls() {
 	client, err := NewClient(&ClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
-		CaCertificatePath:      "testdata/ca.cert.pem",
+		CaCertificatePath:      "testdata/chain.cert.pem",
 	})
 
 	s.NoError(err)
@@ -148,7 +303,7 @@ func (s *clientTestSuite) TestClientWithoutTls() {
 
 func (s *clientTestSuite) TestClientWithDefaultRootCa() {
 	// given
-	lis, grpcServer := createSecureServer()
+	lis, grpcServer := createSecureServer(false)
 
 	go grpcServer.Serve(lis)
 	defer func() {
@@ -176,7 +331,7 @@ func (s *clientTestSuite) TestClientWithDefaultRootCa() {
 
 func (s *clientTestSuite) TestClientWithPathToNonExistingFile() {
 	// given
-	lis, grpcServer := createSecureServer()
+	lis, grpcServer := createSecureServer(false)
 
 	go grpcServer.Serve(lis)
 	defer func() {
@@ -187,7 +342,7 @@ func (s *clientTestSuite) TestClientWithPathToNonExistingFile() {
 	parts := strings.Split(lis.Addr().String(), ":")
 	wrongPath := "non.existing"
 
-	//when
+	// when
 	_, err := NewClient(&ClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		CaCertificatePath: wrongPath,
@@ -200,7 +355,7 @@ func (s *clientTestSuite) TestClientWithPathToNonExistingFile() {
 
 func (s *clientTestSuite) TestClientWithDefaultCredentialsProvider() {
 	// given
-	lis, grpcServer := createServer()
+	lis, grpcServer := createServerWithDefaultAddress()
 
 	go grpcServer.Serve(lis)
 	defer func() {
@@ -237,7 +392,7 @@ func (s *clientTestSuite) TestKeepAlive() {
 	// given
 	keepAlive := 2 * time.Minute
 	config := &ClientConfig{
-		GatewayAddress:         fmt.Sprintf("0.0.0.0:0"),
+		GatewayAddress:         "0.0.0.0:0",
 		UsePlaintextConnection: true,
 		KeepAlive:              keepAlive,
 	}
@@ -257,7 +412,7 @@ func (s *clientTestSuite) TestOverrideKeepAliveWithEnvVar() {
 
 	env.set(KeepAliveEnvVar, strconv.Itoa(keepAlive))
 	config := &ClientConfig{
-		GatewayAddress:         fmt.Sprintf("0.0.0.0:0"),
+		GatewayAddress:         "0.0.0.0:0",
 		UsePlaintextConnection: true,
 		KeepAlive:              5 * time.Second,
 	}
@@ -273,7 +428,7 @@ func (s *clientTestSuite) TestOverrideKeepAliveWithEnvVar() {
 func (s *clientTestSuite) TestRejectNegativeDuration() {
 	// given
 	config := &ClientConfig{
-		GatewayAddress:         fmt.Sprintf("0.0.0.0:0"),
+		GatewayAddress:         "0.0.0.0:0",
 		UsePlaintextConnection: true,
 		KeepAlive:              -5 * time.Second,
 	}
@@ -289,7 +444,7 @@ func (s *clientTestSuite) TestRejectNegativeDurationAsEnvVar() {
 	// given
 	env.set(KeepAliveEnvVar, "-100")
 	config := &ClientConfig{
-		GatewayAddress:         fmt.Sprintf("0.0.0.0:0"),
+		GatewayAddress:         "0.0.0.0:0",
 		UsePlaintextConnection: true,
 	}
 
@@ -304,7 +459,7 @@ func (s *clientTestSuite) TestCommandExpireWithContext() {
 	// given
 	blockReq := make(chan struct{})
 	defer close(blockReq)
-	lis, server := createServerWithInterceptor(func(_ context.Context, _ interface{}, _ *grpc.UnaryServerInfo, _ grpc.UnaryHandler) (interface{}, error) {
+	lis, server := createServerWithUnaryInterceptor(func(_ context.Context, _ interface{}, _ *grpc.UnaryServerInfo, _ grpc.UnaryHandler) (interface{}, error) {
 		<-blockReq
 		return nil, nil
 	})
@@ -340,13 +495,74 @@ func (s *clientTestSuite) TestCommandExpireWithContext() {
 	}
 }
 
-func createSecureServer() (net.Listener, *grpc.Server) {
-	creds, _ := credentials.NewServerTLSFromFile("testdata/chain.cert.pem", "testdata/private.key.pem")
-	return createServer(grpc.Creds(creds))
+func (s *clientTestSuite) TestClientWithEmptyDialOptions() {
+	// given
+	lis, grpcServer := createSecureServer(false)
+
+	go grpcServer.Serve(lis)
+	defer func() {
+		grpcServer.Stop()
+		_ = lis.Close()
+	}()
+
+	parts := strings.Split(lis.Addr().String(), ":")
+	client, err := NewClient(&ClientConfig{
+		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		CaCertificatePath: "testdata/chain.cert.pem",
+		DialOpts:          make([]grpc.DialOption, 0),
+	})
+
+	s.NoError(err)
+
+	// when
+	_, err = client.NewTopologyCommand().Send(context.Background())
+
+	// then
+	s.Error(err)
+	if grpcStatus, ok := status.FromError(err); ok {
+		s.EqualValues(codes.Unimplemented, grpcStatus.Code())
+	}
 }
 
-func createServer(opts ...grpc.ServerOption) (net.Listener, *grpc.Server) {
-	lis, _ := net.Listen("tcp", "0.0.0.0:0")
+func (s *clientTestSuite) TestOverrideHostAndPortEnvVar() {
+	// given
+	address := "127.1"
+	port := "9090"
+
+	env.set(GatewayHostEnvVar, address)
+	env.set(GatewayPortEnvVar, port)
+	config := &ClientConfig{
+		GatewayAddress:         "wrong_address",
+		UsePlaintextConnection: true,
+	}
+
+	// when
+	_, err := NewClient(config)
+
+	// then
+	s.NoError(err)
+	s.EqualValues(fmt.Sprintf("%s:%s", address, port), config.GatewayAddress)
+}
+
+func createSecureServer(withSan bool) (net.Listener, *grpc.Server) {
+	certFile := "testdata/chain.cert.pem"
+	keyFile := "testdata/private.key.pem"
+
+	if withSan {
+		certFile = "testdata/chain.cert.san.pem"
+		keyFile = "testdata/private.key.san.pem"
+	}
+
+	creds, _ := credentials.NewServerTLSFromFile(certFile, keyFile)
+	return createServerWithDefaultAddress(grpc.Creds(creds))
+}
+
+func createServerWithDefaultAddress(opts ...grpc.ServerOption) (net.Listener, *grpc.Server) {
+	return createServer("0.0.0.0", "0", opts...)
+}
+
+func createServer(address string, port string, opts ...grpc.ServerOption) (net.Listener, *grpc.Server) {
+	lis, _ := net.Listen("tcp", fmt.Sprintf("%s:%s", address, port))
 	grpcServer := grpc.NewServer(opts...)
 	pb.RegisterGatewayServer(grpcServer, &pb.UnimplementedGatewayServer{})
 	return lis, grpcServer

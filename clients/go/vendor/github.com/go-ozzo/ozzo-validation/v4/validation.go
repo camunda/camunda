@@ -51,7 +51,7 @@ var (
 	ErrorTag = "json"
 
 	// Skip is a special validation rule that indicates all rules following it should be skipped.
-	Skip = &skipRule{}
+	Skip = skipRule{skip: true}
 
 	validatableType            = reflect.TypeOf((*Validatable)(nil)).Elem()
 	validatableWithContextType = reflect.TypeOf((*ValidatableWithContext)(nil)).Elem()
@@ -67,7 +67,7 @@ var (
 //    for each element call the element value's `Validate()`. Return with the validation result.
 func Validate(value interface{}, rules ...Rule) error {
 	for _, rule := range rules {
-		if _, ok := rule.(*skipRule); ok {
+		if s, ok := rule.(skipRule); ok && s.skip {
 			return nil
 		}
 		if err := rule.Validate(value); err != nil {
@@ -115,7 +115,7 @@ func Validate(value interface{}, rules ...Rule) error {
 //    for each element call the element value's `Validate()`. Return with the validation result.
 func ValidateWithContext(ctx context.Context, value interface{}, rules ...Rule) error {
 	for _, rule := range rules {
-		if _, ok := rule.(*skipRule); ok {
+		if s, ok := rule.(skipRule); ok && s.skip {
 			return nil
 		}
 		if rc, ok := rule.(RuleWithContext); ok {
@@ -228,10 +228,18 @@ func validateSliceWithContext(ctx context.Context, rv reflect.Value) error {
 	return nil
 }
 
-type skipRule struct{}
+type skipRule struct {
+	skip bool
+}
 
-func (r *skipRule) Validate(interface{}) error {
+func (r skipRule) Validate(interface{}) error {
 	return nil
+}
+
+// When determines if all rules following it should be skipped.
+func (r skipRule) When(condition bool) skipRule {
+	r.skip = condition
+	return r
 }
 
 type inlineRule struct {

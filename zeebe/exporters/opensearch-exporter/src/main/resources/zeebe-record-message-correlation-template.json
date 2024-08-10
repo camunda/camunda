@@ -1,0 +1,51 @@
+{
+  "index_patterns": [
+    "zeebe-record_message-correlation_*"
+  ],
+  "composed_of": ["zeebe-record"],
+  "priority": 20,
+  "version": 1,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.queries.cache.enabled": false
+    },
+    "aliases": {
+      "zeebe-record-message-correlation": {}
+    },
+    "mappings": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "name": {
+              "type": "keyword"
+            },
+            "correlationKey": {
+              "type": "text"
+            },
+            "variables": {
+              "enabled": false
+            },
+            "tenantId": {
+              "type": "keyword"
+            },
+            "processInstanceKey": {
+              "type": "long"
+            },
+            "messageKey": {
+              "type": "long"
+            },
+            "requestId": {
+              "type": "long"
+            },
+            "requestStreamId": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    }
+  }
+}

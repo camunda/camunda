@@ -1,0 +1,8 @@
+{
+  "description": "Delete role field ",
+  "@type": "processorStep",
+  "indexName": "user",
+  "version": "1.2.0",
+  "order": 0,
+  "content": "{\"remove\": {\"field\": \"role\" }}"
+}

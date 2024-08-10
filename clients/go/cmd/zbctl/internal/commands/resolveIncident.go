@@ -16,9 +16,22 @@ package commands
 
 import (
 	"context"
+	"fmt"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 	"github.com/spf13/cobra"
-	"log"
 )
+
+type ResolveIncidentResponseWrapper struct {
+	resp *pb.ResolveIncidentResponse
+}
+
+func (r ResolveIncidentResponseWrapper) human() (string, error) {
+	return fmt.Sprint("Resolved an incident of a process instance with key '", incidentKey, "'"), nil
+}
+
+func (r ResolveIncidentResponseWrapper) json() (string, error) {
+	return toJSON(r.resp)
+}
 
 var (
 	incidentKey int64
@@ -26,22 +39,23 @@ var (
 
 var resolveIncidentCommand = &cobra.Command{
 	Use:     "incident <key>",
-	Short:   "Resolve an existing incident of a workflow instance",
+	Short:   "Resolve an existing incident of a process instance",
 	Args:    keyArg(&incidentKey),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 
-		_, err := client.NewResolveIncidentCommand().IncidentKey(incidentKey).Send(ctx)
-		if err == nil {
-			log.Println("Resolved an incident of a workflow instance with key", incidentKey)
+		resp, err := client.NewResolveIncidentCommand().IncidentKey(incidentKey).Send(ctx)
+		if err != nil {
+			return err
 		}
-
+		err = printOutput(ResolveIncidentResponseWrapper{resp})
 		return err
 	},
 }
 
 func init() {
+	addOutputFlag(resolveIncidentCommand)
 	resolveCmd.AddCommand(resolveIncidentCommand)
 }

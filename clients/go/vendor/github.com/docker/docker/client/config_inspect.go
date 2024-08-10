@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 
 	"github.com/docker/docker/api/types/swarm"
 )
@@ -14,16 +14,16 @@ func (cli *Client) ConfigInspectWithRaw(ctx context.Context, id string) (swarm.C
 	if id == "" {
 		return swarm.Config{}, nil, objectNotFoundError{object: "config", id: id}
 	}
-	if err := cli.NewVersionError("1.30", "config inspect"); err != nil {
+	if err := cli.NewVersionError(ctx, "1.30", "config inspect"); err != nil {
 		return swarm.Config{}, nil, err
 	}
 	resp, err := cli.get(ctx, "/configs/"+id, nil, nil)
 	defer ensureReaderClosed(resp)
 	if err != nil {
-		return swarm.Config{}, nil, wrapResponseError(err, resp, "config", id)
+		return swarm.Config{}, nil, err
 	}
 
-	body, err := ioutil.ReadAll(resp.body)
+	body, err := io.ReadAll(resp.body)
 	if err != nil {
 		return swarm.Config{}, nil, err
 	}

@@ -1,0 +1,14 @@
+dist/
+node_modules/
+build/
+target/
+coverage/
+src/fonts/
+test-results/
+playwright-report/
+playwright/.cache/
+yarn.lock
+.eslintcache
+.env
+.prettierignore
+resources/license-header.js

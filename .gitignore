@@ -1,4 +1,12 @@
-.idea
+.idea/*
+!.idea/codeStyles
+!.idea/externalDependencies.xml
+!.idea/google-java-format.xml
+!.idea/saveactions_settings.xml
+!.idea/copyright/Apache_2_0.xml
+!.idea/copyright/profiles_settings.xml
+!.idea/copyright/Zeebe_1_1.xml
+!.idea/scopes/apache_license_scope.xml
 target
 .classpath
 .checkstyle
@@ -22,16 +30,29 @@ faces-config.NavData
 *.lock.db
 .cache-main
 .cache-tests
+.jqwik-database
+.run
 
 *.DS_Store
+.java-version
 .gradle
+.worktree
 work/
 public/
 tngp-data
-docs/book
-docs/mdbook
+*.sst
+
+.flattened-pom.xml
 
 hs_err*.log
 /data/
 /metrics/
 *.exe
+/clients/go/.idea/
+
+.vscode
+.eslintcache
+els-snapshots
+
+optimize/client/.node/
+.yarn

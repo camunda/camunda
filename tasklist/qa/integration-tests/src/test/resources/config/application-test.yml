@@ -1,0 +1,43 @@
+camunda.tasklist:
+  username: demo
+  password: demo
+  elasticsearch:
+    clusterName: docker-cluster
+    url: http://localhost:9200
+    dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
+  zeebe:
+    gatewayAddress: localhost:26500
+    worker: tasklist
+  zeebeElasticsearch:
+    clusterName: docker-cluster
+    url: http://localhost:9200
+    prefix: test-record
+  importer:
+    readerBackoff: 0
+    schedulerBackoff: 0
+    startLoadingDataOnStartup: false
+camunda.webapps:
+  enabled: true
+  default-app: operate
+logging:
+  level:
+    ROOT: INFO
+    io.camunda.tasklist: DEBUG
+management:
+  server:
+    port: 0 # to have a random management port different from server.port
+spring:
+  web:
+    resources:
+      static-locations: classpath:/test-static/tasklist/
+  thymeleaf:
+    prefix: classpath:/test-static/
+server.servlet.session.cookie.name: TASKLIST-SESSION
+server.error.include-message: always
+management.health.defaults.enabled: false
+management.endpoint.health.probes.enabled: true
+management.endpoints.web.exposure.include: health,prometheus,loggers,usage-metrics,backups
+management.endpoint.health.group.readiness.include: readinessState,searchEngineCheck
+---
+spring.config.activate.on-profile: identity-auth, sso-auth
+camunda.webapps.login-delegated: true

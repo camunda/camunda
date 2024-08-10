@@ -1,0 +1,3 @@
+# snyk CLI configuration file
+# Full documentation here: https://docs.snyk.io/snyk-cli/test-for-vulnerabilities/the-.snyk-file
+ignore: {}

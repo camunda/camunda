@@ -1,0 +1,5 @@
+zeebe:
+  broker:
+    cluster:
+      clusterSize: 4
+      nodeId: 2

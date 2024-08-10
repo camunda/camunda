@@ -1,0 +1,24 @@
+# This workflow runs our acceptance tests, triggered by our engineering process automation cluster. It runs the test suite against the
+# given branch.
+#
+name: Zeebe Repo dispatch QA tests
+
+on:
+  repository_dispatch:
+    types: [qa_run_testbench]
+
+env:
+  # This URL is used as the business key for the various QA workflows
+  BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+jobs:
+  qa:
+    strategy:
+      # do not cancel other jobs if one fails
+      fail-fast: false
+    name: Daily QA
+    uses: ./.github/workflows/zeebe-qa-testbench.yaml
+    with:
+      branch: ${{ github.event.client_payload.branch }}
+      generation: Zeebe SNAPSHOT
+    secrets: inherit

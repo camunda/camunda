@@ -1,0 +1,10 @@
+<component name="CopyrightManager">
+  <settings default="Zeebe 1.1">
+    <module2copyright>
+      <element module="apache-license-scope" copyright="Apache 2.0" />
+    </module2copyright>
+    <LanguageOptions name="__TEMPLATE__">
+      <option name="addBlankAfter" value="false" />
+    </LanguageOptions>
+  </settings>
+</component>

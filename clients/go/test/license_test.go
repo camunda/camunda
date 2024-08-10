@@ -16,7 +16,6 @@ package test
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -38,20 +37,19 @@ const license = `// Copyright © 2018 Camunda Services GmbH (info@camunda.com)
 // limitations under the License.
 `
 
-var skip = map[string]bool{
+var skipList = []string{
 	// These files are generated.
-	"../pkg/pb/gateway.pb.go":             true,
-	"../internal/mock_pb/mock_gateway.go": true,
+	"../pkg/pb/gateway.pb.go",
+	"../internal/mock_pb/",
+	"../vendor/",
 }
 
 func TestLicense(t *testing.T) {
 	err := filepath.Walk("..", func(path string, fi os.FileInfo, err error) error {
-		if skip[path] {
-			return nil
-		}
-
-		if strings.HasPrefix(path, "../vendor/") {
-			return nil
+		for _, skip := range skipList {
+			if strings.HasPrefix(path, skip) {
+				return nil
+			}
 		}
 
 		if err != nil {
@@ -62,7 +60,7 @@ func TestLicense(t *testing.T) {
 			return nil
 		}
 
-		src, err := ioutil.ReadFile(path)
+		src, err := os.ReadFile(path)
 		if err != nil {
 			return nil
 		}

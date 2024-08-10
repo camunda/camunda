@@ -1,0 +1,17 @@
+query getTasks($query: TaskQuery!){
+    tasks(query: $query) {
+        id
+        name
+        processName
+        taskDefinitionId
+        creationTime
+        completionTime
+        assignee
+        taskState
+        sortValues
+        isFirst
+        formKey
+        processDefinitionId
+        processInstanceId
+    }
+}

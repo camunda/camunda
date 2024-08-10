@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+  <Properties>
+    <Property name="LOG_PATTERN">%clr{%d{yyyy-MM-dd HH:mm:ss.SSS}}{faint} %clr{%5p} %clr{${sys:PID}}{magenta} %clr{---}{faint} %clr{[%15.15t]}{faint} %clr{%-40.40c{1.}}{cyan} %clr{:}{faint} %m%n%xwEx</Property>
+  </Properties>
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT" follow="true">
+      <PatternLayout pattern="${LOG_PATTERN}"/>
+    </Console>
+	<Console name="Stackdriver" target="SYSTEM_OUT" follow="true">
+      <StackdriverJSONLayout/>
+    </Console>
+  </Appenders>
+  <Loggers>
+    <Logger name="io.camunda.tasklist" level="info" />
+    <Root level="info">
+      <AppenderRef ref="${env:TASKLIST_LOG_APPENDER:-Console}"/>
+    </Root>
+  </Loggers>
+</Configuration>

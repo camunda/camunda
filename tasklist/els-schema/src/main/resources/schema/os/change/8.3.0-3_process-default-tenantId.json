@@ -1,0 +1,8 @@
+{
+  "description": "Set default tenantId for 'process' index",
+  "@type": "processorStep",
+  "indexName": "process",
+  "version": "8.3.0",
+  "order": 3,
+  "content": "{\"set\": {\"field\": \"tenantId\", \"value\": \"<default>\"}}"
+}

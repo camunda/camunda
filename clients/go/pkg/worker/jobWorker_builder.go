@@ -16,13 +16,15 @@
 package worker
 
 import (
-	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"context"
 	"log"
 	"math"
 	"sync"
 	"time"
+
+	"github.com/camunda/camunda/clients/go/v8/pkg/commands"
+	"github.com/camunda/camunda/clients/go/v8/pkg/entities"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 )
 
 const (
@@ -32,50 +34,68 @@ const (
 	DefaultJobWorkerPollThreshold = 0.3
 	RequestTimeoutOffset          = 10 * time.Second
 	DefaultRequestTimeout         = 10 * time.Second
+	DefaultStreamEnabled          = false
 )
+
+var defaultBackoffSupplier = NewExponentialBackoffBuilder().Build()
 
 type JobWorkerBuilder struct {
 	gatewayClient  pb.GatewayClient
 	jobClient      JobClient
-	request        pb.ActivateJobsRequest
+	request        *pb.ActivateJobsRequest
 	requestTimeout time.Duration
 
-	handler       JobHandler
-	maxJobsActive int
-	concurrency   int
-	pollInterval  time.Duration
-	pollThreshold float64
+	handler              JobHandler
+	maxJobsActive        int
+	concurrency          int
+	pollInterval         time.Duration
+	pollThreshold        float64
+	metrics              JobWorkerMetrics
+	shouldRetry          func(context.Context, error) bool
+	backoffSupplier      BackoffSupplier
+	streamEnabled        bool
+	streamRequestTimeout time.Duration
 }
 
 type JobWorkerBuilderStep1 interface {
-	// Set the type of jobs to work on
+	// JobType Set the type of jobs to work on
 	JobType(string) JobWorkerBuilderStep2
 }
 
 type JobWorkerBuilderStep2 interface {
-	// Set the handler to process jobs. The worker should complete or fail the job. The handler implementation
+	// Handler Set the handler to process jobs. The worker should complete or fail the job. The handler implementation
 	// must be thread-safe.
 	Handler(JobHandler) JobWorkerBuilderStep3
 }
 
 type JobWorkerBuilderStep3 interface {
-	// Set the name of the worker owner
+	// Name Set the name of the worker owner
 	Name(string) JobWorkerBuilderStep3
-	// Set the duration no other worker should work on job activated by this worker
+	// Timeout Set the duration no other worker should work on job activated by this worker
 	Timeout(time.Duration) JobWorkerBuilderStep3
-	// Set the timeout for the request
+	// RequestTimeout Set the timeout for the request
 	RequestTimeout(time.Duration) JobWorkerBuilderStep3
-	// Set the maximum number of jobs which will be activated for this worker at the
+	// MaxJobsActive Set the maximum number of jobs which will be activated for this worker at the
 	// same time.
 	MaxJobsActive(int) JobWorkerBuilderStep3
-	// Set the maximum number of concurrent spawned goroutines to complete jobs
+	// Concurrency Set the maximum number of concurrent spawned goroutines to complete jobs
 	Concurrency(int) JobWorkerBuilderStep3
-	// Set the maximal interval between polling for new jobs
+	// PollInterval Set the maximal interval between polling for new jobs
 	PollInterval(time.Duration) JobWorkerBuilderStep3
-	// Set the threshold of buffered activated jobs before polling for new jobs, i.e. threshold * MaxJobsActive(int)
+	// PollThreshold Set the threshold of buffered activated jobs before polling for new jobs, i.e. threshold * MaxJobsActive(int)
 	PollThreshold(float64) JobWorkerBuilderStep3
-	// Set list of variable names which should be fetched on job activation
+	// FetchVariables Set list of variable names which should be fetched on job activation
 	FetchVariables(...string) JobWorkerBuilderStep3
+	// a list of IDs of tenants for which to activate jobs
+	TenantIds(...string) JobWorkerBuilderStep3
+	// Metrics Set implementation for metrics reporting
+	Metrics(metrics JobWorkerMetrics) JobWorkerBuilderStep3
+	// BackoffSupplier Set the backoffSupplier to back off polling on errors
+	BackoffSupplier(supplier BackoffSupplier) JobWorkerBuilderStep3
+	// StreamEnabled Enables the job worker to stream jobs. It will still poll for older jobs, but streaming is favored.
+	StreamEnabled(bool) JobWorkerBuilderStep3
+	// StreamRequestTimeout If streaming is enabled, this sets the timeout on the underlying job stream. It's useful to set a few hours to load-balance your streams over time.
+	StreamRequestTimeout(time.Duration) JobWorkerBuilderStep3
 	// Open the job worker and start polling and handling jobs
 	Open() JobWorker
 }
@@ -143,26 +163,56 @@ func (builder *JobWorkerBuilder) FetchVariables(fetchVariables ...string) JobWor
 	return builder
 }
 
+func (builder *JobWorkerBuilder) TenantIds(tenantIds ...string) JobWorkerBuilderStep3 {
+	builder.request.TenantIds = tenantIds
+	return builder
+}
+
+func (builder *JobWorkerBuilder) Metrics(metrics JobWorkerMetrics) JobWorkerBuilderStep3 {
+	builder.metrics = metrics
+	return builder
+}
+
+func (builder *JobWorkerBuilder) BackoffSupplier(backoffSupplier BackoffSupplier) JobWorkerBuilderStep3 {
+	builder.backoffSupplier = backoffSupplier
+	return builder
+}
+
+func (builder *JobWorkerBuilder) StreamEnabled(streamEnabled bool) JobWorkerBuilderStep3 {
+	builder.streamEnabled = streamEnabled
+	return builder
+}
+
+func (builder *JobWorkerBuilder) StreamRequestTimeout(requestTimeout time.Duration) JobWorkerBuilderStep3 {
+	builder.streamRequestTimeout = requestTimeout
+	return builder
+}
+
 func (builder *JobWorkerBuilder) Open() JobWorker {
 	jobQueue := make(chan entities.Job, builder.maxJobsActive)
 	workerFinished := make(chan bool, builder.maxJobsActive)
 	closePoller := make(chan struct{})
 	closeDispatcher := make(chan struct{})
+	closeStreamer := make(chan struct{})
 	var closeWait sync.WaitGroup
-	closeWait.Add(2)
+	closeWait.Add(3)
 
 	poller := jobPoller{
-		client:         builder.gatewayClient,
-		maxJobsActive:  builder.maxJobsActive,
-		pollInterval:   builder.pollInterval,
-		request:        builder.request,
-		requestTimeout: builder.requestTimeout,
+		client:              builder.gatewayClient,
+		maxJobsActive:       builder.maxJobsActive,
+		pollInterval:        builder.pollInterval,
+		initialPollInterval: builder.pollInterval,
+		request:             builder.request,
+		requestTimeout:      builder.requestTimeout,
 
-		jobQueue:       jobQueue,
-		workerFinished: workerFinished,
-		closeSignal:    closePoller,
-		remaining:      0,
-		threshold:      int(math.Round(float64(builder.maxJobsActive) * builder.pollThreshold)),
+		jobQueue:        jobQueue,
+		workerFinished:  workerFinished,
+		closeSignal:     closePoller,
+		remaining:       0,
+		threshold:       int(math.Round(float64(builder.maxJobsActive) * builder.pollThreshold)),
+		metrics:         builder.metrics,
+		shouldRetry:     builder.shouldRetry,
+		backoffSupplier: builder.backoffSupplier,
 	}
 
 	dispatcher := jobDispatcher{
@@ -171,17 +221,45 @@ func (builder *JobWorkerBuilder) Open() JobWorker {
 		closeSignal:    closeDispatcher,
 	}
 
-	go poller.poll(&closeWait)
 	go dispatcher.run(builder.jobClient, builder.handler, builder.concurrency, &closeWait)
+	go poller.poll(&closeWait)
+
+	if builder.streamEnabled {
+		streamRequest := commands.NewStreamJobsCommand(builder.gatewayClient, builder.shouldRetry).
+			JobType(builder.request.Type).
+			Consumer(jobQueue).
+			Timeout(time.Duration(builder.request.Timeout) * time.Millisecond).
+			FetchVariables(builder.request.FetchVariable...).
+			TenantIds(builder.request.TenantIds...).
+			WorkerName(builder.request.Worker).
+			RequestTimeout(builder.streamRequestTimeout)
+		streamer := jobStreamer{
+			workerFinished:  workerFinished,
+			closeSignal:     closeStreamer,
+			request:         streamRequest,
+			backoffSupplier: builder.backoffSupplier,
+			retryDelay:      0,
+		}
+
+		go streamer.stream(&closeWait)
+	} else {
+		// simulate streamer is already closed
+		closeWait.Done()
+	}
 
 	return jobWorkerController{
 		closePoller:     closePoller,
 		closeDispatcher: closeDispatcher,
+		closeStreamer:   closeStreamer,
 		closeWait:       &closeWait,
 	}
 }
 
-func NewJobWorkerBuilder(gatewayClient pb.GatewayClient, jobClient JobClient) JobWorkerBuilderStep1 {
+// NewJobWorkerBuilder should use the same retryPredicate used by the CredentialProvider (ShouldRetry method):
+//
+//	credsProvider, _ := zbc.NewOAuthCredentialsProvider(...)
+//	worker.NewJobWorkerBuilder(..., credsProvider.ShouldRetry)
+func NewJobWorkerBuilder(gatewayClient pb.GatewayClient, jobClient JobClient, retryPred func(ctx context.Context, err error) bool) JobWorkerBuilderStep1 {
 	return &JobWorkerBuilder{
 		gatewayClient: gatewayClient,
 		jobClient:     jobClient,
@@ -189,11 +267,15 @@ func NewJobWorkerBuilder(gatewayClient pb.GatewayClient, jobClient JobClient) Jo
 		concurrency:   DefaultJobWorkerConcurrency,
 		pollInterval:  DefaultJobWorkerPollInterval,
 		pollThreshold: DefaultJobWorkerPollThreshold,
-		request: pb.ActivateJobsRequest{
+		request: &pb.ActivateJobsRequest{
 			Timeout:        commands.DefaultJobTimeoutInMs,
 			Worker:         commands.DefaultJobWorkerName,
 			RequestTimeout: DefaultRequestTimeout.Milliseconds(),
+			TenantIds:      []string{commands.DefaultJobTenantID},
 		},
-		requestTimeout: DefaultRequestTimeout + RequestTimeoutOffset,
+		requestTimeout:  DefaultRequestTimeout + RequestTimeoutOffset,
+		shouldRetry:     retryPred,
+		backoffSupplier: defaultBackoffSupplier,
 	}
+
 }

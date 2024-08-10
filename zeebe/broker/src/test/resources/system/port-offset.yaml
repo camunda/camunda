@@ -1,0 +1,4 @@
+zeebe:
+  broker:
+    network:
+      portOffset: 5

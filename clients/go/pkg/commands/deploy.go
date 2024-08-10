@@ -16,31 +16,32 @@ package commands
 
 import (
 	"context"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"io/ioutil"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 	"log"
+	"os"
 )
 
 type DeployCommand struct {
 	Command
-	request pb.DeployWorkflowRequest
+	request pb.DeployProcessRequest //nolint
 }
 
 func (cmd *DeployCommand) AddResourceFile(path string) *DeployCommand {
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return cmd.AddResource(b, path, pb.WorkflowRequestObject_FILE)
+	return cmd.AddResource(b, path)
 }
 
-func (cmd *DeployCommand) AddResource(definition []byte, name string, resourceType pb.WorkflowRequestObject_ResourceType) *DeployCommand {
-	cmd.request.Workflows = append(cmd.request.Workflows, &pb.WorkflowRequestObject{Definition: definition, Name: name, Type: resourceType})
+func (cmd *DeployCommand) AddResource(definition []byte, name string) *DeployCommand {
+	process := &pb.ProcessRequestObject{Definition: definition, Name: name} //nolint
+	cmd.request.Processes = append(cmd.request.Processes, process)
 	return cmd
 }
 
-func (cmd *DeployCommand) Send(ctx context.Context) (*pb.DeployWorkflowResponse, error) {
-	response, err := cmd.gateway.DeployWorkflow(ctx, &cmd.request)
+func (cmd *DeployCommand) Send(ctx context.Context) (*pb.DeployProcessResponse, error) { //nolint
+	response, err := cmd.gateway.DeployProcess(ctx, &cmd.request) //nolint
 	if cmd.shouldRetry(ctx, err) {
 		return cmd.Send(ctx)
 	}
@@ -48,6 +49,7 @@ func (cmd *DeployCommand) Send(ctx context.Context) (*pb.DeployWorkflowResponse,
 	return response, err
 }
 
+// Deprecated: Use NewDeployResourceCommand instead. To be removed in 8.1.0.
 func NewDeployCommand(gateway pb.GatewayClient, pred retryPredicate) *DeployCommand {
 	return &DeployCommand{
 		Command: Command{

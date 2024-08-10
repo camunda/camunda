@@ -1,0 +1,180 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "commitMessagePrefix": "deps:",
+  "baseBranches": [
+    "/^stable\\/8\\..*/",
+    "stable/operate-8.5",
+    "main"
+  ],
+  "dependencyDashboard": true,
+  "prConcurrentLimit": 30,
+  "prHourlyLimit": 2,
+  "updateNotScheduled": false,
+  "schedule": [
+    "at any time"
+  ],
+  "helmv3": {
+    "registryAliases": {
+      "helm-camunda-io": "https://helm.camunda.io"
+    }
+  },
+  "vulnerabilityAlerts": {
+    "labels": ["area/security"],
+    "enabled": true
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "automerge": true,
+    "addLabels": ["automerge"]
+  },
+  "packageRules": [
+    {
+      "description": "Only patch updates for our maintenance branches to avoid breaking changes.",
+      "matchBaseBranches": [
+        "/^stable\\/8\\..*/",
+        "stable/operate-8.5"
+      ],
+      "matchUpdateTypes": ["minor", "major"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["maven"],
+      "matchPackagePrefixes": ["org.opensearch.client", "org.elasticsearch", "co.elastic"],
+      "matchUpdateTypes": ["minor", "major"],
+      "enabled": false
+    },
+    {
+      "description": "Skip lucene major updates to avoid breaking changes.",
+      "matchManagers": ["maven"],
+      "matchPackagePrefixes": ["org.apache.lucene"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["maven"],
+      "matchPackagePrefixes": ["com.graphql-java"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
+      "description": "Digest updates cover all use cases since they are used as base, so we disable other types.",
+      "matchManagers": ["dockerfile"],
+      "matchFileNames": ["Dockerfile", "camunda.Dockerfile"],
+      "matchUpdateTypes": ["major", "minor", "patch"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["maven"],
+      "matchPackagePrefixes": ["org.jacoco"],
+      "allowedVersions": "!/0.8.9/"
+    },
+    {
+      "description" : "Exclude SNAPSHOT versions, renovate may suggest them for pre-release values.",
+      "matchManagers": ["maven"],
+      "matchPackagePatterns": [".*"],
+      "allowedVersions": "!/-SNAPSHOT$/"
+    },
+    {
+      "description" : "Exclude internal Maven modules and Maven dependencies lacking metadata.",
+      "matchManagers": ["maven"],
+      "matchPackagePatterns": [
+        "io.camunda:operate-parent",
+        "io.camunda:operate-qa",
+        "io.camunda:operate-qa-migration-tests-parent",
+        "io.camunda:tasklist-qa",
+        "io.camunda:tasklist-qa-migration-tests-parent",
+        "net.jcip:jcip-annotations"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Exclude frontend deps until migration is done in Operate (see issues #17736, #17844, #18851)",
+      "matchManagers": ["npm", "nvm"],
+      "matchFileNames": ["operate/**"],
+      "matchPackagePatterns": [
+        "react-router-dom",
+        "msw",
+        "@carbon/react"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "This additional prefix is used to skip Operate backend tests.",
+      "matchManagers": ["npm", "nvm"],
+      "additionalBranchPrefix": "fe-"
+    },
+    {
+      "matchPackageNames": ["mcr.microsoft.com/playwright"],
+      "additionalBranchPrefix": "fe-"
+    },
+    {
+      "matchPackagePrefixes": ["@types/"],
+      "groupName": "definitelyTyped"
+    },
+    {
+      "extends": ["monorepo:react"],
+      "groupName": "react monorepo"
+    },
+    {
+      "extends": ["monorepo:react-router"],
+      "groupName": "react-router monorepo"
+    },
+    {
+      "matchManagers": ["npm", "nvm"],
+      "matchPackagePatterns": ["*"],
+      "matchUpdateTypes": ["patch"],
+      "groupName": "all non-major dependencies",
+      "groupSlug": "all-minor-patch"
+    },
+    {
+      "description": "For known GitHub repositories that use GitHub tags/releases of format 'v1.2.3' and where we ignore the 'v' prefix, we also tell Renovate to ignore it via extractVersion when updating .tool-version file",
+      "matchFileNames": [
+        ".github/workflows/*.yml"
+      ],
+      "matchPackageNames": [
+        "rhysd/actionlint"
+      ],
+      "extractVersion": "^v(?<version>.*)$"
+    },
+    {
+      "description": "Both dependencies need to be updated at once for green CI.",
+      "matchPackageNames": ["@playwright/test", "mcr.microsoft.com/playwright"],
+      "groupName": "playwright"
+    },
+    {
+      "description": "Automerge all updates with green CI.",
+      "matchPackagePatterns": ["*"],
+      "automerge": true,
+      "addLabels": ["automerge"]
+    }
+  ],
+  "dockerfile": {
+    "fileMatch": ["(^|\\/)([\\w-]+\\.)?[Dd]ockerfile$"],
+    "ignorePaths": [
+      "zeebe/benchmarks/**",
+      "clients/go/vendor/**"
+    ]
+  },
+  "customManagers": [
+    {
+      "fileMatch": ["\\.yml$"],
+      "customType": "regex",
+      "matchStrings": [
+        "renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.* '(?<currentValue>.*)'\\s"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ["package\\.json"],
+      "matchStrings": [
+        "mcr\\.microsoft\\.com\\\/playwright:(?<currentValue>.*?)\\s"
+      ],
+      "depNameTemplate": "mcr.microsoft.com/playwright",
+      "datasourceTemplate": "docker"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "messageName": {
+        "type": "keyword"
+      },
+      "correlationKey": {
+        "type": "keyword"
+      },
+      "publishDate": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "expireDate": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "deadline": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "timeToLive": {
+        "type": "long"
+      },
+      "messageId": {
+        "type": "keyword"
+      },
+      "variables": {
+        "type": "text"
+      },
+      "id": {
+        "type": "keyword"
+      },
+      "key": {
+        "type": "long"
+      },
+      "partitionId": {
+        "type": "integer"
+      },
+      "tenantId": {
+        "type": "keyword"
+      }
+    }
+  }
+}

@@ -11,15 +11,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package zbc
 
 import (
 	"github.com/stretchr/testify/suite"
-	"io/ioutil"
+	"golang.org/x/oauth2"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 type oauthCredsCacheTestSuite struct {
@@ -32,29 +34,31 @@ func TestOAuthCredsProviderCacheSuite(t *testing.T) {
 
 const wombatAudience = "wombat.cloud.camunda.io"
 
-var wombat = &OAuthCredentials{
+var wombat = &oauth2.Token{
 	AccessToken: "wombat",
-	ExpiresIn:   3600,
+	Expiry:      time.Date(3020, 1, 1, 0, 0, 0, 0, time.UTC),
 	TokenType:   "Bearer",
-	Scope:       "grpc",
 }
 
 const aardvarkAudience = "aardvark.cloud.camunda.io"
 
-var aardvark = &OAuthCredentials{
+var aardvark = &oauth2.Token{
 	AccessToken: "aardvark",
-	ExpiresIn:   1800,
+	Expiry:      time.Date(3020, 1, 1, 0, 0, 0, 0, time.UTC),
 	TokenType:   "Bearer",
-	Scope:       "grpc",
 }
 
-func init() {
+func (s *oauthCredsCacheTestSuite) SetupSuite() {
 	// overwrite the default cache path for testing
-	file, err := ioutil.TempFile("", "credentialsCache.tmp.yml")
+	file, err := os.CreateTemp("", "credentialsCache.tmp.yml")
 	if err != nil {
 		panic(err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			panic(err)
+		}
+	}()
 
 	DefaultOauthYamlCachePath, err = filepath.Abs(file.Name())
 	if err != nil {
@@ -73,12 +77,13 @@ func (s *oauthCredsCacheTestSuite) TestReadCacheGoldenFile() {
 
 func (s *oauthCredsCacheTestSuite) TestWriteCacheGoldenFile() {
 	capybaraAudience := "capybara.cloud.camunda.io"
-	capybara := &OAuthCredentials{
+
+	capybara := &oauth2.Token{
 		AccessToken: "capybara",
-		ExpiresIn:   900,
+		Expiry:      time.Now().Add(time.Second * 900).In(time.UTC),
 		TokenType:   "Bearer",
-		Scope:       "grpc",
 	}
+
 	cachePath := copyCredentialsCacheGoldenFileToTempFile()
 	cache, err := NewOAuthYamlCredentialsCache(cachePath)
 	s.NoError(err)
@@ -110,7 +115,7 @@ func (s *oauthCredsCacheTestSuite) TestOAuthYamlCredentialsCacheGetDefaultPath()
 
 func (s *oauthCredsCacheTestSuite) TestOAuthYamlCredentialsCachePathFromEnvironment() {
 	fakePath := copyCredentialsCacheGoldenFileToTempFile()
-	file, err := ioutil.TempFile("", ".envCache")
+	file, err := os.CreateTemp("", ".envCache")
 	if err != nil {
 		panic(err)
 	}
@@ -127,12 +132,12 @@ func (s *oauthCredsCacheTestSuite) TestOAuthYamlCredentialsCachePathFromEnvironm
 }
 
 func copyCredentialsCacheGoldenFileToTempFile() string {
-	cache, err := ioutil.ReadFile("testdata/credentialsCache.yml")
+	cache, err := os.ReadFile("testdata/credentialsCache.yml")
 	if err != nil {
 		panic(err)
 	}
 
-	file, err := ioutil.TempFile("", ".credentialsCache")
+	file, err := os.CreateTemp("", ".credentialsCache")
 	if err != nil {
 		panic(err)
 	}
@@ -147,7 +152,7 @@ func copyCredentialsCacheGoldenFileToTempFile() string {
 		panic(err)
 	}
 
-	err = ioutil.WriteFile(path, cache, 0644)
+	err = os.WriteFile(path, cache, 0644)
 	if err != nil {
 		panic(err)
 	}

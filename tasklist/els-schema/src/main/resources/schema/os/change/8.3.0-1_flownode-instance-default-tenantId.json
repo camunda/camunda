@@ -1,0 +1,8 @@
+{
+  "description": "Set default tenantId for 'flownode-instance' index",
+  "@type": "processorStep",
+  "indexName": "flownode-instance",
+  "version": "8.3.0",
+  "order": 1,
+  "content": "{\"set\": {\"field\": \"tenantId\", \"value\": \"<default>\"}}"
+}

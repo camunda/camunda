@@ -1,0 +1,20 @@
+{
+  "dynamic": "true",
+  "properties": {
+    "id": {
+      "type": "keyword"
+    },
+    "creationTime": {
+      "type": "long"
+    },
+    "lastAccessedTime": {
+      "type": "long"
+    },
+    "maxInactiveIntervalInSeconds": {
+      "type": "integer"
+    },
+    "attributes": {
+      "type": "object"
+    }
+  }
+}

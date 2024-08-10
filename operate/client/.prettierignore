@@ -1,0 +1,12 @@
+node_modules/
+build/
+target/
+coverage/
+**/*.bpmn
+**/*.snap
+**/*.svg
+**/*.xml
+yarn.lock
+.eslintignore
+public/
+.prettierignore

@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>zeebe-parent</artifactId>
+    <version>8.6.0-SNAPSHOT</version>
+    <relativePath>../parent/pom.xml</relativePath>
+  </parent>
+  <groupId>io.camunda</groupId>
+  <artifactId>tasklist-parent</artifactId>
+  <packaging>pom</packaging>
+
+  <name>Tasklist Parent</name>
+
+  <modules>
+    <module>client</module>
+    <module>common</module>
+    <module>els-schema</module>
+    <module>data-generator</module>
+    <module>importer-common</module>
+    <module>importer-850</module>
+    <module>importer-860</module>
+    <module>importer</module>
+    <module>archiver</module>
+    <module>webapp</module>
+    <module>mvc-auth-commons</module>
+  </modules>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <!-- release parent settings -->
+    <nexus.snapshot.repository>https://artifacts.camunda.com/artifactory/camunda-zeebe-tasklist-snapshots/</nexus.snapshot.repository>
+    <nexus.release.repository>https://artifacts.camunda.com/artifactory/camunda-zeebe-tasklist/</nexus.release.repository>
+
+    <maven.compiler.target>21</maven.compiler.target>
+    <maven.compiler.source>21</maven.compiler.source>
+
+    <skip.fe.build>true</skip.fe.build>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
+  </properties>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <!-- Javadoc generation fails under Java 11 -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>empty-javadoc-jar</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+              <phase>package</phase>
+              <configuration>
+                <classifier>javadoc</classifier>
+                <classesDirectory>${basedir}/javadoc</classesDirectory>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <forkCount>${env.LIMITS_CPU}</forkCount>
+            <reuseForks>true</reuseForks>
+            <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            <systemPropertyVariables>
+              <testForkNumber>$${surefire.forkNumber}</testForkNumber>
+            </systemPropertyVariables>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <configuration>
+            <forkCount>${env.LIMITS_CPU}</forkCount>
+            <reuseForks>true</reuseForks>
+            <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            <systemPropertyVariables>
+              <testForkNumber>$${surefire.forkNumber}</testForkNumber>
+            </systemPropertyVariables>
+          </configuration>
+          <executions>
+            <execution>
+              <goals>
+                <goal>integration-test</goal>
+                <goal>verify</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <configuration>
+            <nonFilteredFileExtensions>
+              <nonFilteredFileExtension>p12</nonFilteredFileExtension>
+              <nonFilteredFileExtension>crt</nonFilteredFileExtension>
+              <nonFilteredFileExtension>pem</nonFilteredFileExtension>
+            </nonFilteredFileExtensions>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <configuration>
+            <excludes>
+              <!--exclusions for `tasklist-common` module-->
+              <exclude>**/camunda/tasklist/entities/**/*</exclude>
+              <exclude>**/camunda/tasklist/exceptions/**/*</exclude>
+              <exclude>**/camunda/tasklist/property/**/*</exclude>
+              <!--exclusions for `tasklist-webapp` module-->
+              <exclude>**/camunda/tasklist/webapp/api/rest/v1/entities/**/*</exclude>
+              <exclude>**/camunda/tasklist/webapp/management/dto/**/*</exclude>
+              <exclude>**/camunda/tasklist/webapp/graphql/entity/**/*</exclude>
+              <exclude>**/camunda/tasklist/webapp/rest/exception/**/*</exclude>
+              <exclude>**/camunda/tasklist/webapp/config/**/*</exclude>
+              <exclude>**/camunda/tasklist/webapp/es/dao/response/**/*</exclude>
+              <exclude>**/camunda/tasklist/webapp/**/*ErrorController.*</exclude>
+              <exclude>**/camunda/tasklist/webapp/**/ClusterMetadata.*</exclude>
+            </excludes>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <profiles>
+    <profile>
+      <!--
+        We have to skip spotbugs analysis until we fix several findings
+        See https://github.com/camunda/camunda/issues/17598
+      -->
+      <id>spotbugs</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.github.spotbugs</groupId>
+            <artifactId>spotbugs-maven-plugin</artifactId>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <!--
+      The QA module is enabled per default, but having it in a profile allows us to exclude it easily.
+      That is useful for example for creating releases. This profile is active if the skipQaBuild
+      property is not present, or is present and set to a value other than 'true'.
+       -->
+    <profile>
+      <id>integration-tests-build</id>
+      <activation>
+        <property>
+          <name>skipQaBuild</name>
+          <value>!true</value>
+        </property>
+      </activation>
+      <modules>
+        <module>qa</module>
+        <module>test-coverage</module>
+      </modules>
+    </profile>
+  </profiles>
+
+</project>

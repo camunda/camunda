@@ -11,14 +11,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package commands
 
 import (
 	"context"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-	"strings"
-
+	"github.com/camunda/camunda/clients/go/v8/pkg/commands"
 	"github.com/spf13/cobra"
+	"strconv"
+	"strings"
 )
 
 var (
@@ -28,21 +29,31 @@ var (
 )
 
 var createInstanceCmd = &cobra.Command{
-	Use:     "instance <processId>",
-	Short:   "Creates new workflow instance defined by the process ID",
+	Use:     "instance <processId or processKey>",
+	Short:   "Creates new process instance defined by the process ID or process key",
 	Args:    cobra.ExactArgs(1),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		zbCmd, err := client.
-			NewCreateInstanceCommand().
-			BPMNProcessId(args[0]).
-			Version(createInstanceVersionFlag).
-			VariablesFromString(createInstanceVariablesFlag)
+		var zbCmd commands.CreateInstanceCommandStep3
+
+		processKey, err := strconv.Atoi(args[0])
+		if err != nil {
+			// Process ID given
+			zbCmd = client.NewCreateInstanceCommand().
+				BPMNProcessId(args[0]).
+				Version(createInstanceVersionFlag)
+		} else {
+			zbCmd = client.NewCreateInstanceCommand().
+				ProcessDefinitionKey(int64(processKey))
+		}
+
+		zbCmd, err = zbCmd.VariablesFromString(createInstanceVariablesFlag)
+
 		if err != nil {
 			return err
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 
 		if createInstanceWithResultFlag == nil {
@@ -79,11 +90,11 @@ func init() {
 
 	createInstanceCmd.
 		Flags().
-		Int32Var(&createInstanceVersionFlag, "version", commands.LatestVersion, "Specify version of workflow which should be executed.")
+		Int32Var(&createInstanceVersionFlag, "version", commands.LatestVersion, "Specify version of process which should be executed.")
 
 	createInstanceCmd.
 		Flags().
-		StringSliceVar(&createInstanceWithResultFlag, "withResult", nil, "Specify to await result of workflow, optional a list of variable names can be provided to limit the returned variables")
+		StringSliceVar(&createInstanceWithResultFlag, "withResult", nil, "Specify to await result of process, optional a list of variable names can be provided to limit the returned variables")
 
 	// hack to use --withResult without values
 	createInstanceCmd.Flag("withResult").NoOptDefVal = " "

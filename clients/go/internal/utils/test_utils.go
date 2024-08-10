@@ -16,10 +16,10 @@ package utils
 
 import (
 	"fmt"
-	"github.com/golang/protobuf/proto"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"google.golang.org/protobuf/proto"
 	"time"
 )
 
@@ -43,15 +43,18 @@ func (r *RPCTestMsg) Matches(msg interface{}) bool {
 		gotActivReq, okGot := msg.(*pb.ActivateJobsRequest)
 		wantActivReq, okWant := r.Msg.(*pb.ActivateJobsRequest)
 		if okGot && okWant {
-			return cmp.Equal(gotActivReq, r.Msg, cmpopts.IgnoreFields(pb.ActivateJobsRequest{}, "RequestTimeout")) &&
+			return cmp.Equal(gotActivReq, r.Msg, cmpopts.IgnoreUnexported(pb.ActivateJobsRequest{}),
+				cmpopts.IgnoreFields(pb.ActivateJobsRequest{}, "RequestTimeout")) &&
 				gotActivReq.RequestTimeout <= wantActivReq.RequestTimeout
 		}
 	}
 	{
-		gotCreateReq, okGot := msg.(*pb.CreateWorkflowInstanceWithResultRequest)
-		wantCreateReq, okWant := r.Msg.(*pb.CreateWorkflowInstanceWithResultRequest)
+		gotCreateReq, okGot := msg.(*pb.CreateProcessInstanceWithResultRequest)
+		wantCreateReq, okWant := r.Msg.(*pb.CreateProcessInstanceWithResultRequest)
 		if okGot && okWant {
-			return cmp.Equal(gotCreateReq, r.Msg, cmpopts.IgnoreFields(pb.CreateWorkflowInstanceWithResultRequest{}, "RequestTimeout")) &&
+			return cmp.Equal(gotCreateReq, r.Msg, cmpopts.IgnoreUnexported(pb.CreateProcessInstanceWithResultRequest{}),
+				cmpopts.IgnoreUnexported(pb.CreateProcessInstanceRequest{}),
+				cmpopts.IgnoreFields(pb.CreateProcessInstanceWithResultRequest{}, "RequestTimeout")) &&
 				gotCreateReq.RequestTimeout <= wantCreateReq.RequestTimeout
 		}
 

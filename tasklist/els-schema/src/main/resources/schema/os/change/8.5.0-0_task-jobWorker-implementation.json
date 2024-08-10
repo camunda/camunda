@@ -1,0 +1,8 @@
+{
+  "description": "Set JOB_WORKER implementation for 'task' index",
+  "@type": "processorStep",
+  "indexName": "task",
+  "version": "8.5.0",
+  "order": 0,
+  "content": "{\"set\": {\"field\": \"implementation\", \"value\": \"JOB_WORKER\"}}"
+}

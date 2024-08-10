@@ -1,0 +1,59 @@
+name: Zeebe QA Testbench run
+
+on:
+  workflow_dispatch:
+    inputs:
+      generation:
+        description: 'Specifies the generation template which should be used by the testbench run'
+        required: false
+        default: 'Zeebe SNAPSHOT'
+        type: string
+      branch:
+        description: 'Specifies the branch, for which the QA Testbench run should be executed'
+        default: 'main'
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      generation:
+        description: 'Specifies the generation template which should be used by the testbench run'
+        required: false
+        default: 'Zeebe SNAPSHOT'
+        type: string
+      branch:
+        description: 'Specifies the branch, for which the QA Testbench run should be executed'
+        default: 'main'
+        required: false
+        type: string
+
+jobs:
+
+  prepare:
+    # variables in qa job cannot read env variable. So we are building buildUrl here as output so it can be re-used in both qa, wait and notify jobs
+    name: prepare
+    runs-on: ubuntu-latest
+    outputs:
+      buildUrl: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: prepare variables
+        id: generate
+        run: exit 0
+
+  qa:
+    needs: prepare
+    name: Run testbench process
+    uses: ./.github/workflows/zeebe-testbench.yaml
+    with:
+      processId: qa-github-trigger
+      variables: >
+        {
+        \"zeebeImage\": \"$IMAGE\",
+        \"generationTemplate\": \"${{ inputs.generation }}\",
+        \"channel\": \"Internal Dev\",
+        \"branch\": \"${{ inputs.branch }}\",
+        \"build\":  \"${{ needs.prepare.outputs.buildUrl }}\",
+        \"businessKey\": \"${{ needs.prepare.outputs.buildUrl }}\",
+        \"processId\": \"qa-protocol\"
+        }
+      branch: ${{ inputs.branch }}
+    secrets: inherit

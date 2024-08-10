@@ -17,10 +17,10 @@ package commands
 
 import (
 	"context"
+	"github.com/camunda/camunda/clients/go/v8/internal/mock_pb"
+	"github.com/camunda/camunda/clients/go/v8/internal/utils"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 	"github.com/golang/mock/gomock"
-	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
-	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"testing"
 	"time"
 )
@@ -35,7 +35,9 @@ func TestPublishMessageCommand(t *testing.T) {
 		Name:           "foo",
 		CorrelationKey: "bar",
 	}
-	stub := &pb.PublishMessageResponse{}
+	stub := &pb.PublishMessageResponse{
+		Key: 1,
+	}
 
 	client.EXPECT().PublishMessage(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
 
@@ -76,6 +78,37 @@ func TestPublishMessageCommandWithMessageId(t *testing.T) {
 	defer cancel()
 
 	response, err := command.MessageName("foo").CorrelationKey("bar").MessageId("hello").Send(ctx)
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestPublishMessageCommandWithTenantId(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	request := &pb.PublishMessageRequest{
+		Name:           "foo",
+		CorrelationKey: "bar",
+		TenantId:       "1234",
+	}
+	stub := &pb.PublishMessageResponse{}
+
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
+
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := command.MessageName("foo").CorrelationKey("bar").TenantId("1234").Send(ctx)
 
 	if err != nil {
 		t.Errorf("Failed to send request")

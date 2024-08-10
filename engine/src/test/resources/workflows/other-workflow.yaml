@@ -1,6 +1,0 @@
-name: yaml-workflow
-
-tasks:
-
-  - id: task
-    type: foo

@@ -18,8 +18,8 @@ package commands
 import (
 	"context"
 	"fmt"
-	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/camunda/clients/go/v8/internal/utils"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 	"time"
 )
 
@@ -35,6 +35,7 @@ type PublishMessageCommandStep3 interface {
 	DispatchPublishMessageCommand
 
 	MessageId(string) PublishMessageCommandStep3
+	TenantId(string) PublishMessageCommandStep3
 	TimeToLive(duration time.Duration) PublishMessageCommandStep3
 
 	// Expected to be valid JSON string
@@ -58,8 +59,15 @@ type PublishMessageCommand struct {
 	request pb.PublishMessageRequest
 }
 
+//nolint:revive
 func (cmd *PublishMessageCommand) MessageId(messageId string) PublishMessageCommandStep3 {
 	cmd.request.MessageId = messageId
+	return cmd
+}
+
+//nolint:revive
+func (cmd *PublishMessageCommand) TenantId(tenantId string) PublishMessageCommandStep3 {
+	cmd.request.TenantId = tenantId
 	return cmd
 }
 

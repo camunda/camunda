@@ -1,0 +1,48 @@
+{
+  "root": true,
+  "env": {
+    "browser": true,
+    "es2018": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react-hooks/recommended",
+    "plugin:prettier/recommended",
+    "plugin:testing-library/react",
+    "plugin:@tanstack/eslint-plugin-query/recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "plugins": [
+    "react-refresh",
+    "testing-library",
+    "license-header"
+  ],
+  "rules": {
+    "react-refresh/only-export-components": [
+      "error",
+      {
+        "allowConstantExport": true
+      }
+    ],
+    "import/no-anonymous-default-export": 0,
+    "testing-library/no-debugging-utils": "error",
+    "no-duplicate-imports": "error",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "args": "all",
+        "argsIgnorePattern": "^_",
+        "caughtErrors": "all",
+        "caughtErrorsIgnorePattern": "^_",
+        "destructuredArrayIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "ignoreRestSiblings": true
+      }
+    ],
+    "license-header/header": [
+      "error",
+      "./resources/license-header.js"
+    ]
+  }
+}

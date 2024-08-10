@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:dupl
 package commands
 
 import (
 	"context"
+	"fmt"
+	"github.com/camunda/camunda/clients/go/v8/pkg/commands"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 	"github.com/spf13/cobra"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-	"log"
 )
 
 var (
@@ -26,25 +28,39 @@ var (
 	updateRetriesFlag int32
 )
 
+type UpdateJobRetriesResponseWrapper struct {
+	response *pb.UpdateJobRetriesResponse
+}
+
+func (u UpdateJobRetriesResponseWrapper) human() (string, error) {
+	return fmt.Sprint("Updated the retries of job with key '", updateRetriesKey, "' to '", updateRetriesFlag, "'"), nil
+}
+
+func (u UpdateJobRetriesResponseWrapper) json() (string, error) {
+	return toJSON(u.response)
+}
+
 var updateRetriesCmd = &cobra.Command{
 	Use:     "retries <key>",
 	Short:   "Update retries of a job",
 	Args:    keyArg(&updateRetriesKey),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 
-		_, err := client.NewUpdateJobRetriesCommand().JobKey(updateRetriesKey).Retries(updateRetriesFlag).Send(ctx)
-		if err == nil {
-			log.Println("Updated the retries of job with key", updateRetriesKey, "to", updateRetriesFlag)
+		resp, err := client.NewUpdateJobRetriesCommand().JobKey(updateRetriesKey).Retries(updateRetriesFlag).Send(ctx)
+		if err != nil {
+			return err
 		}
+		err = printOutput(UpdateJobRetriesResponseWrapper{resp})
 
 		return err
 	},
 }
 
 func init() {
+	addOutputFlag(updateRetriesCmd)
 	updateCmd.AddCommand(updateRetriesCmd)
 	updateRetriesCmd.Flags().Int32Var(&updateRetriesFlag, "retries", commands.DefaultJobRetries, "Specify retries of job")
 	if err := updateRetriesCmd.MarkFlagRequired("retries"); err != nil {

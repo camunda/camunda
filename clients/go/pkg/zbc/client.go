@@ -18,25 +18,38 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/keepalive"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/worker"
+	"github.com/camunda/camunda/clients/go/v8/internal/embedded"
+	"google.golang.org/grpc/credentials/insecure"
+
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
+
 	"google.golang.org/grpc"
+
+	"github.com/camunda/camunda/clients/go/v8/pkg/commands"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
+	"github.com/camunda/camunda/clients/go/v8/pkg/worker"
 )
 
-const DefaultRequestTimeout = 15 * time.Second
 const DefaultKeepAlive = 45 * time.Second
+const DefaultAddressHost = "127.0.0.1"
+const DefaultAddressPort = "26500"
 const InsecureEnvVar = "ZEEBE_INSECURE_CONNECTION"
 const CaCertificatePath = "ZEEBE_CA_CERTIFICATE_PATH"
 const KeepAliveEnvVar = "ZEEBE_KEEP_ALIVE"
+const GatewayAddressEnvVar = "ZEEBE_ADDRESS"
+const GatewayHostEnvVar = "ZEEBE_HOST"
+const GatewayPortEnvVar = "ZEEBE_PORT"
+const OverrideAuthorityEnvVar = "ZEEBE_OVERRIDE_AUTHORITY"
+
+// Version specifies the client's version; this is used as part of the user agent string, for example
+var Version = embedded.Version
 
 type ClientImpl struct {
 	gateway             pb.GatewayClient
@@ -48,12 +61,18 @@ type ClientConfig struct {
 	GatewayAddress         string
 	UsePlaintextConnection bool
 	CaCertificatePath      string
+	OverrideAuthority      string
 	CredentialsProvider    CredentialsProvider
 
 	// KeepAlive can be used configure how often keep alive messages should be sent to the gateway. These will be sent
 	// whether or not there are active requests. Negative values will result in error and zero will result in the default
 	// of 45 seconds being used
 	KeepAlive time.Duration
+
+	// UserAgent is an optional field, to specify the user-agent header which should be sent by each
+	// gRPC request. Defaults to zeebe-client-go/%version.
+	UserAgent string
+	DialOpts  []grpc.DialOption
 }
 
 // ErrFileNotFound is returned whenever a file can't be found at the provided path. Use this value to do error comparison.
@@ -69,12 +88,24 @@ func (c *ClientImpl) NewTopologyCommand() *commands.TopologyCommand {
 	return commands.NewTopologyCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
-func (c *ClientImpl) NewDeployWorkflowCommand() *commands.DeployCommand {
-	return commands.NewDeployCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
+func (c *ClientImpl) NewDeployProcessCommand() *commands.DeployCommand {
+	return commands.NewDeployCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest) // nolint
+}
+
+func (c *ClientImpl) NewDeployResourceCommand() *commands.DeployResourceCommand {
+	return commands.NewDeployResourceCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
+}
+
+func (c *ClientImpl) NewEvaluateDecisionCommand() commands.EvaluateDecisionCommandStep1 {
+	return commands.NewEvaluateDecisionCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
 func (c *ClientImpl) NewPublishMessageCommand() commands.PublishMessageCommandStep1 {
 	return commands.NewPublishMessageCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
+}
+
+func (c *ClientImpl) NewBroadcastSignalCommand() commands.BroadcastSignalCommandStep1 {
+	return commands.NewBroadcastSignalCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
 func (c *ClientImpl) NewResolveIncidentCommand() commands.ResolveIncidentCommandStep1 {
@@ -101,6 +132,10 @@ func (c *ClientImpl) NewUpdateJobRetriesCommand() commands.UpdateJobRetriesComma
 	return commands.NewUpdateJobRetriesCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
+func (c *ClientImpl) NewUpdateJobTimeoutCommand() commands.UpdateJobTimeoutCommandStep1 {
+	return commands.NewUpdateJobTimeoutCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
+}
+
 func (c *ClientImpl) NewSetVariablesCommand() commands.SetVariablesCommandStep1 {
 	return commands.NewSetVariablesCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
@@ -113,8 +148,16 @@ func (c *ClientImpl) NewThrowErrorCommand() commands.ThrowErrorCommandStep1 {
 	return commands.NewThrowErrorCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
+func (c *ClientImpl) NewDeleteResourceCommand() commands.DeleteResourceCommandStep1 {
+	return commands.NewDeleteResourceCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
+}
+
+func (c *ClientImpl) NewStreamJobsCommand() commands.StreamJobsCommandStep1 {
+	return commands.NewStreamJobsCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
+}
+
 func (c *ClientImpl) NewJobWorker() worker.JobWorkerBuilderStep1 {
-	return worker.NewJobWorkerBuilder(c.gateway, c)
+	return worker.NewJobWorkerBuilder(c.gateway, c, c.credentialsProvider.ShouldRetryRequest)
 }
 
 func (c *ClientImpl) Close() error {
@@ -122,28 +165,33 @@ func (c *ClientImpl) Close() error {
 }
 
 func NewClient(config *ClientConfig) (Client, error) {
-	var opts []grpc.DialOption
 	err := applyClientEnvOverrides(config)
 	if err != nil {
 		return nil, err
 	}
 
-	opts, err = configureConnectionSecurity(config, opts)
+	err = configureConnectionSecurity(config)
 	if err != nil {
 		return nil, err
 	}
 
-	opts, err = configureCredentialsProvider(config, opts)
+	err = configureCredentialsProvider(config)
 	if err != nil {
 		return nil, err
 	}
 
-	opts, err = configureKeepAlive(config, opts)
+	err = configureKeepAlive(config)
 	if err != nil {
 		return nil, err
 	}
 
-	conn, err := grpc.Dial(config.GatewayAddress, opts...)
+	if config.UserAgent == "" {
+		config.UserAgent = "zeebe-client-go/" + Version
+	}
+
+	config.DialOpts = append(config.DialOpts, grpc.WithUserAgent(config.UserAgent))
+
+	conn, err := grpc.NewClient(config.GatewayAddress, config.DialOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -164,6 +212,22 @@ func applyClientEnvOverrides(config *ClientConfig) error {
 		config.CaCertificatePath = caCertificatePath
 	}
 
+	if overrideAuthority := env.get(OverrideAuthorityEnvVar); overrideAuthority != "" {
+		config.OverrideAuthority = overrideAuthority
+	}
+
+	if gatewayHost := env.get(GatewayHostEnvVar); gatewayHost != "" {
+		if gatewayPort := env.get(GatewayPortEnvVar); gatewayPort != "" {
+			config.GatewayAddress = fmt.Sprintf("%s:%s", gatewayHost, gatewayPort)
+		} else {
+			config.GatewayAddress = fmt.Sprintf("%s:%s", gatewayHost, DefaultAddressPort)
+		}
+	} else if gatewayPort := env.get(GatewayPortEnvVar); gatewayPort != "" {
+		config.GatewayAddress = fmt.Sprintf("%s:%s", DefaultAddressHost, gatewayPort)
+	} else if gatewayAddress := env.get(GatewayAddressEnvVar); gatewayAddress != "" {
+		config.GatewayAddress = gatewayAddress
+	}
+
 	if val := env.get(KeepAliveEnvVar); val != "" {
 		keepAlive, err := strconv.ParseUint(val, 10, 64)
 		if err != nil {
@@ -176,10 +240,10 @@ func applyClientEnvOverrides(config *ClientConfig) error {
 	return nil
 }
 
-func configureCredentialsProvider(config *ClientConfig, opts []grpc.DialOption) ([]grpc.DialOption, error) {
+func configureCredentialsProvider(config *ClientConfig) error {
 	if config.CredentialsProvider == nil && shouldUseDefaultCredentialsProvider() {
 		if err := setDefaultCredentialsProvider(config); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -189,12 +253,12 @@ func configureCredentialsProvider(config *ClientConfig, opts []grpc.DialOption) 
 		}
 
 		callCredentials := &callCredentials{credentialsProvider: config.CredentialsProvider}
-		opts = append(opts, grpc.WithPerRPCCredentials(callCredentials))
+		config.DialOpts = append(config.DialOpts, grpc.WithPerRPCCredentials(callCredentials))
 	} else {
 		config.CredentialsProvider = &noopCredentialsProvider{}
 	}
 
-	return opts, nil
+	return nil
 }
 
 func shouldUseDefaultCredentialsProvider() bool {
@@ -217,37 +281,38 @@ func setDefaultCredentialsProvider(config *ClientConfig) error {
 	return nil
 }
 
-func configureConnectionSecurity(config *ClientConfig, opts []grpc.DialOption) ([]grpc.DialOption, error) {
+func configureConnectionSecurity(config *ClientConfig) error {
 	if !config.UsePlaintextConnection {
 		var creds credentials.TransportCredentials
 
 		if config.CaCertificatePath == "" {
-			creds = credentials.NewTLS(&tls.Config{})
+			creds = credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS12, ServerName: config.OverrideAuthority})
 		} else if _, err := os.Stat(config.CaCertificatePath); os.IsNotExist(err) {
-			return nil, fmt.Errorf("expected to find CA certificate but no such file at '%s': %w", config.CaCertificatePath, ErrFileNotFound)
+			return fmt.Errorf("expected to find CA certificate but no such file at '%s': %w", config.CaCertificatePath, ErrFileNotFound)
 		} else {
-			creds, err = credentials.NewClientTLSFromFile(config.CaCertificatePath, "")
+			creds, err = credentials.NewClientTLSFromFile(config.CaCertificatePath, config.OverrideAuthority)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 
-		opts = append(opts, grpc.WithTransportCredentials(creds))
+		config.DialOpts = append(config.DialOpts, grpc.WithTransportCredentials(creds))
 	} else {
-		opts = append(opts, grpc.WithInsecure())
+		config.DialOpts = append(config.DialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	return opts, nil
+	return nil
 }
 
-func configureKeepAlive(config *ClientConfig, opts []grpc.DialOption) ([]grpc.DialOption, error) {
+func configureKeepAlive(config *ClientConfig) error {
 	keepAlive := DefaultKeepAlive
 
 	if config.KeepAlive < time.Duration(0) {
-		return nil, errors.New("keep alive must be a positive duration")
+		return errors.New("keep alive must be a positive duration")
 	} else if config.KeepAlive != time.Duration(0) {
 		keepAlive = config.KeepAlive
 	}
+	config.DialOpts = append(config.DialOpts, grpc.WithKeepaliveParams(keepalive.ClientParameters{Time: keepAlive}))
 
-	return append(opts, grpc.WithKeepaliveParams(keepalive.ClientParameters{Time: keepAlive})), nil
+	return nil
 }

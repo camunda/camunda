@@ -11,25 +11,27 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package containersuite
 
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/camunda/camunda/clients/go/v8/internal/utils"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
+	"github.com/camunda/camunda/clients/go/v8/pkg/zbc"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"io/ioutil"
-	"os"
-	"strings"
-	"time"
 )
 
 type zeebeWaitStrategy struct {
@@ -87,7 +89,7 @@ func printFailedContainerLogs(target wait.StrategyTarget) error {
 	}
 
 	defer func() { _ = reader.Close() }()
-	if bytes, err := ioutil.ReadAll(reader); err == nil {
+	if bytes, err := io.ReadAll(reader); err == nil {
 		_, _ = fmt.Fprintln(os.Stderr, "=====================================")
 		_, _ = fmt.Fprintln(os.Stderr, "Container logs")
 		_, _ = fmt.Fprintln(os.Stderr, "NOTE: these logs are for all tests in the same suite!")
@@ -155,17 +157,42 @@ type ContainerSuite struct {
 	ContainerImage string
 	// GatewayAddress is the contact point of the spawned Zeebe container specified in the format 'host:port'
 	GatewayAddress string
+	GatewayHost    string
+	GatewayPort    int
+	// MonitoringAddress is the contact point of the spawned Zeebe container specified in the format 'host:port'
+	MonitoringAddress string
+	// Env will add additional environment variables when creating the container
+	Env map[string]string
 
 	suite.Suite
-	container testcontainers.Container
+	container   testcontainers.Container
+	logConsumer testLogConsumer
 }
 
-func (s *ContainerSuite) AfterTest(suiteName, testName string) {
+func (s *ContainerSuite) AfterTest(_, _ string) {
+	s.logConsumer.consumer = func(ignored string) {}
+
 	if s.T().Failed() {
-		if err := printFailedContainerLogs(s.container); err != nil {
-			_, _ = fmt.Fprint(os.Stderr, err)
-		}
+		s.PrintFailedContainerLogs()
 	}
+}
+
+func (s *ContainerSuite) PrintFailedContainerLogs() {
+	if err := printFailedContainerLogs(s.container); err != nil {
+		_, _ = fmt.Fprint(os.Stderr, err)
+	}
+}
+
+func (s *ContainerSuite) ConsumeLogs(consumer func(s string)) {
+	s.logConsumer.consumer = consumer
+}
+
+type testLogConsumer struct {
+	consumer func(s string)
+}
+
+func (t *testLogConsumer) Accept(log testcontainers.Log) {
+	t.consumer(string(log.Content))
 }
 
 func (s *ContainerSuite) SetupSuite() {
@@ -173,10 +200,19 @@ func (s *ContainerSuite) SetupSuite() {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:        s.ContainerImage,
-			ExposedPorts: []string{"26500"},
+			ExposedPorts: []string{"26500/tcp", "9600/tcp"},
 			WaitingFor:   zeebeWaitStrategy{waitTime: s.WaitTime},
+			Env: map[string]string{
+				"ZEEBE_BROKER_NETWORK_HOST":           "0.0.0.0",
+				"ZEEBE_BROKER_NETWORK_ADVERTISEDHOST": "0.0.0.0",
+			},
 		},
 		Started: true,
+	}
+
+	// apply environment overrides
+	for key, value := range s.Env {
+		req.Env[key] = value
 	}
 
 	ctx := context.Background()
@@ -201,9 +237,22 @@ func (s *ContainerSuite) SetupSuite() {
 	}
 
 	s.GatewayAddress = fmt.Sprintf("%s:%d", host, port.Int())
+	s.GatewayHost = host
+	s.GatewayPort = port.Int()
+
+	port, err = s.container.MappedPort(ctx, "9600")
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	s.MonitoringAddress = fmt.Sprintf("%s:%d", host, port.Int())
+
+	s.logConsumer = testLogConsumer{func(ignored string) {}}
+	s.container.FollowOutput(&s.logConsumer)
+	s.Require().NoError(s.container.StartLogProducer(ctx))
 }
 
 func (s *ContainerSuite) TearDownSuite() {
+	_ = s.container.StopLogProducer() // safe to ignore
 	err := s.container.Terminate(context.Background())
 	if err != nil {
 		s.T().Fatal(err)

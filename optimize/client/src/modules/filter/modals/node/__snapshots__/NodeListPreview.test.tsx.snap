@@ -1,0 +1,157 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should create preview of nodes 1`] = `
+<Fragment>
+  <Tooltip
+    content={
+      <Tag
+        className="parameterName"
+        type="blue"
+      >
+        Running, canceled, or completed flow nodes
+      </Tag>
+    }
+    overflowOnly={true}
+  >
+    <Tag
+      className="parameterName"
+      type="blue"
+    >
+      Running, canceled, or completed flow nodes
+    </Tag>
+  </Tooltip>
+  <ul
+    className="previewList filterText"
+  >
+    <li
+      className="previewItem"
+      key="0"
+    >
+      <span>
+         
+        <b>
+          foo
+        </b>
+      </span>
+    </li>
+  </ul>
+</Fragment>
+`;
+
+exports[`should create preview of selected nodes linked by nor 1`] = `
+<Fragment>
+  <Tooltip
+    content={
+      <Tag
+        className="parameterName"
+        type="blue"
+      >
+        Not executed flow nodes
+      </Tag>
+    }
+    overflowOnly={true}
+  >
+    <Tag
+      className="parameterName"
+      type="blue"
+    >
+      Not executed flow nodes
+    </Tag>
+  </Tooltip>
+  <ul
+    className="previewList filterText"
+  >
+    <li
+      className="previewItem"
+      key="0"
+    >
+      <span>
+         
+        <b>
+          foo
+        </b>
+      </span>
+    </li>
+    <li
+      className="previewItem"
+      key="1"
+    >
+      <span>
+         
+        <span
+          className="previewItemOperator"
+        >
+           
+          and
+           
+        </span>
+        <b>
+          foo
+        </b>
+      </span>
+    </li>
+  </ul>
+</Fragment>
+`;
+
+exports[`should create preview of selected nodes linked by or 1`] = `
+<Fragment>
+  <Tooltip
+    content={
+      <Tag
+        className="parameterName"
+        type="blue"
+      >
+        Running, canceled, or completed flow nodes
+      </Tag>
+    }
+    overflowOnly={true}
+  >
+    <Tag
+      className="parameterName"
+      type="blue"
+    >
+      Running, canceled, or completed flow nodes
+    </Tag>
+  </Tooltip>
+  <ul
+    className="previewList filterText"
+  >
+    <li
+      className="previewItem"
+      key="0"
+    >
+      <span>
+         
+        <b>
+          foo
+        </b>
+      </span>
+    </li>
+    <li
+      className="previewItem"
+      key="1"
+    >
+      <span>
+         
+        <span
+          className="previewItemOperator"
+        >
+           
+          or
+           
+        </span>
+        <b>
+          foo
+        </b>
+      </span>
+    </li>
+  </ul>
+</Fragment>
+`;
+
+exports[`should show the id of the flow node if the name is null 1`] = `
+<b>
+  bar
+</b>
+`;

@@ -1,0 +1,59 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+@use '@carbon/type';
+@use '@carbon/layout';
+
+@mixin textOverflowEllipsis {
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.container {
+  width: 100%;
+  height: 100%;
+  padding: var(--cds-spacing-05);
+  background: var(--cds-layer);
+}
+
+.content {
+  height: 100%;
+}
+
+.titleWrapper {
+  height: fit-content;
+}
+
+.title {
+  @include textOverflowEllipsis;
+  @include type.type-style('productive-heading-02');
+
+  color: var(--cds-text-primary);
+}
+
+.subtitle {
+  @include textOverflowEllipsis;
+  @include type.type-style('label-01');
+
+  min-height: layout.to-rem(16px);
+  margin-bottom: var(--cds-spacing-06);
+  color: var(--cds-text-secondary);
+}
+
+.buttonRow {
+  display: flex;
+  flex-flow: row-reverse wrap;
+  place-content: end flex-end;
+  gap: var(--cds-spacing-05);
+
+  & .startButton {
+    margin-right: auto;
+  }
+}

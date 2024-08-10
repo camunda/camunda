@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>zeebe-parent</artifactId>
+    <version>8.6.0-SNAPSHOT</version>
+    <relativePath>../parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>operate-parent</artifactId>
+  <packaging>pom</packaging>
+
+  <name>Operate Parent</name>
+
+  <modules>
+    <module>client</module>
+    <module>common</module>
+    <module>schema</module>
+    <module>data-generator</module>
+    <module>importer-common</module>
+    <module>importer-8_5</module>
+    <module>importer-8_6</module>
+    <module>importer</module>
+    <module>archiver</module>
+    <module>webapp</module>
+    <module>mvc-auth-commons</module>
+  </modules>
+
+  <properties>
+
+    <!-- release parent settings -->
+    <nexus.snapshot.repository>https://artifacts.camunda.com/artifactory/camunda-operate-snapshots/</nexus.snapshot.repository>
+    <nexus.release.repository>https://artifacts.camunda.com/artifactory/camunda-operate/</nexus.release.repository>
+
+    <maven.compiler.target>21</maven.compiler.target>
+    <maven.compiler.source>21</maven.compiler.source>
+
+    <skip.fe.build>false</skip.fe.build>
+    <skipSurefire>false</skipSurefire>
+    <testForkCount>${env.LIMITS_CPU}</testForkCount>
+    <includeITNames>**/*IT.java</includeITNames>
+    <excludeITNames>**/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
+    <itDatabase>elasticsearch</itDatabase>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
+  </properties>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+
+        <!-- Javadoc generation fails under Java 11 -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>empty-javadoc-jar</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+              <phase>package</phase>
+              <configuration>
+                <classifier>javadoc</classifier>
+                <classesDirectory>${basedir}/javadoc</classesDirectory>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <skip>${skipSurefire}</skip>
+            <forkCount>${testForkCount}</forkCount>
+            <reuseForks>true</reuseForks>
+            <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            <systemPropertyVariables>
+              <testForkNumber>$${surefire.forkNumber}</testForkNumber>
+            </systemPropertyVariables>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <configuration>
+            <nonFilteredFileExtensions>
+              <nonFilteredFileExtension>p12</nonFilteredFileExtension>
+              <nonFilteredFileExtension>crt</nonFilteredFileExtension>
+              <nonFilteredFileExtension>pem</nonFilteredFileExtension>
+            </nonFilteredFileExtensions>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>${plugin.version.dependency}</version>
+          <!-- To run with Java 11 - https://issues.apache.org/jira/browse/MDEP-613-->
+          <dependencies>
+            <dependency>
+              <groupId>org.apache.maven.shared</groupId>
+              <artifactId>maven-dependency-analyzer</artifactId>
+              <version>${plugin.version.dependency-analyzer}</version>
+            </dependency>
+          </dependencies>
+
+          <executions>
+            <execution>
+              <id>analyze-dependencies</id>
+              <goals>
+                <goal>analyze-only</goal>
+              </goals>
+              <!-- The analyze-only goal assumes that the test-compile phase has been executed -->
+              <phase>verify</phase>
+              <configuration>
+                <failOnWarning>true</failOnWarning>
+                <outputXML>true</outputXML>
+                <!-- dependencies not directly used in all projects during tests -->
+                <ignoredUnusedDeclaredDependencies combine.children="append">
+                  <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
+                  <dep>org.apache.logging.log4j:log4j-core</dep>
+                  <dep>io.camunda:zeebe-build-tools</dep>
+                  <dep>io.camunda:zeebe-gateway-protocol</dep>
+                  <dep>org.ow2.asm:asm</dep>
+                  <dep>org.bouncycastle:bcpkix-jdk18on</dep>
+                  <dep>org.bouncycastle:bcprov-jdk18on</dep>
+                  <dep>org.junit.jupiter:junit-jupiter-engine</dep>
+                  <dep>org.junit.vintage:junit-vintage-engine</dep>
+                  <dep>com.tngtech.archunit:archunit-junit5-engine</dep>
+                  <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
+                  <dep>org.postgresql:postgresql</dep>
+                </ignoredUnusedDeclaredDependencies>
+                <ignoredNonTestScopedDependencies>
+                  <dep>org.elasticsearch:elasticsearch-x-content</dep>
+                </ignoredNonTestScopedDependencies>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>operateItStage1</id>
+      <properties>
+        <includeITNames>**/*IT.java</includeITNames>
+        <excludeITNames>**/*ZeebeIT.java, **/*ZeebeImportIT.java, **/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>operateItStage2</id>
+      <properties>
+        <includeITNames>**/*ZeebeIT.java</includeITNames>
+        <excludeITNames>none</excludeITNames>
+        <skipSurefire>true</skipSurefire>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>operateItImport</id>
+      <properties>
+        <includeITNames>**/*ZeebeImportIT.java, **/*ZeebeIT.java</includeITNames>
+        <excludeITNames>none</excludeITNames>
+        <skipSurefire>true</skipSurefire>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>operateItOpensearch</id>
+      <properties>
+        <includeITNames>**/api/v1/**/*IT.java</includeITNames>
+        <excludeITNames>none</excludeITNames>
+        <skipSurefire>true</skipSurefire>
+      </properties>
+    </profile>
+
+    <!--
+      The QA module is enabled per default, but having it in a profile allows us to exclude it easily.
+      That is useful for example for creating releases. This profile is active if the skipQaBuild
+      property is not present, or is present and set to a value other than 'true'.
+       -->
+    <profile>
+      <id>integration-tests-build</id>
+      <activation>
+        <property>
+          <name>skipQaBuild</name>
+          <value>!true</value>
+        </property>
+      </activation>
+      <modules>
+        <module>qa</module>
+      </modules>
+    </profile>
+  </profiles>
+</project>

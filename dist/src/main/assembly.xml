@@ -5,7 +5,7 @@
   <id>distro</id>
 
   <includeBaseDirectory>true</includeBaseDirectory>
-  <baseDirectory>zeebe-broker-${project.version}/</baseDirectory>
+  <baseDirectory>camunda-zeebe-${project.version}/</baseDirectory>
 
   <formats>
     <format>zip</format>
@@ -14,7 +14,7 @@
 
   <fileSets>
     <fileSet>
-      <directory>${project.build.directory}/zeebe-broker</directory>
+      <directory>${project.build.directory}/camunda-zeebe</directory>
       <outputDirectory>/</outputDirectory>
     </fileSet>
     <fileSet>
@@ -26,6 +26,12 @@
   <files>
     <file>
       <source>${maven.multiModuleProjectDirectory}/NOTICE.txt</source>
+      <outputDirectory>/</outputDirectory>
+    </file>
+    <file>
+      <source>${maven.multiModuleProjectDirectory}/dist/README.txt</source>
+      <filtered>true</filtered>
+      <lineEnding>keep</lineEnding>
       <outputDirectory>/</outputDirectory>
     </file>
   </files>

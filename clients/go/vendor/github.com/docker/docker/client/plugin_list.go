@@ -15,6 +15,7 @@ func (cli *Client) PluginList(ctx context.Context, filter filters.Args) (types.P
 	query := url.Values{}
 
 	if filter.Len() > 0 {
+		//nolint:staticcheck // ignore SA1019 for old code
 		filterJSON, err := filters.ToParamWithVersion(cli.version, filter)
 		if err != nil {
 			return plugins, err
@@ -24,7 +25,7 @@ func (cli *Client) PluginList(ctx context.Context, filter filters.Args) (types.P
 	resp, err := cli.get(ctx, "/plugins", query, nil)
 	defer ensureReaderClosed(resp)
 	if err != nil {
-		return plugins, wrapResponseError(err, resp, "plugin", "")
+		return plugins, err
 	}
 
 	err = json.NewDecoder(resp.body).Decode(&plugins)

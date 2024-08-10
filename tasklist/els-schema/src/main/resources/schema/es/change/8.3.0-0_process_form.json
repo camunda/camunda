@@ -1,0 +1,8 @@
+{
+  "description": "Add field version ",
+  "@type": "processorStep",
+  "indexName": "process",
+  "version": "8.3.0",
+  "order": 0,
+  "content": "{\"script\": {\"lang\": \"painless\",\"source\": \"ctx.startedByForm = false; ctx.formKey = null;\"}}"
+}

@@ -1,0 +1,21 @@
+{
+  "io.k8s.description": "Tasklist is a ready-to-use application to rapidly implement business processes alongside user tasks in Zeebe",
+  "io.openshift.min-cpu": "1",
+  "io.openshift.min-memory": "1Gi",
+  "io.openshift.non-scalable": "false",
+  "io.openshift.wants": "zeebe,elasticsearch",
+  "io.openshift.tags": "bpmn,tasklist,camunda",
+  "org.opencontainers.image.authors": "hto@camunda.com",
+  "org.opencontainers.image.base.name": $BASE_IMAGE,
+  "org.opencontainers.image.base.digest": $DIGEST,
+  "org.opencontainers.image.created": $DATE,
+  "org.opencontainers.image.description": "Tasklist is a ready-to-use application to rapidly implement business processes alongside user tasks in Zeebe",
+  "org.opencontainers.image.documentation": "https://docs.camunda.io/docs/self-managed/tasklist-deployment/install-and-start/",
+  "org.opencontainers.image.licenses": "(Apache-2.0 AND LicenseRef-Camunda-License-1.0)",
+  "org.opencontainers.image.revision": $REVISION,
+  "org.opencontainers.image.source": "https://github.com/camunda/camunda",
+  "org.opencontainers.image.title": "Camunda Tasklist",
+  "org.opencontainers.image.url": "https://camunda.com/platform/tasklist/",
+  "org.opencontainers.image.vendor": "Camunda Services GmbH",
+  "org.opencontainers.image.version": $VERSION
+}

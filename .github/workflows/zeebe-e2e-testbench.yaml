@@ -1,0 +1,100 @@
+name: Run Zeebe E2E Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      maxTestDuration:
+        description: 'Test duration (Eg: PT2H, P3D)'
+        required: false
+        default: 'P5D'
+        type: string
+      generation:
+        description: 'Specifies the generation template which should be used by the testbench run'
+        required: false
+        default: 'Zeebe SNAPSHOT'
+        type: string
+      branch:
+        description: 'Specifies the branch, for which the E2E run should be executed'
+        default: 'main'
+        required: false
+        type: string
+      clusterPlan:
+        description: 'Cluster plan used by testbench to create the test cluster'
+        default: 'Production - M'
+        required: false
+        type: string
+      fault:
+        ## The fault added to variables as follows
+        ## \"fault\": ${{ inputs.fault || 'null' }}
+        ## So the input should contain escape quotes.
+        description: 'Fault to inject in the test cluster. Eg:- \"restart-leader-1\". Specify the quotes with escape.'
+        default: null
+        required: false
+        type: string
+      maxInstanceDuration:
+        description: 'If an instance takes longer than the given duration to complete, test will fail.'
+        default: '15m'
+        required: false
+        type: string
+
+  workflow_call:
+    inputs:
+      maxTestDuration:
+        description: 'Test duration (Eg: PT2H, P3D)'
+        required: false
+        default: 'P5D'
+        type: string
+      generation:
+        description: 'Specifies the generation template which should be used by the testbench run'
+        required: false
+        default: 'Zeebe SNAPSHOT'
+        type: string
+      branch:
+        description: 'Specifies the branch, for which the E2E run should be executed'
+        default: 'main'
+        required: false
+        type: string
+      clusterPlan:
+        description: 'Cluster plan used by testbench to create the test cluster'
+        default: 'Production - M'
+        required: false
+        type: string
+      fault:
+        description: 'Fault to inject in the test cluster. Eg:- \"restart-leader-1\". Specify the quotes with escape.'
+        default: null
+        required: false
+        type: string
+      maxInstanceDuration:
+        description: 'If an instance takes longer than the given duration to complete, test will fail.'
+        default: '15m'
+        required: false
+        type: string
+
+jobs:
+  e2e:
+    name: Run e2e testbench process
+    uses: ./.github/workflows/zeebe-testbench.yaml
+    with:
+      processId: e2e_testbench_protocol
+      variables: >
+        {
+        \"zeebeImage\":\"$IMAGE\",
+        \"generationTemplate\":\"${{ inputs.generation || 'Zeebe SNAPSHOT' }}\",
+        \"channel\": \"Internal Dev\",
+        \"branch\": \"${{ inputs.branch || 'main' }}\",
+        \"build\":  \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",
+        \"clusterPlan\":\"${{ inputs.clusterPlan }}\",
+        \"region\":\"Chaos, Belgium, Europe (europe-west1)\",
+        \"properties\":[\"allInstancesAreCompleted\"],
+        \"testProcessId\": \"e2e-test\",
+        \"testParams\":
+        {
+        \"maxTestDuration\": \"${{ inputs.maxTestDuration || 'P5D' }}\",
+        \"starter\": [ {\"rate\": 20, \"processId\": \"one-task-one-timer\" },
+                       {\"rate\": 10, \"processId\": \"ping-pong-message\" } ],
+        \"verifier\" : { \"maxInstanceDuration\" : \"${{ inputs.maxInstanceDuration }}\" },
+        \"fault\": ${{ inputs.fault || 'null' }}
+        }
+        }
+      branch: ${{ inputs.branch }}
+    secrets: inherit

@@ -18,8 +18,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 	"github.com/stretchr/testify/require"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -36,7 +36,6 @@ const audience = "localhost"
 
 // response data
 const accessToken = "someToken"
-const tokenType = "Bearer"
 
 type customCredentialsProvider struct {
 	customToken    string
@@ -58,8 +57,8 @@ func (t customCredentialsProvider) ShouldRetryRequest(_ context.Context, err err
 
 func TestCustomCredentialsProvider(t *testing.T) {
 	// given
-	interceptor := newRecordingInterceptor(nil)
-	lis, grpcServer := createServerWithInterceptor(interceptor.unaryClientInterceptor)
+	interceptor := newInterceptor(nil)
+	lis, grpcServer := createServerWithUnaryInterceptor(interceptor.interceptUnary)
 
 	go grpcServer.Serve(lis)
 	defer func() {
@@ -92,11 +91,11 @@ func TestCustomCredentialsProvider(t *testing.T) {
 func TestRetryMoreThanOnce(t *testing.T) {
 	// given
 	retries := 2
-	interceptor := newRecordingInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		return nil, status.Error(codes.Unknown, "expected")
+	interceptor := newInterceptor(func(ctx context.Context) (bool, error) {
+		return false, status.Error(codes.Unknown, "expected")
 	})
 
-	lis, grpcServer := createServerWithInterceptor(interceptor.unaryClientInterceptor)
+	lis, grpcServer := createServerWithUnaryInterceptor(interceptor.interceptUnary)
 
 	go grpcServer.Serve(lis)
 	defer func() {
@@ -133,11 +132,11 @@ func TestRetryMoreThanOnce(t *testing.T) {
 
 func TestNoRetryWithoutProvider(t *testing.T) {
 	// given
-	interceptor := newRecordingInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		return nil, status.Error(codes.Unauthenticated, "expected")
+	interceptor := newInterceptor(func(ctx context.Context) (bool, error) {
+		return false, status.Error(codes.Unauthenticated, "expected")
 	})
 
-	lis, grpcServer := createServerWithInterceptor(interceptor.unaryClientInterceptor)
+	lis, grpcServer := createServerWithUnaryInterceptor(interceptor.interceptUnary)
 
 	go grpcServer.Serve(lis)
 	defer func() {
@@ -164,7 +163,7 @@ func TestNoRetryWithoutProvider(t *testing.T) {
 	require.EqualValues(t, 1, interceptor.interceptCounter)
 }
 
-func createServerWithInterceptor(interceptorFunc grpc.UnaryServerInterceptor) (net.Listener, *grpc.Server) {
+func createServerWithUnaryInterceptor(interceptorFunc grpc.UnaryServerInterceptor) (net.Listener, *grpc.Server) {
 	listener, _ := net.Listen("tcp", "0.0.0.0:0")
 
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(interceptorFunc))
@@ -173,37 +172,77 @@ func createServerWithInterceptor(interceptorFunc grpc.UnaryServerInterceptor) (n
 	return listener, grpcServer
 }
 
+func createServerWithStreamInterceptor(interceptorFunc grpc.StreamServerInterceptor) (net.Listener, *grpc.Server) {
+	listener, _ := net.Listen("tcp", "0.0.0.0:0")
+
+	grpcServer := grpc.NewServer(grpc.StreamInterceptor(interceptorFunc))
+	pb.RegisterGatewayServer(grpcServer, &dummyGateway{})
+
+	return listener, grpcServer
+}
+
+type dummyGateway struct {
+	pb.UnimplementedGatewayServer
+}
+
+func (d *dummyGateway) ActivateJobs(_ *pb.ActivateJobsRequest, s pb.Gateway_ActivateJobsServer) error {
+	jobs := []*pb.ActivatedJob{{Key: 0}}
+	return s.SendMsg(&pb.ActivateJobsResponse{Jobs: jobs})
+}
+
 // recordingInterceptor has several features. For each intercepted gRPC call, it will:
-//  * capture the authorization header (allowing you to check  its value)
-//  * execute an interceptAction, if any exists (allowing you to reject calls with specific codes, modify headers, etc)
-//  * increment an intercept counter (allowing you to verify how many calls were made)
+//   - capture the authorization header (allowing you to check  its value)
+//   - execute an interceptAction, if any exists (allowing you to reject calls with specific codes, modify headers, etc)
+//   - increment an intercept counter (allowing you to verify how many calls were made)
 type recordingInterceptor struct {
 	authHeader       string
 	interceptAction  interceptFunc
 	interceptCounter int
 }
 
-type interceptFunc func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error)
+// the interceptFunc returns a boolean and an error. If the error is nil and the boolean is true, the request will be
+// passed to the handler. If the error is non-nil or the boolean is false, the request will not be passed to the handler
+// and the error value will be returned
+type interceptFunc func(ctx context.Context) (bool, error)
 
-func (interceptor *recordingInterceptor) unaryClientInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-	interceptor.interceptCounter++
+func (i *recordingInterceptor) interceptUnary(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	i.interceptCounter++
 
-	headers, success := metadata.FromIncomingContext(ctx)
-	if !success {
-		return nil, errors.New("recording interceptor failed at retrieving headers")
-	}
-
-	interceptor.authHeader = strings.Join(headers.Get("Authorization"), "")
-
-	if interceptor.interceptAction != nil {
-		return interceptor.interceptAction(ctx, req, info, handler)
+	if handle, err := i.interceptCall(ctx); err != nil || !handle {
+		return nil, err
 	}
 
 	return handler(ctx, req)
 }
 
+func (i *recordingInterceptor) interceptStream(srv interface{}, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	i.interceptCounter++
+
+	ctx := ss.Context()
+	if handle, err := i.interceptCall(ctx); err != nil || !handle {
+		return err
+	}
+
+	return handler(srv, ss)
+}
+
+func (i *recordingInterceptor) interceptCall(ctx context.Context) (bool, error) {
+	headers, success := metadata.FromIncomingContext(ctx)
+	if !success {
+		return true, errors.New("recording interceptor failed at retrieving headers")
+	}
+
+	i.authHeader = strings.Join(headers.Get("Authorization"), "")
+
+	if i.interceptAction != nil {
+		return i.interceptAction(ctx)
+	}
+
+	return true, nil
+}
+
 // Creates a new recording interceptor with a given interception function
-func newRecordingInterceptor(action interceptFunc) *recordingInterceptor {
+func newInterceptor(action interceptFunc) *recordingInterceptor {
 	interceptor := &recordingInterceptor{}
 	interceptor.interceptAction = action
 

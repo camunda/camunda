@@ -16,26 +16,35 @@
 package zbc
 
 import (
-	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/worker"
+	"github.com/camunda/camunda/clients/go/v8/pkg/commands"
+	"github.com/camunda/camunda/clients/go/v8/pkg/worker"
 )
 
 type Client interface {
 	NewTopologyCommand() *commands.TopologyCommand
-	NewDeployWorkflowCommand() *commands.DeployCommand
+	// Deprecated: Use NewDeployResourceCommand instead. To be removed in 8.1.0.
+	NewDeployProcessCommand() *commands.DeployCommand
+	NewDeployResourceCommand() *commands.DeployResourceCommand
 
 	NewCreateInstanceCommand() commands.CreateInstanceCommandStep1
 	NewCancelInstanceCommand() commands.CancelInstanceStep1
 	NewSetVariablesCommand() commands.SetVariablesCommandStep1
 	NewResolveIncidentCommand() commands.ResolveIncidentCommandStep1
 
+	NewEvaluateDecisionCommand() commands.EvaluateDecisionCommandStep1
+
 	NewPublishMessageCommand() commands.PublishMessageCommandStep1
 
+	NewBroadcastSignalCommand() commands.BroadcastSignalCommandStep1
+
 	NewActivateJobsCommand() commands.ActivateJobsCommandStep1
+	NewStreamJobsCommand() commands.StreamJobsCommandStep1
 	NewCompleteJobCommand() commands.CompleteJobCommandStep1
 	NewFailJobCommand() commands.FailJobCommandStep1
 	NewUpdateJobRetriesCommand() commands.UpdateJobRetriesCommandStep1
+	NewUpdateJobTimeoutCommand() commands.UpdateJobTimeoutCommandStep1
 	NewThrowErrorCommand() commands.ThrowErrorCommandStep1
+	NewDeleteResourceCommand() commands.DeleteResourceCommandStep1
 
 	NewJobWorker() worker.JobWorkerBuilderStep1
 

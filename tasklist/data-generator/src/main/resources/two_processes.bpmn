@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1g7j7r5" targetNamespace="http://bpmn.io/schema/bpmn" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.4.0">
+  <bpmn:collaboration id="Collaboration_12tgi69">
+    <bpmn:participant id="Participant_0hpwean" name="Business Operation A" processRef="Process_0diikxu" />
+    <bpmn:participant id="Participant_1n1nt10" name="Business Operation B" processRef="Process_18z2cdf" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_0diikxu" name="Business Operation A" isExecutable="true">
+      <bpmn:extensionElements>
+        <zeebe:userTaskForm id="UserTaskForm_3ad3t51">{
+    "components": [
+    {
+      "label": "Text area 1",
+      "type": "textarea",
+      "layout": {
+        "row": "Row_014zx4y",
+        "columns": null
+      },
+      "id": "Field_0h83f3x",
+      "key": "textarea_mebq13"
+    }
+    ],
+    "type": "default",
+    "id": "test-form-1",
+    "executionPlatform": "Camunda Cloud",
+    "executionPlatformVersion": "8.4.0",
+    "exporter": {
+      "name": "Camunda Modeler",
+      "version": "5.21.0"
+    },
+    "schemaVersion": 15
+  }</zeebe:userTaskForm>
+      </bpmn:extensionElements>
+    <bpmn:startEvent id="StartEvent_1" name="Start process A">
+      <bpmn:outgoing>Flow_0aw0znx</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Activity_0whadek" name="Do task A">
+          <bpmn:extensionElements>
+            <zeebe:formDefinition formKey="camunda-forms:bpmn:UserTaskForm_3ad3t51" />
+          </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0aw0znx</bpmn:incoming>
+      <bpmn:outgoing>Flow_15wdvyf</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_0ovp9k6" name="End process B">
+      <bpmn:incoming>Flow_15wdvyf</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0aw0znx" sourceRef="StartEvent_1" targetRef="Activity_0whadek" />
+    <bpmn:sequenceFlow id="Flow_15wdvyf" sourceRef="Activity_0whadek" targetRef="Event_0ovp9k6" />
+  </bpmn:process>
+  <bpmn:process id="Process_18z2cdf" name="Business Operation B" isExecutable="true">
+        <bpmn:extensionElements>
+          <zeebe:userTaskForm id="UserTaskForm_1unph8k">{
+      "components": [
+      {
+        "label": "Text area 2",
+        "type": "textarea",
+        "layout": {
+          "row": "Row_014zx4y",
+          "columns": null
+        },
+        "id": "Field_0h83f3x",
+        "key": "textarea_mebq13"
+      }
+      ],
+      "type": "default",
+      "id": "test-form-1",
+      "executionPlatform": "Camunda Cloud",
+      "executionPlatformVersion": "8.4.0",
+      "exporter": {
+        "name": "Camunda Modeler",
+        "version": "5.21.0"
+      },
+      "schemaVersion": 15
+    }</zeebe:userTaskForm>
+        </bpmn:extensionElements>
+    <bpmn:startEvent id="Event_00cm7tu" name="Start process B">
+      <bpmn:outgoing>Flow_0k2alvk</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Activity_0w5vpxz" name="Do task B">
+          <bpmn:extensionElements>
+            <zeebe:formDefinition formKey="camunda-forms:bpmn:UserTaskForm_1unph8k" />
+          </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0k2alvk</bpmn:incoming>
+      <bpmn:outgoing>Flow_0leii5r</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="Event_083hekc" name="End process B">
+      <bpmn:incoming>Flow_0leii5r</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0k2alvk" sourceRef="Event_00cm7tu" targetRef="Activity_0w5vpxz" />
+    <bpmn:sequenceFlow id="Flow_0leii5r" sourceRef="Activity_0w5vpxz" targetRef="Event_083hekc" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_12tgi69">
+      <bpmndi:BPMNShape id="Participant_0hpwean_di" bpmnElement="Participant_0hpwean" isHorizontal="true">
+        <dc:Bounds x="129" y="54" width="441" height="186" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="199" y="122" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="179" y="165" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0whadek_di" bpmnElement="Activity_0whadek">
+        <dc:Bounds x="290" y="100" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0ovp9k6_di" bpmnElement="Event_0ovp9k6">
+        <dc:Bounds x="452" y="122" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="434" y="165" width="73" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0aw0znx_di" bpmnElement="Flow_0aw0znx">
+        <di:waypoint x="235" y="140" />
+        <di:waypoint x="290" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15wdvyf_di" bpmnElement="Flow_15wdvyf">
+        <di:waypoint x="390" y="140" />
+        <di:waypoint x="452" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Participant_1n1nt10_di" bpmnElement="Participant_1n1nt10" isHorizontal="true">
+        <dc:Bounds x="129" y="310" width="441" height="180" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_00cm7tu_di" bpmnElement="Event_00cm7tu">
+        <dc:Bounds x="212" y="382" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="192" y="425" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0w5vpxz_di" bpmnElement="Activity_0w5vpxz">
+        <dc:Bounds x="300" y="360" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_083hekc_di" bpmnElement="Event_083hekc">
+        <dc:Bounds x="452" y="382" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="434" y="425" width="73" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0k2alvk_di" bpmnElement="Flow_0k2alvk">
+        <di:waypoint x="248" y="400" />
+        <di:waypoint x="300" y="400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0leii5r_di" bpmnElement="Flow_0leii5r">
+        <di:waypoint x="400" y="400" />
+        <di:waypoint x="452" y="400" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

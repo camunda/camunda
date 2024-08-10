@@ -1,0 +1,45 @@
+# This action packages the complete Zeebe distribution artifacts. This includes the Go client,
+# zbctl, and the Zeebe distribution TAR ball. This excludes the Docker image. See the build-zeebe-docker
+# for that.
+
+---
+name: Build Zeebe
+description: Builds & installs the complete Zeebe distribution
+
+inputs:
+  go:
+    description: If false, will not build zbctl; defaults to true
+    default: "true"
+    required: false
+  java:
+    description: If false, will not build the Java distribution; defaults to true
+    default: "true"
+    required: false
+  maven-extra-args:
+    description: Additional CLI arguments which will be passed to the maven install command as is, e.g. "-am -pl util/"
+    default: ""
+    required: false
+
+outputs:
+  distball:
+    description: "The path to the Zeebe distribution TAR ball"
+    value: ${{ steps.build-java.outputs.distball }}
+
+runs:
+  using: composite
+  steps:
+    - if: ${{ inputs.go == 'true' }}
+      name: Build Go
+      shell: bash
+      id: build-go
+      working-directory: clients/go/cmd/zbctl
+      run: ./build.sh
+    - if: ${{ inputs.java == 'true' }}
+      name: Package Zeebe
+      shell: bash
+      id: build-java
+      run: |
+        ./mvnw -B -T1C -DskipTests -DskipChecks install ${{ inputs.maven-extra-args }}
+        export BUILD_DIR=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.directory -q -DforceStdout)
+        export ARTIFACT=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
+        echo "distball=${BUILD_DIR}/${ARTIFACT}.tar.gz" >> $GITHUB_OUTPUT

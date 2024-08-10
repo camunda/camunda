@@ -16,12 +16,13 @@
 package worker
 
 import (
+	"context"
+	"github.com/camunda/camunda/clients/go/v8/internal/mock_pb"
+	"github.com/camunda/camunda/clients/go/v8/internal/utils"
+	"github.com/camunda/camunda/clients/go/v8/pkg/entities"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
-	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
-	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"io"
 	"math"
 	"sync"
@@ -37,25 +38,28 @@ type JobPollerSuite struct {
 	waitGroup sync.WaitGroup
 }
 
-func (suite *JobPollerSuite) BeforeTest(suiteName, testName string) {
+func (suite *JobPollerSuite) BeforeTest(_, _ string) {
 	suite.ctrl = gomock.NewController(suite.T())
 	suite.client = mock_pb.NewMockGatewayClient(suite.ctrl)
 	suite.poller = jobPoller{
-		client:         suite.client,
-		request:        pb.ActivateJobsRequest{},
-		requestTimeout: utils.DefaultTestTimeout,
-		maxJobsActive:  DefaultJobWorkerMaxJobActive,
-		pollInterval:   DefaultJobWorkerPollInterval,
-		jobQueue:       make(chan entities.Job),
-		workerFinished: make(chan bool),
-		closeSignal:    make(chan struct{}),
-		remaining:      0,
-		threshold:      int(math.Round(float64(DefaultJobWorkerMaxJobActive) * DefaultJobWorkerPollThreshold)),
+		client:              suite.client,
+		request:             &pb.ActivateJobsRequest{},
+		requestTimeout:      utils.DefaultTestTimeout,
+		maxJobsActive:       DefaultJobWorkerMaxJobActive,
+		pollInterval:        DefaultJobWorkerPollInterval,
+		initialPollInterval: DefaultJobWorkerPollInterval,
+		jobQueue:            make(chan entities.Job),
+		workerFinished:      make(chan bool),
+		closeSignal:         make(chan struct{}),
+		remaining:           0,
+		threshold:           int(math.Round(float64(DefaultJobWorkerMaxJobActive) * DefaultJobWorkerPollThreshold)),
+		shouldRetry:         func(_ context.Context, _ error) bool { return false },
+		backoffSupplier:     NewExponentialBackoffBuilder().Build(),
 	}
 	suite.waitGroup.Add(1)
 }
 
-func (suite *JobPollerSuite) AfterTest(suiteName, testName string) {
+func (suite *JobPollerSuite) AfterTest(_, _ string) {
 	defer suite.ctrl.Finish()
 
 	close(suite.poller.closeSignal)
@@ -123,7 +127,7 @@ func (suite *JobPollerSuite) TestShouldNotPollAfterIntervalIfNotThreshold() {
 	suite.consumeJob()
 }
 
-func (suite *JobPollerSuite) TestShoulPolldAfterJobFinsihedIfThresholdIsReached() {
+func (suite *JobPollerSuite) TestShouldPollAfterJobFinishedIfThresholdIsReached() {
 	// given
 	suite.poller.maxJobsActive = 10
 	suite.poller.threshold = 4
@@ -202,6 +206,30 @@ func (suite *JobPollerSuite) TestShouldIgnoreStreamFailure() {
 
 	// should receive another job from broken stream
 	suite.consumeJob()
+}
+
+func (suite *JobPollerSuite) TestShouldReportMetrics() {
+	// given
+	suite.poller.maxJobsActive = 10
+	suite.poller.remaining = 0
+	suite.poller.threshold = 4
+
+	metrics := mock_pb.NewMockJobWorkerMetrics(suite.ctrl)
+	suite.poller.metrics = metrics
+	gomock.InOrder(
+		suite.client.EXPECT().ActivateJobs(gomock.Any(), gomock.Any()).Return(suite.singleJobStream(), nil),
+		metrics.EXPECT().SetJobsRemainingCount(gomock.Any(), 1),
+		metrics.EXPECT().SetJobsRemainingCount(gomock.Any(), 0),
+		suite.client.EXPECT().ActivateJobs(gomock.Any(), gomock.Any()).Return(suite.singleJobStream(), nil),
+		metrics.EXPECT().SetJobsRemainingCount(gomock.Any(), 1),
+		metrics.EXPECT().SetJobsRemainingCount(gomock.Any(), 0),
+	)
+
+	// when
+	go suite.poller.poll(&suite.waitGroup)
+
+	// then signal job finished to poll again
+	suite.completeJob()
 }
 
 func (suite *JobPollerSuite) singleJobStream() pb.Gateway_ActivateJobsClient {

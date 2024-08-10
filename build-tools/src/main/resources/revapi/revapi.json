@@ -1,0 +1,57 @@
+[
+  {
+    "extension": "revapi.java",
+    "id": "java",
+    "configuration": {
+      "reportUsesFor": "all-differences",
+      "missing-classes": {
+        "behavior": "ignore",
+        "ignoreMissingAnnotations": true
+      },
+      "matchOverloads": false
+    }
+  },
+  {
+    "extension": "revapi.versions",
+    "id": "version",
+    "configuration": {
+      "enabled": true,
+      "passThroughDifferences": [
+        "java.class.nonPublicPartOfAPI"
+      ],
+      "versionIncreaseAllows": {
+        "major": {
+          "severity": "BREAKING"
+        },
+        "minor": {
+          "classification": {
+            "BINARY": "NON_BREAKING",
+            "SOURCE": "BREAKING",
+            "SEMANTIC": "BREAKING",
+            "OTHER": "BREAKING"
+          }
+        },
+        "patch": {
+          "classification": {
+            "BINARY": "NON_BREAKING",
+            "SOURCE": "BREAKING",
+            "SEMANTIC": "BREAKING",
+            "OTHER": "BREAKING"
+          }
+        }
+      }
+    }
+  },
+  {
+    "extension": "revapi.differences",
+    "id": "differences",
+    "configuration": {
+      "ignore": true
+    }
+  },
+  {
+    "extension": "revapi.filter",
+    "id": "filter",
+    "configuration": {}
+  }
+]

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteRepositoriesConfiguration">
+    <remote-repository>
+      <option name="id" value="central" />
+      <option name="name" value="Maven Central" />
+      <option name="url" value="https://repo1.maven.org/maven2" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="camunda-identity" />
+      <option name="name" value="Camunda Identity Repository" />
+      <option name="url" value="https://artifacts.camunda.com/artifactory/camunda-identity/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="central" />
+      <option name="name" value="Central Repository" />
+      <option name="url" value="https://repo.maven.apache.org/maven2" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="elasticsearch" />
+      <option name="name" value="Elasticsearch Repository" />
+      <option name="url" value="https://artifacts.elastic.co/maven/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="camunda-identity-snapshot" />
+      <option name="name" value="Camunda Identity Snapshot Repository" />
+      <option name="url" value="https://artifacts.camunda.com/artifactory/camunda-identity-snapshots/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="camunda-bpm-nexus-ee" />
+      <option name="name" value="Camunda Enterprise Maven Repository" />
+      <option name="url" value="https://artifacts.camunda.com/artifactory/private/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="central" />
+      <option name="name" value="Maven Central repository" />
+      <option name="url" value="https://repo1.maven.org/maven2" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="jboss.community" />
+      <option name="name" value="JBoss Community repository" />
+      <option name="url" value="https://repository.jboss.org/nexus/content/repositories/public/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="zeebe-snapshots" />
+      <option name="name" value="Zeebe Snapshot Repository" />
+      <option name="url" value="https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="camunda-identity-services" />
+      <option name="name" value="Camunda Identity Repository" />
+      <option name="url" value="https://artifacts.camunda.com/artifactory/camunda-identity/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="zeebe" />
+      <option name="name" value="Zeebe Repository" />
+      <option name="url" value="https://artifacts.camunda.com/artifactory/zeebe-io/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="camunda-identity-snapshots" />
+      <option name="name" value="Camunda Identity Snapshot Repository" />
+      <option name="url" value="https://artifacts.camunda.com/artifactory/camunda-identity-snapshots/" />
+    </remote-repository>
+  </component>
+</project>

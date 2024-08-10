@@ -16,14 +16,16 @@
 package worker
 
 import (
-	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
 	"sync"
+
+	"github.com/camunda/camunda/clients/go/v8/pkg/commands"
+	"github.com/camunda/camunda/clients/go/v8/pkg/entities"
 )
 
 type JobClient interface {
 	NewCompleteJobCommand() commands.CompleteJobCommandStep1
 	NewFailJobCommand() commands.FailJobCommandStep1
+	NewThrowErrorCommand() commands.ThrowErrorCommandStep1
 }
 
 type JobHandler func(client JobClient, job entities.Job)
@@ -38,11 +40,13 @@ type JobWorker interface {
 type jobWorkerController struct {
 	closePoller     chan struct{}
 	closeDispatcher chan struct{}
+	closeStreamer   chan struct{}
 	closeWait       *sync.WaitGroup
 }
 
 func (controller jobWorkerController) Close() {
 	close(controller.closePoller)
+	close(controller.closeStreamer)
 	close(controller.closeDispatcher)
 	controller.AwaitClose()
 }

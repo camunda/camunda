@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="definitions_114f3101-1b05-43a4-937b-221ef0993b45" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL" exporter="Camunda Modeler" exporterVersion="5.15.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.2.0">
+  <process id="compensation-process" isExecutable="true">
+    <startEvent id="Event_0643g55">
+      <outgoing>Flow_0j7e31s</outgoing>
+    </startEvent>
+    <sequenceFlow id="Flow_0j7e31s" sourceRef="Event_0643g55" targetRef="Activity_07kp3cl" />
+    <userTask id="Activity_07kp3cl">
+      <incoming>Flow_0j7e31s</incoming>
+      <outgoing>Flow_1jfrnxg</outgoing>
+    </userTask>
+    <boundaryEvent id="Event_125xwyw" attachedToRef="Activity_07kp3cl">
+      <compensateEventDefinition id="CompensateEventDefinition_0zcgvs4" />
+    </boundaryEvent>
+    <sequenceFlow id="Flow_1jfrnxg" sourceRef="Activity_07kp3cl" targetRef="Event_1nsw16z" />
+    <intermediateThrowEvent id="Event_1nsw16z">
+      <incoming>Flow_1jfrnxg</incoming>
+      <outgoing>Flow_1a86ltw</outgoing>
+      <compensateEventDefinition id="CompensateEventDefinition_18c6d54" />
+    </intermediateThrowEvent>
+    <endEvent id="Event_147xfm7">
+      <incoming>Flow_1a86ltw</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_1a86ltw" sourceRef="Event_1nsw16z" targetRef="Event_147xfm7" />
+    <userTask id="Activity_08wsb8t" isForCompensation="true" />
+    <subProcess id="subprocess" name="subprocess" triggeredByEvent="true">
+      <intermediateThrowEvent id="compensation-throw-event" name="compensation-throw-event">
+        <incoming>sequenceFlow_7085e289-68f7-4dc0-91cc-19cebb8c3d1a</incoming>
+        <outgoing>sequenceFlow_1b8efbb5-39a0-41d6-bf8e-bd5cf724d02c</outgoing>
+        <compensateEventDefinition id="compensateEventDefinition_12160ccc-f4b9-439c-92c0-60cf4e8aa6f5" />
+      </intermediateThrowEvent>
+      <userTask id="B" name="B">
+        <incoming>sequenceFlow_1b8efbb5-39a0-41d6-bf8e-bd5cf724d02c</incoming>
+        <outgoing>sequenceFlow_39b671b5-f493-4283-a4af-56db8a0c3377</outgoing>
+      </userTask>
+      <endEvent id="endEvent_9739cf9c-9cf4-41e4-9f2f-44ba996671d4">
+        <incoming>sequenceFlow_39b671b5-f493-4283-a4af-56db8a0c3377</incoming>
+      </endEvent>
+      <sequenceFlow id="sequenceFlow_7085e289-68f7-4dc0-91cc-19cebb8c3d1a" sourceRef="compensation-start" targetRef="compensation-throw-event" />
+      <sequenceFlow id="sequenceFlow_1b8efbb5-39a0-41d6-bf8e-bd5cf724d02c" sourceRef="compensation-throw-event" targetRef="B" />
+      <sequenceFlow id="sequenceFlow_39b671b5-f493-4283-a4af-56db8a0c3377" sourceRef="B" targetRef="endEvent_9739cf9c-9cf4-41e4-9f2f-44ba996671d4" />
+      <startEvent id="compensation-start" name="compensation-start">
+        <outgoing>sequenceFlow_7085e289-68f7-4dc0-91cc-19cebb8c3d1a</outgoing>
+        <compensateEventDefinition id="CompensateEventDefinition_1b1gdlo" />
+      </startEvent>
+    </subProcess>
+    <association id="Association_0t5z23r" associationDirection="One" sourceRef="Event_125xwyw" targetRef="Activity_08wsb8t" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_b184f2f4-3c12-466c-b605-e6c88932e3ef">
+    <bpmndi:BPMNPlane id="BPMNPlane_abc9181e-ea9f-4aca-baab-f525c1732440" bpmnElement="compensation-process">
+      <bpmndi:BPMNShape id="Activity_1ta13c5_di" bpmnElement="Activity_07kp3cl">
+        <dc:Bounds x="290" y="90" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0643g55_di" bpmnElement="Event_0643g55">
+        <dc:Bounds x="172" y="112" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_115x7s2_di" bpmnElement="Event_1nsw16z">
+        <dc:Bounds x="472" y="112" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_147xfm7_di" bpmnElement="Event_147xfm7">
+        <dc:Bounds x="592" y="112" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1kxv83k_di" bpmnElement="Activity_08wsb8t">
+        <dc:Bounds x="460" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0t5z23r_di" bpmnElement="Association_0t5z23r">
+        <di:waypoint x="390" y="188" />
+        <di:waypoint x="390" y="250" />
+        <di:waypoint x="460" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Activity_19a7ao9_di" bpmnElement="subprocess" isExpanded="true">
+        <dc:Bounds x="160" y="410" width="494" height="208" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_fdc112cd-dbd2-4d5c-8aef-eec3b9bc5bf9" bpmnElement="compensation-throw-event">
+        <dc:Bounds x="332" y="500" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="314" y="536" width="73" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_299ad898-c37d-49e9-8206-0f2b31897879" bpmnElement="B">
+        <dc:Bounds x="418" y="478" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_4d7c4c18-f563-40ed-b75c-589e2a53bd8d" bpmnElement="endEvent_9739cf9c-9cf4-41e4-9f2f-44ba996671d4">
+        <dc:Bounds x="568" y="500" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1ngbfx2_di" bpmnElement="compensation-start">
+        <dc:Bounds x="246" y="500" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="228" y="536" width="73" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_a6689c35-2ba1-4c82-8cd3-a89cdfaa1145" bpmnElement="sequenceFlow_7085e289-68f7-4dc0-91cc-19cebb8c3d1a">
+        <di:waypoint x="282" y="518" />
+        <di:waypoint x="332" y="518" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_030f6970-a193-4784-9c3e-e127d1bcd8f6" bpmnElement="sequenceFlow_1b8efbb5-39a0-41d6-bf8e-bd5cf724d02c">
+        <di:waypoint x="368" y="518" />
+        <di:waypoint x="418" y="518" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_171e28ac-5660-4b27-8f8f-ebb5ee7fdc73" bpmnElement="sequenceFlow_39b671b5-f493-4283-a4af-56db8a0c3377">
+        <di:waypoint x="518" y="518" />
+        <di:waypoint x="568" y="518" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_0p7dkn7_di" bpmnElement="Event_125xwyw">
+        <dc:Bounds x="372" y="152" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0j7e31s_di" bpmnElement="Flow_0j7e31s">
+        <di:waypoint x="208" y="130" />
+        <di:waypoint x="290" y="130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1jfrnxg_di" bpmnElement="Flow_1jfrnxg">
+        <di:waypoint x="390" y="130" />
+        <di:waypoint x="472" y="130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1a86ltw_di" bpmnElement="Flow_1a86ltw">
+        <di:waypoint x="508" y="130" />
+        <di:waypoint x="592" y="130" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

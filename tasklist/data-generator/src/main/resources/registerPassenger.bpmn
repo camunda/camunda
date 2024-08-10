@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.9.1">
+  <bpmn:process id="flightRegistration" name="Flight registration" isExecutable="true">
+     <bpmn:extensionElements>
+      <zeebe:userTaskForm id="userTaskForm_1">
+        {
+          "components": [
+            {
+              "key": "firstName",
+              "label": "First name",
+              "type": "textfield",
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "key": "lastName",
+              "label": "Last name",
+              "type": "textfield",
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "key": "passNo",
+              "label": "Passport number",
+              "type": "textfield",
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "key": "ticketNo",
+              "label": "Ticket number",
+              "type": "textfield",
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "key": "registered",
+              "label": "Registered successfully",
+              "type": "textfield"
+            },
+            {
+              "key": "button1",
+              "label": "Save",
+              "type": "button"
+            }
+          ],
+          "type": "default"
+        }
+      </zeebe:userTaskForm>
+      <zeebe:userTaskForm id="userTaskForm_2">
+        {
+          "components": [
+            {
+              "key": "ticketNo",
+              "label": "Ticket number",
+              "type": "textfield",
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "key": "cabinBagRegistered",
+              "label": "Cabin bag registered",
+              "type": "textfield",
+              "validate": {
+                "required": true
+              }
+            },
+            {
+              "key": "button1",
+              "label": "Save",
+              "type": "button"
+            }
+          ],
+          "type": "default"
+        }
+      </zeebe:userTaskForm>
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="StartEvent_1" name="Passenger arrived on registration desk">
+      <bpmn:outgoing>SequenceFlow_0kkr7lf</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="registerPassenger" name="Register the passenger">
+      <bpmn:extensionElements>
+        <zeebe:assignmentDefinition assignee="=assignee" candidateGroups="=candidateGroups"/>
+        <zeebe:taskSchedule dueDate="=taskDueDate" followUpDate="=taskFollowUpDate"/>
+        <zeebe:formDefinition formKey="camunda-forms:bpmn:userTaskForm_1" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0kkr7lf</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1n3aihd</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="SequenceFlow_0kkr7lf" sourceRef="StartEvent_1" targetRef="registerPassenger" />
+    <bpmn:exclusiveGateway id="ExclusiveGateway_0dhe4io" name="Passenger has luggage?">
+      <bpmn:incoming>SequenceFlow_04tw8w0</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_06gtrty</bpmn:outgoing>
+      <bpmn:outgoing>SequenceFlow_15n7i0o</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="registerCabinBag" name="Register cabin bag">
+      <bpmn:extensionElements>
+        <zeebe:formDefinition formKey="camunda-forms:bpmn:userTaskForm_2" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_1n3aihd</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_04tw8w0</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="SequenceFlow_1n3aihd" sourceRef="registerPassenger" targetRef="registerCabinBag" />
+    <bpmn:sequenceFlow id="SequenceFlow_04tw8w0" sourceRef="registerCabinBag" targetRef="ExclusiveGateway_0dhe4io" />
+    <bpmn:userTask id="determineLuggageWeight" name="Determine luggage weight">
+      <bpmn:incoming>SequenceFlow_06gtrty</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_15ihg55</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="SequenceFlow_06gtrty" name="yes" sourceRef="ExclusiveGateway_0dhe4io" targetRef="determineLuggageWeight">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=luggage = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:exclusiveGateway id="ExclusiveGateway_1ow3snl">
+      <bpmn:incoming>SequenceFlow_15n7i0o</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_180gn6e</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_13ky0da</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="SequenceFlow_15n7i0o" name="no" sourceRef="ExclusiveGateway_0dhe4io" targetRef="ExclusiveGateway_1ow3snl">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=luggage = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:userTask id="printOutBoardingPass" name="Print out boarding pass">
+      <bpmn:incoming>SequenceFlow_13ky0da</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0yeajob</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="SequenceFlow_13ky0da" sourceRef="ExclusiveGateway_1ow3snl" targetRef="printOutBoardingPass" />
+    <bpmn:endEvent id="EndEvent_0ms0n8v" name="Passender is registered">
+      <bpmn:incoming>SequenceFlow_0yeajob</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_0yeajob" sourceRef="printOutBoardingPass" targetRef="EndEvent_0ms0n8v" />
+    <bpmn:userTask id="registerLuggage" name="Register the luggage">
+      <bpmn:incoming>SequenceFlow_1jhsymx</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_180gn6e</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="SequenceFlow_180gn6e" sourceRef="registerLuggage" targetRef="ExclusiveGateway_1ow3snl" />
+    <bpmn:exclusiveGateway id="ExclusiveGateway_0rpoeeq">
+      <bpmn:incoming>SequenceFlow_1le3lya</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_00mpj9w</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1jhsymx</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="SequenceFlow_1jhsymx" sourceRef="ExclusiveGateway_0rpoeeq" targetRef="registerLuggage" />
+    <bpmn:userTask id="processPayment" name="Process payment">
+      <bpmn:incoming>SequenceFlow_12jenme</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1le3lya</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="SequenceFlow_1le3lya" sourceRef="processPayment" targetRef="ExclusiveGateway_0rpoeeq" />
+    <bpmn:exclusiveGateway id="ExclusiveGateway_0cm4qq4" name="Exceeds the limit?">
+      <bpmn:incoming>SequenceFlow_15ihg55</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_00mpj9w</bpmn:outgoing>
+      <bpmn:outgoing>SequenceFlow_12jenme</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="SequenceFlow_00mpj9w" name="no" sourceRef="ExclusiveGateway_0cm4qq4" targetRef="ExclusiveGateway_0rpoeeq">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=luggageWeight &lt;= 23</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SequenceFlow_12jenme" name="yes" sourceRef="ExclusiveGateway_0cm4qq4" targetRef="processPayment">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=luggageWeight &gt; 23</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SequenceFlow_15ihg55" sourceRef="determineLuggageWeight" targetRef="ExclusiveGateway_0cm4qq4" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="flightRegistration">
+      <bpmndi:BPMNEdge id="SequenceFlow_15ihg55_di" bpmnElement="SequenceFlow_15ihg55">
+        <di:waypoint x="726" y="123" />
+        <di:waypoint x="802" y="123" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="764" y="182" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_12jenme_di" bpmnElement="SequenceFlow_12jenme">
+        <di:waypoint x="852" y="123" />
+        <di:waypoint x="920" y="123" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="878" y="102" width="17" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_00mpj9w_di" bpmnElement="SequenceFlow_00mpj9w">
+        <di:waypoint x="827" y="148" />
+        <di:waypoint x="827" y="200" />
+        <di:waypoint x="1101" y="200" />
+        <di:waypoint x="1101" y="148" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="943" y="201" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1le3lya_di" bpmnElement="SequenceFlow_1le3lya">
+        <di:waypoint x="1020" y="123" />
+        <di:waypoint x="1076" y="123" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1048" y="182" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1jhsymx_di" bpmnElement="SequenceFlow_1jhsymx">
+        <di:waypoint x="1126" y="123" />
+        <di:waypoint x="1181" y="123" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1153.5" y="182" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_180gn6e_di" bpmnElement="SequenceFlow_180gn6e">
+        <di:waypoint x="1281" y="123" />
+        <di:waypoint x="1351" y="123" />
+        <di:waypoint x="1351" y="182" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1316" y="182" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0yeajob_di" bpmnElement="SequenceFlow_0yeajob">
+        <di:waypoint x="1515" y="207" />
+        <di:waypoint x="1577" y="207" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1546" y="266" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_13ky0da_di" bpmnElement="SequenceFlow_13ky0da">
+        <di:waypoint x="1376" y="207" />
+        <di:waypoint x="1415" y="207" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1395.5" y="266" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_15n7i0o_di" bpmnElement="SequenceFlow_15n7i0o">
+        <di:waypoint x="542" y="254" />
+        <di:waypoint x="542" y="316" />
+        <di:waypoint x="1351" y="316" />
+        <di:waypoint x="1351" y="232" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="901" y="295" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_06gtrty_di" bpmnElement="SequenceFlow_06gtrty">
+        <di:waypoint x="542" y="204" />
+        <di:waypoint x="542" y="123" />
+        <di:waypoint x="626" y="123" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="549" y="158" width="17" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_04tw8w0_di" bpmnElement="SequenceFlow_04tw8w0">
+        <di:waypoint x="477" y="229" />
+        <di:waypoint x="517" y="229" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="497" y="288" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1n3aihd_di" bpmnElement="SequenceFlow_1n3aihd">
+        <di:waypoint x="329" y="229" />
+        <di:waypoint x="377" y="229" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="353" y="288" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0kkr7lf_di" bpmnElement="SequenceFlow_0kkr7lf">
+        <di:waypoint x="178" y="229" />
+        <di:waypoint x="229" y="229" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="203.5" y="288" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="142" y="211" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="116" y="247" width="90" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_124c0io_di" bpmnElement="registerPassenger">
+        <dc:Bounds x="229" y="189" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ExclusiveGateway_0dhe4io_di" bpmnElement="ExclusiveGateway_0dhe4io" isMarkerVisible="true">
+        <dc:Bounds x="517" y="204" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="506" y="258" width="74" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1jk33fd_di" bpmnElement="registerCabinBag">
+        <dc:Bounds x="377" y="189" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1k5q5la_di" bpmnElement="determineLuggageWeight">
+        <dc:Bounds x="626" y="83" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ExclusiveGateway_1ow3snl_di" bpmnElement="ExclusiveGateway_1ow3snl" isMarkerVisible="true">
+        <dc:Bounds x="1326" y="182" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1333" y="316" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0u1w2o5_di" bpmnElement="printOutBoardingPass">
+        <dc:Bounds x="1415" y="167" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_0ms0n8v_di" bpmnElement="EndEvent_0ms0n8v">
+        <dc:Bounds x="1577" y="189" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1563" y="229" width="65" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0gl41u2_di" bpmnElement="registerLuggage">
+        <dc:Bounds x="1181" y="83" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ExclusiveGateway_0rpoeeq_di" bpmnElement="ExclusiveGateway_0rpoeeq" isMarkerVisible="true">
+        <dc:Bounds x="1076" y="98" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1101" y="232" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0e5jdce_di" bpmnElement="processPayment">
+        <dc:Bounds x="920" y="83" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ExclusiveGateway_0cm4qq4_di" bpmnElement="ExclusiveGateway_0cm4qq4" isMarkerVisible="true">
+        <dc:Bounds x="802" y="98" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="782" y="152" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

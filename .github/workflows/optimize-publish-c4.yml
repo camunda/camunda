@@ -1,0 +1,33 @@
+name: Optimize publish c4 to npm
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish-optimize-c4:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./optimize/c4 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - name: "Parse pom.xml for versions"
+        id: "pom_info"
+        uses: YunaBraska/java-info-action@main
+      - name: Setup Node
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4
+        with:
+          node-version: ${{ steps.pom_info.outputs.x_version_node }}
+          cache: "yarn"
+          cache-dependency-path: 'optimize/c4/yarn.lock'
+      - name: Install
+        run: yarn install --frozen-lockfile
+      - name: Build
+        run: yarn build
+      - name: Publish to NPM
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ env.NPM_TOKEN }}" >> .npmrc
+          npm publish --access=public
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

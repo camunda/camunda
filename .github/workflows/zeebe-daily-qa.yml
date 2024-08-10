@@ -1,0 +1,88 @@
+# This workflow runs our daily scheduled acceptance tests. It runs each test suite against the
+# development head (e.g. main) and all officially supported branches.
+#
+# As this is meant to be run via scheduling, the workflow itself only runs on the default branch
+# (e.g. main), so any changes you make will affect any other branches we test via this workflow.
+name: Zeebe Daily tests
+
+on:
+  workflow_dispatch: { }
+  schedule:
+    # Runs at 01:00 every week day; see this link for more: https://crontab.guru/#0_1_*_*_1-5
+    - cron: '0 1 * * 1-5'
+
+env:
+  # This URL is used as the business key for the various QA workflows
+  BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+jobs:
+  # This job will figure out the last supported versions based on the latest tags.
+  #
+  # Versions around found by sorting the tags, removing any that doesn't match semantic version,
+  # and ignoring those with suffixes, and sort in natural order reversed. To get the second-highest
+  # minor branch, we do the same, but we also filter out any versions which match the minor version
+  # of the latest stable version.
+  get-versions:
+    name: Compute branch matrix
+    runs-on: ubuntu-latest
+    outputs:
+      latest-version: ${{ env.LATEST_VERSION }}
+      second-last-version: ${{ env.SECOND_LAST_VERSION }}
+      third-last-version: ${{ env.THIRD_LAST_VERSION }}
+      fourth-last-version: ${{ env.FOURTH_LAST_VERSION }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: git fetch --tags
+      - run: |
+          versions=($(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sed -E -e 's/\.[0-9]+$//' | sort -Vr | uniq))
+
+          latest="${versions[0]}"
+          second_last="${versions[1]}"
+          third_last="${versions[2]}"
+          fourth_last="${versions[3]}"
+          if [ ! -z $latest ] && [ ! -z $second_last ] && [ ! -z $third_last ] && [ ! -z $fourth_last ]; then
+            echo "Successfully computed latest versions: ${latest} and ${second_last} and ${third_last} and ${fourth_last}"
+          else
+            echo "Failed to compute latest versions"
+          fi
+          echo "LATEST_VERSION=${latest}" >> $GITHUB_ENV
+          echo "SECOND_LAST_VERSION=${second_last}" >> $GITHUB_ENV
+          echo "THIRD_LAST_VERSION=${third_last}" >> $GITHUB_ENV
+          echo "FOURTH_LAST_VERSION=${fourth_last}" >> $GITHUB_ENV
+  # Runs the qa-testbench workflow against the stable branches. It assumes that branches follow the
+  # pattern of `stable/VERSION`, and generations of `Camunda VERSION`.
+  #
+  # NOTE: it's not possible to use the env context in a matrix, which is why we use job outputs
+  # here.
+  qa:
+    needs:
+      - get-versions
+    strategy:
+      # do not cancel other jobs if one fails
+      fail-fast: false
+      matrix:
+        branch:
+          - 'main'
+          - ${{ format('stable/{0}', needs.get-versions.outputs.latest-version) }}
+          - ${{ format('stable/{0}', needs.get-versions.outputs.second-last-version) }}
+          - ${{ format('stable/{0}', needs.get-versions.outputs.third-last-version) }}
+          - ${{ format('stable/{0}', needs.get-versions.outputs.fourth-last-version) }}
+        include:
+          - branch: 'main'
+            generation_template: 'Zeebe SNAPSHOT'
+          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.latest-version) }}
+            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.latest-version) }}
+          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.second-last-version) }}
+            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.second-last-version) }}
+          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.third-last-version) }}
+            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.third-last-version) }}
+          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.fourth-last-version) }}
+            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.fourth-last-version) }}
+    runs-on: ubuntu-latest
+    name: Daily QA
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trigger QA on ${{ matrix.branch }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run --ref ${{ matrix.branch }} zeebe-qa-testbench.yaml -F generation='${{ matrix.generation_template }}' -F branch=${{ matrix.branch }}

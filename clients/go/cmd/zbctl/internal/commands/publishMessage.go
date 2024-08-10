@@ -16,8 +16,12 @@ package commands
 
 import (
 	"context"
-	"github.com/spf13/cobra"
+	"os"
 	"time"
+
+	"errors"
+	"github.com/camunda/camunda/clients/go/v8/internal/utils"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -33,22 +37,31 @@ var publishMessageCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		parsedMessageVariables, err := parsePublishMessageVariables(publishMessageVariables)
+		if err != nil {
+			return err
+		}
+
 		request, err := client.NewPublishMessageCommand().
 			MessageName(args[0]).
 			CorrelationKey(publishMessageCorrelationKey).
 			MessageId(publishMessageID).
 			TimeToLive(publishMessageTTL).
-			VariablesFromString(publishMessageVariables)
+			VariablesFromString(parsedMessageVariables)
 
 		if err != nil {
 			return err
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 
-		_, err = request.Send(ctx)
-		return err
+		response, err := request.Send(ctx)
+		if err != nil {
+			return err
+		}
+
+		return printJSON(response)
 	},
 }
 
@@ -57,10 +70,24 @@ func init() {
 
 	publishMessageCmd.Flags().StringVar(&publishMessageCorrelationKey, "correlationKey", "", "Specify message correlation key")
 	publishMessageCmd.Flags().StringVar(&publishMessageID, "messageId", "", "Specify the unique id of the message")
-	publishMessageCmd.Flags().DurationVar(&publishMessageTTL, "ttl", 5*time.Second, "Specify the time to live of the message")
-	publishMessageCmd.Flags().StringVar(&publishMessageVariables, "variables", "{}", "Specify message variables as JSON string")
-
+	publishMessageCmd.Flags().DurationVar(&publishMessageTTL, "ttl", 5*time.Second, "Specify the time to live of the message. Example values: 300ms, 50s or 1m")
+	publishMessageCmd.Flags().StringVar(&publishMessageVariables, "variables", "{}", "Specify message variables as JSON string or path to JSON file")
 	if err := publishMessageCmd.MarkFlagRequired("correlationKey"); err != nil {
 		panic(err)
 	}
+}
+
+func parsePublishMessageVariables(messageVariables string) (string, error) {
+	jsStringChecker := utils.NewJSONStringSerializer()
+	jsonErr := jsStringChecker.Validate("variables", messageVariables)
+	if jsonErr != nil {
+		// not a JSON string
+		fileVariables, err := os.ReadFile(messageVariables)
+		if err != nil {
+			// not a file path or valid JSON string
+			return "", errors.New("invalid --variables passed. Invalid file or " + jsonErr.Error())
+		}
+		return string(fileVariables), nil
+	}
+	return messageVariables, nil
 }

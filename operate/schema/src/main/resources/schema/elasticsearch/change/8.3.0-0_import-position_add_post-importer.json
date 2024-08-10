@@ -1,0 +1,8 @@
+{
+  "description": "Add field 'postImporterPosition' to import-position ",
+  "@type": "processorStep",
+  "indexName": "import-position",
+  "version": "8.3.0",
+  "order": 0,
+  "content": "{\"set\": {\"field\": \"postImporterPosition\", \"value\": 0 }}"
+}

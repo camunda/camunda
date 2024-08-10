@@ -18,8 +18,8 @@ package commands
 import (
 	"context"
 	"fmt"
-	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/camunda/clients/go/v8/internal/utils"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 )
 
 type DispatchSetVariablesCommand interface {

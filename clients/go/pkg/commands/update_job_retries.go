@@ -17,7 +17,7 @@ package commands
 
 import (
 	"context"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 )
 
 const (

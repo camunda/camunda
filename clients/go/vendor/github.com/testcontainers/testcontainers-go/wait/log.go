@@ -2,43 +2,53 @@ package wait
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
+	"regexp"
 	"strings"
 	"time"
 )
 
 // Implement interface
-var _ Strategy = (*LogStrategy)(nil)
+var (
+	_ Strategy        = (*LogStrategy)(nil)
+	_ StrategyTimeout = (*LogStrategy)(nil)
+)
 
 // LogStrategy will wait until a given log entry shows up in the docker logs
 type LogStrategy struct {
 	// all Strategies should have a startupTimeout to avoid waiting infinitely
-	startupTimeout time.Duration
+	timeout *time.Duration
 
 	// additional properties
 	Log          string
-	PollInterval time.Duration
+	IsRegexp     bool
 	Occurrence   int
+	PollInterval time.Duration
 }
 
-// NewLogStrategy constructs a HTTP strategy waiting on port 80 and status code 200
+// NewLogStrategy constructs with polling interval of 100 milliseconds and startup timeout of 60 seconds by default
 func NewLogStrategy(log string) *LogStrategy {
 	return &LogStrategy{
-		startupTimeout: defaultStartupTimeout(),
-		Log:            log,
-		PollInterval:   100 * time.Millisecond,
-		Occurrence:     1,
+		Log:          log,
+		IsRegexp:     false,
+		Occurrence:   1,
+		PollInterval: defaultPollInterval(),
 	}
-
 }
 
 // fluent builders for each property
 // since go has neither covariance nor generics, the return type must be the type of the concrete implementation
 // this is true for all properties, even the "shared" ones like startupTimeout
 
+// AsRegexp can be used to change the default behavior of the log strategy to use regexp instead of plain text
+func (ws *LogStrategy) AsRegexp() *LogStrategy {
+	ws.IsRegexp = true
+	return ws
+}
+
 // WithStartupTimeout can be used to change the default startup timeout
-func (ws *LogStrategy) WithStartupTimeout(startupTimeout time.Duration) *LogStrategy {
-	ws.startupTimeout = startupTimeout
+func (ws *LogStrategy) WithStartupTimeout(timeout time.Duration) *LogStrategy {
+	ws.timeout = &timeout
 	return ws
 }
 
@@ -49,7 +59,7 @@ func (ws *LogStrategy) WithPollInterval(pollInterval time.Duration) *LogStrategy
 }
 
 func (ws *LogStrategy) WithOccurrence(o int) *LogStrategy {
-	// the number of occurence needs to be positive
+	// the number of occurrence needs to be positive
 	if o <= 0 {
 		o = 1
 	}
@@ -60,19 +70,29 @@ func (ws *LogStrategy) WithOccurrence(o int) *LogStrategy {
 // ForLog is the default construction for the fluid interface.
 //
 // For Example:
-// wait.
-//     ForLog("some text").
-//     WithPollInterval(1 * time.Second)
+//
+//	wait.
+//		ForLog("some text").
+//		WithPollInterval(1 * time.Second)
 func ForLog(log string) *LogStrategy {
 	return NewLogStrategy(log)
 }
 
+func (ws *LogStrategy) Timeout() *time.Duration {
+	return ws.timeout
+}
+
 // WaitUntilReady implements Strategy.WaitUntilReady
-func (ws *LogStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) (err error) {
-	// limit context to startupTimeout
-	ctx, cancelContext := context.WithTimeout(ctx, ws.startupTimeout)
-	defer cancelContext()
-	currentOccurence := 0
+func (ws *LogStrategy) WaitUntilReady(ctx context.Context, target StrategyTarget) error {
+	timeout := defaultStartupTimeout()
+	if ws.timeout != nil {
+		timeout = *ws.timeout
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	length := 0
 
 LOOP:
 	for {
@@ -80,20 +100,29 @@ LOOP:
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			reader, err := target.Logs(ctx)
+			checkErr := checkTarget(ctx, target)
 
+			reader, err := target.Logs(ctx)
 			if err != nil {
 				time.Sleep(ws.PollInterval)
 				continue
 			}
-			b, err := ioutil.ReadAll(reader)
+
+			b, err := io.ReadAll(reader)
+			if err != nil {
+				time.Sleep(ws.PollInterval)
+				continue
+			}
+
 			logs := string(b)
-			if strings.Contains(logs, ws.Log) {
-				currentOccurence++
-				if ws.Occurrence == 0 || currentOccurence >= ws.Occurrence-1 {
-					break LOOP
-				}
-			} else {
+
+			switch {
+			case length == len(logs) && checkErr != nil:
+				return checkErr
+			case checkLogsFn(ws, b):
+				break LOOP
+			default:
+				length = len(logs)
 				time.Sleep(ws.PollInterval)
 				continue
 			}
@@ -101,4 +130,16 @@ LOOP:
 	}
 
 	return nil
+}
+
+func checkLogsFn(ws *LogStrategy, b []byte) bool {
+	if ws.IsRegexp {
+		re := regexp.MustCompile(ws.Log)
+		occurrences := re.FindAll(b, -1)
+
+		return len(occurrences) >= ws.Occurrence
+	}
+
+	logs := string(b)
+	return strings.Count(logs, ws.Log) >= ws.Occurrence
 }

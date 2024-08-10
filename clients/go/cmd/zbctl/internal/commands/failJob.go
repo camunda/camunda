@@ -16,15 +16,31 @@ package commands
 
 import (
 	"context"
+	"fmt"
+	"github.com/camunda/camunda/clients/go/v8/pkg/commands"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 	"github.com/spf13/cobra"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-	"log"
+	"time"
 )
 
+type FailJobResponseWrapper struct {
+	resp *pb.FailJobResponse
+}
+
+func (f FailJobResponseWrapper) human() (string, error) {
+	return fmt.Sprint("Failed job with key '", failJobKey, "' and set remaining retries to '", failJobRetriesFlag, "' and variables '", failJobVariables, "' with retry backoff '", failJobRetryBackoffFlag, "'"), nil
+}
+
+func (f FailJobResponseWrapper) json() (string, error) {
+	return toJSON(f.resp)
+}
+
 var (
-	failJobKey          int64
-	failJobRetriesFlag  int32
-	failJobErrorMessage string
+	failJobKey              int64
+	failJobRetriesFlag      int32
+	failJobRetryBackoffFlag time.Duration
+	failJobErrorMessage     string
+	failJobVariables        string
 )
 
 var failJobCmd = &cobra.Command{
@@ -33,29 +49,39 @@ var failJobCmd = &cobra.Command{
 	Args:    keyArg(&failJobKey),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
-		defer cancel()
-
-		_, err := client.NewFailJobCommand().
+		request, err := client.NewFailJobCommand().
 			JobKey(failJobKey).
 			Retries(failJobRetriesFlag).
+			RetryBackoff(failJobRetryBackoffFlag).
 			ErrorMessage(failJobErrorMessage).
-			Send(ctx)
-		if err == nil {
-			log.Println("Failed job with key", failJobKey, "and set remaining retries to", failJobRetriesFlag)
+			VariablesFromString(failJobVariables)
+		if err != nil {
+			return err
 		}
 
+		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
+		defer cancel()
+
+		var resp *pb.FailJobResponse
+		resp, err = request.Send(ctx)
+		if err != nil {
+			return err
+		}
+		err = printOutput(FailJobResponseWrapper{resp})
 		return err
 	},
 }
 
 func init() {
+	addOutputFlag(failJobCmd)
 	failCmd.AddCommand(failJobCmd)
 	failJobCmd.Flags().Int32Var(&failJobRetriesFlag, "retries", commands.DefaultJobRetries, "Specify remaining retries of job")
 	if err := failJobCmd.MarkFlagRequired("retries"); err != nil {
 		panic(err)
 	}
+	failJobCmd.Flags().DurationVar(&failJobRetryBackoffFlag, "retryBackoff", time.Second*0, "Specify retry backoff of job. Example values: 300ms, 50s or 1m")
 
 	failJobCmd.Flags().StringVar(&failJobErrorMessage, "errorMessage", "", "Specify failure error message")
+	failJobCmd.Flags().StringVar(&failJobVariables, "variables", "{}", "Specify variables as JSON object string")
 
 }

@@ -11,13 +11,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package zbc
 
 import (
 	"fmt"
 	"github.com/mitchellh/go-homedir"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
+	"golang.org/x/oauth2"
+	"gopkg.in/yaml.v3"
 	"log"
 	"os"
 	"path"
@@ -40,9 +41,9 @@ type OAuthCredentialsCache interface {
 	// Refresh should clear and re-populate the cache from defaults
 	Refresh() error
 	// Get should return the cached credentials for the given audience, or nil
-	Get(audience string) *OAuthCredentials
+	Get(audience string) *oauth2.Token
 	// Update should set the credentials as the cached credentials for the given audience
-	Update(audience string, credentials *OAuthCredentials) error
+	Update(audience string, token *oauth2.Token) error
 }
 
 type oauthYamlCredentialsCache struct {
@@ -52,7 +53,7 @@ type oauthYamlCredentialsCache struct {
 }
 
 type oauthCachedCredentials struct {
-	Auth struct{ Credentials *OAuthCredentials }
+	Auth struct{ Credentials *oauth2.Token }
 }
 
 func NewOAuthYamlCredentialsCache(path string) (OAuthCredentialsCache, error) {
@@ -88,7 +89,7 @@ func (cache *oauthYamlCredentialsCache) Refresh() error {
 
 // Get returns the cached credentials for the given audience or nil
 // Note: it does not read the cache again
-func (cache *oauthYamlCredentialsCache) Get(audience string) *OAuthCredentials {
+func (cache *oauthYamlCredentialsCache) Get(audience string) *oauth2.Token {
 	cache.lock.RLock()
 	defer cache.lock.RUnlock()
 
@@ -101,28 +102,29 @@ func (cache *oauthYamlCredentialsCache) Get(audience string) *OAuthCredentials {
 }
 
 // Update updates the in-memory mapping for the given audience and credentials, and flushes its contents to disk
-func (cache *oauthYamlCredentialsCache) Update(audience string, credentials *OAuthCredentials) error {
+func (cache *oauthYamlCredentialsCache) Update(audience string, credentials *oauth2.Token) error {
 	cache.put(audience, credentials)
 	return cache.writeCache()
 }
 
-func (cache *oauthYamlCredentialsCache) put(audience string, credentials *OAuthCredentials) {
+func (cache *oauthYamlCredentialsCache) put(audience string, credentials *oauth2.Token) {
 	cache.lock.Lock()
 	defer cache.lock.Unlock()
 	cache.audiences[audience] = &oauthCachedCredentials{
-		Auth: struct{ Credentials *OAuthCredentials }{Credentials: credentials},
+		Auth: struct{ Credentials *oauth2.Token }{Credentials: credentials},
 	}
 }
 
 // readCache will overwrite the current contents of cache.audiences, so use carefully
 func (cache *oauthYamlCredentialsCache) readCache() error {
-	cacheContents, err := ioutil.ReadFile(cache.path)
+	cacheContents, err := os.ReadFile(cache.path)
 	if err != nil {
 		return err
 	}
 
 	cache.lock.Lock()
 	defer cache.lock.Unlock()
+
 	err = yaml.Unmarshal(cacheContents, &cache.audiences)
 	return err
 }
@@ -137,7 +139,7 @@ func (cache *oauthYamlCredentialsCache) writeCache() error {
 		return err
 	}
 
-	return ioutil.WriteFile(cache.path, cacheContents, 0640)
+	return os.WriteFile(cache.path, cacheContents, 0600)
 }
 
 func getDefaultOAuthYamlCredentialsCacheRelativePath() string {

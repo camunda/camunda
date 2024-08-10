@@ -11,9 +11,13 @@
     <property name="eachLine" value="true"/>
   </module>
 
+  <module name="SuppressWarningsFilter"/>
+
   <module name="TreeWalker">
     <property name="tabWidth" value="4"/>
     <property name="severity" value="error"/>
+
+    <module name="SuppressWarningsHolder"/>
 
     <module name="ConstantName"/>
 
@@ -147,6 +151,10 @@
       <property name="sortImportsInGroupAlphabetically" value="true"/>
       <property name="separateLineBetweenGroups" value="true"/>
       <property name="customImportOrderRules" value="STATIC###THIRD_PARTY_PACKAGE"/>
+    </module>
+
+    <module name="IllegalImport">
+      <property name="illegalPkgs" value="org.testcontainers.shaded,org.assertj.core.internal"/>
     </module>
   </module>
 </module>

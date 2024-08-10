@@ -1,0 +1,136 @@
+name: Optimize Elastic Search Compatibility Test
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 22 * * 1-5
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  es-compatibility:
+    name: Elastic Search Compatibility Tests
+    runs-on: gcp-core-16-default
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        esVersion: ["8.9.0", "8.10.0", "8.11.0", "8.12.0", "8.13.0"]
+        includedGroups:
+          [ "import,eventBasedProcess", "reportEvaluation", "", "ccsm-test" ]
+        include:
+          - includedGroups: "import,eventBasedProcess"
+            excludedGroups: ""
+            profile: "it,engine-latest"
+          - includedGroups: "reportEvaluation"
+            excludedGroups: ""
+            profile: "it,engine-latest"
+          - includedGroups: ""
+            excludedGroups: "ccsm-test,import,eventBasedProcess,reportEvaluation"
+            profile: "it,engine-latest"
+          - includedGroups: "ccsm-test"
+            excludedGroups: ""
+            profile: "ccsm-it"
+
+    steps:
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+
+      - name: "Read Java Info"
+        id: "pom-info"
+        uses: YunaBraska/java-info-action@main
+
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
+          java-version: ${{ steps.pom-info.outputs.java_version }}
+
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/camunda-optimize CI_SERVICE_ACCOUNT | GCP_CREDENTIALS;
+            secret/data/products/optimize/ci/camunda-optimize SLACK_BOT_URL;
+
+      - name: Login to Harbor registry
+        uses: ./.github/actions/login-registry
+        with:
+          secrets: ${{ toJSON(secrets) }}
+
+      - name: Start Cambpm
+        uses: ./.github/actions/compose
+        with:
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
+          project_name: cambpm
+        env:
+          CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
+          CAMBPM_JVM_MEMORY: 12
+
+      - name: Start Elastic
+        uses: ./.github/actions/compose
+        with:
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
+          project_name: elasticsearch
+        env:
+          ELASTIC_VERSION: ${{ matrix.esVersion }}
+          ELASTIC_JVM_MEMORY: 12
+          ELASTIC_HTTP_PORT: 9200
+
+      - name: IT ES ${{ matrix.esVersion }} - ${{ matrix.includedGroups }} - ${{ matrix.excludedGroups }} - ${{ matrix.profile }}
+        if: always()
+        uses: ./.github/actions/run-maven
+        env:
+          LIMITS_CPU: 8
+        with:
+          threads: 8
+          parameters: verify -Dfailsafe.rerunFailingTestsCount=2 -Dit.test.includedGroups=${{ matrix.includedGroups }} -Dit.test.excludedGroups=${{ matrix.excludedGroups }} -Dskip.docker -Dskip.fe.build -P${{ matrix.profile }} -pl optimize/backend -am
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4
+        with:
+          name: es-compatibility-${{ matrix.esVersion }}-${{ matrix.includedGroups }}-${{ matrix.excludedGroups }}-${{ matrix.profile }}-junit
+          path: |
+            **/failsafe-reports/**/*.xml
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Docker log dump
+        if: always()
+        uses: ./.github/actions/docker-logs
+        with:
+          archive_name: es-compatibility-${{ matrix.esVersion }}-${{ matrix.includedGroups }}${{ matrix.excludedGroups }}-docker
+
+      - name: Post results on slack
+        if: failure() && github.event_name != 'schedule'
+        uses: ./.github/actions/notify-on-slack
+        with:
+          slack_webhook_url: ${{ steps.secrets.outputs.SLACK_BOT_URL}}
+          status: ${{ job.status }}
+
+  # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
+  rerun-failed-jobs:
+    needs:
+      - es-compatibility
+    if: failure() && fromJSON(github.run_attempt) < 3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Retrigger job
+        uses: camunda/infra-global-github-actions/rerun-failed-run@main
+        with:
+          error-messages: |
+            lost communication with the server
+            The runner has received a shutdown signal
+          run-id: ${{ github.run_id }}
+          repository: ${{ github.repository }}
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}

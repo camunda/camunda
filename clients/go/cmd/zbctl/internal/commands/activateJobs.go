@@ -16,10 +16,11 @@ package commands
 
 import (
 	"context"
-	"github.com/spf13/cobra"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-	"log"
 	"time"
+
+	"github.com/camunda/camunda/clients/go/v8/pkg/commands"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -31,7 +32,6 @@ var (
 	activateJobsWorkerFlag         string
 	activateJobsTimeoutFlag        time.Duration
 	activateJobsFetchVariablesFlag []string
-	activateJobsRequestTimeoutFlag time.Duration
 )
 
 var activateJobsCmd = &cobra.Command{
@@ -40,13 +40,7 @@ var activateJobsCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		timeout := defaultTimeout
-
-		if activateJobsRequestTimeoutFlag != 0 {
-			timeout = activateJobsRequestTimeoutFlag
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 
 		jobType := args[0]
@@ -61,20 +55,14 @@ var activateJobsCmd = &cobra.Command{
 			return err
 		}
 
-		jobsCount := len(jobs)
-		if jobsCount > 0 {
-			log.Println("Activated", jobsCount, "for type", jobType)
-			for index, job := range jobs {
-				log.Println("Job", index+1, "/", jobsCount)
-				if err := printJSON(job); err != nil {
-					return err
-				}
-			}
-		} else {
-			log.Println("No jobs found to activate for type", jobType)
+		var activatedJobs []*pb.ActivatedJob
+		for _, job := range jobs {
+			activatedJobs = append(activatedJobs, job.ActivatedJob)
 		}
 
-		return nil
+		return printJSON(&pb.ActivateJobsResponse{
+			Jobs: activatedJobs,
+		})
 	},
 }
 
@@ -82,7 +70,6 @@ func init() {
 	activateCmd.AddCommand(activateJobsCmd)
 	activateJobsCmd.Flags().Int32Var(&maxJobsToActivateFlag, "maxJobsToActivate", 1, "Specify the maximum amount of jobs to activate")
 	activateJobsCmd.Flags().StringVar(&activateJobsWorkerFlag, "worker", DefaultJobWorkerName, "Specify the name of the worker")
-	activateJobsCmd.Flags().DurationVar(&activateJobsTimeoutFlag, "timeout", commands.DefaultJobTimeout, "Specify the timeout of the activated job")
+	activateJobsCmd.Flags().DurationVar(&activateJobsTimeoutFlag, "timeout", commands.DefaultJobTimeout, "Specify the timeout of the activated job. Example values: 300ms, 50s or 1m")
 	activateJobsCmd.Flags().StringSliceVar(&activateJobsFetchVariablesFlag, "variables", []string{}, "Specify the list of variable names which should be fetch on job activation (comma-separated)")
-	activateJobsCmd.Flags().DurationVar(&activateJobsRequestTimeoutFlag, "requestTimeout", 0, "Specify the request timeout")
 }

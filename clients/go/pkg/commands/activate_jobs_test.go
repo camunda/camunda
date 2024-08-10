@@ -16,11 +16,11 @@ package commands
 
 import (
 	"context"
+	"github.com/camunda/camunda/clients/go/v8/internal/mock_pb"
+	"github.com/camunda/camunda/clients/go/v8/internal/utils"
+	"github.com/camunda/camunda/clients/go/v8/pkg/entities"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 	"github.com/golang/mock/gomock"
-	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
-	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"io"
 	"reflect"
 	"testing"
@@ -49,19 +49,19 @@ func TestActivateJobsCommand(t *testing.T) {
 	response1 := &pb.ActivateJobsResponse{
 		Jobs: []*pb.ActivatedJob{
 			{
-				Key:                       123,
-				Type:                      "foo",
-				Retries:                   3,
-				Deadline:                  123123,
-				Worker:                    DefaultJobWorkerName,
-				ElementInstanceKey:        123,
-				WorkflowKey:               124,
-				BpmnProcessId:             "fooProcess",
-				WorkflowInstanceKey:       1233,
-				ElementId:                 "foobar",
-				WorkflowDefinitionVersion: 12345,
-				CustomHeaders:             "{\"foo\": \"bar\"}",
-				Variables:                 "{\"foo\": \"bar\"}",
+				Key:                      123,
+				Type:                     "foo",
+				Retries:                  3,
+				Deadline:                 123123,
+				Worker:                   DefaultJobWorkerName,
+				ElementInstanceKey:       123,
+				ProcessDefinitionKey:     124,
+				BpmnProcessId:            "fooProcess",
+				ProcessInstanceKey:       1233,
+				ElementId:                "foobar",
+				ProcessDefinitionVersion: 12345,
+				CustomHeaders:            "{\"foo\": \"bar\"}",
+				Variables:                "{\"foo\": \"bar\"}",
 			},
 		},
 	}
@@ -71,19 +71,19 @@ func TestActivateJobsCommand(t *testing.T) {
 	response3 := &pb.ActivateJobsResponse{
 		Jobs: []*pb.ActivatedJob{
 			{
-				Key:                       123,
-				Type:                      "foo",
-				Retries:                   3,
-				Deadline:                  123123,
-				Worker:                    DefaultJobWorkerName,
-				ElementInstanceKey:        123,
-				WorkflowKey:               124,
-				BpmnProcessId:             "fooProcess",
-				WorkflowInstanceKey:       1233,
-				ElementId:                 "foobar",
-				WorkflowDefinitionVersion: 12345,
-				CustomHeaders:             "{\"foo\": \"bar\"}",
-				Variables:                 "{\"foo\": \"bar\"}",
+				Key:                      123,
+				Type:                     "foo",
+				Retries:                  3,
+				Deadline:                 123123,
+				Worker:                   DefaultJobWorkerName,
+				ElementInstanceKey:       123,
+				ProcessDefinitionKey:     124,
+				BpmnProcessId:            "fooProcess",
+				ProcessInstanceKey:       1233,
+				ElementId:                "foobar",
+				ProcessDefinitionVersion: 12345,
+				CustomHeaders:            "{\"foo\": \"bar\"}",
+				Variables:                "{\"foo\": \"bar\"}",
 			},
 			{
 				Key:           123,
@@ -99,13 +99,13 @@ func TestActivateJobsCommand(t *testing.T) {
 
 	var expectedJobs []entities.Job
 	for _, job := range response1.Jobs {
-		expectedJobs = append(expectedJobs, entities.Job{ActivatedJob: *job})
+		expectedJobs = append(expectedJobs, entities.Job{ActivatedJob: job})
 	}
 	for _, job := range response2.Jobs {
-		expectedJobs = append(expectedJobs, entities.Job{ActivatedJob: *job})
+		expectedJobs = append(expectedJobs, entities.Job{ActivatedJob: job})
 	}
 	for _, job := range response3.Jobs {
-		expectedJobs = append(expectedJobs, entities.Job{ActivatedJob: *job})
+		expectedJobs = append(expectedJobs, entities.Job{ActivatedJob: job})
 	}
 
 	gomock.InOrder(
@@ -171,6 +171,42 @@ func TestActivateJobsCommandWithTimeout(t *testing.T) {
 	if len(jobs) != 0 {
 		t.Errorf("Failed to receive response")
 	}
+}
+
+func TestActivateJobsCommandWithTenantIDs(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+	stream := mock_pb.NewMockGateway_ActivateJobsClient(ctrl)
+
+	request := &pb.ActivateJobsRequest{
+		Type:              "foo",
+		MaxJobsToActivate: 5,
+		Timeout:           DefaultJobTimeoutInMs,
+		Worker:            DefaultJobWorkerName,
+		RequestTimeout:    longPollMillis,
+		TenantIds:         []string{"1234", "5555"},
+	}
+
+	stream.EXPECT().Recv().Return(nil, io.EOF)
+	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	jobs, err := NewActivateJobsCommand(client, func(context.Context, error) bool {
+		return false
+	}).JobType("foo").MaxJobsToActivate(5).TenantIds("1234", "5555").Send(ctx)
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if len(jobs) != 0 {
+		t.Errorf("Failed to receive response")
+	}
+
 }
 
 func TestActivateJobsCommandWithWorkerName(t *testing.T) {

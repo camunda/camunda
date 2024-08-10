@@ -1,0 +1,5 @@
+query getVariable($variableId: String!){
+    variable(id: $variableId) {
+        ... variableFields
+    }
+}

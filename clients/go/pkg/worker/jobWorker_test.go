@@ -16,16 +16,20 @@
 package worker
 
 import (
+	"context"
 	"fmt"
-	"github.com/golang/mock/gomock"
-	"github.com/golang/protobuf/proto"
-	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
-	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"io"
 	"testing"
 	"time"
+
+	"github.com/camunda/camunda/clients/go/v8/internal/mock_pb"
+	"github.com/camunda/camunda/clients/go/v8/internal/utils"
+	"github.com/camunda/camunda/clients/go/v8/pkg/commands"
+	"github.com/camunda/camunda/clients/go/v8/pkg/entities"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 )
 
 // rpcMsg implements the gomock.Matcher interface
@@ -58,6 +62,7 @@ func TestJobWorkerActivateJobsDefault(t *testing.T) {
 		Timeout:           commands.DefaultJobTimeoutInMs,
 		Worker:            commands.DefaultJobWorkerName,
 		RequestTimeout:    int64(utils.DefaultTestTimeout / time.Millisecond),
+		TenantIds:         []string{commands.DefaultJobTenantID},
 	}
 
 	response := &pb.ActivateJobsResponse{
@@ -74,7 +79,7 @@ func TestJobWorkerActivateJobsDefault(t *testing.T) {
 
 	jobs := make(chan entities.Job, 1)
 
-	NewJobWorkerBuilder(client, nil).JobType("foo").Handler(func(client JobClient, job entities.Job) {
+	NewJobWorkerBuilder(client, nil, nil).JobType("foo").Handler(func(client JobClient, job entities.Job) {
 		jobs <- job
 	}).RequestTimeout(utils.DefaultTestTimeout).Open()
 
@@ -104,6 +109,7 @@ func TestJobWorkerActivateJobsCustom(t *testing.T) {
 		Timeout:           int64(timeout / time.Millisecond),
 		Worker:            "fooWorker",
 		RequestTimeout:    int64(utils.DefaultTestTimeout / time.Millisecond),
+		TenantIds:         []string{commands.DefaultJobTenantID},
 	}
 
 	response := &pb.ActivateJobsResponse{
@@ -120,7 +126,7 @@ func TestJobWorkerActivateJobsCustom(t *testing.T) {
 
 	jobs := make(chan entities.Job, 1)
 
-	NewJobWorkerBuilder(client, nil).JobType("foo").Handler(func(client JobClient, job entities.Job) {
+	NewJobWorkerBuilder(client, nil, nil).JobType("foo").Handler(func(client JobClient, job entities.Job) {
 		jobs <- job
 	}).MaxJobsActive(123).Timeout(timeout).RequestTimeout(utils.DefaultTestTimeout).Name("fooWorker").Open()
 
@@ -132,5 +138,205 @@ func TestJobWorkerActivateJobsCustom(t *testing.T) {
 		}
 	case <-time.After(utils.DefaultTestTimeout):
 		t.Error("Failed to receive all jobs before timeout")
+	}
+}
+
+func TestJobWorkerStreamDisabled(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+	stream := mock_pb.NewMockGateway_ActivateJobsClient(ctrl)
+
+	timeout := 7 * time.Minute
+
+	request := &pb.ActivateJobsRequest{
+		Type:              "foo",
+		MaxJobsToActivate: 123,
+		Timeout:           int64(timeout / time.Millisecond),
+		Worker:            "fooWorker",
+		RequestTimeout:    int64(utils.DefaultTestTimeout / time.Millisecond),
+		TenantIds:         []string{commands.DefaultJobTenantID},
+	}
+
+	response := &pb.ActivateJobsResponse{
+		Jobs: []*pb.ActivatedJob{
+			{
+				Key: 1,
+			},
+		},
+	}
+
+	stream.EXPECT().Recv().Return(response, nil).AnyTimes()
+	client.EXPECT().ActivateJobs(gomock.Any(), &rpcMsg{msg: request}).Return(stream, nil)
+	client.EXPECT().StreamActivatedJobs(gomock.Any(), gomock.Any()).Times(0)
+
+	jobs := make(chan entities.Job, 1)
+	NewJobWorkerBuilder(client, nil, nil).JobType("foo").Handler(func(client JobClient, job entities.Job) {
+		jobs <- job
+	}).MaxJobsActive(123).Timeout(timeout).RequestTimeout(utils.DefaultTestTimeout).Name("fooWorker").Open()
+
+	select {
+	case job := <-jobs:
+		expected := response.Jobs[0].Key
+		if job.Key != expected {
+			t.Error("Failed to received job", expected, "got", job.Key)
+		}
+	case <-time.After(utils.DefaultTestTimeout):
+		t.Error("Failed to receive all jobs before timeout")
+	}
+}
+
+func TestJobWorkerStreamEnabled(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+	stream := mock_pb.NewMockGateway_StreamActivatedJobsClient(ctrl)
+	activateJobsStream := mock_pb.NewMockGateway_ActivateJobsClient(ctrl)
+	timeout := 7 * time.Minute
+	request := &pb.StreamActivatedJobsRequest{
+		Type:      "foo",
+		Timeout:   int64(timeout / time.Millisecond),
+		Worker:    "fooWorker",
+		TenantIds: []string{commands.DefaultJobTenantID},
+	}
+	activateJobsRequest := &pb.ActivateJobsRequest{
+		Type:              "foo",
+		MaxJobsToActivate: 123,
+		Timeout:           int64(timeout / time.Millisecond),
+		Worker:            "fooWorker",
+		RequestTimeout:    int64(utils.DefaultTestTimeout / time.Millisecond),
+		TenantIds:         []string{commands.DefaultJobTenantID},
+	}
+
+	response := &pb.ActivatedJob{Key: 1}
+	emptyActivateResponse := &pb.ActivateJobsResponse{}
+
+	stream.EXPECT().Recv().Return(response, nil).AnyTimes()
+	activateJobsStream.EXPECT().Recv().Return(emptyActivateResponse, nil).AnyTimes()
+	client.EXPECT().StreamActivatedJobs(gomock.Any(), &rpcMsg{msg: request}).AnyTimes().Return(stream, nil)
+	client.EXPECT().ActivateJobs(gomock.Any(), &rpcMsg{msg: activateJobsRequest}).Return(activateJobsStream, nil).AnyTimes()
+
+	retryPred := func(ctx context.Context, err error) bool { return true }
+	jobs := make(chan entities.Job, 1)
+	NewJobWorkerBuilder(client, nil, retryPred).
+		JobType("foo").
+		Handler(func(client JobClient, job entities.Job) {
+			jobs <- job
+		}).
+		MaxJobsActive(123).
+		Timeout(timeout).
+		RequestTimeout(utils.DefaultTestTimeout).
+		Name("fooWorker").
+		StreamEnabled(true).
+		PollInterval(time.Minute).
+		Open()
+
+	select {
+	case job := <-jobs:
+		expected := response.Key
+		if job.Key != expected {
+			t.Error("Failed to received job", expected, "got", job.Key)
+		}
+	case <-time.After(utils.DefaultTestTimeout):
+		t.Error("Failed to receive all jobs before timeout")
+	}
+}
+
+func TestStreamingJobWorkerClose(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+	stream := mock_pb.NewMockGateway_StreamActivatedJobsClient(ctrl)
+	activateJobsStream := mock_pb.NewMockGateway_ActivateJobsClient(ctrl)
+	timeout := 7 * time.Minute
+	request := &pb.StreamActivatedJobsRequest{
+		Type:      "foo",
+		Timeout:   int64(timeout / time.Millisecond),
+		Worker:    "default",
+		TenantIds: []string{commands.DefaultJobTenantID},
+	}
+	activateJobsRequest := &pb.ActivateJobsRequest{
+		Type:              "foo",
+		MaxJobsToActivate: 32,
+		Timeout:           int64(timeout / time.Millisecond),
+		Worker:            "default",
+		RequestTimeout:    10000,
+		TenantIds:         []string{commands.DefaultJobTenantID},
+	}
+
+	stream.EXPECT().Recv().Return(nil, io.EOF).AnyTimes()
+	activateJobsStream.EXPECT().Recv().Return(nil, io.EOF).AnyTimes()
+	client.EXPECT().StreamActivatedJobs(gomock.Any(), &rpcMsg{msg: request}).AnyTimes().Return(stream, nil)
+	client.EXPECT().ActivateJobs(gomock.Any(), &rpcMsg{msg: activateJobsRequest}).Return(activateJobsStream, nil).AnyTimes()
+
+	retryPred := func(ctx context.Context, err error) bool { return err != io.EOF }
+	worker := NewJobWorkerBuilder(client, nil, retryPred).
+		JobType("foo").
+		Handler(func(client JobClient, job entities.Job) {}).
+		Timeout(timeout).
+		StreamEnabled(true).
+		Open()
+
+	closedChan := make(chan bool)
+	go func() {
+		worker.Close()
+		closedChan <- true
+		close(closedChan)
+	}()
+
+	select {
+	case closed := <-closedChan:
+		assert.True(t, closed, "Worker should eventually close")
+		break
+	case <-time.After(10 * time.Second):
+		assert.Fail(t, "Failed to close worker after 10 seconds")
+		break
+	}
+}
+
+func TestJobWorkerClose(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+	stream := mock_pb.NewMockGateway_ActivateJobsClient(ctrl)
+	timeout := 7 * time.Minute
+	request := &pb.ActivateJobsRequest{
+		Type:              "foo",
+		MaxJobsToActivate: 32,
+		Timeout:           int64(timeout / time.Millisecond),
+		Worker:            "default",
+		RequestTimeout:    10000,
+		TenantIds:         []string{commands.DefaultJobTenantID},
+	}
+
+	stream.EXPECT().Recv().Return(nil, io.EOF).AnyTimes()
+	client.EXPECT().ActivateJobs(gomock.Any(), &rpcMsg{msg: request}).Return(stream, nil).AnyTimes()
+
+	retryPred := func(ctx context.Context, err error) bool { return err != io.EOF }
+	worker := NewJobWorkerBuilder(client, nil, retryPred).
+		JobType("foo").
+		Handler(func(client JobClient, job entities.Job) {}).
+		Timeout(timeout).
+		StreamEnabled(false).
+		Open()
+
+	closedChan := make(chan bool)
+	go func() {
+		worker.Close()
+		closedChan <- true
+		close(closedChan)
+	}()
+
+	select {
+	case closed := <-closedChan:
+		assert.True(t, closed, "Worker should eventually close")
+		break
+	case <-time.After(10 * time.Second):
+		assert.Fail(t, "Failed to close worker after 10 seconds")
+		break
 	}
 }

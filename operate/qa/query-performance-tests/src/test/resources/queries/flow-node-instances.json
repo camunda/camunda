@@ -1,0 +1,15 @@
+[
+  {
+    "title": "Flow node instance by process instance id",
+    "url": "/api/flow-node-instances",
+    "method": "POST",
+    "body": {
+      "queries": [
+        {
+          "processInstanceId": "${processInstanceId}",
+          "treePath": "${processInstanceId}"
+        }
+      ]
+    }
+  }
+]

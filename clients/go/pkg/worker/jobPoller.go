@@ -17,26 +17,35 @@ package worker
 
 import (
 	"context"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"fmt"
 	"io"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/camunda/camunda/clients/go/v8/pkg/entities"
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type jobPoller struct {
-	client         pb.GatewayClient
-	request        pb.ActivateJobsRequest
-	requestTimeout time.Duration
-	maxJobsActive  int
-	pollInterval   time.Duration
+	client              pb.GatewayClient
+	request             *pb.ActivateJobsRequest
+	requestTimeout      time.Duration
+	maxJobsActive       int
+	initialPollInterval time.Duration
+	pollInterval        time.Duration
 
 	jobQueue       chan entities.Job
 	workerFinished chan bool
 	closeSignal    chan struct{}
 	remaining      int
 	threshold      int
+	metrics        JobWorkerMetrics
+	shouldRetry    func(context.Context, error) bool
+
+	backoffSupplier BackoffSupplier
 }
 
 func (poller *jobPoller) poll(closeWait *sync.WaitGroup) {
@@ -50,10 +59,13 @@ func (poller *jobPoller) poll(closeWait *sync.WaitGroup) {
 		// either a job was finished
 		case <-poller.workerFinished:
 			poller.remaining--
+			poller.setJobsRemainingCountMetric(poller.remaining)
+			poller.pollInterval = poller.initialPollInterval
 		// or the poll interval exceeded
 		case <-time.After(poller.pollInterval):
 		// or poller should stop
 		case <-poller.closeSignal:
+			poller.setJobsRemainingCountMetric(0)
 			return
 		}
 
@@ -72,25 +84,69 @@ func (poller *jobPoller) activateJobs() {
 	defer cancel()
 
 	poller.request.MaxJobsToActivate = int32(poller.maxJobsActive - poller.remaining)
-	stream, err := poller.client.ActivateJobs(ctx, &poller.request)
+	stream, err := poller.openStream(ctx)
 	if err != nil {
-		log.Println("Failed to request jobs for worker", poller.request.Worker, err)
+		log.Println(err.Error())
 		return
 	}
 
 	for {
 		response, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
 		if err != nil {
-			log.Println("Failed to activate jobs for worker", poller.request.Worker, err)
+			// no need to retry if the error was simply that we reached the end of the stream
+			if err == io.EOF {
+				break
+			}
+
+			if poller.shouldRetry(ctx, err) {
+				// the headers are outdated and need to be rebuilt
+				stream, err = poller.openStream(ctx)
+				if err != nil {
+					log.Printf("Failed to reopen job polling stream: %v\n", err)
+					break
+				}
+				continue
+			}
+
+			if err != io.EOF && status.Code(err) != codes.ResourceExhausted {
+				log.Printf("Failed to activate jobs for worker '%s': %v\n", poller.request.Worker, err)
+			}
+
+			switch status.Code(err) {
+			case codes.ResourceExhausted, codes.Unavailable, codes.Internal:
+				poller.backoff()
+			}
+
 			break
 		}
 
 		poller.remaining += len(response.Jobs)
+		poller.setJobsRemainingCountMetric(poller.remaining)
 		for _, job := range response.Jobs {
-			poller.jobQueue <- entities.Job{ActivatedJob: *job}
+			poller.jobQueue <- entities.Job{ActivatedJob: job}
 		}
 	}
+}
+
+func (poller *jobPoller) openStream(ctx context.Context) (pb.Gateway_ActivateJobsClient, error) {
+	stream, err := poller.client.ActivateJobs(ctx, poller.request)
+	if err != nil {
+		if poller.shouldRetry(ctx, err) {
+			return poller.openStream(ctx)
+		}
+		return nil, fmt.Errorf("worker '%s' failed to open job stream: %w", poller.request.Worker, err)
+	}
+
+	return stream, nil
+}
+
+func (poller *jobPoller) setJobsRemainingCountMetric(count int) {
+	if poller.metrics != nil {
+		poller.metrics.SetJobsRemainingCount(poller.request.GetType(), count)
+	}
+}
+
+func (poller *jobPoller) backoff() {
+	prevInterval := poller.pollInterval
+	poller.pollInterval = poller.backoffSupplier.SupplyRetryDelay(prevInterval)
 }

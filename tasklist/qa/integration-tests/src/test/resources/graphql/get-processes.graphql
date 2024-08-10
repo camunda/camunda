@@ -1,0 +1,8 @@
+query getProcesses($search: String!){
+    processes (search: $search) {
+        id
+        name
+        processDefinitionId
+        version
+    }
+}

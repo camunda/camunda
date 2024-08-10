@@ -1,0 +1,8 @@
+{
+  "description": "Fill in pendingIncident flag",
+  "@type": "processorStep",
+  "indexName": "list-view",
+  "version": "8.1.0",
+  "order": 0,
+  "content": "{\"script\": {\"lang\": \"painless\",\"source\": \"if (ctx.joinRelation.name.equals('activity') && ctx.incidentKey != null) { ctx.pendingIncident = true; ctx.incidentKeys = new Long[]{ctx.incidentKey}}\"}}"
+}

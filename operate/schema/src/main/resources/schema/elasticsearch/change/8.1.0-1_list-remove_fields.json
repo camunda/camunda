@@ -1,0 +1,8 @@
+{
+  "description": "Remove incidentJobKey field",
+  "@type": "processorStep",
+  "indexName": "list-view",
+  "version": "8.1.0",
+  "order": 1,
+  "content": "{\"remove\": {\"field\": [\"incidentJobKey\", \"incidentKey\"], \"ignore_missing\": true }}"
+}

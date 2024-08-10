@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="definitions_51c88d32-dc2c-4d83-a720-6aa1410b6644" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL" exporter="Camunda Modeler" exporterVersion="5.19.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.3.0">
+  <process id="compensation-process" name="A" isExecutable="true">
+    <serviceTask id="CompensationHandler" name="undo A" isForCompensation="true">
+      <extensionElements>
+        <zeebe:taskDefinition type="compensationHandler" />
+      </extensionElements>
+    </serviceTask>
+    <serviceTask id="CompensableActivity" name="A">
+      <extensionElements>
+        <zeebe:taskDefinition type="compensableActivity" />
+      </extensionElements>
+      <incoming>Flow_02lhfi2</incoming>
+      <outgoing>Flow_0nfv1qj</outgoing>
+    </serviceTask>
+    <parallelGateway id="Gateway_0b5qkne">
+      <incoming>Flow_02z5c0s</incoming>
+      <outgoing>Flow_02lhfi2</outgoing>
+      <outgoing>Flow_1piocaf</outgoing>
+    </parallelGateway>
+    <startEvent id="Event_139dbg6">
+      <outgoing>Flow_02z5c0s</outgoing>
+    </startEvent>
+    <subProcess id="embedded-subprocess">
+      <incoming>Flow_1piocaf</incoming>
+      <outgoing>Flow_1msu1yo</outgoing>
+      <startEvent id="Event_1xdfzjf">
+        <outgoing>Flow_0iedfgy</outgoing>
+      </startEvent>
+      <endEvent id="Event_0xxhib9">
+        <incoming>Flow_1qynmpg</incoming>
+      </endEvent>
+      <serviceTask id="CompensableActivity2" name="B">
+        <extensionElements>
+          <zeebe:taskDefinition type="compensableActivity2" />
+        </extensionElements>
+        <incoming>Flow_0iedfgy</incoming>
+        <outgoing>Flow_0xosvgm</outgoing>
+      </serviceTask>
+      <serviceTask id="CompensationHandler2" name="undo B" isForCompensation="true">
+        <extensionElements>
+          <zeebe:taskDefinition type="compensationHandler2" />
+        </extensionElements>
+      </serviceTask>
+      <boundaryEvent id="Event_0m7pypa" attachedToRef="CompensableActivity2">
+        <compensateEventDefinition id="CompensateEventDefinition_1ttewio" />
+      </boundaryEvent>
+      <sequenceFlow id="Flow_0iedfgy" sourceRef="Event_1xdfzjf" targetRef="CompensableActivity2" />
+      <sequenceFlow id="Flow_0xosvgm" sourceRef="CompensableActivity2" targetRef="Event_0zvfco3" />
+      <sequenceFlow id="Flow_1qynmpg" sourceRef="Event_0zvfco3" targetRef="Event_0xxhib9" />
+      <intermediateThrowEvent id="Event_0zvfco3">
+        <incoming>Flow_0xosvgm</incoming>
+        <outgoing>Flow_1qynmpg</outgoing>
+        <compensateEventDefinition id="CompensateEventDefinition_0hpyu3e" />
+      </intermediateThrowEvent>
+      <association id="Association_0qv3sws" associationDirection="One" sourceRef="Event_0m7pypa" targetRef="CompensationHandler2" />
+    </subProcess>
+    <endEvent id="Event_1wybtln">
+      <incoming>Flow_1dcipnh</incoming>
+    </endEvent>
+    <boundaryEvent id="Event_0pp2l1s" attachedToRef="CompensableActivity">
+      <compensateEventDefinition id="CompensateEventDefinition_1uxwrlb" />
+    </boundaryEvent>
+    <sequenceFlow id="Flow_0nfv1qj" sourceRef="CompensableActivity" targetRef="Gateway_1gdwrpb" />
+    <sequenceFlow id="Flow_02lhfi2" sourceRef="Gateway_0b5qkne" targetRef="CompensableActivity" />
+    <sequenceFlow id="Flow_02z5c0s" sourceRef="Event_139dbg6" targetRef="Gateway_0b5qkne" />
+    <sequenceFlow id="Flow_1piocaf" sourceRef="Gateway_0b5qkne" targetRef="embedded-subprocess" />
+    <sequenceFlow id="Flow_1msu1yo" sourceRef="embedded-subprocess" targetRef="Gateway_1gdwrpb" />
+    <exclusiveGateway id="Gateway_1gdwrpb">
+      <incoming>Flow_0nfv1qj</incoming>
+      <incoming>Flow_1msu1yo</incoming>
+      <outgoing>Flow_1dcipnh</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="Flow_1dcipnh" sourceRef="Gateway_1gdwrpb" targetRef="Event_1wybtln" />
+    <association id="Association_0g9hm7g" associationDirection="One" sourceRef="Event_0pp2l1s" targetRef="CompensationHandler" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_d458583a-dbd3-44f4-9045-ef478ea1576c">
+    <bpmndi:BPMNPlane id="BPMNPlane_b1706292-8b4e-48dd-9ca2-e5d428c1f478" bpmnElement="compensation-process">
+      <bpmndi:BPMNShape id="BPMNShape_0ogm7ow" bpmnElement="Gateway_0b5qkne">
+        <dc:Bounds x="245" y="365" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0y51cmi" bpmnElement="Event_139dbg6">
+        <dc:Bounds x="152" y="372" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0i98ovf" bpmnElement="Event_1wybtln">
+        <dc:Bounds x="1172" y="372" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1gdwrpb_di" bpmnElement="Gateway_1gdwrpb" isMarkerVisible="true">
+        <dc:Bounds x="1055" y="365" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0sxm5qg" bpmnElement="CompensableActivity">
+        <dc:Bounds x="590" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1ysefez" bpmnElement="CompensationHandler">
+        <dc:Bounds x="730" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_012abbc" bpmnElement="embedded-subprocess" isExpanded="true">
+        <dc:Bounds x="410" y="440" width="470" height="320" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0xjjg02" bpmnElement="Event_1xdfzjf">
+        <dc:Bounds x="450" y="522" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_112i0mo" bpmnElement="CompensableActivity2">
+        <dc:Bounds x="540" y="500" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_01g7hi2" bpmnElement="CompensationHandler2">
+        <dc:Bounds x="680" y="620" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_07i5iod" bpmnElement="Event_0xxhib9">
+        <dc:Bounds x="792" y="522" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1k1pg56_di" bpmnElement="Event_0zvfco3">
+        <dc:Bounds x="702" y="522" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_0ammj4t" bpmnElement="Association_0qv3sws">
+        <di:waypoint x="610" y="598" />
+        <di:waypoint x="610" y="660" />
+        <di:waypoint x="680" y="660" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="BPMNShape_0vhxgfj" bpmnElement="Event_0m7pypa">
+        <dc:Bounds x="592" y="562" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_1i4c8z0" bpmnElement="Flow_0iedfgy">
+        <di:waypoint x="486" y="540" />
+        <di:waypoint x="540" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_01070qp" bpmnElement="Flow_0xosvgm">
+        <di:waypoint x="640" y="540" />
+        <di:waypoint x="702" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1qynmpg_di" bpmnElement="Flow_1qynmpg">
+        <di:waypoint x="738" y="540" />
+        <di:waypoint x="792" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_198ri2c" bpmnElement="Association_0g9hm7g">
+        <di:waypoint x="660" y="182" />
+        <di:waypoint x="660" y="120" />
+        <di:waypoint x="730" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="BPMNShape_1g52i7l" bpmnElement="Event_0pp2l1s">
+        <dc:Bounds x="642" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_14iaoiq" bpmnElement="Flow_0nfv1qj">
+        <di:waypoint x="690" y="240" />
+        <di:waypoint x="1080" y="240" />
+        <di:waypoint x="1080" y="365" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_05xzywk" bpmnElement="Flow_02lhfi2">
+        <di:waypoint x="270" y="365" />
+        <di:waypoint x="270" y="240" />
+        <di:waypoint x="590" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_03b8hkw" bpmnElement="Flow_02z5c0s">
+        <di:waypoint x="188" y="390" />
+        <di:waypoint x="245" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0o7gyua" bpmnElement="Flow_1piocaf">
+        <di:waypoint x="270" y="415" />
+        <di:waypoint x="270" y="540" />
+        <di:waypoint x="410" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1nvsbs5" bpmnElement="Flow_1msu1yo">
+        <di:waypoint x="880" y="600" />
+        <di:waypoint x="1080" y="600" />
+        <di:waypoint x="1080" y="415" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1dcipnh_di" bpmnElement="Flow_1dcipnh">
+        <di:waypoint x="1105" y="390" />
+        <di:waypoint x="1172" y="390" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

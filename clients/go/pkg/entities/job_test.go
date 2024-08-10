@@ -17,8 +17,8 @@ package entities
 import (
 	"testing"
 
+	"github.com/camunda/camunda/clients/go/v8/pkg/pb"
 	"github.com/google/go-cmp/cmp"
-	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 )
 
 type testType struct {
@@ -27,7 +27,7 @@ type testType struct {
 }
 
 var (
-	job = Job{pb.ActivatedJob{
+	job = Job{&pb.ActivatedJob{
 		CustomHeaders: `{"foo": "bar", "hello": "world"}`,
 		Variables:     `{"foo": "bar", "hello": "world"}`,
 	}}

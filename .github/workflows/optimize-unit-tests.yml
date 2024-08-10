@@ -1,0 +1,94 @@
+name: Optimize Unit Tests
+on:
+  workflow_call:
+
+jobs:
+  detect-changes:
+    name: Get changed directories
+    runs-on: ubuntu-latest
+    outputs:
+      backend-changes: ${{ steps.filter.outputs.backend-changes }}
+      frontend-changes: ${{ steps.filter.outputs.frontend-changes }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+
+    - name: Get list of changed directories
+      id: filter
+      uses: ./.github/actions/optimize-paths-filter
+  unit-tests-backend:
+    name: Optimize Unit Tests - Backend
+    runs-on: gcp-core-8-default
+    timeout-minutes: 30
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+
+    - name: Fetch main branch
+      run: git fetch origin main:refs/remote/origin/main
+
+    - name: Setup Maven
+      uses: ./.github/actions/setup-maven
+      with:
+        secrets: ${{ toJSON(secrets) }}
+
+    - name: Test
+      uses: ./.github/actions/run-maven
+      with:
+        parameters: -f optimize/pom.xml test -Dskip.fe.build -Dskip.docker
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4
+      with:
+        name: unit-tests-backend-junit
+        path: |
+          **/surefire-reports/**/*.xml
+        retention-days: 7
+        if-no-files-found: ignore
+
+  unit-tests-frontend:
+    name: Optimize Unit Tests - Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.frontend-changes == 'true' }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+
+    - name: Fetch main branch
+      run: git fetch origin main:refs/remote/origin/main
+
+    - name: "Parse pom.xml for versions"
+      id: "pom_info"
+      uses: YunaBraska/java-info-action@main
+
+    - name: Set Node.js
+      uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4
+      with:
+        node-version: ${{ steps.pom_info.outputs.x_version_node }}
+        cache: yarn
+        cache-dependency-path: ./optimize/client/yarn.lock
+
+    - name: Pull Dependencies
+      working-directory: ./optimize/client
+      run: |
+        yarn
+
+    - name: Test
+      working-directory: ./optimize/client
+      run: |
+        yarn test:ci
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4
+      with:
+        name: unit-tests-frontend-junit
+        path: |
+          **/jest-test-results.xml
+        retention-days: 7
+        if-no-files-found: ignore

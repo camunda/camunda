@@ -1,0 +1,8 @@
+{
+  "description": "Create post importer queue for pending incidents",
+  "@type": "fillPostImporterQueue",
+  "indexName": "post-importer-queue",
+  "version": "8.3.0",
+  "order": 1,
+  "content": ""
+}

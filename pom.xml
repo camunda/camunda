@@ -2,57 +2,103 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <name>Zeebe Root</name>
-  <artifactId>zeebe-root</artifactId>
-  <packaging>pom</packaging>
 
   <parent>
-    <groupId>io.zeebe</groupId>
+    <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.23.0-SNAPSHOT</version>
-    <relativePath>parent/</relativePath>
+    <version>8.6.0-SNAPSHOT</version>
+    <relativePath>parent/pom.xml</relativePath>
   </parent>
+
+  <artifactId>camunda-8-root</artifactId>
+  <packaging>pom</packaging>
+
+  <name>Camunda 8 Root</name>
 
   <modules>
     <module>bom</module>
     <module>parent</module>
-    <module>broker</module>
-    <module>qa</module>
-    <module>protocol-test-util</module>
-    <module>samples</module>
     <module>dist</module>
-    <module>protocol</module>
-    <module>bpmn-model</module>
-    <module>logstreams</module>
-    <module>engine</module>
-    <module>transport</module>
-    <module>test</module>
-    <module>util</module>
-    <module>test-util</module>
-    <module>dispatcher</module>
-    <module>msgpack-core</module>
-    <module>msgpack-value</module>
-    <module>json-el</module>
-    <module>json-path</module>
     <module>build-tools</module>
-    <module>gateway-protocol</module>
-    <module>gateway-protocol-impl</module>
-    <module>gateway</module>
+    <module>zeebe</module>
+    <module>operate</module>
+    <module>tasklist</module>
+    <module>identity</module>
+    <module>webapps-common</module>
+    <module>authentication</module>
+    <module>search</module>
+    <module>service</module>
     <module>clients/java</module>
-    <module>exporter-api</module>
-    <module>protocol-asserts</module>
-    <module>exporters/elasticsearch-exporter</module>
-    <module>protocol-impl</module>
-    <module>zb-db</module>
-    <module>upgrade-tests</module>
-    <module>expression-language</module>
+    <module>clients/spring-boot-starter-camunda-sdk</module>
+    <module>testing/camunda-process-test-java</module>
+    <module>testing/camunda-process-test-spring</module>
   </modules>
 
   <scm>
-    <url>https://github.com/zeebe-io/zeebe</url>
-    <connection>scm:git:git@github.com:zeebe-io/zeebe.git</connection>
-    <developerConnection>scm:git:git@github.com:zeebe-io/zeebe.git</developerConnection>
+    <connection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git</connection>
+    <developerConnection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git</developerConnection>
     <tag>HEAD</tag>
+    <url>https://github.com/camunda/camunda</url>
   </scm>
 
+  <build>
+    <plugins>
+      <!-- While other files are generally placed in a special directory, markdown files are not.
+      To make sure all markdown files are formatted, we need to rely on the **/*.md pattern.
+      This pattern will match all *.md files in all subdirectories (also in all submodules).
+      So, we need to define it in the root-pom only to avoid formatting the files more than once.-->
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <configuration>
+          <markdown>
+            <includes>
+              <include>**/*.md</include>
+            </includes>
+            <excludes>
+              <exclude>**/target/**/*.md</exclude>
+              <exclude>clients/go/vendor/**/*.md</exclude>
+              <exclude>**/node_modules/**/*.md</exclude>
+              <exclude>tasklist/client/**/*.md</exclude>
+              <exclude>optimize/client/**/*.md</exclude>
+            </excludes>
+            <flexmark></flexmark>
+          </markdown>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <!--
+      The QA module is enabled by default, but having it in a profile allows us to exclude it easily.
+      That is useful for example for creating releases. This profile is active if the skipQaBuild
+      property is not present, or is present and set to a value other than 'true'.
+      -->
+    <profile>
+      <id>integration-tests-build</id>
+      <activation>
+        <property>
+          <name>skipQaBuild</name>
+          <value>!true</value>
+        </property>
+      </activation>
+      <modules>
+        <module>qa</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>include-optimize</id>
+      <activation>
+        <property>
+          <name>skipOptimize</name>
+          <value>!true</value>
+        </property>
+      </activation>
+      <modules>
+        <module>optimize</module>
+      </modules>
+    </profile>
+  </profiles>
 </project>
