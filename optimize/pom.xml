@@ -489,7 +489,7 @@
         <plugin>
           <groupId>org.codehaus.cargo</groupId>
           <artifactId>cargo-maven3-plugin</artifactId>
-          <version>1.10.13</version>
+          <version>1.10.14</version>
         </plugin>
         <plugin>
           <groupId>org.sonatype.plugins</groupId>
