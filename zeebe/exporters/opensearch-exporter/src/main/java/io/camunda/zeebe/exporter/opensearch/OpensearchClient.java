@@ -29,7 +29,6 @@ import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.prometheus.client.Histogram;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -114,7 +113,7 @@ public class OpensearchClient implements AutoCloseable {
     metrics.recordBulkSize(bulkIndexRequest.size());
     metrics.recordBulkMemorySize(bulkIndexRequest.memoryUsageBytes());
 
-    try (final Histogram.Timer ignored = metrics.measureFlushDuration()) {
+    try (final var ignored = metrics.measureFlushDuration()) {
       exportBulk();
 
       // all records where flushed, create new bulk request, otherwise retry next time
