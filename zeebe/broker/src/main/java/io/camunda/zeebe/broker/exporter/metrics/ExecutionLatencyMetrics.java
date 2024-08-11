@@ -12,32 +12,28 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 public class ExecutionLatencyMetrics {
 
   private static final Duration[] jobLifeTimeBuckets =
-      List.of(25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 10000, 15000, 30000, 45000).stream()
-          .map(millis -> Duration.ofMillis(millis))
+      Stream.of(25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 10000, 15000, 30000, 45000)
+          .map(Duration::ofMillis)
           .toArray(Duration[]::new);
 
   private static final Duration[] jobActivationTimeBuckets =
-      List.of(10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 10000, 15000, 30000).stream()
-          .map(millis -> Duration.ofMillis(millis))
+      Stream.of(10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 10000, 15000, 30000)
+          .map(Duration::ofMillis)
           .toArray(Duration[]::new);
 
   private static final Duration[] processInstanceExecutionBuckets =
-      List.of(50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 10000, 15000, 30000, 45000, 60000)
-          .stream()
-          .map(millis -> Duration.ofMillis(millis))
+      Stream.of(50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 10000, 15000, 30000, 45000, 60000)
+          .map(Duration::ofMillis)
           .toArray(Duration[]::new);
-
-  private static final String currentCachedInstanceGaugeDescription =
-      "The current cached instances for counting their execution latency. If only short-lived instances are handled this can be seen or observed as the current active instance count.";
 
   private final MeterRegistry meterRegistry;
   private final Map<Integer, AtomicInteger> currentCachedInstanceJobsCount =
