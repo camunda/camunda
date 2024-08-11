@@ -20,17 +20,17 @@ import java.util.stream.Stream;
 
 public class ExecutionLatencyMetrics {
 
-  private static final Duration[] jobLifeTimeBuckets =
+  private static final Duration[] JOB_LIFE_TIME_BUCKETS =
       Stream.of(25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 10000, 15000, 30000, 45000)
           .map(Duration::ofMillis)
           .toArray(Duration[]::new);
 
-  private static final Duration[] jobActivationTimeBuckets =
+  private static final Duration[] JOB_ACTIVATION_TIME_BUCKETS =
       Stream.of(10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 10000, 15000, 30000)
           .map(Duration::ofMillis)
           .toArray(Duration[]::new);
 
-  private static final Duration[] processInstanceExecutionBuckets =
+  private static final Duration[] PROCESS_INSTANCE_EXECUTION_BUCKETS =
       Stream.of(50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 10000, 15000, 30000, 45000, 60000)
           .map(Duration::ofMillis)
           .toArray(Duration[]::new);
@@ -54,7 +54,7 @@ public class ExecutionLatencyMetrics {
     Timer.builder("zeebe.process.instance.execution.time")
         .description("The execution time of processing a complete process instance")
         .tag("partition", Integer.toString(partitionId))
-        .sla(processInstanceExecutionBuckets)
+        .sla(PROCESS_INSTANCE_EXECUTION_BUCKETS)
         .register(meterRegistry)
         .record(completionTimeMs - creationTimeMs, TimeUnit.MILLISECONDS);
   }
@@ -64,7 +64,7 @@ public class ExecutionLatencyMetrics {
     Timer.builder("zeebe.job.life.time")
         .description("The life time of an job")
         .tag("partition", Integer.toString(partitionId))
-        .sla(jobLifeTimeBuckets)
+        .sla(JOB_LIFE_TIME_BUCKETS)
         .register(meterRegistry)
         .record(completionTimeMs - creationTimeMs, TimeUnit.MILLISECONDS);
   }
@@ -74,7 +74,7 @@ public class ExecutionLatencyMetrics {
     Timer.builder("zeebe.job.activation.time")
         .description("The time until an job was activated")
         .tag("partition", Integer.toString(partitionId))
-        .sla(jobActivationTimeBuckets)
+        .sla(JOB_ACTIVATION_TIME_BUCKETS)
         .register(meterRegistry)
         .record(activationTimeMs - creationTimeMs, TimeUnit.MILLISECONDS);
   }
@@ -90,7 +90,7 @@ public class ExecutionLatencyMetrics {
   private void setCurrentCachedInstanceGauge(
       final int partitionId, final int count, final String type) {
     final var collection =
-        type == "jobs" ? currentCachedInstanceJobsCount : currentCacheInstanceProcessInstances;
+        type.equals("jobs") ? currentCachedInstanceJobsCount : currentCacheInstanceProcessInstances;
 
     collection.putIfAbsent(partitionId, new AtomicInteger());
     collection.get(partitionId).set(count);
