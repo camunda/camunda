@@ -28,6 +28,7 @@ import io.camunda.zeebe.exporter.opensearch.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.prometheus.client.Histogram;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -49,23 +50,20 @@ public class OpensearchClient implements AutoCloseable {
   private final TemplateReader templateReader;
   private final RecordIndexRouter indexRouter;
   private final BulkIndexRequest bulkIndexRequest;
+  private final MeterRegistry meterRegistry;
 
   private OpensearchMetrics metrics;
 
-  OpensearchClient(final OpensearchExporterConfiguration configuration) {
-    this(configuration, new BulkIndexRequest());
-  }
-
   OpensearchClient(
-      final OpensearchExporterConfiguration configuration,
-      final BulkIndexRequest bulkIndexRequest) {
+      final OpensearchExporterConfiguration configuration, final MeterRegistry meterRegistry) {
     this(
         configuration,
-        bulkIndexRequest,
+        new BulkIndexRequest(),
         RestClientFactory.of(configuration),
         new RecordIndexRouter(configuration.index),
         new TemplateReader(configuration.index),
-        null);
+        null,
+        meterRegistry);
   }
 
   OpensearchClient(
@@ -74,13 +72,15 @@ public class OpensearchClient implements AutoCloseable {
       final RestClient client,
       final RecordIndexRouter indexRouter,
       final TemplateReader templateReader,
-      final OpensearchMetrics metrics) {
+      final OpensearchMetrics metrics,
+      final MeterRegistry meterRegistry) {
     this.configuration = configuration;
     this.bulkIndexRequest = bulkIndexRequest;
     this.client = client;
     this.indexRouter = indexRouter;
     this.templateReader = templateReader;
     this.metrics = metrics;
+    this.meterRegistry = meterRegistry;
   }
 
   @Override
@@ -90,7 +90,7 @@ public class OpensearchClient implements AutoCloseable {
 
   public void index(final Record<?> record, final RecordSequence recordSequence) {
     if (metrics == null) {
-      metrics = new OpensearchMetrics(record.getPartitionId());
+      metrics = new OpensearchMetrics(record.getPartitionId(), meterRegistry);
     }
 
     final BulkIndexAction action =

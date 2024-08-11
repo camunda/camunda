@@ -101,6 +101,11 @@
       <artifactId>aws-request-signing-apache-interceptor</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
+
     <!-- Test dependencies -->
 
     <dependency>
