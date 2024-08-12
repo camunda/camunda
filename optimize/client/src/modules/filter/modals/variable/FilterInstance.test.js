@@ -8,7 +8,7 @@
 
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
-import {InlineNotification, TextInputSkeleton} from '@carbon/react';
+import {InlineNotification, Tag, TextInputSkeleton} from '@carbon/react';
 
 import {StringInput} from './string';
 import FilterInstance from './FilterInstance';
@@ -68,7 +68,7 @@ it('should show the header of the filter if there exists a filter after it', () 
   node.setProps({filter: testFilter, filters: [testFilter, {}]});
   runAllEffects();
 
-  expect(node.find('.sectionTitle Tag').dive().find('Text').dive()).toIncludeText(
+  expect(node.find('.sectionTitle').find(Tag).dive().find('Text').dive()).toIncludeText(
     props.variables[0].label
   );
 });
@@ -85,7 +85,9 @@ it('should show the filter header on the last collapsed filter', () => {
   );
   runAllEffects();
 
-  expect(node.find('.sectionTitle Tag').dive().find('Text').dive()).toIncludeText(validFilter.name);
+  expect(node.find('.sectionTitle').find(Tag).dive().find('Text').dive()).toIncludeText(
+    validFilter.name
+  );
 });
 
 it('should prevent collapsing the invalid filter', () => {
