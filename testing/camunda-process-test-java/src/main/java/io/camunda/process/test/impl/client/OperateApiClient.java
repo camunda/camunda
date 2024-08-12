@@ -37,6 +37,7 @@ public class OperateApiClient {
 
   private static final String PROCESS_INSTANCE_GET_ENDPOINT = "/v1/process-instances/%d";
   private static final String FLOW_NODE_INSTANCES_SEARCH_ENDPOINT = "/v1/flownode-instances/search";
+  private static final String VARIABLES_SEARCH_ENDPOINT = "/v1/variables/search";
 
   private final ObjectMapper objectMapper =
       new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
@@ -108,6 +109,18 @@ public class OperateApiClient {
         String.format("{\"filter\": {\"processInstanceKey\":%d}}", processInstanceKey);
     final String responseBody = sendPostRequest(FLOW_NODE_INSTANCES_SEARCH_ENDPOINT, requestBody);
     return objectMapper.readValue(responseBody, FlowNodeInstancesResponseDto.class);
+  }
+
+  public VariableResponseDto findVariablesByProcessInstanceKey(final long processInstanceKey)
+      throws IOException {
+    ensureAuthenticated();
+
+    final String requestBody =
+        String.format(
+            "{\"filter\": {\"processInstanceKey\":%d, \"scopeKey\":%d}}",
+            processInstanceKey, processInstanceKey);
+    final String responseBody = sendPostRequest(VARIABLES_SEARCH_ENDPOINT, requestBody);
+    return objectMapper.readValue(responseBody, VariableResponseDto.class);
   }
 
   private static String getReponseAsString(final ClassicHttpResponse response) {
