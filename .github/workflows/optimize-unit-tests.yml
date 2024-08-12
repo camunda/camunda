@@ -52,9 +52,12 @@ jobs:
   unit-tests-frontend:
     name: Optimize Unit Tests - Frontend
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.frontend-changes == 'true' }}
+    defaults:
+      run:
+        working-directory: optimize/client
     steps:
     - name: Checkout repository
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
@@ -71,15 +74,13 @@ jobs:
       with:
         node-version: ${{ steps.pom_info.outputs.x_version_node }}
         cache: yarn
-        cache-dependency-path: ./optimize/client/yarn.lock
+        cache-dependency-path: yarn.lock
 
     - name: Pull Dependencies
-      working-directory: ./optimize/client
       run: |
         yarn
 
     - name: Test
-      working-directory: ./optimize/client
       run: |
         yarn test:ci
 
