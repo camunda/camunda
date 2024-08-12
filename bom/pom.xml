@@ -159,7 +159,7 @@
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
-      <id>camunda-identity</id>
+      <id>camunda-cpm</id>
       <name>Camunda BPM Repository</name>
       <url>https://artifacts.camunda.com/artifactory/camunda-bpm/</url>
     </repository>
@@ -171,7 +171,7 @@
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
-      <id>camunda-identity</id>
+      <id>camunda-bpm-snapshots</id>
       <name>Camunda BPM Snapshot Repository</name>
       <url>https://artifacts.camunda.com/artifactory/camunda-bpm-snapshots/</url>
     </repository>
