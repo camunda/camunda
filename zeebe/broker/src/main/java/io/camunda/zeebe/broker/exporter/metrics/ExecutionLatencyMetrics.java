@@ -90,7 +90,7 @@ public class ExecutionLatencyMetrics {
   private void setCurrentCachedInstanceGauge(
       final int partitionId, final int count, final String type) {
     final var collection =
-        type.equals("jobs") ? currentCachedInstanceJobsCount : currentCacheInstanceProcessInstances;
+        "jobs".equals(type) ? currentCachedInstanceJobsCount : currentCacheInstanceProcessInstances;
 
     collection.putIfAbsent(partitionId, new AtomicInteger());
     collection.get(partitionId).set(count);
