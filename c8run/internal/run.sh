@@ -207,7 +207,7 @@ if [ "$1" = "start" ] ; then
           echo "Error: $NAME did not start!"
           exit 1;
         else
-          echo "Polling $NAME ... $RETRIES retries left"
+          echo "Waiting for $NAME to start. $RETRIES retries left"
         fi
       done
     echo "$NAME has successfully been started.";
@@ -235,8 +235,6 @@ if [ "$1" = "start" ] ; then
   if [ "$swaggeruiChosen" = "true" ] && [ "$restChosen" = "false" ]; then
     echo You did not enable the REST API. Swagger UI will not be able to send any requests to this Camunda Platform Run instance.
   fi
-
-  echo classpath: $classPath
 
   # start the application
   if [[ "$configuration" != "" ]]; then
@@ -270,6 +268,7 @@ Please stop it or remove the file $PID_PATH."
     if [ -s "$POLLING_CAMUNDA_PID_PATH" ]; then
       wait $(cat "$POLLING_CAMUNDA_PID_PATH")
     fi
+    cat endpoints.txt
   else
     $JAVA -cp "$PARENTDIR/*:$PARENTDIR/custom_connectors/*:./camunda-zeebe-$CAMUNDA_VERSION/lib/*'" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> $PARENTDIR/log/connectors.log 2>> $PARENTDIR/log/connectors.log &
     echo $! > "$CONNECTORS_PID_PATH"
@@ -278,7 +277,6 @@ Please stop it or remove the file $PID_PATH."
     echo ./bin/camunda $extraArgs 2>&1 | tee $PARENTDIR/log/camunda.log
     ./bin/camunda $extraArgs 2>&1 | tee $PARENTDIR/log/camunda.log
     popd
-
   fi
 #   wait $(cat "$CONNECTORS_PID_PATH")
 #   wait $(cat "$POLLING_CAMUNDA_PID_PATH")
