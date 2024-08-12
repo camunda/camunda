@@ -60,7 +60,7 @@ public final class ResponseMapper {
         .tenantId(job.getTenantId());
   }
 
-  public static ResponseEntity<MessageCorrelationResponse> toMessageCorrelationResponse(
+  public static ResponseEntity<Object> toMessageCorrelationResponse(
       final MessageCorrelationRecord brokerResponse) {
     final var response =
         new MessageCorrelationResponse()

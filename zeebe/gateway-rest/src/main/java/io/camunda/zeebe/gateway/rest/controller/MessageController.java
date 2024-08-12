@@ -11,7 +11,6 @@ import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -41,14 +40,14 @@ public class MessageController {
       path = "/correlation",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public CompletableFuture<ResponseEntity<MessageCorrelationResponse>> correlateMessage(
+  public CompletableFuture<ResponseEntity<Object>> correlateMessage(
       @RequestBody final MessageCorrelationRequest correlationRequest) {
     return RequestMapper.toMessageCorrelationRequest(
             correlationRequest, multiTenancyCfg.isEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::correlateMessage);
   }
 
-  private CompletableFuture<ResponseEntity<MessageCorrelationResponse>> correlateMessage(
+  private CompletableFuture<ResponseEntity<Object>> correlateMessage(
       final CorrelateMessageRequest correlationRequest) {
     return RequestMapper.executeServiceMethod(
         () ->
