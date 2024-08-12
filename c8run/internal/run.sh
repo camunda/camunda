@@ -19,10 +19,6 @@ CONNECTORS_PID_PATH=$BASEDIR/connectors.pid
 POLLING_CAMUNDA_PID_PATH=$PARENTDIR/camunda-polling.pid
 
 OPTIONS_HELP="Options:
-  --webapps    - Enables the Camunda Platform Webapps
-  --rest       - Enables the REST API
-  --swaggerui  - Enables the Swagger UI
-  --example    - Enables the example application
   --config     - Applies the specified configuration file
   --detached   - Starts Camunda Run as a detached process
 "
@@ -54,9 +50,6 @@ fi
 
 
 # set environment parameters
-optionalComponentChosen=false
-restChosen=false
-swaggeruiChosen=false
 detachProcess=false
 classPath=$PARENTDIR/configuration/userlib/,$PARENTDIR/configuration/keystore/
 
@@ -141,24 +134,6 @@ if [ "$1" = "start" ] ; then
   # inspect arguments
   while [ "$1" != "" ]; do
     case $1 in
-      --webapps )    optionalComponentChosen=true
-                     classPath=$WEBAPPS_PATH,$classPath
-                     echo WebApps enabled
-                     ;;
-      --rest )       optionalComponentChosen=true
-                     restChosen=true
-                     classPath=$REST_PATH,$classPath
-                     echo REST API enabled
-                     ;;
-      --swaggerui )  optionalComponentChosen=true
-                     swaggeruiChosen=true
-                     classPath=$SWAGGER_PATH,$classPath
-                     echo Swagger UI enabled
-                     ;;
-      --example )    optionalComponentChosen=true
-                     classPath=$EXAMPLE_PATH,$classPath
-                     echo Invoice Example included - needs to be enabled in application configuration as well
-                     ;;
       --config )     shift
                      if [[ "$1" == "" ]]; then
                        printf "%s" "$OPTIONS_HELP"
@@ -215,26 +190,6 @@ if [ "$1" = "start" ] ; then
 
   URL="http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s"
   checkStartup $URL "Elasticsearch"
-
-  # If no optional component is chosen, enable REST and Webapps.
-  # If production mode is not chosen, also enable Swagger UI and the example application.
-  if [ "$optionalComponentChosen" = "false" ]; then
-    restChosen=true
-    echo REST API enabled
-    echo WebApps enabled
-    if [ "$productionChosen" = "false" ]; then
-      swaggeruiChosen=true
-      echo Swagger UI enabled
-      echo Invoice Example included - needs to be enabled in application configuration as well
-      classPath=$SWAGGER_PATH,$EXAMPLE_PATH,$classPath
-    fi
-    classPath=$WEBAPPS_PATH,$REST_PATH,$classPath
-  fi
-
-  # if Swagger UI is enabled but REST is not, warn the user
-  if [ "$swaggeruiChosen" = "true" ] && [ "$restChosen" = "false" ]; then
-    echo You did not enable the REST API. Swagger UI will not be able to send any requests to this Camunda Platform Run instance.
-  fi
 
   # start the application
   if [[ "$configuration" != "" ]]; then
