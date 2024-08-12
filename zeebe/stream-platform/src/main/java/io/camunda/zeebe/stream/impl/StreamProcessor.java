@@ -153,7 +153,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     final var reader = logStream.newLogStreamReader();
     logStreamReader = reader;
     streamProcessorContext.logStreamReader(reader);
-    streamProcessorContext.clock(StreamClock.uncontrolled(ActorClock.current()));
+    streamProcessorContext.clock(StreamClock.controllable(ActorClock.current()));
   }
 
   @Override

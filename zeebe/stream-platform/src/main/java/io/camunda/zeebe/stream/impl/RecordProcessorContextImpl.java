@@ -11,7 +11,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
-import io.camunda.zeebe.stream.api.StreamClock;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -29,7 +29,7 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private final InterPartitionCommandSender partitionCommandSender;
   private final KeyGenerator keyGenerator;
-  private final StreamClock clock;
+  private final ControllableStreamClock clock;
 
   public RecordProcessorContextImpl(
       final int partitionId,
@@ -38,7 +38,7 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
       final TransactionContext transactionContext,
       final InterPartitionCommandSender partitionCommandSender,
       final KeyGeneratorControls keyGeneratorControls,
-      final StreamClock clock) {
+      final ControllableStreamClock clock) {
     this.partitionId = partitionId;
     this.scheduleService = scheduleService;
     this.zeebeDb = zeebeDb;
@@ -89,7 +89,7 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   }
 
   @Override
-  public StreamClock getClock() {
+  public ControllableStreamClock getClock() {
     return clock;
   }
 }

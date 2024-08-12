@@ -9,6 +9,7 @@ package io.camunda.zeebe.stream.api;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
@@ -31,5 +32,5 @@ public interface RecordProcessorContext {
 
   KeyGenerator getKeyGenerator();
 
-  StreamClock getClock();
+  ControllableStreamClock getClock();
 }

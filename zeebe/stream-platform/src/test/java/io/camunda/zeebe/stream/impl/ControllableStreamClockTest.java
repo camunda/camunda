@@ -8,7 +8,6 @@
 package io.camunda.zeebe.stream.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
@@ -26,7 +25,7 @@ final class ControllableStreamClockTest {
     // given
     final var now = Instant.now();
     final var source = InstantSource.fixed(now);
-    final var clock = StreamClock.controlled(source);
+    final var clock = StreamClock.controllable(source);
 
     // then
     assertThat(clock.isModified()).isFalse();
@@ -38,7 +37,7 @@ final class ControllableStreamClockTest {
     // given
     final var sourceTime = Instant.now();
     final var source = InstantSource.fixed(sourceTime);
-    final var clock = StreamClock.controlled(source);
+    final var clock = StreamClock.controllable(source);
 
     // then
     assertThat(clock.instant()).isEqualTo(sourceTime);
@@ -50,7 +49,7 @@ final class ControllableStreamClockTest {
     // given
     final var sourceTime = Instant.now();
     final var source = InstantSource.fixed(sourceTime);
-    final var clock = StreamClock.controlled(source);
+    final var clock = StreamClock.controllable(source);
     final var pinnedTime = Instant.now().plusSeconds(10);
 
     // when
@@ -65,7 +64,7 @@ final class ControllableStreamClockTest {
     // given
     final var sourceTime = Instant.now();
     final var source = InstantSource.fixed(sourceTime);
-    final var clock = StreamClock.controlled(source);
+    final var clock = StreamClock.controllable(source);
     final var firstPin = Instant.now().plusSeconds(5);
     final var secondPin = Instant.now().plusSeconds(10);
 
@@ -82,7 +81,7 @@ final class ControllableStreamClockTest {
     // given
     final var sourceTime = Instant.now();
     final var source = InstantSource.fixed(sourceTime);
-    final var clock = StreamClock.controlled(source);
+    final var clock = StreamClock.controllable(source);
     final var offset = Duration.ofSeconds(10);
 
     // when
@@ -98,7 +97,7 @@ final class ControllableStreamClockTest {
     // given
     final var sourceTime = Instant.now();
     final var source = InstantSource.fixed(sourceTime);
-    final var clock = StreamClock.controlled(source);
+    final var clock = StreamClock.controllable(source);
     final var offset = Duration.ofSeconds(-10);
 
     // when
@@ -114,7 +113,7 @@ final class ControllableStreamClockTest {
     // given
     final var sourceTime = Instant.now();
     final var source = InstantSource.fixed(sourceTime);
-    final var clock = StreamClock.controlled(source);
+    final var clock = StreamClock.controllable(source);
     final var firstOffset = Duration.ofSeconds(5);
     final var secondOffset = Duration.ofSeconds(10);
 
@@ -131,7 +130,7 @@ final class ControllableStreamClockTest {
     // given
     final var sourceTime = Instant.now();
     final var source = InstantSource.fixed(sourceTime);
-    final var clock = StreamClock.controlled(source);
+    final var clock = StreamClock.controllable(source);
 
     // when -- offset and then reset
     final var offset = Duration.ofSeconds(10);
