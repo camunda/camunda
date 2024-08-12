@@ -18,12 +18,17 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
 import io.camunda.process.test.impl.client.FlowNodeInstanceState;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
 import io.camunda.process.test.impl.client.ProcessInstanceState;
+import io.camunda.process.test.impl.client.VariableDto;
 import io.camunda.process.test.impl.client.ZeebeClientNotFoundException;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -40,6 +45,8 @@ import org.awaitility.core.TerminalFailureException;
 
 public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssertj, Long>
     implements ProcessInstanceAssert {
+
+  private final ObjectMapper variableMapper = new ObjectMapper();
 
   private final CamundaDataSource dataSource;
 
@@ -84,6 +91,118 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
     hasElementsInState(
         elementNames, FlowNodeInstanceState.TERMINATED, ProcessInstanceAssertj::isEnded);
     return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasVariableNames(final String... variableNames) {
+
+    final AtomicReference<Map<String, String>> reference =
+        new AtomicReference<>(Collections.emptyMap());
+
+    try {
+      Awaitility.await()
+          .ignoreException(ZeebeClientNotFoundException.class)
+          .untilAsserted(
+              () -> {
+                final Map<String, String> variables = getProcessInstanceVariables();
+                reference.set(variables);
+
+                assertThat(variables).containsKeys(variableNames);
+              });
+
+    } catch (final ConditionTimeoutException | TerminalFailureException e) {
+
+      final Map<String, String> actualVariables = reference.get();
+
+      final List<String> missingVariableNames =
+          Arrays.stream(variableNames)
+              .filter(variableName -> !actualVariables.containsKey(variableName))
+              .collect(Collectors.toList());
+
+      final String failureMessage =
+          String.format(
+              "%s should have the variables %s but %s don't exist. All process instance variables:\n%s",
+              formatProcessInstance(),
+              formatNames(variableNames),
+              formatNames(missingVariableNames),
+              formatVariables(actualVariables));
+      fail(failureMessage);
+    }
+
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasVariable(final String variableName, final Object variableValue) {
+
+    final JsonNode expectedValue = toJson(variableValue);
+
+    final AtomicReference<Map<String, String>> reference =
+        new AtomicReference<>(Collections.emptyMap());
+
+    try {
+      Awaitility.await()
+          .ignoreException(ZeebeClientNotFoundException.class)
+          .untilAsserted(
+              () -> {
+                final Map<String, String> variables = getProcessInstanceVariables();
+                reference.set(variables);
+
+                assertThat(variables).containsKey(variableName);
+
+                final JsonNode actualValue = readJson(variables.get(variableName));
+                assertThat(actualValue).isEqualTo(expectedValue);
+              });
+
+    } catch (final ConditionTimeoutException | TerminalFailureException e) {
+
+      final Map<String, String> actualVariables = reference.get();
+
+      final String failureReason =
+          Optional.ofNullable(actualVariables.get(variableName))
+              .map(value -> String.format("was '%s'", value))
+              .orElse("the variable doesn't exist");
+
+      final String failureMessage =
+          String.format(
+              "%s should have a variable '%s' with value '%s' but %s. All process instance variables:\n%s",
+              formatProcessInstance(),
+              variableName,
+              expectedValue,
+              failureReason,
+              formatVariables(actualVariables));
+      fail(failureMessage);
+    }
+
+    return this;
+  }
+
+  private Map<String, String> getProcessInstanceVariables() throws IOException {
+    return dataSource.getVariablesByProcessInstanceKey(actual).stream()
+        .collect(Collectors.toMap(VariableDto::getName, VariableDto::getValue));
+  }
+
+  private static String formatVariables(final Map<String, String> variables) {
+    return variables.entrySet().stream()
+        .map(variable -> String.format("\t- '%s': %s", variable.getKey(), variable.getValue()))
+        .collect(Collectors.joining("\n"));
+  }
+
+  private JsonNode readJson(final String value) {
+    try {
+      return variableMapper.readValue(value, JsonNode.class);
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(String.format("Failed to read JSON: '%s'", value), e);
+    }
+  }
+
+  private JsonNode toJson(final Object value) {
+    try {
+      return variableMapper.convertValue(value, JsonNode.class);
+    } catch (final IllegalArgumentException e) {
+      throw new RuntimeException(
+          String.format("Failed to transform value to JSON: '%s'", value), e);
+    }
   }
 
   private void hasProcessInstanceInState(
@@ -172,7 +291,7 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
               "%s should have %s elements %s but the following elements were not %s:\n%s",
               formatProcessInstance(),
               formatState(expectedState),
-              formatElementNames(elementNames),
+              formatNames(elementNames),
               formatState(expectedState),
               elementsNotInState);
       fail(failureMessage);
@@ -191,8 +310,12 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
     return String.format("Process instance [key: %s]", actual);
   }
 
-  private static String formatElementNames(final String[] elementNames) {
-    return Arrays.stream(elementNames)
+  private static String formatNames(final String[] elementNames) {
+    return formatNames(Arrays.asList(elementNames));
+  }
+
+  private static String formatNames(final List<String> elementNames) {
+    return elementNames.stream()
         .map(elementName -> String.format("'%s'", elementName))
         .collect(Collectors.joining(", ", "[", "]"));
   }
