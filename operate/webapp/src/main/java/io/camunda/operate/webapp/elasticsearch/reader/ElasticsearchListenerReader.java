@@ -33,7 +33,6 @@ import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -43,8 +42,14 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchListenerReader.class);
 
-  @Autowired private JobTemplate jobTemplate;
-  @Autowired private RestHighLevelClient esClient;
+  private final JobTemplate jobTemplate;
+  private final RestHighLevelClient esClient;
+
+  public ElasticsearchListenerReader(
+      final JobTemplate jobTemplate, final RestHighLevelClient esClient) {
+    this.jobTemplate = jobTemplate;
+    this.esClient = esClient;
+  }
 
   @Override
   public List<ListenerDto> getListenerExecutions(

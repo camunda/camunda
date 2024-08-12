@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -33,12 +32,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchListenerReader extends OpensearchAbstractReader implements ListenerReader {
 
-  @Autowired private JobTemplate jobTemplate;
-  @Autowired private RichOpenSearchClient richOpenSearchClient;
+  private final JobTemplate jobTemplate;
+  private final RichOpenSearchClient richOpenSearchClient;
 
-  @Autowired
-  @Qualifier("operateObjectMapper")
-  private ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
+
+  public OpensearchListenerReader(
+      final JobTemplate jobTemplate,
+      final RichOpenSearchClient richOpenSearchClient,
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
+    this.jobTemplate = jobTemplate;
+    this.richOpenSearchClient = richOpenSearchClient;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public List<ListenerDto> getListenerExecutions(
