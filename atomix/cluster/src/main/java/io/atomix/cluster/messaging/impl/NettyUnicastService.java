@@ -40,7 +40,16 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+<<<<<<< HEAD:atomix/cluster/src/main/java/io/atomix/cluster/messaging/impl/NettyUnicastService.java
 import java.net.InetAddress;
+=======
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.resolver.dns.BiDnsQueryLifecycleObserverFactory;
+import io.netty.resolver.dns.DnsAddressResolverGroup;
+import io.netty.resolver.dns.DnsNameResolverBuilder;
+import io.netty.resolver.dns.LoggingDnsQueryLifeCycleObserverFactory;
+import io.netty.util.concurrent.Future;
+>>>>>>> c8ee3eab (feat: allow dns resolution to fall back to TCP):zeebe/atomix/cluster/src/main/java/io/atomix/cluster/messaging/impl/NettyUnicastService.java
 import java.net.InetSocketAddress;
 import java.util.Iterator;
 import java.util.Map;
@@ -222,7 +231,33 @@ public class NettyUnicastService implements ManagedUnicastService {
   @Override
   public CompletableFuture<UnicastService> start() {
     group = new NioEventLoopGroup(0, namedThreads("netty-unicast-event-nio-client-%d", log));
+<<<<<<< HEAD:atomix/cluster/src/main/java/io/atomix/cluster/messaging/impl/NettyUnicastService.java
     return bootstrap().thenRun(() -> started.set(true)).thenApply(v -> this);
+=======
+    return bootstrap()
+        .thenRun(
+            () -> {
+              final var metrics = new NettyDnsMetrics();
+              started.set(true);
+              dnsAddressResolverGroup =
+                  new DnsAddressResolverGroup(
+                      new DnsNameResolverBuilder(group.next())
+                          .dnsQueryLifecycleObserverFactory(
+                              new BiDnsQueryLifecycleObserverFactory(
+                                  ignored -> metrics,
+                                  new LoggingDnsQueryLifeCycleObserverFactory()))
+                          .socketChannelType(NioSocketChannel.class)
+                          .channelType(NioDatagramChannel.class));
+            })
+        .thenApply(
+            v -> {
+              log.info(
+                  "Started plaintext unicast service bound to {}, advertising {}",
+                  bindAddress,
+                  advertisedAddress);
+              return this;
+            });
+>>>>>>> c8ee3eab (feat: allow dns resolution to fall back to TCP):zeebe/atomix/cluster/src/main/java/io/atomix/cluster/messaging/impl/NettyUnicastService.java
   }
 
   @Override

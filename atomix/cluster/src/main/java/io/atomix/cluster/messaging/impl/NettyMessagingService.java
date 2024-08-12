@@ -108,7 +108,13 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private EventLoopGroup serverGroup;
   private EventLoopGroup clientGroup;
   private Class<? extends ServerChannel> serverChannelClass;
+<<<<<<< HEAD:atomix/cluster/src/main/java/io/atomix/cluster/messaging/impl/NettyMessagingService.java
   private Class<? extends Channel> clientChannelClass;
+=======
+  private Class<? extends SocketChannel> clientChannelClass;
+  private Class<? extends DatagramChannel> clientDataGramChannelClass;
+
+>>>>>>> c8ee3eab (feat: allow dns resolution to fall back to TCP):zeebe/atomix/cluster/src/main/java/io/atomix/cluster/messaging/impl/NettyMessagingService.java
   private Channel serverChannel;
 
   // a single thread executor which silently rejects tasks being submitted when it's shutdown
@@ -368,6 +374,19 @@ public final class NettyMessagingService implements ManagedMessagingService {
         .thenCompose(ok -> bootstrapServer())
         .thenRun(
             () -> {
+<<<<<<< HEAD:atomix/cluster/src/main/java/io/atomix/cluster/messaging/impl/NettyMessagingService.java
+=======
+              final var metrics = new NettyDnsMetrics();
+              dnsResolverGroup =
+                  new DnsAddressResolverGroup(
+                      new DnsNameResolverBuilder(clientGroup.next())
+                          .dnsQueryLifecycleObserverFactory(
+                              new BiDnsQueryLifecycleObserverFactory(
+                                  ignored -> metrics,
+                                  new LoggingDnsQueryLifeCycleObserverFactory()))
+                          .socketChannelType(clientChannelClass)
+                          .channelType(clientDataGramChannelClass));
+>>>>>>> c8ee3eab (feat: allow dns resolution to fall back to TCP):zeebe/atomix/cluster/src/main/java/io/atomix/cluster/messaging/impl/NettyMessagingService.java
               timeoutExecutor =
                   Executors.newSingleThreadScheduledExecutor(
                       new DefaultThreadFactory("netty-messaging-timeout-"));
