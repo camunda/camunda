@@ -10,12 +10,15 @@ package io.camunda.zeebe.engine.property;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import java.time.Duration;
 
-public sealed interface Action {
-  record WriteRecord(int partitionId, LogAppendEntry entry) implements Action {}
+public sealed interface EngineAction {
 
-  record ProcessRecord(int partitionId, boolean deliverIpc) implements Action {}
+  int partitionId();
 
-  record ExecuteScheduledTask(int partitionId, boolean deliverIpc) implements Action {}
+  record WriteRecord(int partitionId, LogAppendEntry entry) implements EngineAction {}
 
-  record UpdateClock(int partitionId, Duration difference) implements Action {}
+  record ProcessNextCommand(int partitionId, boolean deliverIpc) implements EngineAction {}
+
+  record ExecuteScheduledTask(int partitionId, boolean deliverIpc) implements EngineAction {}
+
+  record UpdateClock(int partitionId, Duration difference) implements EngineAction {}
 }

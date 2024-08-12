@@ -15,10 +15,6 @@ import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
-import io.camunda.zeebe.engine.property.Action.ExecuteScheduledTask;
-import io.camunda.zeebe.engine.property.Action.ProcessRecord;
-import io.camunda.zeebe.engine.property.Action.UpdateClock;
-import io.camunda.zeebe.engine.property.Action.WriteRecord;
 import io.camunda.zeebe.engine.property.db.InMemoryDb;
 import io.camunda.zeebe.logstreams.impl.log.LogStreamReaderImpl;
 import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
@@ -29,7 +25,6 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
-import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -45,6 +40,7 @@ import io.camunda.zeebe.stream.api.PostCommitTask;
 import io.camunda.zeebe.stream.api.ProcessingResponse;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -63,6 +59,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -77,7 +74,7 @@ import java.util.stream.StreamSupport;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jetbrains.annotations.NotNull;
 
-public final class InMemoryEngine implements TestEngines {
+public final class InMemoryEngine implements ControllableEngine {
 
   private final Engine engine;
   private final LogStreamWriter[] writers;
@@ -86,8 +83,9 @@ public final class InMemoryEngine implements TestEngines {
   private final LogStorage logStorage;
   private final TestScheduleService scheduleService;
   private final ControllableInstantSource clock;
+  private final TestInterPartitionCommandSender interPartitionCommandSender;
 
-  private InMemoryEngine(
+  InMemoryEngine(
       final int partitionId,
       final int partitionCount,
       final LogStorage logStorage,
@@ -116,10 +114,9 @@ public final class InMemoryEngine implements TestEngines {
     clock = new ControllableInstantSource(InstantSource.system().millis());
     scheduleService = new TestScheduleService(clock);
     this.writers = writers;
-    final InterPartitionCommandSender interPartitionCommandSender =
-        new TestInterPartitionCommandSender(this.writers);
+    interPartitionCommandSender = new TestInterPartitionCommandSender(this.writers);
     final KeyGeneratorControls keyGeneratorControls = new TestKeyGenerator(partitionId);
-    engine.init(
+    final var recordProcessorContext =
         new RecordProcessorContextImpl(
             partitionId,
             scheduleService,
@@ -127,44 +124,46 @@ public final class InMemoryEngine implements TestEngines {
             transactionContext,
             interPartitionCommandSender,
             keyGeneratorControls,
-            clock));
-  }
+            clock);
+    engine.init(recordProcessorContext);
+    for (final var lifecycleListener : recordProcessorContext.getLifecycleListeners()) {
+      lifecycleListener.onRecovered(
+          new ReadonlyStreamProcessorContext() {
+            @Override
+            public ProcessingScheduleService getScheduleService() {
+              return scheduleService;
+            }
 
-  public static InMemoryEngine createEngine() {
-    final var logStorage = new ListLogStorage();
-    final var logStreamWriter = new TestLogStreamWriter(logStorage, InstantSource.system());
+            @Override
+            public int getPartitionId() {
+              return partitionId;
+            }
 
-    return new InMemoryEngine(1, 1, logStorage, new LogStreamWriter[] {logStreamWriter});
-  }
+            @Override
+            public boolean enableAsyncScheduledTasks() {
+              return true;
+            }
 
-  public static InMemoryEngine[] createEngines(final int partitionCount) {
-    final var logStorages = new ListLogStorage[partitionCount];
-    final var logStreamWriters = new TestLogStreamWriter[partitionCount];
-    for (int i = 0; i < partitionCount; i++) {
-      final var logStorage = new ListLogStorage();
-      final var logStreamWriter = new TestLogStreamWriter(logStorage, InstantSource.system());
-      logStorages[i] = logStorage;
-      logStreamWriters[i] = logStreamWriter;
-    }
-    final var engines = new InMemoryEngine[partitionCount];
-    for (int i = 0; i < partitionCount; i++) {
-      engines[i] = new InMemoryEngine(i + 1, partitionCount, logStorages[i], logStreamWriters);
-    }
-    return engines;
-  }
-
-  public void runAction(final Action action) {
-    switch (action) {
-      case WriteRecord(final var partition, final var entry) -> writeInternal(entry);
-      case final ProcessRecord process -> processNextCommand();
-      case final ExecuteScheduledTask scheduledTask -> scheduleService.runNext();
-      case UpdateClock(final var partition, final var difference) -> clock.add(difference);
+            @Override
+            public InstantSource getClock() {
+              return clock;
+            }
+          });
     }
   }
 
-  private void processNextCommand() {
+  @Override
+  public void writeRecord(final LogAppendEntry entry) {
+    writeInternal(entry);
+  }
+
+  @Override
+  public void processNextCommand(final boolean deliverIpc) {
     final ProcessingResultBuilder resultBuilder = new TestProcessingResultBuilder();
     final RecordMetadata metadata = new RecordMetadata();
+    if (!deliverIpc) {
+      interPartitionCommandSender.disable();
+    }
     while (reader.hasNext()) {
       final var logEntry = reader.next();
       if (logEntry.shouldSkipProcessing()) {
@@ -189,22 +188,27 @@ public final class InMemoryEngine implements TestEngines {
         }
       }
     }
+    interPartitionCommandSender.enable();
   }
 
-  private void writeInternal(final LogAppendEntry entry) {
-    final var result = writers[partitionId - 1].tryWrite(WriteContext.internal(), entry);
-    if (result.isLeft()) {
-      throw new IllegalStateException("Failed to write entry: " + result.getLeft());
+  @Override
+  public void executeScheduledTask(final boolean deliverIpc) {
+    final var taskResult = scheduleService.runNext();
+    if (!deliverIpc) {
+      interPartitionCommandSender.disable();
     }
-  }
-
-  private void writeInternal(final List<LogAppendEntry> entries) {
-    final var result = writers[partitionId - 1].tryWrite(WriteContext.internal(), entries);
-    if (result.isLeft()) {
-      throw new IllegalStateException("Failed to write entry: " + result.getLeft());
+    if (taskResult != null && !taskResult.getRecordBatch().isEmpty()) {
+      writeInternal(taskResult.getRecordBatch().entries());
     }
+    interPartitionCommandSender.enable();
   }
 
+  @Override
+  public void updateClock(final Duration duration) {
+    clock.add(duration);
+  }
+
+  @Override
   public Stream<? extends Record<?>> records() {
     final var logStorageReader = logStorage.newReader();
     final var logStreamReader = new LogStreamReaderImpl(logStorageReader);
@@ -234,6 +238,20 @@ public final class InMemoryEngine implements TestEngines {
         .onClose(logStorageReader::close);
   }
 
+  private void writeInternal(final LogAppendEntry entry) {
+    final var result = writers[partitionId - 1].tryWrite(WriteContext.internal(), entry);
+    if (result.isLeft()) {
+      throw new IllegalStateException("Failed to write entry: " + result.getLeft());
+    }
+  }
+
+  private void writeInternal(final List<LogAppendEntry> entries) {
+    final var result = writers[partitionId - 1].tryWrite(WriteContext.internal(), entries);
+    if (result.isLeft()) {
+      throw new IllegalStateException("Failed to write entry: " + result.getLeft());
+    }
+  }
+
   public static final class TestScheduleService implements ProcessingScheduleService {
     private final InstantSource clock;
     private final SortedSet<QueuedTask> taskQueue = new TreeSet<>();
@@ -243,13 +261,13 @@ public final class InMemoryEngine implements TestEngines {
     }
 
     public TaskResult runNext() {
-      final var now = clock.millis();
+      final var now = clock.instant();
       if (taskQueue.isEmpty()) {
         return null;
       }
       final var nextTask = taskQueue.first();
-      if (nextTask.scheduledFor() <= now) {
-        taskQueue.remove(nextTask);
+      if (nextTask.scheduledFor().isBefore(now)) {
+        taskQueue.removeFirst();
         final var result = new SimpleTaskResultBuilder();
         nextTask.task().execute(result);
         return result.build();
@@ -290,7 +308,7 @@ public final class InMemoryEngine implements TestEngines {
 
     @Override
     public ScheduledTask runAt(final long timestamp, final Task task) {
-      final var queuedTask = new QueuedTask(timestamp, task, taskQueue);
+      final var queuedTask = new QueuedTask(Instant.ofEpochMilli(timestamp), task);
       taskQueue.add(queuedTask);
       return queuedTask;
     }
@@ -310,17 +328,20 @@ public final class InMemoryEngine implements TestEngines {
       throw new UnsupportedOperationException();
     }
 
-    private record QueuedTask(long scheduledFor, Task task, SortedSet<QueuedTask> taskQueue)
+    private record QueuedTask(Instant scheduledFor, Task task)
         implements Comparable<QueuedTask>, ScheduledTask {
 
       @Override
       public int compareTo(final QueuedTask o) {
-        return Long.compare(scheduledFor, o.scheduledFor);
+        return Comparator.comparing(QueuedTask::scheduledFor)
+            .thenComparing(java.lang.Record::hashCode)
+            .compare(this, o);
       }
 
       @Override
       public void cancel() {
-        taskQueue.remove(this);
+        throw new UnsupportedOperationException();
+        // taskQueue.remove(this);
       }
     }
 
@@ -388,9 +409,18 @@ public final class InMemoryEngine implements TestEngines {
 
   static final class TestInterPartitionCommandSender implements InterPartitionCommandSender {
     private final LogStreamWriter[] writers;
+    private boolean enabled = true;
 
     TestInterPartitionCommandSender(final LogStreamWriter[] writers) {
       this.writers = writers;
+    }
+
+    void disable() {
+      enabled = false;
+    }
+
+    void enable() {
+      enabled = true;
     }
 
     @Override
@@ -399,6 +429,9 @@ public final class InMemoryEngine implements TestEngines {
         final ValueType valueType,
         final Intent intent,
         final UnifiedRecordValue command) {
+      if (!enabled) {
+        return;
+      }
       final var metadata =
           new RecordMetadata().recordType(RecordType.COMMAND).intent(intent).valueType(valueType);
       writers[receiverPartitionId - 1].tryWrite(
@@ -412,6 +445,9 @@ public final class InMemoryEngine implements TestEngines {
         final Intent intent,
         final Long recordKey,
         final UnifiedRecordValue command) {
+      if (!enabled) {
+        return;
+      }
       final var metadata =
           new RecordMetadata().recordType(RecordType.COMMAND).intent(intent).valueType(valueType);
       writers[receiverPartitionId - 1].tryWrite(
