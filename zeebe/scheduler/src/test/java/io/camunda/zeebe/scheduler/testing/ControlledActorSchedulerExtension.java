@@ -64,6 +64,7 @@ public class ControlledActorSchedulerExtension implements BeforeEachCallback, Af
     actorScheduler = builder.build();
     controlledActorTaskRunner = actorTaskRunnerFactory.controlledThread;
     actorScheduler.start();
+    controlledActorTaskRunner.waitUntilDone();
   }
 
   public ActorFuture<Void> submitActor(final Actor actor) {
