@@ -5,25 +5,30 @@ This is a deployment method very similar to C7 Run.
 
 ## Options
 
-Not all of these options are implemented,
-
 ```
-Usage: run.sh [start|stop] (options...) 
+Usage: run.sh [start|stop] (options...)
 Options:
-  --webapps    - Enables the Camunda Platform Webapps
-  --rest       - Enables the REST API
-  --swaggerui  - Enables the Swagger UI
-  --example    - Enables the example application
-  --production - Applies the production.yaml configuration file
+  --config     - Applies the specified configuration file
   --detached   - Starts Camunda Run as a detached process
 ```
-
-Right now, `start`, `stop`, and `--detached` are the only functional options.
 
 
 ## Note about connectors
 
 Connectors is configured to run on port `8085` just like the docker compose file. Other camunda applications are expected to be accessible via `localhost:8080/<component>`.
 
-`localhost:8080/operate`
-`localhost:8080/tasklist`
+```
+-------------------------------------------
+Access each component at the following urls:
+
+Operate:                     http://localhost:8080/operate
+Tasklist:                    http://localhost:8080/tasklist
+Zeebe Cluster Endpoint:      http://localhost:26500
+Inbound Connectors Endpoint: http://localhost:8085
+
+When using the Desktop Modeler, Authentication may be set to None.
+
+Refer to https://docs.camunda.io/docs/guides/getting-started-java-spring/ for help getting started with Camunda
+
+-------------------------------------------
+```
