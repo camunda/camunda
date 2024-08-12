@@ -8,7 +8,6 @@
 package io.camunda.zeebe.stream.api;
 
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
-import java.time.InstantSource;
 
 public interface ReadonlyStreamProcessorContext {
 
@@ -26,5 +25,5 @@ public interface ReadonlyStreamProcessorContext {
    */
   boolean enableAsyncScheduledTasks();
 
-  InstantSource getClock();
+  StreamClock getClock();
 }

@@ -30,11 +30,11 @@ import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.impl.RecordProcessorContextImpl;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import java.nio.file.Path;
-import java.time.InstantSource;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,7 +80,7 @@ final class CheckpointRecordsProcessorTest {
         context,
         null,
         new DbKeyGenerator(1, zeebeDb, context),
-        InstantSource.system());
+        StreamClock.system());
   }
 
   @AfterEach
