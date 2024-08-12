@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.api;
 
+import io.camunda.zeebe.stream.impl.ControllableStreamClockImpl;
 import io.camunda.zeebe.stream.impl.UncontrolledStreamClock;
 import java.time.Duration;
 import java.time.Instant;
@@ -24,6 +25,10 @@ public interface StreamClock extends InstantSource {
 
   static StreamClock system() {
     return new UncontrolledStreamClock(InstantSource.system());
+  }
+
+  static ControllableStreamClock controllable(final InstantSource source) {
+    return new ControllableStreamClockImpl(source);
   }
 
   /**
