@@ -61,6 +61,10 @@ public final class CamundaServices extends ApiServices<CamundaServices> {
     return new UserServices<>(brokerClient, searchClient, transformers, authentication);
   }
 
+  public <T> MessageServices<T> messageServices() {
+    return new MessageServices<>(brokerClient, searchClient, transformers, authentication);
+  }
+
   public ManagementService managementService() {
     return new ManagementService();
   }

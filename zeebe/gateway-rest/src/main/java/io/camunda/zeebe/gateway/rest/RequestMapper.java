@@ -10,10 +10,12 @@ package io.camunda.zeebe.gateway.rest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
+import static io.camunda.zeebe.gateway.rest.validator.MessageCorrelateValidator.validateMessageCorrelationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
 import io.camunda.service.JobServices.ActivateJobsRequest;
+import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
@@ -24,6 +26,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
@@ -123,6 +126,21 @@ public class RequestMapper {
                 errorRequest.getErrorCode(),
                 getStringOrEmpty(errorRequest, JobErrorRequest::getErrorMessage),
                 getMapOrEmpty(errorRequest, JobErrorRequest::getVariables)));
+  }
+
+  public static Either<ProblemDetail, CorrelateMessageRequest> toMessageCorrelationRequest(
+      final MessageCorrelationRequest correlationRequest) {
+    final var validationErrorResponse = validateMessageCorrelationRequest(correlationRequest);
+    return validationErrorResponse
+        .<Either<ProblemDetail, CorrelateMessageRequest>>map(Either::left)
+        .orElseGet(
+            () ->
+                Either.right(
+                    new CorrelateMessageRequest(
+                        correlationRequest.getName(),
+                        correlationRequest.getCorrelationKey(),
+                        correlationRequest.getVariables(),
+                        correlationRequest.getTenantId())));
   }
 
   public static CompleteJobRequest toJobCompletionRequest(

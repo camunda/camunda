@@ -13,12 +13,14 @@ import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
+import io.camunda.service.MessageServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResponse;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,5 +83,11 @@ public class CamundaServicesConfiguration {
   @Bean
   public UserServices<UserRecord> userServices(final CamundaServices camundaServices) {
     return camundaServices.userServices();
+  }
+
+  @Bean
+  public MessageServices<MessageCorrelationResponse> messageServices(
+      final CamundaServices camundaServices) {
+    return camundaServices.messageServices();
   }
 }
