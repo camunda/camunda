@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.api;
 
+import io.camunda.zeebe.stream.impl.UncontrolledStreamClock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -16,6 +17,14 @@ import java.time.InstantSource;
  * InstantSource} directly to indicate that the clock is used for stream processing.
  */
 public interface StreamClock extends InstantSource {
+
+  static StreamClock uncontrolled(final InstantSource source) {
+    return new UncontrolledStreamClock(source);
+  }
+
+  static StreamClock system() {
+    return new UncontrolledStreamClock(InstantSource.system());
+  }
 
   /**
    * A controllable {@link StreamClock} that allows to pin the time to a specific instant or to
