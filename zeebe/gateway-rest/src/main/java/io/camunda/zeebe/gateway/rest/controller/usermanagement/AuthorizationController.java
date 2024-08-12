@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.service.AuthorizationServices;
-import io.camunda.service.CamundaServices;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.dto.AuthorizationAssignRequest;
@@ -23,10 +22,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @CamundaRestController
 @RequestMapping("/v2/authorizations")
 public class AuthorizationController {
-  private final AuthorizationServices<AuthorizationRecord> identityServices;
+  private final AuthorizationServices<AuthorizationRecord> authorizationServices;
 
-  public AuthorizationController(final CamundaServices camundaServices) {
-    identityServices = camundaServices.authorizationServices();
+  public AuthorizationController(
+      final AuthorizationServices<AuthorizationRecord> authorizationServices) {
+    this.authorizationServices = authorizationServices;
   }
 
   @PostMapping(
@@ -36,7 +36,7 @@ public class AuthorizationController {
       @RequestBody final AuthorizationAssignRequest authorizationAssignRequest) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
-            identityServices
+            authorizationServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .createAuthorization(
                     authorizationAssignRequest.getOwnerKey(),
