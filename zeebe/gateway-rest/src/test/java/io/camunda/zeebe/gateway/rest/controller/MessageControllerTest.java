@@ -16,18 +16,25 @@ import io.camunda.service.MessageServices;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResponse;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @WebMvcTest(MessageController.class)
 public class MessageControllerTest extends RestControllerTest {
@@ -45,7 +52,7 @@ public class MessageControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldCorrelateMessage() {
+  void shouldCorrelateMessageWithMultiTenancyDisabled() {
     // given
     when(multiTenancyCfg.isEnabled()).thenReturn(false);
     when(messageServices.correlateMessage(any()))
@@ -53,7 +60,7 @@ public class MessageControllerTest extends RestControllerTest {
             CompletableFuture.completedFuture(
                 new MessageCorrelationRecord()
                     .setMessageKey(123L)
-                    .setTenantId("<default>")
+                    .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
                     .setProcessInstanceKey(321L)));
 
     final var request =
@@ -84,7 +91,7 @@ public class MessageControllerTest extends RestControllerTest {
     assertThat(capturedRequest.name()).isEqualTo("messageName");
     assertThat(capturedRequest.correlationKey()).isEqualTo("correlationKey");
     assertThat(capturedRequest.variables()).containsExactly(Map.entry("key", "value"));
-    assertThat(capturedRequest.tenantId()).isEqualTo("<default>");
+    assertThat(capturedRequest.tenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     response
         .expectBody()
@@ -93,6 +100,62 @@ public class MessageControllerTest extends RestControllerTest {
         {
           "key": 123,
           "tenantId": "<default>",
+          "processInstanceKey": 321
+        }""");
+  }
+
+  @Test
+  void shouldCorrelateMessageWithMultiTenancyEnabled() {
+    // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
+    when(messageServices.correlateMessage(any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new MessageCorrelationRecord()
+                    .setMessageKey(123L)
+                    .setTenantId("tenantId")
+                    .setProcessInstanceKey(321L)));
+
+    final var request =
+        """
+        {
+          "name": "messageName",
+          "correlationKey": "correlationKey",
+          "variables": {
+            "key": "value"
+          },
+          "tenantId": "tenantId"
+        }""";
+
+    // when then
+    final ResponseSpec response =
+        withMultiTenancy(
+            "tenantId",
+            client ->
+                client
+                    .post()
+                    .uri(CORRELATION_ENDPOINT)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(request)
+                    .exchange()
+                    .expectStatus()
+                    .isOk());
+
+    Mockito.verify(messageServices).correlateMessage(requestCaptor.capture());
+    final var capturedRequest = requestCaptor.getValue();
+    assertThat(capturedRequest.name()).isEqualTo("messageName");
+    assertThat(capturedRequest.correlationKey()).isEqualTo("correlationKey");
+    assertThat(capturedRequest.variables()).containsExactly(Map.entry("key", "value"));
+    assertThat(capturedRequest.tenantId()).isEqualTo("tenantId");
+
+    response
+        .expectBody()
+        .json(
+            """
+        {
+          "key": 123,
+          "tenantId": "tenantId",
           "processInstanceKey": 321
         }""");
   }
@@ -168,5 +231,200 @@ public class MessageControllerTest extends RestControllerTest {
             }"""
                 .formatted(CORRELATION_ENDPOINT));
     verifyNoInteractions(messageServices);
+  }
+
+  @Test
+  void shouldRejectMessageCorrelationWithoutTenantWhenMultiTenancyEnabled() {
+    // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
+
+    final var request =
+        """
+        {
+          "name": "messageName"
+        }""";
+
+    // when then
+    webClient
+        .post()
+        .uri(CORRELATION_ENDPOINT)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "Bad Request",
+              "detail": "Expected to handle request Correlate Message with tenant identifier 'null', but no tenant identifier was provided.",
+              "instance": "%s"
+            }"""
+                .formatted(CORRELATION_ENDPOINT));
+    verifyNoInteractions(messageServices);
+  }
+
+  @Test
+  void shouldRejectMessageCorrelationWithTenantWhenMultiTenancyDisabled() {
+    // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(false);
+
+    final var request =
+        """
+        {
+          "name": "messageName",
+          "tenantId": "tenant"
+        }""";
+
+    // when then
+    webClient
+        .post()
+        .uri(CORRELATION_ENDPOINT)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "Bad Request",
+              "detail": "Expected to handle request Correlate Message with tenant identifier 'tenant', but multi-tenancy is disabled",
+              "instance": "%s"
+            }"""
+                .formatted(CORRELATION_ENDPOINT));
+    verifyNoInteractions(messageServices);
+  }
+
+  @Test
+  void shouldRejectMessageCorrelationWithTooLongTenantWhenMultiTenancyEnabled() {
+    // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
+
+    final var request =
+        """
+        {
+          "name": "messageName",
+          "tenantId": "tenanttenanttenanttenanttenanttenanttenanttenanttenant"
+        }""";
+
+    // when then
+    webClient
+        .post()
+        .uri(CORRELATION_ENDPOINT)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "Bad Request",
+              "detail": "Expected to handle request Correlate Message with tenant identifier 'tenanttenanttenanttenanttenanttenanttenanttenanttenant', but tenant identifier is longer than 31 characters",
+              "instance": "%s"
+            }"""
+                .formatted(CORRELATION_ENDPOINT));
+    verifyNoInteractions(messageServices);
+  }
+
+  @Test
+  void shouldRejectMessageCorrelationWithInvalidTenantWhenMultiTenancyEnabled() {
+    // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
+
+    final var request =
+        """
+        {
+          "name": "messageName",
+          "tenantId": "<invalid>"
+        }""";
+
+    // when then
+    webClient
+        .post()
+        .uri(CORRELATION_ENDPOINT)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "Bad Request",
+              "detail": "Expected to handle request Correlate Message with tenant identifier '<invalid>', but tenant identifier contains illegal characters",
+              "instance": "%s"
+            }"""
+                .formatted(CORRELATION_ENDPOINT));
+    verifyNoInteractions(messageServices);
+  }
+
+  @Test
+  void shouldRejectMessageCorrelationWithUnauthorizedTenantWhenMultiTenancyEnabled() {
+    // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
+
+    final var request =
+        """
+        {
+          "name": "messageName",
+          "tenantId": "unauthorizedTenant"
+        }""";
+
+    // when then
+    final ResponseSpec response =
+        withMultiTenancy(
+            "tenantId",
+            client ->
+                client
+                    .post()
+                    .uri(CORRELATION_ENDPOINT)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(request)
+                    .exchange()
+                    .expectStatus()
+                    .isBadRequest());
+    response
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "Bad Request",
+              "detail": "Expected to handle request Correlate Message with tenant identifier 'unauthorizedTenant', but tenant is not authorized to perform this request",
+              "instance": "%s"
+            }"""
+                .formatted(CORRELATION_ENDPOINT));
+    verifyNoInteractions(messageServices);
+  }
+
+  private ResponseSpec withMultiTenancy(
+      final String tenantId, final Function<WebTestClient, ResponseSpec> function) {
+    try (final MockedStatic<RequestMapper> mockRequestMapper =
+        Mockito.mockStatic(RequestMapper.class, Mockito.CALLS_REAL_METHODS)) {
+      mockRequestMapper
+          .when(RequestMapper::getAuthentication)
+          .thenReturn(new Authentication("user", List.of("group"), List.of(tenantId), "token"));
+      return function.apply(webClient);
+    }
   }
 }
