@@ -30,6 +30,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
+import io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
@@ -129,7 +130,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, CorrelateMessageRequest> toMessageCorrelationRequest(
-      final MessageCorrelationRequest correlationRequest) {
+      final MessageCorrelationRequest correlationRequest, final boolean multiTenancyEnabled) {
     final var validationErrorResponse = validateMessageCorrelationRequest(correlationRequest);
     return validationErrorResponse
         .<Either<ProblemDetail, CorrelateMessageRequest>>map(Either::left)
@@ -140,7 +141,10 @@ public class RequestMapper {
                         correlationRequest.getName(),
                         correlationRequest.getCorrelationKey(),
                         correlationRequest.getVariables(),
-                        correlationRequest.getTenantId())));
+                        MultiTenancyValidator.ensureTenantIdSet(
+                            "Correlate Message",
+                            correlationRequest.getTenantId(),
+                            multiTenancyEnabled))));
   }
 
   public static CompleteJobRequest toJobCompletionRequest(

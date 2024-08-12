@@ -44,7 +44,8 @@ public class MessageController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<MessageCorrelationResponse>> correlateMessage(
       @RequestBody final MessageCorrelationRequest correlationRequest) {
-    return RequestMapper.toMessageCorrelationRequest(correlationRequest)
+    return RequestMapper.toMessageCorrelationRequest(
+            correlationRequest, multiTenancyCfg.isEnabled())
         .fold(this::correlateMessage, RestErrorMapper::mapProblemToCompletedResponse);
   }
 
@@ -54,7 +55,7 @@ public class MessageController {
         () ->
             messageServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .correlateMessage(correlationRequest, multiTenancyCfg.isEnabled()),
+                .correlateMessage(correlationRequest),
         ResponseMapper::toMessageCorrelationResponse);
   }
 }

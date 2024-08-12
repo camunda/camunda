@@ -36,14 +36,12 @@ public final class MessageServices<T> extends ApiServices<MessageServices<T>> {
   }
 
   public CompletableFuture<MessageCorrelationRecord> correlateMessage(
-      final CorrelateMessageRequest correlationRequest, final boolean multiTenancyEnabled) {
+      final CorrelateMessageRequest correlationRequest) {
     final var brokerRequest =
         new BrokerCorrelateMessageRequest(
                 correlationRequest.name, correlationRequest.correlationKey)
             .setVariables(getDocumentOrEmpty(correlationRequest.variables))
-            .setTenantId(
-                ensureTenantIdSet(
-                    "CorrelateMessage", correlationRequest.tenantId, multiTenancyEnabled));
+            .setTenantId(correlationRequest.tenantId);
     return sendBrokerRequest(brokerRequest);
   }
 
