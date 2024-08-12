@@ -166,10 +166,10 @@
 
     <repository>
       <releases>
-        <enabled>true</enabled>
+        <enabled>false</enabled>
       </releases>
       <snapshots>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
       </snapshots>
       <id>camunda-bpm-snapshots</id>
       <name>Camunda BPM Snapshot Repository</name>
