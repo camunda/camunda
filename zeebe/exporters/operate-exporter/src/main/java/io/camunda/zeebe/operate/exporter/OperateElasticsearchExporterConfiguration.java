@@ -7,31 +7,18 @@
  */
 package io.camunda.zeebe.operate.exporter;
 
-import io.camunda.operate.property.OperateElasticsearchProperties;
+import io.camunda.zeebe.operate.exporter.schema.ElasticSearchProperties;
 
-public class OperateElasticsearchExporterConfiguration {
-
-  public final BulkConfiguration bulk = new BulkConfiguration();
-
-  public final OperateElasticsearchProperties elasticsearch = new OperateElasticsearchProperties();
-
-  @Override
-  public String toString() {
-    return "OperateElasticsearchExporterConfiguration{"
-        + "bulk="
-        + bulk
-        + ", elasticsearch="
-        + elasticsearch
-        + '}';
-  }
+public record OperateElasticsearchExporterConfiguration(
+    final BulkConfiguration bulk, final ElasticSearchProperties elasticSearch) {
 
   public static class BulkConfiguration {
     // delay before forced flush
-    public int delay = 5;
+    public final int delay = 5;
     // bulk size before flush
-    public int size = 1_000;
+    public final int size = 1_000;
     // memory limit of the bulk in bytes before flush
-    public int memoryLimit = 10 * 1024 * 1024;
+    public final int memoryLimit = 10 * 1024 * 1024;
 
     @Override
     public String toString() {
