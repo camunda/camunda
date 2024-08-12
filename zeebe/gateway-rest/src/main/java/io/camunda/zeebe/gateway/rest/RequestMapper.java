@@ -154,6 +154,19 @@ public class RequestMapper {
                     .orElseGet(result));
   }
 
+  public static <BrokerResponseT, RestResponseT>
+      CompletableFuture<ResponseEntity<RestResponseT>> executeServiceMethod(
+          final Supplier<CompletableFuture<BrokerResponseT>> method,
+          final Function<BrokerResponseT, ResponseEntity<RestResponseT>> result) {
+    return method
+        .get()
+        .handleAsync(
+            (response, error) ->
+                RestErrorMapper.<RestResponseT>getResponse(
+                        error, RestErrorMapper.DEFAULT_REJECTION_MAPPER)
+                    .orElseGet(() -> result.apply(response)));
+  }
+
   public static CompletableFuture<ResponseEntity<Object>> executeServiceMethodWithNoContentResult(
       final Supplier<CompletableFuture<?>> method) {
     return RequestMapper.executeServiceMethod(method, () -> ResponseEntity.noContent().build());
