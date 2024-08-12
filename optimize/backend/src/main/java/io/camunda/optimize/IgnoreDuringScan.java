@@ -18,6 +18,7 @@ import java.lang.annotation.RetentionPolicy;
  * @ComponentScan(excludeFilters = @ComponentScan.Filter(IgnoreDuringScan.class))
  * @Configuration
  * public class Main {
+ * }
  * }</pre>
  */
 @Retention(RetentionPolicy.RUNTIME)

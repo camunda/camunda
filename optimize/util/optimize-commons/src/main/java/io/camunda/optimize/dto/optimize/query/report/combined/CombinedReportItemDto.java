@@ -14,19 +14,23 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @Builder(toBuilder = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@FieldNameConstants
 public class CombinedReportItemDto {
 
   private String id;
   @Builder.Default private String color = DEFAULT_CONFIGURATION_COLOR;
 
-  public CombinedReportItemDto(String id) {
+  public CombinedReportItemDto(final String id) {
     this.id = id;
+  }
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String color = "color";
   }
 }

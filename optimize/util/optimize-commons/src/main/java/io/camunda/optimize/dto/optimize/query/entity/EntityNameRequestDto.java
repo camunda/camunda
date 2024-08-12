@@ -11,12 +11,10 @@ import jakarta.ws.rs.QueryParam;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-@FieldNameConstants(asEnum = true)
 public class EntityNameRequestDto {
 
   @QueryParam("collectionId")
@@ -30,4 +28,11 @@ public class EntityNameRequestDto {
 
   @QueryParam("eventBasedProcessId")
   private String eventBasedProcessId;
+
+  public enum Fields {
+    collectionId,
+    dashboardId,
+    reportId,
+    eventBasedProcessId
+  }
 }

@@ -15,12 +15,10 @@ import java.io.Serializable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@FieldNameConstants
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
     include = JsonTypeInfo.As.EXISTING_PROPERTY,
@@ -35,4 +33,10 @@ public abstract class DataSourceDto implements OptimizeDto, Serializable {
 
   private DataImportSourceType type;
   private String name;
+
+  public static final class Fields {
+
+    public static final String type = "type";
+    public static final String name = "name";
+  }
 }

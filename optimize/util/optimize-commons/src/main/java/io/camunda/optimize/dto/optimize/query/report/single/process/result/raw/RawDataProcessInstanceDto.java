@@ -15,18 +15,17 @@ import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@FieldNameConstants(asEnum = true)
 public class RawDataProcessInstanceDto implements RawDataInstanceDto {
+
   protected String processDefinitionKey;
   protected String processDefinitionId;
   protected String processInstanceId;
-  @FieldNameConstants.Exclude protected RawDataCountDto counts;
-  @FieldNameConstants.Exclude protected Map<String, FlowNodeTotalDurationDataDto> flowNodeDurations;
+  protected RawDataCountDto counts;
+  protected Map<String, FlowNodeTotalDurationDataDto> flowNodeDurations;
   protected String businessKey;
   protected OffsetDateTime startDate;
   protected OffsetDateTime endDate;
@@ -35,12 +34,23 @@ public class RawDataProcessInstanceDto implements RawDataInstanceDto {
   protected String engineName;
   protected String tenantId;
 
-  @FieldNameConstants.Exclude
   // Note that for more convenient display in raw data reports, each list of variable values is
   // joined to form one
   // comma separated string
   protected Map<String, Object> variables;
 
   // Note that the flow node data field can only be included on the Json export response
-  @FieldNameConstants.Exclude protected List<RawDataFlowNodeDataDto> flowNodeInstances;
+  protected List<RawDataFlowNodeDataDto> flowNodeInstances;
+
+  public enum Fields {
+    processDefinitionKey,
+    processDefinitionId,
+    processInstanceId,
+    businessKey,
+    startDate,
+    endDate,
+    duration,
+    engineName,
+    tenantId
+  }
 }

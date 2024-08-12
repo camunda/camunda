@@ -18,16 +18,15 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 import lombok.extern.slf4j.Slf4j;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldNameConstants
 @Builder
 @Data
 @Slf4j
 public class TableColumnDto {
+
   public static final String VARIABLE_PREFIX = "variable:";
   public static final String INPUT_PREFIX = "input:";
   public static final String OUTPUT_PREFIX = "output:";
@@ -122,7 +121,7 @@ public class TableColumnDto {
     return 0;
   }
 
-  private String getColumnNameWithoutPrefixAndNumbers(String columnName) {
+  private String getColumnNameWithoutPrefixAndNumbers(final String columnName) {
     if (getPrefixOrder(columnName) == 0) {
       // do not sort dto fields to keep them in original order
       return "";
@@ -148,15 +147,23 @@ public class TableColumnDto {
     removeColumns(columnsToRemove);
   }
 
-  private double getNumbersInColumnName(String columnName) {
-    String digitsInString = columnName.replaceAll("\\D+", "");
+  private double getNumbersInColumnName(final String columnName) {
+    final String digitsInString = columnName.replaceAll("\\D+", "");
     try {
       return digitsInString.isEmpty() ? 0 : Double.parseDouble(digitsInString);
-    } catch (NumberFormatException e) {
+    } catch (final NumberFormatException e) {
       log.debug(
           "Cannot parse numbers in variable column names to double, ignoring and sorting by string.",
           e);
       return Double.MAX_VALUE;
     }
+  }
+
+  public static final class Fields {
+
+    public static final String includeNewVariables = "includeNewVariables";
+    public static final String excludedColumns = "excludedColumns";
+    public static final String includedColumns = "includedColumns";
+    public static final String columnOrder = "columnOrder";
   }
 }

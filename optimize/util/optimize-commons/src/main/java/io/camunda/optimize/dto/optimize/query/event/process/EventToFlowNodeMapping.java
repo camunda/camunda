@@ -14,19 +14,28 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@FieldNameConstants
 public class EventToFlowNodeMapping {
+
   @EqualsAndHashCode.Include private String eventIdentifier;
   private MappedEventType mappedAs;
   private String flowNodeId;
   private String flowNodeType;
   private List<String> previousMappedFlowNodeIds;
   private List<String> nextMappedFlowNodeIds;
+
+  public static final class Fields {
+
+    public static final String eventIdentifier = "eventIdentifier";
+    public static final String mappedAs = "mappedAs";
+    public static final String flowNodeId = "flowNodeId";
+    public static final String flowNodeType = "flowNodeType";
+    public static final String previousMappedFlowNodeIds = "previousMappedFlowNodeIds";
+    public static final String nextMappedFlowNodeIds = "nextMappedFlowNodeIds";
+  }
 }

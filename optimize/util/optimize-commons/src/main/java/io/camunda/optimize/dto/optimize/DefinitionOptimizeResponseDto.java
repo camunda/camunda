@@ -14,13 +14,12 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
-@FieldNameConstants
 public abstract class DefinitionOptimizeResponseDto implements Serializable, OptimizeDto {
+
   private String id;
   private String key;
   private String version;
@@ -34,5 +33,18 @@ public abstract class DefinitionOptimizeResponseDto implements Serializable, Opt
   protected DefinitionOptimizeResponseDto(final String id, final DataSourceDto dataSource) {
     this.id = id;
     this.dataSource = dataSource;
+  }
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String key = "key";
+    public static final String version = "version";
+    public static final String versionTag = "versionTag";
+    public static final String name = "name";
+    public static final String dataSource = "dataSource";
+    public static final String tenantId = "tenantId";
+    public static final String deleted = "deleted";
+    public static final String type = "type";
   }
 }

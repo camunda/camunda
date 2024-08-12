@@ -22,12 +22,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-@FieldNameConstants
 @Accessors(chain = true)
 public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
 
@@ -115,7 +113,7 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
     this.engine = engine;
     this.flowNodeId = flowNodeId;
     this.flowNodeInstanceId = flowNodeInstanceId;
-    this.flowNodeType = FLOW_NODE_TYPE_USER_TASK;
+    flowNodeType = FLOW_NODE_TYPE_USER_TASK;
     this.userTaskInstanceId = userTaskInstanceId;
   }
 
@@ -128,7 +126,32 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
     this.processInstanceId = processInstanceId;
     this.definitionKey = definitionKey;
     this.engine = engine;
-    this.flowNodeType = FLOW_NODE_TYPE_USER_TASK;
+    flowNodeType = FLOW_NODE_TYPE_USER_TASK;
     this.userTaskInstanceId = userTaskInstanceId;
+  }
+
+  public static final class Fields {
+
+    public static final String flowNodeInstanceId = "flowNodeInstanceId";
+    public static final String flowNodeId = "flowNodeId";
+    public static final String flowNodeType = "flowNodeType";
+    public static final String processInstanceId = "processInstanceId";
+    public static final String totalDurationInMs = "totalDurationInMs";
+    public static final String startDate = "startDate";
+    public static final String endDate = "endDate";
+    public static final String canceled = "canceled";
+    public static final String definitionKey = "definitionKey";
+    public static final String definitionVersion = "definitionVersion";
+    public static final String tenantId = "tenantId";
+    public static final String engine = "engine";
+    public static final String userTaskInstanceId = "userTaskInstanceId";
+    public static final String dueDate = "dueDate";
+    public static final String deleteReason = "deleteReason";
+    public static final String assignee = "assignee";
+    public static final String candidateGroups = "candidateGroups";
+    public static final String assigneeOperations = "assigneeOperations";
+    public static final String candidateGroupOperations = "candidateGroupOperations";
+    public static final String idleDurationInMs = "idleDurationInMs";
+    public static final String workDurationInMs = "workDurationInMs";
   }
 }

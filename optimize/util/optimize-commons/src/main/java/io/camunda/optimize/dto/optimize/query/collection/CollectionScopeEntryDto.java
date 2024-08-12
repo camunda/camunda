@@ -20,13 +20,12 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@FieldNameConstants(asEnum = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class CollectionScopeEntryDto {
+
   private static final String ID_SEGMENT_SEPARATOR = ":";
 
   @EqualsAndHashCode.Include
@@ -43,11 +42,11 @@ public class CollectionScopeEntryDto {
         id.split(ID_SEGMENT_SEPARATOR)[1]);
   }
 
-  public CollectionScopeEntryDto(CollectionScopeEntryDto oldEntry) {
-    this.definitionKey = oldEntry.definitionKey;
-    this.definitionType = oldEntry.definitionType;
-    this.tenants = oldEntry.tenants;
-    this.id = convertTypeAndKeyToScopeEntryId(this.definitionType, this.definitionKey);
+  public CollectionScopeEntryDto(final CollectionScopeEntryDto oldEntry) {
+    definitionKey = oldEntry.definitionKey;
+    definitionType = oldEntry.definitionType;
+    tenants = oldEntry.tenants;
+    id = convertTypeAndKeyToScopeEntryId(definitionType, definitionKey);
   }
 
   public CollectionScopeEntryDto(final DefinitionType definitionType, final String definitionKey) {
@@ -56,7 +55,7 @@ public class CollectionScopeEntryDto {
 
   public CollectionScopeEntryDto(
       final DefinitionType definitionType, final String definitionKey, final List<String> tenants) {
-    this.id = convertTypeAndKeyToScopeEntryId(definitionType, definitionKey);
+    id = convertTypeAndKeyToScopeEntryId(definitionType, definitionKey);
     this.definitionType = definitionType;
     this.definitionKey = definitionKey;
     this.tenants = tenants;
@@ -83,11 +82,18 @@ public class CollectionScopeEntryDto {
   }
 
   private boolean isInTenantScope(final List<String> givenTenants) {
-    return givenTenants != null && this.tenants.containsAll(givenTenants);
+    return givenTenants != null && tenants.containsAll(givenTenants);
   }
 
   public static String convertTypeAndKeyToScopeEntryId(
       final DefinitionType definitionType, final String definitionKey) {
     return definitionType.getId() + ID_SEGMENT_SEPARATOR + definitionKey;
+  }
+
+  public enum Fields {
+    id,
+    definitionType,
+    definitionKey,
+    tenants
   }
 }

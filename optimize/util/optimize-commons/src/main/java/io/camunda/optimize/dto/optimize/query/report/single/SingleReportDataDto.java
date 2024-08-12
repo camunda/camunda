@@ -22,11 +22,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 
 @AllArgsConstructor
-@FieldNameConstants
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SuperBuilder
 public abstract class SingleReportDataDto implements ReportDataDto {
@@ -74,12 +72,18 @@ public abstract class SingleReportDataDto implements ReportDataDto {
 
   @JsonIgnore
   public void setTenantIds(final List<String> tenantIds) {
-    if (this.definitions.isEmpty()) {
-      this.definitions.add(new ReportDataDefinitionDto());
+    if (definitions.isEmpty()) {
+      definitions.add(new ReportDataDefinitionDto());
     }
-    this.definitions.get(0).setTenantIds(tenantIds);
+    definitions.get(0).setTenantIds(tenantIds);
   }
 
   @JsonIgnore
   public abstract List<ViewProperty> getViewProperties();
+
+  public static final class Fields {
+
+    public static final String configuration = "configuration";
+    public static final String definitions = "definitions";
+  }
 }

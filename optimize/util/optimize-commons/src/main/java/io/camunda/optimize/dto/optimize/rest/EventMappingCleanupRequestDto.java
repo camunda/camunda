@@ -25,6 +25,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class EventMappingCleanupRequestDto {
+
   @NotNull private String xml;
 
   @NotNull @Builder.Default private Map<String, EventMappingDto> mappings = new HashMap<>();

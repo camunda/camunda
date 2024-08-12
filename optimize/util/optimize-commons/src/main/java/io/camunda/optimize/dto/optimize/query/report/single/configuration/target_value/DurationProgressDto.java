@@ -11,16 +11,19 @@ import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import lombok.experimental.FieldNameConstants;
 
 @Getter
 @Setter
-@FieldNameConstants
 @ToString
 public class DurationProgressDto {
 
   private BaseLineDto baseline = new BaseLineDto();
   private TargetDto target = new TargetDto();
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(baseline, target);
+  }
 
   @Override
   public boolean equals(final Object o) {
@@ -33,8 +36,9 @@ public class DurationProgressDto {
     return Objects.equals(baseline, that.baseline) && Objects.equals(target, that.target);
   }
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(baseline, target);
+  public static final class Fields {
+
+    public static final String baseline = "baseline";
+    public static final String target = "target";
   }
 }

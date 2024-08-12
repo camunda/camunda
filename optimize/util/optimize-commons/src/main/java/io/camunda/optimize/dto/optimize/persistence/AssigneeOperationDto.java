@@ -15,13 +15,11 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@FieldNameConstants
 @Accessors(chain = true)
 public class AssigneeOperationDto implements OptimizeDto, Serializable {
 
@@ -30,4 +28,12 @@ public class AssigneeOperationDto implements OptimizeDto, Serializable {
   private String userId;
   private String operationType;
   private OffsetDateTime timestamp;
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String userId = "userId";
+    public static final String operationType = "operationType";
+    public static final String timestamp = "timestamp";
+  }
 }

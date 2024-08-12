@@ -17,6 +17,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 public class BackupInfoDto {
+
   private long backupId;
   private String failureReason;
   private BackupState state;

@@ -14,13 +14,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldNameConstants
 public class EventSequenceCountDto implements OptimizeDto {
 
   public static final String ID_FIELD_SEPARATOR = ":";
@@ -47,12 +45,20 @@ public class EventSequenceCountDto implements OptimizeDto {
     }
   }
 
-  private String generateIdForEventType(EventTypeDto eventTypeDto) {
+  private String generateIdForEventType(final EventTypeDto eventTypeDto) {
     final Optional<EventTypeDto> eventType = Optional.ofNullable(eventTypeDto);
     return String.join(
         ID_FIELD_SEPARATOR,
         eventType.map(EventTypeDto::getGroup).orElse(null),
         eventType.map(EventTypeDto::getSource).orElse(null),
         eventType.map(EventTypeDto::getEventName).orElse(null));
+  }
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String sourceEvent = "sourceEvent";
+    public static final String targetEvent = "targetEvent";
+    public static final String count = "count";
   }
 }

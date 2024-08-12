@@ -15,18 +15,22 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 @EqualsAndHashCode(callSuper = true)
-@FieldNameConstants
 public class AuthorizedReportDefinitionResponseDto extends AuthorizedEntityDto {
+
   @JsonUnwrapped private ReportDefinitionDto definitionDto;
 
   public AuthorizedReportDefinitionResponseDto(
       final ReportDefinitionDto definitionDto, final RoleType currentUserRole) {
     super(currentUserRole);
     this.definitionDto = definitionDto;
+  }
+
+  public static final class Fields {
+
+    public static final String definitionDto = "definitionDto";
   }
 }

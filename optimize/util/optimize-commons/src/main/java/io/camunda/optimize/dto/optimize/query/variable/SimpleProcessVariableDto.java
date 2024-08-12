@@ -13,18 +13,26 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@FieldNameConstants
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class SimpleProcessVariableDto {
+
   @EqualsAndHashCode.Include private String id;
   private String name;
   private String type;
   private List<String> value;
   @EqualsAndHashCode.Include private long version;
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String name = "name";
+    public static final String type = "type";
+    public static final String value = "value";
+    public static final String version = "version";
+  }
 }

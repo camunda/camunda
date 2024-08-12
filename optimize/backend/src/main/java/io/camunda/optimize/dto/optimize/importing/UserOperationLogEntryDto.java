@@ -13,13 +13,12 @@ import java.time.OffsetDateTime;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.FieldNameConstants;
 
 @Accessors(chain = true)
 @Builder
 @Data
-@FieldNameConstants(asEnum = true)
 public class UserOperationLogEntryDto implements OptimizeDto {
+
   private String id;
 
   @JsonIgnore private String processDefinitionId;
@@ -28,4 +27,13 @@ public class UserOperationLogEntryDto implements OptimizeDto {
 
   private UserOperationType operationType;
   private OffsetDateTime timestamp;
+
+  public enum Fields {
+    id,
+    processDefinitionId,
+    processDefinitionKey,
+    processInstanceId,
+    operationType,
+    timestamp
+  }
 }

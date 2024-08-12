@@ -19,12 +19,11 @@ import java.util.List;
 import java.util.Map;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @Accessors(chain = true)
-@FieldNameConstants
 public class ExternalProcessVariableDto implements OptimizeDto {
+
   private String variableId;
   private String variableName;
   private String variableValue;
@@ -55,5 +54,17 @@ public class ExternalProcessVariableDto implements OptimizeDto {
                   .setProcessDefinitionKey(varDto.getProcessDefinitionKey());
             })
         .toList();
+  }
+
+  public static final class Fields {
+
+    public static final String variableId = "variableId";
+    public static final String variableName = "variableName";
+    public static final String variableValue = "variableValue";
+    public static final String variableType = "variableType";
+    public static final String ingestionTimestamp = "ingestionTimestamp";
+    public static final String processInstanceId = "processInstanceId";
+    public static final String processDefinitionKey = "processDefinitionKey";
+    public static final String serializationDataFormat = "serializationDataFormat";
   }
 }

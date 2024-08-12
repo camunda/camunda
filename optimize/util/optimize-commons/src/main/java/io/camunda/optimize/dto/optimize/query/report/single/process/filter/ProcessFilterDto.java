@@ -16,7 +16,6 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 /**
  * Abstract class that contains a hidden "type" field to distinguish, which filter type the jackson
@@ -66,7 +65,6 @@ import lombok.experimental.FieldNameConstants;
 })
 @Data
 @NoArgsConstructor
-@FieldNameConstants
 public abstract class ProcessFilterDto<DATA extends FilterDataDto> {
 
   protected DATA data;
@@ -74,7 +72,7 @@ public abstract class ProcessFilterDto<DATA extends FilterDataDto> {
 
   @NotEmpty protected List<String> appliedTo = List.of(ReportConstants.APPLIED_TO_ALL_DEFINITIONS);
 
-  protected ProcessFilterDto(final DATA data, FilterApplicationLevel filterLevel) {
+  protected ProcessFilterDto(final DATA data, final FilterApplicationLevel filterLevel) {
     this.data = data;
     setFilterLevel(filterLevel);
   }
@@ -84,5 +82,12 @@ public abstract class ProcessFilterDto<DATA extends FilterDataDto> {
   @Override
   public String toString() {
     return "ProcessFilter=" + getClass().getSimpleName();
+  }
+
+  public static final class Fields {
+
+    public static final String data = "data";
+    public static final String filterLevel = "filterLevel";
+    public static final String appliedTo = "appliedTo";
   }
 }

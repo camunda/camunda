@@ -37,6 +37,7 @@ import io.camunda.optimize.service.db.es.report.result.NumberCommandResult;
 import io.camunda.optimize.service.db.es.report.result.RawDataCommandResult;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -49,12 +50,10 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
-import lombok.Singular;
 import lombok.experimental.Accessors;
 import org.apache.commons.lang3.StringUtils;
 
@@ -462,22 +461,144 @@ public class CompositeCommandResult {
     }
   }
 
-  @Builder
   @Data
   public static class ViewResult {
-    @Singular private List<ViewMeasure> viewMeasures;
+
+    private List<ViewMeasure> viewMeasures;
     private List<? extends RawDataInstanceDto> rawData;
+
+    ViewResult(List<ViewMeasure> viewMeasures, List<? extends RawDataInstanceDto> rawData) {
+      this.viewMeasures = viewMeasures;
+      this.rawData = rawData;
+    }
+
+    public static ViewResultBuilder builder() {
+      return new ViewResultBuilder();
+    }
+
+    public static class ViewResultBuilder {
+
+      private ArrayList<ViewMeasure> viewMeasures;
+      private List<? extends RawDataInstanceDto> rawData;
+
+      ViewResultBuilder() {}
+
+      public ViewResultBuilder viewMeasure(ViewMeasure viewMeasure) {
+        if (this.viewMeasures == null) {
+          this.viewMeasures = new ArrayList<ViewMeasure>();
+        }
+        this.viewMeasures.add(viewMeasure);
+        return this;
+      }
+
+      public ViewResultBuilder viewMeasures(Collection<? extends ViewMeasure> viewMeasures) {
+        if (viewMeasures == null) {
+          throw new NullPointerException("viewMeasures cannot be null");
+        }
+        if (this.viewMeasures == null) {
+          this.viewMeasures = new ArrayList<ViewMeasure>();
+        }
+        this.viewMeasures.addAll(viewMeasures);
+        return this;
+      }
+
+      public ViewResultBuilder clearViewMeasures() {
+        if (this.viewMeasures != null) {
+          this.viewMeasures.clear();
+        }
+        return this;
+      }
+
+      public ViewResultBuilder rawData(List<? extends RawDataInstanceDto> rawData) {
+        this.rawData = rawData;
+        return this;
+      }
+
+      public ViewResult build() {
+        List<ViewMeasure> viewMeasures;
+        switch (this.viewMeasures == null ? 0 : this.viewMeasures.size()) {
+          case 0:
+            viewMeasures = Collections.emptyList();
+            break;
+          case 1:
+            viewMeasures = Collections.singletonList(this.viewMeasures.get(0));
+            break;
+          default:
+            viewMeasures =
+                Collections.unmodifiableList(new ArrayList<ViewMeasure>(this.viewMeasures));
+        }
+
+        return new ViewResult(viewMeasures, this.rawData);
+      }
+
+      public String toString() {
+        return "CompositeCommandResult.ViewResult.ViewResultBuilder(viewMeasures="
+            + this.viewMeasures
+            + ", rawData="
+            + this.rawData
+            + ")";
+      }
+    }
   }
 
-  @Builder
   @Data
   public static class ViewMeasure {
+
     private AggregationDto aggregationType;
     private UserTaskDurationTime userTaskDurationTime;
     private Double value;
 
+    ViewMeasure(
+        AggregationDto aggregationType, UserTaskDurationTime userTaskDurationTime, Double value) {
+      this.aggregationType = aggregationType;
+      this.userTaskDurationTime = userTaskDurationTime;
+      this.value = value;
+    }
+
     public ViewMeasureIdentifier getViewMeasureIdentifier() {
       return new ViewMeasureIdentifier(aggregationType, userTaskDurationTime);
+    }
+
+    public static ViewMeasureBuilder builder() {
+      return new ViewMeasureBuilder();
+    }
+
+    public static class ViewMeasureBuilder {
+
+      private AggregationDto aggregationType;
+      private UserTaskDurationTime userTaskDurationTime;
+      private Double value;
+
+      ViewMeasureBuilder() {}
+
+      public ViewMeasureBuilder aggregationType(AggregationDto aggregationType) {
+        this.aggregationType = aggregationType;
+        return this;
+      }
+
+      public ViewMeasureBuilder userTaskDurationTime(UserTaskDurationTime userTaskDurationTime) {
+        this.userTaskDurationTime = userTaskDurationTime;
+        return this;
+      }
+
+      public ViewMeasureBuilder value(Double value) {
+        this.value = value;
+        return this;
+      }
+
+      public ViewMeasure build() {
+        return new ViewMeasure(this.aggregationType, this.userTaskDurationTime, this.value);
+      }
+
+      public String toString() {
+        return "CompositeCommandResult.ViewMeasure.ViewMeasureBuilder(aggregationType="
+            + this.aggregationType
+            + ", userTaskDurationTime="
+            + this.userTaskDurationTime
+            + ", value="
+            + this.value
+            + ")";
+      }
     }
   }
 

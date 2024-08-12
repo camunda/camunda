@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaginationScrollableDto extends PaginationDto {
+
   protected String scrollId;
   protected Integer scrollTimeout;
 

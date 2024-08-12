@@ -23,15 +23,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 @Builder
-@FieldNameConstants
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class EventProcessMappingResponseDto {
+
   @EqualsAndHashCode.Include private String id;
   @NotBlank private String name;
 
@@ -54,8 +53,8 @@ public class EventProcessMappingResponseDto {
 
   public static EventProcessMappingResponseDto from(
       final EventProcessMappingDto dto,
-      String lastModifierName,
-      List<EventSourceEntryDto<?>> eventSourcesDtos) {
+      final String lastModifierName,
+      final List<EventSourceEntryDto<?>> eventSourcesDtos) {
     return EventProcessMappingResponseDto.builder()
         .id(dto.getId())
         .lastModified(dto.getLastModified())
@@ -67,5 +66,18 @@ public class EventProcessMappingResponseDto {
         .xml(dto.getXml())
         .eventSources(eventSourcesDtos)
         .build();
+  }
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String name = "name";
+    public static final String lastModifier = "lastModifier";
+    public static final String lastModified = "lastModified";
+    public static final String xml = "xml";
+    public static final String mappings = "mappings";
+    public static final String state = "state";
+    public static final String publishingProgress = "publishingProgress";
+    public static final String eventSources = "eventSources";
   }
 }

@@ -26,13 +26,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = false)
-@FieldNameConstants
 @NoArgsConstructor
 @SuperBuilder
 @DecisionFiltersMustReferenceExistingDefinitionsConstraint
@@ -61,7 +59,7 @@ public class DecisionReportDataDto extends SingleReportDataDto {
   }
 
   @JsonIgnore
-  public void setDecisionDefinitionName(String name) {
+  public void setDecisionDefinitionName(final String name) {
     final List<ReportDataDefinitionDto> definitions = getDefinitions();
     if (definitions.isEmpty()) {
       definitions.add(new ReportDataDefinitionDto());
@@ -96,16 +94,25 @@ public class DecisionReportDataDto extends SingleReportDataDto {
     return getView().getProperties();
   }
 
+  @JsonIgnore
+  @Override
+  public String createCommandKey() {
+    final String viewCommandKey = view == null ? "null" : view.createCommandKey();
+    final String groupByCommandKey = groupBy == null ? "null" : groupBy.createCommandKey();
+    return viewCommandKey + "_" + groupByCommandKey;
+  }
+
   @Override
   public List<String> createCommandKeys() {
     return Collections.singletonList(createCommandKey());
   }
 
-  @JsonIgnore
-  @Override
-  public String createCommandKey() {
-    String viewCommandKey = view == null ? "null" : view.createCommandKey();
-    String groupByCommandKey = groupBy == null ? "null" : groupBy.createCommandKey();
-    return viewCommandKey + "_" + groupByCommandKey;
+  public static final class Fields {
+
+    public static final String filter = "filter";
+    public static final String view = "view";
+    public static final String groupBy = "groupBy";
+    public static final String distributedBy = "distributedBy";
+    public static final String visualization = "visualization";
   }
 }

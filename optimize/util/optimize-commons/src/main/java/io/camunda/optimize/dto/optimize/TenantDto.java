@@ -13,17 +13,21 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Data
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@FieldNameConstants(asEnum = true)
 public class TenantDto implements OptimizeDto {
 
   @EqualsAndHashCode.Include private String id;
   @EqualsAndHashCode.Include private String name;
   private String engine;
+
+  public enum Fields {
+    id,
+    name,
+    engine
+  }
 }
