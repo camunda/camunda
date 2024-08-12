@@ -20,9 +20,15 @@ public class ListenerStateTest {
     assertEquals(actual1, ListenerState.ACTIVE);
     final ListenerState actual2 = ListenerState.fromZeebeJobIntent("FAILED");
     assertEquals(actual2, ListenerState.FAILED);
-    final ListenerState actual3 = ListenerState.fromZeebeJobIntent("TEST");
-    assertEquals(actual3, ListenerState.UNKNOWN);
-    final ListenerState actual4 = ListenerState.fromZeebeJobIntent(null);
-    assertEquals(actual4, ListenerState.UNKNOWN);
+    final ListenerState actual3 = ListenerState.fromZeebeJobIntent("COMPLETED");
+    assertEquals(actual3, ListenerState.COMPLETED);
+    final ListenerState actual4 = ListenerState.fromZeebeJobIntent("TIMED_OUT");
+    assertEquals(actual4, ListenerState.TIMED_OUT);
+    final ListenerState actual5 = ListenerState.fromZeebeJobIntent("CANCELED");
+    assertEquals(actual5, ListenerState.CANCELED);
+    final ListenerState actual6 = ListenerState.fromZeebeJobIntent("TEST");
+    assertEquals(actual6, ListenerState.UNKNOWN);
+    final ListenerState actual7 = ListenerState.fromZeebeJobIntent(null);
+    assertEquals(actual7, ListenerState.UNKNOWN);
   }
 }
