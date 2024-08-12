@@ -39,6 +39,14 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+<<<<<<< HEAD:atomix/cluster/src/main/java/io/atomix/cluster/messaging/impl/NettyUnicastService.java
+=======
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.resolver.dns.BiDnsQueryLifecycleObserverFactory;
+import io.netty.resolver.dns.DnsAddressResolverGroup;
+import io.netty.resolver.dns.DnsNameResolverBuilder;
+import io.netty.resolver.dns.LoggingDnsQueryLifeCycleObserverFactory;
+>>>>>>> c8ee3eab (feat: allow dns resolution to fall back to TCP):zeebe/atomix/cluster/src/main/java/io/atomix/cluster/messaging/impl/NettyUnicastService.java
 import io.netty.util.concurrent.Future;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -193,7 +201,24 @@ public class NettyUnicastService implements ManagedUnicastService {
   public CompletableFuture<UnicastService> start() {
     group = new NioEventLoopGroup(0, namedThreads("netty-unicast-event-nio-client-%d", log));
     return bootstrap()
+<<<<<<< HEAD:atomix/cluster/src/main/java/io/atomix/cluster/messaging/impl/NettyUnicastService.java
         .thenRun(() -> started.set(true))
+=======
+        .thenRun(
+            () -> {
+              final var metrics = new NettyDnsMetrics();
+              started.set(true);
+              dnsAddressResolverGroup =
+                  new DnsAddressResolverGroup(
+                      new DnsNameResolverBuilder(group.next())
+                          .dnsQueryLifecycleObserverFactory(
+                              new BiDnsQueryLifecycleObserverFactory(
+                                  ignored -> metrics,
+                                  new LoggingDnsQueryLifeCycleObserverFactory()))
+                          .socketChannelType(NioSocketChannel.class)
+                          .channelType(NioDatagramChannel.class));
+            })
+>>>>>>> c8ee3eab (feat: allow dns resolution to fall back to TCP):zeebe/atomix/cluster/src/main/java/io/atomix/cluster/messaging/impl/NettyUnicastService.java
         .thenApply(
             v -> {
               log.info(
