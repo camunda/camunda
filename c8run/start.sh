@@ -5,6 +5,12 @@ runScript=$BASEDIR/internal/run.sh
 
 POLLING_CAMUNDA_PID_PATH=$BASEDIR/camunda-polling.pid
 
+function printEndpoints {
+    echo
+    cat endpoints.txt
+}
+
+
 
 function checkCamundaStartup {
   RETRIES=24
@@ -21,10 +27,11 @@ function checkCamundaStartup {
         echo "Error: $NAME did not start!"
         exit 1;
       else
-        echo "Polling $NAME ... $RETRIES retries left"
+        echo "Waiting for $NAME to start. $RETRIES retries left"
       fi
     done
   echo "$NAME has successfully been started.";
+  printEndpoints
 }
 
 function killPolling {
