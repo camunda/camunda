@@ -45,7 +45,7 @@ public class MessageController {
       @RequestBody final MessageCorrelationRequest correlationRequest) {
     return RequestMapper.toMessageCorrelationRequest(
             correlationRequest, multiTenancyCfg.isEnabled())
-        .fold(this::correlateMessage, RestErrorMapper::mapProblemToCompletedResponse);
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::correlateMessage);
   }
 
   private CompletableFuture<ResponseEntity<MessageCorrelationResponse>> correlateMessage(
