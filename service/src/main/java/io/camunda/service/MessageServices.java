@@ -16,7 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRec
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-public final class MessageServices<T> extends ApiServices<MessageServices<T>> {
+public final class MessageServices extends ApiServices<MessageServices> {
 
   public MessageServices(final BrokerClient brokerClient, final CamundaSearchClient searchClient) {
     this(brokerClient, searchClient, null, null);
@@ -31,8 +31,8 @@ public final class MessageServices<T> extends ApiServices<MessageServices<T>> {
   }
 
   @Override
-  public MessageServices<T> withAuthentication(final Authentication authentication) {
-    return new MessageServices<>(brokerClient, searchClient, transformers, authentication);
+  public MessageServices withAuthentication(final Authentication authentication) {
+    return new MessageServices(brokerClient, searchClient, transformers, authentication);
   }
 
   public CompletableFuture<MessageCorrelationRecord> correlateMessage(

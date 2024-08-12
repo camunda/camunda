@@ -27,13 +27,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/messages")
 public class MessageController {
 
-  private final MessageServices<MessageCorrelationResponse> messageServices;
+  private final MessageServices messageServices;
   private final MultiTenancyCfg multiTenancyCfg;
 
   @Autowired
   public MessageController(
-      final MessageServices<MessageCorrelationResponse> messageServices,
-      final MultiTenancyCfg multiTenancyCfg) {
+      final MessageServices messageServices, final MultiTenancyCfg multiTenancyCfg) {
     this.messageServices = messageServices;
     this.multiTenancyCfg = multiTenancyCfg;
   }

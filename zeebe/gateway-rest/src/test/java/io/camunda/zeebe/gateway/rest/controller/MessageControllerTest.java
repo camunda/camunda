@@ -15,7 +15,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.service.MessageServices;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
-import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
@@ -42,7 +41,7 @@ public class MessageControllerTest extends RestControllerTest {
   private static final String MESSAGE_BASE_URL = "/v2/messages";
   private static final String CORRELATION_ENDPOINT = MESSAGE_BASE_URL + "/correlation";
 
-  @MockBean MessageServices<MessageCorrelationResponse> messageServices;
+  @MockBean MessageServices messageServices;
   @MockBean MultiTenancyCfg multiTenancyCfg;
   @Captor ArgumentCaptor<MessageServices.CorrelateMessageRequest> requestCaptor;
 
