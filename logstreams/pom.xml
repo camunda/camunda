@@ -62,6 +62,11 @@
       <artifactId>zeebe-msgpack-value</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>net.jcip</groupId>
+      <artifactId>jcip-annotations</artifactId>
+    </dependency>
+
     <!-- Test dependencies -->
     <dependency>
       <groupId>io.camunda</groupId>
