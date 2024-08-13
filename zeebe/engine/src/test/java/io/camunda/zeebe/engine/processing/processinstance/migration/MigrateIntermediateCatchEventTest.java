@@ -24,7 +24,7 @@ import org.junit.rules.TestWatcher;
 
 public class MigrateIntermediateCatchEventTest {
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @Rule public final EngineRule engine = EngineRule.multiplePartition(3).maxCommandsInBatch(1);
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
@@ -110,6 +110,7 @@ public class MigrateIntermediateCatchEventTest {
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
+    final var key1 = "key3";
     final var deployment =
         engine
             .deployment()
@@ -118,7 +119,7 @@ public class MigrateIntermediateCatchEventTest {
                     .startEvent()
                     .intermediateCatchEvent(
                         "catch1",
-                        c -> c.message(m -> m.name("msg1").zeebeCorrelationKeyExpression("key1")))
+                        c -> c.message(m -> m.name("msg1").zeebeCorrelationKeyExpression(key1)))
                     .endEvent()
                     .done())
             .withXmlResource(
@@ -137,7 +138,7 @@ public class MigrateIntermediateCatchEventTest {
         engine
             .processInstance()
             .ofBpmnProcessId(processId)
-            .withVariables(Map.of("key1", "key1"))
+            .withVariables(Map.of(key1, key1))
             .create();
 
     RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
@@ -151,7 +152,10 @@ public class MigrateIntermediateCatchEventTest {
         .migration()
         .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
         .addMappingInstruction("catch1", "catch2")
+        .expectNothing()
         .migrate();
+
+    engine.message().withName("msg1").withCorrelationKey(key1).publish();
 
     // then
     Assertions.assertThat(
@@ -168,8 +172,6 @@ public class MigrateIntermediateCatchEventTest {
                 .getFirst())
         .isNotNull();
 
-    engine.message().withName("msg1").withCorrelationKey("key1").publish();
-
     Assertions.assertThat(
             RecordingExporter.processMessageSubscriptionRecords(
                     ProcessMessageSubscriptionIntent.CORRELATED)
@@ -181,7 +183,7 @@ public class MigrateIntermediateCatchEventTest {
         .hasBpmnProcessId(targetProcessId)
         .hasElementId("catch2")
         .describedAs("Expect that the correlation key is not re-evaluated")
-        .hasCorrelationKey("key1");
+        .hasCorrelationKey(key1);
 
     Assertions.assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
@@ -192,6 +194,6 @@ public class MigrateIntermediateCatchEventTest {
         .describedAs("Expect that the process definition is updated")
         .hasBpmnProcessId(targetProcessId)
         .describedAs("Expect that the correlation key is not re-evaluated")
-        .hasCorrelationKey("key1");
+        .hasCorrelationKey(key1);
   }
 }

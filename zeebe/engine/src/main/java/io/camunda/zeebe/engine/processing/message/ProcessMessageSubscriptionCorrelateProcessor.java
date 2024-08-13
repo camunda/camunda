@@ -76,12 +76,13 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   @Override
   public void processRecord(final TypedRecord<ProcessMessageSubscriptionRecord> command) {
 
-    final var record = command.getValue();
-    final var elementInstanceKey = record.getElementInstanceKey();
+    final var elementInstanceKey = command.getValue().getElementInstanceKey();
 
     final ProcessMessageSubscription subscription =
         subscriptionState.getSubscription(
-            elementInstanceKey, record.getMessageNameBuffer(), record.getTenantId());
+            elementInstanceKey,
+            command.getValue().getMessageNameBuffer(),
+            command.getValue().getTenantId());
 
     if (subscription == null) {
       rejectCommand(command, RejectionType.NOT_FOUND, NO_SUBSCRIPTION_FOUND_MESSAGE);
@@ -101,23 +102,25 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       } else {
         // avoid reusing the subscription record directly as any access to the state (e.g. as #get)
         // will overwrite it - safer to just copy its values into an one-time-use record
-        final ProcessMessageSubscriptionRecord subscriptionRecord = subscription.getRecord();
-        record
-            .setElementId(subscriptionRecord.getElementIdBuffer())
-            .setInterrupting(subscriptionRecord.isInterrupting());
+        final var subscriptionRecord = new ProcessMessageSubscriptionRecord();
+        subscriptionRecord.copyFrom(subscription.getRecord());
+        subscriptionRecord
+            .setMessageKey(command.getValue().getMessageKey())
+            .setVariables(command.getValue().getVariablesBuffer());
 
         stateWriter.appendFollowUpEvent(
-            subscription.getKey(), ProcessMessageSubscriptionIntent.CORRELATED, record);
+            subscription.getKey(), ProcessMessageSubscriptionIntent.CORRELATED, subscriptionRecord);
 
         final var catchEvent =
-            getCatchEvent(elementInstance.getValue(), record.getElementIdBuffer());
+            getCatchEvent(
+                elementInstance.getValue(), subscription.getRecord().getElementIdBuffer());
         eventHandle.activateElement(
             catchEvent,
             elementInstanceKey,
             elementInstance.getValue(),
-            record.getVariablesBuffer());
+            subscriptionRecord.getVariablesBuffer());
 
-        sendAcknowledgeCommand(record);
+        sendAcknowledgeCommand(subscriptionRecord);
       }
     }
   }
