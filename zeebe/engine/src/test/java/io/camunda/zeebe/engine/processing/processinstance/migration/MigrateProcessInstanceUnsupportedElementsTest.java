@@ -80,9 +80,9 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
         .contains(
             String.format(
                 """
-      Expected to migrate process instance '%s' \
-      but active element with id '%s' is intermediate catch event of type '%s'. \
-      Migrating active elements with intermediate catch event of these types is not possible yet.""",
+                Expected to migrate process instance '%s' \
+                but active element with id '%s' is intermediate catch event of type '%s'. \
+                Migrating active intermediate catch event of this type is not possible yet.""",
                 processInstanceKey, "timer1", "TIMER"));
   }
 
