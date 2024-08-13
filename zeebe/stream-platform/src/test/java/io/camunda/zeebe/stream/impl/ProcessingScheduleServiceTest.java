@@ -63,7 +63,11 @@ class ProcessingScheduleServiceTest {
     lifecycleSupplier = new LifecycleSupplier();
     final var processingScheduleService =
         new ProcessingScheduleServiceImpl(
-            lifecycleSupplier, lifecycleSupplier, () -> testWriter, commandCache, InstantSource.system());
+            lifecycleSupplier,
+            lifecycleSupplier,
+            () -> testWriter,
+            commandCache,
+            actorScheduler.getClock());
 
     scheduleService = new TestScheduleServiceActorDecorator(processingScheduleService);
     actorScheduler.submitActor(scheduleService);
@@ -571,8 +575,8 @@ class ProcessingScheduleServiceTest {
 
       // then
       final var inOrder = inOrder(mockedTask2, mockedTask);
-      inOrder.verify(mockedTask).execute(any());
       inOrder.verify(mockedTask2).execute(any());
+      inOrder.verify(mockedTask).execute(any());
       inOrder.verifyNoMoreInteractions();
     }
 

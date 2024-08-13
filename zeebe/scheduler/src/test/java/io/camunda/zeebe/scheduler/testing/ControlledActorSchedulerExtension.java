@@ -87,6 +87,10 @@ public class ControlledActorSchedulerExtension implements BeforeEachCallback, Af
     clock.setCurrentTime(currentTime);
   }
 
+  public ControlledActorClock getClock() {
+    return clock;
+  }
+
   static final class ControlledActorThreadFactory implements ActorThreadFactory {
     private ControlledActorThread controlledThread;
 
