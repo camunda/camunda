@@ -20,7 +20,6 @@ public final class ClockRecord extends UnifiedRecordValue implements ClockRecord
     declareProperty(pinProperty).declareProperty(offsetProperty);
   }
 
-  @Override
   public boolean hasPinnedEpoch() {
     return pinProperty.isSet();
   }
@@ -35,7 +34,6 @@ public final class ClockRecord extends UnifiedRecordValue implements ClockRecord
     return offsetProperty.getValue();
   }
 
-  @Override
   public boolean hasOffsetMillis() {
     return offsetProperty.isSet();
   }

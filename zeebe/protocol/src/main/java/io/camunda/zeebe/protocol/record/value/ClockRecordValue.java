@@ -28,17 +28,11 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableClockRecordValue.Builder.class)
 public interface ClockRecordValue extends RecordValue {
-  /** Returns true if this record has a pinned epoch set. */
-  boolean hasPinnedEpoch();
-
   /**
    * Returns the pinned value of this clock, if any; if none, returns an instant at the {@code 0}
    * epoch.
    */
   long getPinnedAtEpoch();
-
-  /** Returns true if this record has an offset set. */
-  boolean hasOffsetMillis();
 
   /**
    * Returns the relative offset duration of this clock, if any; if none, returns a duration offset
