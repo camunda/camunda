@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PaginatedDataExportDto {
+
   private String searchRequestId;
   private String message;
   private Integer numberOfRecordsInResponse;
@@ -25,14 +26,14 @@ public class PaginatedDataExportDto {
   private String reportId;
   private Object data;
 
-  public void setData(Object data) {
+  public void setData(final Object data) {
     this.data = data;
     if (data == null) {
-      this.numberOfRecordsInResponse = 0;
+      numberOfRecordsInResponse = 0;
     } else if (data instanceof Collection) {
-      this.numberOfRecordsInResponse = ((Collection<?>) data).size();
+      numberOfRecordsInResponse = ((Collection<?>) data).size();
     } else {
-      this.numberOfRecordsInResponse = 1;
+      numberOfRecordsInResponse = 1;
     }
   }
 }

@@ -18,7 +18,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
@@ -28,7 +27,6 @@ import lombok.experimental.SuperBuilder;
 })
 @Data
 @NoArgsConstructor
-@FieldNameConstants
 @SuperBuilder(toBuilder = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public abstract class EventSourceEntryDto<CONFIG extends EventSourceConfigDto> {
@@ -38,10 +36,10 @@ public abstract class EventSourceEntryDto<CONFIG extends EventSourceConfigDto> {
   @EqualsAndHashCode.Include @NonNull @Builder.Default
   protected String id = IdGenerator.getNextId();
 
+  @NotNull protected CONFIG configuration;
+
   @JsonIgnore
   public abstract EventSourceType getSourceType();
-
-  @NotNull protected CONFIG configuration;
 
   // This source identifier is only used internally by Optimize for logic such as autogeneration
   @JsonIgnore
@@ -62,5 +60,11 @@ public abstract class EventSourceEntryDto<CONFIG extends EventSourceConfigDto> {
                 .orElse("optimize_noGroupSpecified");
       }
     }
+  }
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String configuration = "configuration";
   }
 }

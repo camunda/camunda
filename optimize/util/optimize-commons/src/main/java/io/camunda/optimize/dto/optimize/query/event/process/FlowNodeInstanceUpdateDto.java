@@ -14,14 +14,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 @Data
-@FieldNameConstants
 public class FlowNodeInstanceUpdateDto implements OptimizeDto {
+
   protected String sourceEventId;
   protected String flowNodeId;
   protected String flowNodeType;
@@ -30,5 +29,14 @@ public class FlowNodeInstanceUpdateDto implements OptimizeDto {
 
   public String getId() {
     return sourceEventId + ":" + flowNodeId;
+  }
+
+  public static final class Fields {
+
+    public static final String sourceEventId = "sourceEventId";
+    public static final String flowNodeId = "flowNodeId";
+    public static final String flowNodeType = "flowNodeType";
+    public static final String mappedAs = "mappedAs";
+    public static final String date = "date";
   }
 }

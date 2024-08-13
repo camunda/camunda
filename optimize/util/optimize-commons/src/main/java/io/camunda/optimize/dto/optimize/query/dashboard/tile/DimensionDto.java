@@ -10,14 +10,18 @@ package io.camunda.optimize.dto.optimize.query.dashboard.tile;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@FieldNameConstants
 public class DimensionDto {
 
   protected int width;
   protected int height;
+
+  public static final class Fields {
+
+    public static final String width = "width";
+    public static final String height = "height";
+  }
 }

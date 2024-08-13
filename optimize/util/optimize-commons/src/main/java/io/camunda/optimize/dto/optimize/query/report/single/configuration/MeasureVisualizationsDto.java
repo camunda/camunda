@@ -9,11 +9,16 @@ package io.camunda.optimize.dto.optimize.query.report.single.configuration;
 
 import io.camunda.optimize.dto.optimize.ReportConstants;
 import lombok.Data;
-import lombok.experimental.FieldNameConstants;
 
 @Data
-@FieldNameConstants
 public class MeasureVisualizationsDto {
+
   private String frequency = ReportConstants.BAR_VISUALIZATION;
   private String duration = ReportConstants.LINE_VISUALIZATION;
+
+  public static final class Fields {
+
+    public static final String frequency = "frequency";
+    public static final String duration = "duration";
+  }
 }

@@ -13,14 +13,20 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@FieldNameConstants
 public class LabelDto implements OptimizeDto {
+
   private String variableLabel;
   @NotBlank private String variableName;
   @NotNull private VariableType variableType;
+
+  public static final class Fields {
+
+    public static final String variableLabel = "variableLabel";
+    public static final String variableName = "variableName";
+    public static final String variableType = "variableType";
+  }
 }

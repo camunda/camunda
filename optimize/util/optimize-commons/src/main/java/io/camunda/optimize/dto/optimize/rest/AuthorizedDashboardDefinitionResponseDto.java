@@ -20,6 +20,7 @@ import lombok.NoArgsConstructor;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class AuthorizedDashboardDefinitionResponseDto extends AuthorizedEntityDto {
+
   @JsonUnwrapped private DashboardDefinitionRestDto definitionDto;
 
   public AuthorizedDashboardDefinitionResponseDto(

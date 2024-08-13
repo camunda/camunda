@@ -16,13 +16,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.experimental.FieldNameConstants;
 
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@FieldNameConstants(asEnum = true)
 public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto {
+
   private String dmn10Xml;
   private List<DecisionVariableNameResponseDto> inputVariableNames = new ArrayList<>();
   private List<DecisionVariableNameResponseDto> outputVariableNames = new ArrayList<>();
@@ -61,5 +60,11 @@ public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto
     this.dmn10Xml = dmn10Xml;
     this.inputVariableNames = inputVariableNames;
     this.outputVariableNames = outputVariableNames;
+  }
+
+  public enum Fields {
+    dmn10Xml,
+    inputVariableNames,
+    outputVariableNames
   }
 }

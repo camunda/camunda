@@ -16,14 +16,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @Builder
-@FieldNameConstants(asEnum = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class CustomBucketDto {
+
   @Builder.Default private boolean active = false;
 
   @Builder.Default
@@ -41,11 +40,11 @@ public class CustomBucketDto {
   @Builder.Default private BucketUnit baselineUnit = null;
 
   public Optional<Double> getBucketSizeInUnit(final BucketUnit requestedBucketUnit) {
-    return convertValueToRequestedUnit(requestedBucketUnit, this.bucketSize, this.bucketSizeUnit);
+    return convertValueToRequestedUnit(requestedBucketUnit, bucketSize, bucketSizeUnit);
   }
 
   public Optional<Double> getBaselineInUnit(final BucketUnit requestedBucketUnit) {
-    return convertValueToRequestedUnit(requestedBucketUnit, this.baseline, this.baselineUnit);
+    return convertValueToRequestedUnit(requestedBucketUnit, baseline, baselineUnit);
   }
 
   private Optional<Double> convertValueToRequestedUnit(
@@ -92,5 +91,13 @@ public class CustomBucketDto {
         throw new OptimizeRuntimeException("Unsupported bucket unit: " + bucketUnit);
     }
     return chronoUnit.getDuration().toMillis();
+  }
+
+  public enum Fields {
+    active,
+    bucketSize,
+    bucketSizeUnit,
+    baseline,
+    baselineUnit
   }
 }

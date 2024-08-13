@@ -11,16 +11,24 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Data
-@FieldNameConstants
 @AllArgsConstructor
 @NoArgsConstructor
 public class ProcessOverviewResponseDto {
+
   private String processDefinitionName;
   private String processDefinitionKey;
   private ProcessOwnerResponseDto owner;
   private ProcessDigestResponseDto digest;
   private List<KpiResultDto> kpis;
+
+  public static final class Fields {
+
+    public static final String processDefinitionName = "processDefinitionName";
+    public static final String processDefinitionKey = "processDefinitionKey";
+    public static final String owner = "owner";
+    public static final String digest = "digest";
+    public static final String kpis = "kpis";
+  }
 }

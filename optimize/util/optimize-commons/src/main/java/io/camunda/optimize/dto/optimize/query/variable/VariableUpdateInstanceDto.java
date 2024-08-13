@@ -15,11 +15,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldNameConstants
 @Builder
 @Getter
 @Setter
@@ -32,4 +30,15 @@ public class VariableUpdateInstanceDto implements OptimizeDto {
   private String processInstanceId;
   private String tenantId;
   private OffsetDateTime timestamp;
+
+  public static final class Fields {
+
+    public static final String instanceId = "instanceId";
+    public static final String name = "name";
+    public static final String type = "type";
+    public static final String value = "value";
+    public static final String processInstanceId = "processInstanceId";
+    public static final String tenantId = "tenantId";
+    public static final String timestamp = "timestamp";
+  }
 }

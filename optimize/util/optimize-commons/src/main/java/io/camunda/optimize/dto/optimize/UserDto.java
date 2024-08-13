@@ -23,15 +23,14 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.ToString;
-import lombok.experimental.FieldNameConstants;
 import org.apache.commons.lang3.StringUtils;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@FieldNameConstants
 @ToString(callSuper = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
 public class UserDto extends IdentityWithMetadataResponseDto {
+
   private String firstName;
   private String lastName;
   private String email;
@@ -85,5 +84,13 @@ public class UserDto extends IdentityWithMetadataResponseDto {
   public List<Supplier<String>> getSearchableDtoFields() {
     return List.of(
         this::getId, this::getEmail, this::getName, this::getFirstName, this::getLastName);
+  }
+
+  public static final class Fields {
+
+    public static final String firstName = "firstName";
+    public static final String lastName = "lastName";
+    public static final String email = "email";
+    public static final String roles = "roles";
   }
 }

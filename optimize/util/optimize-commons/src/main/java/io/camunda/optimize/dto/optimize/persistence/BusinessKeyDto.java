@@ -13,11 +13,9 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import lombok.experimental.FieldNameConstants;
 
 @Getter
 @ToString
-@FieldNameConstants
 @AllArgsConstructor
 @NoArgsConstructor
 @EqualsAndHashCode
@@ -25,4 +23,10 @@ public class BusinessKeyDto implements OptimizeDto {
 
   private String processInstanceId;
   private String businessKey;
+
+  public static final class Fields {
+
+    public static final String processInstanceId = "processInstanceId";
+    public static final String businessKey = "businessKey";
+  }
 }

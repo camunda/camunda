@@ -16,18 +16,16 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-@FieldNameConstants
 public class DecisionViewDto {
 
   protected List<ViewProperty> properties = new ArrayList<>();
 
   public DecisionViewDto(final ViewProperty property) {
-    this.getProperties().add(property);
+    getProperties().add(property);
   }
 
   @JsonIgnore
@@ -42,5 +40,10 @@ public class DecisionViewDto {
 
   public void setProperties(final ViewProperty... properties) {
     this.properties = Arrays.asList(properties);
+  }
+
+  public static final class Fields {
+
+    public static final String properties = "properties";
   }
 }
