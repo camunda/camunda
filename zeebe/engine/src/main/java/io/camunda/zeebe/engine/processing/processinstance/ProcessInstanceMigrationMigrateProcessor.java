@@ -397,7 +397,7 @@ public class ProcessInstanceMigrationMigrateProcessor
                   """
                   Expected to migrate process instance '%s' \
                   but active element with id '%s' is mapped to element with id '%s' \
-                  that must be subscribed to a message catch event. %s"""
+                  that must be subscribed to a catch event. %s"""
                       .formatted(
                           processInstanceKey, elementId, targetElementId, failure.getMessage()),
                   RejectionType.INVALID_STATE);
