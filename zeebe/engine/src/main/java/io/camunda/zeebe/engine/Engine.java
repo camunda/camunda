@@ -83,6 +83,10 @@ public class Engine implements RecordProcessor {
 
     recordProcessorContext.addLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
+
+    recordProcessorContext
+        .getClock()
+        .applyModification(processingState.getClockState().getModification());
   }
 
   @Override
