@@ -67,8 +67,7 @@ public class TaskQueryDTO {
       final DateFilter followUpDate,
       final DateFilter dueDate,
       final TaskOrderBy[] sort,
-      final TaskImplementation implementation,
-      final RangeValueFilter priority) {
+      final TaskImplementation implementation) {
     this.state = state;
     this.assigned = assigned;
     this.assignee = assignee;
@@ -88,7 +87,7 @@ public class TaskQueryDTO {
     this.dueDate = dueDate;
     this.sort = sort;
     this.implementation = implementation;
-    this.priority = priority;
+    priority = priority;
   }
 
   public TaskQueryDTO() {}
