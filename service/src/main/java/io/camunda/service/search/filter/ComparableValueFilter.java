@@ -31,7 +31,7 @@ public final class ComparableValueFilter extends ComparableValues implements Fil
 
   @Override
   public String toString() {
-    return "RangeValueFilter["
+    return "ComparableValueFilter["
         + "eq="
         + eq
         + ", neq="
