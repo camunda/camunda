@@ -53,8 +53,27 @@ public interface StreamClock extends InstantSource {
     Modification currentModification();
 
     /**
-     * Shortcut to reset the clock to the current system time. Equivalent to {@code
-     * applyModification(Modification.none())}.
+     * Shortcut to pin the clock to a specific instant.
+     *
+     * @implSpec Equivalent to {@code applyModification(Modification.pinAt(at))}.
+     */
+    default void pinAt(final Instant at) {
+      applyModification(Modification.pinAt(at));
+    }
+
+    /**
+     * Shortcut to offset the clock by a specific duration.
+     *
+     * @implSpec Equivalent to {@code applyModification(Modification.offsetBy(by))}.
+     */
+    default void offsetBy(final Duration by) {
+      applyModification(Modification.offsetBy(by));
+    }
+
+    /**
+     * Shortcut to reset the clock to the current system time.
+     *
+     * @implSpec Equivalent to {@code applyModification(Modification.none())}.
      */
     default void reset() {
       applyModification(Modification.none());
