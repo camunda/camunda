@@ -109,4 +109,29 @@ public class UserStateTest {
     assertThat(persistedUserOne.getUsername()).isEqualTo(usernameOne);
     assertThat(persistedUserTwo.getUsername()).isEqualTo(usernameTwo);
   }
+
+  @DisplayName("should update a user")
+  @Test
+  void shouldUpdateAUser() {
+    final var username = "username" + UUID.randomUUID();
+    final var name = "name" + UUID.randomUUID();
+
+    final UserRecord user =
+        new UserRecord()
+            .setUsername(username)
+            .setName(name)
+            .setPassword("P")
+            .setEmail("email" + UUID.randomUUID());
+    userState.create(5L, user);
+
+    final var persistedUserBeforeUpdate = userState.getUser(username);
+    assertThat(persistedUserBeforeUpdate.getName()).isEqualTo(name);
+
+    final var updatedName = "name" + UUID.randomUUID();
+    user.setName(updatedName);
+    userState.updateUser(user);
+
+    final var persistedUserAfterUpdate = userState.getUser(username);
+    assertThat(persistedUserAfterUpdate.getName()).isEqualTo(updatedName);
+  }
 }

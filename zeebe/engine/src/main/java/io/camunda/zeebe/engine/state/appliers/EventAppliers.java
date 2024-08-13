@@ -237,6 +237,7 @@ public final class EventAppliers implements EventApplier {
 
   private void registerUserAppliers(final MutableProcessingState state) {
     register(UserIntent.CREATED, new UserCreatedApplier(state));
+    register(UserIntent.UPDATED, new UserUpdatedApplier(state));
   }
 
   private void registerMessageSubscriptionAppliers(final MutableProcessingState state) {

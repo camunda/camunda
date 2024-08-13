@@ -17,7 +17,8 @@ package io.camunda.zeebe.protocol.record.intent;
 
 public enum UserIntent implements Intent {
   CREATE(0),
-  CREATED(1);
+  CREATED(1),
+  UPDATED(2);
 
   private final short value;
 
@@ -41,6 +42,8 @@ public enum UserIntent implements Intent {
         return CREATE;
       case 1:
         return CREATED;
+      case 2:
+        return UPDATED;
       default:
         return UNKNOWN;
     }
