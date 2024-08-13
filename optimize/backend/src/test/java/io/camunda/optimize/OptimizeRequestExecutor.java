@@ -1323,19 +1323,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildValidateAndStoreLicenseRequest(String license) {
-    this.path = "license/validate-and-store";
-    this.method = POST;
-    this.body = Entity.entity(license, MediaType.TEXT_PLAIN);
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildValidateLicenseRequest() {
-    this.path = "license/validate";
-    this.method = GET;
-    return this;
-  }
-
   public OptimizeRequestExecutor buildGetDefinitionByTypeAndKeyRequest(
       final String type, final String key) {
     this.path = "/definition/" + type + "/" + key;

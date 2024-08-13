@@ -50,14 +50,6 @@
     "database": "Database"
   },
   "license": {
-    "label": "Lizenz",
-    "licensedFor": "Lizenziert für",
-    "validUntil": "Gültig bis",
-    "redirectMessage": "Sie werden in Kürze zur Anmeldeseite weitergeleitet.",
-    "clickToLogin": "Klicken Sie hier, um sofort zur Anmeldeseite zu gelangen",
-    "licenseKey": "Lizenzschlüssel",
-    "enterLicense": "Bitte geben Sie den Lizenzschlüssel ein",
-    "submit": "Absenden",
     "nonProduction": "Lizenz: Kein Produktivbetrieb",
     "referTo": "Für mehr Informationen zum Produktivbetrieb lesen Sie bitte unsere",
     "terms": "Allgemeinen Geschäftsbedingungen (AGB)",
@@ -1646,8 +1638,6 @@
     "elasticsearchConnectionError": "Der Server konnte keine Verbindung zu Elasticsearch herstellen.",
     "nonTenantScopeCompliantConflict": "Die Aktion konnte aufgrund von Konflikten mit der Datenquelle der zugehörigen Sammlung nicht durchgeführt werden. Die Definition des Berichts ist in der Datenquelle definiert, jedoch ist mindestens ein Mandant des Berichts nicht in der Datenquelle vorhanden.",
     "nonDefinitionScopeCompliantConflict": "Die Aktion konnte aufgrund von Konflikten mit der Datenquelle der zugehörigen Sammlung nicht durchgeführt werden. Die Definition des Berichts ist nicht in der Datenquelle der Sammlung vorhanden.",
-    "invalidLicenseError": "Die gegebene Lizenz ist ungültig.",
-    "noLicenseStoredError": "Derzeit ist keine Lizenz in Optimize vorhanden. Bitte fügen Sie eine gültige Lizenz hinzu.",
     "invalidEventProcessState": "Diese Aktion kann im aktuellen Zustand des Eventbasierten Prozesses nicht ausgeführt werden.",
     "userOrGroupIdNotFound": "Die gegebene Benutzer- oder Gruppen-ID konnte nicht in Optimize gefunden werden.",
     "tooManyBuckets": "Der Bericht konnte nicht evaluiert werden, da das Ergebnis mehr als 10.000 Datenpunkte enthält. Bitte nutzen Sie Filter oder ändern Sie die konfigurierte Bucket Größe, um die Anzahl der Datenpunkte des Ergebnisses zu verringern.",
