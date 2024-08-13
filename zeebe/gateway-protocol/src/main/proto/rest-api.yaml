@@ -819,6 +819,34 @@ components:
           type: string
         bpmnDefinitionId:
           type: string
+        priority:
+          type: object
+          properties:
+            eq:
+              type: integer
+              minimum: 0
+              maximum: 100
+              format: int64
+            gt:
+              type: integer
+              minimum: 0
+              maximum: 100
+              format: int64
+            gte:
+              type: integer
+              minimum: 0
+              maximum: 100
+              format: int64
+            lt:
+              type: integer
+              minimum: 0
+              maximum: 100
+              format: int64
+            lte:
+              type: integer
+              minimum: 0
+              maximum: 100
+              format: int64
     UserTaskItem:
       type: object
       properties:
@@ -876,6 +904,11 @@ components:
           type: object
           additionalProperties:
             type: string
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 100
+          default: 50
     ProcessInstanceSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"

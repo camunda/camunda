@@ -13,6 +13,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOW
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_ORDER;
 import static java.util.Optional.ofNullable;
 
+import io.camunda.service.search.filter.ComparableValueFilter;
 import io.camunda.service.search.filter.DecisionDefinitionFilter;
 import io.camunda.service.search.filter.DecisionRequirementsFilter;
 import io.camunda.service.search.filter.FilterBase;
@@ -43,6 +44,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQuerySortRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskFilterRequestPriority;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterRequest;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
@@ -228,9 +230,24 @@ public final class SearchQueryRequestMapper {
       if (filter.getTenantIds() != null) {
         builder.tenantIds(filter.getTenantIds());
       }
+
+      // priority
+      if (filter.getPriority() != null) {
+        builder.priority(mapPriorityFilter(filter.getPriority()));
+      }
     }
 
     return builder.build();
+  }
+
+  private static ComparableValueFilter mapPriorityFilter(
+      final UserTaskFilterRequestPriority priority) {
+    return new ComparableValueFilter.Builder()
+        .eq(priority.getEq())
+        .gt(priority.getGt())
+        .lt(priority.getLt())
+        .lte(priority.getLte())
+        .build();
   }
 
   private static List<String> applyProcessInstanceSortField(
@@ -296,6 +313,7 @@ public final class SearchQueryRequestMapper {
       switch (field) {
         case "creationDate" -> builder.creationDate();
         case "completionDate" -> builder.completionDate();
+        case "priority" -> builder.priority();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
