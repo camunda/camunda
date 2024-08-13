@@ -22,6 +22,8 @@ public interface MutableProcessState extends ProcessState {
 
   void storeProcessDefinitionKeyByProcessIdAndDeploymentKey(final ProcessRecord processRecord);
 
+  void storeProcessDefinitionKeyByProcessIdAndVersionTag(final ProcessRecord processRecord);
+
   /**
    * Updates the state of a process. This method updates both the ColumnFamily and the in memory
    * cache.

@@ -31,9 +31,10 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1L);
+  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
 
   public PersistedProcess() {
-    super(8);
+    super(9);
     declareProperty(versionProp)
         .declareProperty(keyProp)
         .declareProperty(bpmnProcessIdProp)
@@ -41,7 +42,8 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
         .declareProperty(resourceProp)
         .declareProperty(stateProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(deploymentKeyProp);
+        .declareProperty(deploymentKeyProp)
+        .declareProperty(versionTagProp);
   }
 
   public void wrap(final ProcessRecord processRecord, final long processDefinitionKey) {
@@ -53,6 +55,7 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
     keyProp.setValue(processDefinitionKey);
     tenantIdProp.setValue(processRecord.getTenantId());
     deploymentKeyProp.setValue(processRecord.getDeploymentKey());
+    versionTagProp.setValue(processRecord.getVersionTag());
   }
 
   public int getVersion() {
@@ -95,6 +98,10 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
 
   public long getDeploymentKey() {
     return deploymentKeyProp.getValue();
+  }
+
+  public String getVersionTag() {
+    return bufferAsString(versionTagProp.getValue());
   }
 
   public enum PersistedProcessState {
