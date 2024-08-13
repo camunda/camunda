@@ -15,12 +15,9 @@ export type Definition = {
 
 export async function loadDefinitions(
   type: string,
-  collectionId: string | null,
-  camundaEventImportedOnly = false
+  collectionId: string | null
 ): Promise<Definition[]> {
-  const params: {camundaEventImportedOnly: boolean; filterByCollectionScope?: string} = {
-    camundaEventImportedOnly,
-  };
+  const params: {filterByCollectionScope?: string} = {};
 
   if (collectionId) {
     params.filterByCollectionScope = collectionId;

@@ -77,11 +77,11 @@ export class DefinitionSelection extends React.Component {
 
   loadDefinitions = () => {
     return new Promise((resolve) => {
-      const {type, camundaEventImportedOnly, location, mightFail} = this.props;
+      const {type, location, mightFail} = this.props;
       const collectionId = getCollection(location.pathname);
 
       mightFail(
-        loadDefinitions(type, collectionId, camundaEventImportedOnly),
+        loadDefinitions(type, collectionId),
         (result) =>
           resolve(
             result.map((entry) => ({
