@@ -17,6 +17,12 @@ import java.util.Map;
 public interface TaskStore {
   String DEFAULT_SORT_FIELD = TaskTemplate.CREATION_TIME;
 
+  /**
+   * Zeebe User Task priority is defined as a number between 0 and 100. The default assigned
+   * priority is 50.
+   */
+  String DEFAULT_PRIORITY = "50";
+
   TaskEntity getTask(final String id);
 
   List<String> getTaskIdsByProcessInstanceId(String processInstanceId);

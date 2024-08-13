@@ -24,9 +24,14 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -54,7 +59,8 @@ public class ZeebeUserTaskImportIT extends TasklistZeebeIntegrationTest {
 
     final String taskId =
         tester
-            .createAndDeploySimpleProcessWithZeebeUserTask(bpmnProcessId, flowNodeBpmnId)
+            .createAndDeploySimpleProcess(
+                bpmnProcessId, flowNodeBpmnId, AbstractUserTaskBuilder::zeebeUserTask)
             .waitUntil()
             .processIsDeployed()
             .startProcessInstance(bpmnProcessId)
@@ -72,6 +78,7 @@ public class ZeebeUserTaskImportIT extends TasklistZeebeIntegrationTest {
     assertEquals(flowNodeBpmnId, taskEntity.getFlowNodeBpmnId());
     assertEquals(tester.getProcessDefinitionKey(), taskEntity.getProcessDefinitionId());
     assertEquals(tester.getProcessInstanceId(), taskEntity.getProcessInstanceId());
+    assertEquals(taskEntity.getPriority(), Integer.valueOf(TaskStore.DEFAULT_PRIORITY));
   }
 
   @Test
@@ -116,5 +123,35 @@ public class ZeebeUserTaskImportIT extends TasklistZeebeIntegrationTest {
         .extractingListContent(objectMapper, VariableSearchResponse.class)
         .extracting("name", "previewValue", "value")
         .containsExactly(tuple("varA", "null", "null"));
+  }
+
+  private static Stream<Arguments> priorityOptions() {
+    return Stream.of(Arguments.of(null, 50), Arguments.of("13", 13), Arguments.of("", 50));
+  }
+
+  @ParameterizedTest
+  @MethodSource("priorityOptions")
+  public void shouldImportZeebeUserTaskWithPriority(
+      final String definedPriority, final int taskEntityPriority) {
+    final String bpmnProcessId = "testProcess";
+    final String flowNodeBpmnId = "taskA";
+    final String taskId =
+        tester
+            .createAndDeploySimpleProcess(
+                bpmnProcessId,
+                flowNodeBpmnId,
+                AbstractUserTaskBuilder::zeebeUserTask,
+                t -> t.zeebeTaskPriority(definedPriority))
+            .processIsDeployed()
+            .then()
+            .startProcessInstance(bpmnProcessId)
+            .then()
+            .taskIsCreated(flowNodeBpmnId)
+            .getTaskId();
+    // then
+    assertNotNull(taskId);
+    final TaskEntity taskEntity = taskStore.getTask(taskId);
+    assertEquals(TaskImplementation.ZEEBE_USER_TASK, taskEntity.getImplementation());
+    assertEquals(taskEntity.getPriority(), taskEntityPriority);
   }
 }
