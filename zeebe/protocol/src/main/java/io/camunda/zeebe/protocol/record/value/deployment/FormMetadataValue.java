@@ -59,4 +59,9 @@ public interface FormMetadataValue extends RecordValue, TenantOwned {
    * @return the key of the deployment this form was deployed with
    */
   long getDeploymentKey();
+
+  /**
+   * @return the custom version tag of the form
+   */
+  String getVersionTag();
 }

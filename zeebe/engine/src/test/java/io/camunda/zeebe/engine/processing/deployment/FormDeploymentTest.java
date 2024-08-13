@@ -31,6 +31,8 @@ import org.junit.Test;
 public class FormDeploymentTest {
 
   private static final String TEST_FORM_1 = "/form/test-form-1.form";
+  private static final String TEST_FORM_1_WITH_VERSION_TAG =
+      "/form/test-form-1-with-version-tag.form";
   private static final String TEST_FORM_1_V2 = "/form/test-form-1_v2.form";
   private static final String TEST_FORM_2 = "/form/test-form-2.form";
   private static final String TEST_FORM_WITHOUT_ID = "/form/test-form_without_id.form";
@@ -93,7 +95,7 @@ public class FormDeploymentTest {
   }
 
   @Test
-  public void shouldWriteFormRecord() {
+  public void shouldWriteFormRecordWithoutVersionTag() {
     // when
     final var deployment = engine.deployment().withJsonClasspathResource(TEST_FORM_1).deploy();
 
@@ -113,10 +115,22 @@ public class FormDeploymentTest {
         .hasFormId(TEST_FORM_1_ID)
         .hasResourceName(TEST_FORM_1)
         .hasVersion(1)
+        .hasVersionTag("")
         .hasDeploymentKey(deployment.getKey());
 
     assertThat(formRecord.getFormKey()).isPositive();
     assertThat(formRecord.isDuplicate()).isFalse();
+  }
+
+  @Test
+  public void shouldWriteFormRecordWithVersionTag() {
+    // when
+    engine.deployment().withJsonClasspathResource(TEST_FORM_1_WITH_VERSION_TAG).deploy();
+
+    // then
+    final Record<Form> record = RecordingExporter.formRecords().getFirst();
+    final Form formRecord = record.getValue();
+    Assertions.assertThat(formRecord).hasVersionTag("v1.0");
   }
 
   @Test

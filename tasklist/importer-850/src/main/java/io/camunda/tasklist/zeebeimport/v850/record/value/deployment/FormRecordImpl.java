@@ -22,6 +22,7 @@ public class FormRecordImpl implements Form {
   private boolean duplicate;
   private String tenantId;
   private long deploymentKey;
+  private String versionTag;
 
   @Override
   public byte[] getResource() {
@@ -95,6 +96,15 @@ public class FormRecordImpl implements Form {
 
   public void setDeploymentKey(final long deploymentKey) {
     this.deploymentKey = deploymentKey;
+  }
+
+  @Override
+  public String getVersionTag() {
+    return versionTag;
+  }
+
+  public void setVersionTag(final String versionTag) {
+    this.versionTag = versionTag;
   }
 
   @Override

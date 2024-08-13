@@ -355,7 +355,8 @@ final class JsonSerializableToJsonTest {
                   .setResourceName("form1.form")
                   .setChecksum(checksum)
                   .setDeploymentKey(deploymentKey)
-                  .setDuplicate(true);
+                  .setDuplicate(true)
+                  .setVersionTag(versionTag);
               return record;
             },
         """
@@ -415,7 +416,8 @@ final class JsonSerializableToJsonTest {
               "resourceName": "form1.form",
               "duplicate": true,
               "tenantId": "<default>",
-              "deploymentKey": 1234
+              "deploymentKey": 1234,
+              "versionTag": "v1.0"
             }
           ],
           "tenantId": "<default>",
