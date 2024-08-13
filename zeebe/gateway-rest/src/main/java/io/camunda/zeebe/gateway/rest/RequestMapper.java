@@ -132,7 +132,7 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, CorrelateMessageRequest> toMessageCorrelationRequest(
       final MessageCorrelationRequest correlationRequest, final boolean multiTenancyEnabled) {
-    final var validationResponse =
+    final Either<ProblemDetail, String> validationResponse =
         validateTenantId(correlationRequest.getTenantId(), multiTenancyEnabled, "Correlate Message")
             .flatMap(
                 tenantId ->
