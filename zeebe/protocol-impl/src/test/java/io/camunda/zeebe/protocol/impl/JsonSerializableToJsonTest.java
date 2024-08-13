@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
+import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
@@ -2480,6 +2481,30 @@ final class JsonSerializableToJsonTest {
           "name": "Foo Bar",
           "email": "foo@bar",
           "password": "f00b4r"
+        }
+        """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////// ClockRecord ////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ClockRecord (pin)",
+        (Supplier<ClockRecord>) () -> new ClockRecord().pinAt(5),
+        """
+        {
+          "pinnedAtEpoch": 5,
+          "offsetMillis": 0
+        }
+        """
+      },
+      {
+        "ClockRecord (offset)",
+        (Supplier<ClockRecord>) () -> new ClockRecord().offsetBy(5),
+        """
+        {
+          "pinnedAtEpoch": 0,
+          "offsetMillis": 5
         }
         """
       },
