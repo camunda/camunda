@@ -12,15 +12,15 @@ import {GitHubService} from './GitHubService';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_ORG = 'camunda';
 const GITHUB_REPO = 'camunda';
+const MAIN_BRANCH = 'main';
 
 const CONFIG_FILE_NAME = 'config.json';
 
 async function createHealthStatusConfig() {
   const githubService = new GitHubService(GITHUB_TOKEN, GITHUB_ORG, GITHUB_REPO);
-  const defaultBranch = 'main';
   const releaseBranches = await githubService.getBranchesWithPrefix('release/optimize-');
   const stableBranches = await githubService.getBranchesWithPrefix('stable');
-  const ciBranches = [defaultBranch, ...releaseBranches, ...stableBranches].sort(
+  const ciBranches = [MAIN_BRANCH, ...releaseBranches, ...stableBranches].sort(
     githubService.sortBranches,
   );
 
@@ -28,7 +28,7 @@ async function createHealthStatusConfig() {
     github: {
       organization: GITHUB_ORG,
       repository: GITHUB_REPO,
-      defaultBranch,
+      defaultBranch: MAIN_BRANCH,
       workflows: [
         {
           name: 'optimize-ci',
