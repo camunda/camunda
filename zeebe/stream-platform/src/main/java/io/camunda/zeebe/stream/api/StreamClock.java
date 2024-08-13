@@ -71,6 +71,18 @@ public interface StreamClock extends InstantSource {
     }
 
     /**
+     * If the clock is already offset, stacks the additional offset on top of the current offset.
+     * Otherwise, offsets the clock by the given duration, overwriting any previous modification.
+     */
+    default void stackOffset(final Duration additionalOffset) {
+      if (currentModification() instanceof Modification.Offset(final var initialOffset)) {
+        applyModification(Modification.offsetBy(initialOffset.plus(additionalOffset)));
+      } else {
+        offsetBy(additionalOffset);
+      }
+    }
+
+    /**
      * Shortcut to reset the clock to the current system time.
      *
      * @implSpec Equivalent to {@code applyModification(Modification.none())}.

@@ -150,4 +150,23 @@ final class ControllableStreamClockTest {
     assertThat(clock.instant()).isEqualTo(sourceTime);
     assertThat(clock.millis()).isEqualTo(sourceTime.toEpochMilli());
   }
+
+  @Test
+  void shouldStackOffset() {
+    // given
+    final var sourceTime = Instant.now();
+    final var source = InstantSource.fixed(sourceTime);
+    final var clock = StreamClock.controllable(source);
+
+    // when
+    final var firstOffset = Duration.ofSeconds(5);
+    final var secondOffset = Duration.ofSeconds(10);
+    clock.offsetBy(firstOffset);
+    clock.stackOffset(secondOffset);
+
+    // then
+    assertThat(clock.instant()).isEqualTo(sourceTime.plus(firstOffset).plus(secondOffset));
+    assertThat(clock.millis())
+        .isEqualTo(sourceTime.toEpochMilli() + firstOffset.toMillis() + secondOffset.toMillis());
+  }
 }
