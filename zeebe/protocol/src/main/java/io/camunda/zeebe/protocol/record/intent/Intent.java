@@ -60,7 +60,8 @@ public interface Intent {
           ProcessInstanceMigrationIntent.class,
           CompensationSubscriptionIntent.class,
           MessageCorrelationIntent.class,
-          UserIntent.class);
+          UserIntent.class,
+          ClockIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
