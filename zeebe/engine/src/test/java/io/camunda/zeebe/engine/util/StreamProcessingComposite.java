@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
@@ -131,6 +132,10 @@ public class StreamProcessingComposite implements CommandWriter {
 
   public StreamProcessor getStreamProcessor(final int partitionId) {
     return streams.getStreamProcessor(getLogName(partitionId));
+  }
+
+  public StreamClock getStreamClock(final int partitionId) {
+    return streams.getStreamClock(getLogName(partitionId));
   }
 
   public MutableProcessingState getProcessingState() {
