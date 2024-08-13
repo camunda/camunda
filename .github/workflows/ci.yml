@@ -502,6 +502,7 @@ jobs:
 
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
+    needs: [detect-changes]
     uses: ./.github/workflows/zeebe-ci.yml
     secrets: inherit
 
