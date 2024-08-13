@@ -116,13 +116,7 @@ public interface StreamClock extends InstantSource {
 
       record Pin(Instant at) implements Modification {}
 
-      record Offset(Duration by) implements Modification {
-        public Offset {
-          if (by.isZero()) {
-            throw new IllegalArgumentException("Offset must not be zero");
-          }
-        }
-      }
+      record Offset(Duration by) implements Modification {}
     }
   }
 }
