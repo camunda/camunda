@@ -12,11 +12,15 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResponse;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 public final class ResponseMapper {
 
@@ -54,6 +58,16 @@ public final class ResponseMapper {
         .variables(job.getVariables())
         .customHeaders(job.getCustomHeadersObjectMap())
         .tenantId(job.getTenantId());
+  }
+
+  public static ResponseEntity<Object> toMessageCorrelationResponse(
+      final MessageCorrelationRecord brokerResponse) {
+    final var response =
+        new MessageCorrelationResponse()
+            .key(brokerResponse.getMessageKey())
+            .tenantId(brokerResponse.getTenantId())
+            .processInstanceKey(brokerResponse.getProcessInstanceKey());
+    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   static class RestJobActivationResult implements JobActivationResult<JobActivationResponse> {
