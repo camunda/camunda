@@ -10,6 +10,8 @@ package io.camunda.optimize.service.importing;
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 import static io.camunda.optimize.util.ZeebeBpmnModels.COMPENSATION_EVENT_TASK;
+import static io.camunda.optimize.util.ZeebeBpmnModels.CONVERGING_GATEWAY;
+import static io.camunda.optimize.util.ZeebeBpmnModels.DIVERGING_GATEWAY;
 import static io.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
 import static io.camunda.optimize.util.ZeebeBpmnModels.END_EVENT_2;
 import static io.camunda.optimize.util.ZeebeBpmnModels.SEND_TASK;
@@ -34,6 +36,7 @@ import static io.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
 import static io.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createCompensationEventProcess;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createInclusiveGatewayProcess;
+import static io.camunda.optimize.util.ZeebeBpmnModels.createInclusiveGatewayProcessWithConverging;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createLoopingProcess;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createProcessWith83SignalEvents;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createSendTaskProcess;
@@ -586,6 +589,31 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
                         BpmnElementType.INCLUSIVE_GATEWAY.getElementTypeName().get(),
                         BpmnElementType.END_EVENT.getElementTypeName().get(),
                         BpmnElementType.END_EVENT.getElementTypeName().get()));
+  }
+
+  @DisabledIf("isZeebeVersionPre86")
+  @Test
+  public void importZeebeProcessInstanceData_processContainsInclusiveGatewayWithConverging() {
+    // given
+    final String processName = "someProcess";
+    final Process process =
+        zeebeExtension.deployProcess(createInclusiveGatewayProcessWithConverging(processName));
+    zeebeExtension.startProcessInstanceWithVariables(
+        process.getBpmnProcessId(), Map.of("varName", "a,b"));
+
+    // when
+    waitUntilInstanceRecordWithElementIdExported(END_EVENT);
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            instance ->
+                assertThat(instance.getFlowNodeInstances())
+                    .extracting(FlowNodeInstanceDto::getFlowNodeId)
+                    .containsExactlyInAnyOrder(
+                        START_EVENT, DIVERGING_GATEWAY, CONVERGING_GATEWAY, END_EVENT));
   }
 
   @Test

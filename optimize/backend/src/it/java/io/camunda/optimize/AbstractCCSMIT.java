@@ -88,6 +88,13 @@ public abstract class AbstractCCSMIT extends AbstractIT {
         .matches();
   }
 
+  public static boolean isZeebeVersionPre86() {
+    final Pattern zeebeVersionPattern = Pattern.compile("8.2.*|8.3.*|8.4.*|8.5.*");
+    return zeebeVersionPattern
+        .matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion())
+        .matches();
+  }
+
   protected static boolean isZeebeVersionWithMultiTenancy() {
     return !isZeebeVersionPre83();
   }
