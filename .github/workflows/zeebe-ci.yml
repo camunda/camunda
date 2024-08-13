@@ -1,39 +1,6 @@
 name: Zeebe CI
 
 on:
-  push:
-    branches:
-      - main
-      - stable/*
-      - release-*
-      - trying
-      - staging
-    paths:
-      - '.ci/docker/test/*'
-      - '.github/actions/**'
-      - '.github/workflows/zeebe-*'
-      - 'Dockerfile'
-      - 'bom/*'
-      - 'build-tools/**'
-      - 'clients/**'
-      - 'dist/**'
-      - 'parent/*'
-      - 'pom.xml'
-      - 'zeebe/**'
-  pull_request:
-    paths: # keep in sync with common-ci.yml trigger
-      - '.ci/docker/test/*'
-      - '.github/actions/**'
-      - '.github/workflows/zeebe-*'
-      - 'Dockerfile'
-      - 'bom/*'
-      - 'build-tools/**'
-      - 'clients/**'
-      - 'dist/**'
-      - 'parent/*'
-      - 'pom.xml'
-      - 'zeebe/**'
-  merge_group: { }
   workflow_dispatch: { }
   workflow_call: { }
 
