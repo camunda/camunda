@@ -75,6 +75,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -486,7 +487,13 @@ public final class EngineRule extends ExternalResource {
 
     @Override
     public void onClose() {
-      executorService.shutdownNow();
+      executorService.shutdown();
+      try {
+        executorService.awaitTermination(1, TimeUnit.HOURS);
+      } catch (final InterruptedException e) {
+        executorService.shutdownNow();
+        throw new RuntimeException(e);
+      }
     }
 
     private void onNewEventCommitted() {
