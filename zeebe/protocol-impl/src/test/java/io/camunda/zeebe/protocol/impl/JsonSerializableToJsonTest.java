@@ -222,7 +222,8 @@ final class JsonSerializableToJsonTest {
                 "processDefinitionKey": 123,
                 "duplicate": false,
                 "tenantId": "<default>",
-                "deploymentKey": -1
+                "deploymentKey": -1,
+                "versionTag": ""
               }
             ],
             "resources": [
@@ -304,6 +305,7 @@ final class JsonSerializableToJsonTest {
               final DirectBuffer checksum = wrapString("checksum");
               final long deploymentKey = 1234;
               final DeploymentRecord record = new DeploymentRecord();
+              final String versionTag = "v1.0";
               record
                   .setDeploymentKey(deploymentKey)
                   .resources()
@@ -319,7 +321,8 @@ final class JsonSerializableToJsonTest {
                   .setVersion(processVersion)
                   .setChecksum(checksum)
                   .setDuplicate(true)
-                  .setDeploymentKey(deploymentKey);
+                  .setDeploymentKey(deploymentKey)
+                  .setVersionTag(versionTag);
               record
                   .decisionRequirementsMetadata()
                   .add()
@@ -371,7 +374,8 @@ final class JsonSerializableToJsonTest {
               "resourceName": "resource",
               "duplicate": true,
               "tenantId": "<default>",
-              "deploymentKey": 1234
+              "deploymentKey": 1234,
+              "versionTag": "v1.0"
             }
           ],
           "decisionsMetadata": [
@@ -466,6 +470,7 @@ final class JsonSerializableToJsonTest {
               final int processVersion = 12;
               final DirectBuffer checksum = wrapString("checksum");
               final long deploymentKey = 1234;
+              final String versionTag = "v1.0";
 
               final ProcessRecord record = new ProcessRecord();
               record
@@ -476,7 +481,8 @@ final class JsonSerializableToJsonTest {
                   .setResourceName(wrapString(resourceName))
                   .setVersion(processVersion)
                   .setChecksum(checksum)
-                  .setDeploymentKey(deploymentKey);
+                  .setDeploymentKey(deploymentKey)
+                  .setVersionTag(versionTag);
 
               return record;
             },
@@ -491,12 +497,13 @@ final class JsonSerializableToJsonTest {
           "resourceName": "resource",
           "duplicate": false,
           "tenantId": "<default>",
-          "deploymentKey": 1234
+          "deploymentKey": 1234,
+          "versionTag": "v1.0"
         }
         """
       },
       new Object[] {
-        "ProcessRecord (with empty deployment key)",
+        "ProcessRecord (with empty deployment key and version tag)",
         (Supplier<UnifiedRecordValue>)
             () -> {
               final String resourceName = "resource";
@@ -529,7 +536,8 @@ final class JsonSerializableToJsonTest {
           "resourceName": "resource",
           "duplicate": false,
           "tenantId": "<default>",
-          "deploymentKey": -1
+          "deploymentKey": -1,
+          "versionTag": ""
         }
         """
       },
@@ -2116,7 +2124,8 @@ final class JsonSerializableToJsonTest {
               "checksum": "c2hhMQ==",
               "duplicate": false,
               "tenantId": "<default>",
-              "deploymentKey": -1
+              "deploymentKey": -1,
+              "versionTag": ""
             }],
             "decisionsMetadata": [],
             "decisionRequirementsMetadata": [],
