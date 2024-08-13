@@ -116,3 +116,4 @@ runs:
       filters: |
         zeebe-change:
           - 'zeebe/**'
+          - 'clients/**'
