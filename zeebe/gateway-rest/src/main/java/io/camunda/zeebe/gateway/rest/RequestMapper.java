@@ -173,21 +173,19 @@ public class RequestMapper {
                 getLongOrZero(updateRequest, r -> updateRequest.getChangeset().getTimeout())));
   }
 
-  public static <BrokerResponseT, RestResponseT>
-      CompletableFuture<ResponseEntity<RestResponseT>> executeServiceMethod(
-          final Supplier<CompletableFuture<BrokerResponseT>> method,
-          final Function<BrokerResponseT, ResponseEntity<RestResponseT>> result) {
+  public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
+      final Supplier<CompletableFuture<BrokerResponseT>> method,
+      final Function<BrokerResponseT, ResponseEntity<Object>> result) {
     return method
         .get()
         .handleAsync(
             (response, error) ->
-                RestErrorMapper.<RestResponseT>getResponse(
-                        error, RestErrorMapper.DEFAULT_REJECTION_MAPPER)
+                RestErrorMapper.getResponse(error, RestErrorMapper.DEFAULT_REJECTION_MAPPER)
                     .orElseGet(() -> result.apply(response)));
   }
 
-  public static <BrokerResponseT, RestResponseT>
-      CompletableFuture<ResponseEntity<RestResponseT>> executeServiceMethodWithNoContentResult(
+  public static <BrokerResponseT>
+      CompletableFuture<ResponseEntity<Object>> executeServiceMethodWithNoContentResult(
           final Supplier<CompletableFuture<BrokerResponseT>> method) {
     return RequestMapper.executeServiceMethod(
         method, ignored -> ResponseEntity.noContent().build());
