@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.state.clock.DbClockState;
 import io.camunda.zeebe.engine.state.compensation.DbCompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableClockState;
 import io.camunda.zeebe.engine.state.mutable.MutableCompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
@@ -95,6 +97,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableUserTaskState userTaskState;
   private final MutableCompensationSubscriptionState compensationSubscriptionState;
   private final MutableUserState userState;
+  private final MutableClockState clockState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -139,6 +142,7 @@ public class ProcessingDbState implements MutableProcessingState {
     compensationSubscriptionState =
         new DbCompensationSubscriptionState(zeebeDb, transactionContext);
     userState = new DbUserState(zeebeDb, transactionContext);
+    clockState = new DbClockState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -257,6 +261,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableUserState getUserState() {
     return userState;
+  }
+
+  @Override
+  public MutableClockState getClockState() {
+    return clockState;
   }
 
   @Override
