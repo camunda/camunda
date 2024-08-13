@@ -94,11 +94,7 @@ public class JobZeebeRecordProcessor {
       throws PersistenceException {
     final JobEntity jobEntity =
         new JobEntity()
-            .setId(
-                String.format(
-                    ID_PATTERN,
-                    recordValue.getProcessInstanceKey(),
-                    recordValue.getElementInstanceKey()))
+            .setId(Long.toString(record.getKey()))
             .setKey(record.getKey())
             .setPartitionId(record.getPartitionId())
             .setProcessInstanceKey(recordValue.getProcessInstanceKey())

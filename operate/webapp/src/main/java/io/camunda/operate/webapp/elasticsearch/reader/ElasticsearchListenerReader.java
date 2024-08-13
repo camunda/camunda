@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
+import static io.camunda.operate.util.ElasticsearchUtil.*;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -71,11 +71,10 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
             .source(
                 new SearchSourceBuilder()
                     .query(
-                        boolQuery()
-                            .must(processInstanceQ)
-                            .must(flowNodeIdQ)
-                            .should(executionListenersQ)
-                            .should(taskListenersQ))
+                        joinWithAnd(
+                            processInstanceQ,
+                            flowNodeIdQ,
+                            joinWithOr(executionListenersQ, taskListenersQ)))
                     .sort(sorting)
                     .size(request.getPageSize()));
 

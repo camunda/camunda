@@ -103,7 +103,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
     final JobEntity e1 =
         createJob()
-            .setId("1_1")
+            .setId("11")
             .setKey(11L)
             .setProcessInstanceKey(111L)
             .setFlowNodeInstanceId(1L)
@@ -114,7 +114,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
     final JobEntity e2 =
         createJob()
-            .setId("1_2")
+            .setId("12")
             .setKey(12L)
             .setProcessInstanceKey(111L)
             .setFlowNodeInstanceId(1L)
@@ -125,7 +125,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
     final JobEntity e3 =
         createJob()
-            .setId("2_1")
+            .setId("21")
             .setKey(21L)
             .setProcessInstanceKey(111L)
             .setFlowNodeInstanceId(2L)
@@ -135,7 +135,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
     final JobEntity e4 =
         createJob()
-            .setId("2_2")
+            .setId("22")
             .setKey(22L)
             .setProcessInstanceKey(111L)
             .setFlowNodeInstanceId(2L)
@@ -147,7 +147,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
     final JobEntity e5 =
         createJob()
-            .setId("3_1")
+            .setId("31")
             .setKey(31L)
             .setProcessInstanceKey(111L)
             .setFlowNodeInstanceId(3L)
@@ -156,11 +156,47 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
             .setJobKind("TASK_LISTENER")
             .setListenerEventType("CREATE");
 
+    // Execution Listener of other process instance that should *not* get returned
+    final JobEntity e6 =
+        createJob()
+            .setId("32")
+            .setKey(32L)
+            .setProcessInstanceKey(222L)
+            .setFlowNodeId("other_ID")
+            .setState("COMPLETE")
+            .setEndTime(OffsetDateTime.now().minusMinutes(4))
+            .setJobKind("EXECUTION_LISTENER")
+            .setListenerEventType("START");
+
+    // non Execution Listener jobs to check that they do *not* get returned
+    final JobEntity e7 =
+        createJob()
+            .setId("41")
+            .setKey(41L)
+            .setProcessInstanceKey(111L)
+            .setState("invalid")
+            .setEndTime(OffsetDateTime.now().minusMinutes(7))
+            .setJobKind("BPMN_ELEMENT")
+            .setListenerEventType("CREATE");
+
+    final JobEntity e8 =
+        createJob()
+            .setId("42")
+            .setKey(42L)
+            .setProcessInstanceKey(111L)
+            .setState("invalid")
+            .setEndTime(OffsetDateTime.now().minusMinutes(7))
+            .setJobKind("BPMN_ELEMENT")
+            .setListenerEventType("CREATE");
+
     testSearchRepository.createOrUpdateDocumentFromObject(jobIndexName, e1.getId(), e1);
     testSearchRepository.createOrUpdateDocumentFromObject(jobIndexName, e2.getId(), e2);
     testSearchRepository.createOrUpdateDocumentFromObject(jobIndexName, e3.getId(), e3);
     testSearchRepository.createOrUpdateDocumentFromObject(jobIndexName, e4.getId(), e4);
     testSearchRepository.createOrUpdateDocumentFromObject(jobIndexName, e5.getId(), e5);
+    testSearchRepository.createOrUpdateDocumentFromObject(jobIndexName, e6.getId(), e6);
+    testSearchRepository.createOrUpdateDocumentFromObject(jobIndexName, e7.getId(), e7);
+    testSearchRepository.createOrUpdateDocumentFromObject(jobIndexName, e8.getId(), e8);
   }
 
   private JobEntity createJob() {
