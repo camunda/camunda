@@ -26,6 +26,15 @@ import org.springframework.http.ProblemDetail;
 public final class MultiTenancyValidator {
   private static final Pattern TENANT_ID_MASK = Pattern.compile("^[\\w\\.-]{1,31}$");
 
+  /**
+   * Validates whether a tenant is authorized to perform the request. It does so by checking the
+   * provided tenant against the list of authorized tenant in the authentication context.
+   *
+   * @param tenantId the tenant to check if it's authorized
+   * @param multiTenancyEnabled whether multi-tenancy is enabled
+   * @param commandName the name of the command, used for error messages
+   * @return a optional {@link ProblemDetail} if the tenant is not authorized
+   */
   public static Optional<ProblemDetail> validateAuthorization(
       final String tenantId, final boolean multiTenancyEnabled, final String commandName) {
     if (!multiTenancyEnabled) {
@@ -45,6 +54,21 @@ public final class MultiTenancyValidator {
     return Optional.empty();
   }
 
+  /**
+   * Validates the tenantId. If multi-tenancy is disabled, the tenantId must be empty, or the
+   * default tenant. if multi-tenancy is enabled a tenantId must be provided and should match the
+   * tenantId mask.
+   *
+   * <p>If all validations succeed the method returns the tenantId that should be used in the
+   * request. This must always be set in the request, as there is no guarantee that the client
+   * provided a tenantId.
+   *
+   * @param tenantId the tenantId to validate
+   * @param multiTenancyEnabled whether multi-tenancy is enabled
+   * @param commandName the name of the command, used for error messages
+   * @return a {@link Either} containing a {@link ProblemDetail} if the tenantId is invalid, or the
+   *     tenantId if it's valid
+   */
   public static Either<ProblemDetail, String> validateTenantId(
       final String tenantId, final boolean multiTenancyEnabled, final String commandName) {
     final var hasTenantId = !StringUtils.isBlank(tenantId);
