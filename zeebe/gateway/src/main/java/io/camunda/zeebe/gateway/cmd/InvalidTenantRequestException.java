@@ -12,10 +12,9 @@ import java.util.List;
 public class InvalidTenantRequestException extends ClientException {
 
   private static final String MESSAGE_FORMAT =
-      "Expected to handle request %s with tenant identifier '%s', but %s";
-
+      "Expected to handle gRPC request %s with tenant identifier '%s', but %s";
   private static final String MESSAGE_FORMAT_TENANTS =
-      "Expected to handle request %s with tenant identifiers '%s', but %s";
+      "Expected to handle gRPC request %s with tenant identifiers '%s', but %s";
 
   private final String commandName;
   private final String tenantId;
