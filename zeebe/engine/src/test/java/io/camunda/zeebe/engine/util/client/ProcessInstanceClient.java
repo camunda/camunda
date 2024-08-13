@@ -601,5 +601,10 @@ public final class ProcessInstanceClient {
         return expectation.apply(position);
       }
     }
+
+    public ProcessInstanceMigrationClient expectNothing() {
+      expectation = (position) -> null;
+      return this;
+    }
   }
 }

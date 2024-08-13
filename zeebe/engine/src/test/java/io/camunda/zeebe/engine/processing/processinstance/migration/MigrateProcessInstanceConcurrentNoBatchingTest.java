@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -39,7 +40,7 @@ import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
-import org.assertj.core.api.Assertions;
+import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -1038,7 +1039,7 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
             .getFirst();
 
     assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
-    Assertions.assertThat(rejection.getRejectionReason())
+    assertThat(rejection.getRejectionReason())
         .contains(
             String.format(
                 """
@@ -1046,6 +1047,112 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
                 is an intermediate catch event attached to an event-based gateway. \
                 Migrating active events attached to an event-based gateway is not possible yet.""",
                 processInstanceKey));
+  }
+
+  @Test
+  public void shouldCorrelateMessageSubscriptionAfterMigration() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("task1")
+                    .boundaryEvent(
+                        "catch1",
+                        b -> b.message(m -> m.name("msg1").zeebeCorrelationKeyExpression("key1")))
+                    .endEvent()
+                    .moveToActivity("task1")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask("task2")
+                    .boundaryEvent(
+                        "catch2",
+                        b -> b.message(m -> m.name("msg2").zeebeCorrelationKeyExpression("key2")))
+                    .endEvent()
+                    .moveToActivity("task2")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(Map.of("key1", "key1"))
+            .create();
+
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .key(processInstanceKey)
+            .migration(
+                new ProcessInstanceMigrationRecord()
+                    .setProcessInstanceKey(processInstanceKey)
+                    .setTargetProcessDefinitionKey(targetProcessDefinitionKey)
+                    .addMappingInstruction(
+                        new ProcessInstanceMigrationMappingInstruction()
+                            .setSourceElementId("task1")
+                            .setTargetElementId("task2"))
+                    .addMappingInstruction(
+                        new ProcessInstanceMigrationMappingInstruction()
+                            .setSourceElementId("catch1")
+                            .setTargetElementId("catch2"))),
+        RecordToWrite.command()
+            .message(
+                MessageIntent.PUBLISH,
+                new MessageRecord().setName("msg1").setCorrelationKey("key1").setTimeToLive(-1)));
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst())
+        .describedAs("Expect that the process message subscription is migrated")
+        .isNotNull();
+    Assertions.assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst())
+        .describedAs("Expect that the message subscription is migrated")
+        .isNotNull();
+
+    Assertions.assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CORRELATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs(
+            "Expect that the message correlated to an instance of the target process definition")
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("catch2");
+
+    Assertions.assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs(
+            "Expect that the message correlated to an instance of the target process definition")
+        .hasBpmnProcessId(targetProcessId);
   }
 
   private static String createMigrationRejectionDueConcurrentModificationReason(
