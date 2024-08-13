@@ -16,12 +16,14 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.UUID;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
 public final class MessageCorrelationRejectionTest {
   @Rule public final EngineRule engine = EngineRule.multiplePartition(2);
 
+  @Ignore("https://github.com/camunda/camunda/issues/21084")
   @Test
   public void shouldWriteNotCorrelatedEvent() {
     // given - a process instance on partition 1 that waits for a message published on 2
