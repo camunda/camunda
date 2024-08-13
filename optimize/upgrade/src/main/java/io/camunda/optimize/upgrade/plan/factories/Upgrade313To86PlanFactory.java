@@ -22,6 +22,7 @@ public class Upgrade313To86PlanFactory implements UpgradePlanFactory {
         .fromVersion("3.13")
         .toVersion("8.6.0")
         .addUpgradeStep(new DeleteIndexIfExistsStep("onboarding-state", 2))
+        .addUpgradeStep(new DeleteIndexIfExistsStep("license", 3))
         .addUpgradeStep(deleteLastModifierAndTelemetryInitializedSettingFields())
         .build();
   }

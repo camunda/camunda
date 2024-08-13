@@ -80,7 +80,6 @@ public class DatabaseConstants {
   public static final String DASHBOARD_INDEX_NAME = "dashboard";
   public static final String COLLECTION_INDEX_NAME = "collection";
   public static final String IMPORT_INDEX_INDEX_NAME = "import-index";
-  public static final String LICENSE_INDEX_NAME = "license";
   public static final String ALERT_INDEX_NAME = "alert";
   public static final String REPORT_SHARE_INDEX_NAME = "report-share";
   public static final String DASHBOARD_SHARE_INDEX_NAME = "dashboard-share";

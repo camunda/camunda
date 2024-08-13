@@ -14,7 +14,7 @@
     <project.previousVersion>3.13.0</project.previousVersion>
 
     <camunda.engine.version>7.19.0</camunda.engine.version>
-    <camunda.maven.artifacts.version>7.19.11-ee</camunda.maven.artifacts.version>
+    <camunda.maven.artifacts.version>7.21.0</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
     <zeebe.version>8.6.0-alpha4</zeebe.version>
@@ -60,7 +60,7 @@
     <version.yarn>v1.22.19</version.yarn>
 
     <!-- testing config -->
-    <h2.version>2.2.224</h2.version>
+    <h2.version>2.3.230</h2.version>
     <postgres.version>42.7.3</postgres.version>
     <mockito.version>5.12.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
@@ -164,7 +164,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-release-plugin</artifactId>
-            <version>3.0.1</version>
+            <version>3.1.1</version>
             <configuration>
               <releaseProfiles>engine-latest</releaseProfiles>
               <localCheckout>true</localCheckout>
@@ -479,7 +479,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.4.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

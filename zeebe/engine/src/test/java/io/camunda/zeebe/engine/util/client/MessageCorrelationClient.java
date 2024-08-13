@@ -35,6 +35,12 @@ public final class MessageCorrelationClient {
               .withPartitionId(message.partitionId)
               .withCorrelationKey(message.correlationKey)
               .getFirst();
+  private static final Function<Message, Record<MessageCorrelationRecordValue>> EXPECT_NOTHING =
+      (message) ->
+          RecordingExporter.messageCorrelationRecords(MessageCorrelationIntent.CORRELATE)
+              .withPartitionId(message.partitionId)
+              .withCorrelationKey(message.correlationKey)
+              .getFirst();
   private static final int NOT_SET = -1;
   private final MessageCorrelationRecord messageCorrelationRecord;
   private final CommandWriter writer;
@@ -86,6 +92,11 @@ public final class MessageCorrelationClient {
 
   public MessageCorrelationClient expectNotCorrelated() {
     expectation = NOT_CORRELATED;
+    return this;
+  }
+
+  public MessageCorrelationClient expectNothing() {
+    expectation = EXPECT_NOTHING;
     return this;
   }
 

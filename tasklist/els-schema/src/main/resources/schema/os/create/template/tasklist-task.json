@@ -82,6 +82,9 @@
     },
     "customHeaders": {
       "type": "object"
+    },
+    "priority": {
+      "type": "integer"
     }
   }
 }

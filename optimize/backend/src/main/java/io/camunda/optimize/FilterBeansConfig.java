@@ -16,12 +16,10 @@ import static io.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.jetty.IngestionQoSFilter;
 import io.camunda.optimize.jetty.JavaScriptMainLicenseEnricherFilter;
-import io.camunda.optimize.jetty.LicenseFilter;
 import io.camunda.optimize.jetty.MaxRequestSizeFilter;
 import io.camunda.optimize.jetty.NoCachingFilter;
 import io.camunda.optimize.plugin.AuthenticationExtractorProvider;
 import io.camunda.optimize.rest.security.SingleSignOnRequestFilter;
-import io.camunda.optimize.service.license.LicenseManager;
 import io.camunda.optimize.service.security.ApplicationAuthorizationService;
 import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.SessionService;
@@ -30,10 +28,8 @@ import jakarta.servlet.DispatcherType;
 import java.util.concurrent.Callable;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.Ordered;
 
 /**
  * The name for each {@link FilterRegistrationBean} has to be set in order to avoid conflicts in
@@ -45,27 +41,6 @@ public class FilterBeansConfig {
   @Bean
   public JavaScriptMainLicenseEnricherFilter javaScriptMainLicenseEnricherFilter() {
     return new JavaScriptMainLicenseEnricherFilter();
-  }
-
-  @Bean
-  public LicenseFilter licenseFilter(
-      LicenseManager licenseManager, ApplicationContext applicationContext) {
-    return new LicenseFilter(licenseManager, applicationContext);
-  }
-
-  @Bean
-  public FilterRegistrationBean<LicenseFilter> licenseFilterRegistrationBean(
-      LicenseFilter licenseFilter) {
-    FilterRegistrationBean<LicenseFilter> registrationBean = new FilterRegistrationBean<>();
-
-    registrationBean.setFilter(licenseFilter);
-    registrationBean.addUrlPatterns("/*");
-    registrationBean.setDispatcherTypes(
-        DispatcherType.REQUEST, DispatcherType.FORWARD, DispatcherType.ERROR, DispatcherType.ASYNC);
-    registrationBean.setOrder(Ordered.HIGHEST_PRECEDENCE);
-
-    registrationBean.setName("licenseFilter");
-    return registrationBean;
   }
 
   @Bean

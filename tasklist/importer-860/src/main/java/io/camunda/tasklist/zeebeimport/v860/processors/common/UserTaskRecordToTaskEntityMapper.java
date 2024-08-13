@@ -77,7 +77,8 @@ public class UserTaskRecordToTaskEntityMapper {
             .setTenantId(recordValue.getTenantId())
             .setExternalFormReference(recordValue.getExternalFormReference())
             .setCustomHeaders(recordValue.getCustomHeaders())
-            .setProcessDefinitionVersion(recordValue.getProcessDefinitionVersion());
+            .setProcessDefinitionVersion(recordValue.getProcessDefinitionVersion())
+            .setPriority(recordValue.getPriority());
 
     switch (intent) {
       case CANCELED ->

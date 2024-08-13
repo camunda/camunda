@@ -7,18 +7,19 @@
  */
 package io.camunda.optimize.dto.zeebe.usertask;
 
+import io.camunda.optimize.service.util.DateFormatterUtil;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
+import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.annotate.JsonIgnore;
 
 @Data
 @FieldNameConstants
+@Slf4j
 public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
 
   private long userTaskKey;
@@ -44,8 +45,13 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
 
   @JsonIgnore
   public OffsetDateTime getDateForDueDate() {
-    return Objects.equals(dueDate, "")
-        ? null
-        : Optional.ofNullable(dueDate).map(OffsetDateTime::parse).orElse(null);
+    return DateFormatterUtil.getOffsetDateTimeFromIsoZoneDateTimeString(dueDate)
+        .orElseGet(
+            () -> {
+              log.info(
+                  "Unable to parse due date of userTask record: {}. UserTask will be imported without dueDate data.",
+                  dueDate);
+              return null;
+            });
   }
 }

@@ -41,7 +41,8 @@ import org.junit.jupiter.api.condition.DisabledIf;
 public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
 
   private static final String TEST_PROCESS = "aProcess";
-  private static final String DUE_DATE = "2023-11-01T12:00:00+05:00";
+  private static final String DUE_DATE = "2024-07-24T00:00Z[GMT]";
+  private static final OffsetDateTime EXPECTED_DUE_DATE = OffsetDateTime.parse("2024-07-24T00:00Z");
   private static final String ASSIGNEE_ID = "assigneeId";
 
   @Test
@@ -77,7 +78,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
                   .usingRecursiveComparison()
                   .isEqualTo(
                       createRunningUserTaskInstance(instance, exportedEvents)
-                          .setDueDate(OffsetDateTime.parse(DUE_DATE)));
+                          .setDueDate(EXPECTED_DUE_DATE));
             });
   }
 
@@ -105,7 +106,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     final FlowNodeInstanceDto expectedUserTask =
         createRunningUserTaskInstance(instance, userTaskEvents);
     expectedUserTask
-        .setDueDate(OffsetDateTime.parse(DUE_DATE))
+        .setDueDate(EXPECTED_DUE_DATE)
         .setEndDate(expectedEndDate)
         .setIdleDurationInMs(0L)
         .setTotalDurationInMs(getExpectedTotalDurationForCompletedUserTask(userTaskEvents))
@@ -159,7 +160,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     final OffsetDateTime expectedEndDate =
         getExpectedEndDateForCompletedUserTaskEvents(userTaskEvents);
     expectedUserTask
-        .setDueDate(OffsetDateTime.parse(DUE_DATE))
+        .setDueDate(EXPECTED_DUE_DATE)
         .setEndDate(expectedEndDate)
         .setIdleDurationInMs(0L)
         .setTotalDurationInMs(getExpectedTotalDurationForCompletedUserTask(userTaskEvents))
@@ -211,7 +212,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     final Long expectedTotalAndIdleDuration =
         Duration.between(expectedUserTask.getStartDate(), expectedEndDate).toMillis();
     expectedUserTask
-        .setDueDate(OffsetDateTime.parse(DUE_DATE))
+        .setDueDate(EXPECTED_DUE_DATE)
         .setEndDate(expectedEndDate)
         .setTotalDurationInMs(expectedTotalAndIdleDuration)
         .setIdleDurationInMs(expectedTotalAndIdleDuration)
@@ -264,7 +265,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     final OffsetDateTime expectedEndDate =
         getExpectedEndDateForCanceledUserTaskEvents(exportedEvents);
     expectedUserTask
-        .setDueDate(OffsetDateTime.parse(DUE_DATE))
+        .setDueDate(EXPECTED_DUE_DATE)
         .setEndDate(expectedEndDate)
         .setTotalDurationInMs(
             Duration.between(expectedUserTask.getStartDate(), expectedEndDate).toMillis())
@@ -322,7 +323,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     final OffsetDateTime assignDate = getTimestampForAssignedUserTaskEvents(exportedEvents);
     expectedUserTask
         .setAssignee(ASSIGNEE_ID)
-        .setDueDate(OffsetDateTime.parse(DUE_DATE))
+        .setDueDate(EXPECTED_DUE_DATE)
         .setEndDate(expectedEndDate)
         .setTotalDurationInMs(
             Duration.between(expectedUserTask.getStartDate(), expectedEndDate).toMillis())
@@ -392,7 +393,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
         createRunningUserTaskInstance(instance, exportedEvents);
     expectedUserTask
         .setAssignee(ASSIGNEE_ID)
-        .setDueDate(OffsetDateTime.parse(DUE_DATE))
+        .setDueDate(EXPECTED_DUE_DATE)
         .setEndDate(expectedEndDate)
         .setTotalDurationInMs(
             Duration.between(expectedUserTask.getStartDate(), expectedEndDate).toMillis())
@@ -687,7 +688,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
                   .usingRecursiveComparison()
                   .isEqualTo(
                       createRunningUserTaskInstance(instance, exportedEvents)
-                          .setDueDate(OffsetDateTime.parse(DUE_DATE))
+                          .setDueDate(EXPECTED_DUE_DATE)
                           .setIdleDurationInMs(0L)
                           .setAssignee(ASSIGNEE_ID)
                           .setAssigneeOperations(
@@ -877,6 +878,31 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
         .flatExtracting(ProcessInstanceDto::getFlowNodeInstances)
         .extracting(FlowNodeInstanceDto::getCandidateGroups)
         .containsOnly(Collections.emptyList());
+  }
+
+  @Test
+  public void importOtherDueDateFormat() {
+    // given
+    final String dueDateStringInOtherFormat = "2023-03-02T15:35+02:00";
+    final ProcessInstanceEvent instance =
+        deployAndStartInstanceForProcess(
+            createSimpleNativeUserTaskProcess(TEST_PROCESS, dueDateStringInOtherFormat));
+    waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
+    // remove all zeebe records except userTask ones to test userTask import only
+    removeAllZeebeExportRecordsExceptUserTaskRecords();
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+
+    // then dueDate is correctly parsed
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            savedInstance ->
+                assertThat(savedInstance.getFlowNodeInstances())
+                    .singleElement()
+                    .extracting(FlowNodeInstanceDto::getDueDate)
+                    .isEqualTo(OffsetDateTime.parse(dueDateStringInOtherFormat)));
   }
 
   private FlowNodeInstanceDto createRunningUserTaskInstance(

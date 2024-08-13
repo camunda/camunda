@@ -35,6 +35,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
   private String externalFormReference;
   private Map<String, String> customHeaders;
   private Integer processDefinitionVersion;
+  private Integer priority;
 
   public String getBpmnProcessId() {
     return bpmnProcessId;
@@ -225,6 +226,15 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return this;
   }
 
+  public Integer getPriority() {
+    return priority;
+  }
+
+  public TaskEntity setPriority(final Integer priority) {
+    this.priority = priority;
+    return this;
+  }
+
   public TaskEntity makeCopy() {
     return new TaskEntity()
         .setId(getId())
@@ -249,7 +259,8 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
         .setImplementation(getImplementation())
         .setExternalFormReference(getExternalFormReference())
         .setCustomHeaders(getCustomHeaders())
-        .setProcessDefinitionVersion(getProcessDefinitionVersion());
+        .setProcessDefinitionVersion(getProcessDefinitionVersion())
+        .setPriority(getPriority());
   }
 
   @Override
@@ -275,7 +286,8 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
             implementation,
             externalFormReference,
             customHeaders,
-            processDefinitionVersion);
+            processDefinitionVersion,
+            priority);
     result = 31 * result + Arrays.hashCode(candidateGroups);
     result = 31 * result + Arrays.hashCode(candidateUsers);
     return result;
@@ -311,6 +323,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
         && Objects.equals(formId, that.formId)
         && Objects.equals(formVersion, that.formVersion)
         && Objects.equals(isFormEmbedded, that.isFormEmbedded)
-        && Objects.equals(externalFormReference, that.externalFormReference);
+        && Objects.equals(externalFormReference, that.externalFormReference)
+        && Objects.equals(priority, that.priority);
   }
 }

@@ -16,7 +16,6 @@ import static io.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
-import static io.camunda.optimize.rest.LicenseCheckingRestService.LICENSE_PATH;
 import static io.camunda.optimize.rest.LocalizationRestService.LOCALIZATION_PATH;
 import static io.camunda.optimize.rest.StatusRestService.STATUS_PATH;
 import static io.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
@@ -146,7 +145,6 @@ public class PlatformSecurityConfigurerAdapter extends AbstractSecurityConfigure
                         new AntPathRequestMatcher(createApiPath(STATUS_PATH)),
                         new AntPathRequestMatcher(createApiPath(UI_CONFIGURATION_PATH)),
                         new AntPathRequestMatcher(createApiPath(LOCALIZATION_PATH)),
-                        new AntPathRequestMatcher(createApiPath(LICENSE_PATH, SUB_PATH_ANY)),
                         new AntPathRequestMatcher(createApiPath(AUTHENTICATION_PATH)))
                     .permitAll()
                     // everything else requires authentication
