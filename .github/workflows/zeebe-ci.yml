@@ -1,48 +1,8 @@
 name: Zeebe CI
 
 on:
-  push:
-    branches:
-      - main
-      - stable/*
-      - release-*
-      - trying
-      - staging
-    paths:
-      - '.ci/docker/test/*'
-      - '.github/actions/**'
-      - '.github/workflows/zeebe-*'
-      - 'Dockerfile'
-      - 'bom/*'
-      - 'build-tools/**'
-      - 'clients/**'
-      - 'dist/**'
-      - 'parent/*'
-      - 'pom.xml'
-      - 'zeebe/**'
-  pull_request:
-    paths: # keep in sync with common-ci.yml trigger
-      - '.ci/docker/test/*'
-      - '.github/actions/**'
-      - '.github/workflows/zeebe-*'
-      - 'Dockerfile'
-      - 'bom/*'
-      - 'build-tools/**'
-      - 'clients/**'
-      - 'dist/**'
-      - 'parent/*'
-      - 'pom.xml'
-      - 'zeebe/**'
-  merge_group: { }
   workflow_dispatch: { }
   workflow_call: { }
-
-# Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
-# Exception for main branch: complete builds for every commit needed for confidenence
-# Exception for deploy jobs that have to wait for each other to avoid overwriting
-concurrency:
-  cancel-in-progress: true
-  group: ${{ github.ref == 'refs/heads/main' && github.sha || format('{0}-{1}', github.workflow, github.ref) }}
 
 defaults:
   run:
@@ -410,60 +370,6 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
 
-  deploy-snapshots:
-    name: Deploy snapshot artifacts
-    needs: [ test-summary ]
-    runs-on: ubuntu-latest
-    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
-    concurrency:
-      group: deploy-maven-snapshot
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v4
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
-      - uses: actions/setup-java@v4.2.2
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
-      - name: 'Create settings.xml'
-        uses: s4u/maven-settings-action@v3.0.0
-        with:
-          githubServer: false
-          servers: |
-            [{
-              "id": "camunda-nexus",
-              "username": "${{ steps.secrets.outputs.ARTIFACTS_USR }}",
-              "password": "${{ steps.secrets.outputs.ARTIFACTS_PSW }}"
-            }]
-          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "zeebe,zeebe-snapshots", "name": "camunda Nexus"}]'
-      # compile and generate-sources to ensure that the Javadoc can be properly generated; compile is
-      # necessary when using annotation preprocessors for code generation, as otherwise the symbols are
-      # not resolve-able by the Javadoc generator
-      - run: ./mvnw -B -D skipTests -D skipChecks compile generate-sources source:jar javadoc:jar deploy
-        env:
-          MAVEN_USERNAME: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
-          MAVEN_PASSWORD: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
   deploy-docker-snapshot:
     name: Deploy snapshot Docker image
     needs: [ test-summary ]
@@ -551,43 +457,6 @@ jobs:
       monitor: true
       build: true
     secrets: inherit
-  notify-if-failed:
-    name: Send slack notification on build failure
-    runs-on: ubuntu-latest
-    needs: [ test-summary, deploy-snapshots, deploy-docker-snapshot, deploy-snyk-projects ]
-    if: failure() && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
-    steps:
-      - id: slack-notify
-        name: Send slack notification
-        uses: slackapi/slack-github-action@v1.26.0
-        with:
-          # For posting a rich message using Block Kit
-          payload: |
-            {
-              "text": ":alarm: Build on `main` failed! :alarm:\n${{ github.event.head_commit.url }}",
-             	"blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":alarm: Build on `main` failed! :alarm:"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Please check the related commit: ${{ github.event.head_commit.url }}\n \\cc @zeebe-medic"
-                  }
-                },
-                {
-                  "type": "divider"
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
   auto-merge:
     # This workflow will auto merge a PR authored by backport-action.
     # It runs only on open PRs ready for review.

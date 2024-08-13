@@ -35,6 +35,7 @@ jobs:
       camunda-docker-tests: ${{ steps.filter.outputs.camunda-docker-tests}}
       identity-frontend-tests: ${{ steps.filter.outputs.identity-frontend-tests }}
       frontend-changes: ${{ steps.filter.outputs.frontend-changes }}
+      zeebe-changes: ${{ steps.filter.outputs.zeebe-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -417,6 +418,12 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  zeebe-ci:
+    if: needs.detect-changes.outputs.zeebe-changes == 'true'
+    needs: [detect-changes]
+    uses: ./.github/workflows/zeebe-ci.yml
+    secrets: inherit
+
   check-results:
     # Used by the merge queue to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
@@ -434,6 +441,24 @@ jobs:
       - integration-tests
       - java-checks
       - build-platform-frontend
+      - zeebe-ci
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for aborted jobs
+        continue-on-error: true
+        uses: ./.github/actions/observe-aborted-jobs
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
+
+  test-summary:
+    # Used as migration path to support old Zeebe CI Test summary
+    name: Test summary
+    runs-on: ubuntu-latest
+    needs:
+      - zeebe-ci
     steps:
       - uses: actions/checkout@v4
       - name: Check for aborted jobs
@@ -498,6 +523,60 @@ jobs:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
           FLAKY_UNIT_TESTS: ${{needs.check-results.outputs.flakyUnitTests}}
           FLAKY_ITS: ${{needs.check-results.outputs.flakyITs}}
+
+  deploy-snapshots:
+    name: Deploy snapshot artifacts
+    needs: [ check-results ]
+    runs-on: ubuntu-latest
+    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
+    concurrency:
+      group: deploy-maven-snapshot
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
+      - uses: actions/setup-java@v4.2.2
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
+      - name: 'Create settings.xml'
+        uses: s4u/maven-settings-action@v3.0.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.ARTIFACTS_USR }}",
+              "password": "${{ steps.secrets.outputs.ARTIFACTS_PSW }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "zeebe,zeebe-snapshots", "name": "camunda Nexus"}]'
+      # compile and generate-sources to ensure that the Javadoc can be properly generated; compile is
+      # necessary when using annotation preprocessors for code generation, as otherwise the symbols are
+      # not resolve-able by the Javadoc generator
+      - run: ./mvnw -B -D skipTests -D skipChecks compile generate-sources source:jar javadoc:jar deploy
+        env:
+          MAVEN_USERNAME: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
+          MAVEN_PASSWORD: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   deploy-camunda-docker-snapshot:
     name: Deploy snapshot Camunda Docker image
