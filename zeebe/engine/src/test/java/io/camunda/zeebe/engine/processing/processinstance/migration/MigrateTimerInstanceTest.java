@@ -371,7 +371,6 @@ public class MigrateTimerInstanceTest {
         .describedAs("Expect that the timer boundary events are migrated")
         .containsExactly(targetProcessDefinitionKey, "boundary2", migratedDueDate);
 
-    // assert that the second timer event is canceled
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
