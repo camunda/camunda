@@ -44,12 +44,11 @@ public class JobZeebeRecordProcessor {
     JOB_EVENTS.add(JobIntent.FAILED.name());
     JOB_EVENTS.add(JobIntent.RETRIES_UPDATED.name());
     JOB_EVENTS.add(JobIntent.CANCELED.name());
+    JOB_EVENTS.add(JobIntent.ERROR_THROWN.name());
     JOB_EVENTS.add(JobIntent.MIGRATED.name());
-    JOB_EVENTS.add(JobIntent.FAIL.name());
-    JOB_EVENTS.add(JobIntent.FAILED.name());
 
-    FAILED_JOB_EVENTS.add(JobIntent.FAIL.name());
     FAILED_JOB_EVENTS.add(JobIntent.FAILED.name());
+    JOB_EVENTS.add(JobIntent.ERROR_THROWN.name());
   }
 
   @Autowired private JobTemplate jobTemplate;

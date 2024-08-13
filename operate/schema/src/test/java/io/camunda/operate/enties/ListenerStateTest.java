@@ -26,9 +26,11 @@ public class ListenerStateTest {
     assertEquals(actual4, ListenerState.TIMED_OUT);
     final ListenerState actual5 = ListenerState.fromZeebeJobIntent("CANCELED");
     assertEquals(actual5, ListenerState.CANCELED);
-    final ListenerState actual6 = ListenerState.fromZeebeJobIntent("TEST");
-    assertEquals(actual6, ListenerState.UNKNOWN);
-    final ListenerState actual7 = ListenerState.fromZeebeJobIntent(null);
+    final ListenerState actual6 = ListenerState.fromZeebeJobIntent("ERROR_THROWN");
+    assertEquals(actual6, ListenerState.FAILED);
+    final ListenerState actual7 = ListenerState.fromZeebeJobIntent("TEST");
     assertEquals(actual7, ListenerState.UNKNOWN);
+    final ListenerState actual8 = ListenerState.fromZeebeJobIntent(null);
+    assertEquals(actual8, ListenerState.UNKNOWN);
   }
 }

@@ -21,11 +21,11 @@ public enum ListenerState {
     }
     final ListenerState result =
         switch (jobState) {
-          case "CREATED", "RETRIES_UPDATED", "MIGRATED" -> ACTIVE;
+          case "CREATED", "RETRIES_UPDATED", "MIGRATED", "UPDATED" -> ACTIVE;
           case "COMPLETED" -> COMPLETED;
           case "TIMED_OUT" -> TIMED_OUT;
           case "CANCELED" -> CANCELED;
-          case "FAILED", "FAIL" -> FAILED;
+          case "FAILED", "ERROR_THROWN" -> FAILED;
           default -> UNKNOWN;
         };
     return result;
