@@ -8,6 +8,7 @@
 
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
+import {Tag} from '@carbon/react';
 
 import {Deleter, ReportTemplateModal, KpiCreationModal} from 'components';
 import {refreshBreadcrumbs} from 'components/navigation';
@@ -293,7 +294,7 @@ it('should display badge with user role Manager', () => {
 
   const node = shallow(<Collection {...props} />);
 
-  expect(node.find('Tag').children().text()).toBe('Manager');
+  expect(node.find(Tag).children().text()).toBe('Manager');
 });
 
 it('should show entity name and description', () => {
