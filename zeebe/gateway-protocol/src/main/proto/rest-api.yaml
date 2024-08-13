@@ -821,32 +821,8 @@ components:
           type: string
         priority:
           type: object
-          properties:
-            eq:
-              type: integer
-              minimum: 0
-              maximum: 100
-              format: int64
-            gt:
-              type: integer
-              minimum: 0
-              maximum: 100
-              format: int64
-            gte:
-              type: integer
-              minimum: 0
-              maximum: 100
-              format: int64
-            lt:
-              type: integer
-              minimum: 0
-              maximum: 100
-              format: int64
-            lte:
-              type: integer
-              minimum: 0
-              maximum: 100
-              format: int64
+          allOf:
+            - $ref: "#/components/schemas/PriorityValueFilter"
     UserTaskItem:
       type: object
       properties:
@@ -1595,6 +1571,29 @@ components:
             description: The key of the first process instance the message correlated with
             type: integer
             format: int64
+    PriorityValueFilter:
+      type: object
+      properties:
+        eq:
+          type: integer
+          minimum: 0
+          maximum: 100
+        gt:
+          type: integer
+          minimum: 0
+          maximum: 100
+        gte:
+          type: integer
+          minimum: 0
+          maximum: 100
+        lt:
+          type: integer
+          minimum: 0
+          maximum: 100
+        lte:
+          type: integer
+          minimum: 0
+          maximum: 100
   securitySchemes:
     bearerAuth:
       type: http

@@ -39,12 +39,12 @@ import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.PriorityValueFilter;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQuerySortRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskFilterRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskFilterRequestPriority;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterRequest;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
@@ -240,16 +240,6 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static ComparableValueFilter mapPriorityFilter(
-      final UserTaskFilterRequestPriority priority) {
-    return new ComparableValueFilter.Builder()
-        .eq(priority.getEq())
-        .gt(priority.getGt())
-        .lt(priority.getLt())
-        .lte(priority.getLte())
-        .build();
-  }
-
   private static List<String> applyProcessInstanceSortField(
       final String field, final ProcessInstanceSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
@@ -423,5 +413,14 @@ public final class SearchQueryRequestMapper {
     } else {
       return values.toArray();
     }
+  }
+
+  private static ComparableValueFilter mapPriorityFilter(final PriorityValueFilter priority) {
+    return new ComparableValueFilter.Builder()
+        .eq(priority.getEq())
+        .gt(priority.getGt())
+        .lt(priority.getLt())
+        .lte(priority.getLte())
+        .build();
   }
 }
