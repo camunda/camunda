@@ -108,7 +108,11 @@ public final class MessageEventProcessors {
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.REJECT,
             new MessageSubscriptionRejectProcessor(
-                messageState, subscriptionState, subscriptionCommandSender, writers))
+                messageState,
+                subscriptionState,
+                messageCorrelationState,
+                subscriptionCommandSender,
+                writers))
         .onCommand(
             ValueType.MESSAGE_CORRELATION,
             MessageCorrelationIntent.CORRELATE,
