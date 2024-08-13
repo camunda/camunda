@@ -43,7 +43,7 @@ public abstract class ZeebeTestUtil {
       return null;
     }
     DeployProcessCommandStep1 deployProcessCommandStep1 = client.newDeployCommand();
-    for (String classpathResource : classpathResources) {
+    for (final String classpathResource : classpathResources) {
       deployProcessCommandStep1 =
           deployProcessCommandStep1.addResourceFromClasspath(classpathResource);
     }
@@ -64,7 +64,7 @@ public abstract class ZeebeTestUtil {
       return;
     }
     DeployProcessCommandStep1 deployProcessCommandStep1 = client.newDeployCommand();
-    for (String classpathResource : classpathResources) {
+    for (final String classpathResource : classpathResources) {
       deployProcessCommandStep1 =
           deployProcessCommandStep1.addResourceFromClasspath(classpathResource);
     }
@@ -76,7 +76,7 @@ public abstract class ZeebeTestUtil {
   }
 
   public static String deployProcess(
-      ZeebeClient client, BpmnModelInstance processModel, String resourceName) {
+      final ZeebeClient client, final BpmnModelInstance processModel, final String resourceName) {
     final DeployProcessCommandStep1 deployProcessCommandStep1 =
         client.newDeployCommand().addProcessModel(processModel, resourceName);
     final DeploymentEvent deploymentEvent =

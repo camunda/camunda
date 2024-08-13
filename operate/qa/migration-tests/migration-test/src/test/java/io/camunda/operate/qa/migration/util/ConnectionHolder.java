@@ -45,6 +45,9 @@ public class ConnectionHolder {
     final TestContext testContext = new TestContext();
     testContext.setZeebeDataFolder(createTemporaryFolder());
     testContext.setZeebeIndexPrefix("migration-test");
+    // Disable CSRF for migration tests, because CSRF implementation is different between Operate
+    // version
+    testContext.addOperateContainerEnv("CAMUNDA_OPERATE_CSRFPREVENTIONENABLED", "false");
     return testContext;
   }
 
