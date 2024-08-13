@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.validator;
 
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_TENANT;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.createProblemDetail;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
@@ -23,8 +24,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
 public final class MultiTenancyValidator {
-  private static final String MESSAGE_FORMAT =
-      "Expected to handle request %s with tenant identifier '%s', but %s";
   private static final Pattern TENANT_ID_MASK = Pattern.compile("^[\\w\\.-]{1,31}$");
 
   public static Optional<ProblemDetail> validateAuthorization(
@@ -38,7 +37,7 @@ public final class MultiTenancyValidator {
       return Optional.of(
           RestErrorMapper.createProblemDetail(
               HttpStatus.UNAUTHORIZED,
-              MESSAGE_FORMAT.formatted(
+              ERROR_MESSAGE_INVALID_TENANT.formatted(
                   commandName, tenantId, "tenant is not authorized to perform this request"),
               HttpStatus.UNAUTHORIZED.name()));
     }
@@ -54,7 +53,8 @@ public final class MultiTenancyValidator {
         return Either.left(
             RestErrorMapper.createProblemDetail(
                 HttpStatus.BAD_REQUEST,
-                MESSAGE_FORMAT.formatted(commandName, tenantId, "multi-tenancy is disabled"),
+                ERROR_MESSAGE_INVALID_TENANT.formatted(
+                    commandName, tenantId, "multi-tenancy is disabled"),
                 INVALID_ARGUMENT.name()));
       }
 
@@ -64,15 +64,16 @@ public final class MultiTenancyValidator {
     final List<String> violations = new ArrayList<>();
     if (!hasTenantId) {
       violations.add(
-          MESSAGE_FORMAT.formatted(commandName, tenantId, "no tenant identifier was provided"));
+          ERROR_MESSAGE_INVALID_TENANT.formatted(
+              commandName, tenantId, "no tenant identifier was provided"));
     } else if (tenantId.length() > 31) {
       violations.add(
-          MESSAGE_FORMAT.formatted(
+          ERROR_MESSAGE_INVALID_TENANT.formatted(
               commandName, tenantId, "tenant identifier is longer than 31 characters"));
     } else if (!TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)
         && !TENANT_ID_MASK.matcher(tenantId).matches()) {
       violations.add(
-          MESSAGE_FORMAT.formatted(
+          ERROR_MESSAGE_INVALID_TENANT.formatted(
               commandName, tenantId, "tenant identifier contains illegal characters"));
     }
 
