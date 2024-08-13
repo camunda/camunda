@@ -504,9 +504,6 @@ jobs:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
     uses: ./.github/workflows/zeebe-ci.yml
     secrets: inherit
-    with:
-      branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
-
 
   deploy-camunda-docker-snapshot:
     name: Deploy snapshot Camunda Docker image
