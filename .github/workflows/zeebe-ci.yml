@@ -511,43 +511,6 @@ jobs:
       monitor: true
       build: true
     secrets: inherit
-  notify-if-failed:
-    name: Send slack notification on build failure
-    runs-on: ubuntu-latest
-    needs: [ test-summary, deploy-snapshots, deploy-docker-snapshot, deploy-snyk-projects ]
-    if: failure() && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
-    steps:
-      - id: slack-notify
-        name: Send slack notification
-        uses: slackapi/slack-github-action@v1.26.0
-        with:
-          # For posting a rich message using Block Kit
-          payload: |
-            {
-              "text": ":alarm: Build on `main` failed! :alarm:\n${{ github.event.head_commit.url }}",
-             	"blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":alarm: Build on `main` failed! :alarm:"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Please check the related commit: ${{ github.event.head_commit.url }}\n \\cc @zeebe-medic"
-                  }
-                },
-                {
-                  "type": "divider"
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
   auto-merge:
     # This workflow will auto merge a PR authored by backport-action.
     # It runs only on open PRs ready for review.
