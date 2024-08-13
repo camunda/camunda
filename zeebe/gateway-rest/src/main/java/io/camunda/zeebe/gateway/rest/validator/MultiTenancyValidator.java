@@ -7,60 +7,78 @@
  */
 package io.camunda.zeebe.gateway.rest.validator;
 
-import io.camunda.zeebe.gateway.cmd.IllegalTenantRequestException;
-import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
+import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.createProblemDetail;
+import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
+
 import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.Either;
 import io.micrometer.common.util.StringUtils;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 
 public final class MultiTenancyValidator {
+  private static final String MESSAGE_FORMAT =
+      "Expected to handle request %s with tenant identifier '%s', but %s";
   private static final Pattern TENANT_ID_MASK = Pattern.compile("^[\\w\\.-]{1,31}$");
 
-  public static String ensureTenantIdSet(
-      final String commandName, final String tenantId, final boolean multiTenancyEnabled) {
+  public static Optional<ProblemDetail> validateAuthorization(
+      final String tenantId, final boolean multiTenancyEnabled, final String commandName) {
+    if (!multiTenancyEnabled) {
+      return Optional.empty();
+    }
+
+    final var authorizedTenants = RequestMapper.getAuthentication().authenticatedTenantIds();
+    if (authorizedTenants == null || !authorizedTenants.contains(tenantId)) {
+      return Optional.of(
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.UNAUTHORIZED,
+              MESSAGE_FORMAT.formatted(
+                  commandName, tenantId, "tenant is not authorized to perform this request"),
+              HttpStatus.UNAUTHORIZED.name()));
+    }
+
+    return Optional.empty();
+  }
+
+  public static Either<ProblemDetail, String> validateTenantId(
+      final String tenantId, final boolean multiTenancyEnabled, final String commandName) {
     final var hasTenantId = !StringUtils.isBlank(tenantId);
     if (!multiTenancyEnabled) {
       if (hasTenantId && !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)) {
-        throw new InvalidTenantRequestException(commandName, tenantId, "multi-tenancy is disabled");
+        return Either.left(
+            RestErrorMapper.createProblemDetail(
+                HttpStatus.BAD_REQUEST,
+                MESSAGE_FORMAT.formatted(commandName, tenantId, "multi-tenancy is disabled"),
+                INVALID_ARGUMENT.name()));
       }
 
-      return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+      return Either.right(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     }
 
+    final List<String> violations = new ArrayList<>();
     if (!hasTenantId) {
-      throw new InvalidTenantRequestException(
-          commandName, tenantId, "no tenant identifier was provided.");
-    }
-
-    if (tenantId.length() > 31) {
-      throw new InvalidTenantRequestException(
-          commandName, tenantId, "tenant identifier is longer than 31 characters");
-    }
-
-    if (!TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)
+      violations.add(
+          MESSAGE_FORMAT.formatted(commandName, tenantId, "no tenant identifier was provided"));
+    } else if (tenantId.length() > 31) {
+      violations.add(
+          MESSAGE_FORMAT.formatted(
+              commandName, tenantId, "tenant identifier is longer than 31 characters"));
+    } else if (!TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)
         && !TENANT_ID_MASK.matcher(tenantId).matches()) {
-      throw new InvalidTenantRequestException(
-          commandName, tenantId, "tenant identifier contains illegal characters");
+      violations.add(
+          MESSAGE_FORMAT.formatted(
+              commandName, tenantId, "tenant identifier contains illegal characters"));
     }
 
-    final List<String> authorizedTenants;
-    try {
-      authorizedTenants = RequestMapper.getAuthentication().authenticatedTenantIds();
-    } catch (final Exception e) {
-      throw new InvalidTenantRequestException(
-          commandName, tenantId, "tenant could not be retrieved from the request context", e);
-    }
-    if (authorizedTenants == null) {
-      throw new InvalidTenantRequestException(
-          commandName, tenantId, "tenant could not be retrieved from the request context");
-    }
-    if (!authorizedTenants.contains(tenantId)) {
-      throw new IllegalTenantRequestException(
-          commandName, tenantId, "tenant is not authorized to perform this request");
-    }
-
-    return tenantId;
+    final var problemDetail = createProblemDetail(violations);
+    return problemDetail
+        .<Either<ProblemDetail, String>>map(Either::left)
+        .orElseGet(() -> Either.right(tenantId));
   }
 }

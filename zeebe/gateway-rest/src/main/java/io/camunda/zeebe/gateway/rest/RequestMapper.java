@@ -11,6 +11,8 @@ import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.valida
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MessageCorrelateValidator.validateMessageCorrelationRequest;
+import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateAuthorization;
+import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
@@ -30,7 +32,6 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
-import io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
@@ -131,20 +132,26 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, CorrelateMessageRequest> toMessageCorrelationRequest(
       final MessageCorrelationRequest correlationRequest, final boolean multiTenancyEnabled) {
-    final var validationErrorResponse = validateMessageCorrelationRequest(correlationRequest);
-    return validationErrorResponse
-        .<Either<ProblemDetail, CorrelateMessageRequest>>map(Either::left)
-        .orElseGet(
-            () ->
-                Either.right(
-                    new CorrelateMessageRequest(
-                        correlationRequest.getName(),
-                        correlationRequest.getCorrelationKey(),
-                        correlationRequest.getVariables(),
-                        MultiTenancyValidator.ensureTenantIdSet(
-                            "Correlate Message",
-                            correlationRequest.getTenantId(),
-                            multiTenancyEnabled))));
+    final var validationResponse =
+        validateTenantId(correlationRequest.getTenantId(), multiTenancyEnabled, "Correlate Message")
+            .flatMap(
+                tenantId ->
+                    validateAuthorization(tenantId, multiTenancyEnabled, "Correlate Message")
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenantId)))
+            .flatMap(
+                tenantId ->
+                    validateMessageCorrelationRequest(correlationRequest)
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenantId)));
+
+    return validationResponse.map(
+        tenantId ->
+            new CorrelateMessageRequest(
+                correlationRequest.getName(),
+                correlationRequest.getCorrelationKey(),
+                correlationRequest.getVariables(),
+                tenantId));
   }
 
   public static CompleteJobRequest toJobCompletionRequest(

@@ -259,7 +259,7 @@ public class MessageControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "Expected to handle request Correlate Message with tenant identifier 'null', but no tenant identifier was provided.",
               "instance": "%s"
             }"""
@@ -295,7 +295,7 @@ public class MessageControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
+              "title": "INVALID_ARGUMENT",
               "detail": "Expected to handle request Correlate Message with tenant identifier 'tenant', but multi-tenancy is disabled",
               "instance": "%s"
             }"""
@@ -331,8 +331,8 @@ public class MessageControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
-              "detail": "Expected to handle request Correlate Message with tenant identifier 'tenanttenanttenanttenanttenanttenanttenanttenanttenant', but tenant identifier is longer than 31 characters",
+              "title": "INVALID_ARGUMENT",
+              "detail": "Expected to handle request Correlate Message with tenant identifier 'tenanttenanttenanttenanttenanttenanttenanttenanttenant', but tenant identifier is longer than 31 characters.",
               "instance": "%s"
             }"""
                 .formatted(CORRELATION_ENDPOINT));
@@ -367,8 +367,8 @@ public class MessageControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 400,
-              "title": "Bad Request",
-              "detail": "Expected to handle request Correlate Message with tenant identifier '<invalid>', but tenant identifier contains illegal characters",
+              "title": "INVALID_ARGUMENT",
+              "detail": "Expected to handle request Correlate Message with tenant identifier '<invalid>', but tenant identifier contains illegal characters.",
               "instance": "%s"
             }"""
                 .formatted(CORRELATION_ENDPOINT));
@@ -400,15 +400,15 @@ public class MessageControllerTest extends RestControllerTest {
                     .bodyValue(request)
                     .exchange()
                     .expectStatus()
-                    .isBadRequest());
+                    .isUnauthorized());
     response
         .expectBody()
         .json(
             """
             {
               "type": "about:blank",
-              "status": 400,
-              "title": "Bad Request",
+              "status": 401,
+              "title": "UNAUTHORIZED",
               "detail": "Expected to handle request Correlate Message with tenant identifier 'unauthorizedTenant', but tenant is not authorized to perform this request",
               "instance": "%s"
             }"""
