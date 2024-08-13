@@ -34,4 +34,8 @@ public interface ZeebeCalledElement extends BpmnModelElementInstance {
   ZeebeBindingType getBindingType();
 
   void setBindingType(ZeebeBindingType bindingType);
+
+  String getVersionTag();
+
+  void setVersionTag(String versionTag);
 }
