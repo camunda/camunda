@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionSt
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -107,6 +108,7 @@ public final class EventAppliers implements EventApplier {
     registerResourceDeletionAppliers();
 
     registerUserAppliers(state);
+    registerClockAppliers(state);
     return this;
   }
 
@@ -418,6 +420,10 @@ public final class EventAppliers implements EventApplier {
   private void registerResourceDeletionAppliers() {
     register(ResourceDeletionIntent.DELETING, NOOP_EVENT_APPLIER);
     register(ResourceDeletionIntent.DELETED, NOOP_EVENT_APPLIER);
+  }
+
+  private void registerClockAppliers(final MutableProcessingState state) {
+    register(ClockIntent.PINNED, new ClockPinnedApplier(state.getClockState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
