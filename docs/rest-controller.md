@@ -37,14 +37,13 @@ Implement your controller(s) in the `zeebe/gateway-rest` module next to the [oth
 You can extend an existing controller if there is one for your resource, e.g. the `UserTaskController` for the user task resource.
 
 1. (optional) Generate the data models locally before implementing controllers by running `mvn clean install -Dquickly` on the `zeebe/gateway-rest` module.
-2. Consider the existing controllers for best practices around structuring your controller.
+2. Consider the existing controllers for best practices around structuring your controller, e.g. using the `RequestMapper` and `ResponseMapper` for input conversion and collecting REST error messages in `ErrorMessages`.
 3. The controllers are Spring `RestController`s, marked as such by adding the appropriate Camunda annotation (refer to the other controllers). There is a separate Camunda annotation for Query endpoint controllers as used by the `ProcessInstanceQueryController`.
-4. Controllers should only take care of
-   1. Mapping and potentially validating user input.
-   2. Invoking the respective `Services` method to execute the desired action, e.g. `UserTaskServices::completeUserTask´ or `UserTaskServices::search`.
-   3. Mapping the result back to either a success or failure response.
-5. Controllers use utility classes for mapping input and output, e.g. the `RequestMapper` and `ResponseMapper`. Expected errors can be conveniently mapped to REST responses using the `RestErrorMapper`.
-6. Provide REST API-level unit tests, mocking the interaction with the service layer and validating that input and output are mapped as expected.
+4. Controllers should only take care of the following tasks:
+   1. Mapping and potentially validating user input, e.g. using the `RequestMapper` and `RequestValidator`.
+   2. Invoking the respective `Services` method to execute the desired action, e.g. `UserTaskServices::completeUserTask` or `UserTaskServices::search`. The `RequestMapper` also provides helpers for invoking service methods.
+   3. Mapping the result back to either a success or failure response, e.g. using the helper methods of the `ResponseMapper` and `RestErrorMapper`.
+5. Provide REST API-level unit tests, mocking the interaction with the service layer, validating that input and output are mapped as expected, and ensuring that service exceptions are handled correctly.
 
 ### Service layer extension
 
