@@ -15,7 +15,6 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.Either;
-import io.micrometer.common.util.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -71,7 +70,7 @@ public final class MultiTenancyValidator {
    */
   public static Either<ProblemDetail, String> validateTenantId(
       final String tenantId, final boolean multiTenancyEnabled, final String commandName) {
-    final var hasTenantId = !StringUtils.isBlank(tenantId);
+    final var hasTenantId = tenantId != null && !tenantId.isBlank();
     if (!multiTenancyEnabled) {
       if (hasTenantId && !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)) {
         return Either.left(
