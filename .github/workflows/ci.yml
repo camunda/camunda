@@ -73,7 +73,7 @@ jobs:
     needs: [detect-changes]
     name: Java checks
     timeout-minutes: 15
-    runs-on: ubuntu-latest
+    runs-on: [ self-hosted, linux, amd64, "16" ]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
