@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -48,7 +49,7 @@ public final class DbProcessState implements MutableProcessState {
 
   private static final int DEFAULT_VERSION_VALUE = 0;
 
-  private final BpmnTransformer transformer = BpmnFactory.createTransformer();
+  private final BpmnTransformer transformer;
   private final ProcessRecord processRecordForDeployments = new ProcessRecord();
   private final Cache<TenantIdAndProcessIdAndVersion, DeployedProcess>
       processesByTenantAndProcessIdAndVersionCache;
@@ -98,7 +99,9 @@ public final class DbProcessState implements MutableProcessState {
   public DbProcessState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final InstantSource clock) {
+    transformer = BpmnFactory.createTransformer(clock);
     processDefinitionKey = new DbLong();
     persistedProcess = new PersistedProcess();
     tenantIdKey = new DbString();
