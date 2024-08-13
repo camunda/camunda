@@ -95,7 +95,8 @@ class TaskServiceTest {
             .setId("123")
             .setTaskState(TaskState.CREATED)
             .setSortValues(new String[] {"123", "456"})
-            .setImplementation(TaskImplementation.JOB_WORKER);
+            .setImplementation(TaskImplementation.JOB_WORKER)
+            .setPriority(50);
 
     when(taskStore.getTasks(taskQuery.toTaskQuery())).thenReturn(List.of(providedTask));
 
@@ -133,13 +134,14 @@ class TaskServiceTest {
     final var taskQuery = new TaskQueryDTO();
     final var providedTasks =
         List.of(
-            new TaskSearchView().setId("123").setState(TaskState.CREATED),
-            new TaskSearchView().setId("456").setState(TaskState.COMPLETED));
+            new TaskSearchView().setId("123").setState(TaskState.CREATED).setPriority(50),
+            new TaskSearchView().setId("456").setState(TaskState.COMPLETED).setPriority(50));
     final var expectedTasks =
         List.of(
             new TaskDTO()
                 .setId("123")
                 .setTaskState(TaskState.CREATED)
+                .setPriority(50)
                 .setVariables(
                     new VariableDTO[] {
                       new VariableDTO()
@@ -151,6 +153,7 @@ class TaskServiceTest {
             new TaskDTO()
                 .setId("456")
                 .setTaskState(TaskState.COMPLETED)
+                .setPriority(50)
                 .setVariables(
                     new VariableDTO[] {
                       new VariableDTO()
@@ -204,12 +207,12 @@ class TaskServiceTest {
     final var taskQuery = new TaskQueryDTO();
     final var providedTasks =
         List.of(
-            new TaskSearchView().setId("123").setState(TaskState.CREATED),
-            new TaskSearchView().setId("456").setState(TaskState.COMPLETED));
+            new TaskSearchView().setId("123").setState(TaskState.CREATED).setPriority(50),
+            new TaskSearchView().setId("456").setState(TaskState.COMPLETED).setPriority(50));
     final var expectedTasks =
         List.of(
-            new TaskDTO().setId("123").setTaskState(TaskState.CREATED),
-            new TaskDTO().setId("456").setTaskState(TaskState.COMPLETED));
+            new TaskDTO().setId("123").setTaskState(TaskState.CREATED).setPriority(50),
+            new TaskDTO().setId("456").setTaskState(TaskState.COMPLETED).setPriority(50));
 
     when(taskStore.getTasks(taskQuery.toTaskQuery())).thenReturn(providedTasks);
     // When
@@ -263,7 +266,8 @@ class TaskServiceTest {
         new TaskDTO()
             .setId(taskId)
             .setTaskState(TaskState.CREATED)
-            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
+            .setTenantId(DEFAULT_TENANT_IDENTIFIER)
+            .setPriority(50);
     when(taskStore.getTask(taskId)).thenReturn(providedTask);
 
     // When
