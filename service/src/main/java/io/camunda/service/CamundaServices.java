@@ -12,6 +12,7 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
+import java.util.HashMap;
 
 public final class CamundaServices extends ApiServices<CamundaServices> {
 
@@ -63,6 +64,11 @@ public final class CamundaServices extends ApiServices<CamundaServices> {
 
   public MessageServices messageServices() {
     return new MessageServices(brokerClient, searchClient, transformers, authentication);
+  }
+
+  public DocumentServices documentServices() {
+    return new DocumentServices(
+        brokerClient, searchClient, transformers, authentication, new HashMap<>());
   }
 
   @Override
