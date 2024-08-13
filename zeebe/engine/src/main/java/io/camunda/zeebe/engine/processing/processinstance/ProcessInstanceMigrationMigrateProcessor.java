@@ -495,16 +495,9 @@ public class ProcessInstanceMigrationMigrateProcessor
             // We will migrate this mapped catch event, so we don't want to unsubscribe from it.
             // Avoid reusing the subscription directly as any access to the state (e.g. #get) will
             // overwrite it
-            final TimerInstance copyTimerInstance = new TimerInstance();
-            copyTimerInstance.setProcessInstanceKey(timerInstance.getProcessInstanceKey());
-            copyTimerInstance.setElementInstanceKey(timerInstance.getElementInstanceKey());
-            copyTimerInstance.setKey(timerInstance.getKey());
-            copyTimerInstance.setDueDate(timerInstance.getDueDate());
-            copyTimerInstance.setHandlerNodeId(timerInstance.getHandlerNodeId());
-            copyTimerInstance.setRepetitions(timerInstance.getRepetitions());
-            copyTimerInstance.setProcessDefinitionKey(timerInstance.getProcessDefinitionKey());
-            copyTimerInstance.setTenantId(timerInstance.getTenantId());
-            timerInstancesToMigrate.add(copyTimerInstance);
+            final var copy = new TimerInstance();
+            copy.copyFrom(timerInstance);
+            timerInstancesToMigrate.add(copy);
 
             return false;
           }
