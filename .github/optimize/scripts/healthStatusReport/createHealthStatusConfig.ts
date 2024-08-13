@@ -9,9 +9,6 @@ import {createJsonFile} from './services';
 import {Config} from './types';
 import {GitHubService} from './GitHubService';
 
-const ARGOCD_PROJECTS = ['optimize-previews'];
-const ARGOCD_URL = 'https://argocd.int.camunda.com';
-
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_ORG = 'camunda';
 const GITHUB_REPO = 'camunda';
@@ -28,10 +25,6 @@ async function createHealthStatusConfig() {
   );
 
   const config: Partial<Config> = {
-    argoCd: {
-      projects: ARGOCD_PROJECTS,
-      url: ARGOCD_URL,
-    },
     github: {
       organization: GITHUB_ORG,
       repository: GITHUB_REPO,
