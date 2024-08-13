@@ -7,7 +7,6 @@
 
 import fs from 'fs';
 import fetch from 'node-fetch';
-import JSON5 from 'json5';
 
 export async function fetchUrl<T>(url: string, authHeader: string): Promise<T> {
   try {
@@ -24,14 +23,6 @@ export async function fetchUrl<T>(url: string, authHeader: string): Promise<T> {
 
 export function createJsonFile(fileName: string, json: Record<string, unknown>) {
   return fs.writeFileSync(fileName, JSON.stringify(json), 'utf-8');
-}
-
-export function readJsonFIle<T extends Record<string, unknown>>(fileName: string) {
-  return JSON5.parse(fs.readFileSync(fileName, 'utf-8')) as T;
-}
-
-export function isRegExp(value: string): boolean {
-  return value.startsWith('/') && value.endsWith('/');
 }
 
 export function matchRegex(string: string, regex: RegExp): string | undefined {
