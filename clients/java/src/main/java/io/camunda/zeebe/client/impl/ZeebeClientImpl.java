@@ -29,6 +29,7 @@ import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
@@ -58,6 +59,7 @@ import io.camunda.zeebe.client.impl.command.AssignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.zeebe.client.impl.command.CancelProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.CompleteUserTaskCommandImpl;
+import io.camunda.zeebe.client.impl.command.CorrelateMessageCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteResourceCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployProcessCommandImpl;
@@ -398,6 +400,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public PublishMessageCommandStep1 newPublishMessageCommand() {
     return new PublishMessageCommandImpl(
         asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
+  }
+
+  @Override
+  public CorrelateMessageCommandStep1 newCorrelateMessageCommand() {
+    return new CorrelateMessageCommandImpl(httpClient, jsonMapper);
   }
 
   @Override
