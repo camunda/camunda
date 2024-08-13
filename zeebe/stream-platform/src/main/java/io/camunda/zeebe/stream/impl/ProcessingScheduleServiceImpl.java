@@ -18,6 +18,7 @@ import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -35,6 +36,7 @@ public class ProcessingScheduleServiceImpl
   private final BooleanSupplier abortCondition;
   private final Supplier<LogStreamWriter> writerSupplier;
   private final StageableScheduledCommandCache commandCache;
+  private final InstantSource clock;
   private LogStreamWriter logStreamWriter;
   private ActorControl actorControl;
   private AbortableRetryStrategy writeRetryStrategy;
@@ -44,11 +46,12 @@ public class ProcessingScheduleServiceImpl
       final Supplier<Phase> streamProcessorPhaseSupplier,
       final BooleanSupplier abortCondition,
       final Supplier<LogStreamWriter> writerSupplier,
-      final StageableScheduledCommandCache commandCache) {
+      final StageableScheduledCommandCache commandCache, final InstantSource clock) {
     this.streamProcessorPhaseSupplier = streamProcessorPhaseSupplier;
     this.abortCondition = abortCondition;
     this.writerSupplier = writerSupplier;
     this.commandCache = commandCache;
+    this.clock = clock;
   }
 
   @Override
