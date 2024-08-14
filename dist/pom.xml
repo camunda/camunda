@@ -83,7 +83,6 @@
       </exclusions>
     </dependency>
 
-
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-elasticsearch-exporter</artifactId>
