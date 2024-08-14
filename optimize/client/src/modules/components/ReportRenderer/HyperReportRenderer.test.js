@@ -31,7 +31,6 @@ jest.mock('services', () => {
 });
 
 const userTaskAssigneeReport = {
-  combined: false,
   reportType: 'process',
   data: {
     processDefinitionKey: 'aKey',
@@ -87,10 +86,10 @@ const userTaskAssigneeReport = {
   },
 };
 
-it('should convert a hypermap to a combined report', () => {
+it('should convert a hypermap to a hyper report', () => {
   const node = shallow(<HyperReportRenderer report={userTaskAssigneeReport} />);
 
-  expect(node.find(Chart).prop('report').combined).toBe(true);
+  expect(node.find(Chart).prop('report').hyper).toBe(true);
 });
 
 it('should render single process report if report result is empty', () => {
@@ -109,7 +108,7 @@ it('should render single process report if report result is empty', () => {
   expect(node.find(ProcessReportRenderer)).toExist();
 });
 
-it('should convert adjust the result to be identical to combined report result structure', () => {
+it('should convert adjust the result to be identical to hyper report result structure', () => {
   const node = shallow(<HyperReportRenderer report={userTaskAssigneeReport} />);
 
   const resultData = node.find(Chart).prop('report').result.data;

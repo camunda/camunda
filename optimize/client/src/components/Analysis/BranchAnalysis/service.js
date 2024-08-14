@@ -31,7 +31,6 @@ export async function loadFrequencyData(
 
 function createFlowNodeFrequencyReport(key, versions, tenantIds, identifier, filter) {
   return {
-    combined: false,
     reportType: 'process',
     data: {
       definitions: [{key, versions, tenantIds, identifier}],

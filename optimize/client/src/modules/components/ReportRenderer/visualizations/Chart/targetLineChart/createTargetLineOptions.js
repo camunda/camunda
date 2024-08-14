@@ -11,17 +11,17 @@ import createDefaultChartOptions from '../defaultChart/createDefaultChartOptions
 import createCombinedChartOptions from '../combinedChart/createCombinedChartOptions';
 
 export default function createTargetLineOptions(props) {
-  if (props.report.combined) {
+  if (props.report.hyper) {
     return createCombinedChartOptions(props);
   } else {
     return createDefaultChartOptions(props);
   }
 }
 
-export function getTargetLineOptions(color, isBelowTarget, isCombined, isDark) {
+export function getTargetLineOptions(color, isBelowTarget, isHyper, isDark) {
   return {
     targetOptions: {
-      borderColor: isCombined ? color : getColorFor('targetBar', isDark),
+      borderColor: isHyper ? color : getColorFor('targetBar', isDark),
       pointBorderColor: getColorFor('targetBar', isDark),
       backgroundColor: 'transparent',
       legendColor: color,

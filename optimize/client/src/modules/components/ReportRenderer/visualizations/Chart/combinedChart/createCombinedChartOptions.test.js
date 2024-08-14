@@ -13,7 +13,7 @@ jest.mock('../defaultChart/createDefaultChartOptions', () => ({
   createBarOptions: jest.fn(),
 }));
 
-it('should find max duration for combined reports', () => {
+it('should find max duration for hyper reports', () => {
   const maxDuration = 99999999999;
 
   createCombinedChartOptions({

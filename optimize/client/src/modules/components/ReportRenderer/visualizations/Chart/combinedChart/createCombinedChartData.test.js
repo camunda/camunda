@@ -53,11 +53,11 @@ const createReport = ({reportA, reportB, groupByType}, measures, visualization =
         stackedBar: true,
       },
     },
-    combined: true,
+    hyper: true,
   };
 };
 
-it('should return correct chart data object for a combined report', () => {
+it('should return correct chart data object for a hyper report', () => {
   const reportA = {
     data: [
       {key: 'foo', value: 123, label: 'Flownode Foo'},

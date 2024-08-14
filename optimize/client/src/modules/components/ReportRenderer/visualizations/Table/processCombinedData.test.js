@@ -36,8 +36,8 @@ const singleReport = {
   },
 };
 
-const combinedReport = {
-  combined: true,
+const hyperReport = {
+  hyper: true,
   data: {
     reports: [{id: 'reportA'}, {id: 'reportB'}],
     configuration: {tableColumns: {columnOrder: []}},
@@ -60,7 +60,7 @@ const props = {
   mightFail: jest.fn().mockImplementation((a, b) => b(a)),
   error: '',
   fomatter: (v) => v,
-  report: combinedReport,
+  report: hyperReport,
 };
 
 it('should return correct labels and body when combining two table report', async () => {
@@ -78,7 +78,7 @@ it('should return correct labels and body when combining two table report', asyn
   });
 });
 
-it('should not include a column in a combined report if it is hidden in the configuration', async () => {
+it('should not include a column in a hyper report if it is hidden in the configuration', async () => {
   getFormattedLabels.mockReturnValue([
     {label: 'Report A', columns: ['value']},
     {label: 'Report B', columns: ['value']},

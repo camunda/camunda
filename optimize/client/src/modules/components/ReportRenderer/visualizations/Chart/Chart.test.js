@@ -50,13 +50,13 @@ it('should use the special targetLine type when target values are enabled on a l
   expect(createTargetLineConfig).toHaveBeenCalled();
 });
 
-it('should render combined chart if report is combined', () => {
+it('should render combined chart if report is hyper', () => {
   shallow(
     <Chart
       report={{
         ...report,
         result: {data: null},
-        combined: true,
+        hyper: true,
       }}
     />
   );

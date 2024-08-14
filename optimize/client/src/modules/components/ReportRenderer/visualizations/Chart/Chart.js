@@ -16,7 +16,7 @@ import {themed} from 'theme';
 export function Chart(props) {
   const {
     report: {
-      combined,
+      hyper,
       result,
       data: {configuration, visualization, view},
     },
@@ -32,7 +32,7 @@ export function Chart(props) {
   let createConfig;
   if (targetValue && visualization === 'line') {
     createConfig = createTargetLineConfig;
-  } else if (combined) {
+  } else if (hyper) {
     createConfig = createCombinedChartConfig;
   } else {
     createConfig = createDefaultChartConfig;

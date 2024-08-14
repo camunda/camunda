@@ -13,9 +13,9 @@ import {extractCombinedData} from '../combinedChart/createCombinedChartData';
 import {extractDefaultChartData} from '../defaultChart/createDefaultChartData';
 
 export default function createTargetLineData(props) {
-  const {combined} = props.report;
+  const {hyper} = props.report;
 
-  if (combined) {
+  if (hyper) {
     return createCombinedTargetLineData(props);
   } else {
     return createSingleTargetLineData(props);
@@ -29,7 +29,7 @@ function createSingleTargetLineData(props) {
     targetValue,
     data: formattedResult,
     color,
-    isCombined: false,
+    isHyper: false,
     isDark,
   });
 
@@ -57,7 +57,7 @@ function createCombinedTargetLineData(props) {
         data: reportData,
         color: colors[i],
         reportName: reportsNames[i],
-        isCombined: true,
+        isHyper: true,
         isDark,
       }),
     ];
@@ -66,12 +66,12 @@ function createCombinedTargetLineData(props) {
   return {labels, datasets};
 }
 
-function createSingleTargetLineDataset({targetValue, data, color, reportName, isCombined, isDark}) {
+function createSingleTargetLineDataset({targetValue, data, color, reportName, isHyper, isDark}) {
   const allValues = data.map(({value}) => value);
   const {targetOptions, normalLineOptions} = getTargetLineOptions(
     color,
     targetValue.isBelow,
-    isCombined,
+    isHyper,
     isDark
   );
 

@@ -73,7 +73,7 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
       entity: view.entity,
       autoSkip: canBeInterpolated(groupBy),
       groupedByDurationMaxValue,
-      isCombined: true,
+      isHyper: true,
     }),
     plugins: {
       legend: {

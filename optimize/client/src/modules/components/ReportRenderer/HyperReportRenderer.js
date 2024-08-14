@@ -46,7 +46,6 @@ export default function HyperReportRenderer({report, ...rest}) {
 
   formatResult(report.data, firstEntryResult).forEach(({key, label}) => {
     newResultData[key] = {
-      combined: false,
       id: key,
       name: label,
       reportType: 'process',
@@ -68,7 +67,7 @@ export default function HyperReportRenderer({report, ...rest}) {
 
   const convertedReport = {
     ...report,
-    combined: true,
+    hyper: true,
     data: {
       configuration: report.data.configuration,
       reports: firstEntryResult.map(({key}) => ({id: key})),

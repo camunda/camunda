@@ -27,10 +27,9 @@ it('should filter labels with undefined names and show correct label coloring', 
   expect(datasets).toEqual([{text: 'test', fillStyle: 'red', strokeStyle: 'red'}]);
 });
 
-it('should return correct cominbed chart repot data properties for single report', () => {
+it('should return correct hyper chart repot data properties for single report', () => {
   const report = {
     name: 'report A',
-    combined: false,
     data: {
       view: {
         properties: ['foo'],
@@ -88,7 +87,7 @@ it('should return correct cominbed chart repot data properties for single report
   });
 });
 
-it('should convert results of a combined number report to a correctly formatted barchart data', () => {
+it('should convert results of a hyper number report to a correctly formatted barchart data', () => {
   const NumberReportA = {
     name: 'report A',
     id: 'NumberReportA',
