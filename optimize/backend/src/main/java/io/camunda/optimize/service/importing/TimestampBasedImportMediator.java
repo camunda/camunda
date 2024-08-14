@@ -20,14 +20,6 @@ public abstract class TimestampBasedImportMediator<
 
   protected int countOfImportedEntitiesWithLastEntityTimestamp = 0;
 
-  protected abstract OffsetDateTime getTimestamp(final DTO dto);
-
-  protected abstract List<DTO> getEntitiesNextPage();
-
-  protected abstract List<DTO> getEntitiesLastTimestamp();
-
-  protected abstract int getMaxPageSize();
-
   protected TimestampBasedImportMediator(
       final ConfigurationService configurationService,
       final BackoffCalculator idleBackoffCalculator,
@@ -35,6 +27,14 @@ public abstract class TimestampBasedImportMediator<
       final ImportService<DTO> importService) {
     super(configurationService, idleBackoffCalculator, importIndexHandler, importService);
   }
+
+  protected abstract OffsetDateTime getTimestamp(final DTO dto);
+
+  protected abstract List<DTO> getEntitiesNextPage();
+
+  protected abstract List<DTO> getEntitiesLastTimestamp();
+
+  protected abstract int getMaxPageSize();
 
   @Override
   protected boolean importNextPage(final Runnable importCompleteCallback) {
@@ -61,7 +61,7 @@ public abstract class TimestampBasedImportMediator<
       final OffsetDateTime currentPageLastEntityTimestamp =
           getTimestamp(entitiesNextPage.get(entitiesNextPage.size() - 1));
       importService.executeImport(
-          filterEntitiesFromExcludedTenants(allEntities),
+          allEntities,
           () -> {
             importIndexHandler.updateTimestampOfLastEntity(currentPageLastEntityTimestamp);
             importCompleteCallback.run();
@@ -74,8 +74,7 @@ public abstract class TimestampBasedImportMediator<
       importIndexHandler.updatePendingTimestampOfLastEntity(currentPageLastEntityTimestamp);
     } else if (entitiesLastTimestamp.size() > countOfImportedEntitiesWithLastEntityTimestamp) {
       countOfImportedEntitiesWithLastEntityTimestamp = entitiesLastTimestamp.size();
-      importService.executeImport(
-          filterEntitiesFromExcludedTenants(entitiesLastTimestamp), importCompleteCallback);
+      importService.executeImport(entitiesLastTimestamp, importCompleteCallback);
     } else {
       importCompleteCallback.run();
     }

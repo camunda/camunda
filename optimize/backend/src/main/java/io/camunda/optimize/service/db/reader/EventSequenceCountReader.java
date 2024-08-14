@@ -12,7 +12,6 @@ import static io.camunda.optimize.service.db.schema.index.events.EventSequenceCo
 import static io.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.SOURCE_EVENT;
 
 import io.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
-import io.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import io.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import io.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import java.util.Collections;
@@ -34,9 +33,6 @@ public interface EventSequenceCountReader {
 
   List<EventCountResponseDto> getEventCountsForSearchTerm(
       final List<String> groups, final String searchTerm);
-
-  List<EventCountResponseDto> getEventCountsForCamundaSources(
-      final List<CamundaEventSourceEntryDto> camundaSources);
 
   Set<String> getIndexSuffixesForCurrentSequenceCountIndices();
 

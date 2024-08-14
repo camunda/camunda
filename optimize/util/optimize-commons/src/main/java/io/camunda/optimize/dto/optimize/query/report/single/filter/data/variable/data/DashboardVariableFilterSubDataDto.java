@@ -15,13 +15,11 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-@FieldNameConstants
 public class DashboardVariableFilterSubDataDto extends OperatorMultipleValuesFilterDataDto {
 
   protected boolean allowCustomValues;
@@ -30,5 +28,10 @@ public class DashboardVariableFilterSubDataDto extends OperatorMultipleValuesFil
       final FilterOperator operator, final List<String> values, final boolean allowCustomValues) {
     super(operator, values);
     this.allowCustomValues = allowCustomValues;
+  }
+
+  public static final class Fields {
+
+    public static final String allowCustomValues = "allowCustomValues";
   }
 }

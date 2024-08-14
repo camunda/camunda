@@ -12,16 +12,20 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.experimental.FieldNameConstants;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldNameConstants
 @EqualsAndHashCode
 public class RelativeDateFilterStartDto {
 
   protected Long value;
   protected DateUnit unit;
+
+  public static final class Fields {
+
+    public static final String value = "value";
+    public static final String unit = "unit";
+  }
 }

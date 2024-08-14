@@ -33,14 +33,14 @@ public class EntitySorter extends Sorter<EntityResponseDto> {
   private static final ImmutableMap<String, Comparator<EntityResponseDto>> sortComparators =
       ImmutableMap.of(
           name.toLowerCase(Locale.ENGLISH),
-              Comparator.comparing(
-                  EntityResponseDto::getName, nullsFirst(String.CASE_INSENSITIVE_ORDER)),
+          Comparator.comparing(
+              EntityResponseDto::getName, nullsFirst(String.CASE_INSENSITIVE_ORDER)),
           entityType.toLowerCase(Locale.ENGLISH),
-              Comparator.comparing(EntityResponseDto::getEntityType),
+          Comparator.comparing(EntityResponseDto::getEntityType),
           lastModified.toLowerCase(Locale.ENGLISH),
-              Comparator.comparing(EntityResponseDto::getLastModified),
+          Comparator.comparing(EntityResponseDto::getLastModified),
           lastModifier.toLowerCase(Locale.ENGLISH),
-              Comparator.comparing(EntityResponseDto::getLastModifier));
+          Comparator.comparing(EntityResponseDto::getLastModifier));
 
   public EntitySorter(final String sortBy, final SortOrder sortOrder) {
     this.sortRequestDto = new SortRequestDto(sortBy, sortOrder);

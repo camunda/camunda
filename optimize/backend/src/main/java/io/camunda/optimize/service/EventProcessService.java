@@ -29,8 +29,6 @@ import io.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingD
 import io.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
-import io.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
-import io.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import io.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
 import io.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import io.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
@@ -42,19 +40,16 @@ import io.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import io.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import io.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import io.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
-import io.camunda.optimize.service.db.reader.CamundaActivityEventReader;
 import io.camunda.optimize.service.db.reader.EventProcessMappingReader;
 import io.camunda.optimize.service.db.reader.EventProcessPublishStateReader;
 import io.camunda.optimize.service.db.writer.CollectionWriter;
 import io.camunda.optimize.service.db.writer.EventProcessMappingWriter;
 import io.camunda.optimize.service.db.writer.EventProcessPublishStateWriter;
-import io.camunda.optimize.service.events.CamundaEventService;
 import io.camunda.optimize.service.events.ExternalEventService;
 import io.camunda.optimize.service.events.autogeneration.AutogenerationProcessModelService;
 import io.camunda.optimize.service.exceptions.InvalidEventProcessStateException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
-import io.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import io.camunda.optimize.service.relations.ReportRelationService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
@@ -63,7 +58,6 @@ import io.camunda.optimize.service.util.BpmnModelUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.variable.ProcessVariableLabelService;
 import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -72,16 +66,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.BaseElement;
@@ -112,14 +103,11 @@ public class EventProcessService {
   private final ConfigurationService configurationService;
 
   private final ExternalEventService externalEventService;
-  private final CamundaEventService camundaEventService;
   private final AutogenerationProcessModelService autogenerationProcessModelService;
   private final ProcessVariableLabelService processVariableLabelService;
 
   private final EventProcessMappingReader eventProcessMappingReader;
   private final EventProcessMappingWriter eventProcessMappingWriter;
-
-  private final CamundaActivityEventReader camundaActivityEventReader;
 
   private final EventProcessPublishStateReader eventProcessPublishStateReader;
   private final EventProcessPublishStateWriter eventProcessPublishStateWriter;
@@ -155,10 +143,10 @@ public class EventProcessService {
   }
 
   private ConflictResponseDto getDeleteConflictingItems(final String eventProcessId) {
-    List<ReportDefinitionDto> reportsForProcessDefinitionKey =
+    final List<ReportDefinitionDto> reportsForProcessDefinitionKey =
         reportService.getAllReportsForProcessDefinitionKeyOmitXml(eventProcessId);
-    Set<ConflictedItemDto> conflictedItems = new HashSet<>();
-    for (ReportDefinitionDto reportForEventProcess : reportsForProcessDefinitionKey) {
+    final Set<ConflictedItemDto> conflictedItems = new HashSet<>();
+    for (final ReportDefinitionDto reportForEventProcess : reportsForProcessDefinitionKey) {
       if (reportForEventProcess instanceof CombinedReportDefinitionRequestDto) {
         conflictedItems.add(
             new ConflictedItemDto(
@@ -182,8 +170,8 @@ public class EventProcessService {
   }
 
   public void bulkDeleteEventProcessMappings(final List<String> eventProcessMappingIds) {
-    List<String> eventProcessMappingsToDelete = new ArrayList<>();
-    for (String eventProcessMappingId : eventProcessMappingIds) {
+    final List<String> eventProcessMappingsToDelete = new ArrayList<>();
+    for (final String eventProcessMappingId : eventProcessMappingIds) {
       try {
         reportService.deleteAllReportsForProcessDefinitionKey(eventProcessMappingId);
         collectionWriter.deleteScopeEntryFromAllCollections(
@@ -194,7 +182,7 @@ public class EventProcessService {
             .markAsDeletedAllEventProcessPublishStatesForEventProcessMappingId(
                 eventProcessMappingId);
         eventProcessMappingsToDelete.add(eventProcessMappingId);
-      } catch (OptimizeRuntimeException e) {
+      } catch (final OptimizeRuntimeException e) {
         log.debug(
             "There was an error while deleting resources associated to the event process mapping with id {}",
             eventProcessMappingId);
@@ -203,8 +191,7 @@ public class EventProcessService {
     eventProcessMappingWriter.deleteEventProcessMappings(eventProcessMappingsToDelete);
   }
 
-  public EventProcessMappingDto getEventProcessMapping(
-      final String userId, final String eventProcessMappingId) {
+  public EventProcessMappingDto getEventProcessMapping(final String eventProcessMappingId) {
     final Optional<EventProcessMappingDto> eventProcessMapping =
         eventProcessMappingReader.getEventProcessMapping(eventProcessMappingId);
 
@@ -217,15 +204,6 @@ public class EventProcessService {
                         .getEventProcessPublishStateByEventProcessId(id)
                         .orElse(null)));
 
-    eventProcessMapping.ifPresent(
-        eventProcessMappingDto -> {
-          final List<CamundaEventSourceEntryDto> camundaSources =
-              eventProcessMappingDto.getEventSources().stream()
-                  .filter(CamundaEventSourceEntryDto.class::isInstance)
-                  .map(CamundaEventSourceEntryDto.class::cast)
-                  .toList();
-          validateAccessToCamundaEventSourcesOrFail(userId, camundaSources);
-        });
     return eventProcessMapping.orElseThrow(
         () -> {
           final String message =
@@ -261,9 +239,9 @@ public class EventProcessService {
     return allEventProcessMappingsOmitXml;
   }
 
-  public void publishEventProcessMapping(final String userId, final String eventProcessMappingId) {
+  public void publishEventProcessMapping(final String eventProcessMappingId) {
     final EventProcessMappingDto eventProcessMapping =
-        getEventProcessMapping(userId, eventProcessMappingId);
+        getEventProcessMapping(eventProcessMappingId);
 
     if (!PUBLISHABLE_STATES.contains(eventProcessMapping.getState())) {
       throw new InvalidEventProcessStateException(
@@ -295,9 +273,9 @@ public class EventProcessService {
             eventProcessMappingId, processPublishStateId.getId());
   }
 
-  public void cancelPublish(final String userId, final String eventProcessMappingId) {
+  public void cancelPublish(final String eventProcessMappingId) {
     final EventProcessMappingDto eventProcessMapping =
-        getEventProcessMapping(userId, eventProcessMappingId);
+        getEventProcessMapping(eventProcessMappingId);
 
     if (!PUBLISH_CANCELABLE_STATES.contains(eventProcessMapping.getState())) {
       throw new InvalidEventProcessStateException(
@@ -326,32 +304,10 @@ public class EventProcessService {
     }
     final Map<EventSourceType, List<EventSourceEntryDto<?>>> sourceByType =
         eventSources.stream().collect(groupingBy(EventSourceEntryDto::getSourceType));
-    List<ExternalEventSourceEntryDto> externalSources =
+    final List<ExternalEventSourceEntryDto> externalSources =
         sourceByType.getOrDefault(EventSourceType.EXTERNAL, Collections.emptyList()).stream()
             .map(ExternalEventSourceEntryDto.class::cast)
             .toList();
-    List<CamundaEventSourceEntryDto> camundaSources =
-        sourceByType.getOrDefault(EventSourceType.CAMUNDA, Collections.emptyList()).stream()
-            .map(CamundaEventSourceEntryDto.class::cast)
-            .toList();
-
-    final List<CamundaEventSourceEntryDto> invalidTracingConfig =
-        camundaSources.stream()
-            .filter(
-                source ->
-                    !source.getConfiguration().isTracedByBusinessKey()
-                        && StringUtils.isEmpty(source.getConfiguration().getTraceVariable()))
-            .toList();
-    if (!invalidTracingConfig.isEmpty()) {
-      throw new OptimizeValidationException(
-          String.format(
-              "The Camunda event sources with keys %s are traced by variable but do not have a variable name set.",
-              invalidTracingConfig));
-    }
-    validateAccessToCamundaEventSourcesOrFail(userId, camundaSources);
-    validateNoDuplicateCamundaEventSources(camundaSources);
-    validateNoEventProcessesAsEventSource(camundaSources);
-    validateCamundaEventSourcesAreImported(camundaSources);
     validateCompatibleExternalEventSources(externalSources);
   }
 
@@ -434,15 +390,7 @@ public class EventProcessService {
       final List<EventSourceEntryDto<?>> eventSources) {
     final Map<EventSourceType, List<EventSourceEntryDto<?>>> sourcesByType =
         eventSources.stream().collect(groupingBy(EventSourceEntryDto::getSourceType));
-    List<EventImportSourceDto> importSources = new ArrayList<>();
-    Optional.ofNullable(sourcesByType.get(EventSourceType.CAMUNDA))
-        .ifPresent(
-            camundaSources ->
-                camundaSources.forEach(
-                    source ->
-                        importSources.add(
-                            createEventImportSourceFromCamundaSource(
-                                (CamundaEventSourceEntryDto) source))));
+    final List<EventImportSourceDto> importSources = new ArrayList<>();
     Optional.ofNullable(sourcesByType.get(EventSourceType.EXTERNAL))
         .ifPresent(
             externalSources -> {
@@ -453,30 +401,13 @@ public class EventProcessService {
     return importSources;
   }
 
-  private EventImportSourceDto createEventImportSourceFromCamundaSource(
-      final CamundaEventSourceEntryDto camundaSourceEntry) {
-    Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> minAndMaxEventTimestamps =
-        camundaEventService.getMinAndMaxIngestedTimestampsForDefinition(
-            camundaSourceEntry.getConfiguration().getProcessDefinitionKey());
-    return EventImportSourceDto.builder()
-        .firstEventForSourceAtTimeOfPublishTimestamp(
-            minAndMaxEventTimestamps.getLeft().orElse(getEpochMilliTimestamp()))
-        .lastEventForSourceAtTimeOfPublishTimestamp(
-            minAndMaxEventTimestamps.getRight().orElse(getEpochMilliTimestamp()))
-        .lastImportedEventTimestamp(
-            minAndMaxEventTimestamps.getLeft().orElse(getEpochMilliTimestamp()))
-        .eventImportSourceType(EventSourceType.CAMUNDA)
-        .eventSourceConfigurations(Collections.singletonList(camundaSourceEntry.getConfiguration()))
-        .build();
-  }
-
   private EventImportSourceDto createEventImportSourceFromExternalSources(
       final List<ExternalEventSourceEntryDto> externalSources) {
-    boolean includeAllGroups =
+    final boolean includeAllGroups =
         externalSources.stream()
             .map(EventSourceEntryDto::getConfiguration)
             .anyMatch(ExternalEventSourceConfigDto::isIncludeAllGroups);
-    Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> minAndMaxEventTimestamps;
+    final Pair<Optional<OffsetDateTime>, Optional<OffsetDateTime>> minAndMaxEventTimestamps;
     if (includeAllGroups) {
       minAndMaxEventTimestamps = externalEventService.getMinAndMaxIngestedTimestampsForAllEvents();
     } else {
@@ -512,7 +443,7 @@ public class EventProcessService {
         .filter(
             eventMapping ->
                 eventMapping.getEventSources().stream()
-                    .allMatch(eventSource -> validateEventSourceAuthorisation(userId, eventSource)))
+                    .allMatch(eventSource -> validateEventSourceAuthorisation(eventSource)))
         .toList();
   }
 
@@ -526,28 +457,6 @@ public class EventProcessService {
     if (externalSourcesByIncludeAll.containsKey(false)) {
       throw new OptimizeValidationException(
           "External event sources specific to a group cannot be used for generation");
-    }
-  }
-
-  private void validateCamundaEventSourcesAreImported(
-      final List<CamundaEventSourceEntryDto> camundaSources) {
-    final Set<String> camundaEventIndexSuffixes =
-        camundaActivityEventReader.getIndexSuffixesForCurrentActivityIndices();
-    final List<String> unimportedEventCamundaSources =
-        camundaSources.stream()
-            .map(
-                camundaSource ->
-                    camundaSource
-                        .getConfiguration()
-                        .getProcessDefinitionKey()
-                        .toLowerCase(Locale.ENGLISH))
-            .filter(definitionKey -> !camundaEventIndexSuffixes.contains(definitionKey))
-            .toList();
-    if (!unimportedEventCamundaSources.isEmpty()) {
-      throw new OptimizeValidationException(
-          "The following process definition IDs cannot be used in Camunda event sources as no events have been imported"
-              + " as event data: "
-              + unimportedEventCamundaSources);
     }
   }
 
@@ -572,78 +481,12 @@ public class EventProcessService {
                     String.format(
                         "An external event source must have an event scope of type %s for autogeneration",
                         EventScopeType.ALL));
-              } else if (EventSourceType.CAMUNDA.equals(eventSource.getSourceType())
-                  && !(eventScope.contains(EventScopeType.PROCESS_INSTANCE)
-                      || eventScope.contains(EventScopeType.START_END))) {
-                throw new OptimizeValidationException(
-                    String.format(
-                        "A Camunda event source must have an event scope of either type %s or %s for autogeneration",
-                        EventScopeType.PROCESS_INSTANCE, EventScopeType.START_END));
               }
             });
   }
 
-  private void validateNoEventProcessesAsEventSource(
-      final List<CamundaEventSourceEntryDto> camundaSources) {
-    List<String> eventProcessSourceKeys =
-        camundaSources.stream()
-            .map(source -> source.getConfiguration().getProcessDefinitionKey())
-            .filter(
-                key ->
-                    eventProcessDefinitionService.getEventProcessDefinitionByKey(key).isPresent())
-            .toList();
-    if (!eventProcessSourceKeys.isEmpty()) {
-      throw new OptimizeConflictException(
-          String.format(
-              "Event sources with keys %s are not permitted as they are event processes themselves",
-              eventProcessSourceKeys));
-    }
-  }
-
-  private boolean validateEventSourceAuthorisation(
-      final String userId, final EventSourceEntryDto<?> eventSource) {
-    return EventSourceType.EXTERNAL.equals(eventSource.getSourceType())
-        || definitionAuthorizationService.isAuthorizedToAccessDefinition(
-            userId,
-            PROCESS,
-            ((CamundaEventSourceConfigDto) eventSource.getConfiguration())
-                .getProcessDefinitionKey(),
-            ((CamundaEventSourceEntryDto) eventSource).getConfiguration().getTenants());
-  }
-
-  private void validateAccessToCamundaEventSourcesOrFail(
-      final String userId, final List<CamundaEventSourceEntryDto> camundaSources) {
-    final Set<String> notAuthorizedProcesses =
-        camundaSources.stream()
-            .filter(eventSource -> !validateEventSourceAuthorisation(userId, eventSource))
-            .map(source -> source.getConfiguration().getProcessDefinitionKey())
-            .collect(toSet());
-    if (!notAuthorizedProcesses.isEmpty()) {
-      final String errorMessage =
-          String.format(
-              "The user is not authorized to access the following process definitions in the event sources: %s",
-              notAuthorizedProcesses);
-      throw new ForbiddenException(errorMessage);
-    }
-  }
-
-  private void validateNoDuplicateCamundaEventSources(
-      final List<CamundaEventSourceEntryDto> camundaSources) {
-    Set<String> processDefinitionKeys = new HashSet<>();
-    final Set<String> duplicates =
-        camundaSources.stream()
-            .map(source -> source.getConfiguration().getProcessDefinitionKey())
-            .filter(Objects::nonNull)
-            .filter(key -> !processDefinitionKeys.add(key))
-            .collect(toSet());
-    if (!duplicates.isEmpty()) {
-      final String errorMessage =
-          String.format(
-              "Only one event source for each process definition can exist for an Event Process Mapping. "
-                  + "Mapping contains duplicates for process definition keys %s",
-              duplicates);
-      throw new OptimizeConflictException(errorMessage);
-    }
+  private boolean validateEventSourceAuthorisation(final EventSourceEntryDto<?> eventSource) {
+    return EventSourceType.EXTERNAL.equals(eventSource.getSourceType());
   }
 
   private void assignState(
@@ -675,7 +518,7 @@ public class EventProcessService {
     final Optional<BpmnModelInstance> modelInstance =
         Optional.ofNullable(eventProcessMappingDto.getXml()).map(this::parseXmlIntoBpmnModel);
 
-    Set<String> flowNodeIds =
+    final Set<String> flowNodeIds =
         modelInstance
             .map(
                 instance ->
@@ -684,7 +527,7 @@ public class EventProcessService {
                         .collect(toSet()))
             .orElse(Collections.emptySet());
 
-    Map<String, EventMappingDto> eventMappings = eventProcessMappingDto.getMappings();
+    final Map<String, EventMappingDto> eventMappings = eventProcessMappingDto.getMappings();
     if (eventMappings != null) {
       if (!flowNodeIds.containsAll(eventMappings.keySet())) {
         throw new BadRequestException(
@@ -719,7 +562,7 @@ public class EventProcessService {
   private BpmnModelInstance parseXmlIntoBpmnModel(final String xmlString) {
     try {
       return BpmnModelUtil.parseBpmnModel(xmlString);
-    } catch (ModelParseException ex) {
+    } catch (final ModelParseException ex) {
       throw new BadRequestException("The provided xml is not valid", ex);
     }
   }

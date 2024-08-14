@@ -14,12 +14,11 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@FieldNameConstants(asEnum = true)
 public class CollectionRoleRequestDto {
+
   private static final String ID_SEGMENT_SEPARATOR = ":";
 
   @Setter(value = AccessLevel.PROTECTED)
@@ -38,7 +37,7 @@ public class CollectionRoleRequestDto {
   }
 
   public void setIdentity(final IdentityDto identity) {
-    this.id = convertIdentityToRoleId(identity);
+    id = convertIdentityToRoleId(identity);
     this.identity = identity;
   }
 
@@ -46,5 +45,11 @@ public class CollectionRoleRequestDto {
     return identity.getType() == null
         ? "UNKNOWN" + ID_SEGMENT_SEPARATOR + identity.getId()
         : identity.getType().name() + ID_SEGMENT_SEPARATOR + identity.getId();
+  }
+
+  public enum Fields {
+    id,
+    identity,
+    role
   }
 }

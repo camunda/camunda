@@ -17,7 +17,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import lombok.experimental.FieldNameConstants;
 import org.apache.commons.lang3.StringUtils;
 
 @JsonTypeInfo(
@@ -31,10 +30,10 @@ import org.apache.commons.lang3.StringUtils;
 })
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@FieldNameConstants
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public abstract class IdentityWithMetadataResponseDto extends IdentityDto {
+
   private String name;
 
   public IdentityWithMetadataResponseDto(final String id, final IdentityType type) {
@@ -62,5 +61,10 @@ public abstract class IdentityWithMetadataResponseDto extends IdentityDto {
                 searchableField ->
                     StringUtils.isNotBlank(searchableField.get())
                         && StringUtils.containsAnyIgnoreCase(searchableField.get(), searchTerm));
+  }
+
+  public static final class Fields {
+
+    public static final String name = "name";
   }
 }

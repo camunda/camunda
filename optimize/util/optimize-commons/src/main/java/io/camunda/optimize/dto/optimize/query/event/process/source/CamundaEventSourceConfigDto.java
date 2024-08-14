@@ -14,14 +14,12 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 
 @NoArgsConstructor
 @SuperBuilder
 @Getter
 @Setter
-@FieldNameConstants
 @EqualsAndHashCode(callSuper = true)
 public class CamundaEventSourceConfigDto extends EventSourceConfigDto {
 
@@ -31,4 +29,14 @@ public class CamundaEventSourceConfigDto extends EventSourceConfigDto {
   @Builder.Default private List<String> tenants = new ArrayList<>();
   private boolean tracedByBusinessKey;
   private String traceVariable;
+
+  public static final class Fields {
+
+    public static final String processDefinitionKey = "processDefinitionKey";
+    public static final String processDefinitionName = "processDefinitionName";
+    public static final String versions = "versions";
+    public static final String tenants = "tenants";
+    public static final String tracedByBusinessKey = "tracedByBusinessKey";
+    public static final String traceVariable = "traceVariable";
+  }
 }

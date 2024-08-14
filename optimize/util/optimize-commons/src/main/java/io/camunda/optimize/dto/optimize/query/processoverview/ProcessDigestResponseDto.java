@@ -13,18 +13,19 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Data
-@FieldNameConstants
 @AllArgsConstructor
 @NoArgsConstructor
 public class ProcessDigestResponseDto implements OptimizeDto {
 
-  // needed to allow inheritance of field name constants
-  @NoArgsConstructor(access = AccessLevel.PROTECTED)
-  public static class Fields {}
-
   @JsonProperty("enabled")
   protected boolean enabled;
+
+  // needed to allow inheritance of field name constants
+  @NoArgsConstructor(access = AccessLevel.PROTECTED)
+  public static class Fields {
+
+    public static final String enabled = "enabled";
+  }
 }

@@ -6,30 +6,44 @@
  * except in compliance with the Camunda License 1.0.
  */
 // TODO recreate C8 IT equivalent of this with #13337
-//package io.camunda.optimize.upgrade.migrate313to86;
+// package io.camunda.optimize.upgrade.migrate313to86;
 //
-//import io.camunda.optimize.upgrade.AbstractUpgradeIT;
-//import io.camunda.optimize.upgrade.migrate313to86.indices.LicenseIndexV3;
-//import io.camunda.optimize.upgrade.migrate313to86.indices.OnboardingStateIndexV2;
-//import io.camunda.optimize.upgrade.migrate313to86.indices.SettingsIndexV2;
-//import io.camunda.optimize.upgrade.plan.UpgradePlan;
-//import io.camunda.optimize.upgrade.plan.UpgradePlanRegistry;
 //import java.util.List;
+//import org.camunda.optimize.upgrade.AbstractUpgradeIT;
+//import io.camunda.optimize.upgrade.migrate313to86.indices.LicenseIndexV3;
+//import org.camunda.optimize.upgrade.migrate313to314.indices.OnboardingStateIndexV2;
+//import org.camunda.optimize.upgrade.migrate313to314.indices.ProcessInstanceArchiveIndexV8;
+//import org.camunda.optimize.upgrade.migrate313to314.indices.SettingsIndexV2;
+//import org.camunda.optimize.upgrade.plan.UpgradePlan;
+//import org.camunda.optimize.upgrade.plan.UpgradePlanRegistry;
 //import org.junit.jupiter.api.BeforeEach;
 //
-//public class AbstractUpgrade86IT extends AbstractUpgradeIT {
+//public class AbstractUpgrade314IT extends AbstractUpgradeIT {
 //
 //  protected static final String FROM_VERSION = "3.13.0";
 //  protected static final String TO_VERSION = "8.6.0";
+//  private static final String EXAMPLE_PROCESS_KEY_1 = "aDefinitionKey1";
+//  private static final String EXAMPLE_PROCESS_KEY_2 = "aDefinitionKey2";
 //
 //  protected final OnboardingStateIndexV2 ONBOARDING_STATE_INDEX = new OnboardingStateIndexV2();
 //  protected final SettingsIndexV2 SETTINGS_INDEX = new SettingsIndexV2();
+//  protected final ProcessInstanceArchiveIndexV8 PROCESS_INSTANCE_ARCHIVE_INDEX_1 =
+//      new ProcessInstanceArchiveIndexV8(EXAMPLE_PROCESS_KEY_1);
+//  protected final ProcessInstanceArchiveIndexV8 PROCESS_INSTANCE_ARCHIVE_INDEX_2 =
+//      new ProcessInstanceArchiveIndexV8(EXAMPLE_PROCESS_KEY_2);
 //  protected final LicenseIndexV3 LICENSE_INDEX = new LicenseIndexV3();
 //
+//  @Override
 //  @BeforeEach
 //  protected void setUp() throws Exception {
 //    super.setUp();
-//    initSchema(List.of(ONBOARDING_STATE_INDEX, SETTINGS_INDEX, LICENSE_INDEX));
+//    initSchema(
+//        List.of(
+//            ONBOARDING_STATE_INDEX,
+//            SETTINGS_INDEX,
+//            PROCESS_INSTANCE_ARCHIVE_INDEX_1,
+//            PROCESS_INSTANCE_ARCHIVE_INDEX_2,
+//            LICENSE_INDEX));
 //    setMetadataVersion(FROM_VERSION);
 //  }
 //

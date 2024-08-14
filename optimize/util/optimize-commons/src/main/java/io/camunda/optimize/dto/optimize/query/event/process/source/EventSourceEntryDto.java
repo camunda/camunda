@@ -18,17 +18,14 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
   @JsonSubTypes.Type(value = ExternalEventSourceEntryDto.class, name = "external"),
-  @JsonSubTypes.Type(value = CamundaEventSourceEntryDto.class, name = "camunda")
 })
 @Data
 @NoArgsConstructor
-@FieldNameConstants
 @SuperBuilder(toBuilder = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public abstract class EventSourceEntryDto<CONFIG extends EventSourceConfigDto> {
@@ -38,29 +35,29 @@ public abstract class EventSourceEntryDto<CONFIG extends EventSourceConfigDto> {
   @EqualsAndHashCode.Include @NonNull @Builder.Default
   protected String id = IdGenerator.getNextId();
 
+  @NotNull protected CONFIG configuration;
+
   @JsonIgnore
   public abstract EventSourceType getSourceType();
-
-  @NotNull protected CONFIG configuration;
 
   // This source identifier is only used internally by Optimize for logic such as autogeneration
   @JsonIgnore
   public String getSourceIdentifier() {
-    if (EventSourceType.CAMUNDA.equals(getSourceType())) {
+    final ExternalEventSourceConfigDto externalSourceConfig =
+        (ExternalEventSourceConfigDto) configuration;
+    if (externalSourceConfig.isIncludeAllGroups()) {
+      return getSourceType() + ":" + "optimize_allExternalEventGroups";
+    } else {
       return getSourceType()
           + ":"
-          + ((CamundaEventSourceConfigDto) configuration).getProcessDefinitionKey();
-    } else {
-      final ExternalEventSourceConfigDto externalSourceConfig =
-          (ExternalEventSourceConfigDto) configuration;
-      if (externalSourceConfig.isIncludeAllGroups()) {
-        return getSourceType() + ":" + "optimize_allExternalEventGroups";
-      } else {
-        return getSourceType()
-            + ":"
-            + Optional.ofNullable(externalSourceConfig.getGroup())
-                .orElse("optimize_noGroupSpecified");
-      }
+          + Optional.ofNullable(externalSourceConfig.getGroup())
+              .orElse("optimize_noGroupSpecified");
     }
+  }
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String configuration = "configuration";
   }
 }

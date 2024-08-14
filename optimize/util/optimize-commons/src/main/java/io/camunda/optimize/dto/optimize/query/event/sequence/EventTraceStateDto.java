@@ -13,15 +13,19 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldNameConstants
 public class EventTraceStateDto implements OptimizeDto {
 
   private String traceId;
   private List<TracedEventDto> eventTrace;
+
+  public static final class Fields {
+
+    public static final String traceId = "traceId";
+    public static final String eventTrace = "eventTrace";
+  }
 }

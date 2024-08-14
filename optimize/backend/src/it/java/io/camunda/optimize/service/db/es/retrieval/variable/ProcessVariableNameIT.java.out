@@ -603,7 +603,7 @@
 //     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
 //     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
 //     importAllEngineEntitiesFromScratch();
-//     embeddedOptimizeExtension.resetImportStartIndexes();
+//     embeddedOptimizeExtension.resetPositionBasedImportStartIndexes();
 //     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 //
 //     // when

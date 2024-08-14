@@ -13,12 +13,11 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@FieldNameConstants
 public class EventProcessRoleRequestDto<T extends IdentityDto> {
+
   private static final String ID_SEGMENT_SEPARATOR = ":";
 
   @Setter(value = AccessLevel.PROTECTED)
@@ -27,7 +26,7 @@ public class EventProcessRoleRequestDto<T extends IdentityDto> {
   private T identity;
 
   public EventProcessRoleRequestDto(final T identity) {
-    this.id = convertIdentityToRoleId(identity);
+    id = convertIdentityToRoleId(identity);
     this.identity = identity;
   }
 
@@ -39,5 +38,11 @@ public class EventProcessRoleRequestDto<T extends IdentityDto> {
     return identity.getType() == null
         ? "UNKNOWN" + ID_SEGMENT_SEPARATOR + identity.getId()
         : identity.getType().name() + ID_SEGMENT_SEPARATOR + identity.getId();
+  }
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String identity = "identity";
   }
 }

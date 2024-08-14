@@ -13,13 +13,18 @@ import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-@FieldNameConstants
 public class EventCorrelationStateDto {
+
   private Map<MappedEventType, Set<String>> correlatedAsToFlowNodeInstanceIds =
       new EnumMap<>(MappedEventType.class);
+
+  public static final class Fields {
+
+    public static final String correlatedAsToFlowNodeInstanceIds =
+        "correlatedAsToFlowNodeInstanceIds";
+  }
 }

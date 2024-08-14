@@ -20,12 +20,10 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldNameConstants
 public class CombinedReportDataDto implements ReportDataDto {
 
   protected CombinedReportConfigurationDto configuration = new CombinedReportConfigurationDto();
@@ -50,5 +48,12 @@ public class CombinedReportDataDto implements ReportDataDto {
   @Override
   public List<String> createCommandKeys() {
     return Collections.singletonList(createCommandKey());
+  }
+
+  public static final class Fields {
+
+    public static final String configuration = "configuration";
+    public static final String visualization = "visualization";
+    public static final String reports = "reports";
   }
 }

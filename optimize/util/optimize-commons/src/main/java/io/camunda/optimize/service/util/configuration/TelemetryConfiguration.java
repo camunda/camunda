@@ -14,13 +14,12 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@FieldNameConstants(asEnum = true)
 @Data
 public class TelemetryConfiguration {
+
   private boolean initializeTelemetry;
   private long reportingIntervalInHours;
 
@@ -31,5 +30,10 @@ public class TelemetryConfiguration {
               "%s.%s must be set to a positive number",
               TELEMETRY_CONFIGURATION, Fields.reportingIntervalInHours.name()));
     }
+  }
+
+  public enum Fields {
+    initializeTelemetry,
+    reportingIntervalInHours
   }
 }

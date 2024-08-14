@@ -9,7 +9,7 @@ package io.camunda.optimize.service.db.es.report.command.modules.distributed_by.
 
 import static io.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.NOT_IN;
 import static io.camunda.optimize.service.db.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
-import static io.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
+import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NODE_TYPE_USER_TASK;
 import static java.util.stream.Collectors.toSet;
 
 import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;

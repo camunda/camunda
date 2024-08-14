@@ -12,13 +12,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import lombok.Data;
-import lombok.experimental.FieldNameConstants;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
-@FieldNameConstants(asEnum = true)
 public class CollectionDataDto {
+
   protected Object configuration = new HashMap<>();
   private List<CollectionRoleRequestDto> roles = new ArrayList<>();
   private List<CollectionScopeEntryDto> scope = new ArrayList<>();
+
+  public enum Fields {
+    configuration,
+    roles,
+    scope
+  }
 }

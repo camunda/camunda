@@ -24,8 +24,6 @@ public class OptimizeResourceConstants implements ConfigurationReloadable {
   public static final String INDEX_HTML_PAGE = "/index.html";
   public static final String STATIC_RESOURCE_PATH = "/static";
 
-  public static final String STATUS_WEBSOCKET_PATH = "/ws/status";
-
   public static final ImmutableList<String> NO_CACHE_RESOURCES =
       ImmutableList.<String>builder().add(INDEX_PAGE).add(INDEX_HTML_PAGE).build();
   public static final String ACTUATOR_PORT_PROPERTY_KEY = "management.server.port";

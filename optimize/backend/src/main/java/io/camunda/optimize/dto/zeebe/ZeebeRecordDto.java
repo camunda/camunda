@@ -22,12 +22,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import lombok.experimental.FieldNameConstants;
 
 @EqualsAndHashCode
 @Getter
 @Setter
-@FieldNameConstants
 @NoArgsConstructor
 @ToString(callSuper = true)
 public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends Intent>
@@ -67,5 +65,24 @@ public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends I
 
   public OffsetDateTime getDateForTimestamp() {
     return OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
+  }
+
+  public static final class Fields {
+
+    public static final String position = "position";
+    public static final String sequence = "sequence";
+    public static final String sourceRecordPosition = "sourceRecordPosition";
+    public static final String key = "key";
+    public static final String timestamp = "timestamp";
+    public static final String partitionId = "partitionId";
+    public static final String recordType = "recordType";
+    public static final String rejectionType = "rejectionType";
+    public static final String rejectionReason = "rejectionReason";
+    public static final String brokerVersion = "brokerVersion";
+    public static final String valueType = "valueType";
+    public static final String value = "value";
+    public static final String intent = "intent";
+    public static final String authorizations = "authorizations";
+    public static final String operationReference = "operationReference";
   }
 }

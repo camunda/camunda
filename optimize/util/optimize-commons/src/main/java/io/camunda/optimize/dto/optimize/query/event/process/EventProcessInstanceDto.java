@@ -17,18 +17,23 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(builderMethodName = "eventProcessInstanceBuilder")
-@FieldNameConstants
 public class EventProcessInstanceDto extends ProcessInstanceDto {
+
   @Builder.Default
   private List<FlowNodeInstanceUpdateDto> pendingFlowNodeInstanceUpdates = new ArrayList<>();
 
   @Builder.Default
   private Map<String, EventCorrelationStateDto> correlatedEventsById = new HashMap<>();
+
+  public static final class Fields {
+
+    public static final String pendingFlowNodeInstanceUpdates = "pendingFlowNodeInstanceUpdates";
+    public static final String correlatedEventsById = "correlatedEventsById";
+  }
 }

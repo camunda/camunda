@@ -60,6 +60,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -87,8 +88,10 @@ public class MultiTenancyMigrationTest {
 
     @BeforeEach
     void setup() {
-      legacyState = new LegacyProcessState(zeebeDb, transactionContext);
-      processState = new DbProcessState(zeebeDb, transactionContext, new EngineConfiguration());
+      legacyState = new LegacyProcessState(zeebeDb, transactionContext, InstantSource.system());
+      processState =
+          new DbProcessState(
+              zeebeDb, transactionContext, new EngineConfiguration(), InstantSource.system());
     }
 
     @Test
@@ -711,7 +714,8 @@ public class MultiTenancyMigrationTest {
     @BeforeEach
     void setup() {
       legacyState = new LegacyMessageSubscriptionState(zeebeDb, transactionContext);
-      state = new DbMessageSubscriptionState(zeebeDb, transactionContext, null);
+      state =
+          new DbMessageSubscriptionState(zeebeDb, transactionContext, null, InstantSource.system());
     }
 
     @Test
@@ -787,7 +791,9 @@ public class MultiTenancyMigrationTest {
     @BeforeEach
     void setup() {
       legacyState = new LegacyProcessMessageSubscriptionState(zeebeDb, transactionContext);
-      state = new DbProcessMessageSubscriptionState(zeebeDb, transactionContext, null);
+      state =
+          new DbProcessMessageSubscriptionState(
+              zeebeDb, transactionContext, null, InstantSource.system());
     }
 
     @Test

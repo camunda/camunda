@@ -6,39 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
+import {useUiConfig} from 'hooks';
+
 import Footer from './Footer';
-import {getOptimizeVersion, getOptimizeProfile} from 'config';
 
-import ConnectionStatus from './ConnectionStatus';
-
-jest.mock('config', () => {
-  return {
-    getOptimizeVersion: jest.fn(),
-    getOptimizeProfile: jest.fn().mockReturnValue('platform'),
-  };
-});
+jest.mock('hooks', () => ({
+  useUiConfig: jest.fn().mockReturnValue({optimizeVersion: ''}),
+}));
 
 it('includes the version number retrieved from back-end', async () => {
   const version = 'alpha';
-  (getOptimizeVersion as jest.Mock).mockReturnValue(version);
+  (useUiConfig as jest.Mock).mockReturnValue({optimizeVersion: version});
 
   const node = shallow(<Footer />);
-
-  runLastEffect();
-  await flushPromises();
 
   expect(node.find('.colophon')).toIncludeText(version);
-});
-
-it('should not show status in cloud environment', async () => {
-  (getOptimizeProfile as jest.Mock).mockReturnValueOnce('cloud');
-  const node = shallow(<Footer />);
-
-  runLastEffect();
-  await flushPromises();
-
-  expect(node.find(ConnectionStatus)).not.toExist();
 });

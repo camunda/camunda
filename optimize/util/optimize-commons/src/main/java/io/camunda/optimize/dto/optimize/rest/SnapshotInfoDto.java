@@ -18,6 +18,7 @@ import org.elasticsearch.snapshots.SnapshotState;
 @AllArgsConstructor
 @Data
 public class SnapshotInfoDto {
+
   private String snapshotName;
   private SnapshotState state;
   private OffsetDateTime startTime;

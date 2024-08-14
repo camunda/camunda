@@ -27,14 +27,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.experimental.FieldNameConstants;
 
 @AllArgsConstructor
 @Builder
 @Data
-@FieldNameConstants
 @NoArgsConstructor
 public class SingleReportConfigurationDto implements Combinable {
+
   @Builder.Default private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
 
   @Builder.Default
@@ -128,5 +127,36 @@ public class SingleReportConfigurationDto implements Combinable {
 
   public Optional<ProcessPartDto> getProcessPart() {
     return Optional.ofNullable(processPart);
+  }
+
+  public static final class Fields {
+
+    public static final String color = "color";
+    public static final String aggregationTypes = "aggregationTypes";
+    public static final String userTaskDurationTimes = "userTaskDurationTimes";
+    public static final String showInstanceCount = "showInstanceCount";
+    public static final String pointMarkers = "pointMarkers";
+    public static final String precision = "precision";
+    public static final String hideRelativeValue = "hideRelativeValue";
+    public static final String hideAbsoluteValue = "hideAbsoluteValue";
+    public static final String yLabel = "yLabel";
+    public static final String xLabel = "xLabel";
+    public static final String alwaysShowRelative = "alwaysShowRelative";
+    public static final String alwaysShowAbsolute = "alwaysShowAbsolute";
+    public static final String showGradientBars = "showGradientBars";
+    public static final String xml = "xml";
+    public static final String tableColumns = "tableColumns";
+    public static final String targetValue = "targetValue";
+    public static final String heatmapTargetValue = "heatmapTargetValue";
+    public static final String groupByDateVariableUnit = "groupByDateVariableUnit";
+    public static final String distributeByDateVariableUnit = "distributeByDateVariableUnit";
+    public static final String customBucket = "customBucket";
+    public static final String distributeByCustomBucket = "distributeByCustomBucket";
+    public static final String sorting = "sorting";
+    public static final String processPart = "processPart";
+    public static final String measureVisualizations = "measureVisualizations";
+    public static final String stackedBar = "stackedBar";
+    public static final String horizontalBar = "horizontalBar";
+    public static final String logScale = "logScale";
   }
 }
