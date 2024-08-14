@@ -11,6 +11,7 @@ import io.camunda.exporter.entities.ExporterEntity;
 import io.camunda.exporter.exceptions.PersistenceException;
 import java.util.Map;
 
+/** A {@link BatchRequest} contains updates to one or more {@link ExporterEntity} */
 public interface BatchRequest {
 
   BatchRequest add(String index, ExporterEntity entity) throws PersistenceException;
@@ -55,6 +56,11 @@ public interface BatchRequest {
       String index, String id, String script, Map<String, Object> parameters)
       throws PersistenceException;
 
+  /**
+   * Applies all updates in this batch.
+   *
+   * @throws PersistenceException if an error occurs during the execution
+   */
   void execute() throws PersistenceException;
 
   void executeWithRefresh() throws PersistenceException;
