@@ -17,7 +17,9 @@ package io.camunda.zeebe.protocol.record.intent;
 
 public enum ClockIntent implements Intent {
   PIN((short) 0, false),
-  PINNED((short) 1, true);
+  PINNED((short) 1, true),
+  RESET((short) 2, false),
+  RESETTED((short) 3, true);
 
   private final short value;
   private final boolean isEvent;
@@ -37,6 +39,10 @@ public enum ClockIntent implements Intent {
         return PIN;
       case 1:
         return PINNED;
+      case 2:
+        return RESET;
+      case 3:
+        return RESETTED;
       default:
         return Intent.UNKNOWN;
     }
