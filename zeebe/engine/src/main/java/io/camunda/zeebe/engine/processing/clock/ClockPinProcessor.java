@@ -62,7 +62,7 @@ public final class ClockPinProcessor implements DistributedTypedRecordProcessor<
   }
 
   private void applyClockModification(final long key, final ClockRecord clockRecord) {
-    final long pinnedAtEpoch = clockRecord.getPinnedAtEpoch();
+    final long pinnedAtEpoch = clockRecord.getTime();
 
     sideEffectWriter.appendSideEffect(
         () -> {

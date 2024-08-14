@@ -22,6 +22,6 @@ public final class ClockPinnedApplier implements TypedEventApplier<ClockIntent, 
 
   @Override
   public void applyState(final long key, final ClockRecord value) {
-    clockState.pinAt(value.getPinnedAtEpoch());
+    clockState.pinAt(value.getTime());
   }
 }
