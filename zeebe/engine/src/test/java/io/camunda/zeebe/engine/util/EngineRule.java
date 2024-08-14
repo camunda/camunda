@@ -206,6 +206,10 @@ public final class EngineRule extends ExternalResource {
     interPartitionCommandSenders.forEach(s -> s.initializeWriters(partitionCount));
   }
 
+  public void snapshot() {
+    environmentRule.snapshot();
+  }
+
   public void forEachPartition(final Consumer<Integer> partitionIdConsumer) {
     int partitionId = PARTITION_ID;
     for (int i = 0; i < partitionCount; i++) {

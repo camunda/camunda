@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.client.ClockClient;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -37,6 +38,28 @@ public final class ClockPinTest {
     final var record = clockClient.pinAt(fakeNow);
     // required to ensure we apply the side effect of the clock
     ENGINE.awaitProcessingOf(record);
+
+    // then
+    assertThat(ENGINE.getStreamClock().instant()).isEqualTo(fakeNow);
+    assertThat(ENGINE.getProcessingState().getClockState().getModification())
+        .isEqualTo(Modification.pinAt(fakeNow));
+  }
+
+  @Test
+  public void shouldRestorePinOnRestart() {
+    // given
+    final var fakeNow = Instant.now().minusSeconds(180).truncatedTo(ChronoUnit.MILLIS);
+    final var record = clockClient.pinAt(fakeNow);
+    // required to ensure we have updated the state
+    ENGINE.awaitProcessingOf(record);
+    assertThat(ENGINE.hasReachedEnd()).isTrue();
+
+    // when
+    ENGINE.snapshot();
+    ENGINE.stop();
+    RecordingExporter.reset();
+    ENGINE.start();
+    assertThat(ENGINE.hasReachedEnd()).isTrue();
 
     // then
     assertThat(ENGINE.getStreamClock().instant()).isEqualTo(fakeNow);
