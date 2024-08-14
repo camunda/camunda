@@ -42,6 +42,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.InstantSource;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -74,16 +75,19 @@ public final class StreamPlatform {
   private final StreamProcessorLifecycleAware mockProcessorLifecycleAware;
   private final StreamProcessorListener mockStreamProcessorListener;
   private TestCommandCache scheduledCommandCache;
+  private final InstantSource clock;
 
   public StreamPlatform(
       final Path dataDirectory,
       final List<AutoCloseable> closeables,
       final ActorScheduler actorScheduler,
-      final ZeebeDbFactory zeebeDbFactory) {
+      final ZeebeDbFactory zeebeDbFactory,
+      final InstantSource clock) {
     this.dataDirectory = dataDirectory;
     this.closeables = closeables;
     this.actorScheduler = actorScheduler;
     this.zeebeDbFactory = zeebeDbFactory;
+    this.clock = clock;
 
     mockCommandResponseWriter = mock(CommandResponseWriter.class);
     when(mockCommandResponseWriter.intent(any())).thenReturn(mockCommandResponseWriter);
@@ -153,6 +157,7 @@ public final class StreamPlatform {
         SyncLogStream.builder()
             .withLogName(STREAM_NAME + partitionId)
             .withLogStorage(logStorage)
+            .withClock(clock)
             .withPartitionId(partitionId)
             .withActorSchedulingService(actorScheduler)
             .build();
