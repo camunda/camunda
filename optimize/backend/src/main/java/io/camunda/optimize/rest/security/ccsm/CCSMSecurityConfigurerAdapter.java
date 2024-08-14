@@ -18,12 +18,10 @@ import static io.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
 import static io.camunda.optimize.rest.LocalizationRestService.LOCALIZATION_PATH;
 import static io.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
-import static io.camunda.optimize.rest.security.platform.PlatformSecurityConfigurerAdapter.DEEP_SUB_PATH_ANY;
 
 import io.camunda.optimize.rest.security.AbstractSecurityConfigurerAdapter;
 import io.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
 import io.camunda.optimize.rest.security.oauth.AudienceValidator;
-import io.camunda.optimize.rest.security.platform.OptimizeStaticTokenDecoder;
 import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.optimize.service.security.SessionService;
@@ -75,7 +73,7 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
   }
 
   @Bean
-  public CCSMAuthenticationCookieFilter ccsmAuthenticationCookieFilter(HttpSecurity http)
+  public CCSMAuthenticationCookieFilter ccsmAuthenticationCookieFilter(final HttpSecurity http)
       throws Exception {
     return new CCSMAuthenticationCookieFilter(
         ccsmTokenService,
@@ -87,7 +85,7 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
   @SneakyThrows
   @Bean
   @Order(1)
-  protected SecurityFilterChain configurePublicApi(HttpSecurity http) {
+  protected SecurityFilterChain configurePublicApi(final HttpSecurity http) {
     final HttpSecurity httpSecurityBuilder =
         http.securityMatchers(
             securityMatchers ->
@@ -100,7 +98,7 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
   @SneakyThrows
   @Bean
   @Order(2)
-  protected SecurityFilterChain configureWebSecurity(HttpSecurity http) {
+  protected SecurityFilterChain configureWebSecurity(final HttpSecurity http) {
     return super.configureGenericSecurityOptions(http)
         // Then we configure the specific web security for CCSM
         .authorizeHttpRequests(
@@ -160,8 +158,8 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
   }
 
   private JwtDecoder createJwtDecoderWithAudience(final String jwtSetUri) {
-    NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwtSetUri).build();
-    OAuth2TokenValidator<Jwt> audienceValidator =
+    final NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwtSetUri).build();
+    final OAuth2TokenValidator<Jwt> audienceValidator =
         new AudienceValidator(getAudienceFromConfiguration());
     jwtDecoder.setJwtValidator(audienceValidator);
     return jwtDecoder;

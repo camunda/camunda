@@ -8,7 +8,7 @@
 // TODO recreate C8 IT equivalent of this with #13337
 
 // package io.camunda.optimize.rest;
-// 
+//
 // import static io.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 // import static io.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 // import static io.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
@@ -17,10 +17,9 @@
 // import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 // import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 // import static io.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
-// import static io.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 // import static io.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 // import static org.assertj.core.api.Assertions.assertThat;
-// 
+//
 // import com.google.common.collect.Lists;
 // import io.camunda.optimize.AbstractPlatformIT;
 // import io.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
@@ -56,10 +55,10 @@
 // import org.junit.jupiter.api.Test;
 // import org.junit.jupiter.params.ParameterizedTest;
 // import org.junit.jupiter.params.provider.EnumSource;
-// 
+//
 // @Tag(OPENSEARCH_PASSING)
 // public class DefinitionRestServiceIT extends AbstractPlatformIT {
-// 
+//
 //   private static final TenantDto SIMPLE_TENANT_NOT_DEFINED_DTO =
 //       TenantDto.builder().id(TENANT_NOT_DEFINED.getId()).name(TENANT_NOT_DEFINED.getName()).build();
 //   private static final String VERSION_TAG = "aVersionTag";
@@ -77,18 +76,18 @@
 //       TenantDto.builder().id("tenant3").name("Tenant 3").engine(DEFAULT_ENGINE_ALIAS).build();
 //   private static final TenantResponseDto TENANT_3_RESPONSE_DTO =
 //       new TenantResponseDto(TENANT_3.getId(), TENANT_3.getName());
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   public void getDefinitionByTypeAndKey(final DefinitionType definitionType) {
 //     // given
 //     final DefinitionOptimizeResponseDto expectedDefinition =
 //         createDefinitionAndAddToDatabase(definitionType, "key", "1", null, "the name");
-// 
+//
 //     // when
 //     final DefinitionResponseDto definition =
 //         definitionClient.getDefinitionByTypeAndKey(definitionType, expectedDefinition);
-// 
+//
 //     // then
 //     assertThat(definition).isNotNull();
 //     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
@@ -96,7 +95,7 @@
 //     assertThat(definition.getName()).isEqualTo(expectedDefinition.getName());
 //     assertThat(definition.getTenants()).isNotEmpty().containsOnly(SIMPLE_TENANT_NOT_DEFINED_DTO);
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   public void getDefinitionByTypeAndKeyGetsLatestName(final DefinitionType definitionType) {
@@ -105,11 +104,11 @@
 //         createDefinitionAndAddToDatabase(definitionType, "key", "1", null, "the name");
 //     final DefinitionOptimizeResponseDto definitionV2 =
 //         createDefinitionAndAddToDatabase(definitionType, "key", "2", null, "new name");
-// 
+//
 //     // when
 //     final DefinitionResponseDto definition =
 //         definitionClient.getDefinitionByTypeAndKey(definitionType, definitionV1);
-// 
+//
 //     // then the name of the definition comes from the latest version
 //     assertThat(definition).isNotNull();
 //     assertThat(definition.getKey()).isEqualTo(definitionV1.getKey());
@@ -117,7 +116,7 @@
 //     assertThat(definition.getName()).isEqualTo(definitionV2.getName());
 //     assertThat(definition.getTenants()).isNotEmpty().containsOnly(SIMPLE_TENANT_NOT_DEFINED_DTO);
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   public void getDefinitionByTypeAndKeyReturnsNonDeletedDefinition(
@@ -126,35 +125,35 @@
 //     final DefinitionOptimizeResponseDto nonDeletedDefinition =
 //         createDefinitionAndAddToDatabase(definitionType, "key", "1", null, "not deleted", false);
 //     createDefinitionAndAddToDatabase(definitionType, "key", "1", null, "deleted", true);
-// 
+//
 //     // when
 //     final DefinitionResponseDto definition =
 //         definitionClient.getDefinitionByTypeAndKey(definitionType, nonDeletedDefinition);
-// 
+//
 //     assertThat(definition).isNotNull();
 //     assertThat(definition.getKey()).isEqualTo(nonDeletedDefinition.getKey());
 //     assertThat(definition.getType()).isEqualTo(definitionType);
 //     assertThat(definition.getName()).isEqualTo(nonDeletedDefinition.getName());
 //     assertThat(definition.getTenants()).isNotEmpty().containsOnly(SIMPLE_TENANT_NOT_DEFINED_DTO);
 //   }
-// 
+//
 //   @Test
 //   public void getEventDefinitionByTypeAndKey() {
 //     // given
 //     final DefinitionOptimizeResponseDto expectedDefinition =
 //         createEventBasedDefinition("key", "the name");
-// 
+//
 //     // when
 //     final DefinitionResponseDto definition =
 //         definitionClient.getDefinitionByTypeAndKey(PROCESS, expectedDefinition);
-// 
+//
 //     assertThat(definition).isNotNull();
 //     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
 //     assertThat(definition.getType()).isEqualTo(PROCESS);
 //     assertThat(definition.getName()).isEqualTo(expectedDefinition.getName());
 //     assertThat(definition.getTenants()).isNotEmpty().containsOnly(SIMPLE_TENANT_NOT_DEFINED_DTO);
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   public void getDefinitionByTypeAndKey_keyNotFound(final DefinitionType definitionType) {
@@ -164,11 +163,11 @@
 //             .getRequestExecutor()
 //             .buildGetDefinitionByTypeAndKeyRequest(definitionType.getId(), "does not exist")
 //             .execute();
-// 
+//
 //     assertThat(response).isNotNull();
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
 //   }
-// 
+//
 //   @Test
 //   public void getDefinitionByTypeAndKey_invalidType() {
 //     // when
@@ -177,11 +176,11 @@
 //             .getRequestExecutor()
 //             .buildGetDefinitionByTypeAndKeyRequest("invalid", "doesntMatter")
 //             .execute();
-// 
+//
 //     assertThat(response).isNotNull();
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //   }
-// 
+//
 //   @Test
 //   public void getDefinitionByTypeAndKey_unauthenticated() {
 //     // when
@@ -191,11 +190,11 @@
 //             .withoutAuthentication()
 //             .buildGetDefinitionByTypeAndKeyRequest(DefinitionType.PROCESS.getId(), "doesntMatter")
 //             .execute();
-// 
+//
 //     assertThat(response).isNotNull();
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   public void getDefinitionByTypeAndKey_multiTenant_specificTenantDefinitions(
@@ -205,14 +204,14 @@
 //     createTenant(TENANT_2);
 //     // should not be in the result
 //     createTenant(TENANT_3);
-// 
+//
 //     final DefinitionOptimizeResponseDto expectedDefinition =
 //         createDefinitionAndAddToDatabase(definitionType, "key", "1", TENANT_2.getId(), "the name");
-// 
+//
 //     // when
 //     final DefinitionResponseDto definition =
 //         definitionClient.getDefinitionByTypeAndKey(definitionType, expectedDefinition);
-// 
+//
 //     assertThat(definition).isNotNull();
 //     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
 //     assertThat(definition.getType()).isEqualTo(definitionType);
@@ -222,7 +221,7 @@
 //         .extracting("id")
 //         .containsExactly(TENANT_2.getId());
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   public void getDefinitionByTypeAndKey_multiTenant_sharedDefinition(
@@ -230,14 +229,14 @@
 //     // given
 //     createTenant(TENANT_1);
 //     createTenant(TENANT_2);
-// 
+//
 //     final DefinitionOptimizeResponseDto expectedDefinition =
 //         createDefinitionAndAddToDatabase(definitionType, "key", "1", null, "the name");
-// 
+//
 //     // when
 //     final DefinitionResponseDto definition =
 //         definitionClient.getDefinitionByTypeAndKey(definitionType, expectedDefinition);
-// 
+//
 //     assertThat(definition).isNotNull();
 //     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
 //     assertThat(definition.getType()).isEqualTo(definitionType);
@@ -247,7 +246,7 @@
 //         .extracting("id")
 //         .containsExactly(SIMPLE_TENANT_NOT_DEFINED_DTO.getId(), TENANT_1.getId(), TENANT_2.getId());
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   public void getDefinitionByTypeAndKey_multiTenant_sharedAndSpecificDefinition(
@@ -255,16 +254,16 @@
 //     // given
 //     createTenant(TENANT_1);
 //     createTenant(TENANT_2);
-// 
+//
 //     final DefinitionOptimizeResponseDto expectedDefinition =
 //         createDefinitionAndAddToDatabase(definitionType, "key", "1", null, "the name");
 //     // having a mix should not distort the result
 //     createDefinitionAndAddToDatabase(definitionType, "key", "1", TENANT_2.getId(), "the name");
-// 
+//
 //     // when
 //     final DefinitionResponseDto definition =
 //         definitionClient.getDefinitionByTypeAndKey(definitionType, expectedDefinition);
-// 
+//
 //     assertThat(definition).isNotNull();
 //     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
 //     assertThat(definition.getType()).isEqualTo(definitionType);
@@ -274,7 +273,7 @@
 //         .extracting("id")
 //         .containsExactly(SIMPLE_TENANT_NOT_DEFINED_DTO.getId(), TENANT_1.getId(), TENANT_2.getId());
 //   }
-// 
+//
 //   @Test
 //   public void getDefinitions() {
 //     // given
@@ -301,10 +300,10 @@
 //     createDefinitionAndAddToDatabase(PROCESS, "process1", "1", null, "Process Definition1", true);
 //     createDefinitionAndAddToDatabase(
 //         DECISION, "decision1", "1", null, "Decision Definition1", true);
-// 
+//
 //     // when
 //     final List<DefinitionResponseDto> definitions = definitionClient.getAllDefinitions();
-// 
+//
 //     assertThat(definitions)
 //         .isNotEmpty()
 //         .hasSize(9)
@@ -373,7 +372,7 @@
 //                 Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
 //                 DEFAULT_ENGINE_ALIAS));
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   public void getDefinitions_nameUpdatedBetweenVersions(final DefinitionType definitionType) {
@@ -383,10 +382,10 @@
 //         createDefinitionAndAddToDatabase(definitionType, "definition1", "2", null, "updated name");
 //     final DefinitionOptimizeResponseDto definition2 =
 //         createDefinitionAndAddToDatabase(definitionType, "definition2", "1", null, "process2");
-// 
+//
 //     // when
 //     final List<DefinitionResponseDto> definitions = definitionClient.getAllDefinitions();
-// 
+//
 //     assertThat(definitions)
 //         .isNotEmpty()
 //         .hasSize(2)
@@ -404,14 +403,14 @@
 //                 Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
 //                 DEFAULT_ENGINE_ALIAS));
 //   }
-// 
+//
 //   @Test
 //   public void getDefinitions_multiTenant_specificTenantDefinitions() {
 //     // given
 //     createTenant(TENANT_1);
 //     createTenant(TENANT_2);
 //     createTenant(TENANT_3);
-// 
+//
 //     final DefinitionOptimizeResponseDto processDefinition1_1 =
 //         createDefinitionAndAddToDatabase(
 //             PROCESS, "process1", "1", TENANT_1.getId(), "Process Definition1");
@@ -424,7 +423,7 @@
 //     final DefinitionOptimizeResponseDto processDefinition2_2 =
 //         createDefinitionAndAddToDatabase(
 //             PROCESS, "process2", "1", TENANT_2.getId(), "Process Definition2");
-// 
+//
 //     final DefinitionOptimizeResponseDto decisionDefinition1_1 =
 //         createDefinitionAndAddToDatabase(
 //             DECISION, "decision1", "2", TENANT_1.getId(), "Decision Definition1");
@@ -438,10 +437,10 @@
 //     final DefinitionOptimizeResponseDto decisionDefinition2_2 =
 //         createDefinitionAndAddToDatabase(
 //             DECISION, "decision2", "1", TENANT_2.getId(), "Decision Definition2");
-// 
+//
 //     // when
 //     final List<DefinitionResponseDto> definitions = definitionClient.getAllDefinitions();
-// 
+//
 //     assertThat(definitions)
 //         .isNotEmpty()
 //         .hasSize(4)
@@ -475,24 +474,24 @@
 //                 Lists.newArrayList(TENANT_2, TENANT_3),
 //                 DEFAULT_ENGINE_ALIAS));
 //   }
-// 
+//
 //   @Test
 //   public void getDefinitions_multiTenant_sharedDefinitions() {
 //     // given
 //     createTenant(TENANT_1);
 //     createTenant(TENANT_2);
 //     createTenant(TENANT_3);
-// 
+//
 //     final DefinitionOptimizeResponseDto processDefinition1_1 =
 //         createDefinitionAndAddToDatabase(PROCESS, "process1", "1", null, "Process Definition1");
 //     final DefinitionOptimizeResponseDto decisionDefinition1_1 =
 //         createDefinitionAndAddToDatabase(DECISION, "decision1", "1", null, "Decision Definition1");
 //     final DefinitionOptimizeResponseDto eventProcessDefinition1_1 =
 //         createEventBasedDefinition("eventProcess1", "Event Process Definition1");
-// 
+//
 //     // when
 //     final List<DefinitionResponseDto> definitions = definitionClient.getAllDefinitions();
-// 
+//
 //     assertThat(definitions)
 //         .isNotEmpty()
 //         .hasSize(3)
@@ -520,14 +519,14 @@
 //                 Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, TENANT_1, TENANT_2, TENANT_3),
 //                 DEFAULT_ENGINE_ALIAS));
 //   }
-// 
+//
 //   @Test
 //   public void getDefinitions_multiTenant_sharedAndSpecificDefinitions() {
 //     // given
 //     createTenant(TENANT_1);
 //     createTenant(TENANT_2);
 //     createTenant(TENANT_3);
-// 
+//
 //     final String processKey1 = "process1";
 //     final String processName1 = "Process Definition1";
 //     final SimpleDefinitionDto processDefinition1 =
@@ -561,7 +560,7 @@
 //     final SimpleDefinitionDto decisionDefinition2 =
 //         new SimpleDefinitionDto(
 //             decisionKey2, decisionName2, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS);
-// 
+//
 //     final DefinitionOptimizeResponseDto eventProcess1 =
 //         createEventBasedDefinition("eventProcessKey1", "Event Process Definition1");
 //     final SimpleDefinitionDto eventProcessDefinition1 =
@@ -580,10 +579,10 @@
 //             DefinitionType.PROCESS,
 //             true,
 //             DEFAULT_ENGINE_ALIAS);
-// 
+//
 //     // when
 //     final List<DefinitionResponseDto> definitions = definitionClient.getAllDefinitions();
-// 
+//
 //     assertThat(definitions)
 //         .isNotEmpty()
 //         .hasSize(6)
@@ -634,7 +633,7 @@
 //                 Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, TENANT_1, TENANT_2, TENANT_3),
 //                 DEFAULT_ENGINE_ALIAS));
 //   }
-// 
+//
 //   @Test
 //   public void getDefinitions_unauthenticated() {
 //     // when
@@ -644,11 +643,11 @@
 //             .withoutAuthentication()
 //             .buildGetDefinitions()
 //             .execute();
-// 
+//
 //     assertThat(response).isNotNull();
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   public void getDefinitionKeysByType(final DefinitionType definitionType) {
@@ -676,11 +675,11 @@
 //             .findFirst()
 //             .orElseThrow(OptimizeIntegrationTestException::new);
 //     createDefinitionAndAddToDatabase(otherDefinitionType, "other", "1", null, "other");
-// 
+//
 //     // when I get process definition keys
 //     final List<DefinitionKeyResponseDto> definitions =
 //         definitionClient.getDefinitionKeysByType(definitionType);
-// 
+//
 //     // then
 //     assertThat(definitions)
 //         .isNotEmpty()
@@ -693,7 +692,7 @@
 //             new DefinitionKeyResponseDto(
 //                 definition2_tenant1.getKey(), definition2_tenant1.getName()));
 //   }
-// 
+//
 //   @Test
 //   public void getDecisionDefinitionKeys_camundaImportedEventProcessesOnlyNotAllowed() {
 //     // when
@@ -702,20 +701,20 @@
 //             .getRequestExecutor()
 //             .buildGetDefinitionKeysByType(DECISION.getId(), null, true)
 //             .execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //   }
-// 
+//
 //   @Test
 //   public void getProcessDefinitionKeys_camundaImportedEventProcessesOnly() {
 //     // given
 //     toggleCamundaEventImportsConfiguration(true);
-// 
+//
 //     final ProcessInstanceEngineDto firstInstance = deployDefinitionAndStartInstance("aProcess");
 //     importAllEngineEntitiesFromScratch();
 //     embeddedOptimizeExtension.processEvents();
-// 
+//
 //     // then the key is returned when requesting keys for camunda event imported definitions
 //     final List<DefinitionKeyResponseDto> keysForCamundaEventImportedDefinitions =
 //         definitionClient.getCamundaEventImportedProcessDefinitionKeys();
@@ -723,7 +722,7 @@
 //         .hasSize(1)
 //         .extracting(DefinitionKeyResponseDto::getKey)
 //         .containsExactly(firstInstance.getProcessDefinitionKey());
-// 
+//
 //     // when we disable imports of Camunda events
 //     toggleCamundaEventImportsConfiguration(false);
 //     // and deploy a second definition and start an instance
@@ -731,7 +730,7 @@
 //         deployDefinitionAndStartInstance("anotherProcess");
 //     importAllEngineEntitiesFromLastIndex();
 //     embeddedOptimizeExtension.processEvents();
-// 
+//
 //     // then both keys are available when fetching all keys
 //     final List<DefinitionKeyResponseDto> allDefinitionKeys =
 //         definitionClient.getDefinitionKeysByType(PROCESS);
@@ -749,7 +748,7 @@
 //         .hasSize(1)
 //         .containsExactlyElementsOf(keysForCamundaEventImportedDefinitions);
 //   }
-// 
+//
 //   @Test
 //   public void getDefinitionKeysByType_unauthenticated() {
 //     // when
@@ -759,12 +758,12 @@
 //             .withoutAuthentication()
 //             .buildGetDefinitionKeysByType(PROCESS.getId())
 //             .execute();
-// 
+//
 //     // then
 //     assertThat(response).isNotNull();
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   public void getDefinitionVersionsByTypeAndKey(final DefinitionType definitionType) {
@@ -781,18 +780,18 @@
 //     createDefinitionAndAddToDatabase(otherDefinitionType, "other", "1", null, "other");
 //     createDefinitionAndAddToDatabase(otherDefinitionType, "other", "2", null, "other");
 //     createDefinitionAndAddToDatabase(otherDefinitionType, "other", "3", null, "other");
-// 
+//
 //     // when
 //     final List<DefinitionVersionResponseDto> versions =
 //         definitionClient.getDefinitionVersionsByTypeAndKey(definitionType, definitionKey);
-// 
+//
 //     // then
 //     assertThat(versions)
 //         .containsExactly(
 //             new DefinitionVersionResponseDto("2", VERSION_TAG),
 //             new DefinitionVersionResponseDto("1", VERSION_TAG));
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   public void getDefinitionVersionsIsSortedNumerically(final DefinitionType definitionType) {
@@ -806,32 +805,32 @@
 //         version ->
 //             createDefinitionAndAddToDatabase(
 //                 definitionType, definitionKey, version, null, "the name"));
-// 
+//
 //     // when
 //     final List<DefinitionVersionResponseDto> versions =
 //         definitionClient.getDefinitionVersionsByTypeAndKey(definitionType, definitionKey);
-// 
+//
 //     // then
 //     assertThat(versions)
 //         .extracting(DefinitionVersionResponseDto::getVersion)
 //         .containsExactlyElementsOf(descendingVersions);
 //   }
-// 
+//
 //   @Test
 //   public void getDefinitionVersionsByTypeAndKey_eventBasedProcess() {
 //     // given
 //     final DefinitionOptimizeResponseDto eventProcessDefinition1 =
 //         createEventBasedDefinition("eventProcess1", "Event process Definition1");
-// 
+//
 //     // when
 //     final List<DefinitionVersionResponseDto> versions =
 //         definitionClient.getDefinitionVersionsByTypeAndKey(
 //             PROCESS, eventProcessDefinition1.getKey());
-// 
+//
 //     // then
 //     assertThat(versions).containsExactly(new DefinitionVersionResponseDto("1", null));
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   public void getDefinitionVersionsByTypeAndKey_multiTenant_specificDefinition(
@@ -849,11 +848,11 @@
 //         definitionType, definitionKey, "2", TENANT_2.getId(), "the name");
 //     createDefinitionAndAddToDatabase(
 //         definitionType, definitionKey, "3", TENANT_3.getId(), "the name");
-// 
+//
 //     // when
 //     final List<DefinitionVersionResponseDto> versions =
 //         definitionClient.getDefinitionVersionsByTypeAndKey(definitionType, definitionKey);
-// 
+//
 //     // then
 //     assertThat(versions)
 //         .containsExactly(
@@ -861,7 +860,7 @@
 //             new DefinitionVersionResponseDto("2", VERSION_TAG),
 //             new DefinitionVersionResponseDto("1", VERSION_TAG));
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   public void getDefinitionVersionsByTypeAndKey_multiTenant_sharedDefinition(
@@ -876,11 +875,11 @@
 //     createDefinitionAndAddToDatabase(definitionType, definitionKey, "2", null, "the name");
 //     createDefinitionAndAddToDatabase(definitionType, definitionKey, "3", null, "the name");
 //     createDefinitionAndAddToDatabase(definitionType, definitionKey, "4", null, "the name");
-// 
+//
 //     // when
 //     final List<DefinitionVersionResponseDto> versions =
 //         definitionClient.getDefinitionVersionsByTypeAndKey(definitionType, definitionKey);
-// 
+//
 //     // then
 //     assertThat(versions)
 //         .containsExactly(
@@ -889,7 +888,7 @@
 //             new DefinitionVersionResponseDto("2", VERSION_TAG),
 //             new DefinitionVersionResponseDto("1", VERSION_TAG));
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   public void getDefinitionVersionsByTypeAndKey_multiTenant_sharedAndSpecificDefinitions(
@@ -909,11 +908,11 @@
 //         definitionType, definitionKey, "3", TENANT_2.getId(), "the name");
 //     createDefinitionAndAddToDatabase(
 //         definitionType, definitionKey, "4", TENANT_3.getId(), "the name");
-// 
+//
 //     // when
 //     final List<DefinitionVersionResponseDto> versions =
 //         definitionClient.getDefinitionVersionsByTypeAndKey(definitionType, definitionKey);
-// 
+//
 //     // then
 //     assertThat(versions)
 //         .containsExactly(
@@ -922,7 +921,7 @@
 //             new DefinitionVersionResponseDto("2", VERSION_TAG),
 //             new DefinitionVersionResponseDto("1", VERSION_TAG));
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   public void getDefinitionVersionsByTypeAndKeyExcludesDeletedDefinitions(
@@ -932,18 +931,18 @@
 //     createDefinitionAndAddToDatabase(definitionType, definitionKey, "1", null, "the name");
 //     createDefinitionAndAddToDatabase(definitionType, definitionKey, "2", null, "the name");
 //     createDefinitionAndAddToDatabase(definitionType, definitionKey, "3", null, "deleted", true);
-// 
+//
 //     // when
 //     final List<DefinitionVersionResponseDto> versions =
 //         definitionClient.getDefinitionVersionsByTypeAndKey(definitionType, definitionKey);
-// 
+//
 //     // then
 //     assertThat(versions)
 //         .containsExactly(
 //             new DefinitionVersionResponseDto("2", VERSION_TAG),
 //             new DefinitionVersionResponseDto("1", VERSION_TAG));
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   public void
@@ -972,7 +971,7 @@
 //     final String definitionKey2 = "key2";
 //     createDefinitionAndAddToDatabase(
 //         definitionType, definitionKey2, "1", TENANT_3.getId(), "the name");
-// 
+//
 //     // when all versions are included
 //     final List<DefinitionWithTenantsResponseDto> definitionsWithTenants =
 //         definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
@@ -980,7 +979,7 @@
 //             createMultiDefinitionTenantsRequestDto(
 //                 new DefinitionDto(definitionKey1, List.of("1", "2")),
 //                 new DefinitionDto(definitionKey2, List.of("1"))));
-// 
+//
 //     // then all tenants are returned
 //     assertThat(definitionsWithTenants)
 //         .extracting(
@@ -996,7 +995,7 @@
 //                 definitionKey2,
 //                 Collections.singletonList("1"),
 //                 Collections.singletonList(TENANT_3_RESPONSE_DTO)));
-// 
+//
 //     // when only some versions are included
 //     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForVersion1 =
 //         definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
@@ -1004,7 +1003,7 @@
 //             createMultiDefinitionTenantsRequestDto(
 //                 new DefinitionDto(definitionKey1, List.of("1")),
 //                 new DefinitionDto(definitionKey2, List.of("1"))));
-// 
+//
 //     // then only the tenants belonging to those versions are included
 //     assertThat(definitionsWithTenantsForVersion1)
 //         .extracting(
@@ -1021,7 +1020,7 @@
 //                 Collections.singletonList("1"),
 //                 Collections.singletonList(TENANT_3_RESPONSE_DTO)));
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
@@ -1047,7 +1046,7 @@
 //         definitionType, definitionKey2, "1", TENANT_1.getId(), "the name");
 //     createDefinitionAndAddToDatabase(
 //         definitionType, definitionKey2, "1", TENANT_3.getId(), "the name");
-// 
+//
 //     // when the "all" version is included
 //     final List<DefinitionWithTenantsResponseDto> definitionsWithTenants =
 //         definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
@@ -1055,14 +1054,14 @@
 //             createMultiDefinitionTenantsRequestDto(
 //                 new DefinitionDto(definitionKey1, List.of(ALL_VERSIONS)),
 //                 new DefinitionDto(definitionKey2, List.of(ALL_VERSIONS))));
-// 
+//
 //     // then all tenants are returned
 //     assertThat(definitionsWithTenants)
 //         .extracting(DefinitionWithTenantsResponseDto::getTenants)
 //         .containsExactly(
 //             Arrays.asList(TENANT_1_RESPONSE_DTO, TENANT_2_RESPONSE_DTO, TENANT_3_RESPONSE_DTO),
 //             Arrays.asList(TENANT_1_RESPONSE_DTO, TENANT_3_RESPONSE_DTO));
-// 
+//
 //     // when "all" version is included among specific versions
 //     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForSpecificAndAllVersion =
 //         definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
@@ -1070,7 +1069,7 @@
 //             createMultiDefinitionTenantsRequestDto(
 //                 new DefinitionDto(definitionKey1, List.of(ALL_VERSIONS, "2")),
 //                 new DefinitionDto(definitionKey2, List.of(ALL_VERSIONS, "3"))));
-// 
+//
 //     // then all tenants are returned
 //     assertThat(definitionsWithTenantsForSpecificAndAllVersion)
 //         .extracting(DefinitionWithTenantsResponseDto::getTenants)
@@ -1078,7 +1077,7 @@
 //             Arrays.asList(TENANT_1_RESPONSE_DTO, TENANT_2_RESPONSE_DTO, TENANT_3_RESPONSE_DTO),
 //             Arrays.asList(TENANT_1_RESPONSE_DTO, TENANT_3_RESPONSE_DTO));
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
@@ -1102,7 +1101,7 @@
 //         definitionType, definitionKey2, "1", TENANT_1.getId(), "the name");
 //     createDefinitionAndAddToDatabase(
 //         definitionType, definitionKey2, "1", TENANT_3.getId(), "the name");
-// 
+//
 //     // when latest version is requested
 //     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForLatestVersion =
 //         definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
@@ -1110,14 +1109,14 @@
 //             createMultiDefinitionTenantsRequestDto(
 //                 new DefinitionDto(definitionKey1, List.of(LATEST_VERSION)),
 //                 new DefinitionDto(definitionKey2, List.of(LATEST_VERSION))));
-// 
+//
 //     // then only the available tenant for the latest version are returned
 //     assertThat(definitionsWithTenantsForLatestVersion)
 //         .extracting(DefinitionWithTenantsResponseDto::getTenants)
 //         .containsExactly(
 //             Collections.singletonList(TENANT_3_RESPONSE_DTO),
 //             Arrays.asList(TENANT_1_RESPONSE_DTO, TENANT_3_RESPONSE_DTO));
-// 
+//
 //     // when latest version is requested along with other specific versions
 //     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForLatestAndOtherVersion =
 //         definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
@@ -1125,7 +1124,7 @@
 //             createMultiDefinitionTenantsRequestDto(
 //                 new DefinitionDto(definitionKey1, List.of(LATEST_VERSION, "2")),
 //                 new DefinitionDto(definitionKey2, List.of(LATEST_VERSION, "1"))));
-// 
+//
 //     // then the available tenants for the latest version as well as the other version are returned
 //     assertThat(definitionsWithTenantsForLatestAndOtherVersion)
 //         .extracting(DefinitionWithTenantsResponseDto::getTenants)
@@ -1133,7 +1132,7 @@
 //             Arrays.asList(TENANT_2_RESPONSE_DTO, TENANT_3_RESPONSE_DTO),
 //             Arrays.asList(TENANT_1_RESPONSE_DTO, TENANT_3_RESPONSE_DTO));
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
@@ -1150,7 +1149,7 @@
 //     // and a second definition of same type we want to get as well
 //     final String definitionKey2 = "key2";
 //     createDefinitionAndAddToDatabase(definitionType, definitionKey2, "1", null, "the name");
-// 
+//
 //     // when all versions are included
 //     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForAllVersions =
 //         definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
@@ -1158,7 +1157,7 @@
 //             createMultiDefinitionTenantsRequestDto(
 //                 new DefinitionDto(definitionKey1, List.of(ALL_VERSIONS)),
 //                 new DefinitionDto(definitionKey2, List.of(ALL_VERSIONS))));
-// 
+//
 //     // then all tenants are returned
 //     assertThat(definitionsWithTenantsForAllVersions)
 //         .extracting(DefinitionWithTenantsResponseDto::getTenants)
@@ -1173,7 +1172,7 @@
 //                 TENANT_1_RESPONSE_DTO,
 //                 TENANT_2_RESPONSE_DTO,
 //                 TENANT_3_RESPONSE_DTO));
-// 
+//
 //     // when only some shared versions are included
 //     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForSpecificVersions =
 //         definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
@@ -1181,7 +1180,7 @@
 //             createMultiDefinitionTenantsRequestDto(
 //                 new DefinitionDto(definitionKey1, List.of("1")),
 //                 new DefinitionDto(definitionKey2, List.of("1"))));
-// 
+//
 //     // then still all tenants are available
 //     assertThat(definitionsWithTenantsForSpecificVersions)
 //         .extracting(DefinitionWithTenantsResponseDto::getTenants)
@@ -1197,7 +1196,7 @@
 //                 TENANT_2_RESPONSE_DTO,
 //                 TENANT_3_RESPONSE_DTO));
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
@@ -1231,7 +1230,7 @@
 //         definitionType, definitionKey2, "1", TENANT_2.getId(), "the name");
 //     createDefinitionAndAddToDatabase(
 //         definitionType, definitionKey2, "2", aTenant.getId(), "the name");
-// 
+//
 //     // when all versions are included
 //     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForAllVersions =
 //         definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
@@ -1239,7 +1238,7 @@
 //             createMultiDefinitionTenantsRequestDto(
 //                 new DefinitionDto(definitionKey1, List.of(ALL_VERSIONS)),
 //                 new DefinitionDto(definitionKey2, List.of(ALL_VERSIONS))));
-// 
+//
 //     // then all tenants are returned
 //     assertThat(definitionsWithTenantsForAllVersions)
 //         .extracting(DefinitionWithTenantsResponseDto::getTenants)
@@ -1254,7 +1253,7 @@
 //                 aTenantResponseDto,
 //                 TENANT_1_RESPONSE_DTO,
 //                 TENANT_2_RESPONSE_DTO));
-// 
+//
 //     // when only a shared version is included
 //     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForVersion1 =
 //         definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
@@ -1262,7 +1261,7 @@
 //             createMultiDefinitionTenantsRequestDto(
 //                 new DefinitionDto(definitionKey1, List.of("1")),
 //                 new DefinitionDto(definitionKey2, List.of("1"))));
-// 
+//
 //     // then still all tenants are returned
 //     assertThat(definitionsWithTenantsForVersion1)
 //         .extracting(DefinitionWithTenantsResponseDto::getTenants)
@@ -1277,7 +1276,7 @@
 //                 aTenantResponseDto,
 //                 TENANT_1_RESPONSE_DTO,
 //                 TENANT_2_RESPONSE_DTO));
-// 
+//
 //     // when only a specific version is included
 //     final List<DefinitionWithTenantsResponseDto> definitionsWithTenantsForVersion3 =
 //         definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
@@ -1285,7 +1284,7 @@
 //             createMultiDefinitionTenantsRequestDto(
 //                 new DefinitionDto(definitionKey1, List.of("3")),
 //                 new DefinitionDto(definitionKey2, List.of("2"))));
-// 
+//
 //     // then only the specific tenant is returned
 //     assertThat(definitionsWithTenantsForVersion3)
 //         .extracting(DefinitionWithTenantsResponseDto::getTenants)
@@ -1293,7 +1292,7 @@
 //             Collections.singletonList(TENANT_2_RESPONSE_DTO),
 //             Collections.singletonList(aTenantResponseDto));
 //   }
-// 
+//
 //   @Test
 //   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
 //   public void getDefinitionTenantsByTypeForMultipleKeyAndVersions_eventBasedProcess() {
@@ -1302,7 +1301,7 @@
 //         createEventBasedDefinition("eventProcess1", "Event process Definition1");
 //     final DefinitionOptimizeResponseDto eventProcessDefinition2 =
 //         createEventBasedDefinition("eventProcess2", "Event process Definition2");
-// 
+//
 //     // when
 //     final List<DefinitionWithTenantsResponseDto> definitionsWithTenants =
 //         definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
@@ -1310,7 +1309,7 @@
 //             createMultiDefinitionTenantsRequestDto(
 //                 new DefinitionDto(eventProcessDefinition1.getKey(), List.of("1")),
 //                 new DefinitionDto(eventProcessDefinition2.getKey(), List.of(ALL_VERSIONS))));
-// 
+//
 //     // then
 //     assertThat(definitionsWithTenants)
 //         .extracting(DefinitionWithTenantsResponseDto::getTenants)
@@ -1318,7 +1317,7 @@
 //             Collections.singletonList(TENANT_NOT_DEFINED_RESPONSE_DTO),
 //             Collections.singletonList(TENANT_NOT_DEFINED_RESPONSE_DTO));
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
@@ -1334,7 +1333,7 @@
 //     final String definitionKey2 = "key2";
 //     createDefinitionAndAddToDatabase(
 //         definitionType, definitionKey2, "1", TENANT_1.getId(), "the name");
-// 
+//
 //     // when the version list is empty
 //     final List<DefinitionWithTenantsResponseDto> definitionsWithTenants =
 //         definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
@@ -1342,7 +1341,7 @@
 //             createMultiDefinitionTenantsRequestDto(
 //                 new DefinitionDto(definitionKey1, Collections.emptyList()),
 //                 new DefinitionDto(definitionKey2, Collections.emptyList())));
-// 
+//
 //     // then all versions are considered
 //     assertThat(definitionsWithTenants)
 //         .extracting(DefinitionWithTenantsResponseDto::getTenants)
@@ -1350,7 +1349,7 @@
 //             Arrays.asList(TENANT_NOT_DEFINED_RESPONSE_DTO, TENANT_1_RESPONSE_DTO),
 //             Collections.singletonList(TENANT_1_RESPONSE_DTO));
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(DefinitionType.class)
 //   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
@@ -1373,7 +1372,7 @@
 //         definitionType, definitionKey2, "1", TENANT_1.getId(), "the name");
 //     createDefinitionAndAddToDatabase(
 //         definitionType, definitionKey2, "1", TENANT_2.getId(), "deleted", true);
-// 
+//
 //     // when all versions are included
 //     final List<DefinitionWithTenantsResponseDto> definitionsWithTenants =
 //         definitionClient.resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
@@ -1381,7 +1380,7 @@
 //             createMultiDefinitionTenantsRequestDto(
 //                 new DefinitionDto(definitionKey1, Collections.emptyList()),
 //                 new DefinitionDto(definitionKey2, Collections.emptyList())));
-// 
+//
 //     // then only the non-deleted tenants are returned
 //     assertThat(definitionsWithTenants)
 //         .extracting(DefinitionWithTenantsResponseDto::getTenants)
@@ -1389,14 +1388,14 @@
 //             Arrays.asList(TENANT_1_RESPONSE_DTO, TENANT_2_RESPONSE_DTO),
 //             Collections.singletonList(TENANT_1_RESPONSE_DTO));
 //   }
-// 
+//
 //   @Test
 //   public void getDefinitionsGroupedByTenant_multiTenant_specificTenantDefinitions() {
 //     // given
 //     createTenant(TENANT_1);
 //     createTenant(TENANT_2);
 //     createTenant(TENANT_3);
-// 
+//
 //     final String processKey1 = "process1";
 //     final String processName1 = "Process Definition1";
 //     final SimpleDefinitionDto processDefinition1 =
@@ -1412,7 +1411,7 @@
 //             processKey2, processName2, DefinitionType.PROCESS, false, DEFAULT_ENGINE_ALIAS);
 //     createDefinitionAndAddToDatabase(PROCESS, processKey2, "1", TENANT_3.getId(), processName2);
 //     createDefinitionAndAddToDatabase(PROCESS, processKey2, "1", TENANT_2.getId(), processName2);
-// 
+//
 //     final String decisionKey1 = "decision1";
 //     final String decisionName1 = "Decision Definition1";
 //     final SimpleDefinitionDto decisionDefinition1 =
@@ -1432,11 +1431,11 @@
 //     // the deleted definition should not be included in the grouped results
 //     createDefinitionAndAddToDatabase(
 //         PROCESS, processKey1, "1", TENANT_3.getId(), processName1, true);
-// 
+//
 //     // when
 //     final List<TenantWithDefinitionsResponseDto> tenantsWithDefinitions =
 //         definitionClient.getDefinitionsGroupedByTenant();
-// 
+//
 //     assertThat(tenantsWithDefinitions)
 //         .isNotEmpty()
 //         .hasSize(3)
@@ -1459,28 +1458,28 @@
 //                 // definitions ordered by name
 //                 Lists.newArrayList(processDefinition2, decisionDefinition2)));
 //   }
-// 
+//
 //   @Test
 //   public void getDefinitionsGroupedByTenant_multiTenant_sharedDefinitions() {
 //     // given
 //     createTenant(TENANT_1);
 //     createTenant(TENANT_2);
 //     createTenant(TENANT_3);
-// 
+//
 //     final String processKey1 = "process1";
 //     final String processName1 = "Process Definition1";
 //     final SimpleDefinitionDto processDefinition1 =
 //         new SimpleDefinitionDto(
 //             processKey1, processName1, DefinitionType.PROCESS, false, DEFAULT_ENGINE_ALIAS);
 //     createDefinitionAndAddToDatabase(PROCESS, processKey1, "1", null, processName1);
-// 
+//
 //     final String decisionKey1 = "decision1";
 //     final String decisionName1 = "Decision Definition1";
 //     final SimpleDefinitionDto decisionDefinition1 =
 //         new SimpleDefinitionDto(
 //             decisionKey1, decisionName1, DefinitionType.DECISION, false, DEFAULT_ENGINE_ALIAS);
 //     createDefinitionAndAddToDatabase(DECISION, decisionKey1, "1", null, decisionName1);
-// 
+//
 //     final DefinitionOptimizeResponseDto eventBasedDefinition1 =
 //         createEventBasedDefinition("eventProcess1", "Event Process Definition1");
 //     final SimpleDefinitionDto eventProcessDefinition1 =
@@ -1490,11 +1489,11 @@
 //             PROCESS,
 //             true,
 //             DEFAULT_ENGINE_ALIAS);
-// 
+//
 //     // when
 //     final List<TenantWithDefinitionsResponseDto> tenantsWithDefinitions =
 //         definitionClient.getDefinitionsGroupedByTenant();
-// 
+//
 //     assertThat(tenantsWithDefinitions)
 //         .isNotEmpty()
 //         .hasSize(4)
@@ -1525,14 +1524,14 @@
 //                 Lists.newArrayList(
 //                     decisionDefinition1, eventProcessDefinition1, processDefinition1)));
 //   }
-// 
+//
 //   @Test
 //   public void getDefinitionsGroupedByTenant_multiTenant_sharedAndSpecificDefinitions() {
 //     // given
 //     createTenant(TENANT_1);
 //     createTenant(TENANT_2);
 //     createTenant(TENANT_3);
-// 
+//
 //     final String processKey1 = "process1";
 //     final String processName1 = "Process Definition1";
 //     final SimpleDefinitionDto processDefinition1 =
@@ -1584,11 +1583,11 @@
 //             DefinitionType.PROCESS,
 //             true,
 //             DEFAULT_ENGINE_ALIAS);
-// 
+//
 //     // when
 //     final List<TenantWithDefinitionsResponseDto> tenantsWithDefinitions =
 //         definitionClient.getDefinitionsGroupedByTenant();
-// 
+//
 //     assertThat(tenantsWithDefinitions)
 //         .isNotEmpty()
 //         .hasSize(4)
@@ -1635,11 +1634,11 @@
 //                     eventProcessDefinition1,
 //                     processDefinition1)));
 //   }
-// 
+//
 //   @Test
 //   public void getDefinitionsGroupedByTenant_unauthenticated() {
 //     // given
-// 
+//
 //     // when
 //     final Response response =
 //         embeddedOptimizeExtension
@@ -1647,17 +1646,17 @@
 //             .withoutAuthentication()
 //             .buildGetDefinitionsGroupedByTenant()
 //             .execute();
-// 
+//
 //     assertThat(response).isNotNull();
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
 //   }
-// 
+//
 //   @Test
 //   public void getDefinitions_allEntriesAreRetrievedIfMoreThanBucketLimit() {
 //     // given
 //     final int bucketLimit = 1000;
 //     final int definitionCount = bucketLimit * 2;
-// 
+//
 //     embeddedOptimizeExtension
 //         .getConfigurationService()
 //         .getElasticSearchConfiguration()
@@ -1671,24 +1670,24 @@
 //                   createProcessDefinition("key" + i, "1", null, "Definition " + i);
 //               definitionMap.put(def.getId(), def);
 //             });
-// 
+//
 //     addProcessDefinitionsToElasticsearch(definitionMap);
 //     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-// 
+//
 //     // when
 //     final List<DefinitionResponseDto> definitions = definitionClient.getAllDefinitions();
-// 
+//
 //     // then
 //     assertThat(definitions).isNotEmpty().hasSize(definitionCount);
 //   }
-// 
+//
 //   @Test
 //   @Tag(OPENSEARCH_SHOULD_BE_PASSING)
 //   public void getDefinitionsGroupedByTenant_allEntriesAreRetrievedIfMoreThanBucketLimit() {
 //     // given
 //     final int bucketLimit = 1000;
 //     final int definitionCount = bucketLimit * 2;
-// 
+//
 //     embeddedOptimizeExtension
 //         .getConfigurationService()
 //         .getElasticSearchConfiguration()
@@ -1702,24 +1701,24 @@
 //                   createProcessDefinition("key" + i, "1", null, "Definition " + i);
 //               definitionMap.put(def.getId(), def);
 //             });
-// 
+//
 //     addProcessDefinitionsToElasticsearch(definitionMap);
 //     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-// 
+//
 //     // when
 //     final List<TenantWithDefinitionsResponseDto> definitions =
 //         definitionClient.getDefinitionsGroupedByTenant();
-// 
+//
 //     // then
 //     assertThat(definitions).isNotEmpty().hasSize(1);
 //     assertThat(definitions.get(0).getDefinitions()).isNotEmpty().hasSize(definitionCount);
 //   }
-// 
+//
 //   private DefinitionOptimizeResponseDto createEventBasedDefinition(
 //       final String key, final String name) {
 //     return databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(key, name);
 //   }
-// 
+//
 //   private DefinitionOptimizeResponseDto createDefinitionAndAddToDatabase(
 //       final DefinitionType definitionType,
 //       final String key,
@@ -1728,7 +1727,7 @@
 //       final String name) {
 //     return createDefinitionAndAddToDatabase(definitionType, key, version, tenantId, name, false);
 //   }
-// 
+//
 //   private DefinitionOptimizeResponseDto createDefinitionAndAddToDatabase(
 //       final DefinitionType definitionType,
 //       final String key,
@@ -1746,7 +1745,7 @@
 //             "Unsupported definition type: " + definitionType);
 //     }
 //   }
-// 
+//
 //   private DecisionDefinitionOptimizeDto addDecisionDefinitionToDatabase(
 //       final String key,
 //       final String version,
@@ -1769,7 +1768,7 @@
 //         DECISION_DEFINITION_INDEX_NAME, decisionDefinitionDto.getId(), decisionDefinitionDto);
 //     return decisionDefinitionDto;
 //   }
-// 
+//
 //   private ProcessDefinitionOptimizeDto addProcessDefinitionToElasticsearch(
 //       final String key,
 //       final String version,
@@ -1783,7 +1782,7 @@
 //         PROCESS_DEFINITION_INDEX_NAME, expectedDto.getId(), expectedDto);
 //     return expectedDto;
 //   }
-// 
+//
 //   private ProcessDefinitionOptimizeDto createProcessDefinition(
 //       final String key, final String version, final String tenantId, final String name) {
 //     return ProcessDefinitionOptimizeDto.builder()
@@ -1797,26 +1796,26 @@
 //         .bpmn20Xml(key + version + tenantId)
 //         .build();
 //   }
-// 
+//
 //   private void addProcessDefinitionsToElasticsearch(final Map<String, Object> definitions) {
 //     databaseIntegrationTestExtension.addEntriesToDatabase(
 //         PROCESS_DEFINITION_INDEX_NAME, definitions);
 //   }
-// 
+//
 //   protected void createTenant(final TenantDto tenant) {
 //     databaseIntegrationTestExtension.addEntryToDatabase(TENANT_INDEX_NAME, tenant.getId(), tenant);
 //   }
-// 
+//
 //   private ProcessInstanceEngineDto deployDefinitionAndStartInstance(final String processId) {
 //     return engineIntegrationExtension.deployAndStartProcess(
 //         Bpmn.createExecutableProcess(processId).name(processId).startEvent().endEvent().done());
 //   }
-// 
+//
 //   private void toggleCamundaEventImportsConfiguration(final boolean enabled) {
 //     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(enabled);
 //     embeddedOptimizeExtension.reloadConfiguration();
 //   }
-// 
+//
 //   private MultiDefinitionTenantsRequestDto createMultiDefinitionTenantsRequestDto(
 //       final DefinitionDto... definitionDtos) {
 //     final MultiDefinitionTenantsRequestDto multiDefinitionTenantsRequestDto =

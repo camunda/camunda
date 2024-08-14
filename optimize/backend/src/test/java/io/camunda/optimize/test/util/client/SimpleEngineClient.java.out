@@ -38,7 +38,6 @@
 // import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 // import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 // import com.google.common.collect.ImmutableSet;
-// import io.camunda.optimize.dto.engine.AuthorizationDto;
 // import io.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
 // import io.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 // import io.camunda.optimize.dto.engine.HistoricIncidentEngineDto;
