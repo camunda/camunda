@@ -24,7 +24,6 @@ import io.camunda.optimize.rest.security.AbstractSecurityConfigurerAdapter;
 import io.camunda.optimize.rest.security.AuthenticationCookieFilter;
 import io.camunda.optimize.rest.security.AuthenticationCookieRefreshFilter;
 import io.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
-import io.camunda.optimize.rest.security.SingleSignOnRequestFilter;
 import io.camunda.optimize.rest.security.oauth.AudienceValidator;
 import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.SessionService;
@@ -63,22 +62,19 @@ public class PlatformSecurityConfigurerAdapter extends AbstractSecurityConfigure
   private static final String CSV_SUFFIX = ".csv";
   private static final String SUB_PATH_ANY = "/*";
   private final AuthenticationCookieRefreshFilter authenticationCookieRefreshFilter;
-  private final SingleSignOnRequestFilter singleSignOnRequestFilter;
 
   public PlatformSecurityConfigurerAdapter(
       final ConfigurationService configurationService,
       final CustomPreAuthenticatedAuthenticationProvider preAuthenticatedAuthenticationProvider,
       final SessionService sessionService,
       final AuthCookieService authCookieService,
-      final AuthenticationCookieRefreshFilter authenticationCookieRefreshFilter,
-      final SingleSignOnRequestFilter singleSignOnRequestFilter) {
+      final AuthenticationCookieRefreshFilter authenticationCookieRefreshFilter) {
     super(
         configurationService,
         preAuthenticatedAuthenticationProvider,
         sessionService,
         authCookieService);
     this.authenticationCookieRefreshFilter = authenticationCookieRefreshFilter;
-    this.singleSignOnRequestFilter = singleSignOnRequestFilter;
   }
 
   @Bean
@@ -145,7 +141,6 @@ public class PlatformSecurityConfigurerAdapter extends AbstractSecurityConfigure
                     // everything else requires authentication
                     .anyRequest()
                     .authenticated())
-        .addFilterBefore(singleSignOnRequestFilter, AbstractPreAuthenticatedProcessingFilter.class)
         .addFilterBefore(
             authenticationCookieFilter(http), AbstractPreAuthenticatedProcessingFilter.class)
         .addFilterAfter(authenticationCookieRefreshFilter, SessionManagementFilter.class)

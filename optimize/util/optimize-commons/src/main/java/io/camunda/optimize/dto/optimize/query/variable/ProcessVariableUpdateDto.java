@@ -8,45 +8,119 @@
 package io.camunda.optimize.dto.optimize.query.variable;
 
 import io.camunda.optimize.dto.optimize.OptimizeDto;
-import io.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import java.time.OffsetDateTime;
 import java.util.Map;
-import lombok.NoArgsConstructor;
 
-/**
- * This class is using the dto from the plugin system, in order to enable to enrich the variable
- * import.
- *
- * <p>Note: This class is still needed, because it implements the optimize dto opposed to the plugin
- * dto.
- */
-@NoArgsConstructor
-public class ProcessVariableUpdateDto extends PluginVariableDto implements OptimizeDto {
-  public ProcessVariableUpdateDto(
-      final String id,
-      final String name,
-      final String type,
-      final String value,
-      final OffsetDateTime timestamp,
-      final Map<String, Object> valueInfo,
-      final String processDefinitionKey,
-      final String processDefinitionId,
-      final String processInstanceId,
-      final Long version,
-      final String engineAlias,
-      final String tenantId) {
-    super(
-        id,
-        name,
-        type,
-        value,
-        timestamp,
-        valueInfo,
-        processDefinitionKey,
-        processDefinitionId,
-        processInstanceId,
-        version,
-        engineAlias,
-        tenantId);
+public class ProcessVariableUpdateDto implements OptimizeDto {
+
+  private String id;
+  private String name;
+  private String type;
+  private String value;
+  private OffsetDateTime timestamp;
+  private Map<String, Object> valueInfo;
+  private String processDefinitionKey;
+  private String processDefinitionId;
+  private String processInstanceId;
+  private Long version;
+  private String engineAlias;
+  private String tenantId;
+
+  public ProcessVariableUpdateDto() {}
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(final String id) {
+    this.id = id;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(final String name) {
+    this.name = name;
+  }
+
+  public String getType() {
+    return type;
+  }
+
+  public void setType(final String type) {
+    this.type = type;
+  }
+
+  public String getValue() {
+    return value;
+  }
+
+  public void setValue(final String value) {
+    this.value = value;
+  }
+
+  public OffsetDateTime getTimestamp() {
+    return timestamp;
+  }
+
+  public void setTimestamp(final OffsetDateTime timestamp) {
+    this.timestamp = timestamp;
+  }
+
+  public Map<String, Object> getValueInfo() {
+    return valueInfo;
+  }
+
+  public void setValueInfo(final Map<String, Object> valueInfo) {
+    this.valueInfo = valueInfo;
+  }
+
+  public String getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public void setProcessDefinitionKey(final String processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public String getProcessDefinitionId() {
+    return processDefinitionId;
+  }
+
+  public void setProcessDefinitionId(final String processDefinitionId) {
+    this.processDefinitionId = processDefinitionId;
+  }
+
+  public String getProcessInstanceId() {
+    return processInstanceId;
+  }
+
+  public void setProcessInstanceId(final String processInstanceId) {
+    this.processInstanceId = processInstanceId;
+  }
+
+  public Long getVersion() {
+    return version;
+  }
+
+  public void setVersion(final Long version) {
+    this.version = version;
+  }
+
+  public String getEngineAlias() {
+    return engineAlias;
+  }
+
+  public void setEngineAlias(final String engineAlias) {
+    this.engineAlias = engineAlias;
+  }
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public void setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
   }
 }

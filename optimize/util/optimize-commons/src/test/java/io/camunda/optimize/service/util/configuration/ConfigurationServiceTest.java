@@ -669,8 +669,6 @@ public class ConfigurationServiceTest {
                 .map(DatabaseConnectionNodeConfiguration::getHttpPort)
                 .collect(toList()))
         .contains(DEFAULT_FIRST_ES_PORT, DEFAULT_SECOND_ES_PORT);
-    assertThat(underTest.getVariableImportPluginBasePackages())
-        .contains("1", DEFAULT_PACKAGE_2, DEFAULT_PACKAGE_3);
     assertThat(underTest.getEventBasedProcessConfiguration().getAuthorizedUserIds()).isEmpty();
     assertThat(underTest.getEventBasedProcessConfiguration().getAuthorizedGroupIds()).isEmpty();
     assertThat(underTest.getOptimizeApiConfiguration().getAccessToken()).isNull();
@@ -764,8 +762,6 @@ public class ConfigurationServiceTest {
                 .map(DatabaseConnectionNodeConfiguration::getHttpPort)
                 .collect(toList()))
         .contains(CUSTOM_FIRST_ES_PORT, CUSTOM_SECOND_ES_PORT);
-    assertThat(underTest.getVariableImportPluginBasePackages())
-        .contains("1", CUSTOM_PACKAGE_2, CUSTOM_PACKAGE_3);
     assertThat(underTest.getEventBasedProcessConfiguration().getAuthorizedUserIds())
         .isEqualTo(ImmutableList.of("demo", "kermit"));
     assertThat(underTest.getOptimizeApiConfiguration().getAccessToken()).isEqualTo(API_SECRET);

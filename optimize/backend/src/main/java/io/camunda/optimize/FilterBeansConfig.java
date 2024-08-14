@@ -18,11 +18,6 @@ import io.camunda.optimize.jetty.IngestionQoSFilter;
 import io.camunda.optimize.jetty.JavaScriptMainLicenseEnricherFilter;
 import io.camunda.optimize.jetty.MaxRequestSizeFilter;
 import io.camunda.optimize.jetty.NoCachingFilter;
-import io.camunda.optimize.plugin.AuthenticationExtractorProvider;
-import io.camunda.optimize.rest.security.SingleSignOnRequestFilter;
-import io.camunda.optimize.service.security.ApplicationAuthorizationService;
-import io.camunda.optimize.service.security.AuthCookieService;
-import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import jakarta.servlet.DispatcherType;
 import java.util.concurrent.Callable;
@@ -44,42 +39,14 @@ public class FilterBeansConfig {
   }
 
   @Bean
-  public SingleSignOnRequestFilter singleSignOnFilter(
-      AuthenticationExtractorProvider authenticationExtractorProvider,
-      ApplicationAuthorizationService applicationAuthorizationService,
-      SessionService sessionService,
-      AuthCookieService authCookieService) {
-    return new SingleSignOnRequestFilter(
-        authenticationExtractorProvider,
-        applicationAuthorizationService,
-        sessionService,
-        authCookieService);
-  }
-
-  @Bean
-  public FilterRegistrationBean<SingleSignOnRequestFilter> singleSignOnFilterRegistrationBean(
-      SingleSignOnRequestFilter singleSignOnRequestFilter) {
-    FilterRegistrationBean<SingleSignOnRequestFilter> registrationBean =
-        new FilterRegistrationBean<>();
-
-    registrationBean.setFilter(singleSignOnRequestFilter);
-    registrationBean.addUrlPatterns("/*");
-    registrationBean.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.ASYNC);
-
-    registrationBean.setName("singleSignOnFilter");
-
-    return registrationBean;
-  }
-
-  @Bean
   public NoCachingFilter noCachingFilter() {
     return new NoCachingFilter();
   }
 
   @Bean
   public FilterRegistrationBean<NoCachingFilter> noCachingFilterRegistrationBean(
-      NoCachingFilter noCachingFilter) {
-    FilterRegistrationBean<NoCachingFilter> registrationBean = new FilterRegistrationBean<>();
+      final NoCachingFilter noCachingFilter) {
+    final FilterRegistrationBean<NoCachingFilter> registrationBean = new FilterRegistrationBean<>();
 
     registrationBean.setFilter(noCachingFilter);
     registrationBean.addUrlPatterns("/*");
@@ -93,8 +60,8 @@ public class FilterBeansConfig {
 
   @Bean
   public MaxRequestSizeFilter maxRequestSizeFilter(
-      @Qualifier("optimizeMapper") ObjectMapper objectMapper,
-      ConfigurationService configurationService) {
+      @Qualifier("optimizeMapper") final ObjectMapper objectMapper,
+      final ConfigurationService configurationService) {
     return new MaxRequestSizeFilter(
         () -> objectMapper,
         () -> configurationService.getEventIngestionConfiguration().getMaxBatchRequestBytes());
@@ -102,8 +69,9 @@ public class FilterBeansConfig {
 
   @Bean
   public FilterRegistrationBean<MaxRequestSizeFilter> maxRequestSizeFilterRegistrationBean(
-      MaxRequestSizeFilter maxRequestSizeFilter) {
-    FilterRegistrationBean<MaxRequestSizeFilter> registrationBean = new FilterRegistrationBean<>();
+      final MaxRequestSizeFilter maxRequestSizeFilter) {
+    final FilterRegistrationBean<MaxRequestSizeFilter> registrationBean =
+        new FilterRegistrationBean<>();
 
     registrationBean.setFilter(maxRequestSizeFilter);
     registrationBean.addUrlPatterns(REST_API_PATH + INGESTION_PATH + EVENT_BATCH_SUB_PATH);
@@ -116,7 +84,7 @@ public class FilterBeansConfig {
 
   @Bean
   public FilterRegistrationBean<IngestionQoSFilter> variableIngestionQoSFilterRegistrationBean(
-      ConfigurationService configurationService) {
+      final ConfigurationService configurationService) {
     return getIngestionQoSFilterRegistrationBean(
         () -> configurationService.getVariableIngestionConfiguration().getMaxRequests(),
         VARIABLE_SUB_PATH,
@@ -125,7 +93,7 @@ public class FilterBeansConfig {
 
   @Bean
   public FilterRegistrationBean<IngestionQoSFilter> eventIngestionQoSFilterRegistrationBean(
-      ConfigurationService configurationService) {
+      final ConfigurationService configurationService) {
     return getIngestionQoSFilterRegistrationBean(
         () -> configurationService.getEventIngestionConfiguration().getMaxRequests(),
         EVENT_BATCH_SUB_PATH,
@@ -133,10 +101,11 @@ public class FilterBeansConfig {
   }
 
   private FilterRegistrationBean<IngestionQoSFilter> getIngestionQoSFilterRegistrationBean(
-      Callable<Integer> provider, String subPath, String name) {
-    IngestionQoSFilter ingestionQoSFilter = new IngestionQoSFilter(provider);
+      final Callable<Integer> provider, final String subPath, final String name) {
+    final IngestionQoSFilter ingestionQoSFilter = new IngestionQoSFilter(provider);
 
-    FilterRegistrationBean<IngestionQoSFilter> registrationBean = new FilterRegistrationBean<>();
+    final FilterRegistrationBean<IngestionQoSFilter> registrationBean =
+        new FilterRegistrationBean<>();
 
     registrationBean.setFilter(ingestionQoSFilter);
     registrationBean.addUrlPatterns(REST_API_PATH + INGESTION_PATH + subPath);
@@ -148,8 +117,8 @@ public class FilterBeansConfig {
   @Bean
   public FilterRegistrationBean<JavaScriptMainLicenseEnricherFilter>
       javaScriptMainLicenseEnricherFilterRegistrationBean(
-          JavaScriptMainLicenseEnricherFilter javaScriptMainLicenseEnricherFilter) {
-    FilterRegistrationBean<JavaScriptMainLicenseEnricherFilter> registrationBean =
+          final JavaScriptMainLicenseEnricherFilter javaScriptMainLicenseEnricherFilter) {
+    final FilterRegistrationBean<JavaScriptMainLicenseEnricherFilter> registrationBean =
         new FilterRegistrationBean<>();
 
     registrationBean.setFilter(javaScriptMainLicenseEnricherFilter);
@@ -164,15 +133,16 @@ public class FilterBeansConfig {
   @Bean
   public FilterRegistrationBean<MaxRequestSizeFilter>
       variableIngestionRequestLimitFilterRegistrationBean(
-          ConfigurationService configurationService, ObjectMapper objectMapper) {
+          final ConfigurationService configurationService, final ObjectMapper objectMapper) {
 
-    MaxRequestSizeFilter variableIngestionRequestLimitFilter =
+    final MaxRequestSizeFilter variableIngestionRequestLimitFilter =
         new MaxRequestSizeFilter(
             () -> objectMapper,
             () ->
                 configurationService.getVariableIngestionConfiguration().getMaxBatchRequestBytes());
 
-    FilterRegistrationBean<MaxRequestSizeFilter> registrationBean = new FilterRegistrationBean<>();
+    final FilterRegistrationBean<MaxRequestSizeFilter> registrationBean =
+        new FilterRegistrationBean<>();
 
     registrationBean.setFilter(variableIngestionRequestLimitFilter);
     registrationBean.addUrlPatterns(REST_API_PATH + INGESTION_PATH + VARIABLE_SUB_PATH);
