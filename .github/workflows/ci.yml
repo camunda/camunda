@@ -417,11 +417,83 @@ jobs:
     needs: [detect-changes]
     uses: ./.github/workflows/zeebe-ci.yml
 
-  optimize-unit-tests:
-    if: ${{ needs.detect-changes.outputs.optimize-frontend-changes == 'true' || needs.detect-changes.outputs.optimize-backend-changes == 'true' }}
+  optimize-frontend-unit-tests:
+    if: needs.detect-changes.outputs.optimize-frontend-changes == 'true'
     needs: [detect-changes]
-    uses: ./.github/workflows/optimize-unit-tests.yml
-    secrets: inherit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: optimize/client
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - name: "Parse pom.xml for versions"
+        id: "pom_info"
+        uses: YunaBraska/java-info-action@main
+      - name: Set Node.js
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4
+        with:
+          node-version: ${{ steps.pom_info.outputs.x_version_node }}
+          cache: yarn
+          cache-dependency-path: optimize/client/yarn.lock
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Unit tests
+        run: yarn test:ci
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4
+        with:
+          name: unit-tests-frontend-junit
+          path: |
+            **/jest-test-results.xml
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  optimize-backend-unit-tests:
+    if: needs.detect-changes.outputs.optimize-backend-changes == 'true'
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
+      - name: Test
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: -f optimize/pom.xml test -Dskip.fe.build -Dskip.docker
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4
+        with:
+          name: unit-tests-backend-junit
+          path: |
+            **/surefire-reports/**/*.xml
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   check-results:
     # Used by the merge queue to check all tests, including the unit test matrix.
@@ -441,7 +513,8 @@ jobs:
       - java-checks
       - build-platform-frontend
       - zeebe-ci
-      - optimize-unit-tests
+      - optimize-frontend-unit-tests
+      - optimize-backend-unit-tests
     steps:
       - uses: actions/checkout@v4
       - name: Check for aborted jobs
