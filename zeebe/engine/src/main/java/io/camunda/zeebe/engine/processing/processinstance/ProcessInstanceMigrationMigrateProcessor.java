@@ -14,7 +14,7 @@ import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -55,14 +55,12 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -323,25 +321,12 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));
 
-    if (elementInstanceRecord.getBpmnElementType() == BpmnElementType.INTERMEDIATE_CATCH_EVENT) {
-      switch (elementInstanceRecord.getBpmnEventType()) {
-        case MESSAGE -> {
-          handleMessageCatchEvent(
-              elementInstance, targetProcessDefinition, sourceElementIdToTargetElementId);
-          return;
-        }
-        default -> {
-          // ignore
-        }
-      }
-    }
-
     if (ProcessInstanceIntent.ELEMENT_ACTIVATING != elementInstance.getState()) {
       // Elements in ACTIVATING state haven't subscribed to events yet. We shouldn't subscribe such
       // elements to events during migration either. For elements that have been ACTIVATED, a
       // subscription would already exist if needed. So, we want to deal with the expected event
       // subscriptions. See: https://github.com/camunda/camunda/issues/19212
-      handleBoundaryCatchEvents(
+      handleCatchEvents(
           elementInstance,
           targetProcessDefinition,
           sourceElementIdToTargetElementId,
@@ -352,28 +337,13 @@ public class ProcessInstanceMigrationMigrateProcessor
     }
   }
 
-  private void handleMessageCatchEvent(
-      final ElementInstance elementInstance,
-      final DeployedProcess targetProcessDefinition,
-      final Map<String, String> sourceElementIdToTargetElementId) {
-    processMessageSubscriptionState.visitElementSubscriptions(
-        elementInstance.getKey(),
-        subscription -> {
-          final var copySubscription = copyProcessMessageSubscription(subscription);
-          migrateMessageSubscription(
-              targetProcessDefinition, sourceElementIdToTargetElementId, copySubscription);
-
-          return true;
-        });
-  }
-
   /**
    * Unsubscribes the element instance from unmapped catch events in the source process, and
    * subscribes it to unmapped catch events in the target process.
    *
    * <p>It also migrates event subscriptions for mapped catch events.
    */
-  private void handleBoundaryCatchEvents(
+  private void handleCatchEvents(
       final ElementInstance elementInstance,
       final DeployedProcess targetProcessDefinition,
       final Map<String, String> sourceElementIdToTargetElementId,
@@ -386,7 +356,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     final var targetElement =
         targetProcessDefinition
             .getProcess()
-            .getElementById(targetElementId, ExecutableActivity.class);
+            .getElementById(targetElementId, ExecutableCatchEventSupplier.class);
     final List<DirectBuffer> subscribedMessageNames = new ArrayList<>();
     final Map<String, Boolean> targetCatchEventIdToInterrupting = new HashMap<>();
     catchEventBehavior
@@ -562,17 +532,6 @@ public class ProcessInstanceMigrationMigrateProcessor
           messageSubscription,
           List.of(processMessageSubscriptionRecord.getSubscriptionPartitionId()));
     }
-  }
-
-  private void migrateMessageSubscription(
-      final DeployedProcess targetProcessDefinition,
-      final Map<String, String> sourceElementIdToTargetElementId,
-      final ProcessMessageSubscription processMessageSubscription) {
-    migrateMessageSubscription(
-        targetProcessDefinition,
-        sourceElementIdToTargetElementId,
-        processMessageSubscription,
-        Collections.emptyMap());
   }
 
   private static ProcessMessageSubscription copyProcessMessageSubscription(
