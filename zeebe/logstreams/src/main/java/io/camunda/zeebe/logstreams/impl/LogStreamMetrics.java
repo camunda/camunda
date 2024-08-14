@@ -167,6 +167,7 @@ public final class LogStreamMetrics {
           .namespace("zeebe")
           .subsystem("flow_control")
           .name("cluster_load")
+          .labelNames("partition")
           .help("The current load of the cluster.")
           .register();
 
@@ -203,7 +204,7 @@ public final class LogStreamMetrics {
     exportingRate = EXPORTING_RATE.labels(partitionLabel);
     writeRateMaxLimit = WRITE_RATE_MAX_LIMIT.labels(partitionLabel);
     writeRateLimit = WRITE_RATE_LIMIT.labels(partitionLabel);
-    clusterLoad = CLUSTER_LOAD.labels("Cluster");
+    clusterLoad = CLUSTER_LOAD.labels(partitionLabel);
   }
 
   public void increaseInflightAppends() {
@@ -269,6 +270,7 @@ public final class LogStreamMetrics {
     EXPORTING_RATE.remove(partitionLabel);
     WRITE_RATE_MAX_LIMIT.remove(partitionLabel);
     WRITE_RATE_LIMIT.remove(partitionLabel);
+    CLUSTER_LOAD.remove(partitionLabel);
     for (final var contextLabel : FlowControlOutComeLabels.allContextLabels()) {
       for (final var reasonLabel : FlowControlOutComeLabels.allReasonLabels()) {
         FLOW_CONTROL_OUTCOME.remove(partitionLabel, contextLabel, reasonLabel);
