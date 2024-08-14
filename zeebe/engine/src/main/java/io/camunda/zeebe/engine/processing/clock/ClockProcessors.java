@@ -15,7 +15,7 @@ import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public class ClockProcessors {
+public final class ClockProcessors {
   private ClockProcessors() {}
 
   public static void addClockProcessors(
