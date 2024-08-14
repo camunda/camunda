@@ -63,7 +63,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           .sortValues(new Object[] {"v"})
           .build();
 
-  static final String PROCESS_INSTANCES_SEARCH_URL = "/v2/process-instances/search";
+  static final String PROCESS_INSTANCES_SEARCH_URL = "/v2/exported/process-instances/search";
 
   @MockBean ProcessInstanceServices processInstanceServices;
 

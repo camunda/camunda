@@ -69,7 +69,7 @@ public class DecisionRequirementsQueryImpl
     final HttpZeebeFuture<SearchQueryResponse<DecisionRequirements>> result =
         new HttpZeebeFuture<>();
     httpClient.post(
-        "/decision-requirements/search",
+        "/exported/decision-requirements/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         DecisionRequirementsSearchQueryResponse.class,

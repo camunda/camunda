@@ -110,7 +110,7 @@ public class DecisionDefinitionQueryImpl
   public ZeebeFuture<SearchQueryResponse<DecisionDefinition>> send() {
     final HttpZeebeFuture<SearchQueryResponse<DecisionDefinition>> result = new HttpZeebeFuture<>();
     httpClient.post(
-        "/decision-definitions/search",
+        "/exported/decision-definitions/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         DecisionDefinitionSearchQueryResponse.class,

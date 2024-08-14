@@ -110,7 +110,7 @@ public class ProcessInstanceQueryImpl
   public ZeebeFuture<SearchQueryResponse<ProcessInstance>> send() {
     final HttpZeebeFuture<SearchQueryResponse<ProcessInstance>> result = new HttpZeebeFuture<>();
     httpClient.post(
-        "/process-instances/search",
+        "/exported/process-instances/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         ProcessInstanceSearchQueryResponse.class,

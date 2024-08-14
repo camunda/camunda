@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestQueryController
-@RequestMapping("/v2/process-instances")
+@RequestMapping("/v2/exported/process-instances")
 public class ProcessInstanceQueryController {
 
   @Autowired private ProcessInstanceServices processInstanceServices;

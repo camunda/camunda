@@ -25,7 +25,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 
 abstract class RestApiConfigurationTest extends RestControllerTest {
 
-  static final String PROCESS_INSTANCES_SEARCH_URL = "/v2/process-instances/search";
+  static final String PROCESS_INSTANCES_SEARCH_URL = "/v2/exported/process-instances/search";
   static final String TOPOLOGY_URL = "/v2/topology";
 
   @MockBean ProcessInstanceServices processInstanceServices;

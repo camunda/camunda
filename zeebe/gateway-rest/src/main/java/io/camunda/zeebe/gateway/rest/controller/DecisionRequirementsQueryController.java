@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestQueryController
-@RequestMapping("/v2/decision-requirements")
+@RequestMapping("/v2/exported/decision-requirements")
 public class DecisionRequirementsQueryController {
 
   @Autowired private DecisionRequirementsServices decisionRequirementsServices;

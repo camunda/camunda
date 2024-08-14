@@ -62,7 +62,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
           .sortValues(new Object[] {"v"})
           .build();
 
-  static final String DECISION_REQUIREMENTS_SEARCH_URL = "/v2/decision-requirements/search";
+  static final String DECISION_REQUIREMENTS_SEARCH_URL = "/v2/exported/decision-requirements/search";
 
   @MockBean DecisionRequirementsServices decisionRequirementsServices;
 

@@ -63,7 +63,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
           .sortValues(new Object[] {"v"})
           .build();
 
-  static final String DECISION_DEFINITIONS_SEARCH_URL = "/v2/decision-definitions/search";
+  static final String DECISION_DEFINITIONS_SEARCH_URL = "/v2/exported/decision-definitions/search";
 
   @MockBean DecisionDefinitionServices decisionDefinitionServices;
 

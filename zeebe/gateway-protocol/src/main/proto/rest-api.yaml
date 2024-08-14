@@ -523,7 +523,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-  /user-tasks/search:
+  /exported/user-tasks/search:
     post:
       tags:
         - User task
@@ -565,7 +565,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-  /process-instances/search:
+  /exported/process-instances/search:
     post:
       tags:
         - Process Instance
@@ -607,7 +607,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-  /decision-definitions/search:
+  /exported/decision-definitions/search:
     post:
       tags:
         - Decision Definition
@@ -649,7 +649,7 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-  /decision-requirements/search:
+  /exported/decision-requirements/search:
     post:
       tags:
         - Decision Requirements

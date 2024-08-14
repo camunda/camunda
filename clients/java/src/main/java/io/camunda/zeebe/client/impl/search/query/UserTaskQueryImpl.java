@@ -68,7 +68,7 @@ public class UserTaskQueryImpl
   public HttpZeebeFuture<SearchQueryResponse<UserTask>> send() {
     final HttpZeebeFuture<SearchQueryResponse<UserTask>> result = new HttpZeebeFuture<>();
     httpClient.post(
-        "/user-tasks/search",
+        "/exported/user-tasks/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         UserTaskSearchQueryResponse.class,

@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestQueryController
-@RequestMapping("/v2/user-tasks")
+@RequestMapping("/v2/exported/user-tasks")
 public class UserTaskQueryController {
 
   @Autowired private UserTaskServices userTaskServices;

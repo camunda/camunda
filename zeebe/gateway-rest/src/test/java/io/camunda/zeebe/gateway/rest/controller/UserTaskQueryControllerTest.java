@@ -66,7 +66,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               ]
           }
       }""";
-  private static final String USER_TASKS_SEARCH_URL = "/v2/user-tasks/search";
+  private static final String USER_TASKS_SEARCH_URL = "/v2/exported/user-tasks/search";
   private static final SearchQueryResult<UserTaskEntity> SEARCH_QUERY_RESULT =
       new Builder<UserTaskEntity>()
           .total(1L)
