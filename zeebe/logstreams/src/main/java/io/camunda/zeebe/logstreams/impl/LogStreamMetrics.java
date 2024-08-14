@@ -162,6 +162,14 @@ public final class LogStreamMetrics {
           .labelNames("partition")
           .register();
 
+  private static final Gauge CLUSTER_LOAD =
+      Gauge.build()
+          .namespace("zeebe")
+          .subsystem("flow_control")
+          .name("cluster_load")
+          .help("The current load of the cluster.")
+          .register();
+
   private final Counter.Child deferredAppends;
   private final Counter.Child triedAppends;
   private final Gauge.Child inflightAppends;
@@ -176,6 +184,7 @@ public final class LogStreamMetrics {
   private final Gauge.Child exportingRate;
   private final Gauge.Child writeRateMaxLimit;
   private final Gauge.Child writeRateLimit;
+  private final Gauge.Child clusterLoad;
   private final String partitionLabel;
 
   public LogStreamMetrics(final int partitionId) {
@@ -194,6 +203,7 @@ public final class LogStreamMetrics {
     exportingRate = EXPORTING_RATE.labels(partitionLabel);
     writeRateMaxLimit = WRITE_RATE_MAX_LIMIT.labels(partitionLabel);
     writeRateLimit = WRITE_RATE_LIMIT.labels(partitionLabel);
+    clusterLoad = CLUSTER_LOAD.labels("Cluster");
   }
 
   public void increaseInflightAppends() {
@@ -290,6 +300,10 @@ public final class LogStreamMetrics {
     FLOW_CONTROL_OUTCOME
         .labels(partitionLabel, labelForContext(context), labelForReason(reason))
         .inc(batchMetadata.size());
+  }
+
+  public void setClusterLoad(final float load) {
+    clusterLoad.set(load);
   }
 
   public void setExportingRate(final long value) {
