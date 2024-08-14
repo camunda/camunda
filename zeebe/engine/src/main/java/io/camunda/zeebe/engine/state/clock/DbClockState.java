@@ -45,6 +45,7 @@ public class DbClockState implements MutableClockState {
   @Override
   public MutableClockState reset() {
     value.reset();
+    columnFamily.upsert(KEY, value);
     return this;
   }
 
