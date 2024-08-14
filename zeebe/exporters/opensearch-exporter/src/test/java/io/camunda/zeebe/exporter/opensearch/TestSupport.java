@@ -115,7 +115,11 @@ final class TestSupport {
    */
   static Stream<ValueType> provideValueTypes() {
     final var excludedValueTypes =
-        EnumSet.of(ValueType.SBE_UNKNOWN, ValueType.NULL_VAL, ValueType.PROCESS_INSTANCE_RESULT);
+        EnumSet.of(
+            ValueType.SBE_UNKNOWN,
+            ValueType.NULL_VAL,
+            ValueType.PROCESS_INSTANCE_RESULT,
+            ValueType.CLOCK);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 }
