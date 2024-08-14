@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
-import io.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
+import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeUserTaskImportService;
@@ -27,14 +27,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class ZeebeUserTaskImportMediatorFactory extends AbstractZeebeImportMediatorFactory {
 
-  private final ZeebeProcessInstanceWriter zeebeProcessInstanceWriter;
+  private final ProcessInstanceWriter zeebeProcessInstanceWriter;
   private final ProcessDefinitionReader processDefinitionReader;
 
   public ZeebeUserTaskImportMediatorFactory(
       final BeanFactory beanFactory,
       final ImportIndexHandlerRegistry importIndexHandlerRegistry,
       final ConfigurationService configurationService,
-      final ZeebeProcessInstanceWriter zeebeProcessInstanceWriter,
+      final ProcessInstanceWriter zeebeProcessInstanceWriter,
       final ProcessDefinitionReader processDefinitionReader,
       final ObjectMapper objectMapper,
       final DatabaseClient databaseClient) {

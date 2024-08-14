@@ -124,7 +124,7 @@
 //   public void importWorksDespiteTemporaryFetchingFailures(
 //       final String endpoint, final ErrorResponseMock mockResp) {
 //     // given
-//     embeddedOptimizeExtension.resetImportStartIndexes();
+//     embeddedOptimizeExtension.resetPositionBasedImportStartIndexes();
 //     embeddedOptimizeExtension.reloadConfiguration();
 //     databaseIntegrationTestExtension.deleteAllOptimizeData();
 //

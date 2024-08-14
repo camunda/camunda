@@ -7,22 +7,16 @@
  */
 package io.camunda.optimize.rest;
 
-import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.IdentityDto;
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
-import io.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
-import io.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
-import io.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
-import io.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import io.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import io.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import io.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
 import io.camunda.optimize.dto.optimize.rest.EventProcessRoleResponseDto;
 import io.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
-import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.EventProcessRoleService;
 import io.camunda.optimize.service.EventProcessService;
 import io.camunda.optimize.service.events.EventMappingCleanupService;
@@ -60,7 +54,6 @@ public class EventBasedProcessRestService {
   private final EventMappingCleanupService eventMappingCleanupService;
   private final EventProcessAuthorizationService authenticationService;
   private final SessionService sessionService;
-  private final DefinitionService definitionService;
   private final AbstractIdentityService identityService;
 
   @GET
@@ -79,9 +72,7 @@ public class EventBasedProcessRestService {
       @Context final ContainerRequestContext requestContext) {
     validateAccessToEventProcessManagement(
         sessionService.getRequestUserOrFailNotAuthorized(requestContext));
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return mapMappingDtoToRestDto(
-        userId, eventProcessService.getEventProcessMapping(userId, eventProcessId));
+    return mapMappingDtoToRestDto(eventProcessService.getEventProcessMapping(eventProcessId));
   }
 
   @GET
@@ -92,7 +83,7 @@ public class EventBasedProcessRestService {
         sessionService.getRequestUserOrFailNotAuthorized(requestContext));
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return eventProcessService.getAllEventProcessMappingsOmitXml(userId).stream()
-        .map(mappingRestDto -> mapMappingDtoToRestDto(userId, mappingRestDto))
+        .map(this::mapMappingDtoToRestDto)
         .toList();
   }
 
@@ -128,8 +119,7 @@ public class EventBasedProcessRestService {
       @Context final ContainerRequestContext requestContext) {
     validateAccessToEventProcessManagement(
         sessionService.getRequestUserOrFailNotAuthorized(requestContext));
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    eventProcessService.publishEventProcessMapping(userId, eventProcessId);
+    eventProcessService.publishEventProcessMapping(eventProcessId);
   }
 
   @POST
@@ -140,8 +130,7 @@ public class EventBasedProcessRestService {
       @Context final ContainerRequestContext requestContext) {
     validateAccessToEventProcessManagement(
         sessionService.getRequestUserOrFailNotAuthorized(requestContext));
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    eventProcessService.cancelPublish(userId, eventProcessId);
+    eventProcessService.cancelPublish(eventProcessId);
   }
 
   @GET
@@ -256,33 +245,9 @@ public class EventBasedProcessRestService {
     return authenticationService.hasEventProcessManagementAccess(userId);
   }
 
-  private EventProcessMappingResponseDto mapMappingDtoToRestDto(
-      final String userId, final EventProcessMappingDto dto) {
+  private EventProcessMappingResponseDto mapMappingDtoToRestDto(final EventProcessMappingDto dto) {
     final String lastModifierName =
         identityService.getIdentityNameById(dto.getLastModifier()).orElse(dto.getLastModifier());
-    return EventProcessMappingResponseDto.from(
-        dto, lastModifierName, mapSourceEntriesToRestDtos(userId, dto.getEventSources()));
-  }
-
-  private List<EventSourceEntryDto<?>> mapSourceEntriesToRestDtos(
-      final String userId, final List<EventSourceEntryDto<?>> eventSourceDtos) {
-    return eventSourceDtos.stream()
-        .peek(
-            eventSource -> {
-              if (eventSource instanceof CamundaEventSourceEntryDto) {
-                final CamundaEventSourceConfigDto sourceConfig =
-                    (CamundaEventSourceConfigDto) eventSource.getConfiguration();
-                sourceConfig.setProcessDefinitionName(
-                    getDefinitionName(userId, sourceConfig.getProcessDefinitionKey()));
-              }
-            })
-        .toList();
-  }
-
-  private String getDefinitionName(final String userId, final String eventSource) {
-    return definitionService
-        .getDefinitionWithAvailableTenants(DefinitionType.PROCESS, eventSource, userId)
-        .map(DefinitionResponseDto::getName)
-        .orElse(eventSource);
+    return EventProcessMappingResponseDto.from(dto, lastModifierName, dto.getEventSources());
   }
 }

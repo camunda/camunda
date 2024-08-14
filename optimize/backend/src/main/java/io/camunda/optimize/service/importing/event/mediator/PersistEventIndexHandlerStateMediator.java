@@ -10,7 +10,6 @@ package io.camunda.optimize.service.importing.event.mediator;
 import io.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.writer.ImportIndexWriter;
-import io.camunda.optimize.service.importing.EngineImportIndexHandler;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.mediator.AbstractStoreIndexesImportMediator;
 import io.camunda.optimize.service.importing.engine.service.StoreIndexesEngineImportService;
@@ -47,11 +46,10 @@ public class PersistEventIndexHandlerStateMediator
     dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
     try {
       final List<EngineImportIndexDto> importIndices =
-          importIndexHandlerRegistry.getAllHandlers().stream()
-              .map(EngineImportIndexHandler::getIndexStateDto)
-              .filter(EngineImportIndexDto.class::isInstance)
-              .map(EngineImportIndexDto.class::cast)
-              .toList();
+          List.of(
+              importIndexHandlerRegistry
+                  .getExternalEventTraceImportIndexHandler()
+                  .getIndexStateDto());
       importService.executeImport(importIndices, () -> importCompleted.complete(null));
     } catch (Exception e) {
       log.error("Could not execute import for storing event processing index handlers!", e);

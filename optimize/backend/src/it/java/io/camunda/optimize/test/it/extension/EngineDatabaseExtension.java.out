@@ -9,11 +9,11 @@
 /*
 package io.camunda.optimize.test.it.extension;
 
-import static io.camunda.optimize.dto.optimize.importing.IdentityLinkLogOperationType.CLAIM_OPERATION_TYPE;
-import static io.camunda.optimize.dto.optimize.importing.IdentityLinkLogOperationType.UNCLAIM_OPERATION_TYPE;
+import static io.camunda.optimize.dto.optimize.importing.UserTaskIdentityOperationType.CLAIM_OPERATION_TYPE;
+import static io.camunda.optimize.dto.optimize.importing.UserTaskIdentityOperationType.UNCLAIM_OPERATION_TYPE;
 
 import com.google.common.collect.ImmutableSet;
-import io.camunda.optimize.dto.optimize.importing.IdentityLinkLogOperationType;
+import io.camunda.optimize.dto.optimize.importing.UserTaskIdentityOperationType;
 import io.camunda.optimize.dto.optimize.importing.IdentityLinkLogType;
 import java.sql.Connection;
 import java.sql.DriverManager;

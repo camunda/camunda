@@ -103,6 +103,16 @@ public class ImportRepositoryOS implements ImportRepository {
         configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 
+  @Override
+  public void importIndices(
+      final String importItemName, final List<EngineImportIndexDto> engineImportIndexDtos) {
+    osClient.doImportBulkRequestWithList(
+        importItemName,
+        engineImportIndexDtos,
+        this::addImportIndexRequest,
+        configurationService.getSkipDataAfterNestedDocLimitReached());
+  }
+
   private BulkOperation addPositionBasedImportIndexRequest(
       PositionBasedImportIndexDto optimizeDto) {
     log.debug(
@@ -124,35 +134,6 @@ public class ImportRepositoryOS implements ImportRepository {
                 .document(optimizeDto)
                 .build())
         .build();
-  }
-
-  @Override
-  public Optional<AllEntitiesBasedImportIndexDto> getImportIndex(final String id) {
-    final GetResponse<AllEntitiesBasedImportIndexDto> response =
-        osClient.get(
-            indexNameService.getOptimizeIndexAliasForIndex(IMPORT_INDEX_INDEX_NAME),
-            id,
-            AllEntitiesBasedImportIndexDto.class,
-            format("Was not able to retrieve import index of [%s].", id));
-
-    if (response.found()) {
-      return Optional.ofNullable(response.source());
-    } else {
-      log.debug(
-          "Was not able to retrieve import index for type '{}' from Opensearch. Desired index does not exist.",
-          id);
-      return Optional.empty();
-    }
-  }
-
-  @Override
-  public void importIndices(
-      final String importItemName, final List<EngineImportIndexDto> engineImportIndexDtos) {
-    osClient.doImportBulkRequestWithList(
-        importItemName,
-        engineImportIndexDtos,
-        this::addImportIndexRequest,
-        configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 
   private BulkOperation addImportIndexRequest(OptimizeDto optimizeDto) {
