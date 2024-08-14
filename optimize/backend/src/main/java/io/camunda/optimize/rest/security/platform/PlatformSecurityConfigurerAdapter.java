@@ -82,7 +82,8 @@ public class PlatformSecurityConfigurerAdapter extends AbstractSecurityConfigure
   }
 
   @Bean
-  public AuthenticationCookieFilter authenticationCookieFilter(final HttpSecurity http) throws Exception {
+  public AuthenticationCookieFilter authenticationCookieFilter(final HttpSecurity http)
+      throws Exception {
     return new AuthenticationCookieFilter(
         sessionService,
         http.getSharedObject(AuthenticationManagerBuilder.class)
@@ -169,7 +170,9 @@ public class PlatformSecurityConfigurerAdapter extends AbstractSecurityConfigure
   }
 
   private void failureHandler(
-      final HttpServletRequest request, final HttpServletResponse response, final AuthenticationException ex) {
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final AuthenticationException ex) {
     if (isCSVRequest(request.getPathInfo())) {
       response.setStatus(TEMPORARY_REDIRECT.value());
       response.setHeader(HttpHeaders.LOCATION, INDEX_PAGE);
