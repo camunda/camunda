@@ -5,10 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service.license;
+package io.camunda.zeebe.engine.state.mutable;
 
-public class EnvironmentVariableReader {
-  public String getEnvironmentVariableValue(final String envVarName) {
-    return System.getenv().getOrDefault(envVarName, "");
-  }
+import io.camunda.zeebe.engine.state.immutable.ClockState;
+
+public interface MutableClockState extends ClockState {
+  MutableClockState pinAt(final long epochMillis);
+
+  MutableClockState offsetBy(final long offsetMillis);
+
+  MutableClockState reset();
 }

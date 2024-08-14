@@ -5,19 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service;
+package io.camunda.zeebe.engine.state.immutable;
 
-import io.camunda.service.license.CamundaLicense;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 
-public final class ManagementService {
-
-  private final CamundaLicense camundaLicense;
-
-  public ManagementService() {
-    camundaLicense = new CamundaLicense();
-  }
-
-  public boolean isCamundaLicenseValid() {
-    return camundaLicense.isValid();
-  }
+@FunctionalInterface
+public interface ClockState {
+  Modification getModification();
 }
