@@ -248,13 +248,6 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
           .thenDo(
               completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
     }
-
-    @Override
-    public void onTerminate(
-        final ExecutableEndEvent element, final BpmnElementContext terminating) {
-
-      jobBehavior.cancelJob(terminating);
-    }
   }
 
   private final class TerminateEndEventBehavior implements EndEventBehavior {

@@ -1075,6 +1075,32 @@ public class ExecutionListenerTaskElementsTest {
               tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
     }
 
+    @Test
+    public void shouldCancelActiveStartElJobAfterProcessInstanceCancellation() {
+      // given
+      deployProcess(
+          createProcessWithTask(
+              b -> b.zeebeExecutionListener(el -> el.start().type(START_EL_TYPE))));
+      final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+      jobRecords(JobIntent.CREATED)
+          .withProcessInstanceKey(processInstanceKey)
+          .withType(START_EL_TYPE)
+          .await();
+
+      // when
+      ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+      // then: start EL job should be canceled
+      assertThat(
+              jobRecords(JobIntent.CANCELED)
+                  .withProcessInstanceKey(processInstanceKey)
+                  .withJobKind(JobKind.EXECUTION_LISTENER)
+                  .onlyEvents()
+                  .getFirst())
+          .extracting(r -> r.getValue().getType())
+          .isEqualTo(START_EL_TYPE);
+    }
+
     private void assertExecutionListenerJobsCompleted(
         final long processInstanceKey, final String... elJobTypes) {
       assertExecutionListenerJobsCompletedForElement(

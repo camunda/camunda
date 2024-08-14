@@ -217,14 +217,6 @@ public class IntermediateThrowEventProcessor
           .thenDo(
               completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
     }
-
-    @Override
-    public void onTerminate(
-        final ExecutableIntermediateThrowEvent element, final BpmnElementContext terminating) {
-      if (element.getJobWorkerProperties() != null) {
-        jobBehavior.cancelJob(terminating);
-      }
-    }
   }
 
   private final class LinkIntermediateThrowEventBehavior implements IntermediateThrowEventBehavior {

@@ -95,7 +95,6 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   public void onTerminate(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
-    jobBehavior.cancelJob(context);
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
 
