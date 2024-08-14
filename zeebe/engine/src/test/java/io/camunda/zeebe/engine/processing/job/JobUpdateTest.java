@@ -20,7 +20,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.Set;
-import org.assertj.core.groups.Tuple;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -60,11 +59,34 @@ public class JobUpdateTest {
 
     // then
     assertThat(RecordingExporter.jobRecords().limit(3))
-        .extracting(Record::getIntent, record -> record.getValue().getRetries(), record -> record.getValue().getTimeout())
+        .extracting(
+            Record::getIntent,
+            record -> record.getValue().getRetries(),
+            record -> record.getValue().getTimeout())
         .containsSubsequence(
             tuple(JobIntent.CREATED, 3, -1L),
             tuple(JobIntent.UPDATE, 5, 300000L),
             tuple(JobIntent.UPDATED, 5, -1L));
+  }
+
+  @Test
+  public void shouldUpdateJobWithNoChanges() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+
+    final var batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    ENGINE
+        .job()
+        .withKey(jobKey)
+        .update();
+
+    // then
+    assertThat(RecordingExporter.jobRecords().limit(3))
+        .extracting(Record::getIntent)
+        .containsSubsequence(JobIntent.CREATED, JobIntent.UPDATE, JobIntent.UPDATED);
   }
 
   @Test
@@ -82,9 +104,7 @@ public class JobUpdateTest {
     assertThat(RecordingExporter.jobRecords().limit(3))
         .extracting(Record::getIntent, record -> record.getValue().getRetries())
         .containsSubsequence(
-            tuple(JobIntent.CREATED, 3),
-            tuple(JobIntent.UPDATE, 5),
-            tuple(JobIntent.UPDATED, 5));
+            tuple(JobIntent.CREATED, 3), tuple(JobIntent.UPDATE, 5), tuple(JobIntent.UPDATED, 5));
   }
 
   @Test
