@@ -8,6 +8,7 @@ on:
 jobs:
   delete-old-benchmarks:
     runs-on: ubuntu-latest
+    continue-on-error: true
     permissions:
       contents: 'read'
       id-token: 'write'
