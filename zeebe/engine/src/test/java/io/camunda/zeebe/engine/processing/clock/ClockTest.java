@@ -20,7 +20,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public final class ClockPinTest {
+public final class ClockTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
@@ -30,7 +30,7 @@ public final class ClockPinTest {
   private final ClockClient clockClient = ENGINE.clock();
 
   @Test
-  public void shouldResetClock() {
+  public void shouldPinClock() {
     // given
     final var fakeNow = Instant.now().minusSeconds(180).truncatedTo(ChronoUnit.MILLIS);
 
@@ -65,5 +65,22 @@ public final class ClockPinTest {
     assertThat(ENGINE.getStreamClock().instant()).isEqualTo(fakeNow);
     assertThat(ENGINE.getProcessingState().getClockState().getModification())
         .isEqualTo(Modification.pinAt(fakeNow));
+  }
+
+  @Test
+  public void shouldResetClock() {
+    // given
+    final var fakeNow = Instant.now().minusSeconds(180).truncatedTo(ChronoUnit.MILLIS);
+    ENGINE.awaitProcessingOf(clockClient.pinAt(fakeNow));
+
+    // when
+    final var record = clockClient.reset();
+    // required to ensure we apply the side effect of the clock
+    ENGINE.awaitProcessingOf(record);
+
+    // then
+    assertThat(ENGINE.getStreamClock().instant()).isAfter(fakeNow);
+    assertThat(ENGINE.getProcessingState().getClockState().getModification())
+        .isEqualTo(Modification.none());
   }
 }

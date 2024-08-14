@@ -16,15 +16,19 @@ import java.time.Instant;
 import java.util.function.Function;
 
 public class ClockClient {
-  private static final Function<Long, Record<ClockRecordValue>> SUCCESS_EXPECTATION =
+  private static final Function<Long, Record<ClockRecordValue>> PIN_SUCCESS_EXPECTATION =
       (position) ->
           RecordingExporter.clockRecords(ClockIntent.PINNED)
+              .withSourceRecordPosition(position)
+              .getFirst();
+  private static final Function<Long, Record<ClockRecordValue>> RESET_SUCCESS_EXPECTATION =
+      (position) ->
+          RecordingExporter.clockRecords(ClockIntent.RESETTED)
               .withSourceRecordPosition(position)
               .getFirst();
 
   private final CommandWriter writer;
   private final ClockRecord record = new ClockRecord();
-  private final Function<Long, Record<ClockRecordValue>> expectation = SUCCESS_EXPECTATION;
 
   public ClockClient(final CommandWriter writer) {
     this.writer = writer;
@@ -32,6 +36,12 @@ public class ClockClient {
 
   public Record<ClockRecordValue> pinAt(final Instant now) {
     final long position = writer.writeCommand(ClockIntent.PIN, record.pinAt(now.toEpochMilli()));
-    return expectation.apply(position);
+    return PIN_SUCCESS_EXPECTATION.apply(position);
+  }
+
+  public Record<ClockRecordValue> reset() {
+    record.reset();
+    final long position = writer.writeCommand(ClockIntent.RESET, record);
+    return RESET_SUCCESS_EXPECTATION.apply(position);
   }
 }
