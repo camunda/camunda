@@ -18,6 +18,8 @@ import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import java.time.Duration;
+import java.time.InstantSource;
+import java.util.PriorityQueue;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -31,10 +33,14 @@ public class ProcessingScheduleServiceImpl
 
   private static final ScheduledTask NOOP_SCHEDULED_TASK = () -> {};
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
+  private static final int PERIODIC_CHECK_INTERVAL_MS = 1000;
+
   private final Supplier<StreamProcessor.Phase> streamProcessorPhaseSupplier;
   private final BooleanSupplier abortCondition;
   private final Supplier<LogStreamWriter> writerSupplier;
   private final StageableScheduledCommandCache commandCache;
+  private final InstantSource clock;
+  private final PriorityQueue<ScheduledTaskImpl> scheduledTasks = new PriorityQueue<>();
   private LogStreamWriter logStreamWriter;
   private ActorControl actorControl;
   private AbortableRetryStrategy writeRetryStrategy;
@@ -44,21 +50,22 @@ public class ProcessingScheduleServiceImpl
       final Supplier<Phase> streamProcessorPhaseSupplier,
       final BooleanSupplier abortCondition,
       final Supplier<LogStreamWriter> writerSupplier,
-      final StageableScheduledCommandCache commandCache) {
+      final StageableScheduledCommandCache commandCache,
+      final InstantSource clock) {
     this.streamProcessorPhaseSupplier = streamProcessorPhaseSupplier;
     this.abortCondition = abortCondition;
     this.writerSupplier = writerSupplier;
     this.commandCache = commandCache;
+    this.clock = clock;
   }
 
   @Override
-  public ScheduledTask runDelayed(final Duration delay, final Runnable followUpTask) {
+  public ScheduledTask runDelayed(final Duration delay, final Runnable task) {
     if (actorControl == null) {
       LOG.warn("ProcessingScheduleService hasn't been opened yet, ignore scheduled task.");
       return NOOP_SCHEDULED_TASK;
     }
-    final var scheduledTimer = actorControl.schedule(delay, followUpTask);
-    return scheduledTimer::cancel;
+    return schedule(clock.millis() + delay.toMillis(), task);
   }
 
   @Override
@@ -77,8 +84,7 @@ public class ProcessingScheduleServiceImpl
       LOG.warn("ProcessingScheduleService hasn't been opened yet, ignore scheduled task.");
       return NOOP_SCHEDULED_TASK;
     }
-    final var scheduledTimer = actorControl.runAt(timestamp, task);
-    return scheduledTimer::cancel;
+    return schedule(timestamp, task);
   }
 
   @Override
@@ -106,6 +112,8 @@ public class ProcessingScheduleServiceImpl
     logStreamWriter = writerSupplier.get();
     actorControl = control;
     openFuture.complete(null);
+    actorControl.runAtFixedRate(
+        Duration.ofMillis(PERIODIC_CHECK_INTERVAL_MS), this::processScheduledTasks);
     return openFuture;
   }
 
@@ -115,6 +123,27 @@ public class ProcessingScheduleServiceImpl
     logStreamWriter = null;
     writeRetryStrategy = null;
     openFuture = null;
+  }
+
+  private void processScheduledTasks() {
+    final var now = clock.millis();
+    while (scheduledTasks.peek() != null && scheduledTasks.peek().scheduledTime <= now) {
+      final var expiredTask = scheduledTasks.poll();
+      actorControl.submit(expiredTask.runnable);
+    }
+  }
+
+  private ScheduledTask schedule(final long timestamp, final Runnable task) {
+    final var scheduledTask = new ScheduledTaskImpl(timestamp, task);
+    actorControl.run(
+        () -> {
+          final var delay = timestamp - clock.millis();
+          scheduledTasks.add(scheduledTask);
+          if (delay < PERIODIC_CHECK_INTERVAL_MS / 2) {
+            actorControl.schedule(Duration.ofMillis(delay), this::processScheduledTasks);
+          }
+        });
+    return scheduledTask;
   }
 
   Runnable toRunnable(final Task task) {
@@ -179,5 +208,26 @@ public class ProcessingScheduleServiceImpl
             }
           });
     };
+  }
+
+  /** Note: this class has a natural ordering that is inconsistent with equals. */
+  private final class ScheduledTaskImpl implements ScheduledTask, Comparable<ScheduledTaskImpl> {
+    private final long scheduledTime;
+    private final Runnable runnable;
+
+    private ScheduledTaskImpl(final long scheduledTime, final Runnable runnable) {
+      this.scheduledTime = scheduledTime;
+      this.runnable = runnable;
+    }
+
+    @Override
+    public void cancel() {
+      actorControl.run(() -> scheduledTasks.remove(this));
+    }
+
+    @Override
+    public int compareTo(final ProcessingScheduleServiceImpl.ScheduledTaskImpl o) {
+      return Long.compare(scheduledTime, o.scheduledTime);
+    }
   }
 }
