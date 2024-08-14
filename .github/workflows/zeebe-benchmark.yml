@@ -280,8 +280,6 @@ jobs:
     name: Deploy
     needs:
       - calculate-image-tag
-      - build-zeebe-image
-      - build-benchmark-images
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
