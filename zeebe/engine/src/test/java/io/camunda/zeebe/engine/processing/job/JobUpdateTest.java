@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.Set;
+import org.assertj.core.groups.Tuple;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -57,13 +59,12 @@ public class JobUpdateTest {
         .update();
 
     // then
-    assertThat(RecordingExporter.jobRecords().limit(4))
-        .extracting(Record::getIntent)
+    assertThat(RecordingExporter.jobRecords().limit(3))
+        .extracting(Record::getIntent, record -> record.getValue().getRetries(), record -> record.getValue().getTimeout())
         .containsSubsequence(
-            JobIntent.CREATED,
-            JobIntent.UPDATE,
-            JobIntent.RETRIES_UPDATED,
-            JobIntent.TIMEOUT_UPDATED);
+            tuple(JobIntent.CREATED, 3, -1L),
+            tuple(JobIntent.UPDATE, 5, 300000L),
+            tuple(JobIntent.UPDATED, 5, -1L));
   }
 
   @Test
@@ -78,10 +79,12 @@ public class JobUpdateTest {
     ENGINE.job().withKey(jobKey).withRetries(5).withChangeset(Set.of("retries")).update();
 
     // then
-    assertThat(RecordingExporter.jobRecords().limit(4))
-        .extracting(Record::getIntent)
-        .containsSubsequence(JobIntent.CREATED, JobIntent.UPDATE, JobIntent.RETRIES_UPDATED)
-        .doesNotContain(JobIntent.TIMEOUT_UPDATED);
+    assertThat(RecordingExporter.jobRecords().limit(3))
+        .extracting(Record::getIntent, record -> record.getValue().getRetries())
+        .containsSubsequence(
+            tuple(JobIntent.CREATED, 3),
+            tuple(JobIntent.UPDATE, 5),
+            tuple(JobIntent.UPDATED, 5));
   }
 
   @Test
@@ -101,10 +104,12 @@ public class JobUpdateTest {
         .update();
 
     // then
-    assertThat(RecordingExporter.jobRecords().limit(4))
-        .extracting(Record::getIntent)
-        .containsSubsequence(JobIntent.CREATED, JobIntent.UPDATE, JobIntent.TIMEOUT_UPDATED)
-        .doesNotContain(JobIntent.RETRIES_UPDATED);
+    assertThat(RecordingExporter.jobRecords().limit(3))
+        .extracting(Record::getIntent, record -> record.getValue().getTimeout())
+        .containsSubsequence(
+            tuple(JobIntent.CREATED, -1L),
+            tuple(JobIntent.UPDATE, 300000L),
+            tuple(JobIntent.UPDATED, -1L));
   }
 
   @Test
