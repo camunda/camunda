@@ -216,7 +216,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     final long processInstanceKey = elementInstanceRecord.getProcessInstanceKey();
     final var elementId = elementInstanceRecord.getElementId();
 
-    requireSupportedElementType(elementInstanceRecord, processInstanceKey);
+    requireSupportedElementType(elementInstanceRecord, processInstanceKey, sourceProcessDefinition);
 
     final String targetElementId = sourceElementIdToTargetElementId.get(elementId);
     requireNonNullTargetElementId(targetElementId, processInstanceKey, elementId);
