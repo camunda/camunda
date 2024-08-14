@@ -6,16 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {runLastEffect} from '__mocks__/react';
+import {ChangeEvent} from 'react';
 import {shallow} from 'enzyme';
+import {runLastEffect} from '__mocks__/react';
 
 import {loadVariables} from 'services';
 import {Table} from 'components';
+import {ProcessFilter} from 'types';
 
 import {updateVariables} from './service';
 import RenameVariablesModal from './RenameVariablesModal';
-import {ChangeEvent} from 'react';
-import {ProcessFilter} from 'modules/types';
 
 jest.mock('./service', () => ({updateVariables: jest.fn()}));
 jest.mock('services', () => {
