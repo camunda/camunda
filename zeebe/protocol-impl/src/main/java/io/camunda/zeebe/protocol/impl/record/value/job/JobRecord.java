@@ -250,6 +250,21 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return jobListenerEventTypeProp.getValue();
   }
 
+  @Override
+  public Set<String> getChangedAttributes() {
+    return StreamSupport.stream(changedAttributesProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toSet());
+  }
+
+  public JobRecord setChangedAttributes(final Set<String> changedAttributes) {
+    changedAttributesProp.reset();
+    changedAttributes.forEach(
+        attribute -> changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute)));
+    return this;
+  }
+
   public JobRecord setProcessDefinitionVersion(final int version) {
     processDefinitionVersionProp.setValue(version);
     return this;
@@ -423,21 +438,6 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
-    return this;
-  }
-
-  @JsonIgnore
-  public Set<String> getChangedAttributes() {
-    return StreamSupport.stream(changedAttributesProp.spliterator(), false)
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .collect(Collectors.toSet());
-  }
-
-  public JobRecord setChangedAttributes(final Set<String> changedAttributes) {
-    changedAttributesProp.reset();
-    changedAttributes.forEach(
-        attribute -> changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute)));
     return this;
   }
 }

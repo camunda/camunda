@@ -677,7 +677,8 @@ final class JsonSerializableToJsonTest {
                   .setProcessDefinitionVersion(processDefinitionVersion)
                   .setProcessInstanceKey(processInstanceKey)
                   .setElementId(wrapString(activityId))
-                  .setElementInstanceKey(activityInstanceKey);
+                  .setElementInstanceKey(activityInstanceKey)
+                  .setChangedAttributes(Set.of("foo", "bar"));
 
               return record;
             },
@@ -713,7 +714,8 @@ final class JsonSerializableToJsonTest {
               "customHeaders": {},
               "deadline": 1000,
               "timeout": -1,
-              "tenantId": "<default>"
+              "tenantId": "<default>",
+              "changedAttributes": ["foo", "bar"]
             }
           ],
           "timeout": 2,
