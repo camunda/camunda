@@ -486,25 +486,3 @@ jobs:
           gh pr review ${{ github.event.pull_request.number }} --approve
           # Call the API directly to work around https://github.com/cli/cli/issues/8352
           gh api graphql -f query='mutation PullRequestAutoMerge {enablePullRequestAutoMerge(input: {pullRequestId: "${{ github.event.pull_request.node_id }}"}) {clientMutationId}}'
-  # This job will trigger another workflow such that it will trigger a re-run of this failing workflow
-  # We can't automatically do this here, since you can only re-run a workflow if it has finished,
-  # and while this job is running, the workflow clearly hasn't finished
-  #
-  # It will only retry if the workflow failed, the run count is < 3 (to avoid infinite loops), and
-  # the author is backport-action, renovate, or camundait (for release PRs)
-  retry-workflow:
-    name: Retry release, renovate, or backport PRs automatically
-    needs: [ test-summary ]
-    if: |
-      failure() &&
-      fromJSON(github.run_attempt) < 3 &&
-      github.repository == 'camunda/camunda' &&
-      (github.actor == 'backport-action' || github.actor == 'renovate[bot]' || github.actor == 'camundait') &&
-      github.event_name != 'merge_queue'
-    runs-on: ubuntu-latest
-    env:
-      GH_REPO: ${{ github.repository }}
-      GH_TOKEN: ${{ github.token }}
-    steps:
-      - name: Retry workflow run ${{ github.run_id }}
-        run: gh workflow run retry-workflow.yml -F run_id=${{ github.run_id }}
