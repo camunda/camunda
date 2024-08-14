@@ -15,24 +15,18 @@ import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modificat
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 public final class ClockPinTest {
-  @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private ClockClient clockClient;
-
-  @Before
-  public void before() {
-    clockClient = ENGINE_RULE.clock();
-  }
+  private final ClockClient clockClient = ENGINE.clock();
 
   @Test
   public void shouldResetClock() {
@@ -42,11 +36,11 @@ public final class ClockPinTest {
     // when
     final var record = clockClient.pinAt(fakeNow);
     // required to ensure we apply the side effect of the clock
-    ENGINE_RULE.awaitProcessingOf(record);
+    ENGINE.awaitProcessingOf(record);
 
     // then
-    assertThat(ENGINE_RULE.getStreamClock().instant()).isEqualTo(fakeNow);
-    assertThat(ENGINE_RULE.getProcessingState().getClockState().getModification())
+    assertThat(ENGINE.getStreamClock().instant()).isEqualTo(fakeNow);
+    assertThat(ENGINE.getProcessingState().getClockState().getModification())
         .isEqualTo(Modification.pinAt(fakeNow));
   }
 }
