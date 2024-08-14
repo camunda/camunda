@@ -17,7 +17,7 @@
 
   <artifactId>camunda-exporter</artifactId>
 
-  <name>Camunda Apps Elasticsearch Exporter</name>
+  <name>Camunda Exporter</name>
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -28,76 +28,6 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
     </dependency>
-
-    <dependency>
-      <groupId>org.camunda.bpm.model</groupId>
-      <artifactId>camunda-xml-model</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-bpmn-model</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>co.elastic.clients</groupId>
-      <artifactId>elasticsearch-java</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-client</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpasyncclient</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpcore</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.assertj</groupId>
-      <artifactId>assertj-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-
   </dependencies>
 
   <build>
