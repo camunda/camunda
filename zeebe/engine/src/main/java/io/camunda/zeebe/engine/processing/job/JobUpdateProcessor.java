@@ -56,7 +56,7 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
                   changeset,
                   JobRecord.TIMEOUT,
                   Number::longValue,
-                  (timeout) -> jobUpdateBehaviour.updateJobTimeout(jobKey, timeout, job, command),
+                  (timeout) -> jobUpdateBehaviour.updateJobTimeout(jobKey, timeout, job),
                   errors);
               if (errors.isEmpty()) {
                 stateWriter.appendFollowUpEvent(jobKey, JobIntent.UPDATED, job);

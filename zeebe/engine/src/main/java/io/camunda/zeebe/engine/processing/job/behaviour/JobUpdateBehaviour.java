@@ -30,14 +30,12 @@ public class JobUpdateBehaviour {
           + "but the amount given was '%d'";
 
   private final JobState jobState;
-  private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final InstantSource clock;
 
   public JobUpdateBehaviour(
       final JobState jobState, final Writers writers, final InstantSource clock) {
     this.jobState = jobState;
-    stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.clock = clock;
   }
@@ -63,15 +61,13 @@ public class JobUpdateBehaviour {
     }
     // update retries for response sent to client
     jobRecord.setRetries(retries);
-    stateWriter.appendFollowUpEvent(jobKey, JobIntent.RETRIES_UPDATED, jobRecord);
     return Optional.empty();
   }
 
   public Optional<String> updateJobTimeout(
       final long jobKey,
       final long timeout,
-      final JobRecord jobRecord,
-      final TypedRecord<JobRecord> command) {
+      final JobRecord jobRecord) {
     final long oldDeadline = jobRecord.getDeadline();
 
     if (!jobState.jobDeadlineExists(jobKey, oldDeadline)) {
@@ -79,7 +75,6 @@ public class JobUpdateBehaviour {
     }
     final long newDeadline = clock.millis() + timeout;
     jobRecord.setDeadline(newDeadline);
-    stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMEOUT_UPDATED, jobRecord);
     return Optional.empty();
   }
 }
