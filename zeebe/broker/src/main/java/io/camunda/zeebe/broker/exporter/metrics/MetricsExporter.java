@@ -21,9 +21,9 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.Set;
 
 public class MetricsExporter implements Exporter {
@@ -48,6 +48,7 @@ public class MetricsExporter implements Exporter {
   private final ExecutionLatencyMetrics executionLatencyMetrics;
   private final TtlKeyCache processInstanceCache;
   private final TtlKeyCache jobCache;
+  private InstantSource clock;
 
   private Controller controller;
 
@@ -74,6 +75,7 @@ public class MetricsExporter implements Exporter {
 
   @Override
   public void configure(final Context context) throws Exception {
+    clock = context.clock();
     context.setFilter(
         new RecordFilter() {
           private static final Set<ValueType> ACCEPTED_VALUE_TYPES =
@@ -165,8 +167,7 @@ public class MetricsExporter implements Exporter {
   }
 
   private void cleanUp() {
-    final var currentTimeMillis = ActorClock.currentTimeMillis();
-    final var deadTime = currentTimeMillis - TIME_TO_LIVE.toMillis();
+    final var deadTime = clock.millis() - TIME_TO_LIVE.toMillis();
     processInstanceCache.cleanup(deadTime);
     jobCache.cleanup(deadTime);
     controller.scheduleCancellableTask(TIME_TO_LIVE, this::cleanUp);
