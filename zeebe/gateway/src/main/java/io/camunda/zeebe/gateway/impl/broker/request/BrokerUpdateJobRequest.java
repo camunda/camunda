@@ -22,7 +22,13 @@ public class BrokerUpdateJobRequest extends BrokerExecuteCommand<JobRecord> {
   public BrokerUpdateJobRequest(final long jobKey, final Map<String, Number> changeset) {
     super(ValueType.JOB, JobIntent.UPDATE);
     request.setKey(jobKey);
-    requestDto.setChangedAttributes(changeset);
+    requestDto.setChangedAttributes(changeset.keySet());
+    if (changeset.get(JobRecord.RETRIES) != null) {
+      requestDto.setRetries(changeset.get(JobRecord.RETRIES).intValue());
+    }
+    if (changeset.get(JobRecord.TIMEOUT) != null) {
+      requestDto.setTimeout(changeset.get(JobRecord.TIMEOUT).longValue());
+    }
   }
 
   @Override

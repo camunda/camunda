@@ -18,7 +18,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
-import java.util.Map;
+import java.util.Set;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -51,7 +51,9 @@ public class JobUpdateTest {
     ENGINE
         .job()
         .withKey(jobKey)
-        .withChangeset(Map.of("retries", 5, "timeout", Duration.ofMinutes(5).toMillis()))
+        .withRetries(5)
+        .withTimeout(Duration.ofMinutes(5).toMillis())
+        .withChangeset(Set.of("retries", "timeout"))
         .update();
 
     // then
@@ -73,7 +75,7 @@ public class JobUpdateTest {
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     // when
-    ENGINE.job().withKey(jobKey).withChangeset(Map.of("retries", 5)).update();
+    ENGINE.job().withKey(jobKey).withRetries(5).withChangeset(Set.of("retries")).update();
 
     // then
     assertThat(RecordingExporter.jobRecords().limit(4))
@@ -94,7 +96,8 @@ public class JobUpdateTest {
     ENGINE
         .job()
         .withKey(jobKey)
-        .withChangeset(Map.of("timeout", Duration.ofMinutes(5).toMillis()))
+        .withTimeout(Duration.ofMinutes(5).toMillis())
+        .withChangeset(Set.of("timeout"))
         .update();
 
     // then
@@ -114,7 +117,9 @@ public class JobUpdateTest {
         ENGINE
             .job()
             .withKey(jobKey)
-            .withChangeset(Map.of("retries", 5, "timeout", Duration.ofMinutes(5).toMillis()))
+            .withRetries(5)
+            .withTimeout(Duration.ofMinutes(5).toMillis())
+            .withChangeset(Set.of("retries", "timeout"))
             .expectRejection()
             .update();
 

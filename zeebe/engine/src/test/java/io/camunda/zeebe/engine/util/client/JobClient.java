@@ -20,6 +20,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -115,7 +116,7 @@ public final class JobClient {
     return this;
   }
 
-  public JobClient withChangeset(final Map<String, Number> changeset) {
+  public JobClient withChangeset(final Set<String> changeset) {
     jobRecord.setChangedAttributes(changeset);
     return this;
   }

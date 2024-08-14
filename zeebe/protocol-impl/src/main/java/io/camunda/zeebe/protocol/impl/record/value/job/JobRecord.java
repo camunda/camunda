@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.impl.record.value.processinstance.Proces
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
@@ -19,13 +20,18 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.PackedProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -72,7 +78,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final DocumentProperty changedAttributesProp = new DocumentProperty("changedAttributes");
+  private final ArrayProperty<StringValue> changedAttributesProp =
+      new ArrayProperty<>("changedAttributes", StringValue::new);
 
   public JobRecord() {
     super(20);
@@ -420,13 +427,17 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   @JsonIgnore
-  public Map<String, Number> getChangedAttributes() {
-    return MsgPackConverter.convertToNumberMap(changedAttributesProp.getValue());
+  public Set<String> getChangedAttributes() {
+    return StreamSupport.stream(changedAttributesProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toSet());
   }
 
-  public JobRecord setChangedAttributes(final Map<String, Number> changedAttributes) {
-    changedAttributesProp.setValue(
-        new UnsafeBuffer(MsgPackConverter.convertToMsgPack(changedAttributes)));
+  public JobRecord setChangedAttributes(final Set<String> changedAttributes) {
+    changedAttributesProp.reset();
+    changedAttributes.forEach(
+        attribute -> changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute)));
     return this;
   }
 }

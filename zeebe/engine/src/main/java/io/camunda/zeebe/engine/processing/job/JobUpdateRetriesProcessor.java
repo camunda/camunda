@@ -55,7 +55,7 @@ public final class JobUpdateRetriesProcessor implements TypedRecordProcessor<Job
                               jobKey, JobIntent.RETRIES_UPDATED, job, command);
                         }),
             errorMessage ->
-              responseWriter.writeRejectionOnCommand(
-                  command, RejectionType.NOT_FOUND, errorMessage));
+                responseWriter.writeRejectionOnCommand(
+                    command, RejectionType.NOT_FOUND, errorMessage));
   }
 }

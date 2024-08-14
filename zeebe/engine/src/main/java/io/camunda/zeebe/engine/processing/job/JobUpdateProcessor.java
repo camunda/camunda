@@ -19,8 +19,8 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
@@ -45,17 +45,17 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
         .ifRightOrLeft(
             job -> {
               final List<String> errors = new ArrayList<>();
-              final Map<String, Number> changeset = command.getValue().getChangedAttributes();
+              final Set<String> changeset = command.getValue().getChangedAttributes();
               jobChange(
                   changeset,
                   JobRecord.RETRIES,
-                  Number::intValue,
+                  command.getValue().getRetries(),
                   (retries) -> jobUpdateBehaviour.updateJobRetries(jobKey, retries, job, command),
                   errors);
               jobChange(
                   changeset,
                   JobRecord.TIMEOUT,
-                  Number::longValue,
+                  command.getValue().getTimeout(),
                   (timeout) -> jobUpdateBehaviour.updateJobTimeout(jobKey, timeout, job),
                   errors);
               if (errors.isEmpty()) {
@@ -72,13 +72,12 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
   }
 
   private <T extends Number> void jobChange(
-      final Map<String, Number> changeset,
+      final Set<String> changeset,
       final String key,
-      final Function<Number, T> converter,
+      final T value,
       final Function<T, Optional<String>> updateFunction,
       final List<String> errors) {
-    if (changeset.containsKey(key)) {
-      final T value = converter.apply(changeset.get(key));
+    if (changeset.contains(key)) {
       updateFunction.apply(value).ifPresent(errors::add);
     }
   }
