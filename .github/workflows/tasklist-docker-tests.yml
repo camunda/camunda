@@ -98,9 +98,6 @@ jobs:
           context: .
           push: true
           tags: ${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
-          cache-from: type=gha,ignore-error=true
-          cache-to: type=gha,mode=max,ignore-error=true
-          no-cache-filters: build,distball,dist
           file: tasklist.Dockerfile
       - name: Run Docker tests
         run: mvn -pl tasklist/qa/integration-tests -DskipChecks -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
