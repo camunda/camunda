@@ -8,7 +8,7 @@
 
 import {t} from 'translation';
 import {Tooltip} from 'components';
-import {useUiConfig} from 'modules/hooks';
+import {useUiConfig} from 'hooks';
 
 import './Footer.scss';
 
