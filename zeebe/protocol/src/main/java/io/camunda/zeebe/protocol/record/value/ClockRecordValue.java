@@ -29,14 +29,14 @@ import org.immutables.value.Value;
 @ImmutableProtocol(builder = ImmutableClockRecordValue.Builder.class)
 public interface ClockRecordValue extends RecordValue {
   /**
-   * Returns the pinned value of this clock, if any; if none, returns an instant at the {@code 0}
-   * epoch.
+   * Returns the value of this clock modification, if any.
+   *
+   * <ol>
+   *   <li>If the associated intent is a pin, then the time is a Unix timestamp as epoch
+   *       milliseconds
+   *   <li>If the associated intent is an offset, then time would be the duration in milliseconds
+   *   <li>If the associated intent is a reset, then this value has no meaning, and will be 0
+   * </ol>
    */
-  long getPinnedAtEpoch();
-
-  /**
-   * Returns the relative offset duration of this clock, if any; if none, returns a duration offset
-   * by {@code 0} milliseconds.
-   */
-  long getOffsetMillis();
+  long getTime();
 }

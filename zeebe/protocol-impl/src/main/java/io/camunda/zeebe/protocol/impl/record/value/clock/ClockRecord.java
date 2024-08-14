@@ -12,41 +12,29 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 
 public final class ClockRecord extends UnifiedRecordValue implements ClockRecordValue {
-  private final LongProperty pinProperty = new LongProperty("pin", 0);
-  private final LongProperty offsetProperty = new LongProperty("offset", 0);
+  // depending on the intent, the value may be a timestamp (epoch milliseconds) or an offset (in
+  // milliseconds)
+  private final LongProperty timeProperty = new LongProperty("time", 0);
 
   public ClockRecord() {
     super(2);
-    declareProperty(pinProperty).declareProperty(offsetProperty);
-  }
-
-  public boolean hasPinnedEpoch() {
-    return pinProperty.isSet();
+    declareProperty(timeProperty);
   }
 
   @Override
-  public long getPinnedAtEpoch() {
-    return pinProperty.getValue();
-  }
-
-  @Override
-  public long getOffsetMillis() {
-    return offsetProperty.getValue();
-  }
-
-  public boolean hasOffsetMillis() {
-    return offsetProperty.isSet();
+  public long getTime() {
+    return timeProperty.getValue();
   }
 
   public ClockRecord pinAt(final long pinnedEpoch) {
     reset();
-    pinProperty.setValue(pinnedEpoch);
+    timeProperty.setValue(pinnedEpoch);
     return this;
   }
 
   public ClockRecord offsetBy(final long offsetMillis) {
     reset();
-    offsetProperty.setValue(offsetMillis);
+    timeProperty.setValue(offsetMillis);
     return this;
   }
 }

@@ -2493,18 +2493,30 @@ final class JsonSerializableToJsonTest {
         (Supplier<ClockRecord>) () -> new ClockRecord().pinAt(5),
         """
         {
-          "pinnedAtEpoch": 5,
-          "offsetMillis": 0
+          "time": 5
         }
         """
       },
       {
         "ClockRecord (offset)",
-        (Supplier<ClockRecord>) () -> new ClockRecord().offsetBy(5),
+        (Supplier<ClockRecord>) () -> new ClockRecord().offsetBy(30),
         """
         {
-          "pinnedAtEpoch": 0,
-          "offsetMillis": 5
+          "time": 30
+        }
+        """
+      },
+      {
+        "ClockRecord (none)",
+        (Supplier<ClockRecord>)
+            () -> {
+              final var record = new ClockRecord().offsetBy(30);
+              record.reset();
+              return record;
+            },
+        """
+        {
+          "time": 0
         }
         """
       },
