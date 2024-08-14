@@ -84,6 +84,13 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
   }
 
   @Override
+  public void update(final TimerInstance timer) {
+    elementInstanceKey.inner().wrapLong(timer.getElementInstanceKey());
+    timerKey.wrapLong(timer.getKey());
+    timerInstanceColumnFamily.update(elementAndTimerKey, timer);
+  }
+
+  @Override
   public long processTimersWithDueDateBefore(final long timestamp, final TimerVisitor consumer) {
     nextDueDate = -1L;
 
