@@ -8,10 +8,17 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.service.UserServices;
+import io.camunda.service.search.query.UserQuery;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaUserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -45,5 +52,29 @@ public class UserController {
                     userWithPasswordDto.getName(),
                     userWithPasswordDto.getEmail(),
                     passwordEncoder.encode(userWithPasswordDto.getPassword())));
+  }
+
+  @PostMapping(
+      path = "/search",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<UserSearchResponse> searchUsers(
+      @RequestBody(required = false) final CamundaUserSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toUserQuery(query)
+        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
+  private ResponseEntity<UserSearchResponse> search(final UserQuery query) {
+    try {
+      final var result = userServices.search(query);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
+    } catch (final Throwable e) {
+      final var problemDetail =
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.BAD_REQUEST,
+              e.getMessage(),
+              "Failed to execute Decision Definition Search Query");
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    }
   }
 }

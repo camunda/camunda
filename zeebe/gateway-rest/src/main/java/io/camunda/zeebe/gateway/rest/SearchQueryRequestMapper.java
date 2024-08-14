@@ -18,6 +18,7 @@ import io.camunda.service.search.filter.DecisionRequirementsFilter;
 import io.camunda.service.search.filter.FilterBase;
 import io.camunda.service.search.filter.FilterBuilders;
 import io.camunda.service.search.filter.ProcessInstanceFilter;
+import io.camunda.service.search.filter.UserFilter;
 import io.camunda.service.search.filter.UserTaskFilter;
 import io.camunda.service.search.filter.VariableValueFilter;
 import io.camunda.service.search.page.SearchQueryPage;
@@ -26,14 +27,18 @@ import io.camunda.service.search.query.DecisionRequirementsQuery;
 import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.TypedSearchQueryBuilder;
+import io.camunda.service.search.query.UserQuery;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.service.search.sort.DecisionDefinitionSort;
 import io.camunda.service.search.sort.DecisionRequirementsSort;
 import io.camunda.service.search.sort.ProcessInstanceSort;
 import io.camunda.service.search.sort.SortOption;
 import io.camunda.service.search.sort.SortOptionBuilders;
+import io.camunda.service.search.sort.UserSort;
 import io.camunda.service.search.sort.UserTaskSort;
 import io.camunda.util.ObjectBuilder;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaUserFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaUserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsFilterRequest;
@@ -118,6 +123,22 @@ public final class SearchQueryRequestMapper {
             SearchQueryRequestMapper::applyUserTaskSortField);
     final var filter = toUserTaskFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userTaskSearchQuery);
+  }
+
+  public static Either<ProblemDetail, UserQuery> toUserQuery(
+      final CamundaUserSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.userSearchQuery().build());
+    }
+
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            request.getSort(),
+            SortOptionBuilders::user,
+            SearchQueryRequestMapper::applyUserSortField);
+    final var filter = toUserFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userSearchQuery);
   }
 
   private static ProcessInstanceFilter toProcessInstanceFilter(
@@ -233,6 +254,29 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
+  private static UserFilter toUserFilter(final CamundaUserFilterRequest filter) {
+    final var builder = FilterBuilders.user();
+
+    if (filter != null) {
+      // username
+      if (filter.getUsername() != null) {
+        builder.username(filter.getUsername());
+      }
+
+      // name
+      if (filter.getName() != null) {
+        builder.name(filter.getName());
+      }
+
+      // email
+      if (filter.getEmail() != null) {
+        builder.email(filter.getEmail());
+      }
+    }
+
+    return builder.build();
+  }
+
   private static List<String> applyProcessInstanceSortField(
       final String field, final ProcessInstanceSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
@@ -296,6 +340,22 @@ public final class SearchQueryRequestMapper {
       switch (field) {
         case "creationDate" -> builder.creationDate();
         case "completionDate" -> builder.completionDate();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  private static List<String> applyUserSortField(
+      final String field, final UserSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case "username" -> builder.username();
+        case "name" -> builder.name();
+        case "email" -> builder.email();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

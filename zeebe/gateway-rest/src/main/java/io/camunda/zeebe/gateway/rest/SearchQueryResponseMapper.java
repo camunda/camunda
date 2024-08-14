@@ -9,20 +9,25 @@ package io.camunda.zeebe.gateway.rest;
 
 import static java.util.Optional.ofNullable;
 
+import io.camunda.service.entities.CamundaUserEntity;
 import io.camunda.service.entities.DecisionDefinitionEntity;
 import io.camunda.service.entities.DecisionRequirementsEntity;
 import io.camunda.service.entities.ProcessInstanceEntity;
 import io.camunda.service.entities.UserTaskEntity;
 import io.camunda.service.search.query.SearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResponse;
+import io.camunda.zeebe.util.Either;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -73,6 +78,28 @@ public final class SearchQueryResponseMapper {
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toUserTasks)
                 .orElseGet(Collections::emptyList));
+  }
+
+  public static UserSearchResponse toUserSearchQueryResponse(
+      final SearchQueryResult<CamundaUserEntity> result) {
+    final var response = new UserSearchResponse();
+    final var total = result.total();
+    final var sortValues = result.sortValues();
+    final var items = result.items();
+
+    final var page = new SearchQueryPageResponse();
+    page.setTotalItems(total);
+    response.setPage(page);
+
+    if (sortValues != null) {
+      page.setLastSortValues(Arrays.asList(sortValues));
+    }
+
+    if (items != null) {
+      response.setItems(toUsers(items).get());
+    }
+
+    return response;
   }
 
   private static SearchQueryPageResponse toSearchQueryPageResponse(
@@ -157,5 +184,19 @@ public final class SearchQueryResponseMapper {
         .externalFormReference(t.externalFormReference())
         .processDefinitionVersion(t.processDefinitionVersion())
         .customHeaders(t.customHeaders());
+  }
+
+  public static Either<ProblemDetail, List<CamundaUserResponse>> toUsers(
+      final List<CamundaUserEntity> users) {
+    return Either.right(
+        users.stream().map(SearchQueryResponseMapper::toUser).map(Either::get).toList());
+  }
+
+  public static Either<ProblemDetail, CamundaUserResponse> toUser(final CamundaUserEntity user) {
+    return Either.right(
+        new CamundaUserResponse()
+            .username(user.value().username())
+            .email(user.value().email())
+            .name(user.value().name()));
   }
 }
