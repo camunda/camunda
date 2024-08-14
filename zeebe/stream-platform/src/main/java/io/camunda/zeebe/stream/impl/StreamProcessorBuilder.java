@@ -167,4 +167,10 @@ public final class StreamProcessorBuilder {
     streamProcessorContext.clock(clock);
     return this;
   }
+
+  public StreamProcessorBuilder meterRegistry(
+      final io.micrometer.core.instrument.MeterRegistry meterRegistry) {
+    streamProcessorContext.meterRegistry(meterRegistry);
+    return this;
+  }
 }

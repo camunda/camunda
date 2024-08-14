@@ -22,6 +22,7 @@ import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
@@ -53,6 +54,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private boolean enableAsyncScheduledTasks = true;
   private EventFilter processingFilter = e -> true;
   private ControllableStreamClock clock;
+  private MeterRegistry meterRegistry;
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -231,5 +233,14 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   public StreamProcessorContext processingFilter(final EventFilter processingFilter) {
     this.processingFilter = processingFilter;
     return this;
+  }
+
+  public StreamProcessorContext meterRegistry(final MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
+    return this;
+  }
+
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
   }
 }
