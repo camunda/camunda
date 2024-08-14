@@ -40,9 +40,7 @@ public class ReportAuthorizationService {
 
   public Optional<RoleType> getAuthorizedRole(
       final String userId, final ReportDefinitionDto<?> report) {
-    final boolean isSuperUser = identityService.isSuperUserIdentity(userId);
-    final Optional<RoleType> authorizedRole =
-        isSuperUser ? Optional.of(RoleType.EDITOR) : getAuthorizedReportRole(userId, report);
+    final Optional<RoleType> authorizedRole = getAuthorizedReportRole(userId, report);
     return authorizedRole.filter(role -> isAuthorizedToAccessReportDefinition(userId, report));
   }
 

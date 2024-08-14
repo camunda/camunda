@@ -110,23 +110,6 @@
 //   }
 //
 //   @Test
-//   public void userIsGrantedAccessAsSuperUser() {
-//     // given
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperUserIds()
-//         .add(KERMIT_USER);
-//
-//     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-//
-//     // when + then
-//     collectionClient.getAuthorizedCollectionById(collectionId, KERMIT_USER, KERMIT_USER);
-//   }
-//
-//   @Test
 //   public void userIsNotGrantedAccessDueMissingRole() {
 //     // given
 //     authorizationClient.addKermitUserAndGrantAccessToOptimize();

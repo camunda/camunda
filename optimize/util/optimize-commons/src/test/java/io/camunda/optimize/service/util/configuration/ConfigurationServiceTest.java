@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.google.common.collect.ImmutableList;
 import com.jayway.jsonpath.spi.mapper.MappingException;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.util.CronNormalizerUtil;
@@ -64,8 +63,6 @@ public class ConfigurationServiceTest {
   private static final String CUSTOM_PACKAGE_3 = "pack_3";
   private static final String API_SECRET = "secret";
   private static final String ACCESS_URL = "accessUrl";
-  private static final String CUSTOM_SUPER_USER_IDS = "[demo, kermit]";
-  private static final String CUSTOM_SUPER_GROUP_IDS = "[demoGroup, kermitGroup]";
   private static final Boolean CUSTOM_ZEEBE_ENABLED = true;
   private static final String CUSTOM_ZEEBE_RECORD_PREFIX = "custom-record-prefix";
   private static final int CUSTOM_ZEEBE_PARTITION_COUNT = 2;
@@ -202,7 +199,6 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set("PACKAGE_3", CUSTOM_PACKAGE_3);
     environmentVariablesExtension.set("OPTIMIZE_API_ACCESS_TOKEN", API_SECRET);
     environmentVariablesExtension.set("ACCESS_URL", ACCESS_URL);
-    environmentVariablesExtension.set("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ENTERPRISE", String.valueOf(false));
     environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
@@ -282,8 +278,6 @@ public class ConfigurationServiceTest {
     System.setProperty("PACKAGE_3", CUSTOM_PACKAGE_3);
     System.setProperty("OPTIMIZE_API_ACCESS_TOKEN", API_SECRET);
     System.setProperty("ACCESS_URL", ACCESS_URL);
-    System.setProperty("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
-    System.setProperty("OPTIMIZE_SUPER_GROUP_IDS", CUSTOM_SUPER_GROUP_IDS);
     System.setProperty("CAMUNDA_OPTIMIZE_ENTERPRISE", String.valueOf(false));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
@@ -421,8 +415,6 @@ public class ConfigurationServiceTest {
     System.setProperty("PACKAGE_3", CUSTOM_PACKAGE_3);
     System.setProperty("OPTIMIZE_API_ACCESS_TOKEN", API_SECRET);
     System.setProperty("ACCESS_URL", ACCESS_URL);
-    System.setProperty("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
-    System.setProperty("OPTIMIZE_SUPER_GROUP_IDS", CUSTOM_SUPER_GROUP_IDS);
     System.setProperty("CAMUNDA_OPTIMIZE_ENTERPRISE", String.valueOf(false));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
@@ -511,8 +503,6 @@ public class ConfigurationServiceTest {
     System.setProperty("PACKAGE_3", CUSTOM_PACKAGE_3);
     System.setProperty("OPTIMIZE_API_ACCESS_TOKEN", API_SECRET);
     System.setProperty("ACCESS_URL", ACCESS_URL);
-    System.setProperty("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
-    System.setProperty("OPTIMIZE_SUPER_GROUP_IDS", CUSTOM_SUPER_GROUP_IDS);
     System.setProperty(
         "CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET", TOKEN_SECRET);
@@ -740,8 +730,6 @@ public class ConfigurationServiceTest {
         .contains(CUSTOM_FIRST_ES_PORT, CUSTOM_SECOND_ES_PORT);
     assertThat(underTest.getOptimizeApiConfiguration().getAccessToken()).isEqualTo(API_SECRET);
     assertThat(underTest.getContainerAccessUrl()).isPresent().get().isEqualTo(ACCESS_URL);
-    assertThat(underTest.getAuthConfiguration().getSuperUserIds())
-        .isEqualTo(ImmutableList.of("demo", "kermit"));
     assertThat(
             underTest
                 .getSecurityConfiguration()

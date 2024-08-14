@@ -54,32 +54,9 @@
 //
 //   private static final String FAKE = "FAKE";
 //
-//   @ParameterizedTest
-//   @ValueSource(strings = {"SUPERUSER", "NONE"})
-//   public void csvExportForbiddenWhenDisabledForNonSuperuserInConfig(
-//       final String authorizationType) {
-//     // given
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getCsvConfiguration()
-//         .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
-//     embeddedOptimizeExtension.reloadConfiguration();
-//     final String reportId = reportClient.createEmptySingleProcessReport();
-//
-//     // when
-//     Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv", "Etc/GMT-1");
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-//   }
-//
 //   @Test
-//   public void csvExportForbiddenWhenDisabledForSuperuserInConfig() {
+//   public void csvExportForbiddenWhenDisabledForUserInConfig() {
 //     // given
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .setSuperUserIds(Collections.singletonList(DEFAULT_USERNAME));
 //     embeddedOptimizeExtension
 //         .getConfigurationService()
 //         .getCsvConfiguration()
@@ -92,40 +69,6 @@
 //
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-//   }
-//
-//   @ParameterizedTest
-//   @ValueSource(strings = {"SUPERUSER", "ALL"})
-//   public void csvExportWorksForSuperuserWhenAuthorizedInConfig(final String authorizationType) {
-//     // given
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .setSuperUserIds(Collections.singletonList(DEFAULT_USERNAME));
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getCsvConfiguration()
-//         .setAuthorizedUserType(AuthorizedUserType.valueOf(authorizationType));
-//     embeddedOptimizeExtension.reloadConfiguration();
-//     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-//
-//     importAllEngineEntitiesFromScratch();
-//
-//     final ProcessReportDataDto currentReport =
-//         TemplatedProcessReportDataBuilder.createReportData()
-//             .setProcessDefinitionKey(FAKE)
-//             .setProcessDefinitionVersion(FAKE)
-//             .setReportDataType(ProcessReportDataType.RAW_DATA)
-//             .build();
-//     currentReport.setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
-//     currentReport.setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion());
-//     final String reportId = createAndStoreDefaultReportDefinition(currentReport);
-//
-//     // when
-//     Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv", "Etc/GMT-1");
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 //   }
 //
 //   @ParameterizedTest
