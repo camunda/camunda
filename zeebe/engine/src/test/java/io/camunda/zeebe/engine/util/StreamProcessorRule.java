@@ -183,6 +183,10 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
     return streamProcessingComposite.getProcessingState();
   }
 
+  public MutableProcessingState getProcessingState(final int partitionId) {
+    return streamProcessingComposite.getProcessingState(getLogName(partitionId));
+  }
+
   public RecordStream events() {
     return new RecordStream(streams.events(getLogName(startPartitionId)));
   }

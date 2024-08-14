@@ -265,6 +265,10 @@ public final class EngineRule extends ExternalResource {
     return environmentRule.getProcessingState();
   }
 
+  public ProcessingState getProcessingState(final int partitionId) {
+    return environmentRule.getProcessingState(partitionId);
+  }
+
   public StreamProcessor getStreamProcessor(final int partitionId) {
     return environmentRule.getStreamProcessor(partitionId);
   }

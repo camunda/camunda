@@ -142,6 +142,10 @@ public class StreamProcessingComposite implements CommandWriter {
     return processingState;
   }
 
+  public MutableProcessingState getProcessingState(final String streamName) {
+    return streams.getProcessingState(streamName);
+  }
+
   public RecordStream events() {
     return new RecordStream(streams.events(getLogName(partitionId)));
   }
