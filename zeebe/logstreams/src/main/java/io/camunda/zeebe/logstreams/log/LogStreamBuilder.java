@@ -11,6 +11,7 @@ import com.netflix.concurrency.limits.Limit;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import java.time.InstantSource;
 
 /** Builder pattern for the {@link LogStream} */
 public interface LogStreamBuilder {
@@ -56,6 +57,9 @@ public interface LogStreamBuilder {
    * @return this builder
    */
   LogStreamBuilder withLogName(String logName);
+
+  /** Clock used to assign record timestamps */
+  LogStreamBuilder withClock(InstantSource clock);
 
   LogStreamBuilder withRequestLimit(Limit requestLimit);
 
