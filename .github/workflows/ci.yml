@@ -36,6 +36,7 @@ jobs:
       identity-frontend-tests: ${{ steps.filter.outputs.identity-frontend-tests }}
       frontend-changes: ${{ steps.filter.outputs.frontend-changes }}
       zeebe-changes: ${{ steps.filter.outputs.zeebe-changes }}
+      optimize-changes: ${{ steps.filter.outputs.optimize-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -52,7 +53,7 @@ jobs:
     timeout-minutes: 5
     env:
       # renovate: datasource=github-releases depName=rhysd/actionlint
-      ACTIONLINT_VERSION: "1.7.1"
+      ACTIONLINT_VERSION: '1.7.1'
     steps:
       - uses: actions/checkout@v4
       - run: echo "::add-matcher::.github/actionlint-matcher.json"
@@ -74,7 +75,7 @@ jobs:
     needs: [detect-changes]
     name: Java checks
     timeout-minutes: 15
-    runs-on: [self-hosted, linux, amd64, "16"]
+    runs-on: [ self-hosted, linux, amd64, "16" ]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
@@ -137,7 +138,7 @@ jobs:
   java-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [detect-changes]
-    runs-on: [self-hosted, linux, amd64, "16"]
+    runs-on: [ self-hosted, linux, amd64, "16" ]
     timeout-minutes: 30
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
@@ -196,15 +197,15 @@ jobs:
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[IT] ${{ matrix.name }}"
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     timeout-minutes: 20
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
-    runs-on: [self-hosted, linux, amd64, "16"]
+    runs-on: [ self-hosted, linux, amd64, "16" ]
     strategy:
       fail-fast: false
       matrix:
-        group: [root, modules, qa-integration, qa-update]
+        group: [ root, modules, qa-integration, qa-update ]
         include:
           - group: root
             name: "Root Integration Tests"
@@ -291,7 +292,7 @@ jobs:
   docker-checks:
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
     name: Camunda docker tests
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
@@ -385,8 +386,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "yarn"
+          node-version: '20'
+          cache: 'yarn'
           cache-dependency-path: identity/client/yarn.lock
       - name: Install dependencies
         run: yarn install --frozen-lockfile
@@ -416,7 +417,8 @@ jobs:
     uses: ./.github/workflows/zeebe-ci.yml
 
   optimize-unit-tests:
-    name: Unit Tests
+    if: needs.detect-changes.outputs.optimize-changes == 'true'
+    needs: [detect-changes]
     uses: ./.github/workflows/optimize-unit-tests.yml
     secrets: inherit
 
@@ -452,7 +454,7 @@ jobs:
   notify-if-failed:
     name: Send slack notification on build failure
     runs-on: ubuntu-latest
-    needs: [check-results]
+    needs: [ check-results ]
     if: failure() && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     steps:
       - id: slack-notify
@@ -505,7 +507,7 @@ jobs:
 
   deploy-snapshots:
     name: Deploy snapshot artifacts
-    needs: [check-results]
+    needs: [ check-results ]
     runs-on: ubuntu-latest
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
@@ -526,10 +528,10 @@ jobs:
             secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
       - uses: actions/setup-java@v4.2.2
         with:
-          distribution: "temurin"
-          java-version: "21"
+          distribution: 'temurin'
+          java-version: '21'
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
-      - name: "Create settings.xml"
+      - name: 'Create settings.xml'
         uses: s4u/maven-settings-action@v3.0.0
         with:
           githubServer: false
@@ -559,7 +561,7 @@ jobs:
 
   deploy-camunda-docker-snapshot:
     name: Deploy snapshot Camunda Docker image
-    needs: [docker-checks, check-results]
+    needs: [ docker-checks, check-results ]
     runs-on: ubuntu-latest
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:

@@ -29,8 +29,16 @@ outputs:
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-identity.outputs.identity-frontend-change == 'true'
       }}
+  optimize-changes:
+    description: Output whether Optimize frontend tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-optimize.outputs.optimize-change == 'true'
+      }}
   camunda-docker-tests:
-    description:
+    description: Output whether Camunda Docker tests should be run based on GitHub event and files changed
     value: >-
       ${{
         github.event_name == 'push' ||
@@ -122,3 +130,12 @@ runs:
           - 'zeebe/**'
           - 'clients/**'
           - 'Dockerfile'
+
+  - uses: dorny/paths-filter@v3
+    id: filter-optimize
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        optimize-change:
+          - 'optimize/**'
