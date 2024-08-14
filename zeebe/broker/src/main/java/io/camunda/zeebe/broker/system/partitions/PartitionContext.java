@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.List;
@@ -71,4 +72,8 @@ public interface PartitionContext {
   DynamicPartitionConfig getDynamicPartitionConfig();
 
   void setDynamicPartitionConfig(DynamicPartitionConfig partitionConfig);
+
+  ControllableStreamClock getStreamClock();
+
+  void setStreamClock(ControllableStreamClock clock);
 }
