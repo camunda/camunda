@@ -171,9 +171,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         break;
       case TERMINATE_ELEMENT:
         final var terminatingContext = stateTransitionBehavior.transitionToTerminating(context);
-        // cancel any active job associated with the element being terminated
-        // (e.g. execution listener, serviceTask job)
-        jobBehavior.cancelJob(terminatingContext);
         processor.onTerminate(element, terminatingContext);
         break;
       case COMPLETE_EXECUTION_LISTENER:
