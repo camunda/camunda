@@ -99,7 +99,6 @@ public class JobZeebeRecordProcessor {
             .setPartitionId(record.getPartitionId())
             .setProcessInstanceKey(recordValue.getProcessInstanceKey())
             .setFlowNodeInstanceId(recordValue.getElementInstanceKey())
-            .setFlowNodeId(recordValue.getElementId())
             .setTenantId(recordValue.getTenantId())
             .setType(recordValue.getType())
             .setWorker(recordValue.getWorker())
@@ -118,12 +117,17 @@ public class JobZeebeRecordProcessor {
     if (jobDeadline >= 0) {
       jobEntity.setDeadline(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(jobDeadline)));
     }
+    // only set flowNodeId for CREATED because incidents can overwrite it
+    if (record.getIntent().name().equals(JobIntent.CREATED.name())) {
+      jobEntity.setFlowNodeId(recordValue.getElementId());
+    }
     if (FAILED_JOB_EVENTS.contains(record.getIntent().name()) && recordValue.getRetries() > 0) {
       jobEntity.setJobFailedWithRetriesLeft(true);
     } else {
       jobEntity.setJobFailedWithRetriesLeft(false);
     }
     final Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(FLOW_NODE_ID, jobEntity.getFlowNodeId());
     updateFields.put(JOB_WORKER, jobEntity.getWorker());
     updateFields.put(JOB_STATE, jobEntity.getState());
     updateFields.put(RETRIES, jobEntity.getRetries());
@@ -133,23 +137,21 @@ public class JobZeebeRecordProcessor {
     updateFields.put(CUSTOM_HEADERS, jobEntity.getCustomHeaders());
     updateFields.put(JOB_DEADLINE, jobEntity.getDeadline());
 
-    if (concurrencyMode) {
-      batchRequest.upsertWithScript(
-          jobTemplate.getFullQualifiedName(),
-          jobEntity.getId(),
-          jobEntity,
-          getJobUpdateScript(),
-          updateFields);
-    } else {
-      batchRequest.upsert(
-          jobTemplate.getFullQualifiedName(), jobEntity.getId(), jobEntity, updateFields);
-    }
+    batchRequest.upsertWithScript(
+        jobTemplate.getFullQualifiedName(),
+        jobEntity.getId(),
+        jobEntity,
+        getJobUpdateScript(),
+        updateFields);
   }
 
   private String getJobUpdateScript() {
     return String.format(
         "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
             + "ctx._source.%s = params.%s; " // position
+            + "if (params.%s != null) {"
+            + "   ctx._source.%s = params.%s; " // flowNodeId
+            + "}"
             + "ctx._source.%s = params.%s; " // state
             + "ctx._source.%s = params.%s; " // retries
             + "ctx._source.%s = params.%s; " // worker
@@ -166,6 +168,9 @@ public class JobZeebeRecordProcessor {
         POSITION,
         POSITION,
         POSITION,
+        FLOW_NODE_ID,
+        FLOW_NODE_ID,
+        FLOW_NODE_ID,
         JOB_STATE,
         JOB_STATE,
         RETRIES,
