@@ -7,40 +7,23 @@
  */
 package io.camunda.exporter.entities;
 
-public abstract class ExporterEntity<T extends ExporterEntity<T>> {
+/**
+ * Represents an entity that can be written to ElasticSearch or OpenSearch
+ *
+ * @param <T>
+ */
+public interface ExporterEntity<T extends ExporterEntity<T>> {
 
-  private String id;
+  /**
+   * @return the id of the entity
+   */
+  String getId();
 
-  public String getId() {
-    return id;
-  }
-
-  public T setId(final String id) {
-    this.id = id;
-    return (T) this;
-  }
-
-  @Override
-  public int hashCode() {
-    return id != null ? id.hashCode() : 0;
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-
-    final ExporterEntity<T> that = (ExporterEntity<T>) o;
-
-    return id != null ? id.equals(that.id) : that.id == null;
-  }
-
-  @Override
-  public String toString() {
-    return "ExporterEntity{" + "id='" + id + '\'' + '}';
-  }
+  /**
+   * Sets the id of the entity
+   *
+   * @param id the id to set
+   * @return the entity
+   */
+  T setId(final String id);
 }
