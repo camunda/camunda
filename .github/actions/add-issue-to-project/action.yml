@@ -11,6 +11,9 @@ inputs:
   issueNumber:
     description: "Issue Number"
     required: true
+  githubToken:
+    description: "GH token with project write access"
+    required: true
 
 runs:
   using: "composite"
@@ -34,7 +37,7 @@ runs:
           repo: "camunda"
           issue: ${{ inputs.issueNumber }}
       env:
-        GITHUB_TOKEN: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
+        GITHUB_TOKEN: ${{ inputs.githubToken }}
 
     - id: has-project
       shell: bash
@@ -46,4 +49,4 @@ runs:
       if: ${{ steps.has-project.outputs.result == 'false' }}
       with:
         project-url: https://github.com/orgs/camunda/projects/${{ inputs.projectId }}
-        github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
+        github-token: ${{ inputs.githubToken }}

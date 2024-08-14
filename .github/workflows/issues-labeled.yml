@@ -22,3 +22,4 @@ jobs:
         with:
           projectId: ${{ matrix.teams.projectId }}
           issueNumber: ${{ github.event.issue.number }}
+          githubToken: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
