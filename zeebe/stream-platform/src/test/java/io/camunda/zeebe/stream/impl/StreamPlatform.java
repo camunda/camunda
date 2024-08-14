@@ -30,6 +30,7 @@ import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.EmptyProcessingResult;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessor;
+import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.impl.TestScheduledCommandCache.TestCommandCache;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
@@ -288,6 +289,7 @@ public final class StreamPlatform {
 
     final var builder =
         StreamProcessor.builder()
+            .clock(StreamClock.controllable(clock))
             .logStream(stream.getAsyncLogStream())
             .zeebeDb(zeebeDb)
             .actorSchedulingService(actorScheduler)
