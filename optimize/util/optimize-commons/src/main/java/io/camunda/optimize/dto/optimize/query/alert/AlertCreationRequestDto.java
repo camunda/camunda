@@ -24,7 +24,6 @@ public class AlertCreationRequestDto {
   private boolean fixNotification;
   private AlertInterval reminder;
   private List<String> emails = new ArrayList<>();
-  private String webhook;
 
   // needed to allow inheritance of field name constants
   @NoArgsConstructor(access = AccessLevel.PROTECTED)

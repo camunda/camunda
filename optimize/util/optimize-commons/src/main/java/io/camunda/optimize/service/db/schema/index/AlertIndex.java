@@ -29,7 +29,6 @@ public abstract class AlertIndex<TBuilder> extends DefaultIndexMappingCreator<TB
   public static final String LAST_MODIFIER = AlertDefinitionDto.Fields.lastModifier;
   public static final String REPORT_ID = AlertCreationRequestDto.Fields.reportId;
   public static final String EMAILS = AlertCreationRequestDto.Fields.emails;
-  public static final String WEBHOOK = AlertCreationRequestDto.Fields.webhook;
   public static final String THRESHOLD = AlertCreationRequestDto.Fields.threshold;
   public static final String THRESHOLD_OPERATOR = AlertCreationRequestDto.Fields.thresholdOperator;
   public static final String FIX_NOTIFICATION = AlertCreationRequestDto.Fields.fixNotification;

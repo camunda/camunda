@@ -421,10 +421,9 @@ public class AlertService implements ReportReferencingService {
     if (emailsDefined) {
       alertRecipientValidator.validateAlertRecipientEmailAddresses(toCreate.getEmails());
     }
-    final boolean webhookDefined = StringUtils.isNotBlank(toCreate.getWebhook());
-    if (!emailsDefined && !webhookDefined) {
+    if (!emailsDefined) {
       throw new OptimizeValidationException(
-          "The fields [emails] and [webhook] are not allowed to both be empty. At least one of them must be set.");
+          "The field [emails] is not allowed to both be empty.");
     }
   }
 

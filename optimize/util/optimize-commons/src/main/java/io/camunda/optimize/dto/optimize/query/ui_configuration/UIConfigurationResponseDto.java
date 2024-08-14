@@ -32,7 +32,6 @@ public class UIConfigurationResponseDto {
   private Map<String, WebappsEndpointDto> webappsEndpoints;
   private Map<AppName, String> webappsLinks; // links for the app switcher
   private String notificationsUrl;
-  private List<String> webhooks;
   private boolean logoutHidden;
   private int maxNumDataSourcesForReport;
   private Integer exportCsvLimit;
