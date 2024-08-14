@@ -24,6 +24,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.InstantSource;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.DynamicType.Unloaded;
 import org.agrona.CloseHelper;
@@ -133,7 +134,11 @@ final class ExternalExporterContainerTest {
     final var expectedClassLoader = descriptor.newInstance().getClass().getClassLoader();
     final var container =
         new ExporterContainer(
-            descriptor, 0, new ExporterInitializationInfo(0, null), new SimpleMeterRegistry());
+            descriptor,
+            0,
+            new ExporterInitializationInfo(0, null),
+            new SimpleMeterRegistry(),
+            InstantSource.system());
 
     // when
     container.close();
@@ -155,7 +160,12 @@ final class ExternalExporterContainerTest {
     final var registry = new SimpleMeterRegistry();
 
     final var container =
-        new ExporterContainer(descriptor, 0, new ExporterInitializationInfo(0, null), registry);
+        new ExporterContainer(
+            descriptor,
+            0,
+            new ExporterInitializationInfo(0, null),
+            registry,
+            InstantSource.system());
 
     // when
     container.configureExporter();

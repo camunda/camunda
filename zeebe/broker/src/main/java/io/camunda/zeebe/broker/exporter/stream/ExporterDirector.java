@@ -36,6 +36,7 @@ import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -91,6 +92,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   // When idle, exporter director is not exporting any records because no exporters are configured.
   // The actor is still running, but it is not actively doing any work.
   private boolean idle;
+  private final InstantSource clock;
 
   public ExporterDirector(
       final ExporterDirectorContext context, final ExporterPhase exporterPhase) {
@@ -107,7 +109,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                         descriptorEntry.getKey(),
                         partitionId,
                         descriptorEntry.getValue(),
-                        meterRegistry))
+                        meterRegistry,
+                        context.getClock()))
             .collect(Collectors.toCollection(ArrayList::new));
     metrics = new ExporterMetrics(partitionId);
     metrics.initializeExporterState(exporterPhase);
@@ -121,6 +124,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     exporterMode = context.getExporterMode();
     distributionInterval = context.getDistributionInterval();
     positionsToSkipFilter = context.getPositionsToSkipFilter();
+    clock = context.getClock();
   }
 
   public ActorFuture<Void> startAsync(final ActorSchedulingService actorSchedulingService) {
@@ -280,7 +284,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       final ExporterInitializationInfo initializationInfo,
       final ExporterDescriptor descriptor) {
     final ExporterContainer container =
-        new ExporterContainer(descriptor, partitionId, initializationInfo, meterRegistry);
+        new ExporterContainer(descriptor, partitionId, initializationInfo, meterRegistry, clock);
     container.initContainer(actor, metrics, state, exporterPhase);
     try {
       container.configureExporter();
