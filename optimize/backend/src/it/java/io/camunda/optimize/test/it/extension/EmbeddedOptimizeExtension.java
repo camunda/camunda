@@ -31,7 +31,6 @@ import io.camunda.optimize.service.KpiService;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.SettingsService;
 import io.camunda.optimize.service.alert.AlertService;
-import io.camunda.optimize.service.archive.ProcessInstanceArchivingService;
 import io.camunda.optimize.service.cleanup.CleanupScheduler;
 import io.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import io.camunda.optimize.service.dashboard.ManagementDashboardService;
@@ -112,20 +111,15 @@ public class EmbeddedOptimizeExtension
     implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, AfterAllCallback {
 
   public static final String DEFAULT_ENGINE_ALIAS = "camunda-bpm";
-
+  private static final ObjectMapper configObjectMapper =
+      new ObjectMapper().registerModules(new JavaTimeModule(), new Jdk8Module());
+  private static String serializedDefaultConfiguration;
   private final boolean beforeAllMode;
   private ApplicationContext applicationContext;
-
   private OptimizeRequestExecutor requestExecutor;
   private ObjectMapper objectMapper;
   private boolean resetImportOnStart = true;
-
   @Getter @Setter private boolean closeContextAfterTest = false;
-
-  private static final ObjectMapper configObjectMapper =
-      new ObjectMapper().registerModules(new JavaTimeModule(), new Jdk8Module());
-
-  private static String serializedDefaultConfiguration;
 
   public EmbeddedOptimizeExtension() {
     this(false);
@@ -150,13 +144,6 @@ public class EmbeddedOptimizeExtension
     if (beforeAllMode) {
       setupOptimize();
     }
-  }
-
-  public void setApplicationContext(final ApplicationContext applicationContext) {
-    this.applicationContext = applicationContext;
-    applicationContext
-        .getBean(ApplicationContextProvider.class)
-        .setApplicationContext(applicationContext);
   }
 
   @Override
@@ -622,6 +609,13 @@ public class EmbeddedOptimizeExtension
     return applicationContext;
   }
 
+  public void setApplicationContext(final ApplicationContext applicationContext) {
+    this.applicationContext = applicationContext;
+    applicationContext
+        .getBean(ApplicationContextProvider.class)
+        .setApplicationContext(applicationContext);
+  }
+
   public <T> T getBean(final Class<T> clazz) {
     return applicationContext.getBean(clazz);
   }
@@ -652,10 +646,6 @@ public class EmbeddedOptimizeExtension
 
   public KpiEvaluationSchedulerService getKpiSchedulerService() {
     return getBean(KpiEvaluationSchedulerService.class);
-  }
-
-  public ProcessInstanceArchivingService getProcessInstanceArchivingService() {
-    return getBean(ProcessInstanceArchivingService.class);
   }
 
   public PlatformUserIdentityCache getUserIdentityCache() {
