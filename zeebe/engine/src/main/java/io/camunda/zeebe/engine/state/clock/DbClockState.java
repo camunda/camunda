@@ -16,14 +16,14 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 
 public class DbClockState implements MutableClockState {
-  private static final DbString KEY = new DbString("MODIFICATION");
+  private static final String KEY = "MODIFICATION";
 
   private final ColumnFamily<DbString, DbClockModification> columnFamily;
+  private final DbString key = new DbString();
   private final DbClockModification value = new DbClockModification();
 
   public DbClockState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
-    final var key = new DbString();
     columnFamily =
         zeebeDb.createColumnFamily(ZbColumnFamilies.CLOCK, transactionContext, key, value);
   }
@@ -31,27 +31,31 @@ public class DbClockState implements MutableClockState {
   @Override
   public MutableClockState pinAt(final long epochMillis) {
     value.pinAt(epochMillis);
-    columnFamily.upsert(KEY, value);
+    key.wrapString(KEY);
+    columnFamily.upsert(key, value);
     return this;
   }
 
   @Override
   public MutableClockState offsetBy(final long offsetMillis) {
     value.offsetBy(offsetMillis);
-    columnFamily.upsert(KEY, value);
+    key.wrapString(KEY);
+    columnFamily.upsert(key, value);
     return this;
   }
 
   @Override
   public MutableClockState reset() {
     value.reset();
-    columnFamily.upsert(KEY, value);
+    key.wrapString(KEY);
+    columnFamily.upsert(key, value);
     return this;
   }
 
   @Override
   public Modification getModification() {
-    final var modification = columnFamily.get(KEY);
+    key.wrapString(KEY);
+    final var modification = columnFamily.get(key);
 
     if (modification == null) {
       return Modification.none();
