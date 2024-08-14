@@ -39,7 +39,6 @@ import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
-import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -425,8 +424,8 @@ public class ProcessInstanceMigrationMigrateProcessor
             // We will migrate this mapped catch event, so we don't want to unsubscribe from it
             // avoid reusing the subscription directly as any access to the state (e.g. #get) will
             // overwrite it
-            final ProcessMessageSubscription copySubscription =
-                copyProcessMessageSubscription(subscription);
+            final var copySubscription = new ProcessMessageSubscription();
+            copySubscription.copyFrom(subscription);
             processMessageSubscriptionsToMigrate.add(copySubscription);
             return false;
           }
@@ -532,18 +531,6 @@ public class ProcessInstanceMigrationMigrateProcessor
           messageSubscription,
           List.of(processMessageSubscriptionRecord.getSubscriptionPartitionId()));
     }
-  }
-
-  private static ProcessMessageSubscription copyProcessMessageSubscription(
-      final ProcessMessageSubscription subscription) {
-    final ProcessMessageSubscription copySubscription = new ProcessMessageSubscription();
-    final ProcessMessageSubscriptionRecord subscriptionRecord =
-        new ProcessMessageSubscriptionRecord();
-    subscriptionRecord.wrap(subscription.getRecord());
-    copySubscription.setRecord(subscriptionRecord);
-    copySubscription.setKey(subscription.getKey());
-    copySubscription.setState(subscription.getState());
-    return copySubscription;
   }
 
   private void appendIncidentMigratedEvent(
