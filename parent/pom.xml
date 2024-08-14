@@ -414,6 +414,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>camunda-exporter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-elasticsearch-exporter</artifactId>
         <version>${project.version}</version>
       </dependency>
