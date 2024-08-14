@@ -29,13 +29,21 @@ outputs:
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-identity.outputs.identity-frontend-change == 'true'
       }}
-  optimize-changes:
+  optimize-frontend-changes:
     description: Output whether Optimize frontend tests should be run based on GitHub event and files changed
     value: >-
       ${{
         github.event_name == 'push' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
-        steps.filter-optimize.outputs.optimize-change == 'true'
+        steps.filter-optimize.outputs.optimize-frontend-change == 'true'
+      }}
+  optimize-backend-changes:
+    description: Output whether Optimize backend tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-optimize.outputs.optimize-backend-change == 'true'
       }}
   camunda-docker-tests:
     description: Output whether Camunda Docker tests should be run based on GitHub event and files changed
@@ -137,5 +145,13 @@ runs:
       base: ${{ github.event.merge_group.base_ref || '' }}
       ref: ${{ github.event.merge_group.head_ref || github.ref }}
       filters: |
-        optimize-change:
-          - 'optimize/**'
+        optimize-backend-change:
+          - optimize/backend/**
+          - optimize/upgrade/**
+          - optimize/util/**
+          - optimize/plugins/**
+
+        optimize-frontend-change:
+          - optimize/client/**
+          - optimize/c4/**
+          - optimize/backend/src/main/resources/localization/**

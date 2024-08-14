@@ -36,7 +36,8 @@ jobs:
       identity-frontend-tests: ${{ steps.filter.outputs.identity-frontend-tests }}
       frontend-changes: ${{ steps.filter.outputs.frontend-changes }}
       zeebe-changes: ${{ steps.filter.outputs.zeebe-changes }}
-      optimize-changes: ${{ steps.filter.outputs.optimize-changes }}
+      optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
+      optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -417,7 +418,7 @@ jobs:
     uses: ./.github/workflows/zeebe-ci.yml
 
   optimize-unit-tests:
-    if: needs.detect-changes.outputs.optimize-changes == 'true'
+    if: ${{ needs.detect-changes.outputs.optimize-frontend-changes == 'true' || needs.detect-changes.outputs.optimize-backend-changes == 'true' }}
     needs: [detect-changes]
     uses: ./.github/workflows/optimize-unit-tests.yml
     secrets: inherit
@@ -440,6 +441,7 @@ jobs:
       - java-checks
       - build-platform-frontend
       - zeebe-ci
+      - optimize-unit-tests
     steps:
       - uses: actions/checkout@v4
       - name: Check for aborted jobs

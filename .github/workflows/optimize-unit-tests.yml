@@ -7,15 +7,15 @@ jobs:
     name: Get changed directories
     runs-on: ubuntu-latest
     outputs:
-      backend-changes: ${{ steps.filter.outputs.backend-changes }}
-      frontend-changes: ${{ steps.filter.outputs.frontend-changes }}
+      backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
+      frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
     - name: Get list of changed directories
       id: filter
-      uses: ./.github/actions/optimize-paths-filter
+      uses: ./.github/actions/paths-filter
   unit-tests-backend:
     name: Optimize Unit Tests - Backend
     runs-on: gcp-core-8-default
