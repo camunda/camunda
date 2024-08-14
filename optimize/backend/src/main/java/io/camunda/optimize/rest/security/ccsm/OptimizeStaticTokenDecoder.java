@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.rest.security.platform;
+package io.camunda.optimize.rest.security.ccsm;
 
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.time.Instant;
@@ -26,14 +26,14 @@ public class OptimizeStaticTokenDecoder implements JwtDecoder {
 
   @Override
   public Jwt decode(final String token) throws JwtException {
-    Map<String, Object> headers = new HashMap<>();
+    final Map<String, Object> headers = new HashMap<>();
     // The static token is not really a JWT Token, so the decoding here is a bit of a stretch in
     // order to get the token
     // value. The header below has no meaning, it just needs to be set otherwise the Jwt constructor
     // will not
     // generate an instance
     headers.put("typ", "SelfMade");
-    Map<String, Object> claims = new HashMap<>();
+    final Map<String, Object> claims = new HashMap<>();
     claims.put("token", token);
     validateToken(token)
         .ifPresent(
@@ -44,7 +44,7 @@ public class OptimizeStaticTokenDecoder implements JwtDecoder {
   }
 
   private Optional<OAuth2Error> validateToken(final String providedToken) {
-    String expectedAccessToken =
+    final String expectedAccessToken =
         configurationService.getOptimizeApiConfiguration().getAccessToken();
     if (expectedAccessToken == null || expectedAccessToken.isEmpty()) {
       return Optional.of(

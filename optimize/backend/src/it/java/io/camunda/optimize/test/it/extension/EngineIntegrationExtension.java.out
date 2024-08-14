@@ -13,7 +13,6 @@
 // import static io.camunda.optimize.test.it.extension.MockServerUtil.MOCKSERVER_HOST;
 // import static io.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 //
-// import io.camunda.optimize.dto.engine.AuthorizationDto;
 // import io.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 // import io.camunda.optimize.dto.engine.HistoricIncidentEngineDto;
 // import io.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
