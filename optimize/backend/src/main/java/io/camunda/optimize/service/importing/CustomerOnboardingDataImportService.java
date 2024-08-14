@@ -15,9 +15,8 @@ import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import io.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import io.camunda.optimize.service.db.repository.ProcessInstanceRepository;
-import io.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
-import io.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
+import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -48,8 +47,7 @@ public class CustomerOnboardingDataImportService {
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
-  private final CompletedProcessInstanceWriter completedProcessInstanceWriter;
-  private final RunningProcessInstanceWriter runningProcessInstanceWriter;
+  private final ProcessInstanceWriter processInstanceWriter;
   private final ProcessInstanceRepository processInstanceRepository;
   private final Environment environment;
 
@@ -216,11 +214,11 @@ public class CustomerOnboardingDataImportService {
             .filter(processInstanceDto -> processInstanceDto.getEndDate() == null)
             .collect(Collectors.toList());
     List<ImportRequestDto> completedProcessInstanceImports =
-        completedProcessInstanceWriter.generateProcessInstanceImports(completedProcessInstances);
+        processInstanceWriter.generateCompletedProcessInstanceImports(completedProcessInstances);
     processInstanceRepository.bulkImport(
         "Completed process instances", completedProcessInstanceImports);
     List<ImportRequestDto> runningProcessInstanceImports =
-        runningProcessInstanceWriter.generateProcessInstanceImports(runningProcessInstances);
+        processInstanceWriter.generateRunningProcessInstanceImports(runningProcessInstances);
     if (!runningProcessInstanceImports.isEmpty()) {
       processInstanceRepository.bulkImport(
           "Running process instances", runningProcessInstanceImports);

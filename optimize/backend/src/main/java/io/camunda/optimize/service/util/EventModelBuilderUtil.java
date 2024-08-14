@@ -14,7 +14,6 @@ import static org.camunda.bpm.model.bpmn.GatewayDirection.Diverging;
 import io.camunda.optimize.dto.optimize.query.event.autogeneration.AutogenerationAdjacentEventTypesDto;
 import io.camunda.optimize.dto.optimize.query.event.autogeneration.AutogenerationEventGraphDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
-import io.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import io.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,7 +59,7 @@ public class EventModelBuilderUtil {
 
   public static AutogenerationEventGraphDto generateExternalEventGraph(
       final List<EventSequenceCountDto> externalEventSequenceCounts) {
-    Map<EventTypeDto, AutogenerationAdjacentEventTypesDto> adjacentEventTypesDtoMap =
+    final Map<EventTypeDto, AutogenerationAdjacentEventTypesDto> adjacentEventTypesDtoMap =
         new HashMap<>();
     externalEventSequenceCounts.forEach(
         eventSequenceCountDto -> {
@@ -77,7 +76,7 @@ public class EventModelBuilderUtil {
                   .getSucceedingEvents()
                   .add(eventSequenceCountDto.getTargetEvent());
             } else {
-              List<EventTypeDto> targetEvents = new ArrayList<>();
+              final List<EventTypeDto> targetEvents = new ArrayList<>();
               targetEvents.add(eventSequenceCountDto.getTargetEvent());
               adjacentEventTypesDtoMap.put(
                   eventSequenceCountDto.getSourceEvent(),
@@ -91,7 +90,7 @@ public class EventModelBuilderUtil {
                   .getPrecedingEvents()
                   .add(eventSequenceCountDto.getSourceEvent());
             } else {
-              List<EventTypeDto> sourceEvents = new ArrayList<>();
+              final List<EventTypeDto> sourceEvents = new ArrayList<>();
               sourceEvents.add(eventSequenceCountDto.getSourceEvent());
               adjacentEventTypesDtoMap.put(
                   eventSequenceCountDto.getTargetEvent(),
@@ -119,19 +118,9 @@ public class EventModelBuilderUtil {
   }
 
   public static String generateGatewayIdForNode(
-      final EventTypeDto eventTypeDto, GatewayDirection gatewayDirection) {
+      final EventTypeDto eventTypeDto, final GatewayDirection gatewayDirection) {
     return removeIllegalCharacters(
         generateId(gatewayDirection.toString().toLowerCase(Locale.ENGLISH), eventTypeDto));
-  }
-
-  public static String generateModelGatewayIdForSource(
-      final CamundaEventSourceEntryDto camundaEventSourceEntryDto,
-      final GatewayDirection gatewayDirection) {
-    return String.join(
-        "_",
-        Arrays.asList(
-            gatewayDirection.toString().toLowerCase(Locale.ENGLISH),
-            camundaEventSourceEntryDto.getConfiguration().getProcessDefinitionKey()));
   }
 
   public static String generateConnectionGatewayIdForDefinitionKey(
@@ -262,7 +251,7 @@ public class EventModelBuilderUtil {
     if (endEventsInModel.size() > 1) {
       final String connectionGatewayId =
           generateConnectionGatewayIdForDefinitionKey(Converging, definitionKey);
-      for (EventTypeDto endEvent : endEventsInModel) {
+      for (final EventTypeDto endEvent : endEventsInModel) {
         builderToReturn = builderToReturn.moveToNode(generateNodeId(endEvent));
         final BpmnModelInstance endEventBuilder = builderToReturn.done();
         if (endEventBuilder.getModelElementById(connectionGatewayId) == null) {
@@ -296,7 +285,7 @@ public class EventModelBuilderUtil {
     return Diverging.equals(gatewayDirection) ? DIVERGING_GATEWAY : CONVERGING_GATEWAY;
   }
 
-  private static String generateId(String type, EventTypeDto eventTypeDto) {
+  private static String generateId(final String type, final EventTypeDto eventTypeDto) {
     // The type prefix is necessary and should start with lower case so that the ID passes QName
     // validation
     return String.join(
@@ -311,7 +300,7 @@ public class EventModelBuilderUtil {
         adjacentEventsByPrecedingEventCount =
             adjacentEventTypesDtoMap.entrySet().stream()
                 .collect(groupingBy(entry -> entry.getValue().getPrecedingEvents().size()));
-    List<EventTypeDto> startEvents =
+    final List<EventTypeDto> startEvents =
         adjacentEventsByPrecedingEventCount.keySet().stream()
             .min(Integer::compareTo)
             .map(
@@ -357,7 +346,7 @@ public class EventModelBuilderUtil {
     return endEvents;
   }
 
-  private static String removeIllegalCharacters(String originalId) {
+  private static String removeIllegalCharacters(final String originalId) {
     return originalId.replaceAll("\\s", "-").replaceAll("[^a-zA-Z0-9_.-]", "-");
   }
 }

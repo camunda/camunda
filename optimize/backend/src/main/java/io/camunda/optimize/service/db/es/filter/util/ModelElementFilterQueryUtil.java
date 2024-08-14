@@ -22,8 +22,8 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.F
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TYPE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS;
-import static io.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_MI_BODY;
-import static io.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
+import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NODE_TYPE_MI_BODY;
+import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NODE_TYPE_USER_TASK;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;

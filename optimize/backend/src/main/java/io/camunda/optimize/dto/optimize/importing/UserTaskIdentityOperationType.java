@@ -5,18 +5,24 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.dto.optimize.query.event.process.source;
+package io.camunda.optimize.dto.optimize.importing;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import java.util.Locale;
 
-public enum EventSourceType {
-  EXTERNAL,
+public enum UserTaskIdentityOperationType {
+  CLAIM_OPERATION_TYPE("add"),
+  UNCLAIM_OPERATION_TYPE("delete"),
   ;
+
+  private final String id;
+
+  UserTaskIdentityOperationType(final String id) {
+    this.id = id;
+  }
 
   @JsonValue
   public String getId() {
-    return name().toLowerCase(Locale.ENGLISH);
+    return id;
   }
 
   @Override

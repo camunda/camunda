@@ -7,10 +7,10 @@
  */
 package io.camunda.optimize.service.importing.engine.service.zeebe;
 
-import static io.camunda.optimize.dto.optimize.importing.IdentityLinkLogOperationType.CLAIM_OPERATION_TYPE;
-import static io.camunda.optimize.dto.optimize.importing.IdentityLinkLogOperationType.UNCLAIM_OPERATION_TYPE;
+import static io.camunda.optimize.dto.optimize.importing.UserTaskIdentityOperationType.CLAIM_OPERATION_TYPE;
+import static io.camunda.optimize.dto.optimize.importing.UserTaskIdentityOperationType.UNCLAIM_OPERATION_TYPE;
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME;
-import static io.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
+import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NODE_TYPE_USER_TASK;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.ASSIGNED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CANCELED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETED;
@@ -23,7 +23,7 @@ import io.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskDataDto;
 import io.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskRecordDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
-import io.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
+import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.netty.util.internal.StringUtil;
@@ -49,7 +49,7 @@ public class ZeebeUserTaskImportService
 
   public ZeebeUserTaskImportService(
       final ConfigurationService configurationService,
-      final ZeebeProcessInstanceWriter processInstanceWriter,
+      final ProcessInstanceWriter processInstanceWriter,
       final int partitionId,
       final ProcessDefinitionReader processDefinitionReader,
       final DatabaseClient databaseClient) {
