@@ -229,9 +229,9 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
           mergedAggResult = totalValueSum / totalDocCount;
         }
         break;
-        // We cannot support percentile aggregation types with this distribution as the information
-        // is lost on merging
-        // of buckets
+      // We cannot support percentile aggregation types with this distribution as the information
+      // is lost on merging
+      // of buckets
       case PERCENTILE:
         mergedAggResult = null;
         break;
