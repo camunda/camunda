@@ -24,13 +24,12 @@ import java.util.Set;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor
-@FieldNameConstants
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
+
   @NotNull private List<DashboardReportTileDto> tiles = new ArrayList<>();
   @NotNull private List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
   private String collectionId;
@@ -43,9 +42,9 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
         dashboardDefinition.getName(),
         dashboardDefinition.getDescription(),
         DashboardIndex.VERSION);
-    this.tiles = dashboardDefinition.getTiles();
-    this.availableFilters = dashboardDefinition.getAvailableFilters();
-    this.collectionId = dashboardDefinition.getCollectionId();
+    tiles = dashboardDefinition.getTiles();
+    availableFilters = dashboardDefinition.getAvailableFilters();
+    collectionId = dashboardDefinition.getCollectionId();
   }
 
   @JsonIgnore
@@ -62,5 +61,13 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
         .map(DashboardReportTileDto::getId)
         .filter(id -> !IdGenerator.isValidId(id))
         .collect(toSet());
+  }
+
+  public static final class Fields {
+
+    public static final String tiles = "tiles";
+    public static final String availableFilters = "availableFilters";
+    public static final String collectionId = "collectionId";
+    public static final String isInstantPreviewDashboard = "isInstantPreviewDashboard";
   }
 }

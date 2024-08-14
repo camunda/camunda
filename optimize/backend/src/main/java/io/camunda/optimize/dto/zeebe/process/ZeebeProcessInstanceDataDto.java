@@ -14,10 +14,8 @@ import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.experimental.FieldNameConstants;
 import org.apache.commons.lang3.StringUtils;
 
-@FieldNameConstants
 @EqualsAndHashCode
 @Data
 public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
@@ -46,5 +44,19 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
   @Override
   public String getTenantId() {
     return StringUtils.isEmpty(tenantId) ? ZEEBE_DEFAULT_TENANT_ID : tenantId;
+  }
+
+  public static final class Fields {
+
+    public static final String version = "version";
+    public static final String bpmnProcessId = "bpmnProcessId";
+    public static final String processDefinitionKey = "processDefinitionKey";
+    public static final String flowScopeKey = "flowScopeKey";
+    public static final String bpmnElementType = "bpmnElementType";
+    public static final String parentProcessInstanceKey = "parentProcessInstanceKey";
+    public static final String parentElementInstanceKey = "parentElementInstanceKey";
+    public static final String elementId = "elementId";
+    public static final String processInstanceKey = "processInstanceKey";
+    public static final String tenantId = "tenantId";
   }
 }

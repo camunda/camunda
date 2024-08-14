@@ -36,7 +36,7 @@
     "react-transition-group": "4.4.5",
     "sass": "1.77.8",
     "styled-components": "6.1.12",
-    "ts-pattern": "5.2.0",
+    "ts-pattern": "5.3.1",
     "zod": "3.23.8"
   },
   "scripts": {
@@ -93,7 +93,7 @@
     "eslint-plugin-prettier": "5.2.1",
     "eslint-plugin-react-hooks": "4.6.2",
     "eslint-plugin-react-refresh": "0.4.9",
-    "eslint-plugin-testing-library": "6.2.2",
+    "eslint-plugin-testing-library": "6.3.0",
     "jsdom": "24.1.1",
     "monaco-editor": "0.50.0",
     "msw": "2.3.5",

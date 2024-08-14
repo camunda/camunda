@@ -13,7 +13,6 @@ import {C3Navigation, C3NavigationProps} from '@camunda/camunda-composite-compon
 import {track} from 'tracking';
 import {useUiConfig} from 'hooks';
 
-import {isEventBasedProcessEnabled} from './service';
 import Header from './Header';
 
 const defaultUiConfig = {
@@ -42,7 +41,6 @@ jest.mock('hooks', () => ({
 }));
 
 jest.mock('./service', () => ({
-  isEventBasedProcessEnabled: jest.fn().mockReturnValue(true),
   getUserToken: jest.fn().mockReturnValue('userToken'),
 }));
 
@@ -62,44 +60,6 @@ function getNavItem(node: ShallowWrapper, key: string) {
 
 beforeEach(() => {
   jest.clearAllMocks();
-});
-
-it('should check if the event-based process feature is enabled', async () => {
-  (isEventBasedProcessEnabled as jest.Mock).mockClear();
-  shallow(<Header />);
-
-  await runLastEffect();
-
-  expect(isEventBasedProcessEnabled).toHaveBeenCalled();
-});
-
-it('should show and hide the event-based process nav item depending on authorization', async () => {
-  (isEventBasedProcessEnabled as jest.Mock).mockReturnValueOnce(true);
-  const enabled = shallow(<Header />);
-
-  await runLastEffect();
-  await enabled.update();
-
-  expect(getNavItem(enabled, 'events')).toBeDefined();
-
-  (isEventBasedProcessEnabled as jest.Mock).mockReturnValueOnce(false);
-  const disabled = shallow(<Header />);
-
-  await runLastEffect();
-  await disabled.update();
-
-  expect(getNavItem(disabled, 'events')).not.toBeDefined();
-});
-
-it('should hide event-based process nav item in cloud environment', async () => {
-  (isEventBasedProcessEnabled as jest.Mock).mockReturnValueOnce(true);
-  (useUiConfig as jest.Mock).mockReturnValueOnce({...defaultUiConfig, optimizeProfile: 'cloud'});
-  const node = shallow(<Header />);
-
-  await runLastEffect();
-  await node.update();
-
-  expect(getNavItem(node, 'events')).not.toBeDefined();
 });
 
 it('should show license warning if enterpriseMode is not set', async () => {

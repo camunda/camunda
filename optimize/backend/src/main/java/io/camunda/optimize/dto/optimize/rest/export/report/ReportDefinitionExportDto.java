@@ -17,13 +17,12 @@ import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor
-@FieldNameConstants
 @Data
 @EqualsAndHashCode(callSuper = true)
 public abstract class ReportDefinitionExportDto extends OptimizeEntityExportDto {
+
   private String collectionId;
 
   protected ReportDefinitionExportDto(
@@ -50,5 +49,10 @@ public abstract class ReportDefinitionExportDto extends OptimizeEntityExportDto 
       return new SingleDecisionReportDefinitionExportDto(
           (SingleDecisionReportDefinitionRequestDto) reportDef);
     }
+  }
+
+  public static final class Fields {
+
+    public static final String collectionId = "collectionId";
   }
 }

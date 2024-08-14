@@ -16,6 +16,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaginationDto {
+
   protected Integer limit;
   protected Integer offset;
 

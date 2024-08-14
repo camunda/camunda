@@ -22,11 +22,9 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @AllArgsConstructor
 @NoArgsConstructor
-@FieldNameConstants
 @Data
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -46,9 +44,19 @@ import lombok.experimental.FieldNameConstants;
   @JsonSubTypes.Type(value = DashboardDefinitionExportDto.class, name = DASHBOARD),
 })
 public abstract class OptimizeEntityExportDto {
+
   @NotNull private String id;
   @NotNull private ExportEntityType exportEntityType;
   @NotNull private String name;
   private String description;
   private int sourceIndexVersion;
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String exportEntityType = "exportEntityType";
+    public static final String name = "name";
+    public static final String description = "description";
+    public static final String sourceIndexVersion = "sourceIndexVersion";
+  }
 }

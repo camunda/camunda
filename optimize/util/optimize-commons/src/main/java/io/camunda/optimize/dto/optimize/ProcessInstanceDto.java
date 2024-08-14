@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize;
 
-import static io.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
+import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NODE_TYPE_USER_TASK;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
@@ -22,14 +22,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @SuperBuilder
-@FieldNameConstants
 public class ProcessInstanceDto implements OptimizeDto {
 
   private String processDefinitionKey;
@@ -52,5 +50,23 @@ public class ProcessInstanceDto implements OptimizeDto {
     return flowNodeInstances.stream()
         .filter(flowNode -> FLOW_NODE_TYPE_USER_TASK.equalsIgnoreCase(flowNode.getFlowNodeType()))
         .toList();
+  }
+
+  public static final class Fields {
+
+    public static final String processDefinitionKey = "processDefinitionKey";
+    public static final String processDefinitionVersion = "processDefinitionVersion";
+    public static final String processDefinitionId = "processDefinitionId";
+    public static final String processInstanceId = "processInstanceId";
+    public static final String businessKey = "businessKey";
+    public static final String startDate = "startDate";
+    public static final String endDate = "endDate";
+    public static final String duration = "duration";
+    public static final String state = "state";
+    public static final String flowNodeInstances = "flowNodeInstances";
+    public static final String variables = "variables";
+    public static final String incidents = "incidents";
+    public static final String dataSource = "dataSource";
+    public static final String tenantId = "tenantId";
   }
 }

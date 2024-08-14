@@ -13,20 +13,18 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@FieldNameConstants
 public class TimestampBasedImportIndexDto extends ImportIndexDto<DataSourceDto>
     implements EngineImportIndexDto {
 
   protected String esTypeIndexRefersTo;
 
   public TimestampBasedImportIndexDto(
-      OffsetDateTime lastImportExecutionTimestamp,
-      OffsetDateTime timestampOfLastEntity,
+      final OffsetDateTime lastImportExecutionTimestamp,
+      final OffsetDateTime timestampOfLastEntity,
       final String esTypeIndexRefersTo,
       final DataSourceDto dataSourceDto) {
     super(lastImportExecutionTimestamp, timestampOfLastEntity, dataSourceDto);
@@ -37,5 +35,10 @@ public class TimestampBasedImportIndexDto extends ImportIndexDto<DataSourceDto>
   @JsonIgnore
   public String getEngine() {
     return dataSource.getName();
+  }
+
+  public static final class Fields {
+
+    public static final String esTypeIndexRefersTo = "esTypeIndexRefersTo";
   }
 }

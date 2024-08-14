@@ -18,13 +18,11 @@ import jakarta.validation.Valid;
 import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 
 @Data
 @AllArgsConstructor
 @SuperBuilder(toBuilder = true)
-@FieldNameConstants
 public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionEntity {
 
   protected String id;
@@ -42,7 +40,7 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
 
   private final ReportType reportType;
 
-  protected ReportDefinitionDto(D data, Boolean combined, ReportType reportType) {
+  protected ReportDefinitionDto(final D data, final Boolean combined, final ReportType reportType) {
     this.data = data;
     this.combined = combined;
     this.reportType = reportType;
@@ -59,13 +57,28 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
         getOwner(),
         getLastModifier(),
         EntityType.REPORT,
-        this.combined,
-        this.reportType,
+        combined,
+        reportType,
         roleType);
   }
 
   @JsonIgnore
   public DefinitionType getDefinitionType() {
-    return this.reportType.toDefinitionType();
+    return reportType.toDefinitionType();
+  }
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String name = "name";
+    public static final String description = "description";
+    public static final String lastModified = "lastModified";
+    public static final String created = "created";
+    public static final String owner = "owner";
+    public static final String lastModifier = "lastModifier";
+    public static final String collectionId = "collectionId";
+    public static final String data = "data";
+    public static final String combined = "combined";
+    public static final String reportType = "reportType";
   }
 }

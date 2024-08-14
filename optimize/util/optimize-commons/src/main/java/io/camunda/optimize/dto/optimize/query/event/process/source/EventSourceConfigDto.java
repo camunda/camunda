@@ -15,14 +15,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-@FieldNameConstants
 @JsonTypeInfo(use = JsonTypeInfo.Id.DEDUCTION)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = CamundaEventSourceConfigDto.class),
@@ -31,4 +29,9 @@ import lombok.experimental.SuperBuilder;
 public abstract class EventSourceConfigDto {
 
   @Builder.Default protected List<EventScopeType> eventScope = Arrays.asList(EventScopeType.ALL);
+
+  public static final class Fields {
+
+    public static final String eventScope = "eventScope";
+  }
 }

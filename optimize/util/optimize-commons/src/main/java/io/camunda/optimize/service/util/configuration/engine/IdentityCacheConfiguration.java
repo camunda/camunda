@@ -12,11 +12,10 @@ import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.util.CronNormalizerUtil;
 import java.util.Optional;
 import lombok.Data;
-import lombok.experimental.FieldNameConstants;
 
 @Data
-@FieldNameConstants
 public abstract class IdentityCacheConfiguration {
+
   private boolean includeUserMetaData;
   private boolean collectionRoleCleanupEnabled;
   private String cronTrigger;
@@ -30,11 +29,20 @@ public abstract class IdentityCacheConfiguration {
     }
   }
 
-  public final void setCronTrigger(String cronTrigger) {
+  public final void setCronTrigger(final String cronTrigger) {
     this.cronTrigger =
         Optional.ofNullable(cronTrigger).map(CronNormalizerUtil::normalizeToSixParts).orElse(null);
   }
 
   @JsonIgnore
   public abstract String getConfigName();
+
+  public static final class Fields {
+
+    public static final String includeUserMetaData = "includeUserMetaData";
+    public static final String collectionRoleCleanupEnabled = "collectionRoleCleanupEnabled";
+    public static final String cronTrigger = "cronTrigger";
+    public static final String maxPageSize = "maxPageSize";
+    public static final String maxEntryLimit = "maxEntryLimit";
+  }
 }

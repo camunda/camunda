@@ -16,14 +16,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.experimental.FieldNameConstants;
 
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 @Builder
-@FieldNameConstants
 public class UpgradeStepLogEntryDto {
+
   @NonNull private String indexName;
   @NonNull private String optimizeVersion;
   @NonNull private UpgradeStepType stepType;
@@ -33,5 +32,14 @@ public class UpgradeStepLogEntryDto {
   @JsonIgnore
   public String getId() {
     return String.join("_", optimizeVersion, stepType.toString(), indexName);
+  }
+
+  public static final class Fields {
+
+    public static final String indexName = "indexName";
+    public static final String optimizeVersion = "optimizeVersion";
+    public static final String stepType = "stepType";
+    public static final String stepNumber = "stepNumber";
+    public static final String appliedDate = "appliedDate";
   }
 }

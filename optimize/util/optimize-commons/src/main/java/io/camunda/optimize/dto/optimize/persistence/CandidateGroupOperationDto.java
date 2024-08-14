@@ -14,13 +14,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@FieldNameConstants
 public class CandidateGroupOperationDto implements OptimizeDto, Serializable {
 
   @EqualsAndHashCode.Include private String id;
@@ -28,4 +26,12 @@ public class CandidateGroupOperationDto implements OptimizeDto, Serializable {
   private String groupId;
   private String operationType;
   private OffsetDateTime timestamp;
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String groupId = "groupId";
+    public static final String operationType = "operationType";
+    public static final String timestamp = "timestamp";
+  }
 }

@@ -9,10 +9,8 @@ package io.camunda.optimize.dto.optimize.query.collection;
 
 import java.time.OffsetDateTime;
 import lombok.Data;
-import lombok.experimental.FieldNameConstants;
 
 @Data
-@FieldNameConstants(asEnum = true)
 public class BaseCollectionDefinitionDto<DATA_TYPE> {
 
   protected String id;
@@ -23,4 +21,15 @@ public class BaseCollectionDefinitionDto<DATA_TYPE> {
   protected String lastModifier;
   protected DATA_TYPE data;
   protected boolean automaticallyCreated = false;
+
+  public enum Fields {
+    id,
+    name,
+    lastModified,
+    created,
+    owner,
+    lastModifier,
+    data,
+    automaticallyCreated
+  }
 }

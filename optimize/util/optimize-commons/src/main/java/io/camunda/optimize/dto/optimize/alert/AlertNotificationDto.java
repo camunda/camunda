@@ -14,6 +14,7 @@ import lombok.Data;
 @AllArgsConstructor
 @Data
 public class AlertNotificationDto {
+
   private final AlertDefinitionDto alert;
   private final Double currentValue;
   private final AlertNotificationType type;

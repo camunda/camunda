@@ -17,14 +17,13 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.ToString;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@FieldNameConstants
 @ToString(callSuper = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
 public class GroupDto extends IdentityWithMetadataResponseDto {
+
   private Long memberCount;
 
   public GroupDto(final String id) {
@@ -44,5 +43,10 @@ public class GroupDto extends IdentityWithMetadataResponseDto {
   @JsonIgnore
   public List<Supplier<String>> getSearchableDtoFields() {
     return List.of(this::getId, this::getName);
+  }
+
+  public static final class Fields {
+
+    public static final String memberCount = "memberCount";
   }
 }

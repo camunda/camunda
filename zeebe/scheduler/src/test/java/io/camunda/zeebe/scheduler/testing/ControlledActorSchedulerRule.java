@@ -50,6 +50,7 @@ public final class ControlledActorSchedulerRule extends ExternalResource {
   @Override
   protected void before() {
     actorScheduler.start();
+    controlledActorTaskRunner.waitUntilDone();
   }
 
   @Override

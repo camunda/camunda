@@ -14,13 +14,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @AllArgsConstructor
 @Builder
 @Data
-@FieldNameConstants(asEnum = true)
 public class SettingsDto {
 
   private Boolean sharingEnabled;
@@ -29,5 +27,10 @@ public class SettingsDto {
 
   public Optional<Boolean> getSharingEnabled() {
     return Optional.ofNullable(sharingEnabled);
+  }
+
+  public enum Fields {
+    sharingEnabled,
+    lastModified
   }
 }

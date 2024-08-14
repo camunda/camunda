@@ -18,9 +18,9 @@ import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.test.util.BufferAssert;
 import io.camunda.zeebe.test.util.MsgPackUtil;
+import java.time.InstantSource;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
@@ -170,7 +170,7 @@ public class UserTaskStateTest {
         .setFollowUpDate("2023-11-12T11:11:00+01:00")
         .setFormKey(5678)
         .setUserTaskKey(userTaskKey)
-        .setCreationTimestamp(ActorClock.currentTimeMillis());
+        .setCreationTimestamp(InstantSource.system().millis());
   }
 
   private void assertUserTask(

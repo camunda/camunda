@@ -13,12 +13,10 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.experimental.FieldNameConstants;
 import org.apache.commons.lang3.StringUtils;
 
 @EqualsAndHashCode
 @Data
-@FieldNameConstants
 public class ZeebeIncidentDataDto implements IncidentRecordValue {
 
   private String errorMessage;
@@ -40,5 +38,19 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
   @Override
   public String getTenantId() {
     return StringUtils.isEmpty(tenantId) ? ZEEBE_DEFAULT_TENANT_ID : tenantId;
+  }
+
+  public static final class Fields {
+
+    public static final String errorMessage = "errorMessage";
+    public static final String bpmnProcessId = "bpmnProcessId";
+    public static final String elementId = "elementId";
+    public static final String elementInstanceKey = "elementInstanceKey";
+    public static final String processInstanceKey = "processInstanceKey";
+    public static final String processDefinitionKey = "processDefinitionKey";
+    public static final String jobKey = "jobKey";
+    public static final String errorType = "errorType";
+    public static final String variableScopeKey = "variableScopeKey";
+    public static final String tenantId = "tenantId";
   }
 }

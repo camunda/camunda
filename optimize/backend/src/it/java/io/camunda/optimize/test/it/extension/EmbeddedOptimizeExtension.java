@@ -18,9 +18,6 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.optimize.ApplicationContextProvider;
 import io.camunda.optimize.OptimizeRequestExecutor;
-import io.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
-import io.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import io.camunda.optimize.rest.engine.EngineContext;
@@ -31,7 +28,6 @@ import io.camunda.optimize.service.KpiService;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.SettingsService;
 import io.camunda.optimize.service.alert.AlertService;
-import io.camunda.optimize.service.archive.ProcessInstanceArchivingService;
 import io.camunda.optimize.service.cleanup.CleanupScheduler;
 import io.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import io.camunda.optimize.service.dashboard.ManagementDashboardService;
@@ -39,9 +35,7 @@ import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import io.camunda.optimize.service.db.schema.DatabaseSchemaManager;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import io.camunda.optimize.service.db.writer.AbstractProcessInstanceDataWriter;
 import io.camunda.optimize.service.db.writer.InstantDashboardMetadataWriter;
-import io.camunda.optimize.service.db.writer.activity.RunningActivityInstanceWriter;
 import io.camunda.optimize.service.digest.DigestService;
 import io.camunda.optimize.service.events.ExternalEventService;
 import io.camunda.optimize.service.events.rollover.EventIndexRolloverService;
@@ -50,25 +44,14 @@ import io.camunda.optimize.service.identity.PlatformIdentityService;
 import io.camunda.optimize.service.identity.PlatformUserIdentityCache;
 import io.camunda.optimize.service.identity.PlatformUserTaskIdentityCache;
 import io.camunda.optimize.service.importing.AbstractImportScheduler;
-import io.camunda.optimize.service.importing.EngineImportIndexHandler;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
-import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.ImportSchedulerManagerService;
 import io.camunda.optimize.service.importing.PositionBasedImportIndexHandler;
-import io.camunda.optimize.service.importing.engine.EngineImportScheduler;
-import io.camunda.optimize.service.importing.engine.mediator.DefinitionXmlImportMediator;
-import io.camunda.optimize.service.importing.engine.mediator.StoreEngineImportProgressMediator;
-import io.camunda.optimize.service.importing.engine.mediator.factory.CamundaEventImportServiceFactory;
-import io.camunda.optimize.service.importing.engine.service.ImportObserver;
-import io.camunda.optimize.service.importing.engine.service.RunningActivityInstanceImportService;
-import io.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionResolverService;
-import io.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import io.camunda.optimize.service.importing.event.EventTraceStateProcessingScheduler;
 import io.camunda.optimize.service.importing.eventprocess.EventBasedProcessesInstanceImportScheduler;
 import io.camunda.optimize.service.importing.eventprocess.EventProcessInstanceImportMediatorManager;
 import io.camunda.optimize.service.importing.ingested.IngestedDataImportScheduler;
 import io.camunda.optimize.service.importing.ingested.mediator.StoreIngestedImportProgressMediator;
-import io.camunda.optimize.service.importing.page.TimestampBasedImportPage;
 import io.camunda.optimize.service.importing.zeebe.mediator.StorePositionBasedImportProgressMediator;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.tenant.CamundaPlatformTenantService;
@@ -88,10 +71,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
@@ -112,20 +92,15 @@ public class EmbeddedOptimizeExtension
     implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, AfterAllCallback {
 
   public static final String DEFAULT_ENGINE_ALIAS = "camunda-bpm";
-
+  private static final ObjectMapper configObjectMapper =
+      new ObjectMapper().registerModules(new JavaTimeModule(), new Jdk8Module());
+  private static String serializedDefaultConfiguration;
   private final boolean beforeAllMode;
   private ApplicationContext applicationContext;
-
   private OptimizeRequestExecutor requestExecutor;
   private ObjectMapper objectMapper;
   private boolean resetImportOnStart = true;
-
   @Getter @Setter private boolean closeContextAfterTest = false;
-
-  private static final ObjectMapper configObjectMapper =
-      new ObjectMapper().registerModules(new JavaTimeModule(), new Jdk8Module());
-
-  private static String serializedDefaultConfiguration;
 
   public EmbeddedOptimizeExtension() {
     this(false);
@@ -150,13 +125,6 @@ public class EmbeddedOptimizeExtension
     if (beforeAllMode) {
       setupOptimize();
     }
-  }
-
-  public void setApplicationContext(final ApplicationContext applicationContext) {
-    this.applicationContext = applicationContext;
-    applicationContext
-        .getBean(ApplicationContextProvider.class)
-        .setApplicationContext(applicationContext);
   }
 
   @Override
@@ -199,7 +167,7 @@ public class EmbeddedOptimizeExtension
                       applicationContext))
               .initAuthCookie();
       if (isResetImportOnStart()) {
-        resetImportStartIndexes();
+        resetPositionBasedImportStartIndexes();
         setResetImportOnStart(true);
       }
     } catch (final Exception e) {
@@ -265,39 +233,9 @@ public class EmbeddedOptimizeExtension
   }
 
   @SneakyThrows
-  public void importAllEngineData() {
-    boolean isDoneImporting;
-    do {
-      isDoneImporting = true;
-      for (final EngineImportScheduler scheduler :
-          getImportSchedulerManager().getEngineImportSchedulers()) {
-        scheduler.runImportRound(false);
-        isDoneImporting &= !scheduler.isImporting();
-      }
-    } while (!isDoneImporting);
-  }
-
-  public void importAllEngineEntitiesFromScratch() {
-    try {
-      resetImportStartIndexes();
-    } catch (final Exception e) {
-      // nothing to do
-    }
-    importAllEngineEntitiesFromLastIndex();
-  }
-
-  public void importAllEngineEntitiesFromLastIndex() {
-    for (final EngineImportScheduler scheduler :
-        getImportSchedulerManager().getEngineImportSchedulers()) {
-      log.debug("scheduling import round");
-      scheduleImportAndWaitUntilIsFinished(scheduler);
-    }
-  }
-
-  @SneakyThrows
   public void importIngestedDataFromScratch() {
     try {
-      resetImportStartIndexes();
+      resetPositionBasedImportStartIndexes();
     } catch (final Exception e) {
       // nothing to do
     }
@@ -316,7 +254,7 @@ public class EmbeddedOptimizeExtension
   @SneakyThrows
   public void importAllZeebeEntitiesFromScratch() {
     try {
-      resetImportStartIndexes();
+      resetPositionBasedImportStartIndexes();
     } catch (final Exception e) {
       // nothing to do
     }
@@ -332,85 +270,6 @@ public class EmbeddedOptimizeExtension
         .get();
   }
 
-  @SneakyThrows
-  public void importRunningActivityInstance(
-      final List<HistoricActivityInstanceEngineDto> activities) {
-    final RunningActivityInstanceWriter writer = getBean(RunningActivityInstanceWriter.class);
-    final ProcessDefinitionResolverService processDefinitionResolverService =
-        getBean(ProcessDefinitionResolverService.class);
-    final CamundaEventImportServiceFactory camundaEventServiceFactory =
-        getBean(CamundaEventImportServiceFactory.class);
-
-    for (final EngineContext configuredEngine : getConfiguredEngines()) {
-      final RunningActivityInstanceImportService service =
-          new RunningActivityInstanceImportService(
-              writer,
-              camundaEventServiceFactory.createCamundaEventService(configuredEngine),
-              configuredEngine,
-              getConfigurationService(),
-              processDefinitionResolverService,
-              getOptimizeDatabaseClient());
-      try {
-        final CompletableFuture<Void> done = new CompletableFuture<>();
-        service.executeImport(activities, () -> done.complete(null));
-        done.get();
-      } finally {
-        service.shutdown();
-      }
-    }
-  }
-
-  @SneakyThrows
-  public Optional<DecisionDefinitionOptimizeDto> getDecisionDefinitionFromResolverService(
-      final String definitionId) {
-    final DecisionDefinitionResolverService resolverService =
-        getBean(DecisionDefinitionResolverService.class);
-    for (final EngineContext configuredEngine : getConfiguredEngines()) {
-      final Optional<DecisionDefinitionOptimizeDto> definition =
-          resolverService.getDefinition(definitionId, configuredEngine);
-      if (definition.isPresent()) {
-        return definition;
-      }
-    }
-    return Optional.empty();
-  }
-
-  @SneakyThrows
-  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionFromResolverService(
-      final String definitionId) {
-    final ProcessDefinitionResolverService resolverService =
-        getBean(ProcessDefinitionResolverService.class);
-    for (final EngineContext configuredEngine : getConfiguredEngines()) {
-      final Optional<ProcessDefinitionOptimizeDto> definition =
-          resolverService.getDefinition(definitionId, configuredEngine);
-      if (definition.isPresent()) {
-        return definition;
-      }
-    }
-    return Optional.empty();
-  }
-
-  @SneakyThrows
-  private void scheduleImportAndWaitUntilIsFinished(final EngineImportScheduler scheduler) {
-    scheduler.runImportRound(true).get();
-    // as the definition is imported in two steps,
-    // we need to run the xml imports once more as they depend on the definition entry to be present
-    // in elastic
-    // which is not guaranteed from the import round, as the write request of the definitions may
-    // not have
-    // been persisted when the xml importers were run
-    runDefinitionXmlImporterMediators(scheduler);
-  }
-
-  @SneakyThrows
-  private void runDefinitionXmlImporterMediators(final EngineImportScheduler scheduler) {
-    final List<ImportMediator> definitionXmlMediators =
-        scheduler.getImportMediators().stream()
-            .filter(mediator -> mediator instanceof DefinitionXmlImportMediator)
-            .collect(Collectors.toList());
-    scheduler.executeImportRound(definitionXmlMediators).get();
-  }
-
   public void storeImportIndexesToElasticsearch() {
     final List<CompletableFuture<Void>> synchronizationCompletables = new ArrayList<>();
     final List<AbstractImportScheduler<?>> importSchedulers =
@@ -424,8 +283,7 @@ public class EmbeddedOptimizeExtension
           scheduler.getImportMediators().stream()
               .filter(
                   med ->
-                      med instanceof StoreEngineImportProgressMediator
-                          || med instanceof StoreIngestedImportProgressMediator
+                      med instanceof StoreIngestedImportProgressMediator
                           || med instanceof StorePositionBasedImportProgressMediator)
               .map(
                   mediator -> {
@@ -446,43 +304,6 @@ public class EmbeddedOptimizeExtension
         .getEngineConfiguration(DEFAULT_ENGINE_ALIAS)
         .orElseThrow(
             () -> new OptimizeIntegrationTestException("Missing default engine configuration"));
-  }
-
-  @SneakyThrows
-  public void ensureImportSchedulerIsIdle(final long timeoutSeconds) {
-    final CountDownLatch importIdleLatch =
-        new CountDownLatch(getImportSchedulerManager().getEngineImportSchedulers().size());
-    for (final EngineImportScheduler scheduler :
-        getImportSchedulerManager().getEngineImportSchedulers()) {
-      if (scheduler.isImporting()) {
-        log.info("Scheduler is still importing, waiting for it to finish.");
-        final ImportObserver importObserver =
-            new ImportObserver() {
-              @Override
-              public void importInProgress(final String engineAlias) {
-                // noop
-              }
-
-              @Override
-              public void importIsIdle(final String engineAlias) {
-                log.info("Scheduler became idle, counting down latch.");
-                importIdleLatch.countDown();
-                scheduler.unsubscribe(this);
-              }
-            };
-        scheduler.subscribe(importObserver);
-
-      } else {
-        log.info("Scheduler is not importing, counting down latch.");
-        importIdleLatch.countDown();
-      }
-    }
-
-    try {
-      importIdleLatch.await(timeoutSeconds, TimeUnit.SECONDS);
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
-    }
   }
 
   public ImportSchedulerManagerService getImportSchedulerManager() {
@@ -571,28 +392,7 @@ public class EmbeddedOptimizeExtension
         IntegrationTestConfigurationUtil.getSecuredEmbeddedOptimizeEndpoint(applicationContext));
   }
 
-  public List<Long> getImportIndexes() {
-    final List<Long> indexes = new LinkedList<>();
-    for (final String engineAlias : getConfigurationService().getConfiguredEngines().keySet()) {
-      getIndexHandlerRegistry()
-          .getAllEntitiesBasedHandlers(engineAlias)
-          .forEach(handler -> indexes.add(handler.getImportIndex()));
-      getIndexHandlerRegistry()
-          .getTimestampEngineBasedHandlers(engineAlias)
-          .forEach(
-              handler -> {
-                final TimestampBasedImportPage page = handler.getNextPage();
-                indexes.add(page.getTimestampOfLastEntity().toEpochSecond());
-              });
-    }
-    return indexes;
-  }
-
-  public void resetImportStartIndexes() {
-    for (final EngineImportIndexHandler<?, ?> engineImportIndexHandler :
-        getIndexHandlerRegistry().getAllEngineImportHandlers()) {
-      engineImportIndexHandler.resetImportIndex();
-    }
+  public void resetPositionBasedImportStartIndexes() {
     getAllPositionBasedImportHandlers().forEach(PositionBasedImportIndexHandler::resetImportIndex);
   }
 
@@ -606,20 +406,19 @@ public class EmbeddedOptimizeExtension
     return positionBasedHandlers;
   }
 
-  public void resetInstanceDataWriters() {
-    final Map<String, AbstractProcessInstanceDataWriter> writers =
-        getApplicationContext().getBeansOfType(AbstractProcessInstanceDataWriter.class);
-    for (final AbstractProcessInstanceDataWriter<?> writer : writers.values()) {
-      writer.reloadConfiguration(getApplicationContext());
-    }
-  }
-
   public void reinitializeSchema() {
     getDatabaseSchemaManager().initializeSchema(getOptimizeDatabaseClient());
   }
 
   public ApplicationContext getApplicationContext() {
     return applicationContext;
+  }
+
+  public void setApplicationContext(final ApplicationContext applicationContext) {
+    this.applicationContext = applicationContext;
+    applicationContext
+        .getBean(ApplicationContextProvider.class)
+        .setApplicationContext(applicationContext);
   }
 
   public <T> T getBean(final Class<T> clazz) {
@@ -652,10 +451,6 @@ public class EmbeddedOptimizeExtension
 
   public KpiEvaluationSchedulerService getKpiSchedulerService() {
     return getBean(KpiEvaluationSchedulerService.class);
-  }
-
-  public ProcessInstanceArchivingService getProcessInstanceArchivingService() {
-    return getBean(ProcessInstanceArchivingService.class);
   }
 
   public PlatformUserIdentityCache getUserIdentityCache() {

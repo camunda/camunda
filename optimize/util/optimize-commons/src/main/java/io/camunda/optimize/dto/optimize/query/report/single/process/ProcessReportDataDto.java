@@ -39,13 +39,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = false)
-@FieldNameConstants
 @NoArgsConstructor
 @SuperBuilder
 @ProcessFiltersMustReferenceExistingDefinitionsConstraint
@@ -114,12 +112,18 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     return view.getProperties();
   }
 
+  @JsonIgnore
+  @Override
+  public String createCommandKey() {
+    return createCommandKeys().get(0);
+  }
+
   @Override
   public List<String> createCommandKeys() {
     final String groupByCommandKey =
         groupBy == null ? MISSING_COMMAND_PART_PLACEHOLDER : groupBy.createCommandKey();
-    String distributedByCommandKey = createDistributedByCommandKey();
-    String configurationCommandKey =
+    final String distributedByCommandKey = createDistributedByCommandKey();
+    final String configurationCommandKey =
         Optional.ofNullable(getConfiguration())
             .map(SingleReportConfigurationDto::createCommandKey)
             .orElse(MISSING_COMMAND_PART_PLACEHOLDER);
@@ -138,12 +142,6 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
         .collect(Collectors.toList());
   }
 
-  @JsonIgnore
-  @Override
-  public String createCommandKey() {
-    return createCommandKeys().get(0);
-  }
-
   public String createDistributedByCommandKey() {
     if (distributedBy != null && (isModelElementCommand() || isInstanceCommand())) {
       return distributedBy.createCommandKey();
@@ -152,14 +150,14 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   }
 
   @Override
-  public boolean isCombinable(Object o) {
+  public boolean isCombinable(final Object o) {
     if (this == o) {
       return true;
     }
     if (!(o instanceof ProcessReportDataDto)) {
       return false;
     }
-    ProcessReportDataDto that = (ProcessReportDataDto) o;
+    final ProcessReportDataDto that = (ProcessReportDataDto) o;
     return Combinable.isCombinable(getView(), that.getView())
         && isGroupByCombinable(that)
         && Combinable.isCombinable(getDistributedBy(), that.getDistributedBy())
@@ -198,9 +196,9 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   }
 
   private boolean isGroupByCombinable(final ProcessReportDataDto that) {
-    if (Combinable.isCombinable(this.groupBy, that.groupBy)) {
+    if (Combinable.isCombinable(groupBy, that.groupBy)) {
       if (isGroupByDateVariableReport()) {
-        return this.getConfiguration()
+        return getConfiguration()
             .getGroupByDateVariableUnit()
             .equals(that.getConfiguration().getGroupByDateVariableUnit());
       } else if (isGroupByNumberReport()) {
@@ -212,10 +210,10 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   }
 
   private boolean isBucketSizeCombinable(final ProcessReportDataDto that) {
-    return this.getConfiguration().getCustomBucket().isActive()
+    return getConfiguration().getCustomBucket().isActive()
             && that.getConfiguration().getCustomBucket().isActive()
             && Objects.equals(
-                this.getConfiguration().getCustomBucket().getBucketSize(),
+                getConfiguration().getCustomBucket().getBucketSize(),
                 that.getConfiguration().getCustomBucket().getBucketSize())
         || isBucketSizeIrrelevant(this) && isBucketSizeIrrelevant(that);
   }
@@ -260,5 +258,16 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     return nonNull(view)
         && nonNull(view.getEntity())
         && ProcessViewEntity.PROCESS_INSTANCE.equals(view.getEntity());
+  }
+
+  public static final class Fields {
+
+    public static final String filter = "filter";
+    public static final String view = "view";
+    public static final String groupBy = "groupBy";
+    public static final String distributedBy = "distributedBy";
+    public static final String visualization = "visualization";
+    public static final String managementReport = "managementReport";
+    public static final String instantPreviewReport = "instantPreviewReport";
   }
 }

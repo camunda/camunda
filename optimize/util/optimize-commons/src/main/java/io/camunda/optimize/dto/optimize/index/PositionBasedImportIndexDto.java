@@ -11,12 +11,10 @@ import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@FieldNameConstants
 public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceDto> {
 
   protected long positionOfLastEntity = 0;
@@ -24,4 +22,12 @@ public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceD
   protected String esTypeIndexRefersTo;
   protected boolean hasSeenSequenceField =
       false; // flag to indicate whether at least one record with a sequence field has been imported
+
+  public static final class Fields {
+
+    public static final String positionOfLastEntity = "positionOfLastEntity";
+    public static final String sequenceOfLastEntity = "sequenceOfLastEntity";
+    public static final String esTypeIndexRefersTo = "esTypeIndexRefersTo";
+    public static final String hasSeenSequenceField = "hasSeenSequenceField";
+  }
 }

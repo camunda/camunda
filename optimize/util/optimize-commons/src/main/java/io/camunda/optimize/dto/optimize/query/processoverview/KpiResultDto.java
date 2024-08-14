@@ -18,11 +18,9 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.time.Duration;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 import org.apache.commons.lang3.StringUtils;
 
 @Data
-@FieldNameConstants
 @NoArgsConstructor
 public class KpiResultDto {
 
@@ -66,5 +64,18 @@ public class KpiResultDto {
               >= 0
           : doubleValue >= doubleTarget;
     }
+  }
+
+  public static final class Fields {
+
+    public static final String reportId = "reportId";
+    public static final String collectionId = "collectionId";
+    public static final String reportName = "reportName";
+    public static final String value = "value";
+    public static final String target = "target";
+    public static final String isBelow = "isBelow";
+    public static final String type = "type";
+    public static final String measure = "measure";
+    public static final String unit = "unit";
   }
 }

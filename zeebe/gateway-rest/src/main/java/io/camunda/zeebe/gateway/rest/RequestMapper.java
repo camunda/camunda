@@ -10,10 +10,14 @@ package io.camunda.zeebe.gateway.rest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
+import static io.camunda.zeebe.gateway.rest.validator.MessageCorrelateValidator.validateMessageCorrelationRequest;
+import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateAuthorization;
+import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
 import io.camunda.service.JobServices.ActivateJobsRequest;
+import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
@@ -24,6 +28,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
@@ -125,6 +130,30 @@ public class RequestMapper {
                 getMapOrEmpty(errorRequest, JobErrorRequest::getVariables)));
   }
 
+  public static Either<ProblemDetail, CorrelateMessageRequest> toMessageCorrelationRequest(
+      final MessageCorrelationRequest correlationRequest, final boolean multiTenancyEnabled) {
+    final Either<ProblemDetail, String> validationResponse =
+        validateTenantId(correlationRequest.getTenantId(), multiTenancyEnabled, "Correlate Message")
+            .flatMap(
+                tenantId ->
+                    validateAuthorization(tenantId, multiTenancyEnabled, "Correlate Message")
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenantId)))
+            .flatMap(
+                tenantId ->
+                    validateMessageCorrelationRequest(correlationRequest)
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenantId)));
+
+    return validationResponse.map(
+        tenantId ->
+            new CorrelateMessageRequest(
+                correlationRequest.getName(),
+                correlationRequest.getCorrelationKey(),
+                correlationRequest.getVariables(),
+                tenantId));
+  }
+
   public static CompleteJobRequest toJobCompletionRequest(
       final JobCompletionRequest completionRequest, final long jobKey) {
 
@@ -144,19 +173,22 @@ public class RequestMapper {
                 getLongOrZero(updateRequest, r -> updateRequest.getChangeset().getTimeout())));
   }
 
-  public static CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
-      final Supplier<CompletableFuture<?>> method, final Supplier<ResponseEntity<Object>> result) {
+  public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
+      final Supplier<CompletableFuture<BrokerResponseT>> method,
+      final Function<BrokerResponseT, ResponseEntity<Object>> result) {
     return method
         .get()
         .handleAsync(
             (response, error) ->
                 RestErrorMapper.getResponse(error, RestErrorMapper.DEFAULT_REJECTION_MAPPER)
-                    .orElseGet(result));
+                    .orElseGet(() -> result.apply(response)));
   }
 
-  public static CompletableFuture<ResponseEntity<Object>> executeServiceMethodWithNoContentResult(
-      final Supplier<CompletableFuture<?>> method) {
-    return RequestMapper.executeServiceMethod(method, () -> ResponseEntity.noContent().build());
+  public static <BrokerResponseT>
+      CompletableFuture<ResponseEntity<Object>> executeServiceMethodWithNoContentResult(
+          final Supplier<CompletableFuture<BrokerResponseT>> method) {
+    return RequestMapper.executeServiceMethod(
+        method, ignored -> ResponseEntity.noContent().build());
   }
 
   public static Authentication getAuthentication() {

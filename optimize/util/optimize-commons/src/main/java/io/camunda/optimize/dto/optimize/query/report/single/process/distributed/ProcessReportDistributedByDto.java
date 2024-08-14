@@ -25,7 +25,6 @@ import io.camunda.optimize.dto.optimize.query.report.Combinable;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.ProcessReportDistributedByValueDto;
 import lombok.Data;
-import lombok.experimental.FieldNameConstants;
 
 /**
  * Abstract class that contains a hidden "type" field to distinguish which distributed by type the
@@ -49,7 +48,6 @@ import lombok.experimental.FieldNameConstants;
   @JsonSubTypes.Type(value = ProcessDistributedByDto.class, name = DISTRIBUTED_BY_PROCESS)
 })
 @Data
-@FieldNameConstants
 public class ProcessReportDistributedByDto<VALUE extends ProcessReportDistributedByValueDto>
     implements Combinable {
 
@@ -70,5 +68,11 @@ public class ProcessReportDistributedByDto<VALUE extends ProcessReportDistribute
   public boolean isCombinable(final Object o) {
     return DistributedByType.NONE.equals(type)
         && DistributedByType.NONE.equals(((ProcessReportDistributedByDto<?>) o).getType());
+  }
+
+  public static final class Fields {
+
+    public static final String type = "type";
+    public static final String value = "value";
   }
 }

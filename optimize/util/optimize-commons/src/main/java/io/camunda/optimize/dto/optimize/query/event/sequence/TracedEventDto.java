@@ -13,13 +13,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldNameConstants
 public class TracedEventDto implements OptimizeDto {
 
   private String eventId;
@@ -29,7 +27,7 @@ public class TracedEventDto implements OptimizeDto {
   private Long timestamp;
   private Long orderCounter;
 
-  public static TracedEventDto fromEventDto(EventDto eventDto) {
+  public static TracedEventDto fromEventDto(final EventDto eventDto) {
     return TracedEventDto.builder()
         .eventId(eventDto.getId())
         .timestamp(eventDto.getTimestamp())
@@ -41,5 +39,15 @@ public class TracedEventDto implements OptimizeDto {
                 ? ((OrderedEventDto) eventDto).getOrderCounter()
                 : null)
         .build();
+  }
+
+  public static final class Fields {
+
+    public static final String eventId = "eventId";
+    public static final String group = "group";
+    public static final String source = "source";
+    public static final String eventName = "eventName";
+    public static final String timestamp = "timestamp";
+    public static final String orderCounter = "orderCounter";
   }
 }

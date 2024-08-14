@@ -13,13 +13,17 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
-@FieldNameConstants(asEnum = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Data
 public class MetadataDto implements OptimizeDto, Serializable {
+
   private String schemaVersion;
   private String installationId;
+
+  public enum Fields {
+    schemaVersion,
+    installationId
+  }
 }

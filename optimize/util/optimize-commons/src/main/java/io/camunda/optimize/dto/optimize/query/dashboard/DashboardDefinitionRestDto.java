@@ -26,13 +26,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldNameConstants
 public class DashboardDefinitionRestDto extends BaseDashboardDefinitionDto
     implements CollectionEntity {
 
@@ -59,5 +57,10 @@ public class DashboardDefinitionRestDto extends BaseDashboardDefinitionDto
         EntityType.DASHBOARD,
         new EntityData(Map.of(EntityType.REPORT, (long) getTiles().size())),
         roleType);
+  }
+
+  public static final class Fields {
+
+    public static final String tiles = "tiles";
   }
 }

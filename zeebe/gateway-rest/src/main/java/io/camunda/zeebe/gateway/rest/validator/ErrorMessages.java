@@ -24,4 +24,6 @@ public final class ErrorMessages {
   public static final String ERROR_SEARCH_BEFORE_AND_AFTER =
       "Both searchAfter and searchBefore cannot be set at the same time";
   public static final String ERROR_MESSAGE_AT_LEAST_ONE_FIELD = "At least one of %s is required";
+  public static final String ERROR_MESSAGE_INVALID_TENANT =
+      "Expected to handle request %s with tenant identifier '%s', but %s";
 }

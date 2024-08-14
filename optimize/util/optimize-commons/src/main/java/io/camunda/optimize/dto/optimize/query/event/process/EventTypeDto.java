@@ -17,7 +17,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import lombok.experimental.FieldNameConstants;
 
 @Getter
 @Setter
@@ -26,10 +25,18 @@ import lombok.experimental.FieldNameConstants;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@FieldNameConstants
 public class EventTypeDto implements OptimizeDto {
+
   private String group;
   private String source;
   @NotBlank private String eventName;
   @EqualsAndHashCode.Exclude private String eventLabel;
+
+  public static final class Fields {
+
+    public static final String group = "group";
+    public static final String source = "source";
+    public static final String eventName = "eventName";
+    public static final String eventLabel = "eventLabel";
+  }
 }

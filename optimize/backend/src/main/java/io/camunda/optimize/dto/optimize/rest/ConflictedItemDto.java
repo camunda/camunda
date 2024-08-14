@@ -8,20 +8,26 @@
 package io.camunda.optimize.dto.optimize.rest;
 
 import lombok.Getter;
-import lombok.experimental.FieldNameConstants;
 
 @Getter
-@FieldNameConstants
 public class ConflictedItemDto {
+
   private String id;
   private ConflictedItemType type;
   private String name;
 
   public ConflictedItemDto() {}
 
-  public ConflictedItemDto(String id, ConflictedItemType type, String name) {
+  public ConflictedItemDto(final String id, final ConflictedItemType type, final String name) {
     this.id = id;
     this.type = type;
     this.name = name;
+  }
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String type = "type";
+    public static final String name = "name";
   }
 }

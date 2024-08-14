@@ -11,17 +11,20 @@ import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import lombok.experimental.FieldNameConstants;
 
 @Getter
 @Setter
-@FieldNameConstants
 @ToString
 public class TargetDto {
 
   private TargetValueUnit unit = TargetValueUnit.HOURS;
   private String value = "2";
   private Boolean isBelow = false;
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(unit, value);
+  }
 
   @Override
   public boolean equals(final Object o) {
@@ -36,8 +39,10 @@ public class TargetDto {
         && Objects.equals(value, targetDto.value);
   }
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(unit, value);
+  public static final class Fields {
+
+    public static final String unit = "unit";
+    public static final String value = "value";
+    public static final String isBelow = "isBelow";
   }
 }

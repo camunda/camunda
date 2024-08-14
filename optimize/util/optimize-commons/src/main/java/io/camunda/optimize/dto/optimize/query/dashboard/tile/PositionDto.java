@@ -10,14 +10,18 @@ package io.camunda.optimize.dto.optimize.query.dashboard.tile;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@FieldNameConstants
 public class PositionDto {
 
   protected int x;
   protected int y;
+
+  public static final class Fields {
+
+    public static final String x = "x";
+    public static final String y = "y";
+  }
 }

@@ -10,11 +10,9 @@ package io.camunda.optimize.dto.optimize;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @Builder
-@FieldNameConstants(asEnum = true)
 public class ImportRequestDto {
 
   private String importName;
@@ -24,4 +22,14 @@ public class ImportRequestDto {
   private Object source;
   private RequestType type;
   private int retryNumberOnConflict;
+
+  public enum Fields {
+    importName,
+    indexName,
+    scriptData,
+    id,
+    source,
+    type,
+    retryNumberOnConflict
+  }
 }

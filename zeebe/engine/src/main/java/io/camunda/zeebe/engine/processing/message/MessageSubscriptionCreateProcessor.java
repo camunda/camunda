@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 
 public final class MessageSubscriptionCreateProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
@@ -46,7 +47,8 @@ public final class MessageSubscriptionCreateProcessor
       final MessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender,
       final Writers writers,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final InstantSource clock) {
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
     stateWriter = writers.state();
@@ -55,7 +57,7 @@ public final class MessageSubscriptionCreateProcessor
     this.keyGenerator = keyGenerator;
     messageCorrelator =
         new MessageCorrelator(
-            partitionId, messageState, commandSender, stateWriter, sideEffectWriter);
+            partitionId, messageState, commandSender, stateWriter, sideEffectWriter, clock);
     currentPartitionId = partitionId;
   }
 

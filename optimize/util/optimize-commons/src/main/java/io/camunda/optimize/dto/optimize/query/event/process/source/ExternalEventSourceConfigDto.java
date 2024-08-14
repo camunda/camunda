@@ -10,16 +10,20 @@ package io.camunda.optimize.dto.optimize.query.event.process.source;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 
 @NoArgsConstructor
 @SuperBuilder
 @Getter
-@FieldNameConstants
 @EqualsAndHashCode(callSuper = true)
 public class ExternalEventSourceConfigDto extends EventSourceConfigDto {
 
   private String group;
   private boolean includeAllGroups;
+
+  public static final class Fields {
+
+    public static final String group = "group";
+    public static final String includeAllGroups = "includeAllGroups";
+  }
 }

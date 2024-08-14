@@ -11,7 +11,6 @@ import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
-import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,11 +22,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @CamundaRestController
 @RequestMapping("/v2/users")
 public class UserController {
-  private final UserServices<UserRecord> userServices;
+  private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
 
-  public UserController(
-      final UserServices<UserRecord> userServices, final PasswordEncoder passwordEncoder) {
+  public UserController(final UserServices userServices, final PasswordEncoder passwordEncoder) {
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
   }

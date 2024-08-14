@@ -229,6 +229,18 @@ public class ZeebeBpmnModels {
         .done();
   }
 
+  public static BpmnModelInstance createInclusiveGatewayProcessWithConverging(
+      final String processName) {
+    return Bpmn.createExecutableProcess(processName)
+        .startEvent(START_EVENT)
+        .inclusiveGateway(DIVERGING_GATEWAY)
+        .sequenceFlowId("s1")
+        .conditionExpression("= contains(varName,\"a\")")
+        .inclusiveGateway(CONVERGING_GATEWAY)
+        .endEvent(END_EVENT)
+        .done();
+  }
+
   public static BpmnModelInstance createSendTaskProcess(final String processName) {
     return Bpmn.createExecutableProcess()
         .name(processName)

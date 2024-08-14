@@ -12,12 +12,15 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@FieldNameConstants(asEnum = true)
 public class CollectionRoleUpdateRequestDto {
+
   private RoleType role;
+
+  public enum Fields {
+    role
+  }
 }
