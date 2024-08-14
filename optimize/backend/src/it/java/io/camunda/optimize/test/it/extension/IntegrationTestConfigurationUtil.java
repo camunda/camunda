@@ -46,36 +46,7 @@ public class IntegrationTestConfigurationUtil {
     return DatabaseType.fromString(PROPERTIES.getProperty("database.type"));
   }
 
-  public static String getEngineDateFormat() {
-    return PROPERTIES.getProperty("camunda.engine.serialization.date.format");
-  }
-
-  public static String getEngineItPluginEndpoint() {
-    return getEngineSchemeAndAuthority()
-        + PROPERTIES.getProperty("camunda.engine.it.plugin.endpoint");
-  }
-
-  public static String getEngineRestEndpoint() {
-    return getEngineSchemeAndAuthority() + getEngineRestPath();
-  }
-
-  private static String getEngineSchemeAndAuthority() {
-    return "http://" + getEngineHost() + ":" + getEnginePort();
-  }
-
-  public static String getEngineRestPath() {
-    return PROPERTIES.getProperty("camunda.engine.rest.engines.endpoint");
-  }
-
-  public static String getEngineHost() {
-    return PROPERTIES.getProperty("camunda.engine.it.host");
-  }
-
-  public static String getEnginePort() {
-    return PROPERTIES.getProperty("camunda.engine.it.port");
-  }
-
-  public static String getEmbeddedOptimizeEndpoint(ApplicationContext applicationContext) {
+  public static String getEmbeddedOptimizeEndpoint(final ApplicationContext applicationContext) {
     return "http://localhost:"
         + applicationContext
             .getBean(JettyConfig.class)
@@ -83,7 +54,8 @@ public class IntegrationTestConfigurationUtil {
         + applicationContext.getBean(JettyConfig.class).getContextPath().orElse("");
   }
 
-  public static String getSecuredEmbeddedOptimizeEndpoint(ApplicationContext applicationContext) {
+  public static String getSecuredEmbeddedOptimizeEndpoint(
+      final ApplicationContext applicationContext) {
     return "https://localhost:"
         + applicationContext
             .getBean(JettyConfig.class)
@@ -91,7 +63,8 @@ public class IntegrationTestConfigurationUtil {
         + applicationContext.getBean(JettyConfig.class).getContextPath().orElse("");
   }
 
-  public static String getEmbeddedOptimizeRestApiEndpoint(ApplicationContext applicationContext) {
+  public static String getEmbeddedOptimizeRestApiEndpoint(
+      final ApplicationContext applicationContext) {
     return getEmbeddedOptimizeEndpoint(applicationContext) + REST_API_PATH;
   }
 

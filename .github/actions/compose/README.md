@@ -2,7 +2,7 @@
 
 ## Intro
 
-The action is used ease the use of docker-compose for running depdencies like cambpm or elasticsearch for tests. Based on the a provided compose file it launches its contents and blocks GHA till the containers are considered healthy.
+The action is used ease the use of docker-compose for running dependencies like elasticsearch for tests. Based on the provided compose file it launches its contents and blocks GHA until the containers are considered healthy.
 
 It also allows running multiple instances of elasticsearch by defining a project_name.
 
@@ -30,6 +30,7 @@ steps:
   env:
     CAMBPM_VERSION: 7.19.0
     CAMBPM_JVM_MEMORY: 1
+
 - name: Start Elastic - Old
   uses: ./.github/actions/compose
   with:

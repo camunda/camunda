@@ -68,13 +68,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cambpm: [ 'latest' ]
         includedGroups: [ 'ccsm-test' ]
         include:
         - includedGroups: 'ccsm-test'
           excludedGroups: ''
           profiles: 'ccsm-it'
-          requiresCambpm: false
 
     steps:
     - name: Checkout repository
@@ -154,7 +152,6 @@ jobs:
           - includedGroups: 'ccsm-test'
             excludedGroups: ''
             profiles: 'ccsm-it'
-            requiresCambpm: false
 
     steps:
       - name: Checkout repository
@@ -233,10 +230,10 @@ jobs:
         include:
           - includedGroups: ''
             excludedGroups: 'ccsm-test,import,reportEvaluation'
-            profiles: 'it,engine-latest'
+            profiles: 'it'
           - includedGroups: 'reportEvaluation'
             excludedGroups: ''
-            profiles: 'it,engine-latest'
+            profiles: 'it'
     steps:
       - name: Checkout repository
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
@@ -260,15 +257,6 @@ jobs:
 
       - name: Expose Parsed OpenSearch Version
         run: echo "OPENSEARCH_VERSION=${{ steps.pom-info.outputs.x_opensearch_test_version }}" >> "$GITHUB_ENV"
-
-      - name: Start Cambpm
-        uses: ./.github/actions/compose
-        with:
-          compose_file: .github/actions/compose/docker-compose.cambpm.yml
-          project_name: cambpm
-        env:
-          CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
-          CAMBPM_JVM_MEMORY: 8
 
       - name: Start OpenSearch
         uses: ./.github/actions/compose
