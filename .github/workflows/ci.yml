@@ -455,19 +455,12 @@ jobs:
 
   test-summary:
     # Used as migration path to support old Zeebe CI Test summary
+    # TODO: can be removed after 2024-08-16, remaining PRs need to be rebased
     name: Test summary
     runs-on: ubuntu-latest
     needs:
       - zeebe-ci
     steps:
-      - uses: actions/checkout@v4
-      - name: Check for aborted jobs
-        continue-on-error: true
-        uses: ./.github/actions/observe-aborted-jobs
-        with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
 
   notify-if-failed:
