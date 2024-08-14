@@ -21,15 +21,6 @@
     </fileSet>
 
     <fileSet>
-      <!--create empty plugin directory-->
-      <directory>src/</directory>
-      <outputDirectory>plugin</outputDirectory>
-      <excludes>
-        <exclude>*/**</exclude>
-      </excludes>
-    </fileSet>
-
-    <fileSet>
       <directory>src/upgrade</directory>
       <outputDirectory>upgrade</outputDirectory>
       <!-- these files will be included in files section -->

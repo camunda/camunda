@@ -13,12 +13,6 @@
 
   <dependencies>
 
-    <dependency>
-      <groupId>io.camunda.optimize</groupId>
-      <artifactId>plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
     <!-- REST -->
     <dependency>
       <groupId>jakarta.validation</groupId>
@@ -214,6 +208,10 @@
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>auth</artifactId>
       <version>${awssdk.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.ws.rs</groupId>
+      <artifactId>jakarta.ws.rs-api</artifactId>
     </dependency>
 
   </dependencies>

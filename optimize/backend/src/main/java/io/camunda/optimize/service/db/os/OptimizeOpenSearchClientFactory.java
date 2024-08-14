@@ -18,7 +18,6 @@ import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.io.IOException;
-import java.util.Collections;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,9 +39,8 @@ public class OptimizeOpenSearchClientFactory {
       throws IOException {
 
     log.info("Creating OpenSearch connection...");
-    // TODO Evaluate the need for OpenSearchCustomHeaderProvider with OPT-7400
     final RequestOptionsProvider requestOptionsProvider =
-        new RequestOptionsProvider(Collections.emptyList(), configurationService);
+        new RequestOptionsProvider(configurationService);
     final ExtendedOpenSearchClient openSearchClient =
         buildOpenSearchClientFromConfig(configurationService);
     final OpenSearchAsyncClient openSearchAsyncClient =
@@ -51,7 +49,7 @@ public class OptimizeOpenSearchClientFactory {
         openSearchClient, backoffCalculator, requestOptionsProvider.getRequestOptions());
     log.info("OpenSearch cluster successfully started");
 
-    OptimizeOpenSearchClient osClient =
+    final OptimizeOpenSearchClient osClient =
         new OptimizeOpenSearchClient(
             openSearchClient,
             openSearchAsyncClient,
@@ -79,7 +77,7 @@ public class OptimizeOpenSearchClientFactory {
             e);
       } finally {
         if (!isConnected) {
-          long sleepTime = backoffCalculator.calculateSleepTime();
+          final long sleepTime = backoffCalculator.calculateSleepTime();
           log.info("No OpenSearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
           try {
             Thread.sleep(sleepTime);
