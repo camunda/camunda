@@ -187,7 +187,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "red"
+                    "color": "red",
+                    "value": null
                   }
                 ]
               }
@@ -213,7 +214,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 17
+            "y": 1
           },
           "id": 68,
           "interval": "1s",
@@ -232,7 +233,7 @@
             "showHeader": true,
             "sortBy": []
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "10.1.5",
           "targets": [
             {
               "datasource": {
@@ -294,7 +295,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -313,7 +315,7 @@
             "h": 4,
             "w": 9,
             "x": 8,
-            "y": 17
+            "y": 1
           },
           "id": 243,
           "options": {
@@ -333,7 +335,7 @@
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "10.1.5",
           "targets": [
             {
               "datasource": {
@@ -362,7 +364,6 @@
                 "mode": "palette-classic"
               },
               "custom": {
-                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisLabel": "",
@@ -401,7 +402,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -417,7 +419,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 17
+            "y": 1
           },
           "id": 116,
           "options": {
@@ -477,7 +479,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -492,7 +495,7 @@
             "h": 2,
             "w": 9,
             "x": 8,
-            "y": 21
+            "y": 5
           },
           "id": 542,
           "options": {
@@ -511,7 +514,7 @@
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "10.1.5",
           "targets": [
             {
               "datasource": {
@@ -538,7 +541,6 @@
                 "mode": "palette-classic"
               },
               "custom": {
-                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisLabel": "",
@@ -576,7 +578,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -592,7 +595,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 23
+            "y": 7
           },
           "id": 58,
           "options": {
@@ -644,7 +647,6 @@
                 "mode": "palette-classic"
               },
               "custom": {
-                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisLabel": "",
@@ -682,7 +684,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -698,7 +701,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 23
+            "y": 7
           },
           "id": 270,
           "options": {
@@ -743,7 +746,6 @@
                 "mode": "palette-classic"
               },
               "custom": {
-                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisLabel": "",
@@ -780,7 +782,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -796,7 +799,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 28
+            "y": 12
           },
           "id": 62,
           "options": {
@@ -852,7 +855,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "red"
+                    "color": "red",
+                    "value": null
                   },
                   {
                     "color": "#EAB839",
@@ -872,7 +876,7 @@
             "h": 2,
             "w": 9,
             "x": 8,
-            "y": 28
+            "y": 12
           },
           "id": 232,
           "options": {
@@ -892,7 +896,7 @@
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "10.1.5",
           "targets": [
             {
               "datasource": {
@@ -920,7 +924,6 @@
                 "mode": "palette-classic"
               },
               "custom": {
-                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisLabel": "",
@@ -958,7 +961,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -974,7 +978,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 28
+            "y": 12
           },
           "id": 74,
           "options": {
@@ -1030,7 +1034,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -1046,7 +1051,7 @@
             "h": 2,
             "w": 9,
             "x": 8,
-            "y": 30
+            "y": 14
           },
           "id": 118,
           "maxDataPoints": 100,
@@ -1066,7 +1071,7 @@
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "10.1.5",
           "targets": [
             {
               "datasource": {
@@ -1107,7 +1112,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -1123,7 +1129,7 @@
             "h": 2,
             "w": 9,
             "x": 8,
-            "y": 32
+            "y": 16
           },
           "id": 117,
           "maxDataPoints": 100,
@@ -1143,7 +1149,7 @@
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "10.4.0",
+          "pluginVersion": "10.1.5",
           "targets": [
             {
               "datasource": {
@@ -1169,7 +1175,6 @@
                 "mode": "palette-classic"
               },
               "custom": {
-                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisLabel": "",
@@ -1208,7 +1213,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "transparent"
+                    "color": "transparent",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -1224,7 +1230,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 34
+            "y": 18
           },
           "id": 39,
           "options": {
@@ -1264,7 +1270,6 @@
                 "mode": "palette-classic"
               },
               "custom": {
-                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisLabel": "",
@@ -1302,7 +1307,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -1316,9 +1322,9 @@
           },
           "gridPos": {
             "h": 6,
-            "w": 9,
+            "w": 5,
             "x": 8,
-            "y": 34
+            "y": 18
           },
           "id": 190,
           "options": {
@@ -1374,6 +1380,77 @@
         },
         {
           "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "The current cluster load is defined by the current write rate divided by the write rate limit. The cluster load will display no data unless the flow control rate write limits are enabled.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "#EAB839",
+                    "value": 70
+                  },
+                  {
+                    "color": "red",
+                    "value": 90
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 4,
+            "x": 13,
+            "y": 18
+          },
+          "id": 612,
+          "options": {
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
+          "pluginVersion": "10.1.5",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "avg(sum by (context, partition) (zeebe_flow_control_cluster_load{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) > 0) ",
+              "instant": true,
+              "legendFormat": "__auto",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "title": "Cluster Load",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
             "uid": "$DS_PROMETHEUS"
           },
           "description": "Memory limits and requests are taken from the k8 pod metrics.",
@@ -1383,7 +1460,6 @@
                 "mode": "palette-classic"
               },
               "custom": {
-                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisLabel": "",
@@ -1420,7 +1496,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -1479,7 +1556,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 34
+            "y": 18
           },
           "id": 33,
           "options": {
@@ -1604,7 +1681,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "transparent"
+                    "color": "transparent",
+                    "value": null
                   },
                   {
                     "color": "orange",
@@ -1624,7 +1702,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 2
+            "y": 25
           },
           "id": 272,
           "options": {
@@ -1680,7 +1758,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 9
+            "y": 32
           },
           "id": 418,
           "options": {
@@ -1783,7 +1861,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -1798,7 +1877,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 9
+            "y": 32
           },
           "id": 421,
           "options": {
@@ -1881,7 +1960,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -1896,7 +1976,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 17
+            "y": 40
           },
           "id": 192,
           "options": {
@@ -1998,7 +2078,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   }
                 ]
               }
@@ -2009,7 +2090,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 17
+            "y": 40
           },
           "id": 602,
           "options": {
@@ -2115,7 +2196,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -2130,7 +2212,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 25
+            "y": 48
           },
           "id": 194,
           "options": {
@@ -2187,7 +2269,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -2262,7 +2345,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 25
+            "y": 48
           },
           "id": 199,
           "options": {
@@ -2326,7 +2409,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -2401,7 +2485,7 @@
             "h": 4,
             "w": 7,
             "x": 12,
-            "y": 25
+            "y": 48
           },
           "id": 196,
           "options": {
@@ -2465,7 +2549,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -2540,7 +2625,7 @@
             "h": 4,
             "w": 5,
             "x": 19,
-            "y": 25
+            "y": 48
           },
           "id": 200,
           "options": {
@@ -2604,7 +2689,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -2679,7 +2765,7 @@
             "h": 8,
             "w": 5,
             "x": 12,
-            "y": 29
+            "y": 52
           },
           "id": 198,
           "options": {
@@ -2743,7 +2829,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -2818,7 +2905,7 @@
             "h": 8,
             "w": 7,
             "x": 17,
-            "y": 29
+            "y": 52
           },
           "id": 268,
           "options": {
@@ -2906,7 +2993,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -2921,7 +3009,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 31
+            "y": 54
           },
           "id": 189,
           "options": {
@@ -2980,7 +3068,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -3055,7 +3144,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 31
+            "y": 54
           },
           "id": 201,
           "options": {
@@ -3152,7 +3241,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "red"
+                    "color": "red",
+                    "value": null
                   }
                 ]
               }
@@ -3178,7 +3268,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 37
+            "y": 60
           },
           "id": 604,
           "interval": "1s",
@@ -3280,7 +3370,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "red"
+                    "color": "red",
+                    "value": null
                   }
                 ]
               }
@@ -3306,7 +3397,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 37
+            "y": 60
           },
           "id": 605,
           "interval": "1s",
@@ -3409,7 +3500,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -3424,7 +3516,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 43
+            "y": 66
           },
           "id": 543,
           "options": {
@@ -3503,7 +3595,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -3518,7 +3611,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 49
+            "y": 72
           },
           "id": 561,
           "options": {
@@ -3601,7 +3694,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -3616,7 +3710,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 49
+            "y": 72
           },
           "id": 594,
           "options": {
@@ -3731,7 +3825,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 19
+            "y": 35
           },
           "hideTimeOverride": false,
           "id": 12,
@@ -3830,7 +3924,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 19
+            "y": 35
           },
           "hideTimeOverride": false,
           "id": 13,
@@ -3935,7 +4029,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 24
+            "y": 40
           },
           "id": 2,
           "options": {
@@ -4040,7 +4134,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 24
+            "y": 40
           },
           "id": 3,
           "options": {
@@ -4146,7 +4240,7 @@
             "h": 6,
             "w": 9,
             "x": 0,
-            "y": 30
+            "y": 46
           },
           "id": 4,
           "options": {
@@ -4243,7 +4337,7 @@
             "h": 6,
             "w": 7,
             "x": 9,
-            "y": 30
+            "y": 46
           },
           "id": 266,
           "options": {
@@ -4341,7 +4435,7 @@
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 30
+            "y": 46
           },
           "id": 267,
           "options": {
@@ -4439,7 +4533,7 @@
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 36
+            "y": 52
           },
           "id": 290,
           "options": {
@@ -4535,7 +4629,7 @@
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 36
+            "y": 52
           },
           "id": 291,
           "options": {
@@ -4631,7 +4725,7 @@
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 36
+            "y": 52
           },
           "id": 288,
           "options": {
@@ -4727,7 +4821,7 @@
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 36
+            "y": 52
           },
           "id": 289,
           "options": {
@@ -4847,7 +4941,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 20
+            "y": 36
           },
           "id": 102,
           "options": {
@@ -4911,7 +5005,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 20
+            "y": 36
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5054,7 +5148,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 28
+            "y": 44
           },
           "id": 105,
           "options": {
@@ -5116,7 +5210,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 28
+            "y": 44
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5256,7 +5350,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 36
+            "y": 52
           },
           "id": 182,
           "options": {
@@ -5419,7 +5513,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 21
+            "y": 37
           },
           "id": 261,
           "options": {
@@ -5536,7 +5630,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 28
+            "y": 44
           },
           "id": 98,
           "options": {
@@ -5672,7 +5766,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 28
+            "y": 44
           },
           "id": 35,
           "options": {
@@ -5776,7 +5870,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 36
+            "y": 52
           },
           "id": 579,
           "options": {
@@ -5867,7 +5961,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 36
+            "y": 52
           },
           "id": 580,
           "options": {
@@ -5962,7 +6056,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 44
+            "y": 60
           },
           "id": 285,
           "options": {
@@ -6071,7 +6165,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 44
+            "y": 60
           },
           "id": 286,
           "options": {
@@ -6206,7 +6300,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 22
+            "y": 38
           },
           "id": 64,
           "options": {
@@ -6303,7 +6397,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 22
+            "y": 38
           },
           "id": 294,
           "options": {
@@ -6461,7 +6555,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 23
+            "y": 39
           },
           "id": 260,
           "options": {
@@ -6552,7 +6646,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 28
+            "y": 44
           },
           "id": 379,
           "options": {
@@ -6645,7 +6739,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 28
+            "y": 44
           },
           "id": 381,
           "options": {
@@ -6763,7 +6857,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 36
+            "y": 52
           },
           "id": 37,
           "options": {
@@ -6869,7 +6963,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 36
+            "y": 52
           },
           "id": 40,
           "options": {
@@ -6965,7 +7059,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 44
+            "y": 60
           },
           "id": 122,
           "options": {
@@ -7062,7 +7156,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 44
+            "y": 60
           },
           "id": 124,
           "options": {
@@ -7159,7 +7253,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 52
+            "y": 68
           },
           "id": 126,
           "options": {
@@ -7256,7 +7350,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 52
+            "y": 68
           },
           "id": 127,
           "options": {
@@ -7344,7 +7438,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 24
+            "y": 40
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7470,7 +7564,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 24
+            "y": 40
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7626,7 +7720,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 32
+            "y": 48
           },
           "id": 343,
           "options": {
@@ -7748,7 +7842,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 32
+            "y": 48
           },
           "id": 345,
           "options": {
@@ -7868,7 +7962,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 42
+            "y": 58
           },
           "id": 347,
           "options": {
@@ -7961,7 +8055,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 42
+            "y": 58
           },
           "id": 349,
           "options": {
@@ -8054,7 +8148,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 50
+            "y": 66
           },
           "id": 353,
           "options": {
@@ -8148,7 +8242,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 50
+            "y": 66
           },
           "id": 351,
           "options": {
@@ -8229,7 +8323,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 25
+            "y": 41
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8372,7 +8466,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 25
+            "y": 41
           },
           "id": 222,
           "options": {
@@ -8450,7 +8544,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 33
+            "y": 49
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8561,7 +8655,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 33
+            "y": 49
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8673,7 +8767,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 41
+            "y": 57
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8816,7 +8910,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 48
+            "y": 64
           },
           "id": 593,
           "options": {
@@ -8912,7 +9006,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 58
+            "y": 74
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9025,7 +9119,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 58
+            "y": 74
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9128,7 +9222,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 65
+            "y": 81
           },
           "id": 420,
           "options": {
@@ -9210,7 +9304,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 65
+            "y": 81
           },
           "id": 419,
           "options": {
@@ -9330,7 +9424,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 72
+            "y": 88
           },
           "id": 310,
           "options": {
@@ -9455,7 +9549,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 72
+            "y": 88
           },
           "id": 311,
           "options": {
@@ -9550,7 +9644,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 79
+            "y": 95
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9661,7 +9755,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 79
+            "y": 95
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9828,7 +9922,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 26
+            "y": 42
           },
           "id": 26,
           "options": {
@@ -9923,7 +10017,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 26
+            "y": 42
           },
           "id": 27,
           "options": {
@@ -9997,7 +10091,7 @@
             "h": 9,
             "w": 8,
             "x": 0,
-            "y": 33
+            "y": 49
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -10107,7 +10201,7 @@
             "h": 9,
             "w": 8,
             "x": 8,
-            "y": 33
+            "y": 49
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -10217,7 +10311,7 @@
             "h": 9,
             "w": 8,
             "x": 16,
-            "y": 33
+            "y": 49
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -10353,7 +10447,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 27
+            "y": 43
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -10517,7 +10611,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 35
+            "y": 51
           },
           "id": 166,
           "options": {
@@ -10634,7 +10728,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 35
+            "y": 51
           },
           "id": 168,
           "options": {
@@ -10795,7 +10889,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 28
+            "y": 44
           },
           "id": 278,
           "options": {
@@ -10934,7 +11028,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 28
+            "y": 44
           },
           "id": 283,
           "options": {
@@ -11030,7 +11124,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 35
+            "y": 51
           },
           "id": 373,
           "options": {
@@ -11127,7 +11221,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 43
+            "y": 59
           },
           "id": 363,
           "options": {
@@ -11224,7 +11318,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 43
+            "y": 59
           },
           "id": 406,
           "options": {
@@ -11320,7 +11414,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 50
+            "y": 66
           },
           "id": 79,
           "options": {
@@ -11416,7 +11510,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 50
+            "y": 66
           },
           "id": 114,
           "options": {
@@ -11478,7 +11572,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 57
+            "y": 73
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -11619,7 +11713,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 57
+            "y": 73
           },
           "id": 305,
           "options": {
@@ -11693,7 +11787,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 64
+            "y": 80
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -11856,7 +11950,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 64
+            "y": 80
           },
           "id": 72,
           "options": {
@@ -11954,7 +12048,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 72
+            "y": 88
           },
           "id": 432,
           "interval": "1s",
@@ -12095,7 +12189,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 72
+            "y": 88
           },
           "id": 95,
           "interval": "1s",
@@ -12213,7 +12307,7 @@
             "h": 5,
             "w": 6,
             "x": 0,
-            "y": 80
+            "y": 96
           },
           "id": 205,
           "options": {
@@ -12339,7 +12433,7 @@
             "h": 5,
             "w": 6,
             "x": 0,
-            "y": 145
+            "y": 161
           },
           "id": 209,
           "options": {
@@ -12413,7 +12507,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 200
+            "y": 216
           },
           "id": 396,
           "options": {
@@ -12478,7 +12572,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 210
+            "y": 226
           },
           "id": 215,
           "options": {
@@ -12601,7 +12695,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 29
+            "y": 45
           },
           "id": 180,
           "options": {
@@ -12697,7 +12791,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 37
+            "y": 53
           },
           "id": 368,
           "options": {
@@ -12794,7 +12888,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 37
+            "y": 53
           },
           "id": 411,
           "options": {
@@ -12890,7 +12984,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 44
+            "y": 60
           },
           "id": 300,
           "options": {
@@ -12970,7 +13064,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 44
+            "y": 60
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -13083,7 +13177,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 51
+            "y": 67
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -13226,7 +13320,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 51
+            "y": 67
           },
           "id": 416,
           "options": {
@@ -13326,7 +13420,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 58
+            "y": 74
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -13437,7 +13531,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 58
+            "y": 74
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -13550,7 +13644,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 64
+            "y": 80
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -13691,7 +13785,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 64
+            "y": 80
           },
           "id": 427,
           "options": {
@@ -13765,7 +13859,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 71
+            "y": 87
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -13876,7 +13970,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 71
+            "y": 87
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -13989,7 +14083,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 77
+            "y": 93
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -14128,7 +14222,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 77
+            "y": 93
           },
           "id": 560,
           "options": {
@@ -15411,7 +15505,7 @@
           },
           "gridPos": {
             "h": 9,
-            "w": 8,
+            "w": 6,
             "x": 0,
             "y": 61
           },
@@ -15481,8 +15575,8 @@
           },
           "gridPos": {
             "h": 9,
-            "w": 8,
-            "x": 8,
+            "w": 6,
+            "x": 6,
             "y": 61
           },
           "id": 591,
@@ -15552,8 +15646,8 @@
           },
           "gridPos": {
             "h": 9,
-            "w": 8,
-            "x": 16,
+            "w": 5,
+            "x": 12,
             "y": 61
           },
           "id": 592,
@@ -15594,6 +15688,77 @@
           ],
           "title": "Written rejections",
           "type": "piechart"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "The current partition load is defined by the current write rate divided by the write rate limit per partition. The partition load panel will display no data unless the flow control rate write limits are enabled.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "#EAB839",
+                    "value": 70
+                  },
+                  {
+                    "color": "red",
+                    "value": 90
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 7,
+            "x": 17,
+            "y": 61
+          },
+          "id": 613,
+          "options": {
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
+          "pluginVersion": "10.1.5",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "zeebe_flow_control_cluster_load{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"} > 0",
+              "instant": true,
+              "legendFormat": "Partition: {{partition}}",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "title": "Partition Load",
+          "type": "gauge"
         }
       ],
       "title": "Logstream",
@@ -15678,7 +15843,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 31
+            "y": 47
           },
           "id": 154,
           "options": {
@@ -15775,7 +15940,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 31
+            "y": 47
           },
           "id": 144,
           "options": {
@@ -15871,7 +16036,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 37
+            "y": 53
           },
           "id": 142,
           "options": {
@@ -15968,7 +16133,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 43
+            "y": 59
           },
           "id": 151,
           "options": {
@@ -16065,7 +16230,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 43
+            "y": 59
           },
           "id": 152,
           "options": {
@@ -16162,7 +16327,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 49
+            "y": 65
           },
           "id": 150,
           "options": {
@@ -16259,7 +16424,7 @@
             "h": 13,
             "w": 12,
             "x": 0,
-            "y": 55
+            "y": 71
           },
           "id": 147,
           "options": {
@@ -16356,7 +16521,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 55
+            "y": 71
           },
           "id": 149,
           "options": {
@@ -16452,7 +16617,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 62
+            "y": 78
           },
           "id": 148,
           "options": {
@@ -16548,7 +16713,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 68
+            "y": 84
           },
           "id": 155,
           "options": {
@@ -16644,7 +16809,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 68
+            "y": 84
           },
           "id": 156,
           "options": {
@@ -16738,7 +16903,7 @@
             "h": 6,
             "w": 6,
             "x": 0,
-            "y": 76
+            "y": 92
           },
           "id": 158,
           "options": {
@@ -16835,7 +17000,7 @@
             "h": 6,
             "w": 6,
             "x": 6,
-            "y": 76
+            "y": 92
           },
           "id": 157,
           "options": {
@@ -16931,7 +17096,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 76
+            "y": 92
           },
           "id": 146,
           "options": {
@@ -17027,7 +17192,7 @@
             "h": 7,
             "w": 6,
             "x": 0,
-            "y": 82
+            "y": 98
           },
           "id": 159,
           "options": {
@@ -17123,7 +17288,7 @@
             "h": 7,
             "w": 6,
             "x": 6,
-            "y": 82
+            "y": 98
           },
           "id": 160,
           "options": {
@@ -17220,7 +17385,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 82
+            "y": 98
           },
           "id": 153,
           "options": {
@@ -17319,7 +17484,7 @@
             "h": 11,
             "w": 24,
             "x": 0,
-            "y": 89
+            "y": 105
           },
           "id": 603,
           "options": {
@@ -17412,7 +17577,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 32
+            "y": 48
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -17554,7 +17719,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 32
+            "y": 48
           },
           "id": 255,
           "options": {
@@ -17617,7 +17782,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 42
+            "y": 58
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -17758,7 +17923,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 42
+            "y": 58
           },
           "id": 185,
           "options": {
@@ -17860,7 +18025,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 52
+            "y": 68
           },
           "id": 52,
           "options": {
@@ -17955,7 +18120,7 @@
             "h": 6,
             "w": 4.8,
             "x": 0,
-            "y": 33
+            "y": 49
           },
           "id": 170,
           "maxPerRow": 6,
@@ -18039,7 +18204,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 39
+            "y": 55
           },
           "id": 174,
           "options": {
@@ -18109,7 +18274,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 39
+            "y": 55
           },
           "id": 265,
           "options": {
@@ -18194,7 +18359,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 34
+            "y": 50
           },
           "id": 329,
           "options": {
@@ -18260,7 +18425,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 34
+            "y": 50
           },
           "id": 319,
           "options": {
@@ -18329,7 +18494,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 42
+            "y": 58
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -18440,7 +18605,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 42
+            "y": 58
           },
           "id": 325,
           "options": {
@@ -18538,7 +18703,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 50
+            "y": 66
           },
           "id": 313,
           "options": {
@@ -18597,7 +18762,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 50
+            "y": 66
           },
           "id": 321,
           "options": {
@@ -18693,7 +18858,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 58
+            "y": 74
           },
           "id": 335,
           "options": {
@@ -18751,7 +18916,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 58
+            "y": 74
           },
           "id": 317,
           "options": {
@@ -18813,7 +18978,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 66
+            "y": 82
           },
           "id": 327,
           "options": {
@@ -18905,7 +19070,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 35
+            "y": 51
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -19019,7 +19184,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 35
+            "y": 51
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -19164,7 +19329,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 43
+            "y": 59
           },
           "id": 444,
           "options": {
@@ -19273,7 +19438,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 43
+            "y": 59
           },
           "id": 446,
           "options": {
@@ -19381,7 +19546,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 51
+            "y": 67
           },
           "id": 440,
           "options": {
@@ -19475,7 +19640,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 51
+            "y": 67
           },
           "id": 442,
           "options": {
@@ -19554,7 +19719,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 36
+            "y": 52
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -19697,7 +19862,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 36
+            "y": 52
           },
           "id": 549,
           "options": {
@@ -19809,7 +19974,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 37
+            "y": 53
           },
           "id": 562,
           "options": {
@@ -19908,7 +20073,7 @@
             "h": 6,
             "w": 9,
             "x": 8,
-            "y": 37
+            "y": 53
           },
           "id": 563,
           "options": {
@@ -20007,7 +20172,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 37
+            "y": 53
           },
           "id": 564,
           "options": {
@@ -20128,7 +20293,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 38
+            "y": 54
           },
           "id": 566,
           "options": {
@@ -20226,7 +20391,7 @@
             "h": 6,
             "w": 8,
             "x": 8,
-            "y": 38
+            "y": 54
           },
           "id": 567,
           "options": {
@@ -20324,7 +20489,7 @@
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 38
+            "y": 54
           },
           "id": 568,
           "options": {
@@ -20454,7 +20619,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 39
+            "y": 55
           },
           "id": 573,
           "options": {
@@ -20580,7 +20745,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 39
+            "y": 55
           },
           "id": 574,
           "options": {
@@ -20694,7 +20859,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 47
+            "y": 63
           },
           "id": 600,
           "options": {
@@ -20797,7 +20962,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 47
+            "y": 63
           },
           "id": 601,
           "options": {
@@ -20893,7 +21058,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 55
+            "y": 71
           },
           "id": 575,
           "options": {
@@ -21001,7 +21166,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 40
+            "y": 56
           },
           "id": 570,
           "options": {
@@ -21106,7 +21271,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 40
+            "y": 56
           },
           "id": 577,
           "options": {
@@ -21210,7 +21375,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 48
+            "y": 64
           },
           "id": 578,
           "options": {
@@ -21305,7 +21470,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 48
+            "y": 64
           },
           "id": 571,
           "options": {
@@ -21411,7 +21576,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 57
+            "y": 73
           },
           "id": 582,
           "options": {
@@ -21502,7 +21667,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 57
+            "y": 73
           },
           "id": 583,
           "options": {
@@ -21594,7 +21759,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 57
+            "y": 73
           },
           "id": 584,
           "options": {
@@ -21699,7 +21864,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 66
+            "y": 82
           },
           "id": 596,
           "options": {
@@ -21796,7 +21961,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 66
+            "y": 82
           },
           "id": 597,
           "options": {
@@ -21858,7 +22023,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 74
+            "y": 90
           },
           "id": 598,
           "options": {
@@ -21983,7 +22148,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 74
+            "y": 90
           },
           "id": 599,
           "options": {
@@ -22031,7 +22196,7 @@
       "type": "row"
     }
   ],
-  "refresh": "",
+  "refresh": "1m",
   "schemaVersion": 38,
   "style": "dark",
   "tags": [],
@@ -22192,6 +22357,6 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "zeebe-dashboard",
-  "version": 14,
+  "version": 16,
   "weekStart": ""
 }
