@@ -27,7 +27,6 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
             secret/data/products/optimize/ci/camunda-optimize SLACK_API_KEY;
-            secret/data/products/optimize/ci/camunda-optimize ARGOCD_TOKEN;
 
       - name: Generate config file
         run: |
@@ -45,7 +44,6 @@ jobs:
         with:
           config_file_path: ${{ github.workspace }}/.github/optimize/scripts/healthStatusReport/config.json
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
 
       - name: Send report to slack channel
         uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
