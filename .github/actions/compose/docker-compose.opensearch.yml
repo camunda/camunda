@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   # this service is only needed to fix the sysctl settings on the host machine since docker 4.25 silently lowers
   # vm.max_map_count from 262144 to 65530, which stops the OpenSearch container from starting

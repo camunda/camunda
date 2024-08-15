@@ -15,7 +15,7 @@
 
   <properties>
     <exclude.from.config>OptimizeLicense.txt</exclude.from.config>
-    <elasticsearch.demo.version>8.9.0</elasticsearch.demo.version>
+    <elasticsearch.demo.version>8.13.0</elasticsearch.demo.version>
     <assembly.skipAssembly>true</assembly.skipAssembly>
   </properties>
 
