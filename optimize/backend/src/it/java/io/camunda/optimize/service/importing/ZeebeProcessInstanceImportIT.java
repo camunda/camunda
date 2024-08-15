@@ -84,7 +84,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   public void
       importCompletedZeebeProcessInstanceDataInOneBatch_allDataSavedToOptimizeProcessInstance() {
     // given
-    final String processName = "someProcess";
+    final String processName = getRandomProcessName();
     final ProcessInstanceEvent deployedInstance =
         deployAndStartInstanceForProcess(createStartEndProcess(processName));
 
@@ -149,7 +149,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
         .getConfiguredZeebe()
         .setMaxImportPageSize(1);
     embeddedOptimizeExtension.reloadConfiguration();
-    deployAndStartInstanceForProcess(createStartEndProcess("someProcess"));
+    deployAndStartInstanceForProcess(createStartEndProcess(getRandomProcessName()));
 
     // when
     waitUntilMinimumProcessInstanceEventsExportedCount(6);
@@ -211,7 +211,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   @Test
   public void importRunningZeebeProcessInstanceData_allDataSavedToOptimizeProcessInstance() {
     // given
-    final String processName = "someProcess";
+    final String processName = getRandomProcessName();
     final ProcessInstanceEvent deployedInstance =
         deployAndStartInstanceForProcess(createSimpleUserTaskProcess(processName));
 
@@ -272,7 +272,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   @Test
   public void importCanceledZeebeProcessInstanceData_allDataSavedToOptimizeProcessInstance() {
     // given
-    final String processName = "someProcess";
+    final String processName = getRandomProcessName();
     final ProcessInstanceEvent deployedInstance =
         deployAndStartInstanceForProcess(createSimpleServiceTaskProcess(processName));
 
@@ -343,7 +343,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   public void
       importZeebeProcessInstanceDataFromMultipleDays_allDataSavedToOptimizeProcessInstance() {
     // given
-    final String processName = "someProcess";
+    final String processName = getRandomProcessName();
     final ProcessInstanceEvent deployedInstance =
         deployAndStartInstanceForProcess(createSimpleServiceTaskProcess(processName));
 
@@ -410,7 +410,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   @Test
   public void importZeebeProcessInstanceData_multipleInstancesForSameProcess() {
     // given
-    final String processName = "someProcess";
+    final String processName = getRandomProcessName();
     final Process deployedProcess =
         zeebeExtension.deployProcess(createStartEndProcess(processName));
     final ProcessInstanceEvent firstInstance =
@@ -463,7 +463,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   @Test
   public void importZeebeProcessInstanceData_instancesWithDifferentVersionsOfSameProcess() {
     // given
-    final String processName = "someProcess";
+    final String processName = getRandomProcessName();
     final ProcessInstanceEvent v1Instance =
         deployAndStartInstanceForProcess(createStartEndProcess(processName, processName));
     final ProcessInstanceEvent v2Instance =
@@ -490,7 +490,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   @Test
   public void importZeebeProcessInstanceData_processContainsLoop() {
     // given
-    final String processName = "someProcess";
+    final String processName = getRandomProcessName();
     deployAndStartInstanceForProcess(createLoopingProcess(processName));
 
     // when
@@ -514,7 +514,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   @Test
   public void importZeebeProcessInstanceData_processStartedDuringProcess() {
     // given
-    final String processName = "someProcess";
+    final String processName = getRandomProcessName();
     final Process process =
         zeebeExtension.deployProcess(createSingleStartDoubleEndEventProcess(processName));
     zeebeExtension.startProcessInstanceBeforeElementWithIds(
@@ -542,7 +542,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   @Test
   public void importZeebeProcessInstanceData_processContainsTerminateEndEvent() {
     // given
-    final String processName = "someProcess";
+    final String processName = getRandomProcessName();
     deployAndStartInstanceForProcess(createTerminateEndEventProcess(processName));
 
     // when
@@ -564,7 +564,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   @Test
   public void importZeebeProcessInstanceData_processContainsInclusiveGateway() {
     // given
-    final String processName = "someProcess";
+    final String processName = getRandomProcessName();
     final Process process =
         zeebeExtension.deployProcess(createInclusiveGatewayProcess(processName));
     zeebeExtension.startProcessInstanceWithVariables(
@@ -592,7 +592,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   public void importSendTaskZeebeProcessInstanceData_flowNodeInstancesCreatedCorrectly() {
     // given
     final ProcessInstanceEvent processInstance =
-        deployAndStartInstanceForProcess(createSendTaskProcess("someProcess"));
+        deployAndStartInstanceForProcess(createSendTaskProcess(getRandomProcessName()));
 
     // when
     waitUntilMinimumProcessInstanceEventsExportedCount(1);
@@ -736,7 +736,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
   public void importZeebeProcess_defaultTenantIdForRecordsWithoutTenantId() {
     // given a process deployed before zeebe implemented multi tenancy (pre 8.3.0 this test is
     // disabled)
-    deployAndStartInstanceForProcess(createStartEndProcess("someProcess"));
+    deployAndStartInstanceForProcess(createStartEndProcess(getRandomProcessName()));
     waitUntilInstanceRecordWithElementIdExported(START_EVENT);
 
     // when
@@ -794,8 +794,9 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     final Process deployedProcess =
         zeebeExtension.deployProcess(createSimpleServiceTaskProcess(processId));
     final long startedInstanceKey =
-        zeebeExtension.startProcessInstanceWithVariables(
-            deployedProcess.getBpmnProcessId(), processVariables);
+        zeebeExtension
+            .startProcessInstanceWithVariables(deployedProcess.getBpmnProcessId(), processVariables)
+            .getProcessInstanceKey();
     waitUntilMinimumProcessInstanceEventsExportedCount(4);
     importAllZeebeEntitiesFromScratch();
     final ProcessInstanceDto firstInstanceOnFirstRoundImport =
@@ -815,8 +816,9 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
 
     // and start a second instance, which should still be imported
     final long secondInstanceKey =
-        zeebeExtension.startProcessInstanceWithVariables(
-            deployedProcess.getBpmnProcessId(), processVariables);
+        zeebeExtension
+            .startProcessInstanceWithVariables(deployedProcess.getBpmnProcessId(), processVariables)
+            .getProcessInstanceKey();
     waitUntilMinimumProcessInstanceEventsExportedCount(8);
 
     // when

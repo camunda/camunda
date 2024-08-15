@@ -24,6 +24,7 @@ import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeProcessInstanceImportService;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeUserTaskImportService;
+import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import io.camunda.optimize.test.it.extension.ZeebeExtension;
 import io.camunda.optimize.test.it.extension.db.TermsQueryContainer;
@@ -366,5 +367,9 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     query.addTermQuery(ZeebeProcessInstanceRecordDto.Fields.intent, intent.name().toUpperCase());
     waitUntilMinimumDataExportedCount(
         1, DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME, query, 10);
+  }
+
+  protected String getRandomProcessName() {
+    return "someProcess" + IdGenerator.getNextId();
   }
 }

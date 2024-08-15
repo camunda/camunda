@@ -8,11 +8,9 @@
 package io.camunda.optimize.test.it.extension;
 
 import static io.camunda.optimize.AbstractCCSMIT.isZeebeVersionPre85;
-import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_ELASTICSEARCH_EXPORTER;
-import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_OPENSEARCH_EXPORTER;
 
+import io.camunda.optimize.ZeebeContainerTestConfig;
 import io.camunda.optimize.service.util.IdGenerator;
-import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.importing.ZeebeConstants;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
@@ -37,64 +35,57 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.testcontainers.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
-import org.testcontainers.utility.MountableFile;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /** Embedded Zeebe Extension */
 @Slf4j
-public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
+public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback, AfterAllCallback {
 
-  private static final String ZEEBE_CONFIG_PATH = "zeebe/zeebe-application.yml";
-  private static final String ZEEBE_VERSION =
-      IntegrationTestConfigurationUtil.getZeebeDockerVersion();
+  private static ZeebeContainer zeebeContainer;
+  @Getter private static String zeebeRecordPrefix;
 
-  private ZeebeContainer zeebeContainer;
-  private ZeebeClient zeebeClient;
+  static {
+    ApplicationContext context =
+        new AnnotationConfigApplicationContext(ZeebeContainerTestConfig.class);
 
-  @Getter private String zeebeRecordPrefix;
-
-  public ZeebeExtension() {
-    final int databasePort;
-    final String zeebeExporterClassName;
-    if (IntegrationTestConfigurationUtil.getDatabaseType().equals(DatabaseType.OPENSEARCH)) {
-      databasePort = 9205;
-      zeebeExporterClassName = ZEEBE_OPENSEARCH_EXPORTER;
-    } else {
-      databasePort = 9200;
-      zeebeExporterClassName = ZEEBE_ELASTICSEARCH_EXPORTER;
-    }
-    Testcontainers.exposeHostPorts(databasePort);
-    zeebeContainer =
-        new ZeebeContainer(DockerImageName.parse("camunda/zeebe:" + ZEEBE_VERSION))
-            .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
-            .withEnv("DATABASE_PORT", String.valueOf(databasePort))
-            .withEnv("ZEEBE_EXPORTER_CLASS_NAME", zeebeExporterClassName)
-            .withCopyFileToContainer(
-                MountableFile.forClasspathResource(ZEEBE_CONFIG_PATH),
-                "/usr/local/zeebe/config/application.yml");
-    if (!isZeebeVersionPre85()) {
-      zeebeContainer =
-          zeebeContainer
-              .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
-              .withAdditionalExposedPort(8080);
-    }
-  }
-
-  @Override
-  public void beforeEach(final ExtensionContext extensionContext) {
+    zeebeContainer = context.getBean(ZeebeContainer.class);
     zeebeRecordPrefix = ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX + "-" + IdGenerator.getNextId();
     setZeebeRecordPrefixForTest();
     zeebeContainer.start();
-    createClient();
+
+    Runtime.getRuntime()
+        .addShutdownHook(
+            new Thread(
+                () -> {
+                  if (zeebeContainer != null && zeebeContainer.isRunning()) {
+                    zeebeContainer.stop();
+                  }
+                }));
+  }
+
+  private ZeebeClient zeebeClient;
+
+  public ZeebeExtension() {}
+
+  @Override
+  public void beforeEach(final ExtensionContext extensionContext) {
+    if (zeebeClient == null) {
+      createClient();
+    }
   }
 
   @Override
   public void afterEach(final ExtensionContext extensionContext) {
-    zeebeContainer.stop();
+    //  probably sometimes need to destroyClient();
+  }
+
+  @Override
+  public void afterAll(final ExtensionContext extensionContext) {
     destroyClient();
   }
 
@@ -121,7 +112,20 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     }
   }
 
+  public Process deployProcess(final BpmnModelInstance bpmnModelInstance, final String tenantId) {
+    final DeployResourceCommandStep1 deployResourceCommandStep1 =
+        zeebeClient.newDeployResourceCommand();
+    var deployResourceCommandStep2 =
+        deployResourceCommandStep1.addProcessModel(bpmnModelInstance, "resourceName.bpmn");
+    if (tenantId != null) {
+      deployResourceCommandStep2 = deployResourceCommandStep2.tenantId(tenantId);
+    }
+    final DeploymentEvent deploymentEvent = deployResourceCommandStep2.send().join();
+    return deploymentEvent.getProcesses().get(0);
+  }
+
   public Process deployProcess(final BpmnModelInstance bpmnModelInstance) {
+    deployProcess(bpmnModelInstance, null);
     final DeployResourceCommandStep1 deployResourceCommandStep1 =
         zeebeClient.newDeployResourceCommand();
     deployResourceCommandStep1.addProcessModel(bpmnModelInstance, "resourceName.bpmn");
@@ -132,7 +136,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     return deploymentEvent.getProcesses().get(0);
   }
 
-  public long startProcessInstanceWithVariables(
+  public ProcessInstanceEvent startProcessInstanceWithVariables(
       final String bpmnProcessId, final Map<String, Object> variables) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
         createProcessInstanceCommandStep3 =
@@ -141,7 +145,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
                 .bpmnProcessId(bpmnProcessId)
                 .latestVersion()
                 .variables(variables);
-    return createProcessInstanceCommandStep3.send().join().getProcessInstanceKey();
+    return createProcessInstanceCommandStep3.send().join();
   }
 
   public void startProcessInstanceWithSignal(final String signalName) {
@@ -276,14 +280,16 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     jobWorker.close();
   }
 
-  private void setZeebeRecordPrefixForTest() {
+  private static void setZeebeRecordPrefixForTest() {
     zeebeContainer =
         zeebeContainer.withEnv(
             "ZEEBE_BROKER_EXPORTERS_OPTIMIZE_ARGS_INDEX_PREFIX", zeebeRecordPrefix);
   }
 
   private void destroyClient() {
-    zeebeClient.close();
-    zeebeClient = null;
+    if (zeebeClient != null) {
+      zeebeClient.close();
+      zeebeClient = null;
+    }
   }
 }

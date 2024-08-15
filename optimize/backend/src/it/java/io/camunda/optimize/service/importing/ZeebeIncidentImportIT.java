@@ -52,12 +52,13 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
   @Test
   public void importZeebeIncidentData_openFailTaskIncident() {
     // given
+    final var processName = getRandomProcessName();
     final ProcessInstanceEvent deployedInstance =
-        deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
+        deployAndStartInstanceForProcess(createSimpleServiceTaskProcess(processName));
     zeebeExtension.failTask(SERVICE_TASK);
 
     // when
-    waitUntilIncidentRecordWithProcessIdExported("someProcess");
+    waitUntilIncidentRecordWithProcessIdExported(processName);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -93,12 +94,13 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
   @Test
   public void importZeebeIncidentData_throwErrorIncident() {
     // given
+    final var processName = getRandomProcessName();
     final ProcessInstanceEvent deployedInstance =
-        deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
+        deployAndStartInstanceForProcess(createSimpleServiceTaskProcess(processName));
     zeebeExtension.throwErrorIncident(SERVICE_TASK);
 
     // when
-    waitUntilIncidentRecordWithProcessIdExported("someProcess");
+    waitUntilIncidentRecordWithProcessIdExported(processName);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -116,11 +118,12 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
   @Test
   public void importZeebeIncidentData_missingVariableIncident() {
     // given
+    final var processName = getRandomProcessName();
     final ProcessInstanceEvent deployedInstance =
-        deployAndStartInstanceForProcess(createIncidentProcess("someProcess"));
+        deployAndStartInstanceForProcess(createIncidentProcess(processName));
 
     // when
-    waitUntilIncidentRecordWithProcessIdExported("someProcess");
+    waitUntilIncidentRecordWithProcessIdExported(processName);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -138,12 +141,13 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
   @Test
   public void importZeebeIncidentData_importResolvedIncidentInSameBatch() {
     // given
+    final var processName = getRandomProcessName();
     final ProcessInstanceEvent deployedInstance =
-        deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
+        deployAndStartInstanceForProcess(createSimpleServiceTaskProcess(processName));
     zeebeExtension.throwErrorIncident(SERVICE_TASK);
-    waitUntilIncidentRecordWithProcessIdExported("someProcess");
+    waitUntilIncidentRecordWithProcessIdExported(processName);
     resolveIncident();
-    waitUntilIncidentRecordsWithProcessIdExported(2, "someProcess");
+    waitUntilIncidentRecordsWithProcessIdExported(2, processName);
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -162,10 +166,11 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
   @Test
   public void importZeebeIncidentData_importResolvedIncidentInDifferentBatches() {
     // given
+    final var processName = getRandomProcessName();
     final ProcessInstanceEvent deployedInstance =
-        deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
+        deployAndStartInstanceForProcess(createSimpleServiceTaskProcess(processName));
     zeebeExtension.throwErrorIncident(SERVICE_TASK);
-    waitUntilIncidentRecordWithProcessIdExported("someProcess");
+    waitUntilIncidentRecordWithProcessIdExported(processName);
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -182,7 +187,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
 
     // when
     resolveIncident();
-    waitUntilIncidentRecordsWithProcessIdExported(2, "someProcess");
+    waitUntilIncidentRecordsWithProcessIdExported(2, processName);
     importAllZeebeEntitiesFromLastIndex();
 
     // then
@@ -202,9 +207,10 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
   @Test
   public void importZeebeIncidentData_defaultTenantIdForRecordsWithoutTenantId() {
     // given a process deployed before zeebe implemented multi tenancy
-    deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("someProcess"));
+    final var processName = getRandomProcessName();
+    deployAndStartInstanceForProcess(createSimpleServiceTaskProcess(processName));
     zeebeExtension.failTask(SERVICE_TASK);
-    waitUntilIncidentRecordWithProcessIdExported("someProcess");
+    waitUntilIncidentRecordWithProcessIdExported(processName);
 
     // when
     importAllZeebeEntitiesFromScratch();
@@ -221,9 +227,11 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
   @Test
   public void importZeebeIncidentData_tenantIdImported() {
     // given
-    deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("aProcess"));
+    embeddedOptimizeExtension.getRequestExecutor().buildGetAllEntitiesRequest().execute();
+    final var processName = getRandomProcessName();
+    deployAndStartInstanceForProcess(createSimpleServiceTaskProcess(processName));
     zeebeExtension.failTask(SERVICE_TASK);
-    waitUntilIncidentRecordsWithProcessIdExported(1, "aProcess");
+    waitUntilIncidentRecordsWithProcessIdExported(1, processName);
     final String expectedTenantId = "testTenant";
     setTenantIdForExportedZeebeRecords(ZEEBE_INCIDENT_INDEX_NAME, expectedTenantId);
 
@@ -243,7 +251,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
   }
 
   private TermsQueryContainer getQueryForIncidentEvents() {
-    TermsQueryContainer query = new TermsQueryContainer();
+    final TermsQueryContainer query = new TermsQueryContainer();
     query.addTermQuery(
         ZeebeProcessInstanceRecordDto.Fields.intent,
         List.of(IncidentIntent.CREATED.name(), IncidentIntent.RESOLVED.name()));
