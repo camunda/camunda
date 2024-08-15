@@ -46,21 +46,28 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@AllArgsConstructor
-@Slf4j
 @Path("/definition")
 @Component
 public class DefinitionRestService {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DefinitionRestService.class);
   private final DefinitionService definitionService;
   private final CollectionScopeService collectionScopeService;
   private final SessionService sessionService;
+
+  public DefinitionRestService(
+      final DefinitionService definitionService,
+      final CollectionScopeService collectionScopeService,
+      final SessionService sessionService) {
+    this.definitionService = definitionService;
+    this.collectionScopeService = collectionScopeService;
+    this.sessionService = sessionService;
+  }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
