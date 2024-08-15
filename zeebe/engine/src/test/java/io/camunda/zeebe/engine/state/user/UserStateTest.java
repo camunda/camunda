@@ -115,23 +115,31 @@ public class UserStateTest {
   void shouldUpdateAUser() {
     final var username = "username" + UUID.randomUUID();
     final var name = "name" + UUID.randomUUID();
+    final var password = "password" + UUID.randomUUID();
+    final var email = "email" + UUID.randomUUID();
 
     final UserRecord user =
-        new UserRecord()
-            .setUsername(username)
-            .setName(name)
-            .setPassword("P")
-            .setEmail("email" + UUID.randomUUID());
+        new UserRecord().setUsername(username).setName(name).setPassword(password).setEmail(email);
     userState.create(5L, user);
 
     final var persistedUserBeforeUpdate = userState.getUser(username);
     assertThat(persistedUserBeforeUpdate.getName()).isEqualTo(name);
+    assertThat(persistedUserBeforeUpdate.getPassword()).isEqualTo(password);
+    assertThat(persistedUserBeforeUpdate.getEmail()).isEqualTo(email);
 
     final var updatedName = "name" + UUID.randomUUID();
+    final var updatedPassword = "password" + UUID.randomUUID();
+    final var updatedEmail = "email" + UUID.randomUUID();
+
     user.setName(updatedName);
+    user.setPassword(updatedPassword);
+    user.setEmail(updatedEmail);
+
     userState.updateUser(user);
 
     final var persistedUserAfterUpdate = userState.getUser(username);
     assertThat(persistedUserAfterUpdate.getName()).isEqualTo(updatedName);
+    assertThat(persistedUserAfterUpdate.getPassword()).isEqualTo(updatedPassword);
+    assertThat(persistedUserAfterUpdate.getEmail()).isEqualTo(updatedEmail);
   }
 }
