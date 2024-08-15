@@ -20,14 +20,8 @@ import jakarta.ws.rs.QueryParam;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class EventSearchRequestDto {
 
   public static final int DEFAULT_LIMIT = 20;
@@ -44,8 +38,25 @@ public class EventSearchRequestDto {
   @QueryParam("searchTerm")
   private String searchTerm;
 
-  @BeanParam @Valid @NotNull private SortRequestDto sortRequestDto;
-  @BeanParam @Valid @NotNull private PaginationRequestDto paginationRequestDto;
+  @BeanParam
+  @Valid
+  @NotNull
+  private SortRequestDto sortRequestDto;
+  @BeanParam
+  @Valid
+  @NotNull
+  private PaginationRequestDto paginationRequestDto;
+
+  public EventSearchRequestDto(final String searchTerm,
+      @Valid @NotNull final SortRequestDto sortRequestDto,
+      @Valid @NotNull final PaginationRequestDto paginationRequestDto) {
+    this.searchTerm = searchTerm;
+    this.sortRequestDto = sortRequestDto;
+    this.paginationRequestDto = paginationRequestDto;
+  }
+
+  public EventSearchRequestDto() {
+  }
 
   public void validateRequest() {
     if (StringUtils.isEmpty(searchTerm)) {
@@ -67,8 +78,91 @@ public class EventSearchRequestDto {
               SortRequestDto.SORT_BY, SortRequestDto.SORT_ORDER));
     } else if (sortBy.isPresent()
         && !EventSearchRequestDto.sortableFields.contains(
-            sortBy.get().toLowerCase(Locale.ENGLISH))) {
+        sortBy.get().toLowerCase(Locale.ENGLISH))) {
       throw new BadRequestException(String.format("%s is not a sortable field", sortBy.get()));
     }
+  }
+
+  public String getSearchTerm() {
+    return searchTerm;
+  }
+
+  public void setSearchTerm(final String searchTerm) {
+    this.searchTerm = searchTerm;
+  }
+
+  public @Valid @NotNull SortRequestDto getSortRequestDto() {
+    return sortRequestDto;
+  }
+
+  public void setSortRequestDto(@Valid @NotNull final SortRequestDto sortRequestDto) {
+    this.sortRequestDto = sortRequestDto;
+  }
+
+  public @Valid @NotNull PaginationRequestDto getPaginationRequestDto() {
+    return paginationRequestDto;
+  }
+
+  public void setPaginationRequestDto(
+      @Valid @NotNull final PaginationRequestDto paginationRequestDto) {
+    this.paginationRequestDto = paginationRequestDto;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof EventSearchRequestDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = 1;
+    final Object $searchTerm = getSearchTerm();
+    result = result * PRIME + ($searchTerm == null ? 43 : $searchTerm.hashCode());
+    final Object $sortRequestDto = getSortRequestDto();
+    result = result * PRIME + ($sortRequestDto == null ? 43 : $sortRequestDto.hashCode());
+    final Object $paginationRequestDto = getPaginationRequestDto();
+    result =
+        result * PRIME + ($paginationRequestDto == null ? 43 : $paginationRequestDto.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof EventSearchRequestDto)) {
+      return false;
+    }
+    final EventSearchRequestDto other = (EventSearchRequestDto) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    final Object this$searchTerm = getSearchTerm();
+    final Object other$searchTerm = other.getSearchTerm();
+    if (this$searchTerm == null ? other$searchTerm != null
+        : !this$searchTerm.equals(other$searchTerm)) {
+      return false;
+    }
+    final Object this$sortRequestDto = getSortRequestDto();
+    final Object other$sortRequestDto = other.getSortRequestDto();
+    if (this$sortRequestDto == null ? other$sortRequestDto != null
+        : !this$sortRequestDto.equals(other$sortRequestDto)) {
+      return false;
+    }
+    final Object this$paginationRequestDto = getPaginationRequestDto();
+    final Object other$paginationRequestDto = other.getPaginationRequestDto();
+    if (this$paginationRequestDto == null ? other$paginationRequestDto != null
+        : !this$paginationRequestDto.equals(other$paginationRequestDto)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "EventSearchRequestDto(searchTerm=" + getSearchTerm() + ", sortRequestDto="
+        + getSortRequestDto() + ", paginationRequestDto=" + getPaginationRequestDto()
+        + ")";
   }
 }

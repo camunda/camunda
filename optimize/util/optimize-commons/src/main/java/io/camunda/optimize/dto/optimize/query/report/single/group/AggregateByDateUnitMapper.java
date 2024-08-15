@@ -8,13 +8,14 @@
 package io.camunda.optimize.dto.optimize.query.report.single.group;
 
 import java.time.temporal.ChronoUnit;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class AggregateByDateUnitMapper {
+
   private static final String UNSUPPORTED_UNIT_STRING = "Unsupported unit: ";
+
+  private AggregateByDateUnitMapper() {
+  }
 
   public static ChronoUnit mapToChronoUnit(final AggregateByDateUnit unit) {
     switch (unit) {

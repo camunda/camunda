@@ -22,9 +22,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 public class EventCountSorter extends Sorter<EventCountResponseDto> {
 
   private static final Comparator<EventCountResponseDto> SUGGESTED_COMPARATOR =
@@ -60,11 +58,14 @@ public class EventCountSorter extends Sorter<EventCountResponseDto> {
           count.toLowerCase(Locale.ENGLISH), COUNTS_COMPARATOR);
 
   public EventCountSorter(final String sortBy, final SortOrder sortOrder) {
-    this.sortRequestDto = new SortRequestDto(sortBy, sortOrder);
+    sortRequestDto = new SortRequestDto(sortBy, sortOrder);
+  }
+
+  public EventCountSorter() {
   }
 
   @Override
-  public List<EventCountResponseDto> applySort(List<EventCountResponseDto> eventCounts) {
+  public List<EventCountResponseDto> applySort(final List<EventCountResponseDto> eventCounts) {
     Comparator<EventCountResponseDto> eventCountSorter;
     final Optional<SortOrder> sortOrderOpt = getSortOrder();
     final Optional<String> sortByOpt = getSortBy();

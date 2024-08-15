@@ -9,14 +9,14 @@ package io.camunda.optimize.dto.optimize.rest;
 
 import io.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import io.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class EventProcessRoleResponseDto
     extends EventProcessRoleRequestDto<IdentityWithMetadataResponseDto> {
 
   public EventProcessRoleResponseDto(final IdentityWithMetadataResponseDto identity) {
     super(identity);
+  }
+
+  protected EventProcessRoleResponseDto() {
   }
 }

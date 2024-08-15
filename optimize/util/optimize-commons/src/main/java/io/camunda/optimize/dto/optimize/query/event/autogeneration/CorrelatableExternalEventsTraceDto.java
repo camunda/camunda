@@ -17,22 +17,22 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.Comparator;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = true)
 public class CorrelatableExternalEventsTraceDto extends CorrelatableInstanceDto {
+
   private String tracingId;
 
   private CorrelatableExternalEventsTraceDto(
       final String tracingId, final OffsetDateTime startDate) {
     super(startDate);
     this.tracingId = tracingId;
+  }
+
+  public CorrelatableExternalEventsTraceDto(final String tracingId) {
+    this.tracingId = tracingId;
+  }
+
+  public CorrelatableExternalEventsTraceDto() {
   }
 
   public static CorrelatableExternalEventsTraceDto fromEventTraceState(
@@ -50,6 +50,57 @@ public class CorrelatableExternalEventsTraceDto extends CorrelatableInstanceDto 
                     new OptimizeRuntimeException(
                         "There was a problem converting an external event trace as no events exist"));
     return new CorrelatableExternalEventsTraceDto(trace.getTraceId(), startDate);
+  }
+
+  public String getTracingId() {
+    return tracingId;
+  }
+
+  public void setTracingId(final String tracingId) {
+    this.tracingId = tracingId;
+  }
+
+  @Override
+  public String toString() {
+    return "CorrelatableExternalEventsTraceDto(tracingId=" + getTracingId() + ")";
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof CorrelatableExternalEventsTraceDto)) {
+      return false;
+    }
+    final CorrelatableExternalEventsTraceDto other = (CorrelatableExternalEventsTraceDto) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final Object this$tracingId = getTracingId();
+    final Object other$tracingId = other.getTracingId();
+    if (this$tracingId == null ? other$tracingId != null
+        : !this$tracingId.equals(other$tracingId)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof CorrelatableExternalEventsTraceDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = super.hashCode();
+    final Object $tracingId = getTracingId();
+    result = result * PRIME + ($tracingId == null ? 43 : $tracingId.hashCode());
+    return result;
   }
 
   @Override

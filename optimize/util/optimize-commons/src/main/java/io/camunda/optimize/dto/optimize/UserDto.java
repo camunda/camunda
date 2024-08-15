@@ -17,18 +17,9 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
 
-@Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@ToString(callSuper = true)
-@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
 public class UserDto extends IdentityWithMetadataResponseDto {
 
   private String firstName;
@@ -70,6 +61,9 @@ public class UserDto extends IdentityWithMetadataResponseDto {
     this.roles = roles;
   }
 
+  protected UserDto() {
+  }
+
   private static String resolveName(
       final String id, final String firstName, final String lastName) {
     return Stream.of(firstName, lastName)
@@ -77,6 +71,74 @@ public class UserDto extends IdentityWithMetadataResponseDto {
         .collect(
             collectingAndThen(
                 Collectors.joining(" "), s -> StringUtils.isNotBlank(s) ? s.trim() : id));
+  }
+
+  public String getFirstName() {
+    return firstName;
+  }
+
+  public void setFirstName(final String firstName) {
+    this.firstName = firstName;
+  }
+
+  public String getLastName() {
+    return lastName;
+  }
+
+  public void setLastName(final String lastName) {
+    this.lastName = lastName;
+  }
+
+  public String getEmail() {
+    return email;
+  }
+
+  public void setEmail(final String email) {
+    this.email = email;
+  }
+
+  public List<String> getRoles() {
+    return roles;
+  }
+
+  public void setRoles(final List<String> roles) {
+    this.roles = roles;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof UserDto)) {
+      return false;
+    }
+    final UserDto other = (UserDto) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof UserDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int result = super.hashCode();
+    return result;
+  }
+
+  @Override
+  public String toString() {
+    return "UserDto(super=" + super.toString() + ", firstName=" + getFirstName()
+        + ", lastName=" + getLastName() + ", email=" + getEmail() + ", roles="
+        + getRoles() + ")";
   }
 
   @Override

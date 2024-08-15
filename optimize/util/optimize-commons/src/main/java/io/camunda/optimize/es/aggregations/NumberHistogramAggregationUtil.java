@@ -8,15 +8,15 @@
 package io.camunda.optimize.es.aggregations;
 
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.histogram.HistogramAggregationBuilder;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class NumberHistogramAggregationUtil {
+
+  private NumberHistogramAggregationUtil() {
+  }
 
   public static HistogramAggregationBuilder generateHistogramWithField(
       final String histogramName,

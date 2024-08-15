@@ -9,9 +9,7 @@ package io.camunda.optimize.dto.optimize.query.alert;
 
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AccessLevel;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
 public class AlertCreationRequestDto {
@@ -27,7 +25,6 @@ public class AlertCreationRequestDto {
   private String webhook;
 
   // needed to allow inheritance of field name constants
-  @NoArgsConstructor(access = AccessLevel.PROTECTED)
   public static class Fields {
 
     public static final String name = "name";
@@ -39,5 +36,8 @@ public class AlertCreationRequestDto {
     public static final String reminder = "reminder";
     public static final String emails = "emails";
     public static final String webhook = "webhook";
+
+    protected Fields() {
+    }
   }
 }
