@@ -49,18 +49,17 @@ public final class CorrelateMessageTest {
         .messageCorrelation()
         .withCorrelationKey(CORRELATION_KEY)
         .withName(MESSAGE_NAME)
-        .expectNotCorrelated()
+        .expectRejection()
         .correlate();
 
     // then
-    assertThat(RecordingExporter.records().limit(r -> r.getIntent().equals(MessageIntent.EXPIRED)))
-        .extracting(Record::getIntent)
-        .containsExactly(
-            MessageCorrelationIntent.CORRELATE,
-            MessageIntent.PUBLISHED,
-            MessageCorrelationIntent.CORRELATING,
-            MessageCorrelationIntent.NOT_CORRELATED,
-            MessageIntent.EXPIRED);
+    Assertions.assertThat(
+            RecordingExporter.messageCorrelationRecords(MessageCorrelationIntent.CORRELATE)
+                .onlyCommandRejections()
+                .getFirst()
+                .getValue())
+        .hasName(MESSAGE_NAME)
+        .hasCorrelationKey(CORRELATION_KEY);
   }
 
   @Test
@@ -183,21 +182,6 @@ public final class CorrelateMessageTest {
 
     // then
     assertMessageIsCorrelated(record);
-  }
-
-  @Test
-  public void shouldNotCorrelateMessageIfNoProcess() {
-    // when
-    final var record =
-        engine
-            .messageCorrelation()
-            .withName(MESSAGE_NAME)
-            .withCorrelationKey(CORRELATION_KEY)
-            .expectNotCorrelated()
-            .correlate();
-
-    // then
-    assertMessageIsNotCorrelated(record);
   }
 
   @Test
