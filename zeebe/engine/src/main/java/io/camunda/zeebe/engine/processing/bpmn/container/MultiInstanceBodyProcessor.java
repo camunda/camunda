@@ -237,6 +237,17 @@ public final class MultiInstanceBodyProcessor
     }
 
     if (!childInstanceCreated && stateBehavior.canBeCompleted(childContext)) {
+      final var inputCollectionOrFailure = readInputCollectionVariable(element, flowScopeContext);
+      final var multiInstanceElementInstance = stateBehavior.getElementInstance(flowScopeContext);
+      if (inputCollectionOrFailure.isRight()) {
+        final var inputCollectionSize = inputCollectionOrFailure.get().size();
+        if (inputCollectionSize
+            != (multiInstanceElementInstance.getNumberOfCompletedElementInstances()
+                + multiInstanceElementInstance.getNumberOfTerminatedElementInstances())) {
+          throw new IllegalStateException("kill bill");
+        }
+      }
+
       stateTransitionBehavior.completeElement(flowScopeContext);
     }
   }
