@@ -34,7 +34,7 @@ on:
         description: 'Measure impact of network latency'
         type: boolean
         required: false
-        default: true
+        default: false
       stable-vms:
         description: 'Deploy to non-spot VMs'
         type: boolean
@@ -275,7 +275,7 @@ jobs:
         --set camunda-platform.zeebeGateway.image.repository=gcr.io/zeebe-io/zeebe
         --set camunda-platform.zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
         ${{ inputs.benchmark-load }}
-        
+
   deploy-benchmark-cluster:
     name: Deploy
     needs:
