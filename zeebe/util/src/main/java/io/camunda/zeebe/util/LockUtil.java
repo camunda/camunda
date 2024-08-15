@@ -38,17 +38,6 @@ public final class LockUtil {
    * @param lock the lock to acquire
    * @param callable the operation to run
    */
-  public static <V> V withLock(final Lock lock, final Supplier<V> callable) {
-    return withLock(lock, callable, IGNORE_ERROR_HANDLER);
-  }
-
-  /**
-   * Runs the given operation only when the lock has been obtained. Locks interruptibly, meaning if
-   * the thread is interrupted while waiting for the lock, the runnable is not executed.
-   *
-   * @param lock the lock to acquire
-   * @param callable the operation to run
-   */
   public static <V> V withLock(final Lock lock, final Callable<V> callable) {
     return withLock(lock, callable, IGNORE_ERROR_HANDLER);
   }
