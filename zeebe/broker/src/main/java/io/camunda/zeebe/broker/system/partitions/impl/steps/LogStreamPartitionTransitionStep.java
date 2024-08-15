@@ -16,6 +16,7 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.StreamClock;
+import java.time.InstantSource;
 import java.util.function.Supplier;
 
 public final class LogStreamPartitionTransitionStep implements PartitionTransitionStep {
@@ -51,7 +52,9 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     if ((context.getLogStream() == null && targetRole != Role.INACTIVE)
         || shouldInstallOnTransition(targetRole, context.getCurrentRole())) {
-      context.setStreamClock(StreamClock.controllable(ActorClock.current()));
+      final var clockSource =
+          ActorClock.current() != null ? ActorClock.current() : InstantSource.system();
+      context.setStreamClock(StreamClock.controllable(clockSource));
       context.setLogStream(buildLogStream(context));
 
       return CompletableActorFuture.completed(null);
