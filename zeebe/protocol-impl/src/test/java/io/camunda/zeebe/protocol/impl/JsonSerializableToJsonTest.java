@@ -71,8 +71,10 @@ import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -661,6 +663,7 @@ final class JsonSerializableToJsonTest {
               final int processInstanceKey = 1234;
               final String activityId = "activity";
               final int activityInstanceKey = 123;
+              final Set<String> changedAttributes = Set.of("bar", "foo");
 
               jobRecord
                   .setWorker(wrapString(worker))
@@ -678,7 +681,7 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(processInstanceKey)
                   .setElementId(wrapString(activityId))
                   .setElementInstanceKey(activityInstanceKey)
-                  .setChangedAttributes(Set.of("foo", "bar"));
+                  .setChangedAttributes(changedAttributes);
 
               return record;
             },
@@ -715,7 +718,7 @@ final class JsonSerializableToJsonTest {
               "deadline": 1000,
               "timeout": -1,
               "tenantId": "<default>",
-              "changedAttributes": ["foo", "bar"]
+              "changedAttributes": ["bar", "foo"]
             }
           ],
           "timeout": 2,
@@ -765,6 +768,7 @@ final class JsonSerializableToJsonTest {
               final int processInstanceKey = 1234;
               final String elementId = "activity";
               final int activityInstanceKey = 123;
+              final Set<String> changedAttributes = Set.of("bar", "foo");
 
               final Map<String, String> customHeaders =
                   Collections.singletonMap("workerVersion", "42");
@@ -786,7 +790,8 @@ final class JsonSerializableToJsonTest {
                       .setProcessDefinitionVersion(processDefinitionVersion)
                       .setProcessInstanceKey(processInstanceKey)
                       .setElementId(wrapString(elementId))
-                      .setElementInstanceKey(activityInstanceKey);
+                      .setElementInstanceKey(activityInstanceKey)
+                      .setChangedAttributes(changedAttributes);
 
               record.setCustomHeaders(wrapArray(MsgPackConverter.convertToMsgPack(customHeaders)));
               return record;
@@ -816,7 +821,8 @@ final class JsonSerializableToJsonTest {
           },
           "deadline": 13,
           "timeout": 14,
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "changedAttributes": ["bar", "foo"]
         }
         """
       },
@@ -848,7 +854,8 @@ final class JsonSerializableToJsonTest {
           "customHeaders": {},
           "deadline": -1,
           "timeout": -1,
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "changedAttributes": []
         }
         """
       },
@@ -885,7 +892,8 @@ final class JsonSerializableToJsonTest {
           "errorCode": "",
           "processDefinitionVersion": -1,
           "customHeaders": {},
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "changedAttributes": []
         }
         """
       },
