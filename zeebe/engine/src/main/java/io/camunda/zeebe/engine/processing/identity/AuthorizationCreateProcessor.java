@@ -23,8 +23,6 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class AuthorizationCreateProcessor
     implements DistributedTypedRecordProcessor<AuthorizationRecord> {
-  private final AuthorizationRecord newAuthorizationRecord = new AuthorizationRecord();
-
   private final AuthorizationState authorizationState;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
@@ -49,42 +47,32 @@ public class AuthorizationCreateProcessor
   public void processNewCommand(final TypedRecord<AuthorizationRecord> command) {
     final var authorizationToCreate = command.getValue();
 
-    // TODO check permissions of command.getAuthorizations().get("user")
-
     final var authorization =
-        authorizationState.getAuthorization(
+        authorizationState.getPermissions(
             authorizationToCreate.getOwnerKey(),
             authorizationToCreate.getOwnerType(),
             authorizationToCreate.getResourceKey(),
             authorizationToCreate.getResourceType());
 
     if (authorization != null) {
-      rejectionWriter.appendRejection(
-          command,
-          RejectionType.ALREADY_EXISTS,
+      final var rejectionMessage =
           "Expected to create authorization with owner key: %s and resource key %s, but an authorization with these values already exists"
               .formatted(
-                  authorizationToCreate.getOwnerKey(), authorizationToCreate.getResourceKey()));
+                  authorizationToCreate.getOwnerKey(), authorizationToCreate.getResourceKey());
+      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, rejectionMessage);
       responseWriter.writeRejectionOnCommand(
-          command,
-          RejectionType.ALREADY_EXISTS,
-          "Expected to create authorization with owner key: %s and resource key %s, but an authorization with these values already exists"
-              .formatted(
-                  authorizationToCreate.getOwnerKey(), authorizationToCreate.getResourceKey()));
+          command, RejectionType.ALREADY_EXISTS, rejectionMessage);
       return;
     }
 
     final var key = keyGenerator.nextKey();
 
-    newAuthorizationRecord.reset();
-    newAuthorizationRecord.wrap(command.getValue());
-    newAuthorizationRecord.setAuthorizationKey(key);
+    authorizationToCreate.setAuthorizationKey(key);
 
-    stateWriter.appendFollowUpEvent(key, AuthorizationIntent.CREATED, newAuthorizationRecord);
-    responseWriter.writeEventOnCommand(
-        key, AuthorizationIntent.CREATED, newAuthorizationRecord, command);
-
+    stateWriter.appendFollowUpEvent(key, AuthorizationIntent.CREATED, authorizationToCreate);
     distributionBehavior.distributeCommand(key, command);
+    responseWriter.writeEventOnCommand(
+        key, AuthorizationIntent.CREATED, authorizationToCreate, command);
   }
 
   @Override
