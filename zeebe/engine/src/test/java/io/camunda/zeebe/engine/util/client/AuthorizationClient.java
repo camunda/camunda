@@ -24,8 +24,8 @@ public final class AuthorizationClient {
     this.writer = writer;
   }
 
-  public AuthorizationCreationClient newAuthorization(final long authorizationKey) {
-    return new AuthorizationCreationClient(writer, authorizationKey);
+  public AuthorizationCreationClient newAuthorization() {
+    return new AuthorizationCreationClient(writer);
   }
 
   public static class AuthorizationCreationClient {
@@ -47,10 +47,9 @@ public final class AuthorizationClient {
     private final AuthorizationRecord authorizationCreationRecord;
     private Function<Long, Record<AuthorizationRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public AuthorizationCreationClient(final CommandWriter writer, final long authorizationKey) {
+    public AuthorizationCreationClient(final CommandWriter writer) {
       this.writer = writer;
       authorizationCreationRecord = new AuthorizationRecord();
-      authorizationCreationRecord.setAuthorizationKey(authorizationKey);
     }
 
     public AuthorizationCreationClient withOwnerKey(final String ownerKey) {
