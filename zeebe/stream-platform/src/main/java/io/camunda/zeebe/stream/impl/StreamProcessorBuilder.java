@@ -14,6 +14,7 @@ import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.EventFilter;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessor;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.NoopScheduledCommandCache;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
@@ -159,6 +160,11 @@ public final class StreamProcessorBuilder {
 
   public StreamProcessorBuilder processingFilter(final EventFilter processingFilter) {
     streamProcessorContext.processingFilter(processingFilter);
+    return this;
+  }
+
+  public StreamProcessorBuilder clock(final ControllableStreamClock clock) {
+    streamProcessorContext.clock(clock);
     return this;
   }
 }

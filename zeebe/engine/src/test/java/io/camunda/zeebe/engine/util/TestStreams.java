@@ -57,6 +57,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -86,6 +87,7 @@ public final class TestStreams {
   private final TemporaryFolder dataDirectory;
   private final AutoCloseableRule closeables;
   private final ActorScheduler actorScheduler;
+  private final InstantSource clock;
 
   private final CommandResponseWriter mockCommandResponseWriter;
   private final Map<String, LogContext> logContextMap = new HashMap<>();
@@ -98,10 +100,12 @@ public final class TestStreams {
   public TestStreams(
       final TemporaryFolder dataDirectory,
       final AutoCloseableRule closeables,
-      final ActorScheduler actorScheduler) {
+      final ActorScheduler actorScheduler,
+      final InstantSource clock) {
     this.dataDirectory = dataDirectory;
     this.closeables = closeables;
     this.actorScheduler = actorScheduler;
+    this.clock = clock;
 
     mockCommandResponseWriter = mock(CommandResponseWriter.class);
     when(mockCommandResponseWriter.intent(any())).thenReturn(mockCommandResponseWriter);
@@ -154,6 +158,7 @@ public final class TestStreams {
             .withLogName(name)
             .withLogStorage(logStorage)
             .withPartitionId(partitionId)
+            .withClock(clock)
             .withActorSchedulingService(actorScheduler)
             .build();
 
@@ -279,7 +284,8 @@ public final class TestStreams {
             .recordProcessors(List.of(new Engine(wrappedFactory, new EngineConfiguration())))
             .streamProcessorMode(streamProcessorMode)
             .maxCommandsInBatch(maxCommandsInBatch)
-            .partitionCommandSender(mock(InterPartitionCommandSender.class));
+            .partitionCommandSender(mock(InterPartitionCommandSender.class))
+            .clock(StreamClock.controllable(clock));
 
     processorConfiguration.accept(builder);
 

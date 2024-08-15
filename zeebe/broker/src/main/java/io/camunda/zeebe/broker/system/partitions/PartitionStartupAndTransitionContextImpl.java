@@ -42,6 +42,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthMonitor;
@@ -101,6 +102,7 @@ public class PartitionStartupAndTransitionContextImpl
   private AdminApiRequestHandler adminApiService;
   private PartitionAdminAccess adminAccess;
   private final MeterRegistry meterRegistry;
+  private ControllableStreamClock clock;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
@@ -399,6 +401,16 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setDynamicPartitionConfig(final DynamicPartitionConfig partitionConfig) {
     dynamicPartitionConfig = partitionConfig;
+  }
+
+  @Override
+  public ControllableStreamClock getStreamClock() {
+    return clock;
+  }
+
+  @Override
+  public void setStreamClock(final ControllableStreamClock clock) {
+    this.clock = clock;
   }
 
   @Override
