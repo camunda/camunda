@@ -27,7 +27,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
@@ -119,6 +121,61 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, Long> {
               variableName,
               expectedValue,
               failureReason,
+              formatVariables(actualVariables));
+      fail(failureMessage);
+    }
+
+    return this;
+  }
+
+  public VariableAssertj hasVariables(final Map<String, Object> expectedVariables) {
+
+    final Map<String, JsonNode> expectedValues =
+        expectedVariables.entrySet().stream()
+            .collect(Collectors.toMap(Entry::getKey, entry -> toJson(entry.getValue())));
+
+    final Set<String> expectedVariableNames = expectedVariables.keySet();
+
+    final AtomicReference<Map<String, String>> reference =
+        new AtomicReference<>(Collections.emptyMap());
+
+    try {
+      Awaitility.await()
+          .untilAsserted(
+              () -> {
+                final Map<String, String> actualVariables = getProcessInstanceVariables();
+                reference.set(actualVariables);
+
+                assertThat(actualVariables.keySet()).containsAll(expectedValues.keySet());
+
+                final Map<String, JsonNode> actualValues =
+                    actualVariables.entrySet().stream()
+                        .filter(entry -> expectedVariableNames.contains(entry.getKey()))
+                        .collect(
+                            Collectors.toMap(Entry::getKey, entry -> readJson(entry.getValue())));
+
+                assertThat(actualValues).containsAllEntriesOf(expectedValues);
+              });
+
+    } catch (final ConditionTimeoutException | TerminalFailureException e) {
+
+      final Map<String, String> actualVariables = reference.get();
+
+      final List<String> notMatchingVariableNames =
+          expectedVariableNames.stream()
+              .filter(
+                  variableName ->
+                      !actualVariables.containsKey(variableName)
+                          || !readJson(actualVariables.get(variableName))
+                              .equals(expectedValues.get(variableName)))
+              .collect(Collectors.toList());
+
+      final String failureMessage =
+          String.format(
+              "%s should have the variables %s but %s don't match. All process instance variables:\n%s",
+              AssertFormatUtil.formatProcessInstance(actual),
+              toJson(expectedVariables),
+              AssertFormatUtil.formatNames(notMatchingVariableNames),
               formatVariables(actualVariables));
       fail(failureMessage);
     }

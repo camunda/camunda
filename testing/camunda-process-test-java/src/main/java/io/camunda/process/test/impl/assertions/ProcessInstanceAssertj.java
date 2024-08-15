@@ -100,6 +100,12 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
     return this;
   }
 
+  @Override
+  public ProcessInstanceAssert hasVariables(final Map<String, Object> variables) {
+    variableAssertj.hasVariables(variables);
+    return this;
+  }
+
   private void hasProcessInstanceInState(
       final ProcessInstanceState expectedState, final Predicate<ProcessInstanceDto> waitCondition) {
 

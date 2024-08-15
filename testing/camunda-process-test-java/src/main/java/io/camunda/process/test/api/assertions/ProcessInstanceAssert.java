@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.api.assertions;
 
+import java.util.Map;
+
 /** The assertion object to verify a process instance. */
 public interface ProcessInstanceAssert {
 
@@ -103,4 +105,15 @@ public interface ProcessInstanceAssert {
    * @return the assertion object
    */
   ProcessInstanceAssert hasVariable(String variableName, Object variableValue);
+
+  /**
+   * Verifies that the process instance has the given variables. The verification fails if at least
+   * one variable doesn't exist or has a different value.
+   *
+   * <p>The assertion waits until all variables exist and have the given value.
+   *
+   * @param variables the expected variables
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasVariables(Map<String, Object> variables);
 }
