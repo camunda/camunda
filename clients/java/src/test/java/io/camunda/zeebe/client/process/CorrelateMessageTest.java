@@ -67,7 +67,7 @@ final class CorrelateMessageTest extends ClientRestTest {
     final MessageCorrelationRequest request =
         gatewayService.getLastRequest(MessageCorrelationRequest.class);
     assertThat(request.getName()).isEqualTo(messageName);
-    assertThat(request.getCorrelationKey()).isNull();
+    assertThat(request.getCorrelationKey()).isEmpty();
     assertThat(request.getTenantId()).isEqualTo(tenantId);
     assertThat(request.getVariables()).isEqualTo(variables);
   }

@@ -1535,7 +1535,7 @@ components:
         correlationKey:
           description: The correlation key of the message
           type: string
-          nullable: true
+          default: ""
         variables:
           description: The message variables as JSON document
           additionalProperties: true
