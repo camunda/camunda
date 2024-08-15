@@ -128,7 +128,6 @@ export default function FiltersEdit({
                 </DashboardVariableFilter>
               );
             case 'assignee':
-            case 'candidateGroup':
               const identityFilter = filter.find((filter) => filter.type === type);
               return (
                 <DashboardAssigneeFilter
@@ -252,7 +251,7 @@ export default function FiltersEdit({
           )}
 
         {typeof filterToEdit !== 'undefined' &&
-          ['assignee', 'candidateGroup'].includes(availableFilters[filterToEdit].type) && (
+          availableFilters[filterToEdit].type === 'assignee' && (
             <AssigneeFilter
               className="dashboardVariableFilter"
               forceEnabled={() => allowCustomValues}

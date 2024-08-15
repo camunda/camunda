@@ -182,15 +182,6 @@ export const group = [
     priority: 8,
   },
   {
-    key: 'candidateGroup',
-    label: () => t('report.groupBy.userGroup'),
-    visible: () => true,
-    enabled: ({view}) => view.entity === 'userTask',
-    matcher: ({groupBy}) => groupBy?.type === 'candidateGroup',
-    payload: () => ({groupBy: {type: 'candidateGroup', value: null}}),
-    priority: 9,
-  },
-  {
     key: 'process',
     label: () => t('common.process.label'),
     visible: ({definitions, view}) =>
@@ -281,16 +272,6 @@ export const distribution = [
     matcher: ({distributedBy}) => distributedBy.type === 'assignee',
     payload: () => ({distributedBy: {type: 'assignee', value: null}}),
     priority: 7,
-  },
-  {
-    key: 'candidateGroup',
-    label: () => t('report.groupBy.userGroup'),
-    visible: ({view, groupBy}) =>
-      view.entity === 'userTask' && ['userTasks', 'startDate', 'endDate'].includes(groupBy.type),
-    enabled: () => true,
-    matcher: ({distributedBy}) => distributedBy.type === 'candidateGroup',
-    payload: () => ({distributedBy: {type: 'candidateGroup', value: null}}),
-    priority: 8,
   },
   {
     key: 'process',

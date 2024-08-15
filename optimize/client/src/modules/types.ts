@@ -56,7 +56,7 @@ export type FilterDataProps = {
     DateFilterType & {flowNodeIds: string[] | null}
   >;
 } & {
-  [key in 'assignee' | 'candidateGroup']: {
+  [key in 'assignee']: {
     values?: (string | null)[];
     operator?: string;
   };
@@ -112,7 +112,6 @@ interface ProcessView {
 interface ProcessGroupBy<Value = unknown> {
   type:
     | 'assignee'
-    | 'candidateGroup'
     | 'duration'
     | 'endDate'
     | 'flowNodes'
@@ -126,7 +125,6 @@ interface ProcessGroupBy<Value = unknown> {
 
 type DistributedByType =
   | 'assignee'
-  | 'candidateGroup'
   | 'endDate'
   | 'flowNode'
   | 'none'

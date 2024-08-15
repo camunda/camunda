@@ -91,7 +91,6 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
                 />
               );
             case 'assignee':
-            case 'candidateGroup':
               const identityFilter = filter.find((filter) => filter.type === type);
               return (
                 <AssigneeFilter

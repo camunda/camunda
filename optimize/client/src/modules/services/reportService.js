@@ -93,7 +93,7 @@ export function isCategoricalBar(report) {
 
 export function isCategorical({groupBy, distributedBy}) {
   return (
-    ['flowNodes', 'userTasks', 'assignee', 'candidateGroup'].includes(groupBy?.type) ||
+    ['flowNodes', 'userTasks', 'assignee'].includes(groupBy?.type) ||
     (groupBy?.type === 'variable' && ['Boolean', 'String'].includes(groupBy.value.type)) ||
     distributedBy?.type === 'process'
   );
