@@ -22,7 +22,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.process.test.impl.client.VariableDto;
-import io.camunda.process.test.impl.client.ZeebeClientNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -54,7 +53,6 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, Long> {
 
     try {
       Awaitility.await()
-          .ignoreException(ZeebeClientNotFoundException.class)
           .untilAsserted(
               () -> {
                 final Map<String, String> variables = getProcessInstanceVariables();
@@ -94,7 +92,6 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, Long> {
 
     try {
       Awaitility.await()
-          .ignoreException(ZeebeClientNotFoundException.class)
           .untilAsserted(
               () -> {
                 final Map<String, String> variables = getProcessInstanceVariables();
