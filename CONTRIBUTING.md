@@ -45,7 +45,6 @@ If you want to report a bug or request a new feature, feel free to open a new is
 
 If you report a bug, please help speed up problem diagnosis by providing as much information as possible. Ideally, that would include a small [sample project][sample] that reproduces the problem.
 
-> [!NOTE]  
 > If you have a general usage question, please ask on the [forum](forum).
 
 Every issue should have a meaningful name and a description that either describes:
