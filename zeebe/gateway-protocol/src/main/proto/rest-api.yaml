@@ -1058,6 +1058,7 @@ components:
           nullable: false
         licenseType:
           description: Will return the license type property of the Camunda License
+          type: string
     BrokerInfo:
       description: Provides information on a broker node.
       type: object
