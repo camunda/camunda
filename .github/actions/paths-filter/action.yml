@@ -84,11 +84,11 @@ runs:
           - '**/src/test/**'
 
         maven-change:
-          - 'bom/*'
+          - 'bom/**'
           - 'build-tools/**'
           - 'dist/**'
-          - 'parent/*'
-          - 'pom.xml'
+          - 'parent/**'
+          - '**/pom.xml'
 
         dockerfile-change:
           - 'Dockerfile'
