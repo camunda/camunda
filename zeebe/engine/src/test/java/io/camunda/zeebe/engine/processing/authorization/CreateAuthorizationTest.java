@@ -40,7 +40,7 @@ public class CreateAuthorizationTest {
     final var createdAuthorizationRecord =
         ENGINE
             .authorization()
-            .newAuthorization(1)
+            .newAuthorization()
             .withOwnerKey(owner)
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceKey("resource")

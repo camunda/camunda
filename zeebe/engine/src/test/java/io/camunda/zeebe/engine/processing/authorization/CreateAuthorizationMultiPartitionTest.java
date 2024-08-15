@@ -38,7 +38,7 @@ public class CreateAuthorizationMultiPartitionTest {
     // given
     ENGINE
         .authorization()
-        .newAuthorization(System.currentTimeMillis() + 1)
+        .newAuthorization()
         .withOwnerKey("owner" + System.currentTimeMillis())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceKey("resource")

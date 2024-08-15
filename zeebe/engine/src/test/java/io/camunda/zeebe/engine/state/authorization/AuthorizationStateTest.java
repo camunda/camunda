@@ -39,10 +39,7 @@ public class AuthorizationStateTest {
     // when
     final var persistedAuth =
         authorizationState.getPermissions(
-            "owner" + UUID.randomUUID(),
-            AuthorizationOwnerType.USER.name(),
-            "resource",
-            "resource-type");
+            "owner" + UUID.randomUUID(), AuthorizationOwnerType.USER, "resource", "resource-type");
     // then
     assertThat(persistedAuth).isNull();
   }
