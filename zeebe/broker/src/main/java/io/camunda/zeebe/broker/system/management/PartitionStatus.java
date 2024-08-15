@@ -9,7 +9,9 @@ package io.camunda.zeebe.broker.system.management;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
+import java.time.Instant;
 
 public record PartitionStatus(
     Role role,
@@ -18,4 +20,9 @@ public record PartitionStatus(
     Long processedPositionInSnapshot,
     Phase streamProcessorPhase,
     ExporterPhase exporterPhase,
-    Long exportedPosition) {}
+    Long exportedPosition,
+    ClockStatus clock) {
+  // without the modificationType, you need to interpret the modification based on its fields, which
+  // may not always be obvious
+  public record ClockStatus(Instant instant, String modificationType, Modification modification) {}
+}
