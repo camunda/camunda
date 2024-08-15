@@ -280,7 +280,7 @@ public class BrokerAdminServiceTest {
     final var clock = status.get(1).clock();
     assertThat(clock.instant()).isEqualTo(expectedInstant);
     assertThat(clock.modificationType()).isEqualTo("Pin");
-    assertThat(clock.modification().get("at")).isEqualTo(expectedInstant.toString());
+    assertThat(clock.modification()).containsEntry("at", expectedInstant.toString());
   }
 
   private void waitForSnapshotAtBroker() {
