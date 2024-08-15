@@ -424,6 +424,7 @@ public final class EventAppliers implements EventApplier {
 
   private void registerClockAppliers(final MutableProcessingState state) {
     register(ClockIntent.PINNED, new ClockPinnedApplier(state.getClockState()));
+    register(ClockIntent.RESETTED, new ClockResettedApplier(state.getClockState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

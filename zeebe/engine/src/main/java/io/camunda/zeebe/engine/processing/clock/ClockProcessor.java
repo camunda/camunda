@@ -15,12 +15,13 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.Instant;
 
-public final class ClockPinProcessor implements DistributedTypedRecordProcessor<ClockRecord> {
+public final class ClockProcessor implements DistributedTypedRecordProcessor<ClockRecord> {
   private final SideEffectWriter sideEffectWriter;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
@@ -28,7 +29,7 @@ public final class ClockPinProcessor implements DistributedTypedRecordProcessor<
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final TypedResponseWriter responseWriter;
 
-  public ClockPinProcessor(
+  public ClockProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ControllableStreamClock clock,
@@ -46,10 +47,12 @@ public final class ClockPinProcessor implements DistributedTypedRecordProcessor<
   public void processNewCommand(final TypedRecord<ClockRecord> command) {
     final long eventKey = keyGenerator.nextKey();
     final var clockRecord = command.getValue();
+    final var intent = (ClockIntent) command.getIntent();
+    final var resultIntent = followUpIntent(intent);
 
-    applyClockModification(eventKey, clockRecord);
+    applyClockModification(eventKey, intent, resultIntent, clockRecord);
     if (command.hasRequestMetadata()) {
-      responseWriter.writeEventOnCommand(eventKey, ClockIntent.PINNED, clockRecord, command);
+      responseWriter.writeEventOnCommand(eventKey, resultIntent, clockRecord, command);
     }
 
     commandDistributionBehavior.distributeCommand(eventKey, command);
@@ -57,18 +60,48 @@ public final class ClockPinProcessor implements DistributedTypedRecordProcessor<
 
   @Override
   public void processDistributedCommand(final TypedRecord<ClockRecord> command) {
-    applyClockModification(command.getKey(), command.getValue());
+    final var commandIntent = (ClockIntent) command.getIntent();
+    final var resultIntent = followUpIntent(commandIntent);
+
+    applyClockModification(command.getKey(), commandIntent, resultIntent, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private void applyClockModification(final long key, final ClockRecord clockRecord) {
-    final long pinnedAtEpoch = clockRecord.getTime();
+  private void applyClockModification(
+      final long key,
+      final ClockIntent commandIntent,
+      final ClockIntent resultIntent,
+      final ClockRecord clockRecord) {
+    final var sideEffect = clockModification(commandIntent, clockRecord);
+    sideEffectWriter.appendSideEffect(sideEffect);
+    stateWriter.appendFollowUpEvent(key, resultIntent, clockRecord);
+  }
 
-    sideEffectWriter.appendSideEffect(
-        () -> {
-          clock.pinAt(Instant.ofEpochMilli(pinnedAtEpoch));
+  private ClockIntent followUpIntent(final ClockIntent intent) {
+    return switch (intent) {
+      case PIN -> ClockIntent.PINNED;
+      case RESET -> ClockIntent.RESETTED;
+      case RESETTED, PINNED ->
+          throw new IllegalStateException("Expected a command intent, but got " + intent.name());
+    };
+  }
+
+  private SideEffectProducer clockModification(final ClockIntent intent, final ClockRecord value) {
+    return switch (intent) {
+      case PIN -> {
+        final var pinnedAt = Instant.ofEpochMilli(value.getTime());
+        yield () -> {
+          clock.pinAt(pinnedAt);
           return true;
-        });
-    stateWriter.appendFollowUpEvent(key, ClockIntent.PINNED, clockRecord);
+        };
+      }
+      case RESET ->
+          () -> {
+            clock.reset();
+            return true;
+          };
+      case RESETTED, PINNED ->
+          throw new IllegalStateException("Expected a command intent, but got " + intent.name());
+    };
   }
 }
