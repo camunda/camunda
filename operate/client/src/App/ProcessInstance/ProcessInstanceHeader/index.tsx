@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useEffect} from 'react';
+import isNil from 'lodash/isNil';
 import {formatDate} from 'modules/utils/date';
 import {getProcessName} from 'modules/utils/instance';
 import {Operations} from 'modules/components/Operations';
@@ -23,59 +25,80 @@ import {InstanceHeader} from 'modules/components/InstanceHeader';
 import {Skeleton} from 'modules/components/InstanceHeader/Skeleton';
 import {notificationsStore} from 'modules/stores/notifications';
 import {authenticationStore} from 'modules/stores/authentication';
+import {processStore} from 'modules/stores/process';
+import {IS_VERSION_TAG_ENABLED} from 'modules/feature-flags';
+import {VersionTag} from './styled';
 
-const getHeaderColumns = (isMultiTenancyEnabled: boolean = false) => {
-  return [
-    {
-      name: 'Process Name',
-      skeletonWidth: '94px',
-    },
-    {
-      name: 'Process Instance Key',
-      skeletonWidth: '136px',
-    },
-    {
-      name: 'Version',
-      skeletonWidth: '34px',
-    },
-    ...(isMultiTenancyEnabled
-      ? [
-          {
-            name: 'Tenant',
-            skeletonWidth: '34px',
-          },
-        ]
-      : []),
+const headerColumns = [
+  'Process Name',
+  'Process Instance Key',
+  'Version',
+  'Version Tag',
+  'Tenant',
+  'Start Date',
+  'End Date',
+  'Parent Process Instance Key',
+  'Called Process Instances',
+] as const;
 
-    {
-      name: 'Start Date',
-      skeletonWidth: '142px',
-    },
-    {
-      name: 'End Date',
-      skeletonWidth: '142px',
-    },
-    {
-      name: 'Parent Process Instance Key',
-      skeletonWidth: '142px',
-    },
-    {
-      name: 'Called Process Instances',
-      skeletonWidth: '142px',
-    },
-  ];
-};
+const skeletonColumns: {
+  name: (typeof headerColumns)[number];
+  skeletonWidth: string;
+}[] = [
+  {
+    name: 'Process Name',
+    skeletonWidth: '94px',
+  },
+  {
+    name: 'Process Instance Key',
+    skeletonWidth: '136px',
+  },
+  {
+    name: 'Version',
+    skeletonWidth: '34px',
+  },
+  {
+    name: 'Start Date',
+    skeletonWidth: '142px',
+  },
+  {
+    name: 'End Date',
+    skeletonWidth: '142px',
+  },
+  {
+    name: 'Parent Process Instance Key',
+    skeletonWidth: '142px',
+  },
+  {
+    name: 'Called Process Instances',
+    skeletonWidth: '142px',
+  },
+] as const;
 
 const ProcessInstanceHeader: React.FC = observer(() => {
   const {processInstance} = processInstanceDetailsStore.state;
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
-  const headerColumns = getHeaderColumns(isMultiTenancyEnabled);
+  const processId = processInstance?.processId;
+  const {
+    state: {process, status},
+  } = processStore;
+
+  useEffect(() => {
+    if (IS_VERSION_TAG_ENABLED && processId !== undefined) {
+      processStore.fetchProcess(processId);
+    }
+  }, [processId]);
+
+  useEffect(() => {
+    return processStore.reset;
+  }, []);
 
   if (
     processInstance === null ||
+    (IS_VERSION_TAG_ENABLED && ['fetching', 'initial'].includes(status)) ||
     !processInstanceDetailsDiagramStore.areDiagramDefinitionsAvailable
   ) {
-    return <Skeleton headerColumns={headerColumns} />;
+    return <Skeleton headerColumns={skeletonColumns} />;
   }
 
   const {
@@ -89,18 +112,28 @@ const ProcessInstanceHeader: React.FC = observer(() => {
     bpmnProcessId,
   } = processInstance;
 
+  const versionTag = process?.versionTag;
   const tenantName = authenticationStore.tenantsById?.[tenantId] ?? tenantId;
   const versionColumnTitle = `View process "${getProcessName(
     processInstance,
   )} version ${processVersion}" instances${
     isMultiTenancyEnabled ? ` - ${tenantName}` : ''
   }`;
+  const hasVersionTag = IS_VERSION_TAG_ENABLED && !isNil(versionTag);
 
   return (
     <InstanceHeader
       state={state}
       hideBottomBorder={state === 'INCIDENT'}
-      headerColumns={headerColumns.map(({name}) => name)}
+      headerColumns={headerColumns.filter((name) => {
+        if (name === 'Tenant') {
+          return isMultiTenancyEnabled;
+        }
+        if (name === 'Version Tag') {
+          return hasVersionTag;
+        }
+        return true;
+      })}
       bodyColumns={[
         {
           title: getProcessName(processInstance),
@@ -135,6 +168,18 @@ const ProcessInstanceHeader: React.FC = observer(() => {
             </Link>
           ),
         },
+        ...(hasVersionTag
+          ? [
+              {
+                title: versionTag,
+                content: (
+                  <VersionTag size="sm" type="outline">
+                    {versionTag}
+                  </VersionTag>
+                ),
+              },
+            ]
+          : []),
         ...(isMultiTenancyEnabled
           ? [
               {
