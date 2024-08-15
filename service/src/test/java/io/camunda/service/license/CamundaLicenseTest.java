@@ -7,6 +7,7 @@
  */
 package io.camunda.service.license;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -54,14 +55,13 @@ public class CamundaLicenseTest {
   }
 
   @Test
-  public void shouldReturnTrueFromIsSelfManagedWhenPropertyIsSetToSelfManaged()
-      throws InvalidLicenseException {
+  public void shouldReturnProperLicenseTypeFromLicenseProperty() throws InvalidLicenseException {
     // given
     final CamundaLicense testLicense = spy(CamundaLicense.class);
     final LicenseKey mockKey = mock(LicenseKey.class);
 
     final Map<String, String> testProperties = new HashMap<>();
-    testProperties.put("environmentMode", "self-managed");
+    testProperties.put("licenseType", "self-managed");
     when(mockKey.getProperties()).thenReturn(testProperties);
 
     Mockito.doReturn(mockKey).when(testLicense).getLicenseKey(anyString());
@@ -70,12 +70,11 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense("whatever");
 
     // then
-    assertTrue(testLicense.isSelfManaged());
+    assertEquals("self-managed", testLicense.getLicenseType());
   }
 
   @Test
-  public void shouldReturnTrueFromIsSelfManagedWhenPropertyDoesNotExist()
-      throws InvalidLicenseException {
+  public void shouldReturnUnknownWhenLicensePropertyDoesNotExist() throws InvalidLicenseException {
     // given
     final CamundaLicense testLicense = spy(CamundaLicense.class);
     final LicenseKey mockKey = mock(LicenseKey.class);
@@ -89,7 +88,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense("whatever");
 
     // then
-    assertTrue(testLicense.isSelfManaged());
+    assertEquals("unknown", testLicense.getLicenseType());
   }
 
   @Test
@@ -108,7 +107,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense("whatever");
 
     // then
-    assertFalse(testLicense.isSelfManaged());
+    assertEquals("saas", testLicense.getLicenseType());
     assertTrue(testLicense.isValid());
   }
 }

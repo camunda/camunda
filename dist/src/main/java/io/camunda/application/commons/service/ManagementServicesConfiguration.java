@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-package io.camunda.webapps;
+package io.camunda.application.commons.service;
 
+import io.camunda.application.commons.service.ManagementServicesConfiguration.LicenseKeyProperties;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.CamundaLicense;
-import io.camunda.webapps.ManagementServicesConfiguration.LicenseKeyProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -28,8 +28,8 @@ public class ManagementServicesConfiguration {
   }
 
   @Bean
-  public ManagementServices managementService(final CamundaLicense camundaLicense) {
-    return new ManagementServices(camundaLicense);
+  public ManagementServices managementServices() {
+    return new ManagementServices(camundaLicense());
   }
 
   @Bean
