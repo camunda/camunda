@@ -26,7 +26,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ClockPinMultiplePartitionsTest {
+public class ClockMultiplePartitionsTest {
   private static final int PARTITION_COUNT = 3;
   @ClassRule public static final EngineRule ENGINE = EngineRule.multiplePartition(PARTITION_COUNT);
 
@@ -84,6 +84,56 @@ public class ClockPinMultiplePartitionsTest {
       assertThat(ENGINE.getStreamClock(partitionId).instant()).isEqualTo(pinnedNow);
       assertThat(ENGINE.getProcessingState(partitionId).getClockState().getModification())
           .isEqualTo(Modification.pinAt(pinnedNow));
+    }
+  }
+
+  @Test
+  public void shouldWriteDistributingRecordsForOtherPartitionsOnReset() {
+    // given
+    // when
+    final var record = clockClient.reset();
+
+    // then
+    final var key = record.getKey();
+    final var commandDistributionRecords =
+        RecordingExporter.commandDistributionRecords()
+            .withIntent(CommandDistributionIntent.DISTRIBUTING)
+            .valueFilter(v -> v.getValueType().equals(ValueType.CLOCK))
+            .limit(2)
+            .asList();
+
+    assertThat(commandDistributionRecords).extracting(Record::getKey).containsOnly(key);
+    assertThat(commandDistributionRecords)
+        .extracting(Record::getValue)
+        .extracting(CommandDistributionRecordValue::getPartitionId)
+        .containsExactly(2, 3);
+  }
+
+  @Test
+  public void shouldResetClockOnAllPartitions() {
+    // given
+    final var pinnedNow = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+    clockClient.pinAt(pinnedNow);
+
+    // when
+    final var record = clockClient.reset();
+
+    // then
+    for (int i = 1; i <= PARTITION_COUNT; i++) {
+      // required to ensure we apply the side effect of the clock
+      final var partitionId = i;
+      Awaitility.await("until side effect has been applied")
+          .until(
+              () ->
+                  RecordingExporter.clockRecords(ClockIntent.RESETTED)
+                      .withPartitionId(partitionId)
+                      .withRecordKey(record.getKey())
+                      .exists());
+
+      // then
+      assertThat(ENGINE.getStreamClock(partitionId).instant()).isAfter(pinnedNow);
+      assertThat(ENGINE.getProcessingState(partitionId).getClockState().getModification())
+          .isEqualTo(Modification.none());
     }
   }
 }

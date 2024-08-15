@@ -10,11 +10,13 @@ package io.camunda.zeebe.scheduler.testing;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.LockUtil;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -40,7 +42,8 @@ import java.util.function.Consumer;
  */
 public class TestConcurrencyControl implements ConcurrencyControl {
 
-  private final Object lock = new Object();
+  // use concrete type to allow us to query if we're holding the lock below
+  private final ReentrantLock lock = new ReentrantLock();
 
   @Override
   public <T> void runOnCompletion(
@@ -79,26 +82,25 @@ public class TestConcurrencyControl implements ConcurrencyControl {
 
   @Override
   public void run(final Runnable action) {
-    synchronized (lock) {
-      action.run();
-    }
+    LockUtil.withLock(lock, action);
   }
 
   @Override
   public <T> ActorFuture<T> call(final Callable<T> callable) {
     final T call;
     try {
-      call = callable.call();
+      call = LockUtil.withLock(lock, callable);
     } catch (final Exception e) {
       return TestActorFuture.failedFuture(e);
     }
+
     return TestActorFuture.completedFuture(call);
   }
 
   @Override
   public ScheduledTimer schedule(final Duration delay, final Runnable runnable) {
     // Schedule immediately
-    runnable.run();
+    LockUtil.withLock(lock, runnable);
     return () -> {};
   }
 

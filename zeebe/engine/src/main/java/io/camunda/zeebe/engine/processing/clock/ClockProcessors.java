@@ -24,9 +24,9 @@ public final class ClockProcessors {
       final KeyGenerator keyGenerator,
       final ControllableStreamClock clock,
       final CommandDistributionBehavior commandDistributionBehavior) {
-    typedRecordProcessors.onCommand(
-        ValueType.CLOCK,
-        ClockIntent.PIN,
-        new ClockPinProcessor(writers, keyGenerator, clock, commandDistributionBehavior));
+    final var clockProcessor =
+        new ClockProcessor(writers, keyGenerator, clock, commandDistributionBehavior);
+    typedRecordProcessors.onCommand(ValueType.CLOCK, ClockIntent.PIN, clockProcessor);
+    typedRecordProcessors.onCommand(ValueType.CLOCK, ClockIntent.RESET, clockProcessor);
   }
 }

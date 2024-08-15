@@ -37,6 +37,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TopologyResponse"
+  /license:
+    get:
+      tags:
+        - License
+      summary: Get status of Camunda License
+      description: Obtains the status of the current Camunda License
+      responses:
+        '200':
+          description: Obtains the current status of the Camunda license
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LicenseResponse"
   /jobs/activation:
     post:
       tags:
@@ -1035,6 +1048,17 @@ components:
           description: The version of the Zeebe Gateway.
           type: string
           nullable: true
+    LicenseResponse:
+      description: The response of a license request.
+      type: object
+      properties:
+        validLicense:
+          description: True if the Camunda License is valid, false if otherwise
+          type: boolean
+          nullable: false
+        licenseType:
+          description: Will return the license type property of the Camunda License
+          type: string
     BrokerInfo:
       description: Provides information on a broker node.
       type: object
