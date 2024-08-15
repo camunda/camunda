@@ -63,7 +63,7 @@ public class AuthorizationStateTest {
 
     // then
     final var persistedAuthorization =
-        authorizationState.getAuthorization(
+        authorizationState.getPermissions(
             authorizationRecord.getOwnerKey(),
             authorizationRecord.getOwnerType(),
             authorizationRecord.getResourceKey(),
@@ -118,14 +118,14 @@ public class AuthorizationStateTest {
     authorizationState.createAuthorization(authorizationRecordTwo);
 
     final var authorizationOne =
-        authorizationState.getAuthorization(
+        authorizationState.getPermissions(
             authorizationRecordOne.getOwnerKey(),
             authorizationRecordOne.getOwnerType(),
             authorizationRecordOne.getResourceKey(),
             authorizationRecordOne.getResourceType());
 
     final var authorizationTwo =
-        authorizationState.getAuthorization(
+        authorizationState.getPermissions(
             authorizationRecordTwo.getOwnerKey(),
             authorizationRecordTwo.getOwnerType(),
             authorizationRecordTwo.getResourceKey(),

@@ -50,7 +50,7 @@ public class CreateAuthorizationTest {
 
     // then
     final var createdAuthorization = createdAuthorizationRecord.getValue();
-    assertThat(createdAuthorization)
+    Assertions.assertThat(createdAuthorization)
         .isNotNull()
         .hasFieldOrPropertyWithValue("ownerKey", owner)
         .hasFieldOrPropertyWithValue("ownerType", AuthorizationOwnerType.USER.toString())
@@ -69,7 +69,7 @@ public class CreateAuthorizationTest {
     final var createdAuthorizationRecord =
         ENGINE
             .authorization()
-            .newAuthorization(System.currentTimeMillis())
+            .newAuthorization()
             .withOwnerKey(owner)
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceKey("resource")
@@ -80,7 +80,7 @@ public class CreateAuthorizationTest {
     final var duplicatedAuthorizationRecord =
         ENGINE
             .authorization()
-            .newAuthorization(System.currentTimeMillis() + 1)
+            .newAuthorization()
             .withOwnerKey(owner)
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceKey("resource")
@@ -90,9 +90,11 @@ public class CreateAuthorizationTest {
             .create();
 
     final var createdAuthorization = createdAuthorizationRecord.getValue();
-    assertThat(createdAuthorization).isNotNull().hasFieldOrPropertyWithValue("ownerKey", owner);
+    Assertions.assertThat(createdAuthorization)
+        .isNotNull()
+        .hasFieldOrPropertyWithValue("ownerKey", owner);
 
-    io.camunda.zeebe.protocol.record.Assertions.assertThat(duplicatedAuthorizationRecord)
+    assertThat(duplicatedAuthorizationRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
             "Expected to create authorization with owner key: %s and resource key %s, but an authorization with these values already exists"
