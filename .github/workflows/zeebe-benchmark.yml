@@ -134,10 +134,12 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          go: false
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
           maven-extra-args: -PskipFrontendBuild
+          go: false
       - uses: ./.github/actions/build-platform-docker
         with:
           repository: 'gcr.io/zeebe-io/zeebe'
