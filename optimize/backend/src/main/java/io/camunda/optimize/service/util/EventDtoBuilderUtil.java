@@ -10,18 +10,17 @@ package io.camunda.optimize.service.util;
 import io.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import io.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import io.camunda.optimize.dto.optimize.query.event.sequence.TracedEventDto;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class EventDtoBuilderUtil {
 
   public static final String PROCESS_START_TYPE = "processInstanceStart";
   public static final String PROCESS_END_TYPE = "processInstanceEnd";
   private static final String START_MAPPED_SUFFIX = "start";
   private static final String END_MAPPED_SUFFIX = "end";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(EventDtoBuilderUtil.class);
+
+  private EventDtoBuilderUtil() {}
 
   public static EventTypeDto fromTracedEventDto(final TracedEventDto tracedEventDto) {
     return EventTypeDto.builder()

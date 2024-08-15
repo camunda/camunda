@@ -15,11 +15,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class VariableTestUtil {
+
+  private VariableTestUtil() {}
 
   public static Map<String, Object> createAllPrimitiveTypeVariables() {
     final Map<String, Object> variables = new HashMap<>();

@@ -24,9 +24,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.GatewayDirection;
 import org.camunda.bpm.model.bpmn.builder.AbstractFlowNodeBuilder;
@@ -44,9 +41,8 @@ import org.camunda.bpm.model.bpmn.instance.IntermediateCatchEvent;
 import org.camunda.bpm.model.bpmn.instance.ParallelGateway;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
 import org.camunda.bpm.model.bpmn.instance.dc.Bounds;
+import org.slf4j.Logger;
 
-@Slf4j
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class EventModelBuilderUtil {
 
   private static final String EVENT = "event";
@@ -56,6 +52,9 @@ public class EventModelBuilderUtil {
   private static final String CONVERGING_GATEWAY = "Converging gateway";
   private static final int DEFAULT_START_EVENT_HEIGHT = 36;
   private static final int DEFAULT_SPACE_HEIGHT = 50;
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(EventModelBuilderUtil.class);
+
+  private EventModelBuilderUtil() {}
 
   public static AutogenerationEventGraphDto generateExternalEventGraph(
       final List<EventSequenceCountDto> externalEventSequenceCounts) {

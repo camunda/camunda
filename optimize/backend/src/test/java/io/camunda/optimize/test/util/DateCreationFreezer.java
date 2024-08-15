@@ -15,7 +15,6 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.TimeZone;
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 
 /**
  * This class is a util builder that helps to freeze the date for testing, e.g if you want to test
@@ -41,15 +40,16 @@ public class DateCreationFreezer {
     return new InnerDateFreezerBuilder();
   }
 
-  @NoArgsConstructor
   public static class InnerDateFreezerBuilder {
 
     private OffsetDateTime dateToFreeze;
     private String timezone = ZoneId.systemDefault().getId();
     private ChronoUnit unitToTruncateTo;
 
+    public InnerDateFreezerBuilder() {}
+
     public InnerDateFreezerBuilder setDateToFreezeToNow() {
-      this.dateToFreeze = LocalDateUtil.getCurrentDateTime();
+      dateToFreeze = LocalDateUtil.getCurrentDateTime();
       return this;
     }
 

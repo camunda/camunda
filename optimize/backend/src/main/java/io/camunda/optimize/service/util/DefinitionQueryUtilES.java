@@ -26,13 +26,12 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DefinitionQueryUtilES {
+
+  private DefinitionQueryUtilES() {}
 
   public static BoolQueryBuilder createDefinitionQuery(
       final String definitionKey, final List<String> tenantIds, final AbstractInstanceIndex type) {

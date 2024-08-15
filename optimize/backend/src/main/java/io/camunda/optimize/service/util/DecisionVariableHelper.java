@@ -23,16 +23,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DecisionVariableHelper {
+
   private static final List<VariableType> MULTIVALUE_TYPE_FIELDS =
       Collections.unmodifiableList(
           Arrays.asList(VariableType.DATE, VariableType.DOUBLE, VariableType.LONG));
+
+  private DecisionVariableHelper() {}
 
   public static String getVariableValueField(final String variablePath) {
     return variablePath + "." + VARIABLE_VALUE;

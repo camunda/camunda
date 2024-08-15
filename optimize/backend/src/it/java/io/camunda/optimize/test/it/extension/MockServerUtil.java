@@ -9,20 +9,19 @@ package io.camunda.optimize.test.it.extension;
 
 import jakarta.ws.rs.core.Response;
 import java.util.stream.Stream;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.mockserver.configuration.ConfigurationProperties;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpResponse;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class MockServerUtil {
 
   public static final String MOCKSERVER_HOST = "localhost";
 
+  private MockServerUtil() {}
+
   public static ClientAndServer createProxyMockServer(
-      String targetHost, int targetPort, int mockServerPort) {
+      final String targetHost, final int targetPort, final int mockServerPort) {
     ConfigurationProperties.logLevel("INFO");
     ConfigurationProperties.maxExpectations(10);
     ConfigurationProperties.maxLogEntries(250);

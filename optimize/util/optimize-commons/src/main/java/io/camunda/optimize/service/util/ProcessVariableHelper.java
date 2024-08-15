@@ -22,13 +22,12 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ProcessVariableHelper {
+
+  private ProcessVariableHelper() {}
 
   public static String getNestedVariableNameField() {
     return VARIABLES + "." + VARIABLE_NAME;

@@ -21,19 +21,13 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.slf4j.Logger;
 
-@Slf4j
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public abstract class DatabaseVersionChecker {
 
-  @Getter
   private static final EnumMap<Database, List<String>> databaseSupportedVersionsMap =
       new EnumMap<>(Database.class);
 
@@ -45,6 +39,7 @@ public abstract class DatabaseVersionChecker {
       Comparator.comparingInt(patch -> Integer.parseInt(getPatchVersionFrom(patch)));
   private static final Comparator<String> LATEST_VERSION_COMPARATOR =
       MAJOR_COMPARATOR.thenComparing(MINOR_COMPARATOR).thenComparing(PATCH_COMPARATOR);
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DatabaseVersionChecker.class);
 
   static {
     databaseSupportedVersionsMap.put(
@@ -56,6 +51,8 @@ public abstract class DatabaseVersionChecker {
         Database.OPENSEARCH,
         List.of("2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0", "2.10.0", "2.11.0", "2.12.0"));
   }
+
+  private DatabaseVersionChecker() {}
 
   public static void checkESVersionSupport(
       final RestHighLevelClient esClient, final RequestOptions requestOptions) throws IOException {
@@ -162,6 +159,10 @@ public abstract class DatabaseVersionChecker {
 
     message.append("Your current ").append(database).append(" version is: ").append(dbVersion);
     return message.toString();
+  }
+
+  public static EnumMap<Database, List<String>> getDatabaseSupportedVersionsMap() {
+    return DatabaseVersionChecker.databaseSupportedVersionsMap;
   }
 
   enum Database {

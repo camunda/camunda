@@ -13,13 +13,11 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DefinitionVersionHandlingUtil {
+
+  private DefinitionVersionHandlingUtil() {}
 
   public static String convertToLatestParticularVersion(
       final String processDefinitionVersion, final Supplier<String> latestVersionSupplier) {
@@ -28,8 +26,15 @@ public class DefinitionVersionHandlingUtil {
   }
 
   public static String convertToLatestParticularVersion(
-      @NonNull final List<String> definitionVersions,
-      @NonNull final Supplier<String> latestVersionSupplier) {
+      final List<String> definitionVersions, final Supplier<String> latestVersionSupplier) {
+    if (definitionVersions == null) {
+      throw new IllegalArgumentException("definitionVersions cannot be null");
+    }
+
+    if (latestVersionSupplier == null) {
+      throw new IllegalArgumentException("latestVersionSupplier cannot be null");
+    }
+
     final boolean isDefinitionVersionSetToAllOrLatest =
         definitionVersions.stream()
             .anyMatch(
@@ -52,7 +57,7 @@ public class DefinitionVersionHandlingUtil {
     }
   }
 
-  private static String getLastEntryInList(@NonNull final List<String> processDefinitionVersions) {
+  private static String getLastEntryInList(final List<String> processDefinitionVersions) {
     return processDefinitionVersions.get(processDefinitionVersions.size() - 1);
   }
 

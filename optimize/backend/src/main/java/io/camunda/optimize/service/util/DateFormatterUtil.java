@@ -15,20 +15,19 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DateFormatterUtil {
 
   private static final DateTimeFormatter OPTIMIZE_FORMATTER =
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
+  private DateFormatterUtil() {}
+
   public static boolean isValidOptimizeDateFormat(final String value) {
     try {
       OffsetDateTime.parse(value, OPTIMIZE_FORMATTER);
       return true;
-    } catch (DateTimeParseException ex) {
+    } catch (final DateTimeParseException ex) {
       return false;
     }
   }
@@ -37,7 +36,7 @@ public class DateFormatterUtil {
     try {
       final OffsetDateTime parsedOffsetDateTime = DateParserUtils.parseOffsetDateTime(dateString);
       return Optional.of(parsedOffsetDateTime.format(OPTIMIZE_FORMATTER));
-    } catch (DateTimeParseException ex) {
+    } catch (final DateTimeParseException ex) {
       return Optional.empty();
     }
   }
@@ -48,7 +47,7 @@ public class DateFormatterUtil {
       return Optional.of(
           ZonedDateTime.parse(dateString, DateTimeFormatter.ISO_ZONED_DATE_TIME)
               .toOffsetDateTime());
-    } catch (DateTimeParseException ex) {
+    } catch (final DateTimeParseException ex) {
       return Optional.empty();
     }
   }
