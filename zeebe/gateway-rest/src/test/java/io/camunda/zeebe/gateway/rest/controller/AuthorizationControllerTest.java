@@ -44,23 +44,25 @@ public class AuthorizationControllerTest extends RestControllerTest {
 
   @Test
   void createAuthorizationShouldReturnNoContent() {
-    final var request = new AuthorizationAssignRequest();
-    request.setOwnerKey("1");
-    request.setOwnerType(AuthorizationOwnerType.USER);
-    request.setResourceKey("2");
-    request.setResourceType("resourceType");
-    request.setPermissions(List.of("permission1", "permission2"));
+    final var request =
+        new AuthorizationAssignRequest()
+            .ownerKey("1")
+            .ownerType(OwnerTypeEnum.USER)
+            .resourceKey("2")
+            .resourceType("resourceType")
+            .permissions(List.of("permission1", "permission2"));
 
-    final var authorizationRecord = new AuthorizationRecord();
-    authorizationRecord.setOwnerKey(request.getOwnerKey());
-    authorizationRecord.setOwnerType(request.getOwnerType());
-    authorizationRecord.setResourceKey(request.getResourceKey());
-    authorizationRecord.setResourceType(request.getResourceType());
-    authorizationRecord.setPermissions(request.getPermissions());
+    final var authorizationRecord =
+        new AuthorizationRecord()
+            .setOwnerKey(request.getOwnerKey())
+            .setOwnerType(AuthorizationOwnerType.valueOf(request.getOwnerType().getValue()))
+            .setResourceKey(request.getResourceKey())
+            .setResourceType(request.getResourceType())
+            .setPermissions(request.getPermissions());
 
     when(authorizationServices.createAuthorization(
             request.getOwnerKey(),
-            request.getOwnerType(),
+            AuthorizationOwnerType.valueOf(request.getOwnerType().getValue()),
             request.getResourceKey(),
             request.getResourceType(),
             request.getPermissions()))
@@ -79,7 +81,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     verify(authorizationServices, times(1))
         .createAuthorization(
             request.getOwnerKey(),
-            request.getOwnerType(),
+            AuthorizationOwnerType.valueOf(request.getOwnerType().getValue()),
             request.getResourceKey(),
             request.getResourceType(),
             request.getPermissions());
@@ -89,24 +91,30 @@ public class AuthorizationControllerTest extends RestControllerTest {
   void createAuthorizationThrowsExceptionWhenServiceThrowsException() {
     final String message = "message";
 
-    final var request = new AuthorizationAssignRequest();
-    request.setOwnerKey("1");
-    request.setOwnerType(AuthorizationOwnerType.USER);
-    request.setResourceKey("2");
-    request.setResourceType("resourceType");
-    request.setPermissions(List.of("permission1", "permission2"));
+    final var request =
+        new AuthorizationAssignRequest()
+            .ownerKey("1")
+            .ownerType(OwnerTypeEnum.USER)
+            .resourceKey("2")
+            .resourceType("resourceType")
+            .permissions(List.of("permission1", "permission2"));
 
     when(authorizationServices.createAuthorization(
             request.getOwnerKey(),
-            request.getOwnerType(),
+            AuthorizationOwnerType.valueOf(request.getOwnerType().getValue()),
             request.getResourceKey(),
             request.getResourceType(),
             request.getPermissions()))
-        .thenThrow(new CamundaServiceException(RejectionType.ALREADY_EXISTS.name()));
+        .thenThrow(
+            new CamundaServiceException(
+                new BrokerRejection(
+                    AuthorizationIntent.CREATE,
+                    1L,
+                    RejectionType.ALREADY_EXISTS,
+                    "Authorization already exists")));
 
-    final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
+    final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
     expectedBody.setTitle("Bad Request");
-    expectedBody.setDetail(RejectionType.ALREADY_EXISTS.name());
     expectedBody.setInstance(URI.create("/v2/authorizations"));
 
     webClient
