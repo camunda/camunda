@@ -8,8 +8,11 @@
 package io.camunda.zeebe.engine.processing.clock;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.client.ClockClient;
@@ -46,15 +49,30 @@ public final class ClockTest {
     final var fakeNow = Instant.now().minusSeconds(180).truncatedTo(ChronoUnit.MILLIS);
 
     // when
+    final var record = clockClient.pinAt(fakeNow);
+    // required to ensure we apply the side effect of the clock
+    ENGINE.awaitProcessingOf(record);
+
+    // then
+    assertThat(ENGINE.getStreamClock().instant()).isEqualTo(fakeNow);
+    assertThat(ENGINE.getProcessingState().getClockState().getModification())
+        .isEqualTo(Modification.pinAt(fakeNow));
+    verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(0))
+        .tryWriteResponse(anyInt(), anyLong());
+  }
+
+  @Test
+  public void shouldRespondToPinClock() {
+    // given
+    final var fakeNow = Instant.now().minusSeconds(180).truncatedTo(ChronoUnit.MILLIS);
+
+    // when
     final var record = clockClient.requestId(1L).requestStreamId(1).pinAt(fakeNow);
     // required to ensure we apply the side effect of the clock
     ENGINE.awaitProcessingOf(record);
 
     // then
     final var inOrder = Mockito.inOrder(ENGINE.getCommandResponseWriter());
-    assertThat(ENGINE.getStreamClock().instant()).isEqualTo(fakeNow);
-    assertThat(ENGINE.getProcessingState().getClockState().getModification())
-        .isEqualTo(Modification.pinAt(fakeNow));
     inOrder
         .verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(1))
         .intent(ClockIntent.PINNED);
@@ -92,15 +110,31 @@ public final class ClockTest {
     ENGINE.awaitProcessingOf(clockClient.pinAt(fakeNow));
 
     // when
+    final var record = clockClient.reset();
+    // required to ensure we apply the side effect of the clock
+    ENGINE.awaitProcessingOf(record);
+
+    // then
+    assertThat(ENGINE.getStreamClock().instant()).isAfter(fakeNow);
+    assertThat(ENGINE.getProcessingState().getClockState().getModification())
+        .isEqualTo(Modification.none());
+    verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(0))
+        .tryWriteResponse(anyInt(), anyLong());
+  }
+
+  @Test
+  public void shouldRespondToResetClock() {
+    // given
+    final var fakeNow = Instant.now().minusSeconds(180).truncatedTo(ChronoUnit.MILLIS);
+    ENGINE.awaitProcessingOf(clockClient.pinAt(fakeNow));
+
+    // when
     final var record = clockClient.requestId(1L).requestStreamId(1).reset();
     // required to ensure we apply the side effect of the clock
     ENGINE.awaitProcessingOf(record);
 
     // then
     final var inOrder = Mockito.inOrder(ENGINE.getCommandResponseWriter());
-    assertThat(ENGINE.getStreamClock().instant()).isAfter(fakeNow);
-    assertThat(ENGINE.getProcessingState().getClockState().getModification())
-        .isEqualTo(Modification.none());
     inOrder
         .verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(1))
         .intent(ClockIntent.RESETTED);
