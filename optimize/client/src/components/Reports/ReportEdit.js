@@ -431,7 +431,7 @@ export class ReportEdit extends React.Component {
           )}
         </div>
         <ConflictModal
-          conflict={conflict}
+          conflicts={conflict}
           onClose={this.closeConflictModal}
           onConfirm={this.saveAndGoBack}
         />

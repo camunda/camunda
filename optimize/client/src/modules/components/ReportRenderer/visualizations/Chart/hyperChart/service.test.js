@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {generateLegendLabels, getCombinedChartProps} from './service';
+import {generateLegendLabels, getHyperChartProps} from './service';
 
 jest.mock('services', () => {
   return {
@@ -69,7 +69,7 @@ it('should return correct hyper chart repot data properties for single report', 
     ],
   };
 
-  const chartProps = getCombinedChartProps(result, data, 0);
+  const chartProps = getHyperChartProps(result, data, 0);
 
   expect(chartProps).toEqual({
     resultArr: [
@@ -102,7 +102,7 @@ it('should convert results of a hyper number report to a correctly formatted bar
     NumberReportB: {...NumberReportA, id: 'NumberReportB', name: 'report B'},
   };
 
-  const chartProps = getCombinedChartProps(result, {
+  const chartProps = getHyperChartProps(result, {
     visualization: 'number',
     reports: [
       {id: 'NumberReportA', color: 'red'},

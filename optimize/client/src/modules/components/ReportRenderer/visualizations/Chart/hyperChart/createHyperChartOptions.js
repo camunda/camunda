@@ -19,7 +19,7 @@ import {createBarOptions} from '../defaultChart/createDefaultChartOptions';
 import {getColorFor} from '../colorsUtils';
 import {generateLegendLabels} from './service';
 
-export default function createCombinedChartOptions({report, targetValue, theme, formatter}) {
+export default function createHyperChartOptions({report, targetValue, theme, formatter}) {
   const {
     data: {visualization, configuration},
     result,

@@ -10,7 +10,7 @@ import {
   sortColumns,
   getFormattedLabels,
   getBodyRows,
-  getCombinedTableProps,
+  getHyperTableProps,
   isVisibleColumn,
   rearrangeColumns,
 } from './service';
@@ -174,12 +174,7 @@ it('should return correct hyper table report data properties', () => {
       'report B': report,
     },
   };
-  const tableProps = getCombinedTableProps(
-    hyperReport.result,
-    hyperReport.data.reports,
-    false,
-    true
-  );
+  const tableProps = getHyperTableProps(hyperReport.result, hyperReport.data.reports, false, true);
 
   expect(tableProps).toEqual({
     combinedResult: [
@@ -270,12 +265,7 @@ it('should default empty header id to non empty value', () => {
     },
   };
 
-  const tableProps = getCombinedTableProps(
-    hyperReport.result,
-    hyperReport.data.reports,
-    true,
-    true
-  );
+  const tableProps = getHyperTableProps(hyperReport.result, hyperReport.data.reports, true, true);
 
   expect(`${tableProps.reportsIds[0]}`).toEqual('0');
   expect(tableProps.reportsIds[1]).toEqual('missing');

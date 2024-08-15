@@ -9,7 +9,7 @@
 import {ColorPicker} from 'components';
 
 import {getTargetLineOptions} from './createTargetLineOptions';
-import {extractCombinedData} from '../combinedChart/createCombinedChartData';
+import {extractHyperData} from '../hyperChart/createHyperChartData';
 import {extractDefaultChartData} from '../defaultChart/createDefaultChartData';
 
 export default function createTargetLineData(props) {
@@ -42,7 +42,7 @@ function createCombinedTargetLineData(props) {
   } = props;
 
   const {labels, unitedResults, reportsNames, reportColors, targetValue, isDark} =
-    extractCombinedData(props);
+    extractHyperData(props);
 
   let colors = reportColors;
   if (result.measures) {

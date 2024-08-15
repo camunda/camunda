@@ -9,7 +9,7 @@
 import React from 'react';
 import ChartRenderer from './ChartRenderer';
 import createDefaultChartConfig from './defaultChart';
-import createCombinedChartConfig from './combinedChart';
+import createHyperChartConfig from './hyperChart';
 import createTargetLineConfig from './targetLineChart';
 import {themed} from 'theme';
 
@@ -33,7 +33,7 @@ export function Chart(props) {
   if (targetValue && visualization === 'line') {
     createConfig = createTargetLineConfig;
   } else if (hyper) {
-    createConfig = createCombinedChartConfig;
+    createConfig = createHyperChartConfig;
   } else {
     createConfig = createDefaultChartConfig;
   }

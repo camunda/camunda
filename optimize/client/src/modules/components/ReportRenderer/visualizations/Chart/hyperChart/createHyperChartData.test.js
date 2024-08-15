@@ -7,14 +7,14 @@
  */
 
 import {createDatasetOptions} from '../defaultChart/createDefaultChartOptions';
-import {getCombinedChartProps} from './service';
-import createCombinedChartData from './createCombinedChartData';
+import {getHyperChartProps} from './service';
+import createHyperChartData from './createHyperChartData';
 
 jest.mock('../defaultChart/createDefaultChartOptions', () => ({createDatasetOptions: jest.fn()}));
-jest.mock('./service', () => ({getCombinedChartProps: jest.fn()}));
+jest.mock('./service', () => ({getHyperChartProps: jest.fn()}));
 
 const createReport = ({reportA, reportB, groupByType}, measures, visualization = 'line') => {
-  getCombinedChartProps.mockReturnValue({
+  getHyperChartProps.mockReturnValue({
     reportsNames: ['report A', 'report B'],
     resultArr: [reportA.data, reportB.data],
     reportColors: [],
@@ -74,7 +74,7 @@ it('should return correct chart data object for a hyper report', () => {
     color: 'yellow',
   };
 
-  const chartData = createCombinedChartData({
+  const chartData = createHyperChartData({
     report: createReport({reportA, reportB, groupByType: 'flowNodes'}),
     targetValue: false,
     theme: 'light',
@@ -83,7 +83,7 @@ it('should return correct chart data object for a hyper report', () => {
   expect(chartData).toMatchSnapshot();
 });
 
-it('should return correct chart data object for a combined report with correct date order', () => {
+it('should return correct chart data object for a hyper report with correct date order', () => {
   const reportA = {
     data: [{key: '2017-12-27T14:21:56.000', value: 123, label: 'Dec 2017'}],
     color: 'blue',
@@ -94,7 +94,7 @@ it('should return correct chart data object for a combined report with correct d
     color: 'yellow',
   };
 
-  const chartData = createCombinedChartData({
+  const chartData = createHyperChartData({
     report: createReport({reportA, reportB}),
     targetValue: false,
     theme: 'light',
@@ -125,7 +125,7 @@ it('should return a dataset for each measure value in multi measure reports', ()
     },
   ];
 
-  const chartData = createCombinedChartData({
+  const chartData = createHyperChartData({
     report: createReport({reportA, reportB}, measures),
     targetValue: false,
     theme: 'light',
@@ -173,7 +173,7 @@ it('should assign line/bar visualization to dataset according to measureVisualiz
     },
   ];
 
-  const chartData = createCombinedChartData({
+  const chartData = createHyperChartData({
     report: createReport({reportA, reportB}, measures, 'barLine'),
     targetValue: false,
     theme: 'light',

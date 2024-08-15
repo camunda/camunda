@@ -11,7 +11,7 @@ import {shallow} from 'enzyme';
 import ConflictModal from './ConflictModal';
 
 const props = {
-  conflict: [{id: '1', name: 'alert', type: 'alert'}],
+  conflicts: [{id: '1', name: 'alert', type: 'alert'}],
   onClose: jest.fn(),
   onConfirm: jest.fn(),
 };

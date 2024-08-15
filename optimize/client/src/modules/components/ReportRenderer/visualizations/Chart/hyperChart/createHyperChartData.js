@@ -11,9 +11,9 @@ import {ColorPicker} from 'components';
 
 import {createDatasetOptions} from '../defaultChart/createDefaultChartOptions';
 import {getAxisIdx, getLabel} from '../service';
-import {getCombinedChartProps} from './service';
+import {getHyperChartProps} from './service';
 
-export default function createCombinedChartData(props) {
+export default function createHyperChartData(props) {
   const {
     report: {result},
   } = props;
@@ -23,7 +23,7 @@ export default function createCombinedChartData(props) {
   }
 
   const {labels, unitedResults, reportsNames, reportColors, targetValue, isDark, visualization} =
-    extractCombinedData(props);
+    extractHyperData(props);
 
   const datasets = unitedResults.map((report, index) => {
     return {
@@ -66,7 +66,7 @@ function createMultiMeasureChartData(props) {
       targetValue,
       isDark,
       visualization,
-    } = extractCombinedData(props, idx);
+    } = extractHyperData(props, idx);
 
     let type = visualization;
     let order;
@@ -103,16 +103,12 @@ function createMultiMeasureChartData(props) {
   return {labels, datasets};
 }
 
-export function extractCombinedData({report, theme, targetValue}, measureIdx = 0) {
-  const {result, data: combinedReportData} = report;
+export function extractHyperData({report, theme, targetValue}, measureIdx = 0) {
+  const {result, data: hyperReportData} = report;
 
-  const data = {...Object.values(result.data)[0].data, ...combinedReportData};
+  const data = {...Object.values(result.data)[0].data, ...hyperReportData};
 
-  const {reportsNames, resultArr, reportColors} = getCombinedChartProps(
-    result.data,
-    data,
-    measureIdx
-  );
+  const {reportsNames, resultArr, reportColors} = getHyperChartProps(result.data, data, measureIdx);
 
   const isDark = theme === 'dark';
   const labelsMap = {};

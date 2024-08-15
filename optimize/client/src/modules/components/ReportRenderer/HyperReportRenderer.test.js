@@ -108,7 +108,7 @@ it('should render single process report if report result is empty', () => {
   expect(node.find(ProcessReportRenderer)).toExist();
 });
 
-it('should convert adjust the result to be identical to hyper report result structure', () => {
+it('should convert and adjust the result to be identical to hyper report result structure', () => {
   const node = shallow(<HyperReportRenderer report={userTaskAssigneeReport} />);
 
   const resultData = node.find(Chart).prop('report').result.data;

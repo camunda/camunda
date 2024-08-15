@@ -12,11 +12,11 @@ import {
   sortColumns,
   getFormattedLabels,
   getBodyRows,
-  getCombinedTableProps,
+  getHyperTableProps,
   formatLabelsForTableBody,
 } from './service';
 
-export default function processCombinedData({report}) {
+export default function processHyperData({report}) {
   const {
     configuration: {hideAbsoluteValue, hideRelativeValue, tableColumns, precision},
   } = report.data;
@@ -25,7 +25,7 @@ export default function processCombinedData({report}) {
   const displayRelativeValue = view.properties[0] === 'frequency' && !hideRelativeValue;
   const displayAbsoluteValue = !hideAbsoluteValue;
 
-  const {labels, reportsNames, reportsIds, combinedResult, instanceCount} = getCombinedTableProps(
+  const {labels, reportsNames, reportsIds, combinedResult, instanceCount} = getHyperTableProps(
     report.result.data,
     report.data.reports,
     displayRelativeValue,

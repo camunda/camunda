@@ -13,13 +13,13 @@ import {Modal} from 'components';
 import {t} from 'translation';
 
 interface ConflictModalProps {
-  conflict?: {id: string; name: string}[];
+  conflicts?: {id: string; name: string}[];
   onClose: () => void;
   onConfirm: () => Promise<void>;
 }
 
 export default function ConflictModal({
-  conflict,
+  conflicts,
   onClose,
   onConfirm,
 }: ConflictModalProps): JSX.Element {
@@ -32,14 +32,14 @@ export default function ConflictModal({
   };
 
   return (
-    <Modal open={!!conflict} onClose={onClose} className="ConflictModal">
+    <Modal open={!!conflicts} onClose={onClose} className="ConflictModal">
       <Modal.Header title={t('report.saveConflict.header')} />
       <Modal.Content>
-        {conflict && conflict?.length !== 0 && (
+        {conflicts && conflicts?.length !== 0 && (
           <>
             <p>{t(`report.saveConflict.alert.header`)}</p>
             <ul>
-              {conflict?.map(({id, name}: {id: string; name: string}) => (
+              {conflicts?.map(({id, name}: {id: string; name: string}) => (
                 <li key={id}>'{name || id}'</li>
               ))}
             </ul>

@@ -9,7 +9,7 @@
 import {Table as TableRenderer} from 'components';
 
 import ColumnRearrangement from './ColumnRearrangement';
-import processCombinedData from './processCombinedData';
+import processHyperData from './processHyperData';
 import processDefaultData from './processDefaultData';
 import {rearrangeColumns} from './service';
 
@@ -23,7 +23,7 @@ export default function DefaultTable(props) {
 
   let tableProps;
   if (hyper) {
-    tableProps = processCombinedData(props);
+    tableProps = processHyperData(props);
   } else {
     tableProps = {
       ...processDefaultData(props, processVariables),

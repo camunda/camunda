@@ -6,6 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import createCombinedChartConfig from './createCombinedChartConfig';
+import createHyperChartConfig from './createHyperChartConfig';
 
-export default createCombinedChartConfig;
+export default createHyperChartConfig;

@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import processCombinedData from './processCombinedData';
+import processHyperData from './processHyperData';
 
 import {getFormattedLabels, getBodyRows} from './service';
 
 jest.mock('./service', () => ({
-  getCombinedTableProps: jest.fn().mockReturnValue({
+  getHyperTableProps: jest.fn().mockReturnValue({
     labels: [['key label', 'operation label']],
     combinedResult: [[]],
   }),
@@ -64,7 +64,7 @@ const props = {
 };
 
 it('should return correct labels and body when combining two table report', async () => {
-  expect(processCombinedData(props)).toEqual({
+  expect(processHyperData(props)).toEqual({
     head: [
       {id: 'key label', label: ' ', columns: ['key label']},
       {label: 'Report A', columns: ['value', 'Relative Frequency']},
@@ -89,7 +89,7 @@ it('should not include a column in a hyper report if it is hidden in the configu
     ['c', 3, 3],
   ]);
 
-  expect(processCombinedData(props)).toEqual({
+  expect(processHyperData(props)).toEqual({
     head: [
       {id: 'key label', label: ' ', columns: ['key label']},
       {label: 'Report A', columns: ['value']},

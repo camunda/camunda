@@ -8,11 +8,11 @@
 
 import {getColorFor} from '../colorsUtils';
 import createDefaultChartOptions from '../defaultChart/createDefaultChartOptions';
-import createCombinedChartOptions from '../combinedChart/createCombinedChartOptions';
+import createHyperChartOptions from '../hyperChart/createHyperChartOptions';
 
 export default function createTargetLineOptions(props) {
   if (props.report.hyper) {
-    return createCombinedChartOptions(props);
+    return createHyperChartOptions(props);
   } else {
     return createDefaultChartOptions(props);
   }
