@@ -14,8 +14,8 @@ import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +38,7 @@ public class AuthorizationStateTest {
   void shouldReturnNullIfNoAuthorizationForOwnerAndResourceExists() {
     // when
     final var persistedAuth =
-        authorizationState.getAuthorization(
+        authorizationState.getPermissions(
             "owner" + UUID.randomUUID(),
             AuthorizationOwnerType.USER.name(),
             "resource",

@@ -12,8 +12,8 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationCreateRequest;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
