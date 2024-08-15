@@ -16,7 +16,6 @@ import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.vali
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
-import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
@@ -281,4 +280,13 @@ public class RequestMapper {
   public record CompleteJobRequest(long jobKey, Map<String, Object> variables) {}
 
   public record UpdateJobRequest(long jobKey, Integer retries, Long timeout) {}
+
+  public record ActivateJobsRequest(
+      String type,
+      int maxJobsToActivate,
+      List<String> tenantIds,
+      long timeout,
+      String worker,
+      List<String> fetchVariable,
+      long requestTimeout) {}
 }

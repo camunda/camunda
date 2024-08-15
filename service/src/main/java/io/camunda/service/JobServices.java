@@ -52,18 +52,24 @@ public final class JobServices<T> extends ApiServices<JobServices<T>> {
   }
 
   public void activateJobs(
-      final ActivateJobsRequest request,
+      final String type,
+      final int maxJobsToActivate,
+      final List<String> tenantIds,
+      final long timeout,
+      final String worker,
+      final List<String> variables,
+      final long requestTimeout,
       final ResponseObserver<T> responseObserver,
       final Consumer<Runnable> cancelationHandlerConsumer) {
     final var brokerRequest =
-        new BrokerActivateJobsRequest(request.type())
-            .setMaxJobsToActivate(request.maxJobsToActivate())
-            .setTenantIds(request.tenantIds())
-            .setTimeout(request.timeout())
-            .setWorker(request.worker())
-            .setVariables(request.fetchVariable());
+        new BrokerActivateJobsRequest(type)
+            .setMaxJobsToActivate(maxJobsToActivate)
+            .setTenantIds(tenantIds)
+            .setTimeout(timeout)
+            .setWorker(worker)
+            .setVariables(variables);
     activateJobsHandler.activateJobs(
-        brokerRequest, responseObserver, cancelationHandlerConsumer, request.requestTimeout());
+        brokerRequest, responseObserver, cancelationHandlerConsumer, requestTimeout);
   }
 
   public CompletableFuture<JobRecord> failJob(
@@ -100,13 +106,4 @@ public final class JobServices<T> extends ApiServices<JobServices<T>> {
       final long jobKey, final Integer retries, final Long timeout) {
     return sendBrokerRequest(new BrokerUpdateJobRequest(jobKey, retries, timeout));
   }
-
-  public record ActivateJobsRequest(
-      String type,
-      int maxJobsToActivate,
-      List<String> tenantIds,
-      long timeout,
-      String worker,
-      List<String> fetchVariable,
-      long requestTimeout) {}
 }

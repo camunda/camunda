@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.service.JobServices;
-import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
@@ -16,6 +15,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.zeebe.gateway.rest.RequestMapper.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.CompleteJobRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.ErrorJobRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.FailJobRequest;
@@ -101,7 +101,14 @@ public class JobController {
     final var result = new CompletableFuture<ResponseEntity<Object>>();
     final var responseObserver = responseObserverProvider.apply(result);
     jobServices.activateJobs(
-        activationRequest, responseObserver, responseObserver::setCancelationHandler);
+        activationRequest.type(),
+        activationRequest.maxJobsToActivate(),
+        activationRequest.tenantIds(),
+        activationRequest.timeout(),
+        activationRequest.worker(),
+        activationRequest.fetchVariable(),
+        activationRequest.requestTimeout(),
+        responseObserver, responseObserver::setCancelationHandler);
     return result.handleAsync(
         (res, ex) -> {
           responseObserver.invokeCancelationHandler();
