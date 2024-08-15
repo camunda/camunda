@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 
 public class DbAuthorizationState implements AuthorizationState, MutableAuthorizationState {
   private final PersistedAuthorization persistedAuthorization = new PersistedAuthorization();
@@ -64,7 +65,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     persistedAuthorization.setAuthorization(authorizationRecord);
 
     ownerKey.wrapString(authorizationRecord.getOwnerKey());
-    ownerType.wrapString(authorizationRecord.getOwnerType());
+    ownerType.wrapString(authorizationRecord.getOwnerType().name());
     resourceKey.wrapString(authorizationRecord.getResourceKey());
     resourceType.wrapString(authorizationRecord.getResourceType());
     persistedPermissions.setPermissions(authorizationRecord.getPermissions());
@@ -74,11 +75,11 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   @Override
   public PersistedPermissions getPermissions(
       final String ownerKey,
-      final String ownerType,
+      final AuthorizationOwnerType ownerType,
       final String resourceKey,
       final String resourceType) {
     this.ownerKey.wrapString(ownerKey);
-    this.ownerType.wrapString(ownerType);
+    this.ownerType.wrapString(ownerType.name());
     this.resourceKey.wrapString(resourceKey);
     this.resourceType.wrapString(resourceType);
 

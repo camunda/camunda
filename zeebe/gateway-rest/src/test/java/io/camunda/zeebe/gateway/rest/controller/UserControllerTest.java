@@ -35,7 +35,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @WebMvcTest(UserController.class)
 public class UserControllerTest extends RestControllerTest {
 
-  @MockBean private UserServices<UserRecord> userServices;
+  @MockBean private UserServices userServices;
   @MockBean private PasswordEncoder passwordEncoder;
 
   @BeforeEach

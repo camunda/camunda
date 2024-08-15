@@ -8,8 +8,9 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.authorization.PersistedPermissions;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 
 public interface AuthorizationState {
   PersistedPermissions getPermissions(
-      String ownerKey, String ownerType, String resourceKey, String resourceType);
+      String ownerKey, AuthorizationOwnerType ownerType, String resourceKey, String resourceType);
 }
