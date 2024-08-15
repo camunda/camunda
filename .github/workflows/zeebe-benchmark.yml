@@ -138,7 +138,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -PskipFrontendBuild
+          maven-extra-args: -PskipFrontendBuild -Dmaven.test.skip=true
           go: false
       - uses: ./.github/actions/build-platform-docker
         with:
