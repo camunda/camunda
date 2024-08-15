@@ -108,7 +108,8 @@ public class JobController {
         activationRequest.worker(),
         activationRequest.fetchVariable(),
         activationRequest.requestTimeout(),
-        responseObserver, responseObserver::setCancelationHandler);
+        responseObserver,
+        responseObserver::setCancelationHandler);
     return result.handleAsync(
         (res, ex) -> {
           responseObserver.invokeCancelationHandler();
