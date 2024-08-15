@@ -27,9 +27,10 @@ For community-maintained Camunda projects, please visit the [Camunda Community H
   - [Commit message body](#commit-message-body)
 
 ## Prerequisites
+
 ### Contributor License Agreement
 
-You will be asked to sign our [Contributor License Agreement](https://cla-assistant.io/camunda-community-hub/community) when you open a Pull Request. We are not asking you to assign copyright to us but to give us the right to distribute your code without restriction. We ask this of all contributors to assure our users of the origin and continuing existence of the code. 
+You will be asked to sign our [Contributor License Agreement](https://cla-assistant.io/camunda-community-hub/community) when you open a Pull Request. We are not asking you to assign copyright to us but to give us the right to distribute your code without restriction. We ask this of all contributors to assure our users of the origin and continuing existence of the code.
 
 > [!NOTE]
 > In most cases, you will only need to sign the CLA once.
@@ -39,12 +40,13 @@ You will be asked to sign our [Contributor License Agreement](https://cla-assist
 This project adheres to the [Camunda Code of Conduct](https://camunda.com/events/code-conduct/). By participating, you are expected to uphold this code. Please [report](https://camunda.com/events/code-conduct/reporting-violations/) unacceptable behavior as soon as possible.
 
 ## GitHub issue guidelines
+
 If you want to report a bug or request a new feature, feel free to open a new issue on [GitHub][issues].
 
 If you report a bug, please help speed up problem diagnosis by providing as much information as possible. Ideally, that would include a small [sample project][sample] that reproduces the problem.
 
-> [!NOTE]  
->  If you have a general usage question, please ask on the [forum](forum).
+> [!NOTE]
+> If you have a general usage question, please ask on the [forum](forum).
 
 Every issue should have a meaningful name and a description that either describes:
 - A new feature with details about the use case the feature would solve or
@@ -82,13 +84,14 @@ The `main` branch contains the current in-development state of the project. To w
    git push -u origin 123-adding-bpel-support
    ```
 7. If you think you finished the issue, please prepare the branch for review. Please consider our [pull requests and code reviews](https://github.com/camunda/camunda/wiki/Pull-Requests-and-Code-Reviews) guide, before requesting a review. In general, the commits should be squashed into meaningful commits with a helpful message. This means cleanup/fix etc. commits should be squashed into the related commit. If you made refactorings it would be best if they are split up into another commit. Think about how a reviewer can best understand your changes. Please follow the [commit message guidelines](#commit-message-guidelines).
-1. After finishing up the squashing, force push your changes to your branch.
+8. After finishing up the squashing, force push your changes to your branch.
 
    ```
    git push --force-with-lease
    ```
 
 ## Build and run Camunda from source
+
 We are currently working on [architecture streamlining](https://camunda.com/blog/2024/04/simplified-deployment-options-accelerated-getting-started-experience/) to simplify the deployment and build process. While this is in progress, the build instructions are subject to change. The most recent build instructions will always be in this document.
 
 This is a small overview of the contents of this repository:
@@ -120,7 +123,7 @@ To **quickly** build all components for development, run the command: `mvn clean
 
 To build the full distribution for local usage (skipping tests), run the command `mvn clean install -DskipChecks -DskipTests`.
 
-To fully build and test the Camunda distribution, run the command: `mvn clean install` in the root folder. 
+To fully build and test the Camunda distribution, run the command: `mvn clean install` in the root folder.
 
 If you built a distribution, it can be found in the folder `dist/target`, i.e.
 
@@ -178,11 +181,11 @@ This will generate a profiler report in the `target` folder.
 Before opening your first pull request, please have a look at this [guide](https://github.com/camunda/camunda/wiki/Pull-Requests-and-Code-Reviews#pull-requests).
 
 1. To start the review process create a new pull request on GitHub from your branch to the `main` branch. Give it a meaningful name and describe your changes in the body of the pull request. Lastly add a link to the issue this pull request closes, i.e. by writing in the description `closes #123`. Without referencing the issue, our [changelog generation] will not recognize your PR as a new feature or fix and instead only include it in the list of merged PRs.
-1. Assign the pull request to one developer to review, if you are not sure who should review the issue skip this step. Someone will assign a reviewer for you.
-1. The reviewer will look at the pull request in the following days and give you either feedback or accept the changes. Your reviewer might use [emoji code](#review-emoji-code) during the reviewing process.
+2. Assign the pull request to one developer to review, if you are not sure who should review the issue skip this step. Someone will assign a reviewer for you.
+3. The reviewer will look at the pull request in the following days and give you either feedback or accept the changes. Your reviewer might use [emoji code](#review-emoji-code) during the reviewing process.
    1. If there are changes requested, address them in a new commit. Notify the reviewer in a comment if the pull request is ready for review again. If the changes are accepted squash them again in the related commit and force push. Then initiate a merge by adding your PR to the merge queue via the `Merge when ready` button.
    2. If no changes are requested, the reviewer will initiate a merge themselves.
-1. When a merge is initiated, a bot will merge your branch with the latest
+4. When a merge is initiated, a bot will merge your branch with the latest
    `main` and run the CI on it.
    1. If everything goes well, the branch is merged and deleted and the issue and pull request are closed.
    2. If there are merge conflicts, the author of the pull request has to manually rebase `main` into the issue branch and retrigger a merge attempt.
@@ -288,13 +291,10 @@ The commit header should be kept short, preferably under 72 chars but we allow a
 
 Should describe the motivation for the change. This is optional but encouraged. Good commit messages explain what changed AND why you changed it. See [I've written a clear changelist description](https://github.com/camunda/camunda/wiki/Pull-Requests-and-Code-Reviews#ive-written-a-clear-changelist-description).
 
-
-
 [issues]: https://github.com/camunda/camunda/issues
 [forum]: https://forum.camunda.io/
 [sample]: https://github.com/zeebe-io/zeebe-test-template-java
 [clients/java]: https://github.com/camunda/camunda/labels/scope%2Fclients-java
 [clients/go]: https://github.com/camunda/camunda/labels/scope%2Fclients-go
 [changelog generation]: https://github.com/zeebe-io/zeebe-changelog
-
 
