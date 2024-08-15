@@ -17,6 +17,7 @@ import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableSch
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
+import io.camunda.zeebe.stream.impl.metrics.ScheduledTaskMetrics;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.PriorityQueue;
@@ -40,6 +41,7 @@ public class ProcessingScheduleServiceImpl
   private final Supplier<LogStreamWriter> writerSupplier;
   private final StageableScheduledCommandCache commandCache;
   private final InstantSource clock;
+  private final ScheduledTaskMetrics metrics;
   private final PriorityQueue<ScheduledTaskImpl> scheduledTasks = new PriorityQueue<>();
   private LogStreamWriter logStreamWriter;
   private ActorControl actorControl;
@@ -51,12 +53,14 @@ public class ProcessingScheduleServiceImpl
       final BooleanSupplier abortCondition,
       final Supplier<LogStreamWriter> writerSupplier,
       final StageableScheduledCommandCache commandCache,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final ScheduledTaskMetrics metrics) {
     this.streamProcessorPhaseSupplier = streamProcessorPhaseSupplier;
     this.abortCondition = abortCondition;
     this.writerSupplier = writerSupplier;
     this.commandCache = commandCache;
     this.clock = clock;
+    this.metrics = metrics;
   }
 
   @Override
@@ -128,8 +132,9 @@ public class ProcessingScheduleServiceImpl
   private void processScheduledTasks() {
     final var now = clock.millis();
     while (scheduledTasks.peek() != null && scheduledTasks.peek().scheduledTime <= now) {
+      metrics.decrementScheduledTasks();
       final var expiredTask = scheduledTasks.poll();
-      actorControl.submit(expiredTask.runnable);
+      actorControl.submit(expiredTask);
     }
   }
 
@@ -137,6 +142,7 @@ public class ProcessingScheduleServiceImpl
     final var scheduledTask = new ScheduledTaskImpl(timestamp, task);
     actorControl.run(
         () -> {
+          metrics.incrementScheduledTasks();
           final var delay = timestamp - clock.millis();
           scheduledTasks.add(scheduledTask);
           if (delay < PERIODIC_CHECK_INTERVAL_MS / 2) {
@@ -211,7 +217,8 @@ public class ProcessingScheduleServiceImpl
   }
 
   /** Note: this class has a natural ordering that is inconsistent with equals. */
-  private final class ScheduledTaskImpl implements ScheduledTask, Comparable<ScheduledTaskImpl> {
+  private final class ScheduledTaskImpl
+      implements ScheduledTask, Comparable<ScheduledTaskImpl>, Runnable {
     private final long scheduledTime;
     private final Runnable runnable;
 
@@ -222,12 +229,23 @@ public class ProcessingScheduleServiceImpl
 
     @Override
     public void cancel() {
-      actorControl.run(() -> scheduledTasks.remove(this));
+      actorControl.run(
+          () -> {
+            if (scheduledTasks.remove(this)) {
+              metrics.decrementScheduledTasks();
+            }
+          });
     }
 
     @Override
     public int compareTo(final ProcessingScheduleServiceImpl.ScheduledTaskImpl o) {
       return Long.compare(scheduledTime, o.scheduledTime);
+    }
+
+    @Override
+    public void run() {
+      metrics.observeScheduledTaskExecution(clock.millis() - scheduledTime);
+      runnable.run();
     }
   }
 }

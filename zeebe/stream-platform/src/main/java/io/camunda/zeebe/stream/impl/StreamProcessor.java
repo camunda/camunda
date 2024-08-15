@@ -22,6 +22,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
+import io.camunda.zeebe.stream.impl.metrics.ScheduledTaskMetrics;
 import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
@@ -161,22 +162,25 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       final var startRecoveryTimer = metrics.startRecoveryTimer();
       final long snapshotPosition = recoverFromSnapshot();
 
-      // the schedule service actor is only opened if the replay is done,
-      // until then it is an unusable and closed schedule service
+      final var scheduledTaskMetrics =
+          ScheduledTaskMetrics.of(
+              streamProcessorContext.getMeterRegistry(), streamProcessorContext.getPartitionId());
       processorActorService =
           new ProcessingScheduleServiceImpl(
               streamProcessorContext::getStreamProcessorPhase,
               streamProcessorContext.getAbortCondition(),
               logStream::newLogStreamWriter,
               scheduledCommandCache,
-              streamProcessorContext.getClock());
+              streamProcessorContext.getClock(),
+              scheduledTaskMetrics);
       asyncScheduleService =
           new ProcessingScheduleServiceImpl(
               streamProcessorContext::getStreamProcessorPhase, // this is volatile
               streamProcessorContext.getAbortCondition(),
               logStream::newLogStreamWriter,
               scheduledCommandCache,
-              streamProcessorContext.getClock());
+              streamProcessorContext.getClock(),
+              scheduledTaskMetrics);
       asyncActor = new AsyncProcessingScheduleServiceActor(asyncScheduleService, partitionId);
       final var extendedProcessingScheduleService =
           new ExtendedProcessingScheduleServiceImpl(

@@ -31,6 +31,7 @@ import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.TestScheduledCommandCache.TestCommandCache;
+import io.camunda.zeebe.stream.impl.metrics.ScheduledTaskMetrics;
 import io.camunda.zeebe.stream.impl.records.RecordBatch;
 import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
@@ -67,7 +68,8 @@ class ProcessingScheduleServiceTest {
             lifecycleSupplier,
             () -> testWriter,
             commandCache,
-            actorScheduler.getClock());
+            actorScheduler.getClock(),
+            ScheduledTaskMetrics.noop());
 
     scheduleService = new TestScheduleServiceActorDecorator(processingScheduleService);
     actorScheduler.submitActor(scheduleService);
@@ -161,7 +163,8 @@ class ProcessingScheduleServiceTest {
             lifecycleSupplier,
             () -> testWriter,
             new NoopScheduledCommandCache(),
-            InstantSource.system());
+            InstantSource.system(),
+            ScheduledTaskMetrics.noop());
     final var mockedTask = spy(new DummyTask());
 
     // when
@@ -184,7 +187,8 @@ class ProcessingScheduleServiceTest {
                   throw new RuntimeException("expected");
                 },
                 new NoopScheduledCommandCache(),
-                InstantSource.system()));
+                InstantSource.system(),
+                ScheduledTaskMetrics.noop()));
 
     // when
     final var actorFuture = actorScheduler.submitActor(notOpenScheduleService);
@@ -636,7 +640,8 @@ class ProcessingScheduleServiceTest {
               lifecycleSupplier,
               () -> testWriter,
               new NoopScheduledCommandCache(),
-              InstantSource.system());
+              InstantSource.system(),
+              ScheduledTaskMetrics.noop());
       final var mockedTask = spy(new DummyTask());
 
       // when
