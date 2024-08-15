@@ -218,8 +218,6 @@ jobs:
           context: .
           push: true
           tags: gcr.io/zeebe-io/operate:${{ inputs.operate-tag }}
-          cache-from: type=gha,ignore-error=true
-          cache-to: type=gha,mode=max,ignore-error=true
           file: operate.Dockerfile
 
   build-benchmark-images:
