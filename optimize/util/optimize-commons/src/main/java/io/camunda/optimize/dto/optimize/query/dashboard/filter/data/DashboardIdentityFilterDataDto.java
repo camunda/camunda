@@ -10,14 +10,7 @@ package io.camunda.optimize.dto.optimize.query.dashboard.filter.data;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.IdentityLinkFilterDataDto;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Data
-@EqualsAndHashCode(callSuper = true)
 public class DashboardIdentityFilterDataDto extends IdentityLinkFilterDataDto {
 
   protected boolean allowCustomValues;
@@ -39,6 +32,76 @@ public class DashboardIdentityFilterDataDto extends IdentityLinkFilterDataDto {
     super(operator, values);
     this.allowCustomValues = allowCustomValues;
     this.defaultValues = defaultValues;
+  }
+
+  protected DashboardIdentityFilterDataDto() {}
+
+  public boolean isAllowCustomValues() {
+    return allowCustomValues;
+  }
+
+  public void setAllowCustomValues(final boolean allowCustomValues) {
+    this.allowCustomValues = allowCustomValues;
+  }
+
+  public List<String> getDefaultValues() {
+    return defaultValues;
+  }
+
+  public void setDefaultValues(final List<String> defaultValues) {
+    this.defaultValues = defaultValues;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof DashboardIdentityFilterDataDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = super.hashCode();
+    result = result * PRIME + (isAllowCustomValues() ? 79 : 97);
+    final Object $defaultValues = getDefaultValues();
+    result = result * PRIME + ($defaultValues == null ? 43 : $defaultValues.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof DashboardIdentityFilterDataDto)) {
+      return false;
+    }
+    final DashboardIdentityFilterDataDto other = (DashboardIdentityFilterDataDto) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    if (isAllowCustomValues() != other.isAllowCustomValues()) {
+      return false;
+    }
+    final Object this$defaultValues = getDefaultValues();
+    final Object other$defaultValues = other.getDefaultValues();
+    if (this$defaultValues == null
+        ? other$defaultValues != null
+        : !this$defaultValues.equals(other$defaultValues)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "DashboardIdentityFilterDataDto(allowCustomValues="
+        + isAllowCustomValues()
+        + ", defaultValues="
+        + getDefaultValues()
+        + ")";
   }
 
   public static final class Fields {

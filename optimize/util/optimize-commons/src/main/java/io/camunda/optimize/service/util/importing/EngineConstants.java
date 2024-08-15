@@ -7,10 +7,6 @@
  */
 package io.camunda.optimize.service.util.importing;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class EngineConstants {
 
   public static final String MAX_RESULTS_TO_RETURN = "maxResults";
@@ -54,4 +50,6 @@ public class EngineConstants {
 
   public static final String OPTIMIZE_APPLICATION_RESOURCE_ID = "optimize";
   public static final String ALL_RESOURCES_RESOURCE_ID = "*";
+
+  private EngineConstants() {}
 }

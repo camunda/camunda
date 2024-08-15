@@ -22,13 +22,12 @@ import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.Arrays;
 import java.util.function.Function;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class InstanceIndexUtil {
+
+  private InstanceIndexUtil() {}
 
   public static String[] getDecisionInstanceIndexAliasName(
       final DecisionReportDataDto reportDataDto) {
@@ -81,7 +80,7 @@ public class InstanceIndexUtil {
   }
 
   private static boolean isInstanceIndexNotFoundException(
-      final RuntimeException e, Function<String, Boolean> messageFilter) {
+      final RuntimeException e, final Function<String, Boolean> messageFilter) {
     if (e instanceof ElasticsearchStatusException) {
       return Arrays.stream(e.getSuppressed())
           .map(Throwable::getMessage)

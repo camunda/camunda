@@ -12,15 +12,10 @@ import static io.camunda.optimize.service.util.configuration.ConfigurationServic
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @JsonIgnoreProperties
-@Data
 public class ProxyConfiguration {
+
   @JsonProperty("enabled")
   private boolean enabled;
 
@@ -33,8 +28,18 @@ public class ProxyConfiguration {
   @JsonProperty("sslEnabled")
   private boolean sslEnabled;
 
+  public ProxyConfiguration(
+      final boolean enabled, final String host, final Integer port, final boolean sslEnabled) {
+    this.enabled = enabled;
+    this.host = host;
+    this.port = port;
+    this.sslEnabled = sslEnabled;
+  }
+
+  public ProxyConfiguration() {}
+
   public void validate() {
-    if (this.enabled) {
+    if (enabled) {
       if (host == null || host.isEmpty()) {
         throw new OptimizeConfigurationException(
             ELASTICSEARCH_PROXY + ".host must be set and not empty if proxy is enabled");
@@ -44,5 +49,102 @@ public class ProxyConfiguration {
             ELASTICSEARCH_PROXY + ".port must be set and not empty if proxy is enabled");
       }
     }
+  }
+
+  public boolean isEnabled() {
+    return enabled;
+  }
+
+  @JsonProperty("enabled")
+  public void setEnabled(final boolean enabled) {
+    this.enabled = enabled;
+  }
+
+  public String getHost() {
+    return host;
+  }
+
+  @JsonProperty("host")
+  public void setHost(final String host) {
+    this.host = host;
+  }
+
+  public Integer getPort() {
+    return port;
+  }
+
+  @JsonProperty("port")
+  public void setPort(final Integer port) {
+    this.port = port;
+  }
+
+  public boolean isSslEnabled() {
+    return sslEnabled;
+  }
+
+  @JsonProperty("sslEnabled")
+  public void setSslEnabled(final boolean sslEnabled) {
+    this.sslEnabled = sslEnabled;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof ProxyConfiguration;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = 1;
+    result = result * PRIME + (isEnabled() ? 79 : 97);
+    final Object $host = getHost();
+    result = result * PRIME + ($host == null ? 43 : $host.hashCode());
+    final Object $port = getPort();
+    result = result * PRIME + ($port == null ? 43 : $port.hashCode());
+    result = result * PRIME + (isSslEnabled() ? 79 : 97);
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof ProxyConfiguration)) {
+      return false;
+    }
+    final ProxyConfiguration other = (ProxyConfiguration) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (isEnabled() != other.isEnabled()) {
+      return false;
+    }
+    final Object this$host = getHost();
+    final Object other$host = other.getHost();
+    if (this$host == null ? other$host != null : !this$host.equals(other$host)) {
+      return false;
+    }
+    final Object this$port = getPort();
+    final Object other$port = other.getPort();
+    if (this$port == null ? other$port != null : !this$port.equals(other$port)) {
+      return false;
+    }
+    if (isSslEnabled() != other.isSslEnabled()) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "ProxyConfiguration(enabled="
+        + isEnabled()
+        + ", host="
+        + getHost()
+        + ", port="
+        + getPort()
+        + ", sslEnabled="
+        + isSslEnabled()
+        + ")";
   }
 }

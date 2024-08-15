@@ -17,11 +17,9 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Objects;
-import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@NoArgsConstructor
 public class LoggingConfigurationReader {
 
   private final LinkedList<String> loggingConfigNames =
@@ -30,22 +28,24 @@ public class LoggingConfigurationReader {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
+  public LoggingConfigurationReader() {}
+
   public void defineLogbackLoggingConfiguration() {
-    LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+    final LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
     loggerContext.reset();
-    JoranConfigurator configurator = new JoranConfigurator();
-    try (InputStream configStream = getLogbackConfigurationFileStream()) {
+    final JoranConfigurator configurator = new JoranConfigurator();
+    try (final InputStream configStream = getLogbackConfigurationFileStream()) {
       configurator.setContext(loggerContext);
       configurator.doConfigure(configStream); // loads logback file
       Objects.requireNonNull(configStream).close();
-    } catch (JoranException | IOException e) {
+    } catch (final JoranException | IOException e) {
       // since logging setup broke, print it in standard error stream
       e.printStackTrace();
     }
     enableElasticsearchRequestLogging(loggerContext);
   }
 
-  private void enableElasticsearchRequestLogging(LoggerContext loggerContext) {
+  private void enableElasticsearchRequestLogging(final LoggerContext loggerContext) {
     if (logger.isTraceEnabled()) {
       // this allows to enable logging of Elasticsearch requests when
       // Optimize log level is set to trace
@@ -59,7 +59,7 @@ public class LoggingConfigurationReader {
 
   private InputStream getLogbackConfigurationFileStream() {
     return loggingConfigNames.stream()
-        .map(config -> this.getClass().getClassLoader().getResourceAsStream(config))
+        .map(config -> getClass().getClassLoader().getResourceAsStream(config))
         .filter(Objects::nonNull)
         .findFirst()
         .orElse(null);
