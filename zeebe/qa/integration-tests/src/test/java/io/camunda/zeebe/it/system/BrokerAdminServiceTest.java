@@ -9,8 +9,13 @@ package io.camunda.zeebe.it.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
+import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -21,9 +26,13 @@ import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.concurrent.Future;
+import org.agrona.DirectBuffer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -254,6 +263,26 @@ public class BrokerAdminServiceTest {
         .isEqualTo(ExporterPhase.EXPORTING.toString());
   }
 
+  @Test
+  void shouldReturnStreamClock() {
+    // given - evil way to modify the clock until we have a client API
+    // TODO: replace this with an actual client command when we have the client API
+    final var brokerClient = zeebe.bean(BrokerClient.class);
+    final var expectedInstant = Instant.now().minusMillis(3600).truncatedTo(ChronoUnit.MILLIS);
+    final var request =
+        new TestClockRequest(new ClockRecord().pinAt(expectedInstant.toEpochMilli()));
+
+    // when
+    brokerClient.sendRequest(request, Duration.ofSeconds(30)).join();
+
+    // then
+    final var status = partitions.query();
+    final var clock = status.get(1).clock();
+    assertThat(clock.instant()).isEqualTo(expectedInstant);
+    assertThat(clock.modificationType()).isEqualTo("Pin");
+    assertThat(clock.modification().get("at")).isEqualTo(expectedInstant.toString());
+  }
+
   private void waitForSnapshotAtBroker() {
     Awaitility.await("snapshot is taken")
         .atMost(Duration.ofSeconds(60))
@@ -263,5 +292,26 @@ public class BrokerAdminServiceTest {
                     .flatMap(FileBasedSnapshotId::ofFileName),
             Optional::isPresent)
         .orElseThrow();
+  }
+
+  private static final class TestClockRequest extends BrokerExecuteCommand<ClockRecord> {
+    private final ClockRecord request;
+
+    public TestClockRequest(final ClockRecord request) {
+      super(ValueType.CLOCK, ClockIntent.PIN);
+      this.request = request;
+    }
+
+    @Override
+    public BufferWriter getRequestWriter() {
+      return request;
+    }
+
+    @Override
+    protected ClockRecord toResponseDto(final DirectBuffer buffer) {
+      final var response = new ClockRecord();
+      response.wrap(buffer);
+      return response;
+    }
   }
 }
