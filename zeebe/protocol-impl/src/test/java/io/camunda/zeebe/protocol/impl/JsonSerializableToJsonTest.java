@@ -19,7 +19,6 @@ import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
@@ -65,6 +64,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -2547,6 +2547,30 @@ final class JsonSerializableToJsonTest {
         """
         {
           "authorizationKey": 1,
+          "ownerKey": "owner",
+          "ownerType": "USER",
+          "resourceKey": "resource",
+          "resourceType": "type",
+          "permissions": ["permission"]
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty AuthorizationRecord /////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty AuthorizationRecord",
+        (Supplier<AuthorizationRecord>)
+            () ->
+                new AuthorizationRecord()
+                    .setOwnerKey("owner")
+                    .setOwnerType(AuthorizationOwnerType.USER)
+                    .setResourceKey("resource")
+                    .setResourceType("type")
+                    .setPermissions(List.of("permission")),
+        """
+        {
+          "authorizationKey": -1,
           "ownerKey": "owner",
           "ownerType": "USER",
           "resourceKey": "resource",
