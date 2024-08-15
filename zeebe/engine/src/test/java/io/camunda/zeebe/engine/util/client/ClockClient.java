@@ -29,19 +29,42 @@ public class ClockClient {
 
   private final CommandWriter writer;
   private final ClockRecord record = new ClockRecord();
+  private long requestId = -1L;
+  private int requestStreamId = -1;
 
   public ClockClient(final CommandWriter writer) {
     this.writer = writer;
   }
 
+  public ClockClient requestId(final long requestId) {
+    this.requestId = requestId;
+    return this;
+  }
+
+  public ClockClient requestStreamId(final int requestStreamId) {
+    this.requestStreamId = requestStreamId;
+    return this;
+  }
+
   public Record<ClockRecordValue> pinAt(final Instant now) {
-    final long position = writer.writeCommand(ClockIntent.PIN, record.pinAt(now.toEpochMilli()));
+    record.pinAt(now.toEpochMilli());
+
+    final long position = writeCommand(ClockIntent.PIN);
     return PIN_SUCCESS_EXPECTATION.apply(position);
   }
 
   public Record<ClockRecordValue> reset() {
     record.reset();
-    final long position = writer.writeCommand(ClockIntent.RESET, record);
+
+    final long position = writeCommand(ClockIntent.RESET);
     return RESET_SUCCESS_EXPECTATION.apply(position);
+  }
+
+  private long writeCommand(final ClockIntent intent) {
+    if (requestId != -1 && requestStreamId != -1) {
+      return writer.writeCommand(requestStreamId, requestId, intent, record);
+    }
+
+    return writer.writeCommand(intent, record);
   }
 }

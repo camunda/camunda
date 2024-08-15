@@ -48,10 +48,11 @@ public final class ClockProcessor implements DistributedTypedRecordProcessor<Clo
     final long eventKey = keyGenerator.nextKey();
     final var clockRecord = command.getValue();
     final var intent = (ClockIntent) command.getIntent();
+    final var resultIntent = followUpIntent(intent);
 
-    applyClockModification(eventKey, intent, clockRecord);
+    applyClockModification(eventKey, intent, resultIntent, clockRecord);
     if (command.hasRequestMetadata()) {
-      responseWriter.writeEventOnCommand(eventKey, ClockIntent.RESETTED, clockRecord, command);
+      responseWriter.writeEventOnCommand(eventKey, resultIntent, clockRecord, command);
     }
 
     commandDistributionBehavior.distributeCommand(eventKey, command);
@@ -59,15 +60,19 @@ public final class ClockProcessor implements DistributedTypedRecordProcessor<Clo
 
   @Override
   public void processDistributedCommand(final TypedRecord<ClockRecord> command) {
-    applyClockModification(command.getKey(), (ClockIntent) command.getIntent(), command.getValue());
+    final var commandIntent = (ClockIntent) command.getIntent();
+    final var resultIntent = followUpIntent(commandIntent);
+
+    applyClockModification(command.getKey(), commandIntent, resultIntent, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
   private void applyClockModification(
-      final long key, final ClockIntent commandIntent, final ClockRecord clockRecord) {
+      final long key,
+      final ClockIntent commandIntent,
+      final ClockIntent resultIntent,
+      final ClockRecord clockRecord) {
     final var sideEffect = clockModification(commandIntent, clockRecord);
-    final var resultIntent = followUpIntent(commandIntent);
-
     sideEffectWriter.appendSideEffect(sideEffect);
     stateWriter.appendFollowUpEvent(key, resultIntent, clockRecord);
   }
