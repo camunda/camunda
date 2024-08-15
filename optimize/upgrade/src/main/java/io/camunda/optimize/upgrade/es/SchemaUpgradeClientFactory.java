@@ -18,12 +18,12 @@ import io.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import io.camunda.optimize.service.util.mapper.OptimizeDateTimeFormatterFactory;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.elasticsearch.xcontent.XContentBuilder;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SchemaUpgradeClientFactory {
+
+  private SchemaUpgradeClientFactory() {}
+
   public static SchemaUpgradeClient createSchemaUpgradeClient(
       final UpgradeExecutionDependencies upgradeDependencies) {
     return createSchemaUpgradeClient(

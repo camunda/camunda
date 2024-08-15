@@ -12,11 +12,11 @@ import static io.camunda.optimize.upgrade.es.SchemaUpgradeClientFactory.createSc
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.service.UpgradeStepLogService;
 import io.camunda.optimize.upgrade.service.UpgradeValidationService;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class UpgradeProcedureFactory {
+
+  private UpgradeProcedureFactory() {}
+
   public static UpgradeProcedure create(final UpgradeExecutionDependencies upgradeDependencies) {
     return new UpgradeProcedure(
         upgradeDependencies.esClient(),
