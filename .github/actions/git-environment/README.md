@@ -17,24 +17,24 @@ action itself takes 2 seconds but GitHub only bills full minutes.
 
 ### Inputs
 
-|          Input           |                        Description                        | Required |             Default             |
-|--------------------------|-----------------------------------------------------------|----------|---------------------------------|
-| maintenance_branch_regex | A bash regex provided to determine the maintenance branch | false    | ^maintenance\/([0-9]+\.[0-9]+)$ |
-| main_branch_regex        | A bash regex provided to determine the main branch        | false    | ^master$                        |
-| branch                   | A provided branch name                                    | false    | defaults to github.ref_name     |
+|        Input        |                     Description                      | Required |           Default           |
+|---------------------|------------------------------------------------------|----------|-----------------------------|
+| stable_branch_regex | A bash regex provided to determine the stable branch | false    | ^stable\/([0-9]+\.[0-9]+)$  |
+| main_branch_regex   | A bash regex provided to determine the main branch   | false    | ^main$                      |
+| branch              | A provided branch name                               | false    | defaults to github.ref_name |
 
 ### Outputs
 
-|            Output             |                                       Description                                       |
-|-------------------------------|-----------------------------------------------------------------------------------------|
-| maintenance_version           | If it's a maintenance branch, which maintenance version it is                           |
-| is_maintenance_branch         | Whether the provided branch is a maintenance branch                                     |
-| is_main_branch                | Whether the provided branch is a main branch                                            |
-| is_main_or_maintenance_branch | Whether the provided branch is a main or maintenance branch                             |
-| branch_slug                   | The sanitized branch - everything lowercase and anything not a-z0-9- is replaced with - |
-| git_commit_hash               | The git commit hash                                                                     |
-| image_tag                     | Depending on main/maintenance returns hash or branch-slug                               |
-| latest_tag                    | If maintenance returns maintenance-version-latest else latest                           |
+|          Output          |                                       Description                                       |
+|--------------------------|-----------------------------------------------------------------------------------------|
+| stable_version           | If it's a stable branch, which stable version it is                                     |
+| is_stable_branch         | Whether the provided branch is a stable branch                                          |
+| is_main_branch           | Whether the provided branch is a main branch                                            |
+| is_main_or_stable_branch | Whether the provided branch is a main or stable branch                                  |
+| branch_slug              | The sanitized branch - everything lowercase and anything not a-z0-9- is replaced with - |
+| git_commit_hash          | The git commit hash                                                                     |
+| image_tag                | Depending on main/stable returns hash or branch-slug                                    |
+| latest_tag               | If stable returns stable-version-latest else latest                                     |
 
 ## Example of using the action
 
@@ -44,10 +44,10 @@ jobs:
     name: Define global values
     runs-on: ubuntu-latest
     outputs:
-      maintenance_version: ${{ steps.define-values.outputs.maintenance_version }}
-      is_maintenance_branch: ${{ steps.define-values.outputs.is_maintenance_branch }}
+      stable_version: ${{ steps.define-values.outputs.stable_version }}
+      is_stable_branch: ${{ steps.define-values.outputs.is_stable_branch }}
       is_main_branch: ${{ steps.define-values.outputs.is_main_branch }}
-      is_main_or_maintenance_branch: ${{ steps.define-values.outputs.is_main_or_maintenance_branch }}
+      is_main_or_stable_branch: ${{ steps.define-values.outputs.is_main_or_stable_branch }}
       branch_slug: ${{ steps.define-values.outputs.branch_slug }}
       git_commit_hash: ${{ steps.define-values.outputs.git_commit_hash }}
       image_tag: ${{ steps.define-values.outputs.image_tag }}

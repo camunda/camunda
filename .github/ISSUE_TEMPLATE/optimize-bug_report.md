@@ -1,10 +1,11 @@
 ---
+
 name: Optimize Bug report
 about: Report a problem about Optimize and help us fix it.
 title: ""
 labels: ["kind/bug", "qa:pendingVerification", "component/optimize"]
 assignees: ""
----
+-------------
 
 ### Describe the bug
 
@@ -60,7 +61,6 @@ Is this bug reproducible?
 #### Review Resources
 
 <!-- When in review, the resources to be used for review should be listed here) -->
-
 - Feature PR: {Link to PR targeting the main branch}
 - Preview environments: {Link(s) to preview environments}
 
@@ -79,5 +79,6 @@ Is this bug reproducible?
 ### Completion
 
 - [ ] All Review stages are successfully completed
-- [ ] All associated PRs are merged to the main branch(es) and maintenance branches
+- [ ] All associated PRs are merged to the main branch(es) and stable branches
 - [ ] The correct version labels are applied to the issue
+
