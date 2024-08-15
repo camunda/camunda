@@ -9,8 +9,6 @@ package io.camunda.optimize.upgrade.es;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
-import io.camunda.optimize.plugin.PluginJarFileLoader;
 import io.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -69,7 +67,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
     request.setOptions(requestOptions);
     final String responseJson =
         EntityUtils.toString(esClient.getLowLevelClient().performRequest(request).getEntity());
-    ObjectNode node = new ObjectMapper().readValue(responseJson, ObjectNode.class);
+    final ObjectNode node = new ObjectMapper().readValue(responseJson, ObjectNode.class);
     return node.get("version").get("number").toString().replace("\"", "");
   }
 
@@ -104,8 +102,8 @@ public class ElasticsearchHighLevelRestClientBuilder {
       builder.setHttpClientConfigCallback(
           createHttpClientConfigCallback(configurationService, sslContext));
       return getRestHighLevelClient(builder, requestOptions);
-    } catch (Exception e) {
-      String message = "Could not build secured Elasticsearch client.";
+    } catch (final Exception e) {
+      final String message = "Could not build secured Elasticsearch client.";
       throw new OptimizeRuntimeException(message, e);
     }
   }
@@ -143,7 +141,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
   }
 
   private static RestClientBuilder buildDefaultRestClient(
-      ConfigurationService configurationService, String protocol) {
+      final ConfigurationService configurationService, final String protocol) {
     final RestClientBuilder restClientBuilder =
         RestClient.builder(buildElasticsearchConnectionNodes(configurationService, protocol))
             .setRequestConfigCallback(
@@ -167,7 +165,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
   }
 
   private static HttpHost[] buildElasticsearchConnectionNodes(
-      ConfigurationService configurationService, String protocol) {
+      final ConfigurationService configurationService, final String protocol) {
     return configurationService.getElasticSearchConfiguration().getConnectionNodes().stream()
         .map(conf -> new HttpHost(conf.getHost(), conf.getHttpPort(), protocol))
         .toArray(HttpHost[]::new);
@@ -191,7 +189,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
     return Optional.ofNullable(credentialsProvider);
   }
 
-  private static KeyStore loadCustomTrustStore(ConfigurationService configurationService) {
+  private static KeyStore loadCustomTrustStore(final ConfigurationService configurationService) {
     try {
       final KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
       trustStore.load(null);
@@ -201,10 +199,10 @@ public class ElasticsearchHighLevelRestClientBuilder {
           configurationService.getElasticSearchConfiguration().getSecuritySSLCertificate();
       if (serverCertificate != null) {
         try {
-          Certificate cert = loadCertificateFromPath(serverCertificate);
+          final Certificate cert = loadCertificateFromPath(serverCertificate);
           trustStore.setCertificateEntry("elasticsearch-host", cert);
-        } catch (Exception e) {
-          String message =
+        } catch (final Exception e) {
+          final String message =
               "Could not load configured server certificate for the secured Elasticsearch Connection!";
           throw new OptimizeConfigurationException(message, e);
         }
@@ -212,24 +210,24 @@ public class ElasticsearchHighLevelRestClientBuilder {
 
       // load trusted CA certificates
       int caCertificateCounter = 0;
-      for (String caCertificatePath :
+      for (final String caCertificatePath :
           configurationService
               .getElasticSearchConfiguration()
               .getSecuritySSLCertificateAuthorities()) {
         try {
-          Certificate cert = loadCertificateFromPath(caCertificatePath);
+          final Certificate cert = loadCertificateFromPath(caCertificatePath);
           trustStore.setCertificateEntry("custom-elasticsearch-ca-" + caCertificateCounter, cert);
           caCertificateCounter++;
-        } catch (Exception e) {
-          String message =
+        } catch (final Exception e) {
+          final String message =
               "Could not load CA authority certificate for the secured Elasticsearch Connection!";
           throw new OptimizeConfigurationException(message, e);
         }
       }
 
       return trustStore;
-    } catch (Exception e) {
-      String message =
+    } catch (final Exception e) {
+      final String message =
           "Could not create certificate trustStore for the secured Elasticsearch Connection!";
       throw new OptimizeRuntimeException(message, e);
     }
@@ -237,10 +235,10 @@ public class ElasticsearchHighLevelRestClientBuilder {
 
   private static Certificate loadCertificateFromPath(final String certificatePath)
       throws IOException, CertificateException {
-    Certificate cert;
+    final Certificate cert;
     final FileInputStream fileInputStream = new FileInputStream(certificatePath);
-    try (BufferedInputStream bis = new BufferedInputStream(fileInputStream)) {
-      CertificateFactory cf = CertificateFactory.getInstance("X.509");
+    try (final BufferedInputStream bis = new BufferedInputStream(fileInputStream)) {
+      final CertificateFactory cf = CertificateFactory.getInstance("X.509");
 
       if (bis.available() > 0) {
         cert = cf.generateCertificate(bis);
@@ -280,9 +278,9 @@ public class ElasticsearchHighLevelRestClientBuilder {
     while (true) {
       try {
         return getCurrentESVersion(restHighLevelClient, requestOptions);
-      } catch (ConnectException ex) {
+      } catch (final ConnectException ex) {
         logger.error("Can't connect to any ES node right now. Retrying connection...");
-        long sleepTime = 1000;
+        final long sleepTime = 1000;
         logger.info(
             "No Elasticsearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
         try {
@@ -291,20 +289,16 @@ public class ElasticsearchHighLevelRestClientBuilder {
           logger.warn("Got interrupted while waiting to retry connecting to Elasticsearch.", e);
           Thread.currentThread().interrupt();
         }
-      } catch (IOException e) {
-        String message = "Could not fetch the version of the Elasticsearch server.";
+      } catch (final IOException e) {
+        final String message = "Could not fetch the version of the Elasticsearch server.";
         throw new OptimizeRuntimeException(message, e);
       }
     }
   }
 
   private static RequestOptions getRequestOptions(final ConfigurationService configurationService) {
-    ElasticsearchCustomHeaderProvider customHeaderProvider =
-        new ElasticsearchCustomHeaderProvider(
-            configurationService, new PluginJarFileLoader(configurationService));
-    customHeaderProvider.initPlugins();
-    RequestOptionsProvider requestOptionsProvider =
-        new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService);
+    final RequestOptionsProvider requestOptionsProvider =
+        new RequestOptionsProvider(configurationService);
     return requestOptionsProvider.getRequestOptions();
   }
 }

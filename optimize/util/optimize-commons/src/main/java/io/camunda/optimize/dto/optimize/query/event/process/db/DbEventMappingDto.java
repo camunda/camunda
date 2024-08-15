@@ -16,14 +16,12 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.experimental.FieldNameConstants;
 
 @Builder
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldNameConstants
 @EqualsAndHashCode
 public class DbEventMappingDto implements OptimizeDto {
 
@@ -38,5 +36,12 @@ public class DbEventMappingDto implements OptimizeDto {
         .start(eventMappingDto.getStart())
         .end(eventMappingDto.getEnd())
         .build();
+  }
+
+  public static final class Fields {
+
+    public static final String flowNodeId = "flowNodeId";
+    public static final String start = "start";
+    public static final String end = "end";
   }
 }

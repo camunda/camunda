@@ -24,6 +24,7 @@ import lombok.NoArgsConstructor;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class AuthorizedCollectionDefinitionDto extends AuthorizedEntityDto {
+
   @JsonUnwrapped private CollectionDefinitionDto definitionDto;
 
   public AuthorizedCollectionDefinitionDto(

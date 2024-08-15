@@ -35,7 +35,7 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
-  public void shouldRejectMigrationForActiveMessageIntermediateCatchEvent() {
+  public void shouldRejectMigrationForActiveTimerIntermediateCatchEvent() {
     // given
     final var deployment =
         ENGINE
@@ -43,33 +43,24 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(SOURCE_PROCESS)
                     .startEvent()
-                    .intermediateCatchEvent(
-                        "A",
-                        e -> e.message(m -> m.name("msg").zeebeCorrelationKeyExpression("key")))
+                    .intermediateCatchEvent("timer1", c -> c.timerWithDuration("PT10S"))
                     .endEvent()
                     .done())
             .withXmlResource(
                 Bpmn.createExecutableProcess(TARGET_PROCESS)
                     .startEvent()
-                    .intermediateCatchEvent(
-                        "A",
-                        e -> e.message(m -> m.name("msg").zeebeCorrelationKeyExpression("key")))
-                    .userTask("B")
+                    .intermediateCatchEvent("timer2", c -> c.timerWithDuration("PT10M"))
                     .endEvent()
                     .done())
             .deploy();
     final long targetProcessDefinitionKey = extractTargetProcessDefinitionKey(deployment);
 
     final var processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(SOURCE_PROCESS)
-            .withVariable("key", helper.getCorrelationValue())
-            .create();
+        ENGINE.processInstance().ofBpmnProcessId(SOURCE_PROCESS).create();
 
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
-        .withElementId("A")
+        .withElementId("timer1")
         .await();
 
     // when
@@ -79,7 +70,7 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
             .withInstanceKey(processInstanceKey)
             .migration()
             .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-            .addMappingInstruction("A", "A")
+            .addMappingInstruction("timer1", "timer2")
             .expectRejection()
             .migrate();
 
@@ -89,69 +80,10 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
         .contains(
             String.format(
                 """
-                Expected to migrate process instance '%s' but active element with id '%s' \
-                has an unsupported type. The migration of a %s is not supported""",
-                processInstanceKey, "A", "INTERMEDIATE_CATCH_EVENT"));
-  }
-
-  @Test
-  public void shouldRejectMigrationForActiveReceiveTask() {
-    // given
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(SOURCE_PROCESS)
-                    .startEvent()
-                    .receiveTask(
-                        "A",
-                        e -> e.message(m -> m.name("msg").zeebeCorrelationKeyExpression("key")))
-                    .endEvent()
-                    .done())
-            .withXmlResource(
-                Bpmn.createExecutableProcess(TARGET_PROCESS)
-                    .startEvent()
-                    .receiveTask(
-                        "A",
-                        e -> e.message(m -> m.name("msg").zeebeCorrelationKeyExpression("key")))
-                    .userTask("B")
-                    .endEvent()
-                    .done())
-            .deploy();
-    final long targetProcessDefinitionKey = extractTargetProcessDefinitionKey(deployment);
-
-    final var processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(SOURCE_PROCESS)
-            .withVariable("key", helper.getCorrelationValue())
-            .create();
-
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementId("A")
-        .await();
-
-    // when
-    final var rejection =
-        ENGINE
-            .processInstance()
-            .withInstanceKey(processInstanceKey)
-            .migration()
-            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-            .addMappingInstruction("A", "A")
-            .expectRejection()
-            .migrate();
-
-    // then
-    assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
-    Assertions.assertThat(rejection.getRejectionReason())
-        .contains(
-            String.format(
-                """
-                Expected to migrate process instance '%s' but active element with id '%s' \
-                has an unsupported type. The migration of a %s is not supported""",
-                processInstanceKey, "A", "RECEIVE_TASK"));
+                Expected to migrate process instance '%s' \
+                but active element with id '%s' is intermediate catch event of type '%s'. \
+                Migrating active intermediate catch event of this type is not possible yet.""",
+                processInstanceKey, "timer1", "TIMER"));
   }
 
   @Test

@@ -18,15 +18,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Data
 @Builder
-@FieldNameConstants
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class EventProcessPublishStateDto {
+
   @EqualsAndHashCode.Include private String id;
   private String processMappingId;
   private String name;
@@ -41,5 +40,19 @@ public class EventProcessPublishStateDto {
   @JsonIgnore
   public String getProcessKey() {
     return processMappingId;
+  }
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String processMappingId = "processMappingId";
+    public static final String name = "name";
+    public static final String publishDateTime = "publishDateTime";
+    public static final String state = "state";
+    public static final String publishProgress = "publishProgress";
+    public static final String deleted = "deleted";
+    public static final String xml = "xml";
+    public static final String mappings = "mappings";
+    public static final String eventImportSources = "eventImportSources";
   }
 }

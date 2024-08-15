@@ -10,7 +10,6 @@
 
 cd $(dirname "$0")
 BASEDIR=$(pwd)
-export PLUGIN_DIR="${BASEDIR}/../plugin"
 
 # now set the path to java
 if [ -x "$JAVA_HOME/bin/java" ]; then

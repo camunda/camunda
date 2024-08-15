@@ -70,7 +70,7 @@ services:
       - keycloak
     restart: on-failure
     container_name: identity
-    image: camunda/identity:latest
+    image: camunda/identity:${IDENTITY_VERSION:-8.5.0}
     profiles: ['self-managed']
     ports:
       - '8081:8081'

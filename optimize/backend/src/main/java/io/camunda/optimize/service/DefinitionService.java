@@ -27,7 +27,6 @@ import io.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIds
 import io.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
 import io.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
 import io.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
-import io.camunda.optimize.service.db.reader.CamundaActivityEventReader;
 import io.camunda.optimize.service.db.reader.DefinitionReader;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
@@ -67,7 +66,6 @@ public class DefinitionService implements ConfigurationReloadable {
   private final DefinitionReader definitionReader;
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final TenantService tenantService;
-  private final CamundaActivityEventReader camundaActivityEventReader;
 
   private final LoadingCache<String, Map<String, DefinitionOptimizeResponseDto>>
       latestProcessDefinitionCache;
@@ -78,12 +76,10 @@ public class DefinitionService implements ConfigurationReloadable {
       final DefinitionReader definitionReader,
       final DataSourceDefinitionAuthorizationService definitionAuthorizationService,
       final TenantService tenantService,
-      final CamundaActivityEventReader camundaActivityEventReader,
       final ConfigurationService configurationService) {
     this.definitionReader = definitionReader;
     this.definitionAuthorizationService = definitionAuthorizationService;
     this.tenantService = tenantService;
-    this.camundaActivityEventReader = camundaActivityEventReader;
 
     final CacheConfiguration definitionCacheConfiguration =
         configurationService.getCaches().getDefinitions();
@@ -212,17 +208,6 @@ public class DefinitionService implements ConfigurationReloadable {
               return authorizedTenants;
             })
         .orElse(List.of());
-  }
-
-  public List<DefinitionResponseDto> getFullyImportedCamundaEventImportedDefinitions(
-      final String userId) {
-    final Set<String> camundaEventImportedKeys =
-        camundaActivityEventReader.getIndexSuffixesForCurrentActivityIndices();
-    final List<DefinitionResponseDto> allProcessDefs =
-        getFullyImportedDefinitions(DefinitionType.PROCESS, userId);
-    return allProcessDefs.stream()
-        .filter(def -> camundaEventImportedKeys.contains(def.getKey().toLowerCase(Locale.ENGLISH)))
-        .toList();
   }
 
   public List<DefinitionResponseDto> getFullyImportedDefinitions(@NonNull final String userId) {
@@ -395,7 +380,7 @@ public class DefinitionService implements ConfigurationReloadable {
     // tenant
     // If > one tenant is in the list, first look on the null tenant, then on other tenants in the
     // sorted list
-    List<String> tenantIdsForDefinitionSearch = new ArrayList<>(selectedTenantIds);
+    final List<String> tenantIdsForDefinitionSearch = new ArrayList<>(selectedTenantIds);
     tenantIdsForDefinitionSearch.add(null);
     return tenantIdsForDefinitionSearch.stream()
         .distinct()

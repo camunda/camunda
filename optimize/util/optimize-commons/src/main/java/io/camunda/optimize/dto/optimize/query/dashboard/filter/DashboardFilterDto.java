@@ -12,11 +12,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @NoArgsConstructor
-@FieldNameConstants
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({
   @JsonSubTypes.Type(value = DashboardInstanceStartDateFilterDto.class, name = "instanceStartDate"),
@@ -27,9 +25,15 @@ import lombok.experimental.FieldNameConstants;
   @JsonSubTypes.Type(value = DashboardCandidateGroupFilterDto.class, name = "candidateGroup")
 })
 public abstract class DashboardFilterDto<DATA extends FilterDataDto> {
+
   protected DATA data;
 
   protected DashboardFilterDto(final DATA data) {
     this.data = data;
+  }
+
+  public static final class Fields {
+
+    public static final String data = "data";
   }
 }

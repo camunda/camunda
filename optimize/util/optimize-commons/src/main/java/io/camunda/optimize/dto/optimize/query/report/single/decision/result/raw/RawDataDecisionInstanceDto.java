@@ -13,13 +13,12 @@ import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@FieldNameConstants(asEnum = true)
 public class RawDataDecisionInstanceDto implements RawDataInstanceDto {
+
   protected String decisionDefinitionKey;
   protected String decisionDefinitionId;
   protected String decisionInstanceId;
@@ -27,6 +26,16 @@ public class RawDataDecisionInstanceDto implements RawDataInstanceDto {
   protected OffsetDateTime evaluationDateTime;
   protected String engineName;
   protected String tenantId;
-  @FieldNameConstants.Exclude protected Map<String, InputVariableEntry> inputVariables;
-  @FieldNameConstants.Exclude protected Map<String, OutputVariableEntry> outputVariables;
+  protected Map<String, InputVariableEntry> inputVariables;
+  protected Map<String, OutputVariableEntry> outputVariables;
+
+  public enum Fields {
+    decisionDefinitionKey,
+    decisionDefinitionId,
+    decisionInstanceId,
+    processInstanceId,
+    evaluationDateTime,
+    engineName,
+    tenantId
+  }
 }

@@ -18,6 +18,8 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import java.time.InstantSource;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 public class TypedRecordProcessorContextImpl implements TypedRecordProcessorContext {
@@ -31,6 +33,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   private final EngineConfiguration config;
   private final TransientPendingSubscriptionState transientMessageSubscriptionState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
+  private final InstantSource clock;
 
   public TypedRecordProcessorContextImpl(
       final RecordProcessorContext context,
@@ -41,6 +44,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
     zeebeDb = context.getZeebeDb();
     transientMessageSubscriptionState = new TransientPendingSubscriptionState();
     transientProcessMessageSubscriptionState = new TransientPendingSubscriptionState();
+    clock = Objects.requireNonNull(context.getClock());
     processingState =
         new ProcessingDbState(
             partitionId,
@@ -49,7 +53,8 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
             context.getKeyGenerator(),
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
-            config);
+            config,
+            clock);
     this.writers = writers;
     partitionCommandSender = context.getPartitionCommandSender();
     this.config = config;
@@ -88,11 +93,17 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
             zeebeDb.createContext(),
             partitionId,
             transientMessageSubscriptionState,
-            transientProcessMessageSubscriptionState);
+            transientProcessMessageSubscriptionState,
+            clock);
   }
 
   @Override
   public EngineConfiguration getConfig() {
     return config;
+  }
+
+  @Override
+  public InstantSource getClock() {
+    return clock;
   }
 }

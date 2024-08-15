@@ -20,7 +20,6 @@ import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.experimental.FieldNameConstants;
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -34,7 +33,6 @@ import lombok.experimental.FieldNameConstants;
 @Getter
 @Setter
 @EqualsAndHashCode(callSuper = true)
-@FieldNameConstants
 public abstract class FlowNodeDateFilterDataDto<START> extends DateFilterDataDto<START> {
 
   protected List<String> flowNodeIds;
@@ -46,5 +44,10 @@ public abstract class FlowNodeDateFilterDataDto<START> extends DateFilterDataDto
       final OffsetDateTime end) {
     super(type, start, end);
     this.flowNodeIds = flowNodeIds;
+  }
+
+  public static final class Fields {
+
+    public static final String flowNodeIds = "flowNodeIds";
   }
 }

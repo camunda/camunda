@@ -19,10 +19,6 @@ Contents:
 
                     this folder contains preconfigured Elasticsearch server.
 
-        plugin/
-
-                   directory where all Optimize plugins need to be put.
-
         upgrade/
 
                     execute the upgrade optimize jar files from here to upgrade Optimize.

@@ -36,6 +36,7 @@ import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -62,7 +63,11 @@ class ProcessingScheduleServiceTest {
     lifecycleSupplier = new LifecycleSupplier();
     final var processingScheduleService =
         new ProcessingScheduleServiceImpl(
-            lifecycleSupplier, lifecycleSupplier, () -> testWriter, commandCache);
+            lifecycleSupplier,
+            lifecycleSupplier,
+            () -> testWriter,
+            commandCache,
+            actorScheduler.getClock());
 
     scheduleService = new TestScheduleServiceActorDecorator(processingScheduleService);
     actorScheduler.submitActor(scheduleService);
@@ -155,7 +160,8 @@ class ProcessingScheduleServiceTest {
             lifecycleSupplier,
             lifecycleSupplier,
             () -> testWriter,
-            new NoopScheduledCommandCache());
+            new NoopScheduledCommandCache(),
+            InstantSource.system());
     final var mockedTask = spy(new DummyTask());
 
     // when
@@ -177,7 +183,8 @@ class ProcessingScheduleServiceTest {
                 () -> {
                   throw new RuntimeException("expected");
                 },
-                new NoopScheduledCommandCache()));
+                new NoopScheduledCommandCache(),
+                InstantSource.system()));
 
     // when
     final var actorFuture = actorScheduler.submitActor(notOpenScheduleService);
@@ -568,8 +575,8 @@ class ProcessingScheduleServiceTest {
 
       // then
       final var inOrder = inOrder(mockedTask2, mockedTask);
-      inOrder.verify(mockedTask).execute(any());
       inOrder.verify(mockedTask2).execute(any());
+      inOrder.verify(mockedTask).execute(any());
       inOrder.verifyNoMoreInteractions();
     }
 
@@ -628,7 +635,8 @@ class ProcessingScheduleServiceTest {
               lifecycleSupplier,
               lifecycleSupplier,
               () -> testWriter,
-              new NoopScheduledCommandCache());
+              new NoopScheduledCommandCache(),
+              InstantSource.system());
       final var mockedTask = spy(new DummyTask());
 
       // when

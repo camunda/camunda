@@ -15,16 +15,22 @@ import java.time.ZoneId;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
-@FieldNameConstants
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 public abstract class ImportIndexDto<T extends DataSourceDto> implements OptimizeDto {
+
   protected OffsetDateTime lastImportExecutionTimestamp =
       OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
   protected OffsetDateTime timestampOfLastEntity =
       OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
   protected T dataSource;
+
+  public static final class Fields {
+
+    public static final String lastImportExecutionTimestamp = "lastImportExecutionTimestamp";
+    public static final String timestampOfLastEntity = "timestampOfLastEntity";
+    public static final String dataSource = "dataSource";
+  }
 }

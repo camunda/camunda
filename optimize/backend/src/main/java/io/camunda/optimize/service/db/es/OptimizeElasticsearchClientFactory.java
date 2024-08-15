@@ -10,7 +10,6 @@ package io.camunda.optimize.service.db.es;
 import static io.camunda.optimize.service.util.DatabaseVersionChecker.checkESVersionSupport;
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 
-import io.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
@@ -36,13 +35,11 @@ public class OptimizeElasticsearchClientFactory {
       final ConfigurationService configurationService,
       final OptimizeIndexNameService optimizeIndexNameService,
       final ElasticSearchSchemaManager elasticSearchSchemaManager,
-      final ElasticsearchCustomHeaderProvider elasticsearchCustomHeaderProvider,
       final BackoffCalculator backoffCalculator)
       throws IOException {
     log.info("Initializing Elasticsearch rest client...");
     final RequestOptionsProvider requestOptionsProvider =
-        new RequestOptionsProvider(
-            elasticsearchCustomHeaderProvider.getPlugins(), configurationService);
+        new RequestOptionsProvider(configurationService);
     final RestHighLevelClient esClient =
         ElasticsearchHighLevelRestClientBuilder.build(configurationService);
     waitForElasticsearch(esClient, backoffCalculator, requestOptionsProvider.getRequestOptions());
@@ -73,7 +70,7 @@ public class OptimizeElasticsearchClientFactory {
             e);
       } finally {
         if (!isConnected) {
-          long sleepTime = backoffCalculator.calculateSleepTime();
+          final long sleepTime = backoffCalculator.calculateSleepTime();
           log.info(
               "No Elasticsearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
           try {

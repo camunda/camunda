@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscrip
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnDecisionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
@@ -31,6 +32,7 @@ public final class BusinessRuleTaskProcessor
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
+  private final BpmnJobBehavior jobBehavior;
 
   public BusinessRuleTaskProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -43,6 +45,7 @@ public final class BusinessRuleTaskProcessor
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     stateBehavior = bpmnBehaviors.stateBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
+    jobBehavior = bpmnBehaviors.jobBehavior();
   }
 
   @Override
@@ -105,6 +108,10 @@ public final class BusinessRuleTaskProcessor
   @Override
   public void onTerminateInternal(
       final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(context);
+    }
+
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
     incidentBehavior.resolveIncidents(context);

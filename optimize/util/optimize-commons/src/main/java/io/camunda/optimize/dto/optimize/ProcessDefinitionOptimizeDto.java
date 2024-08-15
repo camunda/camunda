@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize;
 
-import static io.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
+import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NODE_TYPE_USER_TASK;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
@@ -19,13 +19,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.experimental.FieldNameConstants;
 
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@FieldNameConstants
 public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto {
+
   private String bpmn20Xml;
   private List<FlowNodeDataDto> flowNodeData = new ArrayList<>();
   private Map<String, String> userTaskNames = new HashMap<>();
@@ -33,7 +32,7 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
   @JsonIgnore private boolean eventBased;
 
   public ProcessDefinitionOptimizeDto() {
-    this.setType(DefinitionType.PROCESS);
+    setType(DefinitionType.PROCESS);
   }
 
   public ProcessDefinitionOptimizeDto(
@@ -98,5 +97,14 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
 
   public Map<String, String> getUserTaskNames() {
     return userTaskNames == null ? new HashMap<>() : new HashMap<>(userTaskNames);
+  }
+
+  public static final class Fields {
+
+    public static final String bpmn20Xml = "bpmn20Xml";
+    public static final String flowNodeData = "flowNodeData";
+    public static final String userTaskNames = "userTaskNames";
+    public static final String onboarded = "onboarded";
+    public static final String eventBased = "eventBased";
   }
 }

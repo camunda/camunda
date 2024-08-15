@@ -228,8 +228,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     richOpenSearchClient =
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
     indexNameService = context.getBean(OptimizeIndexNameService.class);
-    // For now we are descoping the custom header provider, to be evaluated with OPT-7400
-    requestOptionsProvider = new RequestOptionsProvider(List.of(), configurationService);
+    requestOptionsProvider = new RequestOptionsProvider(configurationService);
   }
 
   public final <T> GetResponse<T> get(
@@ -313,12 +312,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     }
   }
 
-  public final GetAliasResponse getAlias(final String indexNamePattern) throws IOException {
-    final GetAliasRequest getAliasesRequest =
-        new GetAliasRequest.Builder().index(convertToPrefixedAliasName(indexNamePattern)).build();
-    return openSearchClient.indices().getAlias(getAliasesRequest);
-  }
-
   @Override
   public boolean triggerRollover(final String indexAliasName, final int maxIndexSizeGB) {
     final RolloverRequest rolloverRequest =
@@ -362,6 +355,139 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   public <T> long count(final String[] indexNames, final T query) throws IOException {
     return count(
         indexNames, query, "Could not execute count request for " + Arrays.toString(indexNames));
+  }
+
+  @Override
+  public org.elasticsearch.action.search.SearchResponse scroll(
+      final SearchScrollRequest scrollRequest) throws IOException {
+    // todo will be handle in the OPT-7469
+    return new org.elasticsearch.action.search.SearchResponse(null);
+  }
+
+  @Override
+  public org.elasticsearch.action.search.SearchResponse search(
+      final org.elasticsearch.action.search.SearchRequest searchRequest) throws IOException {
+    // TODO this is a temporary implementation, here we are extracting the json query from the
+    // search request and performing a low-level request to OpenSearch
+    final String jsonQuery = searchRequest.source().toString();
+    final String[] indicesToQuery = searchRequest.indices();
+    final String response =
+        getOpenSearchClient()
+            .arbitraryRequestAsString(
+                "POST",
+                "/"
+                    + indexNameService.getOptimizeIndexAliasForIndex(indicesToQuery[0])
+                    + "/_search",
+                jsonQuery);
+    return getSearchResponseFromJson(response);
+  }
+
+  @Override
+  public ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest)
+      throws IOException {
+    // todo will be handle in the OPT-7469
+    return new ClearScrollResponse(null);
+  }
+
+  @Override
+  public String getDatabaseVersion() throws IOException {
+    return getOpenSearchClient().info().version().number();
+  }
+
+  @Override
+  public void setDefaultRequestOptions() {
+    // TODO Do nothing, will be handled with OPT-7400
+  }
+
+  @Override
+  public void update(final String indexName, final String entityId, final ScriptData script) {
+
+    final Script scr = QueryDSL.script(script.scriptString(), script.params());
+
+    final UpdateRequest.Builder<Void, Void> updateReqBuilder =
+        new UpdateRequest.Builder<Void, Void>()
+            .id(entityId)
+            .index(indexName)
+            .script(scr)
+            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+
+    update(
+        updateReqBuilder,
+        String.format(
+            "The error occurs while updating OpenSearch entity %s with id %s",
+            indexName, entityId));
+  }
+
+  @Override
+  public void executeImportRequestsAsBulk(
+      final String bulkRequestName,
+      final List<ImportRequestDto> importRequestDtos,
+      final Boolean retryRequestIfNestedDocLimitReached) {
+
+    if (importRequestDtos.isEmpty()) {
+      log.warn("Cannot perform bulk request with empty collection of {}.", bulkRequestName);
+    } else {
+      final List<BulkOperation> operations =
+          importRequestDtos.stream().map(this::createBulkOperation).toList();
+      doBulkRequest(
+          BulkRequest.Builder::new,
+          operations,
+          bulkRequestName,
+          retryRequestIfNestedDocLimitReached);
+    }
+  }
+
+  @Override
+  public Set<String> performSearchDefinitionQuery(
+      final String indexName,
+      final String definitionXml,
+      final String definitionIdField,
+      final int maxPageSize,
+      final String engineAlias) {
+    log.debug("Performing " + indexName + " search query!");
+    final Set<String> result = new HashSet<>();
+
+    final BoolQuery filterQuery = buildBasicSearchDefinitionQuery(definitionXml, engineAlias);
+
+    final SearchRequest.Builder searchRequest =
+        new SearchRequest.Builder()
+            .sort(
+                new SortOptions.Builder()
+                    .field(
+                        new FieldSort.Builder()
+                            .field(definitionIdField)
+                            .order(SortOrder.Desc)
+                            .build())
+                    .build())
+            .index(indexName)
+            .source(new SourceConfig.Builder().fetch(false).build())
+            .query(filterQuery.toQuery());
+
+    // refresh to ensure we see the latest state
+    richOpenSearchClient.index().refresh(indexName);
+
+    final String errorMessage = "Was not able to search for " + indexName + "!";
+
+    final SearchResponse<DefinitionOptimizeResponseDto> searchResponse =
+        search(searchRequest, DefinitionOptimizeResponseDto.class, errorMessage);
+
+    log.debug(indexName + " search query got [{}] results", searchResponse.hits().hits());
+
+    for (final Hit<DefinitionOptimizeResponseDto> hit : searchResponse.hits().hits()) {
+      result.add(hit.id());
+    }
+    return result;
+  }
+
+  @Override
+  public DatabaseType getDatabaseVendor() {
+    return DatabaseType.OPENSEARCH;
+  }
+
+  public final GetAliasResponse getAlias(final String indexNamePattern) throws IOException {
+    final GetAliasRequest getAliasesRequest =
+        new GetAliasRequest.Builder().index(convertToPrefixedAliasName(indexNamePattern)).build();
+    return openSearchClient.indices().getAlias(getAliasesRequest);
   }
 
   public <T> long count(final String[] indexNames, final T query, final String errorMessage) {
@@ -418,16 +544,9 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return richOpenSearchClient.doc().scrollValues(requestBuilder, entityClass);
   }
 
-  public <R> ScrollResponse<R> scroll(String scrollId, String timeout, Class<R> entityClass)
-      throws IOException {
+  public <R> ScrollResponse<R> scroll(
+      final String scrollId, final String timeout, final Class<R> entityClass) throws IOException {
     return richOpenSearchClient.doc().scroll(scrollRequest(scrollId, timeout), entityClass);
-  }
-
-  @Override
-  public org.elasticsearch.action.search.SearchResponse scroll(
-      final SearchScrollRequest scrollRequest) throws IOException {
-    // todo will be handle in the OPT-7469
-    return new org.elasticsearch.action.search.SearchResponse(null);
   }
 
   public <T> MgetResponse<T> mget(
@@ -435,24 +554,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final String errorMessage,
       final Map<String, String> indexesToEntitiesId) {
     return richOpenSearchClient.doc().mget(responseType, e -> errorMessage, indexesToEntitiesId);
-  }
-
-  @Override
-  public org.elasticsearch.action.search.SearchResponse search(
-      final org.elasticsearch.action.search.SearchRequest searchRequest) throws IOException {
-    // TODO this is a temporary implementation, here we are extracting the json query from the
-    // search request and performing a low-level request to OpenSearch
-    final String jsonQuery = searchRequest.source().toString();
-    final String[] indicesToQuery = searchRequest.indices();
-    final String response =
-        getOpenSearchClient()
-            .arbitraryRequestAsString(
-                "POST",
-                "/"
-                    + indexNameService.getOptimizeIndexAliasForIndex(indicesToQuery[0])
-                    + "/_search",
-                jsonQuery);
-    return getSearchResponseFromJson(response);
   }
 
   public <T> SearchResponse<T> search(
@@ -467,7 +568,8 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return richOpenSearchClient.doc().searchValues(requestBuilder, entityClass);
   }
 
-  public void clearScroll(final String scrollId, Function<Exception, String> errorMessageSupplier) {
+  public void clearScroll(
+      final String scrollId, final Function<Exception, String> errorMessageSupplier) {
     safe(
         () -> {
           richOpenSearchClient.doc().clearScroll(scrollId);
@@ -475,42 +577,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
         },
         errorMessageSupplier,
         log);
-  }
-
-  @Override
-  public ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest)
-      throws IOException {
-    // todo will be handle in the OPT-7469
-    return new ClearScrollResponse(null);
-  }
-
-  @Override
-  public String getDatabaseVersion() throws IOException {
-    return getOpenSearchClient().info().version().number();
-  }
-
-  @Override
-  public void setDefaultRequestOptions() {
-    // TODO Do nothing, will be handled with OPT-7400
-  }
-
-  @Override
-  public void executeImportRequestsAsBulk(
-      final String bulkRequestName,
-      final List<ImportRequestDto> importRequestDtos,
-      final Boolean retryRequestIfNestedDocLimitReached) {
-
-    if (importRequestDtos.isEmpty()) {
-      log.warn("Cannot perform bulk request with empty collection of {}.", bulkRequestName);
-    } else {
-      final List<BulkOperation> operations =
-          importRequestDtos.stream().map(this::createBulkOperation).toList();
-      doBulkRequest(
-          BulkRequest.Builder::new,
-          operations,
-          bulkRequestName,
-          retryRequestIfNestedDocLimitReached);
-    }
   }
 
   private BulkOperation createBulkOperation(final ImportRequestDto requestDto) {
@@ -671,67 +737,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     }
   }
 
-  @Override
-  public void update(final String indexName, final String entityId, final ScriptData script) {
-
-    final Script scr = QueryDSL.script(script.scriptString(), script.params());
-
-    final UpdateRequest.Builder<Void, Void> updateReqBuilder =
-        new UpdateRequest.Builder<Void, Void>()
-            .id(entityId)
-            .index(indexName)
-            .script(scr)
-            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-
-    update(
-        updateReqBuilder,
-        String.format(
-            "The error occurs while updating OpenSearch entity %s with id %s",
-            indexName, entityId));
-  }
-
-  @Override
-  public Set<String> performSearchDefinitionQuery(
-      final String indexName,
-      final String definitionXml,
-      final String definitionIdField,
-      final int maxPageSize,
-      final String engineAlias) {
-    log.debug("Performing " + indexName + " search query!");
-    final Set<String> result = new HashSet<>();
-
-    final BoolQuery filterQuery = buildBasicSearchDefinitionQuery(definitionXml, engineAlias);
-
-    final SearchRequest.Builder searchRequest =
-        new SearchRequest.Builder()
-            .sort(
-                new SortOptions.Builder()
-                    .field(
-                        new FieldSort.Builder()
-                            .field(definitionIdField)
-                            .order(SortOrder.Desc)
-                            .build())
-                    .build())
-            .index(indexName)
-            .source(new SourceConfig.Builder().fetch(false).build())
-            .query(filterQuery.toQuery());
-
-    // refresh to ensure we see the latest state
-    richOpenSearchClient.index().refresh(indexName);
-
-    final String errorMessage = "Was not able to search for " + indexName + "!";
-
-    final SearchResponse<DefinitionOptimizeResponseDto> searchResponse =
-        search(searchRequest, DefinitionOptimizeResponseDto.class, errorMessage);
-
-    log.debug(indexName + " search query got [{}] results", searchResponse.hits().hits());
-
-    for (final Hit<DefinitionOptimizeResponseDto> hit : searchResponse.hits().hits()) {
-      result.add(hit.id());
-    }
-    return result;
-  }
-
   public BulkResponse bulk(final BulkRequest.Builder bulkRequest, final String errorMessage) {
     return richOpenSearchClient.doc().bulk(bulkRequest, e -> errorMessage);
   }
@@ -852,11 +857,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     final Status taskStatus = richOpenSearchClient.task().task(taskId).response();
     log.debug("Deleted [{}] {}.", taskStatus.updated(), deleteItemIdentifier);
     return taskStatus.updated() > 0L;
-  }
-
-  @Override
-  public DatabaseType getDatabaseVendor() {
-    return DatabaseType.OPENSEARCH;
   }
 
   private void waitUntilTaskIsFinished(final String taskId, final String taskItemIdentifier) {

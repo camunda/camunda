@@ -11,6 +11,7 @@ import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -41,9 +42,13 @@ public final class ProcessInstanceMigrationPreconditions {
           BpmnElementType.SERVICE_TASK,
           BpmnElementType.USER_TASK,
           BpmnElementType.SUB_PROCESS,
-          BpmnElementType.CALL_ACTIVITY);
+          BpmnElementType.CALL_ACTIVITY,
+          BpmnElementType.INTERMEDIATE_CATCH_EVENT,
+          BpmnElementType.RECEIVE_TASK);
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       EnumSet.complementOf(SUPPORTED_ELEMENT_TYPES);
+  private static final Set<BpmnEventType> SUPPORTED_INTERMEDIATE_CATCH_EVENT_TYPES =
+      EnumSet.of(BpmnEventType.MESSAGE);
 
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to migrate process instance but no process instance found with key '%d'";
@@ -80,6 +85,17 @@ public final class ProcessInstanceMigrationPreconditions {
       Expected to migrate process instance '%s' \
       but active element with id '%s' has an unsupported type. \
       The migration of a %s is not supported.""";
+  private static final String ERROR_UNSUPPORTED_INTERMEDIATE_CATCH_EVENT_TYPE =
+      """
+      Expected to migrate process instance '%s' \
+      but active element with id '%s' is intermediate catch event of type '%s'. \
+      Migrating active intermediate catch event of this type is not possible yet.""";
+  private static final String ERROR_UNSUPPORTED_ATTACHED_TO_EVENT_BASED_GATEWAY =
+      """
+      Expected to migrate process instance '%s' \
+      but active element with id '%s' is an intermediate catch event \
+      attached to an event-based gateway. \
+      Migrating active events attached to an event-based gateway is not possible yet.""";
   private static final String ERROR_UNMAPPED_ACTIVE_ELEMENT =
       """
       Expected to migrate process instance '%s' \
@@ -290,16 +306,48 @@ public final class ProcessInstanceMigrationPreconditions {
    * @param processInstanceKey process instance key to be logged
    */
   public static void requireSupportedElementType(
-      final ProcessInstanceRecord elementInstanceRecord, final long processInstanceKey) {
-    if (UNSUPPORTED_ELEMENT_TYPES.contains(elementInstanceRecord.getBpmnElementType())) {
+      final ProcessInstanceRecord elementInstanceRecord,
+      final long processInstanceKey,
+      final DeployedProcess sourceProcessDefinition) {
+    final var bpmnElementType = elementInstanceRecord.getBpmnElementType();
+    if (UNSUPPORTED_ELEMENT_TYPES.contains(bpmnElementType)) {
       final String reason =
           String.format(
               ERROR_UNSUPPORTED_ELEMENT_TYPE,
               processInstanceKey,
               elementInstanceRecord.getElementId(),
-              elementInstanceRecord.getBpmnElementType());
+              bpmnElementType);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
+    }
+
+    final var bpmnEventType = elementInstanceRecord.getBpmnEventType();
+    if (bpmnElementType == BpmnElementType.INTERMEDIATE_CATCH_EVENT) {
+      if (!SUPPORTED_INTERMEDIATE_CATCH_EVENT_TYPES.contains(bpmnEventType)) {
+        final String reason =
+            String.format(
+                ERROR_UNSUPPORTED_INTERMEDIATE_CATCH_EVENT_TYPE,
+                processInstanceKey,
+                elementInstanceRecord.getElementId(),
+                bpmnEventType);
+        throw new ProcessInstanceMigrationPreconditionFailedException(
+            reason, RejectionType.INVALID_STATE);
+      }
+
+      final var intermediateCatchEvent =
+          sourceProcessDefinition
+              .getProcess()
+              .getElementById(
+                  elementInstanceRecord.getElementIdBuffer(), ExecutableCatchEventElement.class);
+      if (intermediateCatchEvent.isConnectedToEventBasedGateway()) {
+        final var reason =
+            String.format(
+                ERROR_UNSUPPORTED_ATTACHED_TO_EVENT_BASED_GATEWAY,
+                processInstanceKey,
+                elementInstanceRecord.getElementId());
+        throw new ProcessInstanceMigrationPreconditionFailedException(
+            reason, RejectionType.INVALID_STATE);
+      }
     }
   }
 
@@ -493,6 +541,14 @@ public final class ProcessInstanceMigrationPreconditions {
       final String elementId,
       final EnumSet<BpmnEventType> allowedEventTypes,
       final String errorTemplate) {
+    final AbstractFlowElement elementById =
+        sourceProcessDefinition.getProcess().getElementById(elementId);
+
+    if (!(ExecutableActivity.class.isAssignableFrom(elementById.getClass()))) {
+      // no boundary event check needed
+      return;
+    }
+
     final List<ExecutableBoundaryEvent> boundaryEvents =
         sourceProcessDefinition
             .getProcess()

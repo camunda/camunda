@@ -13,12 +13,6 @@
 
   <dependencies>
 
-    <dependency>
-      <groupId>io.camunda.optimize</groupId>
-      <artifactId>plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
     <!-- REST -->
     <dependency>
       <groupId>jakarta.validation</groupId>
@@ -123,7 +117,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.14.0</version>
+      <version>3.16.0</version>
     </dependency>
     <dependency>
       <groupId>com.ethlo.time</groupId>
@@ -187,7 +181,7 @@
     <dependency>
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-java-sdk-core</artifactId>
-      <version>1.12.767</version>
+      <version>1.12.768</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -214,6 +208,10 @@
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>auth</artifactId>
       <version>${awssdk.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.ws.rs</groupId>
+      <artifactId>jakarta.ws.rs-api</artifactId>
     </dependency>
 
   </dependencies>

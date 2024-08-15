@@ -13,12 +13,16 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@FieldNameConstants
 public class DashboardDateFilterDataDto implements FilterDataDto {
+
   private DateFilterDataDto<?> defaultValues;
+
+  public static final class Fields {
+
+    public static final String defaultValues = "defaultValues";
+  }
 }

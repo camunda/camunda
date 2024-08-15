@@ -12,12 +12,10 @@ import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@FieldNameConstants
 public class DeletableEventDto {
 
   private String id;
@@ -35,5 +33,15 @@ public class DeletableEventDto {
         eventDto.getSource(),
         eventDto.getEventName(),
         Instant.ofEpochMilli(eventDto.getTimestamp()));
+  }
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String traceId = "traceId";
+    public static final String group = "group";
+    public static final String source = "source";
+    public static final String eventName = "eventName";
+    public static final String timestamp = "timestamp";
   }
 }

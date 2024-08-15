@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBufferedMessageStart
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessResultSenderBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
@@ -37,6 +38,7 @@ public final class ProcessProcessor
   private final BpmnProcessResultSenderBehavior processResultSenderBehavior;
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
+  private final BpmnJobBehavior jobBehavior;
 
   public ProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -48,6 +50,7 @@ public final class ProcessProcessor
     processResultSenderBehavior = bpmnBehaviors.processResultSenderBehavior();
     bufferedMessageStartEventBehavior = bpmnBehaviors.bufferedMessageStartEventBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
+    jobBehavior = bpmnBehaviors.jobBehavior();
   }
 
   @Override
@@ -90,6 +93,9 @@ public final class ProcessProcessor
   @Override
   public void onTerminate(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(context);
+    }
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);

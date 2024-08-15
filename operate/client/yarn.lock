@@ -1278,14 +1278,14 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
-"@carbon/elements@11.50.0":
-  version "11.50.0"
-  resolved "https://registry.yarnpkg.com/@carbon/elements/-/elements-11.50.0.tgz#036728a17fcd2d6108d5669d8a0f3a7be2ca8a49"
-  integrity sha512-g9tO5FY5niySC/6zeRV4fxKLlLvbkyZju10Kdh5Jx41Pz2VVjsA2oJkj6CSAQx69SKdYt87WKI79Q5Tuy+5WvQ==
+"@carbon/elements@11.51.0":
+  version "11.51.0"
+  resolved "https://registry.yarnpkg.com/@carbon/elements/-/elements-11.51.0.tgz#6b8507bd0e1545f89bc606e06c2dfd21fd30186f"
+  integrity sha512-GmaKS3VCroSvVt7rAdOQcf3uPcT04T1WkCHOTVHekgz/n1FXnatr3ZvDdQ/KyYnfbVpQD5zTCS3GXYhkJd2v5Q==
   dependencies:
     "@carbon/colors" "^11.24.0"
     "@carbon/grid" "^11.25.0"
-    "@carbon/icons" "^11.46.0"
+    "@carbon/icons" "^11.47.0"
     "@carbon/layout" "^11.24.0"
     "@carbon/motion" "^11.20.0"
     "@carbon/themes" "^11.38.0"
@@ -1331,10 +1331,10 @@
     "@ibm/telemetry-js" "^1.5.0"
     prop-types "^15.7.2"
 
-"@carbon/icons@^11.46.0":
-  version "11.46.0"
-  resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.46.0.tgz#62eca6cb9419cbf0a0d3de64ac7513450c6ab3a1"
-  integrity sha512-A8qkNlm40CYRyu9dlaTklHoqSdwTwny50Cg0tDfykO+eCCW3VL+1VhYnQuyZ5mIXSNAwtLQvhMaq8QDTBI8eSQ==
+"@carbon/icons@^11.47.0":
+  version "11.47.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.47.0.tgz#5951980d64acabfdb36cc3f07fee249d81b64d57"
+  integrity sha512-tVtdVNIblrukvZjNeU54k8kPJttKi+gNR7t7rOsFT2ApCi5accIen+k3kikJie81Slmj1VL6CHTOZcpf4qqX0A==
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
@@ -8173,10 +8173,10 @@ lines-and-columns@^1.1.6:
   resolved "https://registry.yarnpkg.com/lines-and-columns/-/lines-and-columns-1.2.4.tgz#eca284f75d2965079309dc0ad9255abb2ebc1632"
   integrity sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==
 
-lint-staged@15.2.8:
-  version "15.2.8"
-  resolved "https://registry.yarnpkg.com/lint-staged/-/lint-staged-15.2.8.tgz#5e19eb7b4dbb922f56fafb4635b44ee3c92f7322"
-  integrity sha512-PUWFf2zQzsd9EFU+kM1d7UP+AZDbKFKuj+9JNVTBkhUFhbg4MAt6WfyMMwBfM4lYqd4D2Jwac5iuTu9rVj4zCQ==
+lint-staged@15.2.9:
+  version "15.2.9"
+  resolved "https://registry.yarnpkg.com/lint-staged/-/lint-staged-15.2.9.tgz#bf70d40b6b192df6ad756fb89822211615e0f4da"
+  integrity sha512-BZAt8Lk3sEnxw7tfxM7jeZlPRuT4M68O0/CwZhhaw6eeWu0Lz5eERE3m386InivXB64fp/mDID452h48tvKlRQ==
   dependencies:
     chalk "~5.3.0"
     commander "~12.1.0"

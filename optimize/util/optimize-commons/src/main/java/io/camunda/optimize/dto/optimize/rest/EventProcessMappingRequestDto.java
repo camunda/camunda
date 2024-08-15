@@ -19,15 +19,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@FieldNameConstants
 @Builder
 public class EventProcessMappingRequestDto {
+
   private String name;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -38,4 +37,12 @@ public class EventProcessMappingRequestDto {
   private Map<String, EventMappingDto> mappings;
 
   @Builder.Default @Valid private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
+
+  public static final class Fields {
+
+    public static final String name = "name";
+    public static final String xml = "xml";
+    public static final String mappings = "mappings";
+    public static final String eventSources = "eventSources";
+  }
 }

@@ -95,6 +95,10 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   public void onTerminate(final ExecutableEndEvent element, final BpmnElementContext terminating) {
     eventBehaviorOf(element).onTerminate(element, terminating);
 
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(terminating);
+    }
+
     // common behavior for all end events
     incidentBehavior.resolveIncidents(terminating);
 
@@ -252,7 +256,6 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     @Override
     public void onTerminate(
         final ExecutableEndEvent element, final BpmnElementContext terminating) {
-
       jobBehavior.cancelJob(terminating);
     }
   }

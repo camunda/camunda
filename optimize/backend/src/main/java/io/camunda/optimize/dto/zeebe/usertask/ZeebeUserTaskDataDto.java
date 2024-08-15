@@ -13,12 +13,10 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import lombok.Data;
-import lombok.experimental.FieldNameConstants;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.annotate.JsonIgnore;
 
 @Data
-@FieldNameConstants
 @Slf4j
 public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
 
@@ -53,5 +51,29 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
                   dueDate);
               return null;
             });
+  }
+
+  public static final class Fields {
+
+    public static final String userTaskKey = "userTaskKey";
+    public static final String assignee = "assignee";
+    public static final String candidateGroupsList = "candidateGroupsList";
+    public static final String candidateUsersList = "candidateUsersList";
+    public static final String dueDate = "dueDate";
+    public static final String elementId = "elementId";
+    public static final String elementInstanceKey = "elementInstanceKey";
+    public static final String bpmnProcessId = "bpmnProcessId";
+    public static final String processDefinitionVersion = "processDefinitionVersion";
+    public static final String processDefinitionKey = "processDefinitionKey";
+    public static final String processInstanceKey = "processInstanceKey";
+    public static final String tenantId = "tenantId";
+    public static final String changedAttributes = "changedAttributes";
+    public static final String variables = "variables";
+    public static final String followUpDate = "followUpDate";
+    public static final String formKey = "formKey";
+    public static final String action = "action";
+    public static final String externalFormReference = "externalFormReference";
+    public static final String customHeaders = "customHeaders";
+    public static final String creationTimestamp = "creationTimestamp";
   }
 }

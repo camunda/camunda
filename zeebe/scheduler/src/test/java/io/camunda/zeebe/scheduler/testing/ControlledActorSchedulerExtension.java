@@ -64,6 +64,7 @@ public class ControlledActorSchedulerExtension implements BeforeEachCallback, Af
     actorScheduler = builder.build();
     controlledActorTaskRunner = actorTaskRunnerFactory.controlledThread;
     actorScheduler.start();
+    controlledActorTaskRunner.waitUntilDone();
   }
 
   public ActorFuture<Void> submitActor(final Actor actor) {
@@ -84,6 +85,10 @@ public class ControlledActorSchedulerExtension implements BeforeEachCallback, Af
 
   public void setClockTime(final long currentTime) {
     clock.setCurrentTime(currentTime);
+  }
+
+  public ControlledActorClock getClock() {
+    return clock;
   }
 
   static final class ControlledActorThreadFactory implements ActorThreadFactory {

@@ -20,6 +20,7 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.RecordProcessor;
+import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
 import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
@@ -152,6 +153,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     final var reader = logStream.newLogStreamReader();
     logStreamReader = reader;
     streamProcessorContext.logStreamReader(reader);
+    streamProcessorContext.clock(StreamClock.controllable(ActorClock.current()));
   }
 
   @Override
@@ -168,13 +170,15 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               streamProcessorContext::getStreamProcessorPhase,
               streamProcessorContext.getAbortCondition(),
               logStream::newLogStreamWriter,
-              scheduledCommandCache);
+              scheduledCommandCache,
+              streamProcessorContext.getClock());
       asyncScheduleService =
           new ProcessingScheduleServiceImpl(
               streamProcessorContext::getStreamProcessorPhase, // this is volatile
               streamProcessorContext.getAbortCondition(),
               logStream::newLogStreamWriter,
-              scheduledCommandCache);
+              scheduledCommandCache,
+              streamProcessorContext.getClock());
       asyncActor = new AsyncProcessingScheduleServiceActor(asyncScheduleService, partitionId);
       final var extendedProcessingScheduleService =
           new ExtendedProcessingScheduleServiceImpl(
@@ -341,7 +345,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             zeebeDb,
             streamProcessorContext.getTransactionContext(),
             streamProcessorContext.getPartitionCommandSender(),
-            streamProcessorContext.getKeyGeneratorControls());
+            streamProcessorContext.getKeyGeneratorControls(),
+            streamProcessorContext.getClock());
 
     recordProcessors.forEach(processor -> processor.init(processorContext));
 

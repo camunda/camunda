@@ -22,7 +22,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import lombok.experimental.FieldNameConstants;
 
 /**
  * Abstract class that contains a hidden "type" field to distinguish which filter type the jackson
@@ -41,7 +40,6 @@ import lombok.experimental.FieldNameConstants;
 @Setter
 @EqualsAndHashCode
 @Accessors(chain = true)
-@FieldNameConstants
 public abstract class DateFilterDataDto<START> implements FilterDataDto {
 
   protected DateFilterType type;
@@ -57,5 +55,14 @@ public abstract class DateFilterDataDto<START> implements FilterDataDto {
     this.type = type;
     this.start = start;
     this.end = end;
+  }
+
+  public static final class Fields {
+
+    public static final String type = "type";
+    public static final String start = "start";
+    public static final String end = "end";
+    public static final String includeUndefined = "includeUndefined";
+    public static final String excludeUndefined = "excludeUndefined";
   }
 }

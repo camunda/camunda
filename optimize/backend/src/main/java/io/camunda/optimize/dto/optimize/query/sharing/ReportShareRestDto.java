@@ -9,11 +9,16 @@ package io.camunda.optimize.dto.optimize.query.sharing;
 
 import java.io.Serializable;
 import lombok.Data;
-import lombok.experimental.FieldNameConstants;
 
 @Data
-@FieldNameConstants
 public class ReportShareRestDto implements Serializable {
+
   private String id;
   private String reportId;
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String reportId = "reportId";
+  }
 }

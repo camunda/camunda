@@ -13,15 +13,19 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldNameConstants
 public class EventMappingDto implements OptimizeDto {
 
   @Valid EventTypeDto start;
   @Valid EventTypeDto end;
+
+  public static final class Fields {
+
+    public static final String start = "start";
+    public static final String end = "end";
+  }
 }

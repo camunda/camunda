@@ -218,7 +218,7 @@ services:
     environment:
       - camunda.tasklist.elasticsearch.url=http://elasticsearch:9200
       - camunda.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
-      - camunda.tasklist.zeebe.gatewayAdress=zeebe:26500
+      - camunda.tasklist.zeebe.gatewayAddress=zeebe:26500
       - spring.profiles.active=dev,dev-data,sso-auth
       - camunda.tasklist.auth0.backendDomain=camunda-dev.eu.auth0.com
       - camunda.tasklist.auth0.claimName=https://camunda.com/orgs

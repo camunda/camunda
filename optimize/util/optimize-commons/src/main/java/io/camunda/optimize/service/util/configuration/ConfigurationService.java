@@ -119,15 +119,6 @@ public class ConfigurationService {
   private Boolean importUserTaskWorkerDataEnabled;
   private Boolean skipDataAfterNestedDocLimitReached;
   private Boolean customerOnboarding;
-  // plugin base packages
-  private List<String> variableImportPluginBasePackages;
-  private List<String> engineRestFilterPluginBasePackages;
-  private List<String> authenticationExtractorPluginBasePackages;
-  private List<String> decisionOutputImportPluginBasePackages;
-  private List<String> decisionInputImportPluginBasePackages;
-  private List<String> businessKeyImportPluginBasePackages;
-  private List<String> elasticsearchCustomHeaderPluginBasePackages;
-  private String pluginDirectory;
   private String containerHost;
   private String contextPath;
   private String containerKeystorePassword;
@@ -308,16 +299,6 @@ public class ConfigurationService {
   @JsonIgnore
   public AuthConfiguration getAuthConfiguration() {
     return getSecurityConfiguration().getAuth();
-  }
-
-  public List<String> getDecisionOutputImportPluginBasePackages() {
-    if (decisionOutputImportPluginBasePackages == null) {
-      decisionOutputImportPluginBasePackages =
-          configJsonContext.read(
-              ConfigurationServiceConstants.DECISION_OUTPUT_IMPORT_PLUGIN_BASE_PACKAGES,
-              LIST_OF_STRINGS_TYPE_REF);
-    }
-    return decisionOutputImportPluginBasePackages;
   }
 
   public String getEngineDateFormat() {
@@ -573,64 +554,6 @@ public class ConfigurationService {
     return engineImportUserOperationLogsMaxPageSize;
   }
 
-  public String getPluginDirectory() {
-    if (pluginDirectory == null) {
-      pluginDirectory =
-          configJsonContext.read(ConfigurationServiceConstants.PLUGIN_BASE_DIRECTORY, String.class);
-    }
-    return pluginDirectory;
-  }
-
-  public List<String> getVariableImportPluginBasePackages() {
-    if (variableImportPluginBasePackages == null) {
-      variableImportPluginBasePackages =
-          configJsonContext.read(
-              ConfigurationServiceConstants.VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES,
-              LIST_OF_STRINGS_TYPE_REF);
-    }
-    return variableImportPluginBasePackages;
-  }
-
-  public List<String> getBusinessKeyImportPluginBasePackages() {
-    if (businessKeyImportPluginBasePackages == null) {
-      businessKeyImportPluginBasePackages =
-          configJsonContext.read(
-              ConfigurationServiceConstants.BUSINESS_KEY_IMPORT_PLUGIN_BASE_PACKAGES,
-              LIST_OF_STRINGS_TYPE_REF);
-    }
-    return businessKeyImportPluginBasePackages;
-  }
-
-  public List<String> getEngineRestFilterPluginBasePackages() {
-    if (engineRestFilterPluginBasePackages == null) {
-      engineRestFilterPluginBasePackages =
-          configJsonContext.read(
-              ConfigurationServiceConstants.ENGINE_REST_FILTER_PLUGIN_BASE_PACKAGES,
-              LIST_OF_STRINGS_TYPE_REF);
-    }
-    return engineRestFilterPluginBasePackages;
-  }
-
-  public List<String> getAuthenticationExtractorPluginBasePackages() {
-    if (authenticationExtractorPluginBasePackages == null) {
-      authenticationExtractorPluginBasePackages =
-          configJsonContext.read(
-              ConfigurationServiceConstants.AUTHENTICATION_EXTRACTOR_BASE_PACKAGES,
-              LIST_OF_STRINGS_TYPE_REF);
-    }
-    return authenticationExtractorPluginBasePackages;
-  }
-
-  public List<String> getElasticsearchCustomHeaderPluginBasePackages() {
-    if (elasticsearchCustomHeaderPluginBasePackages == null) {
-      elasticsearchCustomHeaderPluginBasePackages =
-          configJsonContext.read(
-              ConfigurationServiceConstants.ELASTICSEARCH_CUSTOM_HEADER_BASE_PACKAGES,
-              LIST_OF_STRINGS_TYPE_REF);
-    }
-    return elasticsearchCustomHeaderPluginBasePackages;
-  }
-
   public String getContainerHost() {
     if (containerHost == null) {
       containerHost = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_HOST);
@@ -684,16 +607,6 @@ public class ConfigurationService {
               ConfigurationServiceConstants.CONTAINER_MAX_RESPONSE_HEADER_IN_BYTES, Integer.class);
     }
     return maxResponseHeaderSizeInBytes;
-  }
-
-  public List<String> getDecisionInputImportPluginBasePackages() {
-    if (decisionInputImportPluginBasePackages == null) {
-      decisionInputImportPluginBasePackages =
-          configJsonContext.read(
-              ConfigurationServiceConstants.DECISION_INPUT_IMPORT_PLUGIN_BASE_PACKAGES,
-              LIST_OF_STRINGS_TYPE_REF);
-    }
-    return decisionInputImportPluginBasePackages;
   }
 
   public String getContainerKeystoreLocation() {

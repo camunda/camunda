@@ -23,7 +23,7 @@
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
     <!-- maven plugins -->
-    <surefire-plugin.version>3.2.5</surefire-plugin.version>
+    <surefire-plugin.version>3.3.1</surefire-plugin.version>
 
     <!-- database config -->
     <elasticsearch.version>7.17.23</elasticsearch.version>
@@ -46,7 +46,7 @@
     <apache.http5-core.version>5.2.5</apache.http5-core.version>
     <guava.version>33.2.0-jre</guava.version>
     <spring.boot.version>3.3.0</spring.boot.version>
-    <spring.version>6.1.11</spring.version>
+    <spring.version>6.1.12</spring.version>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
     <jakarta.rs-api.version>4.0.0</jakarta.rs-api.version>
@@ -68,7 +68,7 @@
     <junit.platform.version>1.10.3</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
     <assertj.version>3.26.3</assertj.version>
-    <google-java-format.plugin.version>1.22.0</google-java-format.plugin.version>
+    <google-java-format.plugin.version>1.23.0</google-java-format.plugin.version>
     <!-- This is the default profile used for the DB selection in tests -->
     <database.type>elasticsearch</database.type>
 
@@ -86,7 +86,6 @@
     <!-- client should be built before distro -->
     <module>client</module>
     <module>util</module>
-    <module>plugins</module>
     <module>backend</module>
     <module>../optimize-distro</module>
     <module>upgrade</module>
@@ -411,7 +410,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.6.1</version>
+          <version>3.7.1</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -479,7 +478,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>3.4.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -552,8 +551,8 @@
         <configuration>
           <gitFlowConfig>
             <productionBranch>optimize-latest</productionBranch>
-            <developmentBranch>test-optimize-release</developmentBranch>
-            <supportBranchPrefix>maintenance/</supportBranchPrefix>
+            <developmentBranch>main</developmentBranch>
+            <supportBranchPrefix>stable/</supportBranchPrefix>
             <releaseBranchPrefix>release/optimize-</releaseBranchPrefix>
           </gitFlowConfig>
           <commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>

@@ -14,14 +14,13 @@ import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_INS
 import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
 import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
-import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TYPE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_IDLE_DURATION;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
-import static io.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
+import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NODE_TYPE_USER_TASK;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -70,7 +69,6 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
-import org.elasticsearch.core.TimeValue;
 import org.mockserver.integration.ClientAndServer;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
@@ -152,16 +150,8 @@ public abstract class DatabaseTestService {
 
   public abstract Integer getDocumentCountOf(final String indexName);
 
-  public abstract Integer getCountOfCompletedInstances();
-
   public abstract Integer getCountOfCompletedInstancesWithIdsIn(
       final Set<Object> processInstanceIds);
-
-  public abstract Integer getActivityCountForAllProcessInstances();
-
-  public abstract Integer getVariableInstanceCountForAllProcessInstances();
-
-  public abstract Integer getVariableInstanceCountForAllCompletedProcessInstances();
 
   public abstract void deleteAllOptimizeData();
 
@@ -203,9 +193,9 @@ public abstract class DatabaseTestService {
   public abstract void updateUserTaskDurations(
       final String processInstanceId, final String processDefinitionKey, final long duration);
 
-  public abstract boolean indexExists(final String indexOrAliasName);
+  public abstract boolean indexExistsCheckWithApplyingOptimizePrefix(final String indexOrAliasName);
 
-  public abstract boolean zeebeIndexExists(final String indexName);
+  public abstract boolean indexExistsCheckWithoutApplyingOptimizePrefix(final String indexName);
 
   public abstract OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(
       final String dbType, final String engine);
@@ -239,8 +229,6 @@ public abstract class DatabaseTestService {
 
   public abstract void deleteProcessInstancesFromIndex(final String indexName, final String id);
 
-  public abstract void deleteDatabaseEntryById(final String indexName, final String id);
-
   public abstract DatabaseType getDatabaseVendor();
 
   protected abstract <T extends OptimizeDto> List<T> getInstancesById(
@@ -269,17 +257,12 @@ public abstract class DatabaseTestService {
 
   public abstract Optional<MetadataDto> readMetadata();
 
-  public void disableCleanup() {
-    haveToClean = false;
-  }
-
   public void cleanAndVerifyDatabase() {
     try {
       refreshAllOptimizeIndices();
       deleteAllOptimizeData();
       deleteAllEventProcessInstanceIndices();
       deleteCamundaEventIndicesAndEventCountsAndTraces();
-      deleteAllProcessInstanceArchiveIndices();
     } catch (final Exception e) {
       // nothing to do
       log.error("can't clean optimize indexes", e);
@@ -343,10 +326,6 @@ public abstract class DatabaseTestService {
     deleteIndicesStartingWithPrefix(EVENT_TRACE_STATE_INDEX_PREFIX);
   }
 
-  protected void deleteAllProcessInstanceArchiveIndices() {
-    deleteIndicesStartingWithPrefix(PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX);
-  }
-
   protected void deleteAllEventProcessInstanceIndices() {
     deleteIndicesStartingWithPrefix(EVENT_PROCESS_INSTANCE_INDEX_PREFIX);
   }
@@ -374,19 +353,9 @@ public abstract class DatabaseTestService {
 
   public abstract Long getImportedActivityCount();
 
-  public abstract void removeStoredOrderCountersForDefinitionKey(
-      String definitionKey, ScriptData script);
-
   public abstract List<String> getAllIndicesWithWriteAlias(String aliasNameWithPrefix);
 
   public abstract List<String> getAllIndicesWithReadOnlyAlias(String aliasNameWithPrefix);
-
-  public abstract void deleteTraceStateImportIndexForDefinitionKey(String definitionKey);
-
-  public abstract void verifyThatAllDocumentsOfIndexAreRelatedToRunningInstancesOnly(
-      String entityIndex, String processInstanceField, TimeValue scrollKeepAlive);
-
-  public abstract Integer getVariableInstanceCount(String variableName);
 
   public abstract EventProcessInstanceIndex getEventInstanceIndex(String indexId);
 

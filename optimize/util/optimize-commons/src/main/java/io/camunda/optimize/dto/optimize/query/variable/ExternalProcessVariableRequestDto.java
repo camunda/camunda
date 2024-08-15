@@ -14,13 +14,12 @@ import java.util.List;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor
 @Data
 @Accessors(chain = true)
-@FieldNameConstants
 public class ExternalProcessVariableRequestDto implements OptimizeDto {
+
   @NotBlank private String id;
   @NotBlank private String name;
   private String value;
@@ -44,5 +43,16 @@ public class ExternalProcessVariableRequestDto implements OptimizeDto {
                     .setProcessDefinitionKey(varDto.getProcessDefinitionKey())
                     .setSerializationDataFormat(varDto.getSerializationDataFormat()))
         .toList();
+  }
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String name = "name";
+    public static final String value = "value";
+    public static final String type = "type";
+    public static final String processInstanceId = "processInstanceId";
+    public static final String processDefinitionKey = "processDefinitionKey";
+    public static final String serializationDataFormat = "serializationDataFormat";
   }
 }

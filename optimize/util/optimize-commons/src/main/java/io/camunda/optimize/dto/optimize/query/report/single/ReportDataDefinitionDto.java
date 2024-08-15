@@ -17,13 +17,12 @@ import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @AllArgsConstructor
 @Data
-@FieldNameConstants
 @NoArgsConstructor
 public class ReportDataDefinitionDto {
+
   @NotEmpty private String identifier = UUID.randomUUID().toString();
   private String key;
   private String name;
@@ -92,6 +91,16 @@ public class ReportDataDefinitionDto {
 
   @JsonIgnore
   public void setVersion(final String version) {
-    this.versions = List.of(version);
+    versions = List.of(version);
+  }
+
+  public static final class Fields {
+
+    public static final String identifier = "identifier";
+    public static final String key = "key";
+    public static final String name = "name";
+    public static final String displayName = "displayName";
+    public static final String versions = "versions";
+    public static final String tenantIds = "tenantIds";
   }
 }

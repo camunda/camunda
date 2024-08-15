@@ -14,12 +14,10 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 @EqualsAndHashCode(callSuper = true)
-@FieldNameConstants
 public class DashboardIdentityFilterDataDto extends IdentityLinkFilterDataDto {
 
   protected boolean allowCustomValues;
@@ -41,5 +39,11 @@ public class DashboardIdentityFilterDataDto extends IdentityLinkFilterDataDto {
     super(operator, values);
     this.allowCustomValues = allowCustomValues;
     this.defaultValues = defaultValues;
+  }
+
+  public static final class Fields {
+
+    public static final String allowCustomValues = "allowCustomValues";
+    public static final String defaultValues = "defaultValues";
   }
 }

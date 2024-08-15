@@ -27,9 +27,9 @@ import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import java.time.InstantSource;
 import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -54,6 +54,7 @@ public final class BpmnUserTaskBehavior {
   private final BpmnStateBehavior stateBehavior;
   private final FormState formState;
   private final MutableUserTaskState userTaskState;
+  private final InstantSource clock;
 
   public BpmnUserTaskBehavior(
       final KeyGenerator keyGenerator,
@@ -61,13 +62,15 @@ public final class BpmnUserTaskBehavior {
       final ExpressionProcessor expressionBehavior,
       final BpmnStateBehavior stateBehavior,
       final FormState formState,
-      final MutableUserTaskState userTaskState) {
+      final MutableUserTaskState userTaskState,
+      final InstantSource clock) {
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     this.expressionBehavior = expressionBehavior;
     this.stateBehavior = stateBehavior;
     this.formState = formState;
     this.userTaskState = userTaskState;
+    this.clock = clock;
   }
 
   public Either<Failure, UserTaskProperties> evaluateUserTaskExpressions(
@@ -135,7 +138,7 @@ public final class BpmnUserTaskBehavior {
         .setElementInstanceKey(context.getElementInstanceKey())
         .setTenantId(context.getTenantId())
         .setPriority(userTaskProperties.getPriority())
-        .setCreationTimestamp(ActorClock.currentTimeMillis());
+        .setCreationTimestamp(clock.millis());
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
     return userTaskRecord;

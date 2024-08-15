@@ -13,11 +13,9 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@FieldNameConstants(asEnum = true)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AuthorizedSingleReportEvaluationResponseDto<T, D extends ReportDefinitionDto<?>>
     extends AuthorizedReportEvaluationResponseDto<D> {
@@ -30,5 +28,9 @@ public class AuthorizedSingleReportEvaluationResponseDto<T, D extends ReportDefi
       final D reportDefinition) {
     super(currentUserRole, reportDefinition);
     this.result = result;
+  }
+
+  public enum Fields {
+    result
   }
 }

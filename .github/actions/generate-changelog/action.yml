@@ -5,7 +5,7 @@ inputs:
   branch:
     description: "Branch to use"
     required: true
-    default: "master"
+    default: "main"
   from:
     description: "Tag Name or Commit SHA of previous release (optional)"
 outputs:

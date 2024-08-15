@@ -14,7 +14,13 @@ import {useTranslation} from 'react-i18next';
 const TurnOnNotificationPermission: React.FC = () => {
   const {t} = useTranslation();
   const [enabled, setEnabled] = useState(true);
-  if (!(enabled && Notification.permission === 'default')) {
+  if (
+    !(
+      enabled &&
+      'Notification' in window &&
+      Notification.permission === 'default'
+    )
+  ) {
     return null;
   }
   return (

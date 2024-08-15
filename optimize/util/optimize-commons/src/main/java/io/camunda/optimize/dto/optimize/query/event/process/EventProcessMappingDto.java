@@ -22,15 +22,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@FieldNameConstants
 public class EventProcessMappingDto implements OptimizeDto {
+
   @EqualsAndHashCode.Include private String id;
   @NotBlank private String name;
 
@@ -52,4 +51,18 @@ public class EventProcessMappingDto implements OptimizeDto {
   private Double publishingProgress;
 
   @Builder.Default private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String name = "name";
+    public static final String lastModifier = "lastModifier";
+    public static final String lastModified = "lastModified";
+    public static final String xml = "xml";
+    public static final String mappings = "mappings";
+    public static final String roles = "roles";
+    public static final String state = "state";
+    public static final String publishingProgress = "publishingProgress";
+    public static final String eventSources = "eventSources";
+  }
 }

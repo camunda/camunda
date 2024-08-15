@@ -18,11 +18,10 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
-import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.time.Duration;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -492,7 +491,7 @@ public class MigrateProcessInstanceRejectionTest {
                     .startEvent("start")
                     .serviceTask("A", t -> t.zeebeJobType("A"))
                     .boundaryEvent("boundary")
-                    .timerWithDuration(Duration.ofDays(1))
+                    .signal("signal")
                     .endEvent()
                     .moveToActivity("A")
                     .endEvent("end")
@@ -507,9 +506,8 @@ public class MigrateProcessInstanceRejectionTest {
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
 
-    RecordingExporter.timerRecords(TimerIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withHandlerNodeId("boundary")
+    RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+        .withSignalName("signal")
         .await();
 
     final long targetProcessDefinitionKey =
@@ -535,7 +533,7 @@ public class MigrateProcessInstanceRejectionTest {
         .hasRejectionReason(
             """
                 Expected to migrate process instance '%s' \
-                but active element with id 'A' has one or more boundary events of types 'TIMER'. \
+                but active element with id 'A' has one or more boundary events of types 'SIGNAL'. \
                 Migrating active elements with boundary events of these types is not possible yet."""
                 .formatted(processInstanceKey))
         .hasKey(processInstanceKey);
@@ -625,7 +623,7 @@ public class MigrateProcessInstanceRejectionTest {
                     .startEvent()
                     .serviceTask("A", t -> t.zeebeJobType("A"))
                     .boundaryEvent("boundary")
-                    .timerWithDuration(Duration.ofDays(1))
+                    .signal("signal")
                     .endEvent()
                     .moveToActivity("A")
                     .endEvent("end")
@@ -661,7 +659,7 @@ public class MigrateProcessInstanceRejectionTest {
         .hasRejectionReason(
             """
             Expected to migrate process instance '%s' \
-            but target element with id 'A' has one or more boundary events of types 'TIMER'. \
+            but target element with id 'A' has one or more boundary events of types 'SIGNAL'. \
             Migrating target elements with boundary events of these types is not possible yet."""
                 .formatted(processInstanceKey))
         .hasKey(processInstanceKey);
@@ -1020,10 +1018,72 @@ public class MigrateProcessInstanceRejectionTest {
         .hasRejectionReason(
             """
             Expected to migrate process instance '%s' but active element with id 'A' \
-            is mapped to element with id 'B' that must be subscribed to a message catch event. \
+            is mapped to element with id 'B' that must be subscribed to a catch event. \
             Failed to extract the correlation key for 'key': The value must be either a string or \
             a number, but was 'NULL'. The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'key'"""
+                .formatted(processInstanceKey));
+  }
+
+  @Test
+  public void shouldRejectWhenUnableToSubscribeToTimerBoundaryEvent() {
+    // given
+    final String processId = "process";
+    final String targetProcessId = "process2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("A")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask("B")
+                    .boundaryEvent("boundary")
+                    .timerWithDurationExpression("invalid_timer_expression")
+                    .endEvent()
+                    .moveToActivity("B")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractTargetProcessDefinitionKey(deployment, targetProcessId);
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("A", "B")
+            .expectRejection()
+            .migrate();
+
+    // then
+    Assertions.assertThat(rejection)
+        .describedAs("Expect that the message boundary event could not be subscribed")
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            """
+            Expected to migrate process instance '%s' but active element with id 'A' \
+            is mapped to element with id 'B' that must be subscribed to a catch event. \
+            Expected result of the expression 'invalid_timer_expression' to be one of \
+            '[DURATION, PERIOD, STRING]', but was 'NULL'. \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'invalid_timer_expression'"""
                 .formatted(processInstanceKey));
   }
 

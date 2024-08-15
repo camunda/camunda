@@ -12,15 +12,9 @@ import java.util.List;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Data
-@FieldNameConstants
 public class AlertCreationRequestDto {
-
-  // needed to allow inheritance of field name constants
-  @NoArgsConstructor(access = AccessLevel.PROTECTED)
-  public static class Fields {}
 
   private String name;
   private AlertInterval checkInterval;
@@ -31,4 +25,19 @@ public class AlertCreationRequestDto {
   private AlertInterval reminder;
   private List<String> emails = new ArrayList<>();
   private String webhook;
+
+  // needed to allow inheritance of field name constants
+  @NoArgsConstructor(access = AccessLevel.PROTECTED)
+  public static class Fields {
+
+    public static final String name = "name";
+    public static final String checkInterval = "checkInterval";
+    public static final String reportId = "reportId";
+    public static final String threshold = "threshold";
+    public static final String thresholdOperator = "thresholdOperator";
+    public static final String fixNotification = "fixNotification";
+    public static final String reminder = "reminder";
+    public static final String emails = "emails";
+    public static final String webhook = "webhook";
+  }
 }

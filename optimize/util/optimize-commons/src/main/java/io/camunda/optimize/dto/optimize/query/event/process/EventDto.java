@@ -17,7 +17,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 
 @NoArgsConstructor
@@ -27,8 +26,8 @@ import lombok.experimental.SuperBuilder;
 @Setter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
-@FieldNameConstants()
 public class EventDto implements OptimizeDto, EventProcessEventDto {
+
   @NotBlank @EqualsAndHashCode.Include @ToString.Include private String id;
   @NotBlank @ToString.Include private String eventName;
 
@@ -42,4 +41,16 @@ public class EventDto implements OptimizeDto, EventProcessEventDto {
   @ToString.Include private String group;
   @ToString.Include private String source;
   private Object data;
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String eventName = "eventName";
+    public static final String timestamp = "timestamp";
+    public static final String ingestionTimestamp = "ingestionTimestamp";
+    public static final String traceId = "traceId";
+    public static final String group = "group";
+    public static final String source = "source";
+    public static final String data = "data";
+  }
 }

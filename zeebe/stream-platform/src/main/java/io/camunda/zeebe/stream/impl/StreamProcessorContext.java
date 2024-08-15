@@ -16,11 +16,13 @@ import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.EventFilter;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
 public final class StreamProcessorContext implements ReadonlyStreamProcessorContext {
@@ -50,6 +52,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private int maxCommandsInBatch = DEFAULT_MAX_COMMANDS_IN_BATCH;
   private boolean enableAsyncScheduledTasks = true;
   private EventFilter processingFilter = e -> true;
+  private ControllableStreamClock clock;
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -74,6 +77,16 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   @Override
   public boolean enableAsyncScheduledTasks() {
     return enableAsyncScheduledTasks;
+  }
+
+  @Override
+  public ControllableStreamClock getClock() {
+    return clock;
+  }
+
+  public StreamProcessorContext clock(final ControllableStreamClock clock) {
+    this.clock = Objects.requireNonNull(clock);
+    return this;
   }
 
   public LogStream getLogStream() {

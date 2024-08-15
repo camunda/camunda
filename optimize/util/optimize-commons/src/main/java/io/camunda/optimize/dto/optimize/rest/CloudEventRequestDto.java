@@ -21,7 +21,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import lombok.experimental.FieldNameConstants;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -30,8 +29,8 @@ import lombok.experimental.FieldNameConstants;
 @Setter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
-@FieldNameConstants
 public class CloudEventRequestDto {
+
   // required properties
   @NotBlank @EqualsAndHashCode.Include @ToString.Include private String id;
 
@@ -81,5 +80,17 @@ public class CloudEventRequestDto {
 
   public Optional<Object> getData() {
     return Optional.ofNullable(data);
+  }
+
+  public static final class Fields {
+
+    public static final String id = "id";
+    public static final String source = "source";
+    public static final String specversion = "specversion";
+    public static final String type = "type";
+    public static final String time = "time";
+    public static final String data = "data";
+    public static final String traceid = "traceid";
+    public static final String group = "group";
   }
 }
