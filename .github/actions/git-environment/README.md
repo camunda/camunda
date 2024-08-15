@@ -17,16 +17,16 @@ action itself takes 2 seconds but GitHub only bills full minutes.
 
 ### Inputs
 
-| Input               | Description                                          | Required | Default                     |
-| ------------------- | ---------------------------------------------------- | -------- | --------------------------- |
+|        Input        |                     Description                      | Required |           Default           |
+|---------------------|------------------------------------------------------|----------|-----------------------------|
 | stable_branch_regex | A bash regex provided to determine the stable branch | false    | ^stable\/([0-9]+\.[0-9]+)$  |
-| main_branch_regex   | A bash regex provided to determine the main branch   | false    | ^main$                    |
+| main_branch_regex   | A bash regex provided to determine the main branch   | false    | ^main$                      |
 | branch              | A provided branch name                               | false    | defaults to github.ref_name |
 
 ### Outputs
 
-| Output                   | Description                                                                             |
-| ------------------------ | --------------------------------------------------------------------------------------- |
+|          Output          |                                       Description                                       |
+|--------------------------|-----------------------------------------------------------------------------------------|
 | stable_version           | If it's a stable branch, which stable version it is                                     |
 | is_stable_branch         | Whether the provided branch is a stable branch                                          |
 | is_main_branch           | Whether the provided branch is a main branch                                            |
@@ -71,3 +71,4 @@ jobs:
           } >> "$GITHUB_ENV"
   ...
 ```
+

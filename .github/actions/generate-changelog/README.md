@@ -10,7 +10,7 @@ This actions gets a branch for which we want to generate changelog, finds last t
 
 | Input  |                   Description                    | Required | Default |
 |--------|--------------------------------------------------|----------|---------|
-| branch | A branch for which we want to generate changelog | true     | main  |
+| branch | A branch for which we want to generate changelog | true     | main    |
 
 ### Outputs
 
