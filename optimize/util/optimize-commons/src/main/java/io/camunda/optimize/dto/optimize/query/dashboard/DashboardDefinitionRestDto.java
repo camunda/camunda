@@ -22,19 +22,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@Data
-@EqualsAndHashCode(callSuper = true)
-@NoArgsConstructor
-@AllArgsConstructor
 public class DashboardDefinitionRestDto extends BaseDashboardDefinitionDto
     implements CollectionEntity {
 
   @Valid protected List<DashboardReportTileDto> tiles = new ArrayList<>();
+
+  public DashboardDefinitionRestDto(@Valid final List<DashboardReportTileDto> tiles) {
+    this.tiles = tiles;
+  }
+
+  public DashboardDefinitionRestDto() {}
 
   @JsonIgnore
   public Set<String> getTileIds() {
@@ -57,6 +55,56 @@ public class DashboardDefinitionRestDto extends BaseDashboardDefinitionDto
         EntityType.DASHBOARD,
         new EntityData(Map.of(EntityType.REPORT, (long) getTiles().size())),
         roleType);
+  }
+
+  public @Valid List<DashboardReportTileDto> getTiles() {
+    return tiles;
+  }
+
+  public void setTiles(@Valid final List<DashboardReportTileDto> tiles) {
+    this.tiles = tiles;
+  }
+
+  @Override
+  public String toString() {
+    return "DashboardDefinitionRestDto(tiles=" + getTiles() + ")";
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof DashboardDefinitionRestDto)) {
+      return false;
+    }
+    final DashboardDefinitionRestDto other = (DashboardDefinitionRestDto) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final Object this$tiles = getTiles();
+    final Object other$tiles = other.getTiles();
+    if (this$tiles == null ? other$tiles != null : !this$tiles.equals(other$tiles)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof DashboardDefinitionRestDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = super.hashCode();
+    final Object $tiles = getTiles();
+    result = result * PRIME + ($tiles == null ? 43 : $tiles.hashCode());
+    return result;
   }
 
   public static final class Fields {
