@@ -20,24 +20,23 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DatabaseWriterUtil {
 
   public static final DateTimeFormatter dateTimeFormatter =
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
+  private DatabaseWriterUtil() {}
+
   public static <T> Map<String, T> createFieldUpdateScriptParams(
       final Set<String> fields, final Object entityDto, final ObjectMapper objectMapper) {
-    Map<String, Object> entityAsMap =
+    final Map<String, Object> entityAsMap =
         objectMapper.convertValue(entityDto, new TypeReference<>() {});
     final Map<String, T> params = new HashMap<>();
-    for (String fieldName : fields) {
+    for (final String fieldName : fields) {
       Object fieldValue = entityAsMap.get(fieldName);
       if (fieldValue != null) {
-        if (fieldValue instanceof TemporalAccessor temporalAccessor) {
+        if (fieldValue instanceof final TemporalAccessor temporalAccessor) {
           fieldValue = dateTimeFormatter.format(temporalAccessor);
         }
         params.put(fieldName, (T) fieldValue);

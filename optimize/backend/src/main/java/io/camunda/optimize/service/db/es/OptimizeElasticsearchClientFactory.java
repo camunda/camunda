@@ -18,18 +18,19 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import io.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import java.io.IOException;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 
-@Slf4j
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Conditional(ElasticSearchCondition.class)
 public class OptimizeElasticsearchClientFactory {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OptimizeElasticsearchClientFactory.class);
+
+  private OptimizeElasticsearchClientFactory() {}
 
   public static OptimizeElasticsearchClient create(
       final ConfigurationService configurationService,

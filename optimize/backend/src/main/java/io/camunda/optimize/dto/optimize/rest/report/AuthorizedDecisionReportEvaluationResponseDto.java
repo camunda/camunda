@@ -9,9 +9,7 @@ package io.camunda.optimize.dto.optimize.rest.report;
 
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
 public class AuthorizedDecisionReportEvaluationResponseDto<T>
     extends AuthorizedSingleReportEvaluationResponseDto<
         T, SingleDecisionReportDefinitionRequestDto> {
@@ -22,4 +20,6 @@ public class AuthorizedDecisionReportEvaluationResponseDto<T>
       final SingleDecisionReportDefinitionRequestDto reportDefinition) {
     super(currentUserRole, reportResult, reportDefinition);
   }
+
+  public AuthorizedDecisionReportEvaluationResponseDto() {}
 }
