@@ -144,7 +144,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullTargetProcessDefinition(targetProcessDefinition, targetProcessDefinitionKey);
     requireReferredElementsExist(
         sourceProcessDefinition, targetProcessDefinition, mappingInstructions, processInstanceKey);
-    requireNoEventSubprocess(sourceProcessDefinition, targetProcessDefinition);
 
     final Map<String, String> mappedElementIds =
         mapElementIds(mappingInstructions, processInstance, targetProcessDefinition);
@@ -223,6 +222,13 @@ public class ProcessInstanceMigrationMigrateProcessor
         targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
     requireUnchangedFlowScope(
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
+    requireNoEventSubprocessInSource(
+        sourceProcessDefinition, elementInstanceRecord, EnumSet.of(BpmnEventType.MESSAGE));
+    requireNoEventSubprocessInTarget(
+        targetProcessDefinition,
+        targetElementId,
+        elementInstanceRecord,
+        EnumSet.of(BpmnEventType.MESSAGE));
     requireNoBoundaryEventInSource(
         sourceProcessDefinition,
         elementInstanceRecord,
