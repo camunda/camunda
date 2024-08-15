@@ -18,7 +18,7 @@ jobs:
     steps:
       - name: Add labeled issue to project
         if: ${{ github.event.label.name == matrix.teams.label }}
-        uses: ./.github/actions/add-labeled-to-project
+        uses: ./.github/actions/add-issue-to-project
         with:
           projectId: ${{ matrix.teams.projectId }}
           issueNumber: ${{ github.event.issue.number }}
