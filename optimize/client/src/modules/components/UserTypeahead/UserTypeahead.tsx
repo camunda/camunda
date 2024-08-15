@@ -43,8 +43,8 @@ export default function UserTypeahead({
       return mightFail(
         getUser(user.id),
         (user) => {
-          const {type, id} = user;
-          const exists = (users: User[]) => users.some((user) => user.id === getUserId(id, type));
+          const {id} = user;
+          const exists = (users: User[]) => users.some((user) => user.id === getUserId(id));
 
           if (exists(users)) {
             return showError(t('home.roles.existing-identity'));
@@ -66,9 +66,9 @@ export default function UserTypeahead({
   };
 
   const addUser = (user: {id: string} | User['identity']) => {
-    getSelectedUser(user, ({id, type, name, memberCount, email}) => {
-      const newId = getUserId(id, type);
-      const newIdentity: User = {id: newId, identity: {id, name, type, memberCount, email}};
+    getSelectedUser(user, ({id, name, email}) => {
+      const newId = getUserId(id);
+      const newIdentity: User = {id: newId, identity: {id, name, email}};
       onChange(update(users, {$push: [newIdentity]}));
     });
   };

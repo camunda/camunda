@@ -111,7 +111,7 @@ export default function MultiUserInput({
     if (id || id === null) {
       const selectedIdentity = identities
         .filter(filterSelected)
-        .find((identity) => getUserId(identity.id, identity.type) === id);
+        .find((identity) => getUserId(identity.id) === id);
       if (selectedIdentity) {
         onAdd(selectedIdentity);
       } else if (id) {
@@ -120,8 +120,8 @@ export default function MultiUserInput({
     }
   }
 
-  const filterSelected = ({id, type}: User['identity']) => {
-    const exists = (users: User[]) => users.some((user) => user.id === getUserId(id, type));
+  const filterSelected = ({id}: User['identity']) => {
+    const exists = (users: User[]) => users.some((user) => user.id === getUserId(id));
 
     return !exists(users) && !exists(collectionUsers);
   };
@@ -198,7 +198,7 @@ export default function MultiUserInput({
   );
 }
 
-function formatTypeaheadOption({name, email, id, type}: User['identity']): {
+function formatTypeaheadOption({name, email, id}: User['identity']): {
   label: string;
   tag: string | null;
   subText: string | null;
@@ -210,7 +210,7 @@ function formatTypeaheadOption({name, email, id, type}: User['identity']): {
 
   return {
     label: name || email || id || '',
-    tag: type === 'group' ? ` (${t('common.user-group.label')})` : null,
+    tag: null,
     subText,
   };
 }
@@ -219,7 +219,7 @@ function formatIdentity(identity: User['identity']): Item {
   const {label, tag, subText} = formatTypeaheadOption(identity);
 
   return {
-    id: getUserId(identity.id, identity.type),
+    id: getUserId(identity.id),
     label,
     tag,
     subText,

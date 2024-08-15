@@ -14,7 +14,7 @@ import {useUiConfig} from 'hooks';
 import {t} from 'translation';
 
 export default function InstanceFilters({openNewFilterModal, processDefinitionIsNotSelected}) {
-  const {optimizeProfile, userTaskAssigneeAnalyticsEnabled} = useUiConfig();
+  const {userTaskAssigneeAnalyticsEnabled} = useUiConfig();
 
   return (
     <MenuDropdown
@@ -78,13 +78,6 @@ export default function InstanceFilters({openNewFilterModal, processDefinitionIs
           label={t('report.groupBy.userAssignee')}
           disabled={processDefinitionIsNotSelected}
           onClick={openNewFilterModal('assignee')}
-        />
-      )}
-      {optimizeProfile === 'platform' && (
-        <MenuItem
-          label={t('report.groupBy.userGroup')}
-          disabled={processDefinitionIsNotSelected}
-          onClick={openNewFilterModal('candidateGroup')}
         />
       )}
       <MenuItem

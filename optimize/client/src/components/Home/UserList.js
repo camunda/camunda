@@ -8,7 +8,7 @@
 
 import {Component} from 'react';
 import {Button} from '@carbon/react';
-import {Edit, Group, TrashCan, User} from '@carbon/icons-react';
+import {Edit, TrashCan, User} from '@carbon/icons-react';
 
 import {t} from 'translation';
 import {Deleter, BulkDeleter, EntityList, EmptyState} from 'components';
@@ -74,9 +74,6 @@ export default withErrorHandling(
       const {readOnly, collection} = this.props;
 
       const columns = [t('common.name'), t('home.roles.role')];
-      if (optimizeProfile === 'platform') {
-        columns.splice(1, 0, t('home.members'));
-      }
 
       return (
         <div className="UserList">
@@ -111,20 +108,11 @@ export default withErrorHandling(
                 const isLastManager = role === 'manager' && numberOfManagers === 1;
                 const meta = [formatRole(role)];
 
-                if (optimizeProfile === 'platform') {
-                  meta.unshift(
-                    identity.type === 'group' &&
-                      `${identity.memberCount} ${t(
-                        'common.user.' + (identity.memberCount > 1 ? 'label-plural' : 'label')
-                      )}`
-                  );
-                }
-
                 return {
                   id: user.id,
                   entityType: 'user',
                   className: identity.type,
-                  icon: identity.type === 'group' ? <Group /> : <User />,
+                  icon: <User />,
                   type: formatType(identity.type),
                   name: identity.name || identity.id,
                   meta,
@@ -188,12 +176,9 @@ export default withErrorHandling(
 );
 
 function formatType(type) {
-  switch (type) {
-    case 'user':
-      return t('common.user.label');
-    case 'group':
-      return t('common.user-group.label');
-    default:
-      return t('home.types.unknown');
+  if (!type) {
+    return t('home.types.unknown');
   }
+
+  return t('common.user.label');
 }

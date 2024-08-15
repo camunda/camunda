@@ -43,18 +43,14 @@ it('should invoke onChange when adding a user', () => {
   const node = shallow(<UserTypeahead users={[testUser]} onChange={spy} />);
 
   node.find('MultiUserInput').simulate('add', {
-    id: 'sales',
-    type: 'group',
-    name: 'Sales',
-    memberCount: '2',
+    id: 'user2',
+    type: 'user',
+    name: 'User 2',
   });
 
   expect(spy).toHaveBeenCalledWith([
     testUser,
-    {
-      id: 'GROUP:sales',
-      identity: {id: 'sales', memberCount: '2', name: 'Sales', type: 'group', email: undefined},
-    },
+    {id: 'USER:user2', identity: {email: undefined, id: 'user2', name: 'User 2'}},
   ]);
 });
 
@@ -77,7 +73,7 @@ it('should load non imported user before adding it to the list', () => {
   expect(spy).toHaveBeenCalledWith([
     {
       id: 'USER:kermit',
-      identity: {id: 'kermit', memberCount: undefined, name: 'Kermit', type: 'user'},
+      identity: {id: 'kermit', name: 'Kermit'},
     },
   ]);
 });
