@@ -129,24 +129,22 @@ jobs:
           token_format: 'access_token'
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - name: Setup BuildKit
-        uses: docker/setup-buildx-action@v3
-      - name: Login to GCR
-        uses: docker/login-action@v3
+      - uses: ./.github/actions/setup-zeebe
         with:
-          registry: gcr.io
-          username: oauth2accesstoken
-          password: ${{ steps.auth.outputs.access_token }}
-      - uses: docker/build-push-action@v6
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
         with:
-          context: .
-          tags: gcr.io/zeebe-io/zeebe:${{ needs.calculate-image-tag.outputs.image-tag }}
+          maven-extra-args: -PskipFrontendBuild
+      - uses: ./.github/actions/build-platform-docker
+        with:
+          repository: 'gcr.io/zeebe-io/zeebe'
+          revision: ${{ inputs.ref }}
           push: true
-          cache-from: type=gha,ignore-error=true
-          cache-to: type=gha,mode=max,ignore-error=true
-          build-args: DIST=build
-          provenance: false
-          target: app
+          version: ${{ needs.calculate-image-tag.outputs.image-tag }}
+          distball: ${{ steps.build-zeebe.outputs.distball }}
 
   build-operate-image:
     name: Build + Push Operate Docker image
