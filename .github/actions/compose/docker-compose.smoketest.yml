@@ -1,7 +1,7 @@
 services:
   elasticsearch:
     container_name: elasticsearch
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION:-8.9.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION:-8.13.0}
     environment:
       - TZ=Europe/Berlin
       - xpack.security.enabled=false

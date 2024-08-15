@@ -87,7 +87,7 @@ services:
       - localhost
   elasticsearch:
     profiles: ["", "elasticsearch"]
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.9.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.13.0}
     container_name: elasticsearch
     environment:
       - cluster.name=elasticsearch

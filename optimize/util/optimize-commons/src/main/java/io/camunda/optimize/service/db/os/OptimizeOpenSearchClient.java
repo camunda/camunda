@@ -21,7 +21,6 @@ import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
@@ -128,8 +127,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
   @Getter private OpenSearchAsyncClient openSearchAsyncClient;
 
-  private RequestOptionsProvider requestOptionsProvider;
-
   @Getter private RichOpenSearchClient richOpenSearchClient;
   @Getter private List<NamedXContentRegistry.Entry> defaultNamedXContents;
 
@@ -137,17 +134,8 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final ExtendedOpenSearchClient openSearchClient,
       final OpenSearchAsyncClient openSearchAsyncClient,
       final OptimizeIndexNameService indexNameService) {
-    this(openSearchClient, openSearchAsyncClient, indexNameService, new RequestOptionsProvider());
-  }
-
-  public OptimizeOpenSearchClient(
-      final ExtendedOpenSearchClient openSearchClient,
-      final OpenSearchAsyncClient openSearchAsyncClient,
-      final OptimizeIndexNameService indexNameService,
-      final RequestOptionsProvider requestOptionsProvider) {
     this.openSearchClient = openSearchClient;
     this.indexNameService = indexNameService;
-    this.requestOptionsProvider = requestOptionsProvider;
     this.openSearchAsyncClient = openSearchAsyncClient;
     richOpenSearchClient =
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
@@ -228,7 +216,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     richOpenSearchClient =
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
     indexNameService = context.getBean(OptimizeIndexNameService.class);
-    requestOptionsProvider = new RequestOptionsProvider(configurationService);
   }
 
   public final <T> GetResponse<T> get(
