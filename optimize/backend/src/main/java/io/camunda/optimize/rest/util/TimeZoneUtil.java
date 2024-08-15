@@ -15,17 +15,16 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Set;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class TimeZoneUtil {
 
   private static final Set<String> AVAILABLE_ZONE_IDS = ZoneId.getAvailableZoneIds();
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(TimeZoneUtil.class);
 
-  public static ZoneId extractTimezone(ContainerRequestContext requestContext) {
+  private TimeZoneUtil() {}
+
+  public static ZoneId extractTimezone(final ContainerRequestContext requestContext) {
     final String headerString = requestContext.getHeaderString(X_OPTIMIZE_CLIENT_TIMEZONE);
     if (AVAILABLE_ZONE_IDS.contains(headerString)) {
       return ZoneId.of(headerString);
@@ -42,7 +41,8 @@ public class TimeZoneUtil {
   public static String formatToCorrectTimezone(
       final String dateAsString, final ZoneId timezone, final DateTimeFormatter dateTimeFormatter) {
     final OffsetDateTime date = OffsetDateTime.parse(dateAsString, dateTimeFormatter);
-    OffsetDateTime dateWithAdjustedTimezone = date.atZoneSameInstant(timezone).toOffsetDateTime();
+    final OffsetDateTime dateWithAdjustedTimezone =
+        date.atZoneSameInstant(timezone).toOffsetDateTime();
     return dateTimeFormatter.format(dateWithAdjustedTimezone);
   }
 

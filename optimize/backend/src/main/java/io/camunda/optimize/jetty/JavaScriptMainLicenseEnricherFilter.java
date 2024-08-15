@@ -21,18 +21,19 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
-import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
-@NoArgsConstructor
 public class JavaScriptMainLicenseEnricherFilter implements Filter {
+
   public static final String LICENSE_PATH = "OPTIMIZE-LICENSE.txt";
   private static final Pattern MAIN_JS_PATTERN = Pattern.compile(".*/main\\..*\\.chunk\\.js");
 
   // used as means to cache the main js content enriched with the license as its content is static
   // anyway
   private String licensedContent;
+
+  public JavaScriptMainLicenseEnricherFilter() {}
 
   @Override
   public void init(final FilterConfig filterConfig) throws ServletException {
@@ -78,16 +79,16 @@ public class JavaScriptMainLicenseEnricherFilter implements Filter {
       // but following calls will make use of the preprocessed value
       final String originalContent =
           new String(cachingResponseWrapper.getContentAsByteArray(), StandardCharsets.UTF_8);
-      this.licensedContent = readLicense() + originalContent;
+      licensedContent = readLicense() + originalContent;
     }
     cachingResponseWrapper.resetBuffer();
-    cachingResponseWrapper.getWriter().write(this.licensedContent);
+    cachingResponseWrapper.getWriter().write(licensedContent);
   }
 
   @SneakyThrows
   private String readLicense() {
     final InputStream inputStream =
-        this.getClass()
+        getClass()
             .getClassLoader()
             .getResourceAsStream(JavaScriptMainLicenseEnricherFilter.LICENSE_PATH);
 
