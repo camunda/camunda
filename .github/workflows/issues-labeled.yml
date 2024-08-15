@@ -16,6 +16,7 @@ jobs:
     name: Add ${{ matrix.teams.name }} issue to project if relevant component label added
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Add labeled issue to project
         if: ${{ github.event.label.name == matrix.teams.label }}
         uses: ./.github/actions/add-issue-to-project
