@@ -1,11 +1,10 @@
 ---
-
 name: Optimize Task
 about: Describe a task for the technical issue - it may be individual issue or be connected to epic.
 title: ""
 labels: ["kind/task", "component/optimize"]
 assignees: ""
--------------
+---
 
 ### Context
 
@@ -45,6 +44,7 @@ commands by writing `/help` as a comment on this issue.
 #### Review Resources
 
 <!-- When in review, the resources to be used for review should be listed here) -->
+
 - Feature PR: {Link to PR targeting the main branch}
 - Preview environments: {Link(s) to preview environments}
 
@@ -65,4 +65,3 @@ commands by writing `/help` as a comment on this issue.
 - [ ] All Review stages are successfully completed
 - [ ] All associated PRs are merged to the main branch(es) and maintenance branches
 - [ ] The correct version labels are applied to the issue
-
