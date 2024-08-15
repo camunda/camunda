@@ -21,8 +21,7 @@ public class DashboardVariableFilterSubDataDto extends OperatorMultipleValuesFil
     this.allowCustomValues = allowCustomValues;
   }
 
-  protected DashboardVariableFilterSubDataDto() {
-  }
+  protected DashboardVariableFilterSubDataDto() {}
 
   public boolean isAllowCustomValues() {
     return allowCustomValues;
@@ -68,8 +67,11 @@ public class DashboardVariableFilterSubDataDto extends OperatorMultipleValuesFil
 
   @Override
   public String toString() {
-    return "DashboardVariableFilterSubDataDto(super=" + super.toString() + ", allowCustomValues="
-        + isAllowCustomValues() + ")";
+    return "DashboardVariableFilterSubDataDto(super="
+        + super.toString()
+        + ", allowCustomValues="
+        + isAllowCustomValues()
+        + ")";
   }
 
   public static final class Fields {

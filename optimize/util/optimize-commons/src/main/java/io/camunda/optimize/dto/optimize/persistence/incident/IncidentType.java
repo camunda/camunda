@@ -12,14 +12,8 @@ import static io.camunda.optimize.service.util.importing.ZeebeConstants.FAILED_J
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import lombok.AccessLevel;
-import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
-@EqualsAndHashCode
-@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public class IncidentType {
 
   public static final IncidentType FAILED_EXTERNAL_TASK =
@@ -31,16 +25,16 @@ public class IncidentType {
    https://docs.camunda.org/manual/latest/user-guide/process-engine/incidents/#incident-types
   */
   private static final IncidentType FAILED_JOB = new IncidentType(FAILED_JOB_INCIDENT_TYPE);
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(IncidentType.class);
   private final String id;
+
+  protected IncidentType(final String id) {
+    this.id = id;
+  }
 
   @JsonValue
   public String getId() {
     return id;
-  }
-
-  @Override
-  public String toString() {
-    return getId();
   }
 
   public static IncidentType valueOfId(final String incidentTypeId) {
@@ -52,5 +46,43 @@ public class IncidentType {
       log.debug("Importing custom incident type [{}]", incidentTypeId);
     }
     return new IncidentType(incidentTypeId);
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof IncidentType;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = 1;
+    final Object $id = getId();
+    result = result * PRIME + ($id == null ? 43 : $id.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof IncidentType)) {
+      return false;
+    }
+    final IncidentType other = (IncidentType) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    final Object this$id = getId();
+    final Object other$id = other.getId();
+    if (this$id == null ? other$id != null : !this$id.equals(other$id)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return getId();
   }
 }

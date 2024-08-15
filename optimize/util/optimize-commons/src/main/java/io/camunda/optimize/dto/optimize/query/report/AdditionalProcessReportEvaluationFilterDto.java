@@ -19,8 +19,7 @@ public class AdditionalProcessReportEvaluationFilterDto {
     this.filter = filter;
   }
 
-  public AdditionalProcessReportEvaluationFilterDto() {
-  }
+  public AdditionalProcessReportEvaluationFilterDto() {}
 
   public List<ProcessFilterDto<?>> getFilter() {
     return filter;
@@ -51,7 +50,8 @@ public class AdditionalProcessReportEvaluationFilterDto {
     if (!(o instanceof AdditionalProcessReportEvaluationFilterDto)) {
       return false;
     }
-    final AdditionalProcessReportEvaluationFilterDto other = (AdditionalProcessReportEvaluationFilterDto) o;
+    final AdditionalProcessReportEvaluationFilterDto other =
+        (AdditionalProcessReportEvaluationFilterDto) o;
     if (!other.canEqual((Object) this)) {
       return false;
     }

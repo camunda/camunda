@@ -31,8 +31,7 @@ public class EventCountResponseDto {
     this.suggested = suggested;
   }
 
-  public EventCountResponseDto() {
-  }
+  public EventCountResponseDto() {}
 
   public String getGroup() {
     return group;
@@ -136,13 +135,15 @@ public class EventCountResponseDto {
     }
     final Object this$eventName = getEventName();
     final Object other$eventName = other.getEventName();
-    if (this$eventName == null ? other$eventName != null
+    if (this$eventName == null
+        ? other$eventName != null
         : !this$eventName.equals(other$eventName)) {
       return false;
     }
     final Object this$eventLabel = getEventLabel();
     final Object other$eventLabel = other.getEventLabel();
-    if (this$eventLabel == null ? other$eventLabel != null
+    if (this$eventLabel == null
+        ? other$eventLabel != null
         : !this$eventLabel.equals(other$eventLabel)) {
       return false;
     }
@@ -159,9 +160,19 @@ public class EventCountResponseDto {
 
   @Override
   public String toString() {
-    return "EventCountResponseDto(group=" + getGroup() + ", source=" + getSource()
-        + ", eventName=" + getEventName() + ", eventLabel=" + getEventLabel() + ", count="
-        + getCount() + ", suggested=" + isSuggested() + ")";
+    return "EventCountResponseDto(group="
+        + getGroup()
+        + ", source="
+        + getSource()
+        + ", eventName="
+        + getEventName()
+        + ", eventLabel="
+        + getEventLabel()
+        + ", count="
+        + getCount()
+        + ", suggested="
+        + isSuggested()
+        + ")";
   }
 
   private static boolean $default$suggested() {
@@ -173,8 +184,12 @@ public class EventCountResponseDto {
   }
 
   public EventCountResponseDtoBuilder toBuilder() {
-    return new EventCountResponseDtoBuilder().group(group).source(source)
-        .eventName(eventName).eventLabel(eventLabel).count(count)
+    return new EventCountResponseDtoBuilder()
+        .group(group)
+        .source(source)
+        .eventName(eventName)
+        .eventLabel(eventLabel)
+        .count(count)
         .suggested(suggested);
   }
 
@@ -198,8 +213,7 @@ public class EventCountResponseDto {
     private boolean suggested$value;
     private boolean suggested$set;
 
-    EventCountResponseDtoBuilder() {
-    }
+    EventCountResponseDtoBuilder() {}
 
     public EventCountResponseDtoBuilder group(final String group) {
       this.group = group;
@@ -245,15 +259,25 @@ public class EventCountResponseDto {
       if (!suggested$set) {
         suggested$value = EventCountResponseDto.$default$suggested();
       }
-      return new EventCountResponseDto(group, source, eventName, eventLabel,
-          count, suggested$value);
+      return new EventCountResponseDto(
+          group, source, eventName, eventLabel, count, suggested$value);
     }
 
     @Override
     public String toString() {
-      return "EventCountResponseDto.EventCountResponseDtoBuilder(group=" + group + ", source="
-          + source + ", eventName=" + eventName + ", eventLabel=" + eventLabel
-          + ", count=" + count + ", suggested$value=" + suggested$value + ")";
+      return "EventCountResponseDto.EventCountResponseDtoBuilder(group="
+          + group
+          + ", source="
+          + source
+          + ", eventName="
+          + eventName
+          + ", eventLabel="
+          + eventLabel
+          + ", count="
+          + count
+          + ", suggested$value="
+          + suggested$value
+          + ")";
     }
   }
 }

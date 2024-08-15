@@ -20,8 +20,8 @@ import org.apache.commons.lang3.StringUtils;
     property = "type",
     visible = true)
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = UserDto.class, name = "user"),
-    @JsonSubTypes.Type(value = GroupDto.class, name = "group"),
+  @JsonSubTypes.Type(value = UserDto.class, name = "user"),
+  @JsonSubTypes.Type(value = GroupDto.class, name = "group"),
 })
 public abstract class IdentityWithMetadataResponseDto extends IdentityDto {
 
@@ -37,8 +37,7 @@ public abstract class IdentityWithMetadataResponseDto extends IdentityDto {
     this.name = name;
   }
 
-  protected IdentityWithMetadataResponseDto() {
-  }
+  protected IdentityWithMetadataResponseDto() {}
 
   @JsonIgnore
   protected abstract List<Supplier<String>> getSearchableDtoFields();
@@ -51,10 +50,10 @@ public abstract class IdentityWithMetadataResponseDto extends IdentityDto {
   public boolean isIdentityContainsSearchTerm(final String searchTerm) {
     return StringUtils.isBlank(searchTerm)
         || getSearchableDtoFields().stream()
-        .anyMatch(
-            searchableField ->
-                StringUtils.isNotBlank(searchableField.get())
-                    && StringUtils.containsAnyIgnoreCase(searchableField.get(), searchTerm));
+            .anyMatch(
+                searchableField ->
+                    StringUtils.isNotBlank(searchableField.get())
+                        && StringUtils.containsAnyIgnoreCase(searchableField.get(), searchTerm));
   }
 
   public String getName() {
@@ -104,7 +103,10 @@ public abstract class IdentityWithMetadataResponseDto extends IdentityDto {
 
   @Override
   public String toString() {
-    return "IdentityWithMetadataResponseDto(super=" + super.toString() + ", name=" + getName()
+    return "IdentityWithMetadataResponseDto(super="
+        + super.toString()
+        + ", name="
+        + getName()
         + ")";
   }
 

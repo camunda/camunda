@@ -14,26 +14,28 @@ import jakarta.validation.constraints.NotNull;
 
 public class EventDto implements OptimizeDto, EventProcessEventDto {
 
-  @NotBlank
-  private String id;
-  @NotBlank
-  private String eventName;
+  @NotBlank private String id;
+  @NotBlank private String eventName;
 
   @NotNull
   @Min(0)
   private Long timestamp;
 
   private Long ingestionTimestamp;
-  @NotBlank
-  private String traceId;
+  @NotBlank private String traceId;
   private String group;
   private String source;
   private Object data;
 
-  public EventDto(@NotBlank final String id, @NotBlank final String eventName,
+  public EventDto(
+      @NotBlank final String id,
+      @NotBlank final String eventName,
       @NotNull @Min(0) final Long timestamp,
-      final Long ingestionTimestamp, @NotBlank final String traceId, final String group,
-      final String source, final Object data) {
+      final Long ingestionTimestamp,
+      @NotBlank final String traceId,
+      final String group,
+      final String source,
+      final Object data) {
     this.id = id;
     this.eventName = eventName;
     this.timestamp = timestamp;
@@ -44,8 +46,7 @@ public class EventDto implements OptimizeDto, EventProcessEventDto {
     this.data = data;
   }
 
-  public EventDto() {
-  }
+  public EventDto() {}
 
   protected EventDto(final EventDtoBuilder<?, ?> b) {
     id = b.id;
@@ -157,10 +158,21 @@ public class EventDto implements OptimizeDto, EventProcessEventDto {
 
   @Override
   public String toString() {
-    return "EventDto(id=" + getId() + ", eventName=" + getEventName() + ", timestamp="
-        + getTimestamp() + ", ingestionTimestamp=" + getIngestionTimestamp()
-        + ", traceId=" + getTraceId() + ", group=" + getGroup() + ", source="
-        + getSource() + ")";
+    return "EventDto(id="
+        + getId()
+        + ", eventName="
+        + getEventName()
+        + ", timestamp="
+        + getTimestamp()
+        + ", ingestionTimestamp="
+        + getIngestionTimestamp()
+        + ", traceId="
+        + getTraceId()
+        + ", group="
+        + getGroup()
+        + ", source="
+        + getSource()
+        + ")";
   }
 
   public static EventDtoBuilder<?, ?> builder() {
@@ -183,12 +195,12 @@ public class EventDto implements OptimizeDto, EventProcessEventDto {
     public static final String data = "data";
   }
 
-  public static abstract class EventDtoBuilder<C extends EventDto, B extends EventDtoBuilder<C, B>> {
+  public abstract static class EventDtoBuilder<
+      C extends EventDto, B extends EventDtoBuilder<C, B>> {
 
     private @NotBlank String id;
     private @NotBlank String eventName;
-    private @NotNull
-    @Min(0) Long timestamp;
+    private @NotNull @Min(0) Long timestamp;
     private Long ingestionTimestamp;
     private @NotBlank String traceId;
     private String group;
@@ -235,8 +247,8 @@ public class EventDto implements OptimizeDto, EventProcessEventDto {
       return self();
     }
 
-    private static void $fillValuesFromInstanceIntoBuilder(final EventDto instance,
-        final EventDtoBuilder<?, ?> b) {
+    private static void $fillValuesFromInstanceIntoBuilder(
+        final EventDto instance, final EventDtoBuilder<?, ?> b) {
       b.id(instance.id);
       b.eventName(instance.eventName);
       b.timestamp(instance.timestamp);
@@ -258,24 +270,36 @@ public class EventDto implements OptimizeDto, EventProcessEventDto {
 
     @Override
     public String toString() {
-      return "EventDto.EventDtoBuilder(id=" + id + ", eventName=" + eventName
-          + ", timestamp=" + timestamp + ", ingestionTimestamp=" + ingestionTimestamp
-          + ", traceId=" + traceId + ", group=" + group + ", source=" + source
-          + ", data=" + data + ")";
+      return "EventDto.EventDtoBuilder(id="
+          + id
+          + ", eventName="
+          + eventName
+          + ", timestamp="
+          + timestamp
+          + ", ingestionTimestamp="
+          + ingestionTimestamp
+          + ", traceId="
+          + traceId
+          + ", group="
+          + group
+          + ", source="
+          + source
+          + ", data="
+          + data
+          + ")";
     }
   }
 
-  private static final class EventDtoBuilderImpl extends
-      EventDtoBuilder<EventDto, EventDtoBuilderImpl> {
+  private static final class EventDtoBuilderImpl
+      extends EventDtoBuilder<EventDto, EventDtoBuilderImpl> {
 
-    private EventDtoBuilderImpl() {
-    }
+    private EventDtoBuilderImpl() {}
 
     @Override
     protected EventDtoBuilderImpl self() {
       return this;
     }
-    
+
     @Override
     public EventDto build() {
       return new EventDto(this);

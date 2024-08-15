@@ -19,8 +19,7 @@ import java.util.Optional;
 public class CloudEventRequestDto {
 
   // required properties
-  @NotBlank
-  private String id;
+  @NotBlank private String id;
 
   @NotBlank
   @Pattern(
@@ -36,8 +35,7 @@ public class CloudEventRequestDto {
   // https://github.com/cloudevents/spec/blob/v1.0/spec.md#attribute-naming-convention
   private String specversion;
 
-  @NotBlank
-  private String type;
+  @NotBlank private String type;
 
   // optional properties
   @JsonDeserialize(using = CustomCloudEventTimeDeserializer.class)
@@ -54,13 +52,20 @@ public class CloudEventRequestDto {
 
   private String group;
 
-  public CloudEventRequestDto(@NotBlank final String id, @NotBlank @Pattern(
-      regexp = "^(?!camunda$).*",
-      flags = Flag.CASE_INSENSITIVE,
-      message = "field must not equal 'camunda'") final String source,
-      @NotNull @Pattern(regexp = "1\\.0") final String specversion, @NotBlank final String type,
+  public CloudEventRequestDto(
+      @NotBlank final String id,
+      @NotBlank
+          @Pattern(
+              regexp = "^(?!camunda$).*",
+              flags = Flag.CASE_INSENSITIVE,
+              message = "field must not equal 'camunda'")
+          final String source,
+      @NotNull @Pattern(regexp = "1\\.0") final String specversion,
+      @NotBlank final String type,
       final Instant time,
-      final Object data, @NotBlank final String traceid, final String group) {
+      final Object data,
+      @NotBlank final String traceid,
+      final String group) {
     this.id = id;
     this.source = source;
     this.specversion = specversion;
@@ -71,8 +76,7 @@ public class CloudEventRequestDto {
     this.group = group;
   }
 
-  public CloudEventRequestDto() {
-  }
+  public CloudEventRequestDto() {}
 
   public Optional<Instant> getTime() {
     return Optional.ofNullable(time);
@@ -114,10 +118,13 @@ public class CloudEventRequestDto {
     return source;
   }
 
-  public void setSource(@NotBlank @Pattern(
-      regexp = "^(?!camunda$).*",
-      flags = Flag.CASE_INSENSITIVE,
-      message = "field must not equal 'camunda'") final String source) {
+  public void setSource(
+      @NotBlank
+          @Pattern(
+              regexp = "^(?!camunda$).*",
+              flags = Flag.CASE_INSENSITIVE,
+              message = "field must not equal 'camunda'")
+          final String source) {
     this.source = source;
   }
 
@@ -188,7 +195,8 @@ public class CloudEventRequestDto {
     }
     final Object this$specversion = getSpecversion();
     final Object other$specversion = other.getSpecversion();
-    if (this$specversion == null ? other$specversion != null
+    if (this$specversion == null
+        ? other$specversion != null
         : !this$specversion.equals(other$specversion)) {
       return false;
     }
@@ -202,9 +210,21 @@ public class CloudEventRequestDto {
 
   @Override
   public String toString() {
-    return "CloudEventRequestDto(id=" + getId() + ", source=" + getSource()
-        + ", specversion=" + getSpecversion() + ", type=" + getType() + ", time="
-        + getTime() + ", traceid=" + getTraceid() + ", group=" + getGroup() + ")";
+    return "CloudEventRequestDto(id="
+        + getId()
+        + ", source="
+        + getSource()
+        + ", specversion="
+        + getSpecversion()
+        + ", type="
+        + getType()
+        + ", time="
+        + getTime()
+        + ", traceid="
+        + getTraceid()
+        + ", group="
+        + getGroup()
+        + ")";
   }
 
   public static CloudEventRequestDtoBuilder builder() {
@@ -212,9 +232,15 @@ public class CloudEventRequestDto {
   }
 
   public CloudEventRequestDtoBuilder toBuilder() {
-    return new CloudEventRequestDtoBuilder().id(id).source(source)
-        .specversion(specversion).type(type).time(time).data(data)
-        .traceid(traceid).group(group);
+    return new CloudEventRequestDtoBuilder()
+        .id(id)
+        .source(source)
+        .specversion(specversion)
+        .type(type)
+        .time(time)
+        .data(data)
+        .traceid(traceid)
+        .group(group);
   }
 
   public static final class Fields {
@@ -232,31 +258,31 @@ public class CloudEventRequestDto {
   public static class CloudEventRequestDtoBuilder {
 
     private @NotBlank String id;
-    private @NotBlank
-    @Pattern(
+    private @NotBlank @Pattern(
         regexp = "^(?!camunda$).*",
         flags = Flag.CASE_INSENSITIVE,
         message = "field must not equal 'camunda'") String source;
-    private @NotNull
-    @Pattern(regexp = "1\\.0") String specversion;
+    private @NotNull @Pattern(regexp = "1\\.0") String specversion;
     private @NotBlank String type;
     private Instant time;
     private Object data;
     private @NotBlank String traceid;
     private String group;
 
-    CloudEventRequestDtoBuilder() {
-    }
+    CloudEventRequestDtoBuilder() {}
 
     public CloudEventRequestDtoBuilder id(@NotBlank final String id) {
       this.id = id;
       return this;
     }
 
-    public CloudEventRequestDtoBuilder source(@NotBlank @Pattern(
-        regexp = "^(?!camunda$).*",
-        flags = Flag.CASE_INSENSITIVE,
-        message = "field must not equal 'camunda'") final String source) {
+    public CloudEventRequestDtoBuilder source(
+        @NotBlank
+            @Pattern(
+                regexp = "^(?!camunda$).*",
+                flags = Flag.CASE_INSENSITIVE,
+                message = "field must not equal 'camunda'")
+            final String source) {
       this.source = source;
       return this;
     }
@@ -294,16 +320,28 @@ public class CloudEventRequestDto {
     }
 
     public CloudEventRequestDto build() {
-      return new CloudEventRequestDto(id, source, specversion, type, time,
-          data, traceid, group);
+      return new CloudEventRequestDto(id, source, specversion, type, time, data, traceid, group);
     }
 
     @Override
     public String toString() {
-      return "CloudEventRequestDto.CloudEventRequestDtoBuilder(id=" + id + ", source="
-          + source + ", specversion=" + specversion + ", type=" + type + ", time="
-          + time + ", data=" + data + ", traceid=" + traceid + ", group="
-          + group + ")";
+      return "CloudEventRequestDto.CloudEventRequestDtoBuilder(id="
+          + id
+          + ", source="
+          + source
+          + ", specversion="
+          + specversion
+          + ", type="
+          + type
+          + ", time="
+          + time
+          + ", data="
+          + data
+          + ", traceid="
+          + traceid
+          + ", group="
+          + group
+          + ")";
     }
   }
 }

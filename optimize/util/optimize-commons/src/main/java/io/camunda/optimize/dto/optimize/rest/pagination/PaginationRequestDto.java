@@ -27,14 +27,13 @@ public class PaginationRequestDto {
   @Min(0)
   protected Integer offset;
 
-  public PaginationRequestDto(@Min(0) @Max(MAX_RESPONSE_SIZE_LIMIT) final Integer limit,
-      @Min(0) final Integer offset) {
+  public PaginationRequestDto(
+      @Min(0) @Max(MAX_RESPONSE_SIZE_LIMIT) final Integer limit, @Min(0) final Integer offset) {
     this.limit = limit;
     this.offset = offset;
   }
 
-  public PaginationRequestDto() {
-  }
+  public PaginationRequestDto() {}
 
   public @Min(0) @Max(MAX_RESPONSE_SIZE_LIMIT) Integer getLimit() {
     return limit;

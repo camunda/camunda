@@ -19,8 +19,7 @@ public class PaginationScrollableDto extends PaginationDto {
     this.scrollTimeout = scrollTimeout;
   }
 
-  public PaginationScrollableDto() {
-  }
+  public PaginationScrollableDto() {}
 
   public static PaginationScrollableDto fromPaginationDto(final PaginationDto pagination) {
     final PaginationScrollableDto paginationObject = new PaginationScrollableDto();
@@ -61,8 +60,11 @@ public class PaginationScrollableDto extends PaginationDto {
 
   @Override
   public String toString() {
-    return "PaginationScrollableDto(scrollId=" + getScrollId() + ", scrollTimeout="
-        + getScrollTimeout() + ")";
+    return "PaginationScrollableDto(scrollId="
+        + getScrollId()
+        + ", scrollTimeout="
+        + getScrollTimeout()
+        + ")";
   }
 
   @Override
@@ -87,7 +89,8 @@ public class PaginationScrollableDto extends PaginationDto {
     }
     final Object this$scrollTimeout = getScrollTimeout();
     final Object other$scrollTimeout = other.getScrollTimeout();
-    if (this$scrollTimeout == null ? other$scrollTimeout != null
+    if (this$scrollTimeout == null
+        ? other$scrollTimeout != null
         : !this$scrollTimeout.equals(other$scrollTimeout)) {
       return false;
     }
@@ -115,6 +118,6 @@ public class PaginationScrollableDto extends PaginationDto {
   public boolean isValid() {
     return limit != null
         && ((offset != null && scrollTimeout == null && scrollId == null)
-        || (offset == null && scrollTimeout != null));
+            || (offset == null && scrollTimeout != null));
   }
 }

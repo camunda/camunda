@@ -21,8 +21,7 @@ public class SettingsDto {
     this.lastModified = lastModified;
   }
 
-  private SettingsDto() {
-  }
+  private SettingsDto() {}
 
   public Optional<Boolean> getSharingEnabled() {
     return Optional.ofNullable(sharingEnabled);
@@ -69,13 +68,15 @@ public class SettingsDto {
     }
     final Object this$sharingEnabled = getSharingEnabled();
     final Object other$sharingEnabled = other.getSharingEnabled();
-    if (this$sharingEnabled == null ? other$sharingEnabled != null
+    if (this$sharingEnabled == null
+        ? other$sharingEnabled != null
         : !this$sharingEnabled.equals(other$sharingEnabled)) {
       return false;
     }
     final Object this$lastModified = getLastModified();
     final Object other$lastModified = other.getLastModified();
-    if (this$lastModified == null ? other$lastModified != null
+    if (this$lastModified == null
+        ? other$lastModified != null
         : !this$lastModified.equals(other$lastModified)) {
       return false;
     }
@@ -84,8 +85,11 @@ public class SettingsDto {
 
   @Override
   public String toString() {
-    return "SettingsDto(sharingEnabled=" + getSharingEnabled() + ", lastModified="
-        + getLastModified() + ")";
+    return "SettingsDto(sharingEnabled="
+        + getSharingEnabled()
+        + ", lastModified="
+        + getLastModified()
+        + ")";
   }
 
   public static SettingsDtoBuilder builder() {
@@ -97,8 +101,7 @@ public class SettingsDto {
     private Boolean sharingEnabled;
     private OffsetDateTime lastModified;
 
-    SettingsDtoBuilder() {
-    }
+    SettingsDtoBuilder() {}
 
     public SettingsDtoBuilder sharingEnabled(final Boolean sharingEnabled) {
       this.sharingEnabled = sharingEnabled;
@@ -116,8 +119,11 @@ public class SettingsDto {
 
     @Override
     public String toString() {
-      return "SettingsDto.SettingsDtoBuilder(sharingEnabled=" + sharingEnabled
-          + ", lastModified=" + lastModified + ")";
+      return "SettingsDto.SettingsDtoBuilder(sharingEnabled="
+          + sharingEnabled
+          + ", lastModified="
+          + lastModified
+          + ")";
     }
   }
 

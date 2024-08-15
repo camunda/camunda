@@ -16,8 +16,7 @@ import io.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 
 public class AuthorizedCollectionDefinitionDto extends AuthorizedEntityDto {
 
-  @JsonUnwrapped
-  private CollectionDefinitionDto definitionDto;
+  @JsonUnwrapped private CollectionDefinitionDto definitionDto;
 
   public AuthorizedCollectionDefinitionDto(
       final RoleType currentUserRole, final CollectionDefinitionDto definitionDto) {
@@ -29,8 +28,7 @@ public class AuthorizedCollectionDefinitionDto extends AuthorizedEntityDto {
     this.definitionDto = definitionDto;
   }
 
-  protected AuthorizedCollectionDefinitionDto() {
-  }
+  protected AuthorizedCollectionDefinitionDto() {}
 
   public EntityResponseDto toEntityDto() {
     return definitionDto.toEntityDto(getCurrentUserRole());
@@ -88,7 +86,8 @@ public class AuthorizedCollectionDefinitionDto extends AuthorizedEntityDto {
     }
     final Object this$definitionDto = getDefinitionDto();
     final Object other$definitionDto = other.getDefinitionDto();
-    if (this$definitionDto == null ? other$definitionDto != null
+    if (this$definitionDto == null
+        ? other$definitionDto != null
         : !this$definitionDto.equals(other$definitionDto)) {
       return false;
     }

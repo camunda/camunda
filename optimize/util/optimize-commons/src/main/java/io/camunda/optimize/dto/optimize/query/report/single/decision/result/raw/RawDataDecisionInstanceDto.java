@@ -23,11 +23,14 @@ public class RawDataDecisionInstanceDto implements RawDataInstanceDto {
   protected Map<String, InputVariableEntry> inputVariables;
   protected Map<String, OutputVariableEntry> outputVariables;
 
-  public RawDataDecisionInstanceDto(final String decisionDefinitionKey,
+  public RawDataDecisionInstanceDto(
+      final String decisionDefinitionKey,
       final String decisionDefinitionId,
-      final String decisionInstanceId, final String processInstanceId,
+      final String decisionInstanceId,
+      final String processInstanceId,
       final OffsetDateTime evaluationDateTime,
-      final String engineName, final String tenantId,
+      final String engineName,
+      final String tenantId,
       final Map<String, InputVariableEntry> inputVariables,
       final Map<String, OutputVariableEntry> outputVariables) {
     this.decisionDefinitionKey = decisionDefinitionKey;
@@ -41,8 +44,7 @@ public class RawDataDecisionInstanceDto implements RawDataInstanceDto {
     this.outputVariables = outputVariables;
   }
 
-  public RawDataDecisionInstanceDto() {
-  }
+  public RawDataDecisionInstanceDto() {}
 
   public String getDecisionDefinitionKey() {
     return decisionDefinitionKey;
@@ -161,37 +163,43 @@ public class RawDataDecisionInstanceDto implements RawDataInstanceDto {
     }
     final Object this$decisionDefinitionKey = getDecisionDefinitionKey();
     final Object other$decisionDefinitionKey = other.getDecisionDefinitionKey();
-    if (this$decisionDefinitionKey == null ? other$decisionDefinitionKey != null
+    if (this$decisionDefinitionKey == null
+        ? other$decisionDefinitionKey != null
         : !this$decisionDefinitionKey.equals(other$decisionDefinitionKey)) {
       return false;
     }
     final Object this$decisionDefinitionId = getDecisionDefinitionId();
     final Object other$decisionDefinitionId = other.getDecisionDefinitionId();
-    if (this$decisionDefinitionId == null ? other$decisionDefinitionId != null
+    if (this$decisionDefinitionId == null
+        ? other$decisionDefinitionId != null
         : !this$decisionDefinitionId.equals(other$decisionDefinitionId)) {
       return false;
     }
     final Object this$decisionInstanceId = getDecisionInstanceId();
     final Object other$decisionInstanceId = other.getDecisionInstanceId();
-    if (this$decisionInstanceId == null ? other$decisionInstanceId != null
+    if (this$decisionInstanceId == null
+        ? other$decisionInstanceId != null
         : !this$decisionInstanceId.equals(other$decisionInstanceId)) {
       return false;
     }
     final Object this$processInstanceId = getProcessInstanceId();
     final Object other$processInstanceId = other.getProcessInstanceId();
-    if (this$processInstanceId == null ? other$processInstanceId != null
+    if (this$processInstanceId == null
+        ? other$processInstanceId != null
         : !this$processInstanceId.equals(other$processInstanceId)) {
       return false;
     }
     final Object this$evaluationDateTime = getEvaluationDateTime();
     final Object other$evaluationDateTime = other.getEvaluationDateTime();
-    if (this$evaluationDateTime == null ? other$evaluationDateTime != null
+    if (this$evaluationDateTime == null
+        ? other$evaluationDateTime != null
         : !this$evaluationDateTime.equals(other$evaluationDateTime)) {
       return false;
     }
     final Object this$engineName = getEngineName();
     final Object other$engineName = other.getEngineName();
-    if (this$engineName == null ? other$engineName != null
+    if (this$engineName == null
+        ? other$engineName != null
         : !this$engineName.equals(other$engineName)) {
       return false;
     }
@@ -202,13 +210,15 @@ public class RawDataDecisionInstanceDto implements RawDataInstanceDto {
     }
     final Object this$inputVariables = getInputVariables();
     final Object other$inputVariables = other.getInputVariables();
-    if (this$inputVariables == null ? other$inputVariables != null
+    if (this$inputVariables == null
+        ? other$inputVariables != null
         : !this$inputVariables.equals(other$inputVariables)) {
       return false;
     }
     final Object this$outputVariables = getOutputVariables();
     final Object other$outputVariables = other.getOutputVariables();
-    if (this$outputVariables == null ? other$outputVariables != null
+    if (this$outputVariables == null
+        ? other$outputVariables != null
         : !this$outputVariables.equals(other$outputVariables)) {
       return false;
     }
@@ -217,12 +227,25 @@ public class RawDataDecisionInstanceDto implements RawDataInstanceDto {
 
   @Override
   public String toString() {
-    return "RawDataDecisionInstanceDto(decisionDefinitionKey=" + getDecisionDefinitionKey()
-        + ", decisionDefinitionId=" + getDecisionDefinitionId() + ", decisionInstanceId="
-        + getDecisionInstanceId() + ", processInstanceId=" + getProcessInstanceId()
-        + ", evaluationDateTime=" + getEvaluationDateTime() + ", engineName="
-        + getEngineName() + ", tenantId=" + getTenantId() + ", inputVariables="
-        + getInputVariables() + ", outputVariables=" + getOutputVariables() + ")";
+    return "RawDataDecisionInstanceDto(decisionDefinitionKey="
+        + getDecisionDefinitionKey()
+        + ", decisionDefinitionId="
+        + getDecisionDefinitionId()
+        + ", decisionInstanceId="
+        + getDecisionInstanceId()
+        + ", processInstanceId="
+        + getProcessInstanceId()
+        + ", evaluationDateTime="
+        + getEvaluationDateTime()
+        + ", engineName="
+        + getEngineName()
+        + ", tenantId="
+        + getTenantId()
+        + ", inputVariables="
+        + getInputVariables()
+        + ", outputVariables="
+        + getOutputVariables()
+        + ")";
   }
 
   public enum Fields {

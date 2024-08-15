@@ -38,8 +38,7 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
   private String tenantId;
 
   // Note that engine is transient and only used for correct "routing" during import
-  @JsonIgnore
-  private String engine;
+  @JsonIgnore private String engine;
 
   private String userTaskInstanceId;
 
@@ -125,16 +124,27 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
     this.userTaskInstanceId = userTaskInstanceId;
   }
 
-  public FlowNodeInstanceDto(final String flowNodeInstanceId, final String flowNodeId,
+  public FlowNodeInstanceDto(
+      final String flowNodeInstanceId,
+      final String flowNodeId,
       final String flowNodeType,
-      final String processInstanceId, final Long totalDurationInMs, final OffsetDateTime startDate,
-      final OffsetDateTime endDate, final Boolean canceled, final String definitionKey,
+      final String processInstanceId,
+      final Long totalDurationInMs,
+      final OffsetDateTime startDate,
+      final OffsetDateTime endDate,
+      final Boolean canceled,
+      final String definitionKey,
       final String definitionVersion,
-      final String tenantId, final String engine, final String userTaskInstanceId,
+      final String tenantId,
+      final String engine,
+      final String userTaskInstanceId,
       final OffsetDateTime dueDate,
-      final String deleteReason, final String assignee, final List<String> candidateGroups,
+      final String deleteReason,
+      final String assignee,
+      final List<String> candidateGroups,
       final List<AssigneeOperationDto> assigneeOperations,
-      final List<CandidateGroupOperationDto> candidateGroupOperations, final Long idleDurationInMs,
+      final List<CandidateGroupOperationDto> candidateGroupOperations,
+      final Long idleDurationInMs,
       final Long workDurationInMs) {
     this.flowNodeInstanceId = flowNodeInstanceId;
     this.flowNodeId = flowNodeId;
@@ -159,8 +169,7 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
     this.workDurationInMs = workDurationInMs;
   }
 
-  public FlowNodeInstanceDto() {
-  }
+  public FlowNodeInstanceDto() {}
 
   public String getFlowNodeInstanceId() {
     return flowNodeInstanceId;
@@ -399,8 +408,9 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
     final Object $assigneeOperations = getAssigneeOperations();
     result = result * PRIME + ($assigneeOperations == null ? 43 : $assigneeOperations.hashCode());
     final Object $candidateGroupOperations = getCandidateGroupOperations();
-    result = result * PRIME + ($candidateGroupOperations == null ? 43
-        : $candidateGroupOperations.hashCode());
+    result =
+        result * PRIME
+            + ($candidateGroupOperations == null ? 43 : $candidateGroupOperations.hashCode());
     final Object $idleDurationInMs = getIdleDurationInMs();
     result = result * PRIME + ($idleDurationInMs == null ? 43 : $idleDurationInMs.hashCode());
     final Object $workDurationInMs = getWorkDurationInMs();
@@ -422,37 +432,43 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
     }
     final Object this$flowNodeInstanceId = getFlowNodeInstanceId();
     final Object other$flowNodeInstanceId = other.getFlowNodeInstanceId();
-    if (this$flowNodeInstanceId == null ? other$flowNodeInstanceId != null
+    if (this$flowNodeInstanceId == null
+        ? other$flowNodeInstanceId != null
         : !this$flowNodeInstanceId.equals(other$flowNodeInstanceId)) {
       return false;
     }
     final Object this$flowNodeId = getFlowNodeId();
     final Object other$flowNodeId = other.getFlowNodeId();
-    if (this$flowNodeId == null ? other$flowNodeId != null
+    if (this$flowNodeId == null
+        ? other$flowNodeId != null
         : !this$flowNodeId.equals(other$flowNodeId)) {
       return false;
     }
     final Object this$flowNodeType = getFlowNodeType();
     final Object other$flowNodeType = other.getFlowNodeType();
-    if (this$flowNodeType == null ? other$flowNodeType != null
+    if (this$flowNodeType == null
+        ? other$flowNodeType != null
         : !this$flowNodeType.equals(other$flowNodeType)) {
       return false;
     }
     final Object this$processInstanceId = getProcessInstanceId();
     final Object other$processInstanceId = other.getProcessInstanceId();
-    if (this$processInstanceId == null ? other$processInstanceId != null
+    if (this$processInstanceId == null
+        ? other$processInstanceId != null
         : !this$processInstanceId.equals(other$processInstanceId)) {
       return false;
     }
     final Object this$totalDurationInMs = getTotalDurationInMs();
     final Object other$totalDurationInMs = other.getTotalDurationInMs();
-    if (this$totalDurationInMs == null ? other$totalDurationInMs != null
+    if (this$totalDurationInMs == null
+        ? other$totalDurationInMs != null
         : !this$totalDurationInMs.equals(other$totalDurationInMs)) {
       return false;
     }
     final Object this$startDate = getStartDate();
     final Object other$startDate = other.getStartDate();
-    if (this$startDate == null ? other$startDate != null
+    if (this$startDate == null
+        ? other$startDate != null
         : !this$startDate.equals(other$startDate)) {
       return false;
     }
@@ -468,13 +484,15 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
     }
     final Object this$definitionKey = getDefinitionKey();
     final Object other$definitionKey = other.getDefinitionKey();
-    if (this$definitionKey == null ? other$definitionKey != null
+    if (this$definitionKey == null
+        ? other$definitionKey != null
         : !this$definitionKey.equals(other$definitionKey)) {
       return false;
     }
     final Object this$definitionVersion = getDefinitionVersion();
     final Object other$definitionVersion = other.getDefinitionVersion();
-    if (this$definitionVersion == null ? other$definitionVersion != null
+    if (this$definitionVersion == null
+        ? other$definitionVersion != null
         : !this$definitionVersion.equals(other$definitionVersion)) {
       return false;
     }
@@ -490,7 +508,8 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
     }
     final Object this$userTaskInstanceId = getUserTaskInstanceId();
     final Object other$userTaskInstanceId = other.getUserTaskInstanceId();
-    if (this$userTaskInstanceId == null ? other$userTaskInstanceId != null
+    if (this$userTaskInstanceId == null
+        ? other$userTaskInstanceId != null
         : !this$userTaskInstanceId.equals(other$userTaskInstanceId)) {
       return false;
     }
@@ -501,7 +520,8 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
     }
     final Object this$deleteReason = getDeleteReason();
     final Object other$deleteReason = other.getDeleteReason();
-    if (this$deleteReason == null ? other$deleteReason != null
+    if (this$deleteReason == null
+        ? other$deleteReason != null
         : !this$deleteReason.equals(other$deleteReason)) {
       return false;
     }
@@ -512,31 +532,36 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
     }
     final Object this$candidateGroups = getCandidateGroups();
     final Object other$candidateGroups = other.getCandidateGroups();
-    if (this$candidateGroups == null ? other$candidateGroups != null
+    if (this$candidateGroups == null
+        ? other$candidateGroups != null
         : !this$candidateGroups.equals(other$candidateGroups)) {
       return false;
     }
     final Object this$assigneeOperations = getAssigneeOperations();
     final Object other$assigneeOperations = other.getAssigneeOperations();
-    if (this$assigneeOperations == null ? other$assigneeOperations != null
+    if (this$assigneeOperations == null
+        ? other$assigneeOperations != null
         : !this$assigneeOperations.equals(other$assigneeOperations)) {
       return false;
     }
     final Object this$candidateGroupOperations = getCandidateGroupOperations();
     final Object other$candidateGroupOperations = other.getCandidateGroupOperations();
-    if (this$candidateGroupOperations == null ? other$candidateGroupOperations != null
+    if (this$candidateGroupOperations == null
+        ? other$candidateGroupOperations != null
         : !this$candidateGroupOperations.equals(other$candidateGroupOperations)) {
       return false;
     }
     final Object this$idleDurationInMs = getIdleDurationInMs();
     final Object other$idleDurationInMs = other.getIdleDurationInMs();
-    if (this$idleDurationInMs == null ? other$idleDurationInMs != null
+    if (this$idleDurationInMs == null
+        ? other$idleDurationInMs != null
         : !this$idleDurationInMs.equals(other$idleDurationInMs)) {
       return false;
     }
     final Object this$workDurationInMs = getWorkDurationInMs();
     final Object other$workDurationInMs = other.getWorkDurationInMs();
-    if (this$workDurationInMs == null ? other$workDurationInMs != null
+    if (this$workDurationInMs == null
+        ? other$workDurationInMs != null
         : !this$workDurationInMs.equals(other$workDurationInMs)) {
       return false;
     }
@@ -545,19 +570,49 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
 
   @Override
   public String toString() {
-    return "FlowNodeInstanceDto(flowNodeInstanceId=" + getFlowNodeInstanceId()
-        + ", flowNodeId=" + getFlowNodeId() + ", flowNodeType=" + getFlowNodeType()
-        + ", processInstanceId=" + getProcessInstanceId() + ", totalDurationInMs="
-        + getTotalDurationInMs() + ", startDate=" + getStartDate() + ", endDate="
-        + getEndDate() + ", canceled=" + getCanceled() + ", definitionKey="
-        + getDefinitionKey() + ", definitionVersion=" + getDefinitionVersion()
-        + ", tenantId=" + getTenantId() + ", engine=" + getEngine()
-        + ", userTaskInstanceId=" + getUserTaskInstanceId() + ", dueDate=" + getDueDate()
-        + ", deleteReason=" + getDeleteReason() + ", assignee=" + getAssignee()
-        + ", candidateGroups=" + getCandidateGroups() + ", assigneeOperations="
-        + getAssigneeOperations() + ", candidateGroupOperations="
-        + getCandidateGroupOperations() + ", idleDurationInMs=" + getIdleDurationInMs()
-        + ", workDurationInMs=" + getWorkDurationInMs() + ")";
+    return "FlowNodeInstanceDto(flowNodeInstanceId="
+        + getFlowNodeInstanceId()
+        + ", flowNodeId="
+        + getFlowNodeId()
+        + ", flowNodeType="
+        + getFlowNodeType()
+        + ", processInstanceId="
+        + getProcessInstanceId()
+        + ", totalDurationInMs="
+        + getTotalDurationInMs()
+        + ", startDate="
+        + getStartDate()
+        + ", endDate="
+        + getEndDate()
+        + ", canceled="
+        + getCanceled()
+        + ", definitionKey="
+        + getDefinitionKey()
+        + ", definitionVersion="
+        + getDefinitionVersion()
+        + ", tenantId="
+        + getTenantId()
+        + ", engine="
+        + getEngine()
+        + ", userTaskInstanceId="
+        + getUserTaskInstanceId()
+        + ", dueDate="
+        + getDueDate()
+        + ", deleteReason="
+        + getDeleteReason()
+        + ", assignee="
+        + getAssignee()
+        + ", candidateGroups="
+        + getCandidateGroups()
+        + ", assigneeOperations="
+        + getAssigneeOperations()
+        + ", candidateGroupOperations="
+        + getCandidateGroupOperations()
+        + ", idleDurationInMs="
+        + getIdleDurationInMs()
+        + ", workDurationInMs="
+        + getWorkDurationInMs()
+        + ")";
   }
 
   public static final class Fields {

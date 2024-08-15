@@ -25,8 +25,7 @@ public class EventGroupRequestDto {
     this.limit = limit;
   }
 
-  public EventGroupRequestDto() {
-  }
+  public EventGroupRequestDto() {}
 
   public void validateRequest() {
     if (StringUtils.isEmpty(searchTerm)) {
@@ -78,7 +77,8 @@ public class EventGroupRequestDto {
     }
     final Object this$searchTerm = getSearchTerm();
     final Object other$searchTerm = other.getSearchTerm();
-    if (this$searchTerm == null ? other$searchTerm != null
+    if (this$searchTerm == null
+        ? other$searchTerm != null
         : !this$searchTerm.equals(other$searchTerm)) {
       return false;
     }
@@ -90,7 +90,6 @@ public class EventGroupRequestDto {
 
   @Override
   public String toString() {
-    return "EventGroupRequestDto(searchTerm=" + getSearchTerm() + ", limit=" + getLimit()
-        + ")";
+    return "EventGroupRequestDto(searchTerm=" + getSearchTerm() + ", limit=" + getLimit() + ")";
   }
 }

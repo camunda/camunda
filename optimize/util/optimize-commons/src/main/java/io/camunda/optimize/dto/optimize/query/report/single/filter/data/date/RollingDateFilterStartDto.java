@@ -17,8 +17,7 @@ public class RollingDateFilterStartDto {
     this.unit = unit;
   }
 
-  public RollingDateFilterStartDto() {
-  }
+  public RollingDateFilterStartDto() {}
 
   public Long getValue() {
     return value;

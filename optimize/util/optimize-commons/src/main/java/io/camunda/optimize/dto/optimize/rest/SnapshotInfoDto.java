@@ -18,7 +18,9 @@ public class SnapshotInfoDto {
   private OffsetDateTime startTime;
   private List<String> failures;
 
-  public SnapshotInfoDto(final String snapshotName, final SnapshotState state,
+  public SnapshotInfoDto(
+      final String snapshotName,
+      final SnapshotState state,
       final OffsetDateTime startTime,
       final List<String> failures) {
     this.snapshotName = snapshotName;
@@ -27,8 +29,7 @@ public class SnapshotInfoDto {
     this.failures = failures;
   }
 
-  public SnapshotInfoDto() {
-  }
+  public SnapshotInfoDto() {}
 
   public String getSnapshotName() {
     return snapshotName;
@@ -95,7 +96,8 @@ public class SnapshotInfoDto {
     }
     final Object this$snapshotName = getSnapshotName();
     final Object other$snapshotName = other.getSnapshotName();
-    if (this$snapshotName == null ? other$snapshotName != null
+    if (this$snapshotName == null
+        ? other$snapshotName != null
         : !this$snapshotName.equals(other$snapshotName)) {
       return false;
     }
@@ -106,7 +108,8 @@ public class SnapshotInfoDto {
     }
     final Object this$startTime = getStartTime();
     final Object other$startTime = other.getStartTime();
-    if (this$startTime == null ? other$startTime != null
+    if (this$startTime == null
+        ? other$startTime != null
         : !this$startTime.equals(other$startTime)) {
       return false;
     }
@@ -120,7 +123,14 @@ public class SnapshotInfoDto {
 
   @Override
   public String toString() {
-    return "SnapshotInfoDto(snapshotName=" + getSnapshotName() + ", state=" + getState()
-        + ", startTime=" + getStartTime() + ", failures=" + getFailures() + ")";
+    return "SnapshotInfoDto(snapshotName="
+        + getSnapshotName()
+        + ", state="
+        + getState()
+        + ", startTime="
+        + getStartTime()
+        + ", failures="
+        + getFailures()
+        + ")";
   }
 }

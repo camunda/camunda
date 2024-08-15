@@ -22,8 +22,7 @@ public class OperatorMultipleValuesFilterDataDto {
     this.values = Optional.ofNullable(values).orElseGet(ArrayList::new);
   }
 
-  protected OperatorMultipleValuesFilterDataDto() {
-  }
+  protected OperatorMultipleValuesFilterDataDto() {}
 
   public FilterOperator getOperator() {
     return operator;
@@ -83,7 +82,10 @@ public class OperatorMultipleValuesFilterDataDto {
 
   @Override
   public String toString() {
-    return "OperatorMultipleValuesFilterDataDto(operator=" + getOperator() + ", values="
-        + getValues() + ")";
+    return "OperatorMultipleValuesFilterDataDto(operator="
+        + getOperator()
+        + ", values="
+        + getValues()
+        + ")";
   }
 }

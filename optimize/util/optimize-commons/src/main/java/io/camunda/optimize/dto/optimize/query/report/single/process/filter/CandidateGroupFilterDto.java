@@ -18,8 +18,7 @@ public class CandidateGroupFilterDto extends ProcessFilterDto<IdentityLinkFilter
     super(assigneeCandidateGroupFilterDataDto, FilterApplicationLevel.INSTANCE);
   }
 
-  public CandidateGroupFilterDto() {
-  }
+  public CandidateGroupFilterDto() {}
 
   @Override
   public List<FilterApplicationLevel> validApplicationLevels() {

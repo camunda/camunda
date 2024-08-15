@@ -20,6 +20,5 @@ public class FilterOperatorConstants {
   public static final String GREATER_THAN = ">";
   public static final String GREATER_THAN_EQUALS = ">=";
 
-  private FilterOperatorConstants() {
-  }
+  private FilterOperatorConstants() {}
 }

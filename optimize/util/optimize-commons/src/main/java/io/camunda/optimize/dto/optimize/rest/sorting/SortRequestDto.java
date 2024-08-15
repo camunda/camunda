@@ -27,8 +27,7 @@ public class SortRequestDto {
     this.sortOrder = sortOrder;
   }
 
-  public SortRequestDto() {
-  }
+  public SortRequestDto() {}
 
   public Optional<String> getSortBy() {
     return Optional.ofNullable(sortBy);
@@ -80,7 +79,8 @@ public class SortRequestDto {
     }
     final Object this$sortOrder = getSortOrder();
     final Object other$sortOrder = other.getSortOrder();
-    if (this$sortOrder == null ? other$sortOrder != null
+    if (this$sortOrder == null
+        ? other$sortOrder != null
         : !this$sortOrder.equals(other$sortOrder)) {
       return false;
     }

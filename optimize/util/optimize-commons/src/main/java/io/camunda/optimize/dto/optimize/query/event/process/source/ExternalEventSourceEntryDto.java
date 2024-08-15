@@ -13,8 +13,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder(toBuilder = true)
 public class ExternalEventSourceEntryDto extends EventSourceEntryDto<ExternalEventSourceConfigDto> {
 
-  public ExternalEventSourceEntryDto() {
-  }
+  public ExternalEventSourceEntryDto() {}
 
   @Override
   public EventSourceType getSourceType() {

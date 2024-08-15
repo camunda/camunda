@@ -15,6 +15,5 @@ public class ProcessInstanceConstants {
   public static final String EXTERNALLY_TERMINATED_STATE = "EXTERNALLY_TERMINATED";
   public static final String INTERNALLY_TERMINATED_STATE = "INTERNALLY_TERMINATED";
 
-  private ProcessInstanceConstants() {
-  }
+  private ProcessInstanceConstants() {}
 }

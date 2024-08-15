@@ -20,14 +20,13 @@ public class EntityData {
     this.subEntityCounts = subEntityCounts;
   }
 
-  public EntityData(final Map<EntityType, Long> subEntityCounts,
-      final Map<IdentityType, Long> roleCounts) {
+  public EntityData(
+      final Map<EntityType, Long> subEntityCounts, final Map<IdentityType, Long> roleCounts) {
     this.subEntityCounts = subEntityCounts;
     this.roleCounts = roleCounts;
   }
 
-  public EntityData() {
-  }
+  public EntityData() {}
 
   public Map<EntityType, Long> getSubEntityCounts() {
     return subEntityCounts;
@@ -74,13 +73,15 @@ public class EntityData {
     }
     final Object this$subEntityCounts = getSubEntityCounts();
     final Object other$subEntityCounts = other.getSubEntityCounts();
-    if (this$subEntityCounts == null ? other$subEntityCounts != null
+    if (this$subEntityCounts == null
+        ? other$subEntityCounts != null
         : !this$subEntityCounts.equals(other$subEntityCounts)) {
       return false;
     }
     final Object this$roleCounts = getRoleCounts();
     final Object other$roleCounts = other.getRoleCounts();
-    if (this$roleCounts == null ? other$roleCounts != null
+    if (this$roleCounts == null
+        ? other$roleCounts != null
         : !this$roleCounts.equals(other$roleCounts)) {
       return false;
     }
@@ -89,7 +90,10 @@ public class EntityData {
 
   @Override
   public String toString() {
-    return "EntityData(subEntityCounts=" + getSubEntityCounts() + ", roleCounts="
-        + getRoleCounts() + ")";
+    return "EntityData(subEntityCounts="
+        + getSubEntityCounts()
+        + ", roleCounts="
+        + getRoleCounts()
+        + ")";
   }
 }

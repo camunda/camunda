@@ -39,11 +39,16 @@ public class RawDataProcessInstanceDto implements RawDataInstanceDto {
   public RawDataProcessInstanceDto(
       final String processDefinitionKey,
       final String processDefinitionId,
-      final String processInstanceId, final RawDataCountDto counts,
-      final Map<String, FlowNodeTotalDurationDataDto> flowNodeDurations, final String businessKey,
-      final OffsetDateTime startDate, final OffsetDateTime endDate, final Long duration,
+      final String processInstanceId,
+      final RawDataCountDto counts,
+      final Map<String, FlowNodeTotalDurationDataDto> flowNodeDurations,
+      final String businessKey,
+      final OffsetDateTime startDate,
+      final OffsetDateTime endDate,
+      final Long duration,
       final String engineName,
-      final String tenantId, final Map<String, Object> variables,
+      final String tenantId,
+      final Map<String, Object> variables,
       final List<RawDataFlowNodeDataDto> flowNodeInstances) {
     this.processDefinitionKey = processDefinitionKey;
     this.processDefinitionId = processDefinitionId;
@@ -60,8 +65,7 @@ public class RawDataProcessInstanceDto implements RawDataInstanceDto {
     this.flowNodeInstances = flowNodeInstances;
   }
 
-  public RawDataProcessInstanceDto() {
-  }
+  public RawDataProcessInstanceDto() {}
 
   public String getProcessDefinitionKey() {
     return processDefinitionKey;
@@ -220,19 +224,22 @@ public class RawDataProcessInstanceDto implements RawDataInstanceDto {
     }
     final Object this$processDefinitionKey = getProcessDefinitionKey();
     final Object other$processDefinitionKey = other.getProcessDefinitionKey();
-    if (this$processDefinitionKey == null ? other$processDefinitionKey != null
+    if (this$processDefinitionKey == null
+        ? other$processDefinitionKey != null
         : !this$processDefinitionKey.equals(other$processDefinitionKey)) {
       return false;
     }
     final Object this$processDefinitionId = getProcessDefinitionId();
     final Object other$processDefinitionId = other.getProcessDefinitionId();
-    if (this$processDefinitionId == null ? other$processDefinitionId != null
+    if (this$processDefinitionId == null
+        ? other$processDefinitionId != null
         : !this$processDefinitionId.equals(other$processDefinitionId)) {
       return false;
     }
     final Object this$processInstanceId = getProcessInstanceId();
     final Object other$processInstanceId = other.getProcessInstanceId();
-    if (this$processInstanceId == null ? other$processInstanceId != null
+    if (this$processInstanceId == null
+        ? other$processInstanceId != null
         : !this$processInstanceId.equals(other$processInstanceId)) {
       return false;
     }
@@ -243,19 +250,22 @@ public class RawDataProcessInstanceDto implements RawDataInstanceDto {
     }
     final Object this$flowNodeDurations = getFlowNodeDurations();
     final Object other$flowNodeDurations = other.getFlowNodeDurations();
-    if (this$flowNodeDurations == null ? other$flowNodeDurations != null
+    if (this$flowNodeDurations == null
+        ? other$flowNodeDurations != null
         : !this$flowNodeDurations.equals(other$flowNodeDurations)) {
       return false;
     }
     final Object this$businessKey = getBusinessKey();
     final Object other$businessKey = other.getBusinessKey();
-    if (this$businessKey == null ? other$businessKey != null
+    if (this$businessKey == null
+        ? other$businessKey != null
         : !this$businessKey.equals(other$businessKey)) {
       return false;
     }
     final Object this$startDate = getStartDate();
     final Object other$startDate = other.getStartDate();
-    if (this$startDate == null ? other$startDate != null
+    if (this$startDate == null
+        ? other$startDate != null
         : !this$startDate.equals(other$startDate)) {
       return false;
     }
@@ -271,7 +281,8 @@ public class RawDataProcessInstanceDto implements RawDataInstanceDto {
     }
     final Object this$engineName = getEngineName();
     final Object other$engineName = other.getEngineName();
-    if (this$engineName == null ? other$engineName != null
+    if (this$engineName == null
+        ? other$engineName != null
         : !this$engineName.equals(other$engineName)) {
       return false;
     }
@@ -282,13 +293,15 @@ public class RawDataProcessInstanceDto implements RawDataInstanceDto {
     }
     final Object this$variables = getVariables();
     final Object other$variables = other.getVariables();
-    if (this$variables == null ? other$variables != null
+    if (this$variables == null
+        ? other$variables != null
         : !this$variables.equals(other$variables)) {
       return false;
     }
     final Object this$flowNodeInstances = getFlowNodeInstances();
     final Object other$flowNodeInstances = other.getFlowNodeInstances();
-    if (this$flowNodeInstances == null ? other$flowNodeInstances != null
+    if (this$flowNodeInstances == null
+        ? other$flowNodeInstances != null
         : !this$flowNodeInstances.equals(other$flowNodeInstances)) {
       return false;
     }
@@ -297,14 +310,33 @@ public class RawDataProcessInstanceDto implements RawDataInstanceDto {
 
   @Override
   public String toString() {
-    return "RawDataProcessInstanceDto(processDefinitionKey=" + getProcessDefinitionKey()
-        + ", processDefinitionId=" + getProcessDefinitionId() + ", processInstanceId="
-        + getProcessInstanceId() + ", counts=" + getCounts() + ", flowNodeDurations="
-        + getFlowNodeDurations() + ", businessKey=" + getBusinessKey() + ", startDate="
-        + getStartDate() + ", endDate=" + getEndDate() + ", duration="
-        + getDuration() + ", engineName=" + getEngineName() + ", tenantId="
-        + getTenantId() + ", variables=" + getVariables() + ", flowNodeInstances="
-        + getFlowNodeInstances() + ")";
+    return "RawDataProcessInstanceDto(processDefinitionKey="
+        + getProcessDefinitionKey()
+        + ", processDefinitionId="
+        + getProcessDefinitionId()
+        + ", processInstanceId="
+        + getProcessInstanceId()
+        + ", counts="
+        + getCounts()
+        + ", flowNodeDurations="
+        + getFlowNodeDurations()
+        + ", businessKey="
+        + getBusinessKey()
+        + ", startDate="
+        + getStartDate()
+        + ", endDate="
+        + getEndDate()
+        + ", duration="
+        + getDuration()
+        + ", engineName="
+        + getEngineName()
+        + ", tenantId="
+        + getTenantId()
+        + ", variables="
+        + getVariables()
+        + ", flowNodeInstances="
+        + getFlowNodeInstances()
+        + ")";
   }
 
   public enum Fields {

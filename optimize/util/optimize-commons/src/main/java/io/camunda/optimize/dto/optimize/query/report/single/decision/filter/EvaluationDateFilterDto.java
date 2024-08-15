@@ -9,12 +9,13 @@ package io.camunda.optimize.dto.optimize.query.report.single.decision.filter;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
-import lombok.NoArgsConstructor;
 
 @JsonTypeName("evaluationDateTime")
-@NoArgsConstructor
 public class EvaluationDateFilterDto extends DecisionFilterDto<DateFilterDataDto<?>> {
+
   public EvaluationDateFilterDto(final DateFilterDataDto<?> dateFilterDataDto) {
     super(dateFilterDataDto);
   }
+
+  public EvaluationDateFilterDto() {}
 }

@@ -21,8 +21,7 @@ public class RawDataCountDto implements RawDataInstanceDto {
     this.userTasks = userTasks;
   }
 
-  public RawDataCountDto() {
-  }
+  public RawDataCountDto() {}
 
   public long getIncidents() {
     return incidents;
@@ -91,8 +90,13 @@ public class RawDataCountDto implements RawDataInstanceDto {
 
   @Override
   public String toString() {
-    return "RawDataCountDto(incidents=" + getIncidents() + ", openIncidents="
-        + getOpenIncidents() + ", userTasks=" + getUserTasks() + ")";
+    return "RawDataCountDto(incidents="
+        + getIncidents()
+        + ", openIncidents="
+        + getOpenIncidents()
+        + ", userTasks="
+        + getUserTasks()
+        + ")";
   }
 
   public enum Fields {

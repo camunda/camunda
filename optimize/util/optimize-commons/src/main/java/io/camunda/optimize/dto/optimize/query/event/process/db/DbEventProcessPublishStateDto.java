@@ -29,11 +29,16 @@ public class DbEventProcessPublishStateDto {
   private List<DbEventMappingDto> mappings;
   private List<EventImportSourceDto> eventImportSources;
 
-  public DbEventProcessPublishStateDto(final String id, final String processMappingId,
+  public DbEventProcessPublishStateDto(
+      final String id,
+      final String processMappingId,
       final String name,
-      final OffsetDateTime publishDateTime, final EventProcessState state,
+      final OffsetDateTime publishDateTime,
+      final EventProcessState state,
       final Double publishProgress,
-      final Boolean deleted, final String xml, final List<DbEventMappingDto> mappings,
+      final Boolean deleted,
+      final String xml,
+      final List<DbEventMappingDto> mappings,
       final List<EventImportSourceDto> eventImportSources) {
     this.id = id;
     this.processMappingId = processMappingId;
@@ -47,8 +52,7 @@ public class DbEventProcessPublishStateDto {
     this.eventImportSources = eventImportSources;
   }
 
-  protected DbEventProcessPublishStateDto() {
-  }
+  protected DbEventProcessPublishStateDto() {}
 
   public static DbEventProcessPublishStateDto fromEventProcessPublishStateDto(
       final EventProcessPublishStateDto publishState) {
@@ -219,12 +223,27 @@ public class DbEventProcessPublishStateDto {
 
   @Override
   public String toString() {
-    return "DbEventProcessPublishStateDto(id=" + getId() + ", processMappingId="
-        + getProcessMappingId() + ", name=" + getName() + ", publishDateTime="
-        + getPublishDateTime() + ", state=" + getState() + ", publishProgress="
-        + getPublishProgress() + ", deleted=" + getDeleted() + ", xml=" + getXml()
-        + ", mappings=" + getMappings() + ", eventImportSources="
-        + getEventImportSources() + ")";
+    return "DbEventProcessPublishStateDto(id="
+        + getId()
+        + ", processMappingId="
+        + getProcessMappingId()
+        + ", name="
+        + getName()
+        + ", publishDateTime="
+        + getPublishDateTime()
+        + ", state="
+        + getState()
+        + ", publishProgress="
+        + getPublishProgress()
+        + ", deleted="
+        + getDeleted()
+        + ", xml="
+        + getXml()
+        + ", mappings="
+        + getMappings()
+        + ", eventImportSources="
+        + getEventImportSources()
+        + ")";
   }
 
   private static Boolean $default$deleted() {
@@ -263,8 +282,7 @@ public class DbEventProcessPublishStateDto {
     private List<DbEventMappingDto> mappings;
     private List<EventImportSourceDto> eventImportSources;
 
-    DbEventProcessPublishStateDtoBuilder() {
-    }
+    DbEventProcessPublishStateDtoBuilder() {}
 
     public DbEventProcessPublishStateDtoBuilder id(final String id) {
       this.id = id;
@@ -324,19 +342,42 @@ public class DbEventProcessPublishStateDto {
       if (!deleted$set) {
         deleted$value = DbEventProcessPublishStateDto.$default$deleted();
       }
-      return new DbEventProcessPublishStateDto(id, processMappingId, name,
-          publishDateTime, state, publishProgress, deleted$value, xml,
-          mappings, eventImportSources);
+      return new DbEventProcessPublishStateDto(
+          id,
+          processMappingId,
+          name,
+          publishDateTime,
+          state,
+          publishProgress,
+          deleted$value,
+          xml,
+          mappings,
+          eventImportSources);
     }
 
     @Override
     public String toString() {
-      return "DbEventProcessPublishStateDto.DbEventProcessPublishStateDtoBuilder(id=" + id
-          + ", processMappingId=" + processMappingId + ", name=" + name
-          + ", publishDateTime=" + publishDateTime + ", state=" + state
-          + ", publishProgress=" + publishProgress + ", deleted$value=" + deleted$value
-          + ", xml=" + xml + ", mappings=" + mappings + ", eventImportSources="
-          + eventImportSources + ")";
+      return "DbEventProcessPublishStateDto.DbEventProcessPublishStateDtoBuilder(id="
+          + id
+          + ", processMappingId="
+          + processMappingId
+          + ", name="
+          + name
+          + ", publishDateTime="
+          + publishDateTime
+          + ", state="
+          + state
+          + ", publishProgress="
+          + publishProgress
+          + ", deleted$value="
+          + deleted$value
+          + ", xml="
+          + xml
+          + ", mappings="
+          + mappings
+          + ", eventImportSources="
+          + eventImportSources
+          + ")";
     }
   }
 }

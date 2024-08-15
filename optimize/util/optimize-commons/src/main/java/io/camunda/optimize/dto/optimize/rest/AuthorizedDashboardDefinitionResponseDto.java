@@ -14,8 +14,7 @@ import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestD
 
 public class AuthorizedDashboardDefinitionResponseDto extends AuthorizedEntityDto {
 
-  @JsonUnwrapped
-  private DashboardDefinitionRestDto definitionDto;
+  @JsonUnwrapped private DashboardDefinitionRestDto definitionDto;
 
   public AuthorizedDashboardDefinitionResponseDto(
       final RoleType currentUserRole, final DashboardDefinitionRestDto definitionDto) {
@@ -23,8 +22,7 @@ public class AuthorizedDashboardDefinitionResponseDto extends AuthorizedEntityDt
     this.definitionDto = definitionDto;
   }
 
-  protected AuthorizedDashboardDefinitionResponseDto() {
-  }
+  protected AuthorizedDashboardDefinitionResponseDto() {}
 
   public DashboardDefinitionRestDto getDefinitionDto() {
     return definitionDto;
@@ -57,7 +55,8 @@ public class AuthorizedDashboardDefinitionResponseDto extends AuthorizedEntityDt
     if (!(o instanceof AuthorizedDashboardDefinitionResponseDto)) {
       return false;
     }
-    final AuthorizedDashboardDefinitionResponseDto other = (AuthorizedDashboardDefinitionResponseDto) o;
+    final AuthorizedDashboardDefinitionResponseDto other =
+        (AuthorizedDashboardDefinitionResponseDto) o;
     if (!other.canEqual((Object) this)) {
       return false;
     }
@@ -66,7 +65,8 @@ public class AuthorizedDashboardDefinitionResponseDto extends AuthorizedEntityDt
     }
     final Object this$definitionDto = getDefinitionDto();
     final Object other$definitionDto = other.getDefinitionDto();
-    if (this$definitionDto == null ? other$definitionDto != null
+    if (this$definitionDto == null
+        ? other$definitionDto != null
         : !this$definitionDto.equals(other$definitionDto)) {
       return false;
     }
@@ -75,7 +75,6 @@ public class AuthorizedDashboardDefinitionResponseDto extends AuthorizedEntityDt
 
   @Override
   public String toString() {
-    return "AuthorizedDashboardDefinitionResponseDto(definitionDto=" + getDefinitionDto()
-        + ")";
+    return "AuthorizedDashboardDefinitionResponseDto(definitionDto=" + getDefinitionDto() + ")";
   }
 }

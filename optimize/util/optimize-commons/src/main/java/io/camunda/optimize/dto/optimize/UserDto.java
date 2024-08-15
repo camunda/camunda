@@ -61,8 +61,7 @@ public class UserDto extends IdentityWithMetadataResponseDto {
     this.roles = roles;
   }
 
-  protected UserDto() {
-  }
+  protected UserDto() {}
 
   private static String resolveName(
       final String id, final String firstName, final String lastName) {
@@ -136,9 +135,17 @@ public class UserDto extends IdentityWithMetadataResponseDto {
 
   @Override
   public String toString() {
-    return "UserDto(super=" + super.toString() + ", firstName=" + getFirstName()
-        + ", lastName=" + getLastName() + ", email=" + getEmail() + ", roles="
-        + getRoles() + ")";
+    return "UserDto(super="
+        + super.toString()
+        + ", firstName="
+        + getFirstName()
+        + ", lastName="
+        + getLastName()
+        + ", email="
+        + getEmail()
+        + ", roles="
+        + getRoles()
+        + ")";
   }
 
   @Override

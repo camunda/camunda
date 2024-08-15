@@ -9,36 +9,20 @@ package io.camunda.optimize.dto.optimize.query.event.process.source;
 
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Builder;
+import lombok.experimental.SuperBuilder;
 
+@SuperBuilder // TODO: not sure how to delombok this
 public class CamundaEventSourceConfigDto extends EventSourceConfigDto {
 
   private String processDefinitionKey;
   private String processDefinitionName;
-  private List<String> versions = new ArrayList<>();
-  private List<String> tenants = new ArrayList<>();
+  @Builder.Default private List<String> versions = new ArrayList<>();
+  @Builder.Default private List<String> tenants = new ArrayList<>();
   private boolean tracedByBusinessKey;
   private String traceVariable;
 
-  public CamundaEventSourceConfigDto() {
-  }
-
-  protected CamundaEventSourceConfigDto(final CamundaEventSourceConfigDtoBuilder<?, ?> b) {
-    super(b);
-    processDefinitionKey = b.processDefinitionKey;
-    processDefinitionName = b.processDefinitionName;
-    if (b.versions$set) {
-      versions = b.versions$value;
-    } else {
-      versions = $default$versions();
-    }
-    if (b.tenants$set) {
-      tenants = b.tenants$value;
-    } else {
-      tenants = $default$tenants();
-    }
-    tracedByBusinessKey = b.tracedByBusinessKey;
-    traceVariable = b.traceVariable;
-  }
+  public CamundaEventSourceConfigDto() {}
 
   public String getProcessDefinitionKey() {
     return processDefinitionKey;
@@ -89,55 +73,6 @@ public class CamundaEventSourceConfigDto extends EventSourceConfigDto {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (o == this) {
-      return true;
-    }
-    if (!(o instanceof CamundaEventSourceConfigDto)) {
-      return false;
-    }
-    final CamundaEventSourceConfigDto other = (CamundaEventSourceConfigDto) o;
-    if (!other.canEqual((Object) this)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final Object this$processDefinitionKey = getProcessDefinitionKey();
-    final Object other$processDefinitionKey = other.getProcessDefinitionKey();
-    if (this$processDefinitionKey == null ? other$processDefinitionKey != null
-        : !this$processDefinitionKey.equals(other$processDefinitionKey)) {
-      return false;
-    }
-    final Object this$processDefinitionName = getProcessDefinitionName();
-    final Object other$processDefinitionName = other.getProcessDefinitionName();
-    if (this$processDefinitionName == null ? other$processDefinitionName != null
-        : !this$processDefinitionName.equals(other$processDefinitionName)) {
-      return false;
-    }
-    final Object this$versions = getVersions();
-    final Object other$versions = other.getVersions();
-    if (this$versions == null ? other$versions != null : !this$versions.equals(other$versions)) {
-      return false;
-    }
-    final Object this$tenants = getTenants();
-    final Object other$tenants = other.getTenants();
-    if (this$tenants == null ? other$tenants != null : !this$tenants.equals(other$tenants)) {
-      return false;
-    }
-    if (isTracedByBusinessKey() != other.isTracedByBusinessKey()) {
-      return false;
-    }
-    final Object this$traceVariable = getTraceVariable();
-    final Object other$traceVariable = other.getTraceVariable();
-    if (this$traceVariable == null ? other$traceVariable != null
-        : !this$traceVariable.equals(other$traceVariable)) {
-      return false;
-    }
-    return true;
-  }
-
-  @Override
   protected boolean canEqual(final Object other) {
     return other instanceof CamundaEventSourceConfigDto;
   }
@@ -162,16 +97,56 @@ public class CamundaEventSourceConfigDto extends EventSourceConfigDto {
     return result;
   }
 
-  private static List<String> $default$versions() {
-    return new ArrayList<>();
-  }
-
-  private static List<String> $default$tenants() {
-    return new ArrayList<>();
-  }
-
-  public static CamundaEventSourceConfigDtoBuilder<?, ?> builder() {
-    return new CamundaEventSourceConfigDtoBuilderImpl();
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof CamundaEventSourceConfigDto)) {
+      return false;
+    }
+    final CamundaEventSourceConfigDto other = (CamundaEventSourceConfigDto) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final Object this$processDefinitionKey = getProcessDefinitionKey();
+    final Object other$processDefinitionKey = other.getProcessDefinitionKey();
+    if (this$processDefinitionKey == null
+        ? other$processDefinitionKey != null
+        : !this$processDefinitionKey.equals(other$processDefinitionKey)) {
+      return false;
+    }
+    final Object this$processDefinitionName = getProcessDefinitionName();
+    final Object other$processDefinitionName = other.getProcessDefinitionName();
+    if (this$processDefinitionName == null
+        ? other$processDefinitionName != null
+        : !this$processDefinitionName.equals(other$processDefinitionName)) {
+      return false;
+    }
+    final Object this$versions = getVersions();
+    final Object other$versions = other.getVersions();
+    if (this$versions == null ? other$versions != null : !this$versions.equals(other$versions)) {
+      return false;
+    }
+    final Object this$tenants = getTenants();
+    final Object other$tenants = other.getTenants();
+    if (this$tenants == null ? other$tenants != null : !this$tenants.equals(other$tenants)) {
+      return false;
+    }
+    if (isTracedByBusinessKey() != other.isTracedByBusinessKey()) {
+      return false;
+    }
+    final Object this$traceVariable = getTraceVariable();
+    final Object other$traceVariable = other.getTraceVariable();
+    if (this$traceVariable == null
+        ? other$traceVariable != null
+        : !this$traceVariable.equals(other$traceVariable)) {
+      return false;
+    }
+    return true;
   }
 
   public static final class Fields {
@@ -182,83 +157,5 @@ public class CamundaEventSourceConfigDto extends EventSourceConfigDto {
     public static final String tenants = "tenants";
     public static final String tracedByBusinessKey = "tracedByBusinessKey";
     public static final String traceVariable = "traceVariable";
-  }
-
-  public static abstract class CamundaEventSourceConfigDtoBuilder<C extends CamundaEventSourceConfigDto, B extends CamundaEventSourceConfigDtoBuilder<C, B>> extends
-      EventSourceConfigDtoBuilder<C, B> {
-
-    private String processDefinitionKey;
-    private String processDefinitionName;
-    private List<String> versions$value;
-    private boolean versions$set;
-    private List<String> tenants$value;
-    private boolean tenants$set;
-    private boolean tracedByBusinessKey;
-    private String traceVariable;
-
-    public B processDefinitionKey(final String processDefinitionKey) {
-      this.processDefinitionKey = processDefinitionKey;
-      return self();
-    }
-
-    public B processDefinitionName(final String processDefinitionName) {
-      this.processDefinitionName = processDefinitionName;
-      return self();
-    }
-
-    public B versions(final List<String> versions) {
-      versions$value = versions;
-      versions$set = true;
-      return self();
-    }
-
-    public B tenants(final List<String> tenants) {
-      tenants$value = tenants;
-      tenants$set = true;
-      return self();
-    }
-
-    public B tracedByBusinessKey(final boolean tracedByBusinessKey) {
-      this.tracedByBusinessKey = tracedByBusinessKey;
-      return self();
-    }
-
-    public B traceVariable(final String traceVariable) {
-      this.traceVariable = traceVariable;
-      return self();
-    }
-
-    @Override
-    protected abstract B self();
-
-    @Override
-    public abstract C build();
-
-    @Override
-    public String toString() {
-      return "CamundaEventSourceConfigDto.CamundaEventSourceConfigDtoBuilder(super="
-          + super.toString() + ", processDefinitionKey=" + processDefinitionKey
-          + ", processDefinitionName=" + processDefinitionName + ", versions$value="
-          + versions$value + ", tenants$value=" + tenants$value + ", tracedByBusinessKey="
-          + tracedByBusinessKey + ", traceVariable=" + traceVariable + ")";
-    }
-  }
-
-  private static final class CamundaEventSourceConfigDtoBuilderImpl extends
-      CamundaEventSourceConfigDtoBuilder<CamundaEventSourceConfigDto, CamundaEventSourceConfigDtoBuilderImpl> {
-
-    private CamundaEventSourceConfigDtoBuilderImpl() {
-    }
-
-    @Override
-    @Override
-    protected CamundaEventSourceConfigDtoBuilderImpl self() {
-      return this;
-    }
-
-    @Override
-    public CamundaEventSourceConfigDto build() {
-      return new CamundaEventSourceConfigDto(this);
-    }
   }
 }

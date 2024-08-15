@@ -21,7 +21,9 @@ public class EventSequenceCountDto implements OptimizeDto {
   EventTypeDto targetEvent;
   Long count;
 
-  public EventSequenceCountDto(final String id, final EventTypeDto sourceEvent,
+  public EventSequenceCountDto(
+      final String id,
+      final EventTypeDto sourceEvent,
       final EventTypeDto targetEvent,
       final Long count) {
     this.id = id;
@@ -30,8 +32,7 @@ public class EventSequenceCountDto implements OptimizeDto {
     this.count = count;
   }
 
-  public EventSequenceCountDto() {
-  }
+  public EventSequenceCountDto() {}
 
   public String getId() {
     if (id == null) {
@@ -124,13 +125,15 @@ public class EventSequenceCountDto implements OptimizeDto {
     }
     final Object this$sourceEvent = getSourceEvent();
     final Object other$sourceEvent = other.getSourceEvent();
-    if (this$sourceEvent == null ? other$sourceEvent != null
+    if (this$sourceEvent == null
+        ? other$sourceEvent != null
         : !this$sourceEvent.equals(other$sourceEvent)) {
       return false;
     }
     final Object this$targetEvent = getTargetEvent();
     final Object other$targetEvent = other.getTargetEvent();
-    if (this$targetEvent == null ? other$targetEvent != null
+    if (this$targetEvent == null
+        ? other$targetEvent != null
         : !this$targetEvent.equals(other$targetEvent)) {
       return false;
     }
@@ -144,8 +147,15 @@ public class EventSequenceCountDto implements OptimizeDto {
 
   @Override
   public String toString() {
-    return "EventSequenceCountDto(id=" + getId() + ", sourceEvent=" + getSourceEvent()
-        + ", targetEvent=" + getTargetEvent() + ", count=" + getCount() + ")";
+    return "EventSequenceCountDto(id="
+        + getId()
+        + ", sourceEvent="
+        + getSourceEvent()
+        + ", targetEvent="
+        + getTargetEvent()
+        + ", count="
+        + getCount()
+        + ")";
   }
 
   public static EventSequenceCountDtoBuilder builder() {
@@ -167,8 +177,7 @@ public class EventSequenceCountDto implements OptimizeDto {
     private EventTypeDto targetEvent;
     private Long count;
 
-    EventSequenceCountDtoBuilder() {
-    }
+    EventSequenceCountDtoBuilder() {}
 
     public EventSequenceCountDtoBuilder id(final String id) {
       this.id = id;
@@ -196,8 +205,15 @@ public class EventSequenceCountDto implements OptimizeDto {
 
     @Override
     public String toString() {
-      return "EventSequenceCountDto.EventSequenceCountDtoBuilder(id=" + id + ", sourceEvent="
-          + sourceEvent + ", targetEvent=" + targetEvent + ", count=" + count + ")";
+      return "EventSequenceCountDto.EventSequenceCountDtoBuilder(id="
+          + id
+          + ", sourceEvent="
+          + sourceEvent
+          + ", targetEvent="
+          + targetEvent
+          + ", count="
+          + count
+          + ")";
     }
   }
 }

@@ -32,8 +32,7 @@ public class CorrelatableExternalEventsTraceDto extends CorrelatableInstanceDto 
     this.tracingId = tracingId;
   }
 
-  public CorrelatableExternalEventsTraceDto() {
-  }
+  public CorrelatableExternalEventsTraceDto() {}
 
   public static CorrelatableExternalEventsTraceDto fromEventTraceState(
       final EventTraceStateDto trace) {
@@ -82,7 +81,8 @@ public class CorrelatableExternalEventsTraceDto extends CorrelatableInstanceDto 
     }
     final Object this$tracingId = getTracingId();
     final Object other$tracingId = other.getTracingId();
-    if (this$tracingId == null ? other$tracingId != null
+    if (this$tracingId == null
+        ? other$tracingId != null
         : !this$tracingId.equals(other$tracingId)) {
       return false;
     }

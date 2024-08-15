@@ -20,8 +20,7 @@ public class BackupRequestDto {
     this.backupId = backupId;
   }
 
-  protected BackupRequestDto() {
-  }
+  protected BackupRequestDto() {}
 
   public @NotNull @Min(0) Long getBackupId() {
     return backupId;

@@ -16,13 +16,12 @@ public class EventCorrelationStateDto {
   private Map<MappedEventType, Set<String>> correlatedAsToFlowNodeInstanceIds =
       new EnumMap<>(MappedEventType.class);
 
-  public EventCorrelationStateDto(final
-  Map<MappedEventType, Set<String>> correlatedAsToFlowNodeInstanceIds) {
+  public EventCorrelationStateDto(
+      final Map<MappedEventType, Set<String>> correlatedAsToFlowNodeInstanceIds) {
     this.correlatedAsToFlowNodeInstanceIds = correlatedAsToFlowNodeInstanceIds;
   }
 
-  public EventCorrelationStateDto() {
-  }
+  public EventCorrelationStateDto() {}
 
   public Map<MappedEventType, Set<String>> getCorrelatedAsToFlowNodeInstanceIds() {
     return correlatedAsToFlowNodeInstanceIds;
@@ -42,8 +41,11 @@ public class EventCorrelationStateDto {
     final int PRIME = 59;
     int result = 1;
     final Object $correlatedAsToFlowNodeInstanceIds = getCorrelatedAsToFlowNodeInstanceIds();
-    result = result * PRIME + ($correlatedAsToFlowNodeInstanceIds == null ? 43
-        : $correlatedAsToFlowNodeInstanceIds.hashCode());
+    result =
+        result * PRIME
+            + ($correlatedAsToFlowNodeInstanceIds == null
+                ? 43
+                : $correlatedAsToFlowNodeInstanceIds.hashCode());
     return result;
   }
 
@@ -60,9 +62,10 @@ public class EventCorrelationStateDto {
       return false;
     }
     final Object this$correlatedAsToFlowNodeInstanceIds = getCorrelatedAsToFlowNodeInstanceIds();
-    final Object other$correlatedAsToFlowNodeInstanceIds = other.getCorrelatedAsToFlowNodeInstanceIds();
-    if (this$correlatedAsToFlowNodeInstanceIds == null ? other$correlatedAsToFlowNodeInstanceIds
-        != null
+    final Object other$correlatedAsToFlowNodeInstanceIds =
+        other.getCorrelatedAsToFlowNodeInstanceIds();
+    if (this$correlatedAsToFlowNodeInstanceIds == null
+        ? other$correlatedAsToFlowNodeInstanceIds != null
         : !this$correlatedAsToFlowNodeInstanceIds.equals(other$correlatedAsToFlowNodeInstanceIds)) {
       return false;
     }
@@ -72,7 +75,8 @@ public class EventCorrelationStateDto {
   @Override
   public String toString() {
     return "EventCorrelationStateDto(correlatedAsToFlowNodeInstanceIds="
-        + getCorrelatedAsToFlowNodeInstanceIds() + ")";
+        + getCorrelatedAsToFlowNodeInstanceIds()
+        + ")";
   }
 
   public static final class Fields {

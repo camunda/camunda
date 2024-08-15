@@ -15,12 +15,14 @@ public class EventTypeDto implements OptimizeDto {
   private String group;
   private String source;
 
-  @NotBlank
-  private String eventName;
+  @NotBlank private String eventName;
 
   private String eventLabel;
 
-  public EventTypeDto(final String group, final String source, @NotBlank final String eventName,
+  public EventTypeDto(
+      final String group,
+      final String source,
+      @NotBlank final String eventName,
       final String eventLabel) {
     this.group = group;
     this.source = source;
@@ -28,8 +30,7 @@ public class EventTypeDto implements OptimizeDto {
     this.eventLabel = eventLabel;
   }
 
-  protected EventTypeDto() {
-  }
+  protected EventTypeDto() {}
 
   public String getGroup() {
     return group;
@@ -104,7 +105,8 @@ public class EventTypeDto implements OptimizeDto {
     }
     final Object this$eventName = getEventName();
     final Object other$eventName = other.getEventName();
-    if (this$eventName == null ? other$eventName != null
+    if (this$eventName == null
+        ? other$eventName != null
         : !this$eventName.equals(other$eventName)) {
       return false;
     }
@@ -113,8 +115,15 @@ public class EventTypeDto implements OptimizeDto {
 
   @Override
   public String toString() {
-    return "EventTypeDto(group=" + getGroup() + ", source=" + getSource() + ", eventName="
-        + getEventName() + ", eventLabel=" + getEventLabel() + ")";
+    return "EventTypeDto(group="
+        + getGroup()
+        + ", source="
+        + getSource()
+        + ", eventName="
+        + getEventName()
+        + ", eventLabel="
+        + getEventLabel()
+        + ")";
   }
 
   public static EventTypeDtoBuilder builder() {
@@ -122,7 +131,10 @@ public class EventTypeDto implements OptimizeDto {
   }
 
   public EventTypeDtoBuilder toBuilder() {
-    return new EventTypeDtoBuilder().group(group).source(source).eventName(eventName)
+    return new EventTypeDtoBuilder()
+        .group(group)
+        .source(source)
+        .eventName(eventName)
         .eventLabel(eventLabel);
   }
 
@@ -141,8 +153,7 @@ public class EventTypeDto implements OptimizeDto {
     private @NotBlank String eventName;
     private String eventLabel;
 
-    EventTypeDtoBuilder() {
-    }
+    EventTypeDtoBuilder() {}
 
     public EventTypeDtoBuilder group(final String group) {
       this.group = group;
@@ -170,8 +181,15 @@ public class EventTypeDto implements OptimizeDto {
 
     @Override
     public String toString() {
-      return "EventTypeDto.EventTypeDtoBuilder(group=" + group + ", source=" + source
-          + ", eventName=" + eventName + ", eventLabel=" + eventLabel + ")";
+      return "EventTypeDto.EventTypeDtoBuilder(group="
+          + group
+          + ", source="
+          + source
+          + ", eventName="
+          + eventName
+          + ", eventLabel="
+          + eventLabel
+          + ")";
     }
   }
 }

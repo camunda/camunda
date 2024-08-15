@@ -42,8 +42,7 @@ public class ProcessViewDto implements Combinable {
     this.properties = properties;
   }
 
-  public ProcessViewDto() {
-  }
+  public ProcessViewDto() {}
 
   @Override
   public boolean isCombinable(final Object o) {
@@ -143,7 +142,8 @@ public class ProcessViewDto implements Combinable {
     }
     final Object this$properties = getProperties();
     final Object other$properties = other.getProperties();
-    if (this$properties == null ? other$properties != null
+    if (this$properties == null
+        ? other$properties != null
         : !this$properties.equals(other$properties)) {
       return false;
     }
@@ -152,8 +152,7 @@ public class ProcessViewDto implements Combinable {
 
   @Override
   public String toString() {
-    return "ProcessViewDto(entity=" + getEntity() + ", properties=" + getProperties()
-        + ")";
+    return "ProcessViewDto(entity=" + getEntity() + ", properties=" + getProperties() + ")";
   }
 
   public static final class Fields {

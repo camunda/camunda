@@ -29,9 +29,13 @@ public class DbEventProcessMappingDto implements OptimizeDto {
   private List<EventSourceEntryDto<?>> eventSources;
   private List<EventProcessRoleRequestDto<IdentityDto>> roles;
 
-  public DbEventProcessMappingDto(final String id, final String name, final String xml,
+  public DbEventProcessMappingDto(
+      final String id,
+      final String name,
+      final String xml,
       final OffsetDateTime lastModified,
-      final String lastModifier, final List<DbEventMappingDto> mappings,
+      final String lastModifier,
+      final List<DbEventMappingDto> mappings,
       final List<EventSourceEntryDto<?>> eventSources,
       final List<EventProcessRoleRequestDto<IdentityDto>> roles) {
     this.id = id;
@@ -44,8 +48,7 @@ public class DbEventProcessMappingDto implements OptimizeDto {
     this.roles = roles;
   }
 
-  public DbEventProcessMappingDto() {
-  }
+  public DbEventProcessMappingDto() {}
 
   public static DbEventProcessMappingDto fromEventProcessMappingDto(
       final EventProcessMappingDto eventMappingDto) {
@@ -196,10 +199,23 @@ public class DbEventProcessMappingDto implements OptimizeDto {
 
   @Override
   public String toString() {
-    return "DbEventProcessMappingDto(id=" + getId() + ", name=" + getName() + ", xml="
-        + getXml() + ", lastModified=" + getLastModified() + ", lastModifier="
-        + getLastModifier() + ", mappings=" + getMappings() + ", eventSources="
-        + getEventSources() + ", roles=" + getRoles() + ")";
+    return "DbEventProcessMappingDto(id="
+        + getId()
+        + ", name="
+        + getName()
+        + ", xml="
+        + getXml()
+        + ", lastModified="
+        + getLastModified()
+        + ", lastModifier="
+        + getLastModifier()
+        + ", mappings="
+        + getMappings()
+        + ", eventSources="
+        + getEventSources()
+        + ", roles="
+        + getRoles()
+        + ")";
   }
 
   public static DbEventProcessMappingDtoBuilder builder() {
@@ -229,8 +245,7 @@ public class DbEventProcessMappingDto implements OptimizeDto {
     private List<EventSourceEntryDto<?>> eventSources;
     private List<EventProcessRoleRequestDto<IdentityDto>> roles;
 
-    DbEventProcessMappingDtoBuilder() {
-    }
+    DbEventProcessMappingDtoBuilder() {}
 
     public DbEventProcessMappingDtoBuilder id(final String id) {
       this.id = id;
@@ -275,16 +290,29 @@ public class DbEventProcessMappingDto implements OptimizeDto {
     }
 
     public DbEventProcessMappingDto build() {
-      return new DbEventProcessMappingDto(id, name, xml, lastModified,
-          lastModifier, mappings, eventSources, roles);
+      return new DbEventProcessMappingDto(
+          id, name, xml, lastModified, lastModifier, mappings, eventSources, roles);
     }
 
     @Override
     public String toString() {
-      return "DbEventProcessMappingDto.DbEventProcessMappingDtoBuilder(id=" + id + ", name="
-          + name + ", xml=" + xml + ", lastModified=" + lastModified
-          + ", lastModifier=" + lastModifier + ", mappings=" + mappings
-          + ", eventSources=" + eventSources + ", roles=" + roles + ")";
+      return "DbEventProcessMappingDto.DbEventProcessMappingDtoBuilder(id="
+          + id
+          + ", name="
+          + name
+          + ", xml="
+          + xml
+          + ", lastModified="
+          + lastModified
+          + ", lastModifier="
+          + lastModifier
+          + ", mappings="
+          + mappings
+          + ", eventSources="
+          + eventSources
+          + ", roles="
+          + roles
+          + ")";
     }
   }
 }

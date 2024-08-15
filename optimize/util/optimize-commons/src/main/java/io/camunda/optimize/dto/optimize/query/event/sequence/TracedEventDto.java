@@ -19,9 +19,13 @@ public class TracedEventDto implements OptimizeDto {
   private Long timestamp;
   private Long orderCounter;
 
-  public TracedEventDto(final String eventId, final String group, final String source,
+  public TracedEventDto(
+      final String eventId,
+      final String group,
+      final String source,
       final String eventName,
-      final Long timestamp, final Long orderCounter) {
+      final Long timestamp,
+      final Long orderCounter) {
     this.eventId = eventId;
     this.group = group;
     this.source = source;
@@ -30,8 +34,7 @@ public class TracedEventDto implements OptimizeDto {
     this.orderCounter = orderCounter;
   }
 
-  public TracedEventDto() {
-  }
+  public TracedEventDto() {}
 
   public static TracedEventDto fromEventDto(final EventDto eventDto) {
     return TracedEventDto.builder()
@@ -147,19 +150,22 @@ public class TracedEventDto implements OptimizeDto {
     }
     final Object this$eventName = getEventName();
     final Object other$eventName = other.getEventName();
-    if (this$eventName == null ? other$eventName != null
+    if (this$eventName == null
+        ? other$eventName != null
         : !this$eventName.equals(other$eventName)) {
       return false;
     }
     final Object this$timestamp = getTimestamp();
     final Object other$timestamp = other.getTimestamp();
-    if (this$timestamp == null ? other$timestamp != null
+    if (this$timestamp == null
+        ? other$timestamp != null
         : !this$timestamp.equals(other$timestamp)) {
       return false;
     }
     final Object this$orderCounter = getOrderCounter();
     final Object other$orderCounter = other.getOrderCounter();
-    if (this$orderCounter == null ? other$orderCounter != null
+    if (this$orderCounter == null
+        ? other$orderCounter != null
         : !this$orderCounter.equals(other$orderCounter)) {
       return false;
     }
@@ -168,9 +174,19 @@ public class TracedEventDto implements OptimizeDto {
 
   @Override
   public String toString() {
-    return "TracedEventDto(eventId=" + getEventId() + ", group=" + getGroup()
-        + ", source=" + getSource() + ", eventName=" + getEventName() + ", timestamp="
-        + getTimestamp() + ", orderCounter=" + getOrderCounter() + ")";
+    return "TracedEventDto(eventId="
+        + getEventId()
+        + ", group="
+        + getGroup()
+        + ", source="
+        + getSource()
+        + ", eventName="
+        + getEventName()
+        + ", timestamp="
+        + getTimestamp()
+        + ", orderCounter="
+        + getOrderCounter()
+        + ")";
   }
 
   public static TracedEventDtoBuilder builder() {
@@ -196,8 +212,7 @@ public class TracedEventDto implements OptimizeDto {
     private Long timestamp;
     private Long orderCounter;
 
-    TracedEventDtoBuilder() {
-    }
+    TracedEventDtoBuilder() {}
 
     public TracedEventDtoBuilder eventId(final String eventId) {
       this.eventId = eventId;
@@ -230,15 +245,24 @@ public class TracedEventDto implements OptimizeDto {
     }
 
     public TracedEventDto build() {
-      return new TracedEventDto(eventId, group, source, eventName,
-          timestamp, orderCounter);
+      return new TracedEventDto(eventId, group, source, eventName, timestamp, orderCounter);
     }
 
     @Override
     public String toString() {
-      return "TracedEventDto.TracedEventDtoBuilder(eventId=" + eventId + ", group="
-          + group + ", source=" + source + ", eventName=" + eventName
-          + ", timestamp=" + timestamp + ", orderCounter=" + orderCounter + ")";
+      return "TracedEventDto.TracedEventDtoBuilder(eventId="
+          + eventId
+          + ", group="
+          + group
+          + ", source="
+          + source
+          + ", eventName="
+          + eventName
+          + ", timestamp="
+          + timestamp
+          + ", orderCounter="
+          + orderCounter
+          + ")";
     }
   }
 }

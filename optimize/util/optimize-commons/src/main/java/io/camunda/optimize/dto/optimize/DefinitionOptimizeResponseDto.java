@@ -21,17 +21,21 @@ public abstract class DefinitionOptimizeResponseDto implements Serializable, Opt
   private DataSourceDto dataSource;
   private String tenantId;
   private boolean deleted;
-  @JsonIgnore
-  private DefinitionType type;
+  @JsonIgnore private DefinitionType type;
 
   protected DefinitionOptimizeResponseDto(final String id, final DataSourceDto dataSource) {
     this.id = id;
     this.dataSource = dataSource;
   }
 
-  public DefinitionOptimizeResponseDto(final String id, final String key, final String version,
+  public DefinitionOptimizeResponseDto(
+      final String id,
+      final String key,
+      final String version,
       final String versionTag,
-      final String name, final DataSourceDto dataSource, final String tenantId,
+      final String name,
+      final DataSourceDto dataSource,
+      final String tenantId,
       final boolean deleted,
       final DefinitionType type) {
     this.id = id;
@@ -45,8 +49,7 @@ public abstract class DefinitionOptimizeResponseDto implements Serializable, Opt
     this.type = type;
   }
 
-  protected DefinitionOptimizeResponseDto() {
-  }
+  protected DefinitionOptimizeResponseDto() {}
 
   public String getId() {
     return id;
@@ -178,7 +181,8 @@ public abstract class DefinitionOptimizeResponseDto implements Serializable, Opt
     }
     final Object this$versionTag = getVersionTag();
     final Object other$versionTag = other.getVersionTag();
-    if (this$versionTag == null ? other$versionTag != null
+    if (this$versionTag == null
+        ? other$versionTag != null
         : !this$versionTag.equals(other$versionTag)) {
       return false;
     }
@@ -189,7 +193,8 @@ public abstract class DefinitionOptimizeResponseDto implements Serializable, Opt
     }
     final Object this$dataSource = getDataSource();
     final Object other$dataSource = other.getDataSource();
-    if (this$dataSource == null ? other$dataSource != null
+    if (this$dataSource == null
+        ? other$dataSource != null
         : !this$dataSource.equals(other$dataSource)) {
       return false;
     }
@@ -211,10 +216,25 @@ public abstract class DefinitionOptimizeResponseDto implements Serializable, Opt
 
   @Override
   public String toString() {
-    return "DefinitionOptimizeResponseDto(id=" + getId() + ", key=" + getKey()
-        + ", version=" + getVersion() + ", versionTag=" + getVersionTag() + ", name="
-        + getName() + ", dataSource=" + getDataSource() + ", tenantId="
-        + getTenantId() + ", deleted=" + isDeleted() + ", type=" + getType() + ")";
+    return "DefinitionOptimizeResponseDto(id="
+        + getId()
+        + ", key="
+        + getKey()
+        + ", version="
+        + getVersion()
+        + ", versionTag="
+        + getVersionTag()
+        + ", name="
+        + getName()
+        + ", dataSource="
+        + getDataSource()
+        + ", tenantId="
+        + getTenantId()
+        + ", deleted="
+        + isDeleted()
+        + ", type="
+        + getType()
+        + ")";
   }
 
   public static final class Fields {

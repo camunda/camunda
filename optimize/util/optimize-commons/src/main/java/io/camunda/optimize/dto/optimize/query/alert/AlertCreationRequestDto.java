@@ -37,7 +37,6 @@ public class AlertCreationRequestDto {
     public static final String emails = "emails";
     public static final String webhook = "webhook";
 
-    protected Fields() {
-    }
+    protected Fields() {}
   }
 }

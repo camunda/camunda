@@ -26,10 +26,11 @@ public class EventProcessMappingRequestDto {
   @Valid
   private Map<String, EventMappingDto> mappings;
 
-  @Valid
-  private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
+  @Valid private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
 
-  public EventProcessMappingRequestDto(final String name, final String xml,
+  public EventProcessMappingRequestDto(
+      final String name,
+      final String xml,
       @Valid final Map<String, EventMappingDto> mappings,
       @Valid final List<EventSourceEntryDto<?>> eventSources) {
     this.name = name;
@@ -38,8 +39,7 @@ public class EventProcessMappingRequestDto {
     this.eventSources = eventSources;
   }
 
-  public EventProcessMappingRequestDto() {
-  }
+  public EventProcessMappingRequestDto() {}
 
   public String getName() {
     return name;
@@ -100,8 +100,15 @@ public class EventProcessMappingRequestDto {
 
   @Override
   public String toString() {
-    return "EventProcessMappingRequestDto(name=" + getName() + ", xml=" + getXml()
-        + ", mappings=" + getMappings() + ", eventSources=" + getEventSources() + ")";
+    return "EventProcessMappingRequestDto(name="
+        + getName()
+        + ", xml="
+        + getXml()
+        + ", mappings="
+        + getMappings()
+        + ", eventSources="
+        + getEventSources()
+        + ")";
   }
 
   @Valid
@@ -129,8 +136,7 @@ public class EventProcessMappingRequestDto {
     private @Valid List<EventSourceEntryDto<?>> eventSources$value;
     private boolean eventSources$set;
 
-    EventProcessMappingRequestDtoBuilder() {
-    }
+    EventProcessMappingRequestDtoBuilder() {}
 
     public EventProcessMappingRequestDtoBuilder name(final String name) {
       this.name = name;
@@ -160,15 +166,20 @@ public class EventProcessMappingRequestDto {
       if (!eventSources$set) {
         eventSources$value = EventProcessMappingRequestDto.$default$eventSources();
       }
-      return new EventProcessMappingRequestDto(name, xml, mappings,
-          eventSources$value);
+      return new EventProcessMappingRequestDto(name, xml, mappings, eventSources$value);
     }
 
     @Override
     public String toString() {
-      return "EventProcessMappingRequestDto.EventProcessMappingRequestDtoBuilder(name=" + name
-          + ", xml=" + xml + ", mappings=" + mappings + ", eventSources$value="
-          + eventSources$value + ")";
+      return "EventProcessMappingRequestDto.EventProcessMappingRequestDtoBuilder(name="
+          + name
+          + ", xml="
+          + xml
+          + ", mappings="
+          + mappings
+          + ", eventSources$value="
+          + eventSources$value
+          + ")";
     }
   }
 }

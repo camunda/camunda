@@ -12,8 +12,7 @@ import java.util.List;
 
 public class FlowNodeStartDateFilterDto extends ProcessFilterDto<FlowNodeDateFilterDataDto<?>> {
 
-  public FlowNodeStartDateFilterDto() {
-  }
+  public FlowNodeStartDateFilterDto() {}
 
   @Override
   public List<FilterApplicationLevel> validApplicationLevels() {

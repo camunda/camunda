@@ -18,9 +18,12 @@ public class EventToFlowNodeMapping {
   private List<String> previousMappedFlowNodeIds;
   private List<String> nextMappedFlowNodeIds;
 
-  public EventToFlowNodeMapping(final String eventIdentifier, final MappedEventType mappedAs,
+  public EventToFlowNodeMapping(
+      final String eventIdentifier,
+      final MappedEventType mappedAs,
       final String flowNodeId,
-      final String flowNodeType, final List<String> previousMappedFlowNodeIds,
+      final String flowNodeType,
+      final List<String> previousMappedFlowNodeIds,
       final List<String> nextMappedFlowNodeIds) {
     this.eventIdentifier = eventIdentifier;
     this.mappedAs = mappedAs;
@@ -30,8 +33,7 @@ public class EventToFlowNodeMapping {
     this.nextMappedFlowNodeIds = nextMappedFlowNodeIds;
   }
 
-  protected EventToFlowNodeMapping() {
-  }
+  protected EventToFlowNodeMapping() {}
 
   public String getEventIdentifier() {
     return eventIdentifier;
@@ -108,7 +110,8 @@ public class EventToFlowNodeMapping {
     }
     final Object this$eventIdentifier = getEventIdentifier();
     final Object other$eventIdentifier = other.getEventIdentifier();
-    if (this$eventIdentifier == null ? other$eventIdentifier != null
+    if (this$eventIdentifier == null
+        ? other$eventIdentifier != null
         : !this$eventIdentifier.equals(other$eventIdentifier)) {
       return false;
     }
@@ -117,11 +120,19 @@ public class EventToFlowNodeMapping {
 
   @Override
   public String toString() {
-    return "EventToFlowNodeMapping(eventIdentifier=" + getEventIdentifier() + ", mappedAs="
-        + getMappedAs() + ", flowNodeId=" + getFlowNodeId() + ", flowNodeType="
-        + getFlowNodeType() + ", previousMappedFlowNodeIds="
-        + getPreviousMappedFlowNodeIds() + ", nextMappedFlowNodeIds="
-        + getNextMappedFlowNodeIds() + ")";
+    return "EventToFlowNodeMapping(eventIdentifier="
+        + getEventIdentifier()
+        + ", mappedAs="
+        + getMappedAs()
+        + ", flowNodeId="
+        + getFlowNodeId()
+        + ", flowNodeType="
+        + getFlowNodeType()
+        + ", previousMappedFlowNodeIds="
+        + getPreviousMappedFlowNodeIds()
+        + ", nextMappedFlowNodeIds="
+        + getNextMappedFlowNodeIds()
+        + ")";
   }
 
   public static EventToFlowNodeMappingBuilder builder() {
@@ -147,8 +158,7 @@ public class EventToFlowNodeMapping {
     private List<String> previousMappedFlowNodeIds;
     private List<String> nextMappedFlowNodeIds;
 
-    EventToFlowNodeMappingBuilder() {
-    }
+    EventToFlowNodeMappingBuilder() {}
 
     public EventToFlowNodeMappingBuilder eventIdentifier(final String eventIdentifier) {
       this.eventIdentifier = eventIdentifier;
@@ -183,16 +193,29 @@ public class EventToFlowNodeMapping {
     }
 
     public EventToFlowNodeMapping build() {
-      return new EventToFlowNodeMapping(eventIdentifier, mappedAs, flowNodeId,
-          flowNodeType, previousMappedFlowNodeIds, nextMappedFlowNodeIds);
+      return new EventToFlowNodeMapping(
+          eventIdentifier,
+          mappedAs,
+          flowNodeId,
+          flowNodeType,
+          previousMappedFlowNodeIds,
+          nextMappedFlowNodeIds);
     }
 
     @Override
     public String toString() {
       return "EventToFlowNodeMapping.EventToFlowNodeMappingBuilder(eventIdentifier="
-          + eventIdentifier + ", mappedAs=" + mappedAs + ", flowNodeId=" + flowNodeId
-          + ", flowNodeType=" + flowNodeType + ", previousMappedFlowNodeIds="
-          + previousMappedFlowNodeIds + ", nextMappedFlowNodeIds=" + nextMappedFlowNodeIds
+          + eventIdentifier
+          + ", mappedAs="
+          + mappedAs
+          + ", flowNodeId="
+          + flowNodeId
+          + ", flowNodeType="
+          + flowNodeType
+          + ", previousMappedFlowNodeIds="
+          + previousMappedFlowNodeIds
+          + ", nextMappedFlowNodeIds="
+          + nextMappedFlowNodeIds
           + ")";
     }
   }

@@ -28,8 +28,7 @@ public class RawDataFlowNodeDataDto implements RawDataInstanceDto {
     this.endDate = endDate;
   }
 
-  public RawDataFlowNodeDataDto() {
-  }
+  public RawDataFlowNodeDataDto() {}
 
   public String getId() {
     return id;
@@ -106,7 +105,8 @@ public class RawDataFlowNodeDataDto implements RawDataInstanceDto {
     }
     final Object this$startDate = getStartDate();
     final Object other$startDate = other.getStartDate();
-    if (this$startDate == null ? other$startDate != null
+    if (this$startDate == null
+        ? other$startDate != null
         : !this$startDate.equals(other$startDate)) {
       return false;
     }
@@ -120,7 +120,14 @@ public class RawDataFlowNodeDataDto implements RawDataInstanceDto {
 
   @Override
   public String toString() {
-    return "RawDataFlowNodeDataDto(id=" + getId() + ", name=" + getName() + ", startDate="
-        + getStartDate() + ", endDate=" + getEndDate() + ")";
+    return "RawDataFlowNodeDataDto(id="
+        + getId()
+        + ", name="
+        + getName()
+        + ", startDate="
+        + getStartDate()
+        + ", endDate="
+        + getEndDate()
+        + ")";
   }
 }

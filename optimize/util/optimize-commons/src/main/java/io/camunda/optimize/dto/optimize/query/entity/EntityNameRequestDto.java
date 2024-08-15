@@ -23,7 +23,9 @@ public class EntityNameRequestDto {
   @QueryParam("eventBasedProcessId")
   private String eventBasedProcessId;
 
-  public EntityNameRequestDto(final String collectionId, final String dashboardId,
+  public EntityNameRequestDto(
+      final String collectionId,
+      final String dashboardId,
       final String reportId,
       final String eventBasedProcessId) {
     this.collectionId = collectionId;
@@ -32,8 +34,7 @@ public class EntityNameRequestDto {
     this.eventBasedProcessId = eventBasedProcessId;
   }
 
-  public EntityNameRequestDto() {
-  }
+  public EntityNameRequestDto() {}
 
   public String getCollectionId() {
     return collectionId;
@@ -100,13 +101,15 @@ public class EntityNameRequestDto {
     }
     final Object this$collectionId = getCollectionId();
     final Object other$collectionId = other.getCollectionId();
-    if (this$collectionId == null ? other$collectionId != null
+    if (this$collectionId == null
+        ? other$collectionId != null
         : !this$collectionId.equals(other$collectionId)) {
       return false;
     }
     final Object this$dashboardId = getDashboardId();
     final Object other$dashboardId = other.getDashboardId();
-    if (this$dashboardId == null ? other$dashboardId != null
+    if (this$dashboardId == null
+        ? other$dashboardId != null
         : !this$dashboardId.equals(other$dashboardId)) {
       return false;
     }
@@ -117,7 +120,8 @@ public class EntityNameRequestDto {
     }
     final Object this$eventBasedProcessId = getEventBasedProcessId();
     final Object other$eventBasedProcessId = other.getEventBasedProcessId();
-    if (this$eventBasedProcessId == null ? other$eventBasedProcessId != null
+    if (this$eventBasedProcessId == null
+        ? other$eventBasedProcessId != null
         : !this$eventBasedProcessId.equals(other$eventBasedProcessId)) {
       return false;
     }
@@ -126,9 +130,15 @@ public class EntityNameRequestDto {
 
   @Override
   public String toString() {
-    return "EntityNameRequestDto(collectionId=" + getCollectionId() + ", dashboardId="
-        + getDashboardId() + ", reportId=" + getReportId() + ", eventBasedProcessId="
-        + getEventBasedProcessId() + ")";
+    return "EntityNameRequestDto(collectionId="
+        + getCollectionId()
+        + ", dashboardId="
+        + getDashboardId()
+        + ", reportId="
+        + getReportId()
+        + ", eventBasedProcessId="
+        + getEventBasedProcessId()
+        + ")";
   }
 
   public enum Fields {

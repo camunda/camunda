@@ -23,7 +23,10 @@ public class TokenRequestDto {
   @JsonProperty("grant_type")
   private String grantType;
 
-  public TokenRequestDto(final String clientId, final String clientSecret, final String audience,
+  public TokenRequestDto(
+      final String clientId,
+      final String clientSecret,
+      final String audience,
       final String grantType) {
     this.clientId = clientId;
     this.clientSecret = clientSecret;
@@ -31,8 +34,7 @@ public class TokenRequestDto {
     this.grantType = grantType;
   }
 
-  public TokenRequestDto() {
-  }
+  public TokenRequestDto() {}
 
   public String getClientId() {
     return clientId;
@@ -108,7 +110,8 @@ public class TokenRequestDto {
     }
     final Object this$clientSecret = getClientSecret();
     final Object other$clientSecret = other.getClientSecret();
-    if (this$clientSecret == null ? other$clientSecret != null
+    if (this$clientSecret == null
+        ? other$clientSecret != null
         : !this$clientSecret.equals(other$clientSecret)) {
       return false;
     }
@@ -119,7 +122,8 @@ public class TokenRequestDto {
     }
     final Object this$grantType = getGrantType();
     final Object other$grantType = other.getGrantType();
-    if (this$grantType == null ? other$grantType != null
+    if (this$grantType == null
+        ? other$grantType != null
         : !this$grantType.equals(other$grantType)) {
       return false;
     }
@@ -128,9 +132,15 @@ public class TokenRequestDto {
 
   @Override
   public String toString() {
-    return "TokenRequestDto(clientId=" + getClientId() + ", clientSecret="
-        + getClientSecret() + ", audience=" + getAudience() + ", grantType="
-        + getGrantType() + ")";
+    return "TokenRequestDto(clientId="
+        + getClientId()
+        + ", clientSecret="
+        + getClientSecret()
+        + ", audience="
+        + getAudience()
+        + ", grantType="
+        + getGrantType()
+        + ")";
   }
 
   public static TokenRequestDtoBuilder builder() {
@@ -144,8 +154,7 @@ public class TokenRequestDto {
     private String audience;
     private String grantType;
 
-    TokenRequestDtoBuilder() {
-    }
+    TokenRequestDtoBuilder() {}
 
     @JsonProperty("client_id")
     public TokenRequestDtoBuilder clientId(final String clientId) {
@@ -177,8 +186,14 @@ public class TokenRequestDto {
 
     @Override
     public String toString() {
-      return "TokenRequestDto.TokenRequestDtoBuilder(clientId=" + clientId + ", clientSecret="
-          + clientSecret + ", audience=" + audience + ", grantType=" + grantType
+      return "TokenRequestDto.TokenRequestDtoBuilder(clientId="
+          + clientId
+          + ", clientSecret="
+          + clientSecret
+          + ", audience="
+          + audience
+          + ", grantType="
+          + grantType
           + ")";
     }
   }

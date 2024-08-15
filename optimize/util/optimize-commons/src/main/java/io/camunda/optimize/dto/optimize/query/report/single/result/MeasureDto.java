@@ -18,16 +18,18 @@ public class MeasureDto<T> {
   private UserTaskDurationTime userTaskDurationTime;
   private T data;
 
-  public MeasureDto(final ViewProperty property, final AggregationDto aggregationType,
-      final UserTaskDurationTime userTaskDurationTime, final T data) {
+  public MeasureDto(
+      final ViewProperty property,
+      final AggregationDto aggregationType,
+      final UserTaskDurationTime userTaskDurationTime,
+      final T data) {
     this.property = property;
     this.aggregationType = aggregationType;
     this.userTaskDurationTime = userTaskDurationTime;
     this.data = data;
   }
 
-  protected MeasureDto() {
-  }
+  protected MeasureDto() {}
 
   public static <T> MeasureDto<T> of(
       final ViewProperty property,
@@ -116,13 +118,15 @@ public class MeasureDto<T> {
     }
     final Object this$aggregationType = getAggregationType();
     final Object other$aggregationType = other.getAggregationType();
-    if (this$aggregationType == null ? other$aggregationType != null
+    if (this$aggregationType == null
+        ? other$aggregationType != null
         : !this$aggregationType.equals(other$aggregationType)) {
       return false;
     }
     final Object this$userTaskDurationTime = getUserTaskDurationTime();
     final Object other$userTaskDurationTime = other.getUserTaskDurationTime();
-    if (this$userTaskDurationTime == null ? other$userTaskDurationTime != null
+    if (this$userTaskDurationTime == null
+        ? other$userTaskDurationTime != null
         : !this$userTaskDurationTime.equals(other$userTaskDurationTime)) {
       return false;
     }
@@ -136,8 +140,14 @@ public class MeasureDto<T> {
 
   @Override
   public String toString() {
-    return "MeasureDto(property=" + getProperty() + ", aggregationType="
-        + getAggregationType() + ", userTaskDurationTime=" + getUserTaskDurationTime()
-        + ", data=" + getData() + ")";
+    return "MeasureDto(property="
+        + getProperty()
+        + ", aggregationType="
+        + getAggregationType()
+        + ", userTaskDurationTime="
+        + getUserTaskDurationTime()
+        + ", data="
+        + getData()
+        + ")";
   }
 }

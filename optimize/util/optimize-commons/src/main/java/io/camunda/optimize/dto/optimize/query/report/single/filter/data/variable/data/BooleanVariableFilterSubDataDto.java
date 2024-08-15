@@ -17,8 +17,7 @@ public class BooleanVariableFilterSubDataDto {
     this.values = values;
   }
 
-  protected BooleanVariableFilterSubDataDto() {
-  }
+  protected BooleanVariableFilterSubDataDto() {}
 
   public List<Boolean> getValues() {
     return values;

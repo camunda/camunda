@@ -18,8 +18,7 @@ public class DateGroupByValueDto implements ProcessGroupByValueDto {
     this.unit = unit;
   }
 
-  public DateGroupByValueDto() {
-  }
+  public DateGroupByValueDto() {}
 
   @Override
   public boolean isCombinable(final Object o) {

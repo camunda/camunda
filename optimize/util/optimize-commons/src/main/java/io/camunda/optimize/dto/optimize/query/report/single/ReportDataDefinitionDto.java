@@ -17,8 +17,7 @@ import java.util.UUID;
 
 public class ReportDataDefinitionDto {
 
-  @NotEmpty
-  private String identifier = UUID.randomUUID().toString();
+  @NotEmpty private String identifier = UUID.randomUUID().toString();
   private String key;
   private String name;
   private String displayName;
@@ -84,9 +83,13 @@ public class ReportDataDefinitionDto {
     this.versions = versions;
   }
 
-  public ReportDataDefinitionDto(@NotEmpty final String identifier, final String key,
+  public ReportDataDefinitionDto(
+      @NotEmpty final String identifier,
+      final String key,
       final String name,
-      final String displayName, final List<String> versions, final List<String> tenantIds) {
+      final String displayName,
+      final List<String> versions,
+      final List<String> tenantIds) {
     this.identifier = identifier;
     this.key = key;
     this.name = name;
@@ -95,8 +98,7 @@ public class ReportDataDefinitionDto {
     this.tenantIds = tenantIds;
   }
 
-  public ReportDataDefinitionDto() {
-  }
+  public ReportDataDefinitionDto() {}
 
   @JsonIgnore
   public void setVersion(final String version) {
@@ -188,7 +190,8 @@ public class ReportDataDefinitionDto {
     }
     final Object this$identifier = getIdentifier();
     final Object other$identifier = other.getIdentifier();
-    if (this$identifier == null ? other$identifier != null
+    if (this$identifier == null
+        ? other$identifier != null
         : !this$identifier.equals(other$identifier)) {
       return false;
     }
@@ -204,7 +207,8 @@ public class ReportDataDefinitionDto {
     }
     final Object this$displayName = getDisplayName();
     final Object other$displayName = other.getDisplayName();
-    if (this$displayName == null ? other$displayName != null
+    if (this$displayName == null
+        ? other$displayName != null
         : !this$displayName.equals(other$displayName)) {
       return false;
     }
@@ -215,7 +219,8 @@ public class ReportDataDefinitionDto {
     }
     final Object this$tenantIds = getTenantIds();
     final Object other$tenantIds = other.getTenantIds();
-    if (this$tenantIds == null ? other$tenantIds != null
+    if (this$tenantIds == null
+        ? other$tenantIds != null
         : !this$tenantIds.equals(other$tenantIds)) {
       return false;
     }
@@ -224,9 +229,19 @@ public class ReportDataDefinitionDto {
 
   @Override
   public String toString() {
-    return "ReportDataDefinitionDto(identifier=" + getIdentifier() + ", key=" + getKey()
-        + ", name=" + getName() + ", displayName=" + getDisplayName() + ", versions="
-        + getVersions() + ", tenantIds=" + getTenantIds() + ")";
+    return "ReportDataDefinitionDto(identifier="
+        + getIdentifier()
+        + ", key="
+        + getKey()
+        + ", name="
+        + getName()
+        + ", displayName="
+        + getDisplayName()
+        + ", versions="
+        + getVersions()
+        + ", tenantIds="
+        + getTenantIds()
+        + ")";
   }
 
   public static final class Fields {

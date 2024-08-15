@@ -13,8 +13,7 @@ import java.util.List;
 
 public class InstanceStartDateFilterDto extends ProcessFilterDto<DateFilterDataDto<?>> {
 
-  public InstanceStartDateFilterDto() {
-  }
+  public InstanceStartDateFilterDto() {}
 
   @Override
   public List<FilterApplicationLevel> validApplicationLevels() {

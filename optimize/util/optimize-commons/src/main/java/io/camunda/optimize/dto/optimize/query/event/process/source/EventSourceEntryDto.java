@@ -16,18 +16,16 @@ import java.util.Optional;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = ExternalEventSourceEntryDto.class, name = "external"),
+  @JsonSubTypes.Type(value = ExternalEventSourceEntryDto.class, name = "external"),
 })
 public abstract class EventSourceEntryDto<CONFIG extends EventSourceConfigDto> {
 
   public static final String TYPE = "type";
   protected String id = IdGenerator.getNextId();
 
-  @NotNull
-  protected CONFIG configuration;
+  @NotNull protected CONFIG configuration;
 
-  public EventSourceEntryDto() {
-  }
+  public EventSourceEntryDto() {}
 
   protected EventSourceEntryDto(final EventSourceEntryDtoBuilder<CONFIG, ?, ?> b) {
     if (b.id$set) {
@@ -52,7 +50,7 @@ public abstract class EventSourceEntryDto<CONFIG extends EventSourceConfigDto> {
       return getSourceType()
           + ":"
           + Optional.ofNullable(externalSourceConfig.getGroup())
-          .orElse("optimize_noGroupSpecified");
+              .orElse("optimize_noGroupSpecified");
     }
   }
 
@@ -111,8 +109,7 @@ public abstract class EventSourceEntryDto<CONFIG extends EventSourceConfigDto> {
 
   @Override
   public String toString() {
-    return "EventSourceEntryDto(id=" + getId() + ", configuration=" + getConfiguration()
-        + ")";
+    return "EventSourceEntryDto(id=" + getId() + ", configuration=" + getConfiguration() + ")";
   }
 
   private static String $default$id() {
@@ -125,7 +122,10 @@ public abstract class EventSourceEntryDto<CONFIG extends EventSourceConfigDto> {
     public static final String configuration = "configuration";
   }
 
-  public static abstract class EventSourceEntryDtoBuilder<CONFIG extends EventSourceConfigDto, C extends EventSourceEntryDto<CONFIG>, B extends EventSourceEntryDtoBuilder<CONFIG, C, B>> {
+  public abstract static class EventSourceEntryDtoBuilder<
+      CONFIG extends EventSourceConfigDto,
+      C extends EventSourceEntryDto<CONFIG>,
+      B extends EventSourceEntryDtoBuilder<CONFIG, C, B>> {
 
     private String id$value;
     private boolean id$set;
@@ -164,8 +164,11 @@ public abstract class EventSourceEntryDto<CONFIG extends EventSourceConfigDto> {
 
     @Override
     public String toString() {
-      return "EventSourceEntryDto.EventSourceEntryDtoBuilder(id$value=" + id$value
-          + ", configuration=" + configuration + ")";
+      return "EventSourceEntryDto.EventSourceEntryDtoBuilder(id$value="
+          + id$value
+          + ", configuration="
+          + configuration
+          + ")";
     }
   }
 }

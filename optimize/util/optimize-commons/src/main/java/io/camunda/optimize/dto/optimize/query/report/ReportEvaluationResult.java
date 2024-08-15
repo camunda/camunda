@@ -23,8 +23,7 @@ public abstract class ReportEvaluationResult {
     this.reportDefinition = reportDefinition;
   }
 
-  public ReportEvaluationResult() {
-  }
+  public ReportEvaluationResult() {}
 
   public String getId() {
     return reportDefinition.getId();
@@ -74,7 +73,8 @@ public abstract class ReportEvaluationResult {
     }
     final Object this$reportDefinition = getReportDefinition();
     final Object other$reportDefinition = other.getReportDefinition();
-    if (this$reportDefinition == null ? other$reportDefinition != null
+    if (this$reportDefinition == null
+        ? other$reportDefinition != null
         : !this$reportDefinition.equals(other$reportDefinition)) {
       return false;
     }

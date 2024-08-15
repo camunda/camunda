@@ -18,9 +18,12 @@ public class FlowNodeInstanceUpdateDto implements OptimizeDto {
   protected MappedEventType mappedAs;
   protected OffsetDateTime date;
 
-  public FlowNodeInstanceUpdateDto(final String sourceEventId, final String flowNodeId,
+  public FlowNodeInstanceUpdateDto(
+      final String sourceEventId,
+      final String flowNodeId,
       final String flowNodeType,
-      final MappedEventType mappedAs, final OffsetDateTime date) {
+      final MappedEventType mappedAs,
+      final OffsetDateTime date) {
     this.sourceEventId = sourceEventId;
     this.flowNodeId = flowNodeId;
     this.flowNodeType = flowNodeType;
@@ -28,8 +31,7 @@ public class FlowNodeInstanceUpdateDto implements OptimizeDto {
     this.date = date;
   }
 
-  protected FlowNodeInstanceUpdateDto() {
-  }
+  protected FlowNodeInstanceUpdateDto() {}
 
   public String getId() {
     return sourceEventId + ":" + flowNodeId;
@@ -110,19 +112,22 @@ public class FlowNodeInstanceUpdateDto implements OptimizeDto {
     }
     final Object this$sourceEventId = getSourceEventId();
     final Object other$sourceEventId = other.getSourceEventId();
-    if (this$sourceEventId == null ? other$sourceEventId != null
+    if (this$sourceEventId == null
+        ? other$sourceEventId != null
         : !this$sourceEventId.equals(other$sourceEventId)) {
       return false;
     }
     final Object this$flowNodeId = getFlowNodeId();
     final Object other$flowNodeId = other.getFlowNodeId();
-    if (this$flowNodeId == null ? other$flowNodeId != null
+    if (this$flowNodeId == null
+        ? other$flowNodeId != null
         : !this$flowNodeId.equals(other$flowNodeId)) {
       return false;
     }
     final Object this$flowNodeType = getFlowNodeType();
     final Object other$flowNodeType = other.getFlowNodeType();
-    if (this$flowNodeType == null ? other$flowNodeType != null
+    if (this$flowNodeType == null
+        ? other$flowNodeType != null
         : !this$flowNodeType.equals(other$flowNodeType)) {
       return false;
     }
@@ -141,9 +146,17 @@ public class FlowNodeInstanceUpdateDto implements OptimizeDto {
 
   @Override
   public String toString() {
-    return "FlowNodeInstanceUpdateDto(sourceEventId=" + getSourceEventId() + ", flowNodeId="
-        + getFlowNodeId() + ", flowNodeType=" + getFlowNodeType() + ", mappedAs="
-        + getMappedAs() + ", date=" + getDate() + ")";
+    return "FlowNodeInstanceUpdateDto(sourceEventId="
+        + getSourceEventId()
+        + ", flowNodeId="
+        + getFlowNodeId()
+        + ", flowNodeType="
+        + getFlowNodeType()
+        + ", mappedAs="
+        + getMappedAs()
+        + ", date="
+        + getDate()
+        + ")";
   }
 
   public static FlowNodeInstanceUpdateDtoBuilder builder() {
@@ -167,8 +180,7 @@ public class FlowNodeInstanceUpdateDto implements OptimizeDto {
     private MappedEventType mappedAs;
     private OffsetDateTime date;
 
-    FlowNodeInstanceUpdateDtoBuilder() {
-    }
+    FlowNodeInstanceUpdateDtoBuilder() {}
 
     public FlowNodeInstanceUpdateDtoBuilder sourceEventId(final String sourceEventId) {
       this.sourceEventId = sourceEventId;
@@ -196,15 +208,22 @@ public class FlowNodeInstanceUpdateDto implements OptimizeDto {
     }
 
     public FlowNodeInstanceUpdateDto build() {
-      return new FlowNodeInstanceUpdateDto(sourceEventId, flowNodeId, flowNodeType,
-          mappedAs, date);
+      return new FlowNodeInstanceUpdateDto(sourceEventId, flowNodeId, flowNodeType, mappedAs, date);
     }
 
     @Override
     public String toString() {
       return "FlowNodeInstanceUpdateDto.FlowNodeInstanceUpdateDtoBuilder(sourceEventId="
-          + sourceEventId + ", flowNodeId=" + flowNodeId + ", flowNodeType="
-          + flowNodeType + ", mappedAs=" + mappedAs + ", date=" + date + ")";
+          + sourceEventId
+          + ", flowNodeId="
+          + flowNodeId
+          + ", flowNodeType="
+          + flowNodeType
+          + ", mappedAs="
+          + mappedAs
+          + ", date="
+          + date
+          + ")";
     }
   }
 }

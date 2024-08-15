@@ -17,8 +17,7 @@ public class AlertInterval {
     this.unit = unit;
   }
 
-  public AlertInterval() {
-  }
+  public AlertInterval() {}
 
   public int getValue() {
     return value;

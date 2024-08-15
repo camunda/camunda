@@ -12,14 +12,12 @@ import java.util.List;
 
 public class EntitiesDeleteRequestDto {
 
-  @NotNull
-  List<String> reports;
-  @NotNull
-  List<String> collections;
-  @NotNull
-  List<String> dashboards;
+  @NotNull List<String> reports;
+  @NotNull List<String> collections;
+  @NotNull List<String> dashboards;
 
-  public EntitiesDeleteRequestDto(@NotNull final List<String> reports,
+  public EntitiesDeleteRequestDto(
+      @NotNull final List<String> reports,
       @NotNull final List<String> collections,
       @NotNull final List<String> dashboards) {
     this.reports = reports;
@@ -27,8 +25,7 @@ public class EntitiesDeleteRequestDto {
     this.dashboards = dashboards;
   }
 
-  public EntitiesDeleteRequestDto() {
-  }
+  public EntitiesDeleteRequestDto() {}
 
   public @NotNull List<String> getReports() {
     return reports;
@@ -90,13 +87,15 @@ public class EntitiesDeleteRequestDto {
     }
     final Object this$collections = getCollections();
     final Object other$collections = other.getCollections();
-    if (this$collections == null ? other$collections != null
+    if (this$collections == null
+        ? other$collections != null
         : !this$collections.equals(other$collections)) {
       return false;
     }
     final Object this$dashboards = getDashboards();
     final Object other$dashboards = other.getDashboards();
-    if (this$dashboards == null ? other$dashboards != null
+    if (this$dashboards == null
+        ? other$dashboards != null
         : !this$dashboards.equals(other$dashboards)) {
       return false;
     }
@@ -105,7 +104,12 @@ public class EntitiesDeleteRequestDto {
 
   @Override
   public String toString() {
-    return "EntitiesDeleteRequestDto(reports=" + getReports() + ", collections="
-        + getCollections() + ", dashboards=" + getDashboards() + ")";
+    return "EntitiesDeleteRequestDto(reports="
+        + getReports()
+        + ", collections="
+        + getCollections()
+        + ", dashboards="
+        + getDashboards()
+        + ")";
   }
 }

@@ -17,8 +17,7 @@ public class AssigneeFilterDto extends ProcessFilterDto<IdentityLinkFilterDataDt
     super(assigneeCandidateGroupFilterDataDto, FilterApplicationLevel.INSTANCE);
   }
 
-  public AssigneeFilterDto() {
-  }
+  public AssigneeFilterDto() {}
 
   @Override
   public List<FilterApplicationLevel> validApplicationLevels() {

@@ -25,8 +25,7 @@ public class TimestampBasedImportIndexDto extends ImportIndexDto<DataSourceDto>
     this.esTypeIndexRefersTo = esTypeIndexRefersTo;
   }
 
-  public TimestampBasedImportIndexDto() {
-  }
+  public TimestampBasedImportIndexDto() {}
 
   @Override
   @JsonIgnore
@@ -45,8 +44,7 @@ public class TimestampBasedImportIndexDto extends ImportIndexDto<DataSourceDto>
 
   @Override
   public String toString() {
-    return "TimestampBasedImportIndexDto(esTypeIndexRefersTo=" + getEsTypeIndexRefersTo()
-        + ")";
+    return "TimestampBasedImportIndexDto(esTypeIndexRefersTo=" + getEsTypeIndexRefersTo() + ")";
   }
 
   @Override
@@ -66,7 +64,8 @@ public class TimestampBasedImportIndexDto extends ImportIndexDto<DataSourceDto>
     }
     final Object this$esTypeIndexRefersTo = getEsTypeIndexRefersTo();
     final Object other$esTypeIndexRefersTo = other.getEsTypeIndexRefersTo();
-    if (this$esTypeIndexRefersTo == null ? other$esTypeIndexRefersTo != null
+    if (this$esTypeIndexRefersTo == null
+        ? other$esTypeIndexRefersTo != null
         : !this$esTypeIndexRefersTo.equals(other$esTypeIndexRefersTo)) {
       return false;
     }

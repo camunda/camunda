@@ -17,16 +17,14 @@ import java.util.Map;
 
 public class EventMappingCleanupRequestDto {
 
-  @NotNull
-  private String xml;
+  @NotNull private String xml;
 
-  @NotNull
-  private Map<String, EventMappingDto> mappings = new HashMap<>();
+  @NotNull private Map<String, EventMappingDto> mappings = new HashMap<>();
 
-  @NotNull
-  private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
+  @NotNull private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
 
-  public EventMappingCleanupRequestDto(@NotNull final String xml,
+  public EventMappingCleanupRequestDto(
+      @NotNull final String xml,
       @NotNull final Map<String, EventMappingDto> mappings,
       @NotNull final List<EventSourceEntryDto<?>> eventSources) {
     this.xml = xml;
@@ -34,8 +32,7 @@ public class EventMappingCleanupRequestDto {
     this.eventSources = eventSources;
   }
 
-  protected EventMappingCleanupRequestDto() {
-  }
+  protected EventMappingCleanupRequestDto() {}
 
   public @NotNull String getXml() {
     return xml;
@@ -102,7 +99,8 @@ public class EventMappingCleanupRequestDto {
     }
     final Object this$eventSources = getEventSources();
     final Object other$eventSources = other.getEventSources();
-    if (this$eventSources == null ? other$eventSources != null
+    if (this$eventSources == null
+        ? other$eventSources != null
         : !this$eventSources.equals(other$eventSources)) {
       return false;
     }
@@ -111,8 +109,13 @@ public class EventMappingCleanupRequestDto {
 
   @Override
   public String toString() {
-    return "EventMappingCleanupRequestDto(xml=" + getXml() + ", mappings=" + getMappings()
-        + ", eventSources=" + getEventSources() + ")";
+    return "EventMappingCleanupRequestDto(xml="
+        + getXml()
+        + ", mappings="
+        + getMappings()
+        + ", eventSources="
+        + getEventSources()
+        + ")";
   }
 
   @NotNull
@@ -137,8 +140,7 @@ public class EventMappingCleanupRequestDto {
     private @NotNull List<EventSourceEntryDto<?>> eventSources$value;
     private boolean eventSources$set;
 
-    EventMappingCleanupRequestDtoBuilder() {
-    }
+    EventMappingCleanupRequestDtoBuilder() {}
 
     public EventMappingCleanupRequestDtoBuilder xml(@NotNull final String xml) {
       this.xml = xml;
@@ -173,9 +175,13 @@ public class EventMappingCleanupRequestDto {
 
     @Override
     public String toString() {
-      return "EventMappingCleanupRequestDto.EventMappingCleanupRequestDtoBuilder(xml=" + xml
-          + ", mappings$value=" + mappings$value + ", eventSources$value="
-          + eventSources$value + ")";
+      return "EventMappingCleanupRequestDto.EventMappingCleanupRequestDtoBuilder(xml="
+          + xml
+          + ", mappings$value="
+          + mappings$value
+          + ", eventSources$value="
+          + eventSources$value
+          + ")";
     }
   }
 }

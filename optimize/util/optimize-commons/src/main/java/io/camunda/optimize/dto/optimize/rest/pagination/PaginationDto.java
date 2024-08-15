@@ -19,8 +19,7 @@ public class PaginationDto {
     this.offset = offset;
   }
 
-  public PaginationDto() {
-  }
+  public PaginationDto() {}
 
   public static PaginationDto fromPaginationRequest(
       final PaginationRequestDto paginationRequestDto) {

@@ -35,8 +35,7 @@ public class MapResultEntryDto {
     this.label = label;
   }
 
-  protected MapResultEntryDto() {
-  }
+  protected MapResultEntryDto() {}
 
   public String getLabel() {
     return label != null && !label.isEmpty() ? label : key;
@@ -95,8 +94,7 @@ public class MapResultEntryDto {
 
   @Override
   public String toString() {
-    return "MapResultEntryDto(key=" + key + ", value=" + value + ", label="
-        + getLabel() + ")";
+    return "MapResultEntryDto(key=" + key + ", value=" + value + ", label=" + getLabel() + ")";
   }
 
   public String getKey() {

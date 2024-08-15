@@ -17,8 +17,7 @@ public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceD
   protected boolean hasSeenSequenceField =
       false; // flag to indicate whether at least one record with a sequence field has been imported
 
-  public PositionBasedImportIndexDto() {
-  }
+  public PositionBasedImportIndexDto() {}
 
   public long getPositionOfLastEntity() {
     return positionOfLastEntity;
@@ -54,9 +53,14 @@ public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceD
 
   @Override
   public String toString() {
-    return "PositionBasedImportIndexDto(positionOfLastEntity=" + getPositionOfLastEntity()
-        + ", sequenceOfLastEntity=" + getSequenceOfLastEntity() + ", esTypeIndexRefersTo="
-        + getEsTypeIndexRefersTo() + ", hasSeenSequenceField=" + isHasSeenSequenceField()
+    return "PositionBasedImportIndexDto(positionOfLastEntity="
+        + getPositionOfLastEntity()
+        + ", sequenceOfLastEntity="
+        + getSequenceOfLastEntity()
+        + ", esTypeIndexRefersTo="
+        + getEsTypeIndexRefersTo()
+        + ", hasSeenSequenceField="
+        + isHasSeenSequenceField()
         + ")";
   }
 
@@ -83,7 +87,8 @@ public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceD
     }
     final Object this$esTypeIndexRefersTo = getEsTypeIndexRefersTo();
     final Object other$esTypeIndexRefersTo = other.getEsTypeIndexRefersTo();
-    if (this$esTypeIndexRefersTo == null ? other$esTypeIndexRefersTo != null
+    if (this$esTypeIndexRefersTo == null
+        ? other$esTypeIndexRefersTo != null
         : !this$esTypeIndexRefersTo.equals(other$esTypeIndexRefersTo)) {
       return false;
     }

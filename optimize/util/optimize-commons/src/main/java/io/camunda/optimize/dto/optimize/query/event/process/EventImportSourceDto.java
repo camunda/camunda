@@ -25,9 +25,11 @@ public class EventImportSourceDto {
   // there can be multiple
   private List<EventSourceConfigDto> eventSourceConfigurations;
 
-  public EventImportSourceDto(final OffsetDateTime firstEventForSourceAtTimeOfPublishTimestamp,
-      final OffsetDateTime lastEventForSourceAtTimeOfPublishTimestamp, final
-  OffsetDateTime lastImportedEventTimestamp, final OffsetDateTime lastImportExecutionTimestamp,
+  public EventImportSourceDto(
+      final OffsetDateTime firstEventForSourceAtTimeOfPublishTimestamp,
+      final OffsetDateTime lastEventForSourceAtTimeOfPublishTimestamp,
+      final OffsetDateTime lastImportedEventTimestamp,
+      final OffsetDateTime lastImportExecutionTimestamp,
       final EventSourceType eventImportSourceType,
       final List<EventSourceConfigDto> eventSourceConfigurations) {
     this.firstEventForSourceAtTimeOfPublishTimestamp = firstEventForSourceAtTimeOfPublishTimestamp;
@@ -38,8 +40,7 @@ public class EventImportSourceDto {
     this.eventSourceConfigurations = eventSourceConfigurations;
   }
 
-  public EventImportSourceDto() {
-  }
+  public EventImportSourceDto() {}
 
   public OffsetDateTime getFirstEventForSourceAtTimeOfPublishTimestamp() {
     return firstEventForSourceAtTimeOfPublishTimestamp;
@@ -100,24 +101,37 @@ public class EventImportSourceDto {
   public int hashCode() {
     final int PRIME = 59;
     int result = 1;
-    final Object $firstEventForSourceAtTimeOfPublishTimestamp = getFirstEventForSourceAtTimeOfPublishTimestamp();
-    result = result * PRIME + ($firstEventForSourceAtTimeOfPublishTimestamp == null ? 43
-        : $firstEventForSourceAtTimeOfPublishTimestamp.hashCode());
-    final Object $lastEventForSourceAtTimeOfPublishTimestamp = getLastEventForSourceAtTimeOfPublishTimestamp();
-    result = result * PRIME + ($lastEventForSourceAtTimeOfPublishTimestamp == null ? 43
-        : $lastEventForSourceAtTimeOfPublishTimestamp.hashCode());
+    final Object $firstEventForSourceAtTimeOfPublishTimestamp =
+        getFirstEventForSourceAtTimeOfPublishTimestamp();
+    result =
+        result * PRIME
+            + ($firstEventForSourceAtTimeOfPublishTimestamp == null
+                ? 43
+                : $firstEventForSourceAtTimeOfPublishTimestamp.hashCode());
+    final Object $lastEventForSourceAtTimeOfPublishTimestamp =
+        getLastEventForSourceAtTimeOfPublishTimestamp();
+    result =
+        result * PRIME
+            + ($lastEventForSourceAtTimeOfPublishTimestamp == null
+                ? 43
+                : $lastEventForSourceAtTimeOfPublishTimestamp.hashCode());
     final Object $lastImportedEventTimestamp = getLastImportedEventTimestamp();
-    result = result * PRIME + ($lastImportedEventTimestamp == null ? 43
-        : $lastImportedEventTimestamp.hashCode());
+    result =
+        result * PRIME
+            + ($lastImportedEventTimestamp == null ? 43 : $lastImportedEventTimestamp.hashCode());
     final Object $lastImportExecutionTimestamp = getLastImportExecutionTimestamp();
-    result = result * PRIME + ($lastImportExecutionTimestamp == null ? 43
-        : $lastImportExecutionTimestamp.hashCode());
+    result =
+        result * PRIME
+            + ($lastImportExecutionTimestamp == null
+                ? 43
+                : $lastImportExecutionTimestamp.hashCode());
     final Object $eventImportSourceType = getEventImportSourceType();
     result =
         result * PRIME + ($eventImportSourceType == null ? 43 : $eventImportSourceType.hashCode());
     final Object $eventSourceConfigurations = getEventSourceConfigurations();
-    result = result * PRIME + ($eventSourceConfigurations == null ? 43
-        : $eventSourceConfigurations.hashCode());
+    result =
+        result * PRIME
+            + ($eventSourceConfigurations == null ? 43 : $eventSourceConfigurations.hashCode());
     return result;
   }
 
@@ -133,43 +147,51 @@ public class EventImportSourceDto {
     if (!other.canEqual((Object) this)) {
       return false;
     }
-    final Object this$firstEventForSourceAtTimeOfPublishTimestamp = getFirstEventForSourceAtTimeOfPublishTimestamp();
-    final Object other$firstEventForSourceAtTimeOfPublishTimestamp = other.getFirstEventForSourceAtTimeOfPublishTimestamp();
-    if (this$firstEventForSourceAtTimeOfPublishTimestamp == null ?
-        other$firstEventForSourceAtTimeOfPublishTimestamp != null
+    final Object this$firstEventForSourceAtTimeOfPublishTimestamp =
+        getFirstEventForSourceAtTimeOfPublishTimestamp();
+    final Object other$firstEventForSourceAtTimeOfPublishTimestamp =
+        other.getFirstEventForSourceAtTimeOfPublishTimestamp();
+    if (this$firstEventForSourceAtTimeOfPublishTimestamp == null
+        ? other$firstEventForSourceAtTimeOfPublishTimestamp != null
         : !this$firstEventForSourceAtTimeOfPublishTimestamp.equals(
             other$firstEventForSourceAtTimeOfPublishTimestamp)) {
       return false;
     }
-    final Object this$lastEventForSourceAtTimeOfPublishTimestamp = getLastEventForSourceAtTimeOfPublishTimestamp();
-    final Object other$lastEventForSourceAtTimeOfPublishTimestamp = other.getLastEventForSourceAtTimeOfPublishTimestamp();
-    if (this$lastEventForSourceAtTimeOfPublishTimestamp == null ?
-        other$lastEventForSourceAtTimeOfPublishTimestamp != null
+    final Object this$lastEventForSourceAtTimeOfPublishTimestamp =
+        getLastEventForSourceAtTimeOfPublishTimestamp();
+    final Object other$lastEventForSourceAtTimeOfPublishTimestamp =
+        other.getLastEventForSourceAtTimeOfPublishTimestamp();
+    if (this$lastEventForSourceAtTimeOfPublishTimestamp == null
+        ? other$lastEventForSourceAtTimeOfPublishTimestamp != null
         : !this$lastEventForSourceAtTimeOfPublishTimestamp.equals(
             other$lastEventForSourceAtTimeOfPublishTimestamp)) {
       return false;
     }
     final Object this$lastImportedEventTimestamp = getLastImportedEventTimestamp();
     final Object other$lastImportedEventTimestamp = other.getLastImportedEventTimestamp();
-    if (this$lastImportedEventTimestamp == null ? other$lastImportedEventTimestamp != null
+    if (this$lastImportedEventTimestamp == null
+        ? other$lastImportedEventTimestamp != null
         : !this$lastImportedEventTimestamp.equals(other$lastImportedEventTimestamp)) {
       return false;
     }
     final Object this$lastImportExecutionTimestamp = getLastImportExecutionTimestamp();
     final Object other$lastImportExecutionTimestamp = other.getLastImportExecutionTimestamp();
-    if (this$lastImportExecutionTimestamp == null ? other$lastImportExecutionTimestamp != null
+    if (this$lastImportExecutionTimestamp == null
+        ? other$lastImportExecutionTimestamp != null
         : !this$lastImportExecutionTimestamp.equals(other$lastImportExecutionTimestamp)) {
       return false;
     }
     final Object this$eventImportSourceType = getEventImportSourceType();
     final Object other$eventImportSourceType = other.getEventImportSourceType();
-    if (this$eventImportSourceType == null ? other$eventImportSourceType != null
+    if (this$eventImportSourceType == null
+        ? other$eventImportSourceType != null
         : !this$eventImportSourceType.equals(other$eventImportSourceType)) {
       return false;
     }
     final Object this$eventSourceConfigurations = getEventSourceConfigurations();
     final Object other$eventSourceConfigurations = other.getEventSourceConfigurations();
-    if (this$eventSourceConfigurations == null ? other$eventSourceConfigurations != null
+    if (this$eventSourceConfigurations == null
+        ? other$eventSourceConfigurations != null
         : !this$eventSourceConfigurations.equals(other$eventSourceConfigurations)) {
       return false;
     }
@@ -181,11 +203,16 @@ public class EventImportSourceDto {
     return "EventImportSourceDto(firstEventForSourceAtTimeOfPublishTimestamp="
         + getFirstEventForSourceAtTimeOfPublishTimestamp()
         + ", lastEventForSourceAtTimeOfPublishTimestamp="
-        + getLastEventForSourceAtTimeOfPublishTimestamp() + ", lastImportedEventTimestamp="
-        + getLastImportedEventTimestamp() + ", lastImportExecutionTimestamp="
-        + getLastImportExecutionTimestamp() + ", eventImportSourceType="
-        + getEventImportSourceType() + ", eventSourceConfigurations="
-        + getEventSourceConfigurations() + ")";
+        + getLastEventForSourceAtTimeOfPublishTimestamp()
+        + ", lastImportedEventTimestamp="
+        + getLastImportedEventTimestamp()
+        + ", lastImportExecutionTimestamp="
+        + getLastImportExecutionTimestamp()
+        + ", eventImportSourceType="
+        + getEventImportSourceType()
+        + ", eventSourceConfigurations="
+        + getEventSourceConfigurations()
+        + ")";
   }
 
   public static EventImportSourceDtoBuilder builder() {
@@ -213,12 +240,12 @@ public class EventImportSourceDto {
     private EventSourceType eventImportSourceType;
     private List<EventSourceConfigDto> eventSourceConfigurations;
 
-    EventImportSourceDtoBuilder() {
-    }
+    EventImportSourceDtoBuilder() {}
 
     public EventImportSourceDtoBuilder firstEventForSourceAtTimeOfPublishTimestamp(
         final OffsetDateTime firstEventForSourceAtTimeOfPublishTimestamp) {
-      this.firstEventForSourceAtTimeOfPublishTimestamp = firstEventForSourceAtTimeOfPublishTimestamp;
+      this.firstEventForSourceAtTimeOfPublishTimestamp =
+          firstEventForSourceAtTimeOfPublishTimestamp;
       return this;
     }
 
@@ -253,23 +280,30 @@ public class EventImportSourceDto {
     }
 
     public EventImportSourceDto build() {
-      return new EventImportSourceDto(firstEventForSourceAtTimeOfPublishTimestamp,
-          lastEventForSourceAtTimeOfPublishTimestamp, lastImportedEventTimestamp,
-          lastImportExecutionTimestamp, eventImportSourceType,
+      return new EventImportSourceDto(
+          firstEventForSourceAtTimeOfPublishTimestamp,
+          lastEventForSourceAtTimeOfPublishTimestamp,
+          lastImportedEventTimestamp,
+          lastImportExecutionTimestamp,
+          eventImportSourceType,
           eventSourceConfigurations);
     }
 
     @Override
     public String toString() {
-      return
-          "EventImportSourceDto.EventImportSourceDtoBuilder(firstEventForSourceAtTimeOfPublishTimestamp="
-              + firstEventForSourceAtTimeOfPublishTimestamp
-              + ", lastEventForSourceAtTimeOfPublishTimestamp="
-              + lastEventForSourceAtTimeOfPublishTimestamp + ", lastImportedEventTimestamp="
-              + lastImportedEventTimestamp + ", lastImportExecutionTimestamp="
-              + lastImportExecutionTimestamp + ", eventImportSourceType="
-              + eventImportSourceType + ", eventSourceConfigurations="
-              + eventSourceConfigurations + ")";
+      return "EventImportSourceDto.EventImportSourceDtoBuilder(firstEventForSourceAtTimeOfPublishTimestamp="
+          + firstEventForSourceAtTimeOfPublishTimestamp
+          + ", lastEventForSourceAtTimeOfPublishTimestamp="
+          + lastEventForSourceAtTimeOfPublishTimestamp
+          + ", lastImportedEventTimestamp="
+          + lastImportedEventTimestamp
+          + ", lastImportExecutionTimestamp="
+          + lastImportExecutionTimestamp
+          + ", eventImportSourceType="
+          + eventImportSourceType
+          + ", eventSourceConfigurations="
+          + eventSourceConfigurations
+          + ")";
     }
   }
 }

@@ -17,8 +17,7 @@ public class SimpleDefinitionDto {
   private String key;
   private String name;
   private DefinitionType type;
-  @JsonIgnore
-  private Boolean isEventProcess = false;
+  @JsonIgnore private Boolean isEventProcess = false;
   private Set<String> engines = new HashSet<>();
 
   public SimpleDefinitionDto(
@@ -29,7 +28,6 @@ public class SimpleDefinitionDto {
       final String engine) {
     if (key == null) {
       throw new IllegalArgumentException("key cannot be null");
-
     }
     this.key = key;
     this.name = name;
@@ -46,9 +44,12 @@ public class SimpleDefinitionDto {
     engines = Collections.singleton(engine);
   }
 
-  public SimpleDefinitionDto(final String key, final String name,
+  public SimpleDefinitionDto(
+      final String key,
+      final String name,
       final DefinitionType type,
-      final Boolean isEventProcess, final Set<String> engines) {
+      final Boolean isEventProcess,
+      final Set<String> engines) {
     if (key == null) {
       throw new IllegalArgumentException("key cannot be null");
     }
@@ -68,8 +69,7 @@ public class SimpleDefinitionDto {
     this.engines = engines;
   }
 
-  protected SimpleDefinitionDto() {
-  }
+  protected SimpleDefinitionDto() {}
 
   public String getKey() {
     return key;
@@ -165,8 +165,16 @@ public class SimpleDefinitionDto {
 
   @Override
   public String toString() {
-    return "SimpleDefinitionDto(key=" + getKey() + ", name=" + getName() + ", type="
-        + getType() + ", isEventProcess=" + getIsEventProcess() + ", engines="
-        + getEngines() + ")";
+    return "SimpleDefinitionDto(key="
+        + getKey()
+        + ", name="
+        + getName()
+        + ", type="
+        + getType()
+        + ", isEventProcess="
+        + getIsEventProcess()
+        + ", engines="
+        + getEngines()
+        + ")";
   }
 }

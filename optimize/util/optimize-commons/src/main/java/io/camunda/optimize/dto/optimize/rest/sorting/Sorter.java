@@ -18,11 +18,9 @@ import java.util.Optional;
  */
 public abstract class Sorter<T> {
 
-  @BeanParam
-  SortRequestDto sortRequestDto;
+  @BeanParam SortRequestDto sortRequestDto;
 
-  public Sorter() {
-  }
+  public Sorter() {}
 
   public Optional<String> getSortBy() {
     return sortRequestDto.getSortBy();

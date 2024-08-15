@@ -18,7 +18,9 @@ public class DurationFilterDataDto implements FilterDataDto {
   protected ComparisonOperator operator;
   protected boolean includeNull;
 
-  public DurationFilterDataDto(final Long value, final DurationUnit unit,
+  public DurationFilterDataDto(
+      final Long value,
+      final DurationUnit unit,
       final ComparisonOperator operator,
       final boolean includeNull) {
     this.value = value;
@@ -27,8 +29,7 @@ public class DurationFilterDataDto implements FilterDataDto {
     this.includeNull = includeNull;
   }
 
-  public DurationFilterDataDto() {
-  }
+  public DurationFilterDataDto() {}
 
   public Long getValue() {
     return value;
@@ -115,8 +116,15 @@ public class DurationFilterDataDto implements FilterDataDto {
 
   @Override
   public String toString() {
-    return "DurationFilterDataDto(value=" + getValue() + ", unit=" + getUnit()
-        + ", operator=" + getOperator() + ", includeNull=" + isIncludeNull() + ")";
+    return "DurationFilterDataDto(value="
+        + getValue()
+        + ", unit="
+        + getUnit()
+        + ", operator="
+        + getOperator()
+        + ", includeNull="
+        + isIncludeNull()
+        + ")";
   }
 
   public static DurationFilterDataDtoBuilder builder() {
@@ -130,8 +138,7 @@ public class DurationFilterDataDto implements FilterDataDto {
     private ComparisonOperator operator;
     private boolean includeNull;
 
-    DurationFilterDataDtoBuilder() {
-    }
+    DurationFilterDataDtoBuilder() {}
 
     public DurationFilterDataDtoBuilder value(final Long value) {
       this.value = value;
@@ -159,8 +166,15 @@ public class DurationFilterDataDto implements FilterDataDto {
 
     @Override
     public String toString() {
-      return "DurationFilterDataDto.DurationFilterDataDtoBuilder(value=" + value + ", unit="
-          + unit + ", operator=" + operator + ", includeNull=" + includeNull + ")";
+      return "DurationFilterDataDto.DurationFilterDataDtoBuilder(value="
+          + value
+          + ", unit="
+          + unit
+          + ", operator="
+          + operator
+          + ", includeNull="
+          + includeNull
+          + ")";
     }
   }
 }

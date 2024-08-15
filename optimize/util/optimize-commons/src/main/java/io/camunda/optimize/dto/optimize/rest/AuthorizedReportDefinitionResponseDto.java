@@ -14,8 +14,7 @@ import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 
 public class AuthorizedReportDefinitionResponseDto extends AuthorizedEntityDto {
 
-  @JsonUnwrapped
-  private ReportDefinitionDto definitionDto;
+  @JsonUnwrapped private ReportDefinitionDto definitionDto;
 
   public AuthorizedReportDefinitionResponseDto(
       final ReportDefinitionDto definitionDto, final RoleType currentUserRole) {
@@ -23,8 +22,7 @@ public class AuthorizedReportDefinitionResponseDto extends AuthorizedEntityDto {
     this.definitionDto = definitionDto;
   }
 
-  protected AuthorizedReportDefinitionResponseDto() {
-  }
+  protected AuthorizedReportDefinitionResponseDto() {}
 
   public ReportDefinitionDto getDefinitionDto() {
     return definitionDto;
@@ -66,7 +64,8 @@ public class AuthorizedReportDefinitionResponseDto extends AuthorizedEntityDto {
     }
     final Object this$definitionDto = getDefinitionDto();
     final Object other$definitionDto = other.getDefinitionDto();
-    if (this$definitionDto == null ? other$definitionDto != null
+    if (this$definitionDto == null
+        ? other$definitionDto != null
         : !this$definitionDto.equals(other$definitionDto)) {
       return false;
     }

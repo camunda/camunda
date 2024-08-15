@@ -17,7 +17,10 @@ public class BackupInfoDto {
   private BackupState state;
   private List<SnapshotInfoDto> details;
 
-  public BackupInfoDto(final long backupId, final String failureReason, final BackupState state,
+  public BackupInfoDto(
+      final long backupId,
+      final String failureReason,
+      final BackupState state,
       final List<SnapshotInfoDto> details) {
     this.backupId = backupId;
     this.failureReason = failureReason;
@@ -25,8 +28,7 @@ public class BackupInfoDto {
     this.details = details;
   }
 
-  public BackupInfoDto() {
-  }
+  public BackupInfoDto() {}
 
   public long getBackupId() {
     return backupId;
@@ -96,7 +98,8 @@ public class BackupInfoDto {
     }
     final Object this$failureReason = getFailureReason();
     final Object other$failureReason = other.getFailureReason();
-    if (this$failureReason == null ? other$failureReason != null
+    if (this$failureReason == null
+        ? other$failureReason != null
         : !this$failureReason.equals(other$failureReason)) {
       return false;
     }
@@ -115,8 +118,14 @@ public class BackupInfoDto {
 
   @Override
   public String toString() {
-    return "BackupInfoDto(backupId=" + getBackupId() + ", failureReason="
-        + getFailureReason() + ", state=" + getState() + ", details=" + getDetails()
+    return "BackupInfoDto(backupId="
+        + getBackupId()
+        + ", failureReason="
+        + getFailureReason()
+        + ", state="
+        + getState()
+        + ", details="
+        + getDetails()
         + ")";
   }
 }

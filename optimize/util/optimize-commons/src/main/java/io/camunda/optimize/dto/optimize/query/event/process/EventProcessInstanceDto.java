@@ -18,8 +18,7 @@ public class EventProcessInstanceDto extends ProcessInstanceDto {
   private List<FlowNodeInstanceUpdateDto> pendingFlowNodeInstanceUpdates = new ArrayList<>();
   private Map<String, EventCorrelationStateDto> correlatedEventsById = new HashMap<>();
 
-  protected EventProcessInstanceDto() {
-  }
+  protected EventProcessInstanceDto() {}
 
   protected EventProcessInstanceDto(final EventProcessInstanceDtoBuilder<?, ?> b) {
     super(b);
@@ -63,8 +62,11 @@ public class EventProcessInstanceDto extends ProcessInstanceDto {
     final int PRIME = 59;
     int result = super.hashCode();
     final Object $pendingFlowNodeInstanceUpdates = getPendingFlowNodeInstanceUpdates();
-    result = result * PRIME + ($pendingFlowNodeInstanceUpdates == null ? 43
-        : $pendingFlowNodeInstanceUpdates.hashCode());
+    result =
+        result * PRIME
+            + ($pendingFlowNodeInstanceUpdates == null
+                ? 43
+                : $pendingFlowNodeInstanceUpdates.hashCode());
     final Object $correlatedEventsById = getCorrelatedEventsById();
     result =
         result * PRIME + ($correlatedEventsById == null ? 43 : $correlatedEventsById.hashCode());
@@ -88,13 +90,15 @@ public class EventProcessInstanceDto extends ProcessInstanceDto {
     }
     final Object this$pendingFlowNodeInstanceUpdates = getPendingFlowNodeInstanceUpdates();
     final Object other$pendingFlowNodeInstanceUpdates = other.getPendingFlowNodeInstanceUpdates();
-    if (this$pendingFlowNodeInstanceUpdates == null ? other$pendingFlowNodeInstanceUpdates != null
+    if (this$pendingFlowNodeInstanceUpdates == null
+        ? other$pendingFlowNodeInstanceUpdates != null
         : !this$pendingFlowNodeInstanceUpdates.equals(other$pendingFlowNodeInstanceUpdates)) {
       return false;
     }
     final Object this$correlatedEventsById = getCorrelatedEventsById();
     final Object other$correlatedEventsById = other.getCorrelatedEventsById();
-    if (this$correlatedEventsById == null ? other$correlatedEventsById != null
+    if (this$correlatedEventsById == null
+        ? other$correlatedEventsById != null
         : !this$correlatedEventsById.equals(other$correlatedEventsById)) {
       return false;
     }
@@ -104,8 +108,10 @@ public class EventProcessInstanceDto extends ProcessInstanceDto {
   @Override
   public String toString() {
     return "EventProcessInstanceDto(pendingFlowNodeInstanceUpdates="
-        + getPendingFlowNodeInstanceUpdates() + ", correlatedEventsById="
-        + getCorrelatedEventsById() + ")";
+        + getPendingFlowNodeInstanceUpdates()
+        + ", correlatedEventsById="
+        + getCorrelatedEventsById()
+        + ")";
   }
 
   private static List<FlowNodeInstanceUpdateDto> $default$pendingFlowNodeInstanceUpdates() {
@@ -126,8 +132,9 @@ public class EventProcessInstanceDto extends ProcessInstanceDto {
     public static final String correlatedEventsById = "correlatedEventsById";
   }
 
-  public static abstract class EventProcessInstanceDtoBuilder<C extends EventProcessInstanceDto, B extends EventProcessInstanceDtoBuilder<C, B>> extends
-      ProcessInstanceDtoBuilder<C, B> {
+  public abstract static class EventProcessInstanceDtoBuilder<
+          C extends EventProcessInstanceDto, B extends EventProcessInstanceDtoBuilder<C, B>>
+      extends ProcessInstanceDtoBuilder<C, B> {
 
     private List<FlowNodeInstanceUpdateDto> pendingFlowNodeInstanceUpdates$value;
     private boolean pendingFlowNodeInstanceUpdates$set;
@@ -156,17 +163,21 @@ public class EventProcessInstanceDto extends ProcessInstanceDto {
 
     @Override
     public String toString() {
-      return "EventProcessInstanceDto.EventProcessInstanceDtoBuilder(super=" + super.toString()
-          + ", pendingFlowNodeInstanceUpdates$value=" + pendingFlowNodeInstanceUpdates$value
-          + ", correlatedEventsById$value=" + correlatedEventsById$value + ")";
+      return "EventProcessInstanceDto.EventProcessInstanceDtoBuilder(super="
+          + super.toString()
+          + ", pendingFlowNodeInstanceUpdates$value="
+          + pendingFlowNodeInstanceUpdates$value
+          + ", correlatedEventsById$value="
+          + correlatedEventsById$value
+          + ")";
     }
   }
 
-  private static final class EventProcessInstanceDtoBuilderImpl extends
-      EventProcessInstanceDtoBuilder<EventProcessInstanceDto, EventProcessInstanceDtoBuilderImpl> {
+  private static final class EventProcessInstanceDtoBuilderImpl
+      extends EventProcessInstanceDtoBuilder<
+          EventProcessInstanceDto, EventProcessInstanceDtoBuilderImpl> {
 
-    private EventProcessInstanceDtoBuilderImpl() {
-    }
+    private EventProcessInstanceDtoBuilderImpl() {}
 
     @Override
     protected EventProcessInstanceDtoBuilderImpl self() {

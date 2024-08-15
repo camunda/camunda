@@ -21,17 +21,16 @@ public abstract class SingleReportDataDto implements ReportDataDto {
 
   private SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
 
-  @Valid
-  private List<ReportDataDefinitionDto> definitions = new ArrayList<>();
+  @Valid private List<ReportDataDefinitionDto> definitions = new ArrayList<>();
 
-  public SingleReportDataDto(final SingleReportConfigurationDto configuration,
+  public SingleReportDataDto(
+      final SingleReportConfigurationDto configuration,
       @Valid final List<ReportDataDefinitionDto> definitions) {
     this.configuration = configuration;
     this.definitions = definitions;
   }
 
-  protected SingleReportDataDto() {
-  }
+  protected SingleReportDataDto() {}
 
   protected SingleReportDataDto(final SingleReportDataDtoBuilder<?, ?> b) {
     if (b.configuration$set) {
@@ -123,7 +122,8 @@ public abstract class SingleReportDataDto implements ReportDataDto {
     public static final String definitions = "definitions";
   }
 
-  public static abstract class SingleReportDataDtoBuilder<C extends SingleReportDataDto, B extends SingleReportDataDtoBuilder<C, B>> {
+  public abstract static class SingleReportDataDtoBuilder<
+      C extends SingleReportDataDto, B extends SingleReportDataDtoBuilder<C, B>> {
 
     private SingleReportConfigurationDto configuration$value;
     private boolean configuration$set;
@@ -149,7 +149,10 @@ public abstract class SingleReportDataDto implements ReportDataDto {
     @Override
     public String toString() {
       return "SingleReportDataDto.SingleReportDataDtoBuilder(configuration$value="
-          + configuration$value + ", definitions$value=" + definitions$value + ")";
+          + configuration$value
+          + ", definitions$value="
+          + definitions$value
+          + ")";
     }
   }
 }

@@ -17,8 +17,7 @@ public class CloudUserDto {
   private String email;
   private List<String> roles;
 
-  public CloudUserDto() {
-  }
+  public CloudUserDto() {}
 
   public List<Supplier<String>> getSearchableDtoFields() {
     return List.of(this::getUserId, this::getName, this::getEmail);
@@ -112,7 +111,14 @@ public class CloudUserDto {
 
   @Override
   public String toString() {
-    return "CloudUserDto(userId=" + getUserId() + ", name=" + getName() + ", email="
-        + getEmail() + ", roles=" + getRoles() + ")";
+    return "CloudUserDto(userId="
+        + getUserId()
+        + ", name="
+        + getName()
+        + ", email="
+        + getEmail()
+        + ", roles="
+        + getRoles()
+        + ")";
   }
 }

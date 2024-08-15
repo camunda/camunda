@@ -21,8 +21,7 @@ public class IdentityDto {
     this.type = type;
   }
 
-  protected IdentityDto() {
-  }
+  protected IdentityDto() {}
 
   public String getId() {
     return id;

@@ -61,8 +61,7 @@ public class EventCountSorter extends Sorter<EventCountResponseDto> {
     sortRequestDto = new SortRequestDto(sortBy, sortOrder);
   }
 
-  public EventCountSorter() {
-  }
+  public EventCountSorter() {}
 
   @Override
   public List<EventCountResponseDto> applySort(final List<EventCountResponseDto> eventCounts) {

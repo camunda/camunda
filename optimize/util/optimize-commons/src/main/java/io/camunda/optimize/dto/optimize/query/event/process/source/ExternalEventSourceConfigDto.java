@@ -12,8 +12,7 @@ public class ExternalEventSourceConfigDto extends EventSourceConfigDto {
   private String group;
   private boolean includeAllGroups;
 
-  public ExternalEventSourceConfigDto() {
-  }
+  public ExternalEventSourceConfigDto() {}
 
   protected ExternalEventSourceConfigDto(final ExternalEventSourceConfigDtoBuilder<?, ?> b) {
     super(b);
@@ -80,8 +79,10 @@ public class ExternalEventSourceConfigDto extends EventSourceConfigDto {
     public static final String includeAllGroups = "includeAllGroups";
   }
 
-  public static abstract class ExternalEventSourceConfigDtoBuilder<C extends ExternalEventSourceConfigDto, B extends ExternalEventSourceConfigDtoBuilder<C, B>> extends
-      EventSourceConfigDtoBuilder<C, B> {
+  public abstract static class ExternalEventSourceConfigDtoBuilder<
+          C extends ExternalEventSourceConfigDto,
+          B extends ExternalEventSourceConfigDtoBuilder<C, B>>
+      extends EventSourceConfigDtoBuilder<C, B> {
 
     private String group;
     private boolean includeAllGroups;
@@ -105,16 +106,20 @@ public class ExternalEventSourceConfigDto extends EventSourceConfigDto {
     @Override
     public String toString() {
       return "ExternalEventSourceConfigDto.ExternalEventSourceConfigDtoBuilder(super="
-          + super.toString() + ", group=" + group + ", includeAllGroups="
-          + includeAllGroups + ")";
+          + super.toString()
+          + ", group="
+          + group
+          + ", includeAllGroups="
+          + includeAllGroups
+          + ")";
     }
   }
 
-  private static final class ExternalEventSourceConfigDtoBuilderImpl extends
-      ExternalEventSourceConfigDtoBuilder<ExternalEventSourceConfigDto, ExternalEventSourceConfigDtoBuilderImpl> {
+  private static final class ExternalEventSourceConfigDtoBuilderImpl
+      extends ExternalEventSourceConfigDtoBuilder<
+          ExternalEventSourceConfigDto, ExternalEventSourceConfigDtoBuilderImpl> {
 
-    private ExternalEventSourceConfigDtoBuilderImpl() {
-    }
+    private ExternalEventSourceConfigDtoBuilderImpl() {}
 
     @Override
     protected ExternalEventSourceConfigDtoBuilderImpl self() {

@@ -16,8 +16,7 @@ public class CorrelationValueDto {
   private String businessKey;
   private List<SimpleProcessVariableDto> variables = new ArrayList<>();
 
-  public CorrelationValueDto() {
-  }
+  public CorrelationValueDto() {}
 
   public String getBusinessKey() {
     return businessKey;
@@ -64,13 +63,15 @@ public class CorrelationValueDto {
     }
     final Object this$businessKey = getBusinessKey();
     final Object other$businessKey = other.getBusinessKey();
-    if (this$businessKey == null ? other$businessKey != null
+    if (this$businessKey == null
+        ? other$businessKey != null
         : !this$businessKey.equals(other$businessKey)) {
       return false;
     }
     final Object this$variables = getVariables();
     final Object other$variables = other.getVariables();
-    if (this$variables == null ? other$variables != null
+    if (this$variables == null
+        ? other$variables != null
         : !this$variables.equals(other$variables)) {
       return false;
     }
@@ -79,7 +80,10 @@ public class CorrelationValueDto {
 
   @Override
   public String toString() {
-    return "CorrelationValueDto(businessKey=" + getBusinessKey() + ", variables="
-        + getVariables() + ")";
+    return "CorrelationValueDto(businessKey="
+        + getBusinessKey()
+        + ", variables="
+        + getVariables()
+        + ")";
   }
 }

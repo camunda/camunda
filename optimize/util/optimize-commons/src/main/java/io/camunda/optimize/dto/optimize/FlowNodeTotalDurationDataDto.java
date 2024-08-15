@@ -17,8 +17,7 @@ public class FlowNodeTotalDurationDataDto {
     this.value = value;
   }
 
-  public FlowNodeTotalDurationDataDto() {
-  }
+  public FlowNodeTotalDurationDataDto() {}
 
   public String getName() {
     return name;
@@ -76,7 +75,6 @@ public class FlowNodeTotalDurationDataDto {
 
   @Override
   public String toString() {
-    return "FlowNodeTotalDurationDataDto(name=" + getName() + ", value=" + getValue()
-        + ")";
+    return "FlowNodeTotalDurationDataDto(name=" + getName() + ", value=" + getValue() + ")";
   }
 }

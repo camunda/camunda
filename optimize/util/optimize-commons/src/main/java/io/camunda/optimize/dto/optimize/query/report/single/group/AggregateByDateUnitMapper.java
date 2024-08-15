@@ -14,8 +14,7 @@ public class AggregateByDateUnitMapper {
 
   private static final String UNSUPPORTED_UNIT_STRING = "Unsupported unit: ";
 
-  private AggregateByDateUnitMapper() {
-  }
+  private AggregateByDateUnitMapper() {}
 
   public static ChronoUnit mapToChronoUnit(final AggregateByDateUnit unit) {
     switch (unit) {

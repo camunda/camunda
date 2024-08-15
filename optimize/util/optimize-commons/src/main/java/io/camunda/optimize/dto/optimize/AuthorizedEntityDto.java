@@ -16,8 +16,7 @@ public class AuthorizedEntityDto {
     this.currentUserRole = currentUserRole;
   }
 
-  protected AuthorizedEntityDto() {
-  }
+  protected AuthorizedEntityDto() {}
 
   public RoleType getCurrentUserRole() {
     return currentUserRole;
@@ -54,7 +53,8 @@ public class AuthorizedEntityDto {
     }
     final Object this$currentUserRole = getCurrentUserRole();
     final Object other$currentUserRole = other.getCurrentUserRole();
-    if (this$currentUserRole == null ? other$currentUserRole != null
+    if (this$currentUserRole == null
+        ? other$currentUserRole != null
         : !this$currentUserRole.equals(other$currentUserRole)) {
       return false;
     }

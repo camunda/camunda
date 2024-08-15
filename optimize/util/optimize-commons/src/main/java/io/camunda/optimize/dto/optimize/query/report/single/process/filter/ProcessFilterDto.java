@@ -21,62 +21,59 @@ import java.util.List;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = InstanceStartDateFilterDto.class, name = "instanceStartDate"),
-    @JsonSubTypes.Type(value = FlowNodeStartDateFilterDto.class, name = "flowNodeStartDate"),
-    @JsonSubTypes.Type(value = FlowNodeEndDateFilterDto.class, name = "flowNodeEndDate"),
-    @JsonSubTypes.Type(value = InstanceEndDateFilterDto.class, name = "instanceEndDate"),
-    @JsonSubTypes.Type(value = DurationFilterDto.class, name = "processInstanceDuration"),
-    @JsonSubTypes.Type(value = VariableFilterDto.class, name = "variable"),
-    @JsonSubTypes.Type(value = MultipleVariableFilterDto.class, name = "multipleVariable"),
-    @JsonSubTypes.Type(value = ExecutedFlowNodeFilterDto.class, name = "executedFlowNodes"),
-    @JsonSubTypes.Type(value = ExecutingFlowNodeFilterDto.class, name = "executingFlowNodes"),
-    @JsonSubTypes.Type(value = CanceledFlowNodeFilterDto.class, name = "canceledFlowNodes"),
-    @JsonSubTypes.Type(value = RunningInstancesOnlyFilterDto.class, name = "runningInstancesOnly"),
-    @JsonSubTypes.Type(
-        value = CompletedInstancesOnlyFilterDto.class,
-        name = "completedInstancesOnly"),
-    @JsonSubTypes.Type(value = CanceledInstancesOnlyFilterDto.class, name = "canceledInstancesOnly"),
-    @JsonSubTypes.Type(
-        value = NonCanceledInstancesOnlyFilterDto.class,
-        name = "nonCanceledInstancesOnly"),
-    @JsonSubTypes.Type(
-        value = SuspendedInstancesOnlyFilterDto.class,
-        name = "suspendedInstancesOnly"),
-    @JsonSubTypes.Type(
-        value = NonSuspendedInstancesOnlyFilterDto.class,
-        name = "nonSuspendedInstancesOnly"),
-    @JsonSubTypes.Type(value = FlowNodeDurationFilterDto.class, name = "flowNodeDuration"),
-    @JsonSubTypes.Type(value = AssigneeFilterDto.class, name = "assignee"),
-    @JsonSubTypes.Type(value = CandidateGroupFilterDto.class, name = "candidateGroup"),
-    @JsonSubTypes.Type(value = OpenIncidentFilterDto.class, name = "includesOpenIncident"),
-    @JsonSubTypes.Type(value = DeletedIncidentFilterDto.class, name = "includesClosedIncident"),
-    @JsonSubTypes.Type(value = ResolvedIncidentFilterDto.class, name = "includesResolvedIncident"),
-    @JsonSubTypes.Type(value = NoIncidentFilterDto.class, name = "doesNotIncludeIncident"),
-    @JsonSubTypes.Type(value = RunningFlowNodesOnlyFilterDto.class, name = "runningFlowNodesOnly"),
-    @JsonSubTypes.Type(
-        value = CompletedFlowNodesOnlyFilterDto.class,
-        name = "completedFlowNodesOnly"),
-    @JsonSubTypes.Type(value = CanceledFlowNodesOnlyFilterDto.class, name = "canceledFlowNodesOnly"),
-    @JsonSubTypes.Type(
-        value = CompletedOrCanceledFlowNodesOnlyFilterDto.class,
-        name = "completedOrCanceledFlowNodesOnly")
+  @JsonSubTypes.Type(value = InstanceStartDateFilterDto.class, name = "instanceStartDate"),
+  @JsonSubTypes.Type(value = FlowNodeStartDateFilterDto.class, name = "flowNodeStartDate"),
+  @JsonSubTypes.Type(value = FlowNodeEndDateFilterDto.class, name = "flowNodeEndDate"),
+  @JsonSubTypes.Type(value = InstanceEndDateFilterDto.class, name = "instanceEndDate"),
+  @JsonSubTypes.Type(value = DurationFilterDto.class, name = "processInstanceDuration"),
+  @JsonSubTypes.Type(value = VariableFilterDto.class, name = "variable"),
+  @JsonSubTypes.Type(value = MultipleVariableFilterDto.class, name = "multipleVariable"),
+  @JsonSubTypes.Type(value = ExecutedFlowNodeFilterDto.class, name = "executedFlowNodes"),
+  @JsonSubTypes.Type(value = ExecutingFlowNodeFilterDto.class, name = "executingFlowNodes"),
+  @JsonSubTypes.Type(value = CanceledFlowNodeFilterDto.class, name = "canceledFlowNodes"),
+  @JsonSubTypes.Type(value = RunningInstancesOnlyFilterDto.class, name = "runningInstancesOnly"),
+  @JsonSubTypes.Type(
+      value = CompletedInstancesOnlyFilterDto.class,
+      name = "completedInstancesOnly"),
+  @JsonSubTypes.Type(value = CanceledInstancesOnlyFilterDto.class, name = "canceledInstancesOnly"),
+  @JsonSubTypes.Type(
+      value = NonCanceledInstancesOnlyFilterDto.class,
+      name = "nonCanceledInstancesOnly"),
+  @JsonSubTypes.Type(
+      value = SuspendedInstancesOnlyFilterDto.class,
+      name = "suspendedInstancesOnly"),
+  @JsonSubTypes.Type(
+      value = NonSuspendedInstancesOnlyFilterDto.class,
+      name = "nonSuspendedInstancesOnly"),
+  @JsonSubTypes.Type(value = FlowNodeDurationFilterDto.class, name = "flowNodeDuration"),
+  @JsonSubTypes.Type(value = AssigneeFilterDto.class, name = "assignee"),
+  @JsonSubTypes.Type(value = CandidateGroupFilterDto.class, name = "candidateGroup"),
+  @JsonSubTypes.Type(value = OpenIncidentFilterDto.class, name = "includesOpenIncident"),
+  @JsonSubTypes.Type(value = DeletedIncidentFilterDto.class, name = "includesClosedIncident"),
+  @JsonSubTypes.Type(value = ResolvedIncidentFilterDto.class, name = "includesResolvedIncident"),
+  @JsonSubTypes.Type(value = NoIncidentFilterDto.class, name = "doesNotIncludeIncident"),
+  @JsonSubTypes.Type(value = RunningFlowNodesOnlyFilterDto.class, name = "runningFlowNodesOnly"),
+  @JsonSubTypes.Type(
+      value = CompletedFlowNodesOnlyFilterDto.class,
+      name = "completedFlowNodesOnly"),
+  @JsonSubTypes.Type(value = CanceledFlowNodesOnlyFilterDto.class, name = "canceledFlowNodesOnly"),
+  @JsonSubTypes.Type(
+      value = CompletedOrCanceledFlowNodesOnlyFilterDto.class,
+      name = "completedOrCanceledFlowNodesOnly")
 })
 public abstract class ProcessFilterDto<DATA extends FilterDataDto> {
 
   protected DATA data;
-  @NotNull
-  protected FilterApplicationLevel filterLevel;
+  @NotNull protected FilterApplicationLevel filterLevel;
 
-  @NotEmpty
-  protected List<String> appliedTo = List.of(ReportConstants.APPLIED_TO_ALL_DEFINITIONS);
+  @NotEmpty protected List<String> appliedTo = List.of(ReportConstants.APPLIED_TO_ALL_DEFINITIONS);
 
   protected ProcessFilterDto(final DATA data, final FilterApplicationLevel filterLevel) {
     this.data = data;
     setFilterLevel(filterLevel);
   }
 
-  public ProcessFilterDto() {
-  }
+  public ProcessFilterDto() {}
 
   public abstract List<FilterApplicationLevel> validApplicationLevels();
 
@@ -140,13 +137,15 @@ public abstract class ProcessFilterDto<DATA extends FilterDataDto> {
     }
     final Object this$filterLevel = getFilterLevel();
     final Object other$filterLevel = other.getFilterLevel();
-    if (this$filterLevel == null ? other$filterLevel != null
+    if (this$filterLevel == null
+        ? other$filterLevel != null
         : !this$filterLevel.equals(other$filterLevel)) {
       return false;
     }
     final Object this$appliedTo = getAppliedTo();
     final Object other$appliedTo = other.getAppliedTo();
-    if (this$appliedTo == null ? other$appliedTo != null
+    if (this$appliedTo == null
+        ? other$appliedTo != null
         : !this$appliedTo.equals(other$appliedTo)) {
       return false;
     }

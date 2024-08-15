@@ -23,8 +23,7 @@ public class EventProcessRoleRequestDto<T extends IdentityDto> {
     this.identity = identity;
   }
 
-  protected EventProcessRoleRequestDto() {
-  }
+  protected EventProcessRoleRequestDto() {}
 
   public String getId() {
     return Optional.ofNullable(id).orElse(convertIdentityToRoleId(identity));
@@ -90,8 +89,7 @@ public class EventProcessRoleRequestDto<T extends IdentityDto> {
 
   @Override
   public String toString() {
-    return "EventProcessRoleRequestDto(id=" + getId() + ", identity=" + getIdentity()
-        + ")";
+    return "EventProcessRoleRequestDto(id=" + getId() + ", identity=" + getIdentity() + ")";
   }
 
   public static final class Fields {

@@ -15,8 +15,7 @@ import io.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRes
 
 public class AuthorizedCollectionDefinitionRestDto extends AuthorizedEntityDto {
 
-  @JsonUnwrapped
-  private CollectionDefinitionRestDto definitionDto;
+  @JsonUnwrapped private CollectionDefinitionRestDto definitionDto;
 
   public AuthorizedCollectionDefinitionRestDto(
       final RoleType currentUserRole, final CollectionDefinitionRestDto definitionDto) {
@@ -24,8 +23,7 @@ public class AuthorizedCollectionDefinitionRestDto extends AuthorizedEntityDto {
     this.definitionDto = definitionDto;
   }
 
-  protected AuthorizedCollectionDefinitionRestDto() {
-  }
+  protected AuthorizedCollectionDefinitionRestDto() {}
 
   public static AuthorizedCollectionDefinitionRestDto from(
       final AuthorizedCollectionDefinitionDto authorizedCollectionDto) {
@@ -86,7 +84,8 @@ public class AuthorizedCollectionDefinitionRestDto extends AuthorizedEntityDto {
     }
     final Object this$definitionDto = getDefinitionDto();
     final Object other$definitionDto = other.getDefinitionDto();
-    if (this$definitionDto == null ? other$definitionDto != null
+    if (this$definitionDto == null
+        ? other$definitionDto != null
         : !this$definitionDto.equals(other$definitionDto)) {
       return false;
     }

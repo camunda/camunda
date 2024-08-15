@@ -22,8 +22,7 @@ public class EventProcessMappingDto implements OptimizeDto {
 
   private String id;
 
-  @NotBlank
-  private String name;
+  @NotBlank private String name;
 
   private String lastModifier;
   private OffsetDateTime lastModified;
@@ -40,12 +39,17 @@ public class EventProcessMappingDto implements OptimizeDto {
   private Double publishingProgress;
   private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
 
-  public EventProcessMappingDto(final String id, @NotBlank final String name,
+  public EventProcessMappingDto(
+      final String id,
+      @NotBlank final String name,
       final String lastModifier,
-      final OffsetDateTime lastModified, final String xml,
+      final OffsetDateTime lastModified,
+      final String xml,
       @Valid final Map<String, EventMappingDto> mappings,
-      final List<EventProcessRoleRequestDto<IdentityDto>> roles, final EventProcessState state,
-      final Double publishingProgress, final List<EventSourceEntryDto<?>> eventSources) {
+      final List<EventProcessRoleRequestDto<IdentityDto>> roles,
+      final EventProcessState state,
+      final Double publishingProgress,
+      final List<EventSourceEntryDto<?>> eventSources) {
     this.id = id;
     this.name = name;
     this.lastModifier = lastModifier;
@@ -58,8 +62,7 @@ public class EventProcessMappingDto implements OptimizeDto {
     this.eventSources = eventSources;
   }
 
-  public EventProcessMappingDto() {
-  }
+  public EventProcessMappingDto() {}
 
   public String getId() {
     return id;
@@ -176,11 +179,27 @@ public class EventProcessMappingDto implements OptimizeDto {
 
   @Override
   public String toString() {
-    return "EventProcessMappingDto(id=" + getId() + ", name=" + getName()
-        + ", lastModifier=" + getLastModifier() + ", lastModified=" + getLastModified()
-        + ", xml=" + getXml() + ", mappings=" + getMappings() + ", roles="
-        + getRoles() + ", state=" + getState() + ", publishingProgress="
-        + getPublishingProgress() + ", eventSources=" + getEventSources() + ")";
+    return "EventProcessMappingDto(id="
+        + getId()
+        + ", name="
+        + getName()
+        + ", lastModifier="
+        + getLastModifier()
+        + ", lastModified="
+        + getLastModified()
+        + ", xml="
+        + getXml()
+        + ", mappings="
+        + getMappings()
+        + ", roles="
+        + getRoles()
+        + ", state="
+        + getState()
+        + ", publishingProgress="
+        + getPublishingProgress()
+        + ", eventSources="
+        + getEventSources()
+        + ")";
   }
 
   private static List<EventSourceEntryDto<?>> $default$eventSources() {
@@ -219,8 +238,7 @@ public class EventProcessMappingDto implements OptimizeDto {
     private List<EventSourceEntryDto<?>> eventSources$value;
     private boolean eventSources$set;
 
-    EventProcessMappingDtoBuilder() {
-    }
+    EventProcessMappingDtoBuilder() {}
 
     public EventProcessMappingDtoBuilder id(final String id) {
       this.id = id;
@@ -281,18 +299,42 @@ public class EventProcessMappingDto implements OptimizeDto {
       if (!eventSources$set) {
         eventSources$value = EventProcessMappingDto.$default$eventSources();
       }
-      return new EventProcessMappingDto(id, name, lastModifier, lastModified,
-          xml, mappings, roles, state, publishingProgress,
+      return new EventProcessMappingDto(
+          id,
+          name,
+          lastModifier,
+          lastModified,
+          xml,
+          mappings,
+          roles,
+          state,
+          publishingProgress,
           eventSources$value);
     }
 
     @Override
     public String toString() {
-      return "EventProcessMappingDto.EventProcessMappingDtoBuilder(id=" + id + ", name="
-          + name + ", lastModifier=" + lastModifier + ", lastModified="
-          + lastModified + ", xml=" + xml + ", mappings=" + mappings + ", roles="
-          + roles + ", state=" + state + ", publishingProgress=" + publishingProgress
-          + ", eventSources$value=" + eventSources$value + ")";
+      return "EventProcessMappingDto.EventProcessMappingDtoBuilder(id="
+          + id
+          + ", name="
+          + name
+          + ", lastModifier="
+          + lastModifier
+          + ", lastModified="
+          + lastModified
+          + ", xml="
+          + xml
+          + ", mappings="
+          + mappings
+          + ", roles="
+          + roles
+          + ", state="
+          + state
+          + ", publishingProgress="
+          + publishingProgress
+          + ", eventSources$value="
+          + eventSources$value
+          + ")";
     }
   }
 }

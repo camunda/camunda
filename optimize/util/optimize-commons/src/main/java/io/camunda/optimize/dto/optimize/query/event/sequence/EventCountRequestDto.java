@@ -22,6 +22,7 @@ public class EventCountRequestDto {
 
   @Size(min = 1)
   private String xml;
+
   private Map<String, EventMappingDto> mappings = new HashMap<>();
   private List<EventSourceEntryDto<?>> eventSources = new ArrayList<>();
 
@@ -44,8 +45,7 @@ public class EventCountRequestDto {
     this.eventSources = eventSources;
   }
 
-  protected EventCountRequestDto() {
-  }
+  protected EventCountRequestDto() {}
 
   public @Size(min = 1) String getTargetFlowNodeId() {
     return targetFlowNodeId;
@@ -124,7 +124,8 @@ public class EventCountRequestDto {
     }
     final Object this$targetFlowNodeId = getTargetFlowNodeId();
     final Object other$targetFlowNodeId = other.getTargetFlowNodeId();
-    if (this$targetFlowNodeId == null ? other$targetFlowNodeId != null
+    if (this$targetFlowNodeId == null
+        ? other$targetFlowNodeId != null
         : !this$targetFlowNodeId.equals(other$targetFlowNodeId)) {
       return false;
     }
@@ -140,7 +141,8 @@ public class EventCountRequestDto {
     }
     final Object this$eventSources = getEventSources();
     final Object other$eventSources = other.getEventSources();
-    if (this$eventSources == null ? other$eventSources != null
+    if (this$eventSources == null
+        ? other$eventSources != null
         : !this$eventSources.equals(other$eventSources)) {
       return false;
     }
@@ -149,9 +151,15 @@ public class EventCountRequestDto {
 
   @Override
   public String toString() {
-    return "EventCountRequestDto(targetFlowNodeId=" + getTargetFlowNodeId() + ", xml="
-        + getXml() + ", mappings=" + getMappings() + ", eventSources="
-        + getEventSources() + ")";
+    return "EventCountRequestDto(targetFlowNodeId="
+        + getTargetFlowNodeId()
+        + ", xml="
+        + getXml()
+        + ", mappings="
+        + getMappings()
+        + ", eventSources="
+        + getEventSources()
+        + ")";
   }
 
   private static Map<String, EventMappingDto> $default$mappings() {
@@ -175,8 +183,7 @@ public class EventCountRequestDto {
     private List<EventSourceEntryDto<?>> eventSources$value;
     private boolean eventSources$set;
 
-    EventCountRequestDtoBuilder() {
-    }
+    EventCountRequestDtoBuilder() {}
 
     public EventCountRequestDtoBuilder targetFlowNodeId(
         @Size(min = 1) final String targetFlowNodeId) {
@@ -219,15 +226,20 @@ public class EventCountRequestDto {
       if (!eventSources$set) {
         eventSources$value = EventCountRequestDto.$default$eventSources();
       }
-      return new EventCountRequestDto(targetFlowNodeId, xml, mappings$value,
-          eventSources$value);
+      return new EventCountRequestDto(targetFlowNodeId, xml, mappings$value, eventSources$value);
     }
 
     @Override
     public String toString() {
       return "EventCountRequestDto.EventCountRequestDtoBuilder(targetFlowNodeId="
-          + targetFlowNodeId + ", xml=" + xml + ", mappings$value=" + mappings$value
-          + ", eventSources$value=" + eventSources$value + ")";
+          + targetFlowNodeId
+          + ", xml="
+          + xml
+          + ", mappings$value="
+          + mappings$value
+          + ", eventSources$value="
+          + eventSources$value
+          + ")";
     }
   }
 }

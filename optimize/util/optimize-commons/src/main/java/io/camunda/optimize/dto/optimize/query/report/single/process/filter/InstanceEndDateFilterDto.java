@@ -13,8 +13,7 @@ import java.util.List;
 
 public class InstanceEndDateFilterDto extends ProcessFilterDto<DateFilterDataDto<?>> {
 
-  public InstanceEndDateFilterDto() {
-  }
+  public InstanceEndDateFilterDto() {}
 
   @Override
   public List<FilterApplicationLevel> validApplicationLevels() {

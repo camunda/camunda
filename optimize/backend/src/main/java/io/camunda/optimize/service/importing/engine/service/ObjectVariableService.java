@@ -125,12 +125,12 @@ public class ObjectVariableService {
     if (jsonObject instanceof ArrayList && !((ArrayList<?>) jsonObject).isEmpty()) {
       return ((ArrayList<Object>) jsonObject)
           .stream()
-          .filter(Objects::nonNull)
-          .findFirst()
-          .map(
-              item ->
-                  item instanceof String || item instanceof Number || item instanceof Boolean)
-          .orElse(true);
+              .filter(Objects::nonNull)
+              .findFirst()
+              .map(
+                  item ->
+                      item instanceof String || item instanceof Number || item instanceof Boolean)
+              .orElse(true);
     }
     return jsonObject instanceof String
         || jsonObject instanceof Number
@@ -142,8 +142,8 @@ public class ObjectVariableService {
     try {
       new JsonFlattener(new JacksonJsonCore(objectMapper), variable.getValue())
           .withFlattenMode(FlattenMode.KEEP_ARRAYS).flattenAsMap().entrySet().stream()
-          .map(e -> mapToFlattenedVariable(e.getKey(), e.getValue(), variable))
-          .forEach(resultList::addAll);
+              .map(e -> mapToFlattenedVariable(e.getKey(), e.getValue(), variable))
+              .forEach(resultList::addAll);
     } catch (final Exception exception) {
       log.error(
           "Error while flattening json object variable with name '{}'.",
@@ -196,7 +196,8 @@ public class ObjectVariableService {
       final Object value,
       final ProcessVariableUpdateDto origin,
       final List<ProcessVariableDto> resultList) {
-    @SuppressWarnings(UNCHECKED_CAST) final ArrayList<Object> originList = (ArrayList<Object>) value;
+    @SuppressWarnings(UNCHECKED_CAST)
+    final ArrayList<Object> originList = (ArrayList<Object>) value;
     if (originList.isEmpty()) {
       return;
     }

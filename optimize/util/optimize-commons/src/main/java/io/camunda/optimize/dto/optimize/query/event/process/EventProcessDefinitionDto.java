@@ -27,8 +27,19 @@ public class EventProcessDefinitionDto extends ProcessDefinitionOptimizeDto {
       final boolean onboarded,
       final List<FlowNodeDataDto> flowNodeData,
       final Map<String, String> userTaskNames) {
-    super(id, key, version, versionTag, name, new EventsDataSourceDto(), tenantId, bpmn20Xml,
-        deleted, onboarded, flowNodeData, userTaskNames);
+    super(
+        id,
+        key,
+        version,
+        versionTag,
+        name,
+        new EventsDataSourceDto(),
+        tenantId,
+        bpmn20Xml,
+        deleted,
+        onboarded,
+        flowNodeData,
+        userTaskNames);
     if (id == null) {
       throw new IllegalArgumentException("id cannot be null");
     }
@@ -58,8 +69,7 @@ public class EventProcessDefinitionDto extends ProcessDefinitionOptimizeDto {
     }
   }
 
-  public EventProcessDefinitionDto() {
-  }
+  public EventProcessDefinitionDto() {}
 
   @Override
   public String toString() {
@@ -113,8 +123,7 @@ public class EventProcessDefinitionDto extends ProcessDefinitionOptimizeDto {
     private List<FlowNodeDataDto> flowNodeData;
     private Map<String, String> userTaskNames;
 
-    EventProcessDefinitionDtoBuilder() {
-    }
+    EventProcessDefinitionDtoBuilder() {}
 
     public EventProcessDefinitionDtoBuilder id(final String id) {
       if (id == null) {
@@ -200,18 +209,45 @@ public class EventProcessDefinitionDto extends ProcessDefinitionOptimizeDto {
     }
 
     public EventProcessDefinitionDto build() {
-      return new EventProcessDefinitionDto(id, key, version, versionTag,
-          name, tenantId, bpmn20Xml, deleted, onboarded, flowNodeData,
+      return new EventProcessDefinitionDto(
+          id,
+          key,
+          version,
+          versionTag,
+          name,
+          tenantId,
+          bpmn20Xml,
+          deleted,
+          onboarded,
+          flowNodeData,
           userTaskNames);
     }
 
     @Override
     public String toString() {
-      return "EventProcessDefinitionDto.EventProcessDefinitionDtoBuilder(id=" + id + ", key="
-          + key + ", version=" + version + ", versionTag=" + versionTag + ", name="
-          + name + ", tenantId=" + tenantId + ", bpmn20Xml=" + bpmn20Xml
-          + ", deleted=" + deleted + ", onboarded=" + onboarded + ", flowNodeData="
-          + flowNodeData + ", userTaskNames=" + userTaskNames + ")";
+      return "EventProcessDefinitionDto.EventProcessDefinitionDtoBuilder(id="
+          + id
+          + ", key="
+          + key
+          + ", version="
+          + version
+          + ", versionTag="
+          + versionTag
+          + ", name="
+          + name
+          + ", tenantId="
+          + tenantId
+          + ", bpmn20Xml="
+          + bpmn20Xml
+          + ", deleted="
+          + deleted
+          + ", onboarded="
+          + onboarded
+          + ", flowNodeData="
+          + flowNodeData
+          + ", userTaskNames="
+          + userTaskNames
+          + ")";
     }
   }
 }

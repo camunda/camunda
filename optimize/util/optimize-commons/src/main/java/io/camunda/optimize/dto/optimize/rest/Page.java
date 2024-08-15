@@ -19,7 +19,11 @@ public class Page<T> {
   private SortOrder sortOrder;
   private List<T> results;
 
-  public Page(final Integer offset, final Integer limit, final Long total, final String sortBy,
+  public Page(
+      final Integer offset,
+      final Integer limit,
+      final Long total,
+      final String sortBy,
       final SortOrder sortOrder,
       final List<T> results) {
     this.offset = offset;
@@ -30,8 +34,7 @@ public class Page<T> {
     this.results = results;
   }
 
-  public Page() {
-  }
+  public Page() {}
 
   public Integer getOffset() {
     return offset;
@@ -138,7 +141,8 @@ public class Page<T> {
     }
     final Object this$sortOrder = getSortOrder();
     final Object other$sortOrder = other.getSortOrder();
-    if (this$sortOrder == null ? other$sortOrder != null
+    if (this$sortOrder == null
+        ? other$sortOrder != null
         : !this$sortOrder.equals(other$sortOrder)) {
       return false;
     }
@@ -152,8 +156,18 @@ public class Page<T> {
 
   @Override
   public String toString() {
-    return "Page(offset=" + getOffset() + ", limit=" + getLimit() + ", total="
-        + getTotal() + ", sortBy=" + getSortBy() + ", sortOrder=" + getSortOrder()
-        + ", results=" + getResults() + ")";
+    return "Page(offset="
+        + getOffset()
+        + ", limit="
+        + getLimit()
+        + ", total="
+        + getTotal()
+        + ", sortBy="
+        + getSortBy()
+        + ", sortOrder="
+        + getSortOrder()
+        + ", results="
+        + getResults()
+        + ")";
   }
 }

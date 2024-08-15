@@ -20,8 +20,7 @@ public class MetadataDto implements OptimizeDto, Serializable {
     this.installationId = installationId;
   }
 
-  protected MetadataDto() {
-  }
+  protected MetadataDto() {}
 
   public String getSchemaVersion() {
     return schemaVersion;
@@ -68,13 +67,15 @@ public class MetadataDto implements OptimizeDto, Serializable {
     }
     final Object this$schemaVersion = getSchemaVersion();
     final Object other$schemaVersion = other.getSchemaVersion();
-    if (this$schemaVersion == null ? other$schemaVersion != null
+    if (this$schemaVersion == null
+        ? other$schemaVersion != null
         : !this$schemaVersion.equals(other$schemaVersion)) {
       return false;
     }
     final Object this$installationId = getInstallationId();
     final Object other$installationId = other.getInstallationId();
-    if (this$installationId == null ? other$installationId != null
+    if (this$installationId == null
+        ? other$installationId != null
         : !this$installationId.equals(other$installationId)) {
       return false;
     }
@@ -83,8 +84,11 @@ public class MetadataDto implements OptimizeDto, Serializable {
 
   @Override
   public String toString() {
-    return "MetadataDto(schemaVersion=" + getSchemaVersion() + ", installationId="
-        + getInstallationId() + ")";
+    return "MetadataDto(schemaVersion="
+        + getSchemaVersion()
+        + ", installationId="
+        + getInstallationId()
+        + ")";
   }
 
   public enum Fields {

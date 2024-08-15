@@ -30,8 +30,7 @@ public class GroupDto extends IdentityWithMetadataResponseDto {
     this.memberCount = memberCount;
   }
 
-  protected GroupDto() {
-  }
+  protected GroupDto() {}
 
   public Long getMemberCount() {
     return memberCount;

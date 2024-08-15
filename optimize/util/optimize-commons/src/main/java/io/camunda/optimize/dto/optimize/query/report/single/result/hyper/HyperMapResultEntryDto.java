@@ -28,9 +28,7 @@ public class HyperMapResultEntryDto {
   }
 
   public HyperMapResultEntryDto(
-      final String key,
-      final List<MapResultEntryDto> value,
-      final String label) {
+      final String key, final List<MapResultEntryDto> value, final String label) {
     if (key == null) {
       throw new IllegalArgumentException("key cannot be null");
     }
@@ -40,8 +38,7 @@ public class HyperMapResultEntryDto {
     this.label = label;
   }
 
-  protected HyperMapResultEntryDto() {
-  }
+  protected HyperMapResultEntryDto() {}
 
   public String getLabel() {
     return label != null && !label.isEmpty() ? label : key;
@@ -100,8 +97,7 @@ public class HyperMapResultEntryDto {
 
   @Override
   public String toString() {
-    return "HyperMapResultEntryDto(key=" + key + ", value=" + value + ", label="
-        + getLabel() + ")";
+    return "HyperMapResultEntryDto(key=" + key + ", value=" + value + ", label=" + getLabel() + ")";
   }
 
   public String getKey() {

@@ -11,22 +11,24 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.util.Arrays;
 import java.util.List;
+import lombok.Builder;
+import lombok.experimental.SuperBuilder;
 
+@SuperBuilder // TODO: Not sure how to delombok this
 @JsonTypeInfo(use = JsonTypeInfo.Id.DEDUCTION)
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = CamundaEventSourceConfigDto.class),
-    @JsonSubTypes.Type(value = ExternalEventSourceConfigDto.class)
+  @JsonSubTypes.Type(value = CamundaEventSourceConfigDto.class),
+  @JsonSubTypes.Type(value = ExternalEventSourceConfigDto.class)
 })
 public abstract class EventSourceConfigDto {
 
-  protected List<EventScopeType> eventScope = Arrays.asList(EventScopeType.ALL);
+  @Builder.Default protected List<EventScopeType> eventScope = Arrays.asList(EventScopeType.ALL);
 
   public EventSourceConfigDto(final List<EventScopeType> eventScope) {
     this.eventScope = eventScope;
   }
 
-  public EventSourceConfigDto() {
-  }
+  public EventSourceConfigDto() {}
 
   public List<EventScopeType> getEventScope() {
     return eventScope;
@@ -63,7 +65,8 @@ public abstract class EventSourceConfigDto {
     }
     final Object this$eventScope = getEventScope();
     final Object other$eventScope = other.getEventScope();
-    if (this$eventScope == null ? other$eventScope != null
+    if (this$eventScope == null
+        ? other$eventScope != null
         : !this$eventScope.equals(other$eventScope)) {
       return false;
     }
@@ -75,34 +78,8 @@ public abstract class EventSourceConfigDto {
     return "EventSourceConfigDto(eventScope=" + getEventScope() + ")";
   }
 
-  private static List<EventScopeType> $default$eventScope() {
-    return Arrays.asList(EventScopeType.ALL);
-  }
-
   public static final class Fields {
 
     public static final String eventScope = "eventScope";
-  }
-
-  public static abstract class EventSourceConfigDtoBuilder<C extends EventSourceConfigDto, B extends EventSourceConfigDtoBuilder<C, B>> {
-
-    private List<EventScopeType> eventScope$value;
-    private boolean eventScope$set;
-
-    public B eventScope(final List<EventScopeType> eventScope) {
-      eventScope$value = eventScope;
-      eventScope$set = true;
-      return self();
-    }
-
-    protected abstract B self();
-
-    public abstract C build();
-
-    @Override
-    public String toString() {
-      return "EventSourceConfigDto.EventSourceConfigDtoBuilder(eventScope$value="
-          + eventScope$value + ")";
-    }
   }
 }

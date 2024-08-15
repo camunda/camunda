@@ -41,8 +41,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   private static final String COMMAND_KEY_SEPARATOR = "_";
   private static final String MISSING_COMMAND_PART_PLACEHOLDER = "null";
 
-  @Valid
-  protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
+  @Valid protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
   protected ProcessViewDto view;
   protected ProcessGroupByDto<?> groupBy;
 
@@ -55,8 +54,10 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   public ProcessReportDataDto(
       @Valid final List<ProcessFilterDto<?>> filter,
       final ProcessViewDto view,
-      final ProcessGroupByDto<?> groupBy, final ProcessReportDistributedByDto<?> distributedBy,
-      final ProcessVisualization visualization, final boolean managementReport,
+      final ProcessGroupByDto<?> groupBy,
+      final ProcessReportDistributedByDto<?> distributedBy,
+      final ProcessVisualization visualization,
+      final boolean managementReport,
       final boolean instantPreviewReport) {
     this.filter = filter;
     this.view = view;
@@ -67,8 +68,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     this.instantPreviewReport = instantPreviewReport;
   }
 
-  public ProcessReportDataDto() {
-  }
+  public ProcessReportDataDto() {}
 
   protected ProcessReportDataDto(final ProcessReportDataDtoBuilder<?, ?> b) {
     super(b);
@@ -245,10 +245,10 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
 
   private boolean isBucketSizeCombinable(final ProcessReportDataDto that) {
     return getConfiguration().getCustomBucket().isActive()
-        && that.getConfiguration().getCustomBucket().isActive()
-        && Objects.equals(
-        getConfiguration().getCustomBucket().getBucketSize(),
-        that.getConfiguration().getCustomBucket().getBucketSize())
+            && that.getConfiguration().getCustomBucket().isActive()
+            && Objects.equals(
+                getConfiguration().getCustomBucket().getBucketSize(),
+                that.getConfiguration().getCustomBucket().getBucketSize())
         || isBucketSizeIrrelevant(this) && isBucketSizeIrrelevant(that);
   }
 
@@ -276,16 +276,16 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   private boolean isGroupByNumberReport() {
     return groupBy != null
         && (ProcessGroupByType.VARIABLE.equals(groupBy.getType())
-        && (VariableType.getNumericTypes()
-        .contains(((VariableGroupByDto) groupBy).getValue().getType()))
-        || ProcessGroupByType.DURATION.equals(groupBy.getType()));
+                && (VariableType.getNumericTypes()
+                    .contains(((VariableGroupByDto) groupBy).getValue().getType()))
+            || ProcessGroupByType.DURATION.equals(groupBy.getType()));
   }
 
   private boolean isModelElementCommand() {
     return nonNull(view)
         && nonNull(view.getEntity())
         && (ProcessViewEntity.USER_TASK.equals(view.getEntity())
-        || ProcessViewEntity.FLOW_NODE.equals(view.getEntity()));
+            || ProcessViewEntity.FLOW_NODE.equals(view.getEntity()));
   }
 
   private boolean isInstanceCommand() {
@@ -402,13 +402,15 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     }
     final Object this$distributedBy = getDistributedBy();
     final Object other$distributedBy = other.getDistributedBy();
-    if (this$distributedBy == null ? other$distributedBy != null
+    if (this$distributedBy == null
+        ? other$distributedBy != null
         : !this$distributedBy.equals(other$distributedBy)) {
       return false;
     }
     final Object this$visualization = getVisualization();
     final Object other$visualization = other.getVisualization();
-    if (this$visualization == null ? other$visualization != null
+    if (this$visualization == null
+        ? other$visualization != null
         : !this$visualization.equals(other$visualization)) {
       return false;
     }
@@ -423,10 +425,20 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
 
   @Override
   public String toString() {
-    return "ProcessReportDataDto(filter=" + getFilter() + ", view=" + getView()
-        + ", groupBy=" + getGroupBy() + ", distributedBy=" + getDistributedBy()
-        + ", visualization=" + getVisualization() + ", managementReport="
-        + isManagementReport() + ", instantPreviewReport=" + isInstantPreviewReport()
+    return "ProcessReportDataDto(filter="
+        + getFilter()
+        + ", view="
+        + getView()
+        + ", groupBy="
+        + getGroupBy()
+        + ", distributedBy="
+        + getDistributedBy()
+        + ", visualization="
+        + getVisualization()
+        + ", managementReport="
+        + isManagementReport()
+        + ", instantPreviewReport="
+        + isInstantPreviewReport()
         + ")";
   }
 
@@ -462,8 +474,9 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     public static final String instantPreviewReport = "instantPreviewReport";
   }
 
-  public static abstract class ProcessReportDataDtoBuilder<C extends ProcessReportDataDto, B extends ProcessReportDataDtoBuilder<C, B>> extends
-      SingleReportDataDtoBuilder<C, B> {
+  public abstract static class ProcessReportDataDtoBuilder<
+          C extends ProcessReportDataDto, B extends ProcessReportDataDtoBuilder<C, B>>
+      extends SingleReportDataDtoBuilder<C, B> {
 
     private @Valid List<ProcessFilterDto<?>> filter$value;
     private boolean filter$set;
@@ -524,21 +537,31 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
 
     @Override
     public String toString() {
-      return "ProcessReportDataDto.ProcessReportDataDtoBuilder(super=" + super.toString()
-          + ", filter$value=" + filter$value + ", view=" + view + ", groupBy="
-          + groupBy + ", distributedBy$value=" + distributedBy$value + ", visualization="
-          + visualization + ", managementReport$value=" + managementReport$value
-          + ", instantPreviewReport$value=" + instantPreviewReport$value + ")";
+      return "ProcessReportDataDto.ProcessReportDataDtoBuilder(super="
+          + super.toString()
+          + ", filter$value="
+          + filter$value
+          + ", view="
+          + view
+          + ", groupBy="
+          + groupBy
+          + ", distributedBy$value="
+          + distributedBy$value
+          + ", visualization="
+          + visualization
+          + ", managementReport$value="
+          + managementReport$value
+          + ", instantPreviewReport$value="
+          + instantPreviewReport$value
+          + ")";
     }
   }
 
-  private static final class ProcessReportDataDtoBuilderImpl extends
-      ProcessReportDataDtoBuilder<ProcessReportDataDto, ProcessReportDataDtoBuilderImpl> {
+  private static final class ProcessReportDataDtoBuilderImpl
+      extends ProcessReportDataDtoBuilder<ProcessReportDataDto, ProcessReportDataDtoBuilderImpl> {
 
-    private ProcessReportDataDtoBuilderImpl() {
-    }
+    private ProcessReportDataDtoBuilderImpl() {}
 
-    @Override
     @Override
     protected ProcessReportDataDtoBuilderImpl self() {
       return this;

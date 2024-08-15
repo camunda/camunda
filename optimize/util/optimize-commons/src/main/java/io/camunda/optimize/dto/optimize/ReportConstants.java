@@ -173,6 +173,5 @@ public class ReportConstants {
 
   public static final String API_IMPORT_OWNER_NAME = "System User";
 
-  private ReportConstants() {
-  }
+  private ReportConstants() {}
 }

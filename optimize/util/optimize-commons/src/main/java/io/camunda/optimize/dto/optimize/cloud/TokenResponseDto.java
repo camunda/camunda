@@ -23,8 +23,7 @@ public class TokenResponseDto {
   @JsonProperty("scope")
   private String scope;
 
-  public TokenResponseDto() {
-  }
+  public TokenResponseDto() {}
 
   public String getAccessToken() {
     return accessToken;
@@ -95,13 +94,15 @@ public class TokenResponseDto {
     }
     final Object this$accessToken = getAccessToken();
     final Object other$accessToken = other.getAccessToken();
-    if (this$accessToken == null ? other$accessToken != null
+    if (this$accessToken == null
+        ? other$accessToken != null
         : !this$accessToken.equals(other$accessToken)) {
       return false;
     }
     final Object this$tokenType = getTokenType();
     final Object other$tokenType = other.getTokenType();
-    if (this$tokenType == null ? other$tokenType != null
+    if (this$tokenType == null
+        ? other$tokenType != null
         : !this$tokenType.equals(other$tokenType)) {
       return false;
     }
@@ -118,8 +119,14 @@ public class TokenResponseDto {
 
   @Override
   public String toString() {
-    return "TokenResponseDto(accessToken=" + getAccessToken() + ", tokenType="
-        + getTokenType() + ", expiresIn=" + getExpiresIn() + ", scope=" + getScope()
+    return "TokenResponseDto(accessToken="
+        + getAccessToken()
+        + ", tokenType="
+        + getTokenType()
+        + ", expiresIn="
+        + getExpiresIn()
+        + ", scope="
+        + getScope()
         + ")";
   }
 }

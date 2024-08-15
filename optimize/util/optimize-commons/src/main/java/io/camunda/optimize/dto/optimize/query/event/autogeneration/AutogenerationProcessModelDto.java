@@ -15,14 +15,13 @@ public class AutogenerationProcessModelDto {
   private String xml;
   private Map<String, EventMappingDto> mappings;
 
-  public AutogenerationProcessModelDto(final String xml,
-      final Map<String, EventMappingDto> mappings) {
+  public AutogenerationProcessModelDto(
+      final String xml, final Map<String, EventMappingDto> mappings) {
     this.xml = xml;
     this.mappings = mappings;
   }
 
-  public AutogenerationProcessModelDto() {
-  }
+  public AutogenerationProcessModelDto() {}
 
   public String getXml() {
     return xml;
@@ -41,8 +40,7 @@ public class AutogenerationProcessModelDto {
     private String xml;
     private Map<String, EventMappingDto> mappings;
 
-    AutogenerationProcessModelDtoBuilder() {
-    }
+    AutogenerationProcessModelDtoBuilder() {}
 
     public AutogenerationProcessModelDtoBuilder xml(final String xml) {
       this.xml = xml;
@@ -61,8 +59,11 @@ public class AutogenerationProcessModelDto {
 
     @Override
     public String toString() {
-      return "AutogenerationProcessModelDto.AutogenerationProcessModelDtoBuilder(xml=" + xml
-          + ", mappings=" + mappings + ")";
+      return "AutogenerationProcessModelDto.AutogenerationProcessModelDtoBuilder(xml="
+          + xml
+          + ", mappings="
+          + mappings
+          + ")";
     }
   }
 }

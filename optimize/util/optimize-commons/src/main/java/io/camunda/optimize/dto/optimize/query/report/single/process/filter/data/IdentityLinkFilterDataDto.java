@@ -17,14 +17,12 @@ public class IdentityLinkFilterDataDto implements FilterDataDto {
   protected List<String> values;
 
   public IdentityLinkFilterDataDto(
-      final MembershipFilterOperator operator,
-      final List<String> values) {
+      final MembershipFilterOperator operator, final List<String> values) {
     this.operator = operator;
     this.values = values;
   }
 
-  protected IdentityLinkFilterDataDto() {
-  }
+  protected IdentityLinkFilterDataDto() {}
 
   public MembershipFilterOperator getOperator() {
     return operator;
@@ -84,7 +82,6 @@ public class IdentityLinkFilterDataDto implements FilterDataDto {
 
   @Override
   public String toString() {
-    return "IdentityLinkFilterDataDto(operator=" + getOperator() + ", values="
-        + getValues() + ")";
+    return "IdentityLinkFilterDataDto(operator=" + getOperator() + ", values=" + getValues() + ")";
   }
 }

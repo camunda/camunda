@@ -17,6 +17,5 @@ public class EventProcessRoleResponseDto
     super(identity);
   }
 
-  protected EventProcessRoleResponseDto() {
-  }
+  protected EventProcessRoleResponseDto() {}
 }

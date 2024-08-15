@@ -20,9 +20,13 @@ public class PaginatedDataExportDto {
   private String reportId;
   private Object data;
 
-  public PaginatedDataExportDto(final String searchRequestId, final String message,
-      final Integer numberOfRecordsInResponse, final long totalNumberOfRecords,
-      final String reportId, final Object data) {
+  public PaginatedDataExportDto(
+      final String searchRequestId,
+      final String message,
+      final Integer numberOfRecordsInResponse,
+      final long totalNumberOfRecords,
+      final String reportId,
+      final Object data) {
     this.searchRequestId = searchRequestId;
     this.message = message;
     this.numberOfRecordsInResponse = numberOfRecordsInResponse;
@@ -31,8 +35,7 @@ public class PaginatedDataExportDto {
     this.data = data;
   }
 
-  public PaginatedDataExportDto() {
-  }
+  public PaginatedDataExportDto() {}
 
   public String getSearchRequestId() {
     return searchRequestId;
@@ -102,8 +105,9 @@ public class PaginatedDataExportDto {
     final Object $message = getMessage();
     result = result * PRIME + ($message == null ? 43 : $message.hashCode());
     final Object $numberOfRecordsInResponse = getNumberOfRecordsInResponse();
-    result = result * PRIME + ($numberOfRecordsInResponse == null ? 43
-        : $numberOfRecordsInResponse.hashCode());
+    result =
+        result * PRIME
+            + ($numberOfRecordsInResponse == null ? 43 : $numberOfRecordsInResponse.hashCode());
     final long $totalNumberOfRecords = getTotalNumberOfRecords();
     result = result * PRIME + (int) ($totalNumberOfRecords >>> 32 ^ $totalNumberOfRecords);
     final Object $reportId = getReportId();
@@ -127,7 +131,8 @@ public class PaginatedDataExportDto {
     }
     final Object this$searchRequestId = getSearchRequestId();
     final Object other$searchRequestId = other.getSearchRequestId();
-    if (this$searchRequestId == null ? other$searchRequestId != null
+    if (this$searchRequestId == null
+        ? other$searchRequestId != null
         : !this$searchRequestId.equals(other$searchRequestId)) {
       return false;
     }
@@ -138,7 +143,8 @@ public class PaginatedDataExportDto {
     }
     final Object this$numberOfRecordsInResponse = getNumberOfRecordsInResponse();
     final Object other$numberOfRecordsInResponse = other.getNumberOfRecordsInResponse();
-    if (this$numberOfRecordsInResponse == null ? other$numberOfRecordsInResponse != null
+    if (this$numberOfRecordsInResponse == null
+        ? other$numberOfRecordsInResponse != null
         : !this$numberOfRecordsInResponse.equals(other$numberOfRecordsInResponse)) {
       return false;
     }
@@ -160,9 +166,18 @@ public class PaginatedDataExportDto {
 
   @Override
   public String toString() {
-    return "PaginatedDataExportDto(searchRequestId=" + getSearchRequestId() + ", message="
-        + getMessage() + ", numberOfRecordsInResponse=" + getNumberOfRecordsInResponse()
-        + ", totalNumberOfRecords=" + getTotalNumberOfRecords() + ", reportId="
-        + getReportId() + ", data=" + getData() + ")";
+    return "PaginatedDataExportDto(searchRequestId="
+        + getSearchRequestId()
+        + ", message="
+        + getMessage()
+        + ", numberOfRecordsInResponse="
+        + getNumberOfRecordsInResponse()
+        + ", totalNumberOfRecords="
+        + getTotalNumberOfRecords()
+        + ", reportId="
+        + getReportId()
+        + ", data="
+        + getData()
+        + ")";
   }
 }

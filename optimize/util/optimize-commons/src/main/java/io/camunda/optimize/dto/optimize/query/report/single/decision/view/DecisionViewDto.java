@@ -26,8 +26,7 @@ public class DecisionViewDto {
     this.properties = properties;
   }
 
-  public DecisionViewDto() {
-  }
+  public DecisionViewDto() {}
 
   @JsonIgnore
   public String createCommandKey() {
@@ -74,7 +73,8 @@ public class DecisionViewDto {
     }
     final Object this$properties = getProperties();
     final Object other$properties = other.getProperties();
-    if (this$properties == null ? other$properties != null
+    if (this$properties == null
+        ? other$properties != null
         : !this$properties.equals(other$properties)) {
       return false;
     }

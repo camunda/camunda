@@ -16,16 +16,15 @@ import java.util.List;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = EvaluationDateFilterDto.class, name = "evaluationDateTime"),
-    @JsonSubTypes.Type(value = InputVariableFilterDto.class, name = "inputVariable"),
-    @JsonSubTypes.Type(value = OutputVariableFilterDto.class, name = "outputVariable"),
+  @JsonSubTypes.Type(value = EvaluationDateFilterDto.class, name = "evaluationDateTime"),
+  @JsonSubTypes.Type(value = InputVariableFilterDto.class, name = "inputVariable"),
+  @JsonSubTypes.Type(value = OutputVariableFilterDto.class, name = "outputVariable"),
 })
 public abstract class DecisionFilterDto<DATA extends FilterDataDto> {
 
   protected DATA data;
 
-  @NotEmpty
-  protected List<String> appliedTo = List.of(ReportConstants.APPLIED_TO_ALL_DEFINITIONS);
+  @NotEmpty protected List<String> appliedTo = List.of(ReportConstants.APPLIED_TO_ALL_DEFINITIONS);
 
   protected DecisionFilterDto(final DATA data) {
     this.data = data;
@@ -36,8 +35,7 @@ public abstract class DecisionFilterDto<DATA extends FilterDataDto> {
     this.appliedTo = appliedTo;
   }
 
-  public DecisionFilterDto() {
-  }
+  public DecisionFilterDto() {}
 
   public DATA getData() {
     return data;
@@ -89,7 +87,8 @@ public abstract class DecisionFilterDto<DATA extends FilterDataDto> {
     }
     final Object this$appliedTo = getAppliedTo();
     final Object other$appliedTo = other.getAppliedTo();
-    if (this$appliedTo == null ? other$appliedTo != null
+    if (this$appliedTo == null
+        ? other$appliedTo != null
         : !this$appliedTo.equals(other$appliedTo)) {
       return false;
     }

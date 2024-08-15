@@ -17,15 +17,14 @@ public class DbEventMappingDto implements OptimizeDto {
   EventTypeDto start;
   EventTypeDto end;
 
-  public DbEventMappingDto(final String flowNodeId, final EventTypeDto start,
-      final EventTypeDto end) {
+  public DbEventMappingDto(
+      final String flowNodeId, final EventTypeDto start, final EventTypeDto end) {
     this.flowNodeId = flowNodeId;
     this.start = start;
     this.end = end;
   }
 
-  public DbEventMappingDto() {
-  }
+  public DbEventMappingDto() {}
 
   public static DbEventMappingDto fromEventMappingDto(
       final String flowNodeId, final EventMappingDto eventMappingDto) {
@@ -91,7 +90,8 @@ public class DbEventMappingDto implements OptimizeDto {
     }
     final Object this$flowNodeId = getFlowNodeId();
     final Object other$flowNodeId = other.getFlowNodeId();
-    if (this$flowNodeId == null ? other$flowNodeId != null
+    if (this$flowNodeId == null
+        ? other$flowNodeId != null
         : !this$flowNodeId.equals(other$flowNodeId)) {
       return false;
     }
@@ -125,8 +125,7 @@ public class DbEventMappingDto implements OptimizeDto {
     private EventTypeDto start;
     private EventTypeDto end;
 
-    DbEventMappingDtoBuilder() {
-    }
+    DbEventMappingDtoBuilder() {}
 
     public DbEventMappingDtoBuilder flowNodeId(final String flowNodeId) {
       this.flowNodeId = flowNodeId;
@@ -149,8 +148,13 @@ public class DbEventMappingDto implements OptimizeDto {
 
     @Override
     public String toString() {
-      return "DbEventMappingDto.DbEventMappingDtoBuilder(flowNodeId=" + flowNodeId + ", start="
-          + start + ", end=" + end + ")";
+      return "DbEventMappingDto.DbEventMappingDtoBuilder(flowNodeId="
+          + flowNodeId
+          + ", start="
+          + start
+          + ", end="
+          + end
+          + ")";
     }
   }
 }

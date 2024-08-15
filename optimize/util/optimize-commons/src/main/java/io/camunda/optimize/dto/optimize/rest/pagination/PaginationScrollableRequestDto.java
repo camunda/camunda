@@ -34,15 +34,16 @@ public class PaginationScrollableRequestDto {
   @DefaultValue("120")
   protected Integer scrollTimeout;
 
-  public PaginationScrollableRequestDto(@Min(0) @Max(MAX_RESPONSE_SIZE_LIMIT) final Integer limit,
-      final String scrollId, @Min(60) final Integer scrollTimeout) {
+  public PaginationScrollableRequestDto(
+      @Min(0) @Max(MAX_RESPONSE_SIZE_LIMIT) final Integer limit,
+      final String scrollId,
+      @Min(60) final Integer scrollTimeout) {
     this.limit = limit;
     this.scrollId = scrollId;
     this.scrollTimeout = scrollTimeout;
   }
 
-  public PaginationScrollableRequestDto() {
-  }
+  public PaginationScrollableRequestDto() {}
 
   public @Min(0) @Max(MAX_RESPONSE_SIZE_LIMIT) Integer getLimit() {
     return limit;
@@ -109,7 +110,8 @@ public class PaginationScrollableRequestDto {
     }
     final Object this$scrollTimeout = getScrollTimeout();
     final Object other$scrollTimeout = other.getScrollTimeout();
-    if (this$scrollTimeout == null ? other$scrollTimeout != null
+    if (this$scrollTimeout == null
+        ? other$scrollTimeout != null
         : !this$scrollTimeout.equals(other$scrollTimeout)) {
       return false;
     }
@@ -118,7 +120,12 @@ public class PaginationScrollableRequestDto {
 
   @Override
   public String toString() {
-    return "PaginationScrollableRequestDto(limit=" + getLimit() + ", scrollId="
-        + getScrollId() + ", scrollTimeout=" + getScrollTimeout() + ")";
+    return "PaginationScrollableRequestDto(limit="
+        + getLimit()
+        + ", scrollId="
+        + getScrollId()
+        + ", scrollTimeout="
+        + getScrollTimeout()
+        + ")";
   }
 }

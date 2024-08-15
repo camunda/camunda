@@ -37,8 +37,7 @@ public class EventProcessMappingCreateRequestDto extends EventProcessMappingRequ
     this.autogenerate = autogenerate;
   }
 
-  public EventProcessMappingCreateRequestDto() {
-  }
+  public EventProcessMappingCreateRequestDto() {}
 
   public static EventProcessMappingDto to(
       final String userId, final EventProcessMappingCreateRequestDto createRequestDto) {
@@ -113,8 +112,7 @@ public class EventProcessMappingCreateRequestDto extends EventProcessMappingRequ
     private List<EventSourceEntryDto<?>> eventSources;
     private boolean autogenerate;
 
-    EventProcessMappingCreateRequestDtoBuilder() {
-    }
+    EventProcessMappingCreateRequestDtoBuilder() {}
 
     public EventProcessMappingCreateRequestDtoBuilder name(final String name) {
       this.name = name;
@@ -144,15 +142,23 @@ public class EventProcessMappingCreateRequestDto extends EventProcessMappingRequ
     }
 
     public EventProcessMappingCreateRequestDto build() {
-      return new EventProcessMappingCreateRequestDto(name, xml, mappings,
-          eventSources, autogenerate);
+      return new EventProcessMappingCreateRequestDto(
+          name, xml, mappings, eventSources, autogenerate);
     }
 
     @Override
     public String toString() {
       return "EventProcessMappingCreateRequestDto.EventProcessMappingCreateRequestDtoBuilder(name="
-          + name + ", xml=" + xml + ", mappings=" + mappings + ", eventSources="
-          + eventSources + ", autogenerate=" + autogenerate + ")";
+          + name
+          + ", xml="
+          + xml
+          + ", mappings="
+          + mappings
+          + ", eventSources="
+          + eventSources
+          + ", autogenerate="
+          + autogenerate
+          + ")";
     }
   }
 }

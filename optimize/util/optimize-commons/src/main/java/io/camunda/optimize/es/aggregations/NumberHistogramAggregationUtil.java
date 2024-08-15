@@ -15,8 +15,7 @@ import org.elasticsearch.search.aggregations.bucket.histogram.HistogramAggregati
 
 public class NumberHistogramAggregationUtil {
 
-  private NumberHistogramAggregationUtil() {
-  }
+  private NumberHistogramAggregationUtil() {}
 
   public static HistogramAggregationBuilder generateHistogramWithField(
       final String histogramName,

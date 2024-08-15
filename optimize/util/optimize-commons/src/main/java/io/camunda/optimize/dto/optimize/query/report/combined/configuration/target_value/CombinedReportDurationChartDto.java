@@ -9,22 +9,26 @@ package io.camunda.optimize.dto.optimize.query.report.combined.configuration.tar
 
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import java.util.Objects;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
 
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-@ToString
 public class CombinedReportDurationChartDto {
 
   private TargetValueUnit unit = TargetValueUnit.HOURS;
   private Boolean isBelow = false;
   private String value = "2";
+
+  public CombinedReportDurationChartDto(
+      final TargetValueUnit unit, final Boolean isBelow, final String value) {
+    this.unit = unit;
+    this.isBelow = isBelow;
+    this.value = value;
+  }
+
+  public CombinedReportDurationChartDto() {}
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(unit, isBelow, value);
+  }
 
   @Override
   public boolean equals(final Object o) {
@@ -40,7 +44,37 @@ public class CombinedReportDurationChartDto {
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(unit, isBelow, value);
+  public String toString() {
+    return "CombinedReportDurationChartDto(unit="
+        + getUnit()
+        + ", isBelow="
+        + getIsBelow()
+        + ", value="
+        + getValue()
+        + ")";
+  }
+
+  public TargetValueUnit getUnit() {
+    return unit;
+  }
+
+  public void setUnit(final TargetValueUnit unit) {
+    this.unit = unit;
+  }
+
+  public Boolean getIsBelow() {
+    return isBelow;
+  }
+
+  public void setIsBelow(final Boolean isBelow) {
+    this.isBelow = isBelow;
+  }
+
+  public String getValue() {
+    return value;
+  }
+
+  public void setValue(final String value) {
+    this.value = value;
   }
 }

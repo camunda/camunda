@@ -20,8 +20,7 @@ public class EventTraceStateDto implements OptimizeDto {
     this.eventTrace = eventTrace;
   }
 
-  public EventTraceStateDto() {
-  }
+  public EventTraceStateDto() {}
 
   public String getTraceId() {
     return traceId;
@@ -73,7 +72,8 @@ public class EventTraceStateDto implements OptimizeDto {
     }
     final Object this$eventTrace = getEventTrace();
     final Object other$eventTrace = other.getEventTrace();
-    if (this$eventTrace == null ? other$eventTrace != null
+    if (this$eventTrace == null
+        ? other$eventTrace != null
         : !this$eventTrace.equals(other$eventTrace)) {
       return false;
     }
@@ -82,8 +82,7 @@ public class EventTraceStateDto implements OptimizeDto {
 
   @Override
   public String toString() {
-    return "EventTraceStateDto(traceId=" + getTraceId() + ", eventTrace="
-        + getEventTrace() + ")";
+    return "EventTraceStateDto(traceId=" + getTraceId() + ", eventTrace=" + getEventTrace() + ")";
   }
 
   public static EventTraceStateDtoBuilder builder() {
@@ -101,8 +100,7 @@ public class EventTraceStateDto implements OptimizeDto {
     private String traceId;
     private List<TracedEventDto> eventTrace;
 
-    EventTraceStateDtoBuilder() {
-    }
+    EventTraceStateDtoBuilder() {}
 
     public EventTraceStateDtoBuilder traceId(final String traceId) {
       this.traceId = traceId;
@@ -120,8 +118,11 @@ public class EventTraceStateDto implements OptimizeDto {
 
     @Override
     public String toString() {
-      return "EventTraceStateDto.EventTraceStateDtoBuilder(traceId=" + traceId
-          + ", eventTrace=" + eventTrace + ")";
+      return "EventTraceStateDto.EventTraceStateDtoBuilder(traceId="
+          + traceId
+          + ", eventTrace="
+          + eventTrace
+          + ")";
     }
   }
 }

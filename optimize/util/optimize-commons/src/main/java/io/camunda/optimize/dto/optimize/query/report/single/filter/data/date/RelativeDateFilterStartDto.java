@@ -17,8 +17,7 @@ public class RelativeDateFilterStartDto {
     this.unit = unit;
   }
 
-  public RelativeDateFilterStartDto() {
-  }
+  public RelativeDateFilterStartDto() {}
 
   public Long getValue() {
     return value;

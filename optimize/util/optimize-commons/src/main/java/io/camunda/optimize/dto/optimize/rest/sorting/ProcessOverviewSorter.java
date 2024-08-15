@@ -36,8 +36,7 @@ public class ProcessOverviewSorter extends Sorter<ProcessOverviewResponseDto> {
     sortRequestDto = new SortRequestDto(sortBy, sortOrder);
   }
 
-  public ProcessOverviewSorter() {
-  }
+  public ProcessOverviewSorter() {}
 
   @Override
   public List<ProcessOverviewResponseDto> applySort(

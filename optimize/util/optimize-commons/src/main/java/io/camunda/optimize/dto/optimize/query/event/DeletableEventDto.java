@@ -19,8 +19,12 @@ public class DeletableEventDto {
   private String eventName;
   private Instant timestamp;
 
-  public DeletableEventDto(final String id, final String traceId, final String group,
-      final String source, final String eventName,
+  public DeletableEventDto(
+      final String id,
+      final String traceId,
+      final String group,
+      final String source,
+      final String eventName,
       final Instant timestamp) {
     this.id = id;
     this.traceId = traceId;
@@ -30,8 +34,7 @@ public class DeletableEventDto {
     this.timestamp = timestamp;
   }
 
-  public DeletableEventDto() {
-  }
+  public DeletableEventDto() {}
 
   public static DeletableEventDto from(final EventDto eventDto) {
     return new DeletableEventDto(
@@ -148,13 +151,15 @@ public class DeletableEventDto {
     }
     final Object this$eventName = getEventName();
     final Object other$eventName = other.getEventName();
-    if (this$eventName == null ? other$eventName != null
+    if (this$eventName == null
+        ? other$eventName != null
         : !this$eventName.equals(other$eventName)) {
       return false;
     }
     final Object this$timestamp = getTimestamp();
     final Object other$timestamp = other.getTimestamp();
-    if (this$timestamp == null ? other$timestamp != null
+    if (this$timestamp == null
+        ? other$timestamp != null
         : !this$timestamp.equals(other$timestamp)) {
       return false;
     }
@@ -163,9 +168,19 @@ public class DeletableEventDto {
 
   @Override
   public String toString() {
-    return "DeletableEventDto(id=" + getId() + ", traceId=" + getTraceId() + ", group="
-        + getGroup() + ", source=" + getSource() + ", eventName=" + getEventName()
-        + ", timestamp=" + getTimestamp() + ")";
+    return "DeletableEventDto(id="
+        + getId()
+        + ", traceId="
+        + getTraceId()
+        + ", group="
+        + getGroup()
+        + ", source="
+        + getSource()
+        + ", eventName="
+        + getEventName()
+        + ", timestamp="
+        + getTimestamp()
+        + ")";
   }
 
   public static final class Fields {

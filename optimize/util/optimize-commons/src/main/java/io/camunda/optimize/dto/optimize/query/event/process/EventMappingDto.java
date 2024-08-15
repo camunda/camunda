@@ -12,18 +12,15 @@ import jakarta.validation.Valid;
 
 public class EventMappingDto implements OptimizeDto {
 
-  @Valid
-  EventTypeDto start;
-  @Valid
-  EventTypeDto end;
+  @Valid EventTypeDto start;
+  @Valid EventTypeDto end;
 
   public EventMappingDto(@Valid final EventTypeDto start, @Valid final EventTypeDto end) {
     this.start = start;
     this.end = end;
   }
 
-  public EventMappingDto() {
-  }
+  public EventMappingDto() {}
 
   public @Valid EventTypeDto getStart() {
     return start;
@@ -101,8 +98,7 @@ public class EventMappingDto implements OptimizeDto {
     private @Valid EventTypeDto start;
     private @Valid EventTypeDto end;
 
-    EventMappingDtoBuilder() {
-    }
+    EventMappingDtoBuilder() {}
 
     public EventMappingDtoBuilder start(@Valid final EventTypeDto start) {
       this.start = start;
@@ -120,8 +116,7 @@ public class EventMappingDto implements OptimizeDto {
 
     @Override
     public String toString() {
-      return "EventMappingDto.EventMappingDtoBuilder(start=" + start + ", end=" + end
-          + ")";
+      return "EventMappingDto.EventMappingDtoBuilder(start=" + start + ", end=" + end + ")";
     }
   }
 }

@@ -79,11 +79,18 @@ public class EntityResponseDto {
         currentUserRole);
   }
 
-  public EntityResponseDto(final String id, final String name, final String description,
+  public EntityResponseDto(
+      final String id,
+      final String name,
+      final String description,
       final OffsetDateTime lastModified,
-      final OffsetDateTime created, final String owner, final String lastModifier,
+      final OffsetDateTime created,
+      final String owner,
+      final String lastModifier,
       final EntityType entityType,
-      final EntityData data, final Boolean combined, final ReportType reportType,
+      final EntityData data,
+      final Boolean combined,
+      final ReportType reportType,
       final RoleType currentUserRole) {
     this.id = id;
     this.name = name;
@@ -99,8 +106,7 @@ public class EntityResponseDto {
     this.currentUserRole = currentUserRole;
   }
 
-  protected EntityResponseDto() {
-  }
+  protected EntityResponseDto() {}
 
   public String getId() {
     return id;
@@ -257,13 +263,15 @@ public class EntityResponseDto {
     }
     final Object this$description = getDescription();
     final Object other$description = other.getDescription();
-    if (this$description == null ? other$description != null
+    if (this$description == null
+        ? other$description != null
         : !this$description.equals(other$description)) {
       return false;
     }
     final Object this$lastModified = getLastModified();
     final Object other$lastModified = other.getLastModified();
-    if (this$lastModified == null ? other$lastModified != null
+    if (this$lastModified == null
+        ? other$lastModified != null
         : !this$lastModified.equals(other$lastModified)) {
       return false;
     }
@@ -279,13 +287,15 @@ public class EntityResponseDto {
     }
     final Object this$lastModifier = getLastModifier();
     final Object other$lastModifier = other.getLastModifier();
-    if (this$lastModifier == null ? other$lastModifier != null
+    if (this$lastModifier == null
+        ? other$lastModifier != null
         : !this$lastModifier.equals(other$lastModifier)) {
       return false;
     }
     final Object this$entityType = getEntityType();
     final Object other$entityType = other.getEntityType();
-    if (this$entityType == null ? other$entityType != null
+    if (this$entityType == null
+        ? other$entityType != null
         : !this$entityType.equals(other$entityType)) {
       return false;
     }
@@ -301,13 +311,15 @@ public class EntityResponseDto {
     }
     final Object this$reportType = getReportType();
     final Object other$reportType = other.getReportType();
-    if (this$reportType == null ? other$reportType != null
+    if (this$reportType == null
+        ? other$reportType != null
         : !this$reportType.equals(other$reportType)) {
       return false;
     }
     final Object this$currentUserRole = getCurrentUserRole();
     final Object other$currentUserRole = other.getCurrentUserRole();
-    if (this$currentUserRole == null ? other$currentUserRole != null
+    if (this$currentUserRole == null
+        ? other$currentUserRole != null
         : !this$currentUserRole.equals(other$currentUserRole)) {
       return false;
     }
@@ -316,12 +328,31 @@ public class EntityResponseDto {
 
   @Override
   public String toString() {
-    return "EntityResponseDto(id=" + getId() + ", name=" + getName() + ", description="
-        + getDescription() + ", lastModified=" + getLastModified() + ", created="
-        + getCreated() + ", owner=" + getOwner() + ", lastModifier="
-        + getLastModifier() + ", entityType=" + getEntityType() + ", data="
-        + getData() + ", combined=" + getCombined() + ", reportType="
-        + getReportType() + ", currentUserRole=" + getCurrentUserRole() + ")";
+    return "EntityResponseDto(id="
+        + getId()
+        + ", name="
+        + getName()
+        + ", description="
+        + getDescription()
+        + ", lastModified="
+        + getLastModified()
+        + ", created="
+        + getCreated()
+        + ", owner="
+        + getOwner()
+        + ", lastModifier="
+        + getLastModifier()
+        + ", entityType="
+        + getEntityType()
+        + ", data="
+        + getData()
+        + ", combined="
+        + getCombined()
+        + ", reportType="
+        + getReportType()
+        + ", currentUserRole="
+        + getCurrentUserRole()
+        + ")";
   }
 
   public static final class Fields {

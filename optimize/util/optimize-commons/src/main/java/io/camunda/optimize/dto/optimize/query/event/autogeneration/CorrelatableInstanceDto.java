@@ -18,8 +18,7 @@ public abstract class CorrelatableInstanceDto {
     this.startDate = startDate;
   }
 
-  public CorrelatableInstanceDto() {
-  }
+  public CorrelatableInstanceDto() {}
 
   public abstract String getSourceIdentifier();
 
@@ -61,7 +60,8 @@ public abstract class CorrelatableInstanceDto {
     }
     final Object this$startDate = getStartDate();
     final Object other$startDate = other.getStartDate();
-    if (this$startDate == null ? other$startDate != null
+    if (this$startDate == null
+        ? other$startDate != null
         : !this$startDate.equals(other$startDate)) {
       return false;
     }

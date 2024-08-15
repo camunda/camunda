@@ -21,15 +21,16 @@ public abstract class ImportIndexDto<T extends DataSourceDto> implements Optimiz
       OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
   protected T dataSource;
 
-  public ImportIndexDto(final OffsetDateTime lastImportExecutionTimestamp,
-      final OffsetDateTime timestampOfLastEntity, final T dataSource) {
+  public ImportIndexDto(
+      final OffsetDateTime lastImportExecutionTimestamp,
+      final OffsetDateTime timestampOfLastEntity,
+      final T dataSource) {
     this.lastImportExecutionTimestamp = lastImportExecutionTimestamp;
     this.timestampOfLastEntity = timestampOfLastEntity;
     this.dataSource = dataSource;
   }
 
-  public ImportIndexDto() {
-  }
+  public ImportIndexDto() {}
 
   public OffsetDateTime getLastImportExecutionTimestamp() {
     return lastImportExecutionTimestamp;
@@ -64,8 +65,11 @@ public abstract class ImportIndexDto<T extends DataSourceDto> implements Optimiz
     final int PRIME = 59;
     int result = 1;
     final Object $lastImportExecutionTimestamp = getLastImportExecutionTimestamp();
-    result = result * PRIME + ($lastImportExecutionTimestamp == null ? 43
-        : $lastImportExecutionTimestamp.hashCode());
+    result =
+        result * PRIME
+            + ($lastImportExecutionTimestamp == null
+                ? 43
+                : $lastImportExecutionTimestamp.hashCode());
     final Object $timestampOfLastEntity = getTimestampOfLastEntity();
     result =
         result * PRIME + ($timestampOfLastEntity == null ? 43 : $timestampOfLastEntity.hashCode());
@@ -88,19 +92,22 @@ public abstract class ImportIndexDto<T extends DataSourceDto> implements Optimiz
     }
     final Object this$lastImportExecutionTimestamp = getLastImportExecutionTimestamp();
     final Object other$lastImportExecutionTimestamp = other.getLastImportExecutionTimestamp();
-    if (this$lastImportExecutionTimestamp == null ? other$lastImportExecutionTimestamp != null
+    if (this$lastImportExecutionTimestamp == null
+        ? other$lastImportExecutionTimestamp != null
         : !this$lastImportExecutionTimestamp.equals(other$lastImportExecutionTimestamp)) {
       return false;
     }
     final Object this$timestampOfLastEntity = getTimestampOfLastEntity();
     final Object other$timestampOfLastEntity = other.getTimestampOfLastEntity();
-    if (this$timestampOfLastEntity == null ? other$timestampOfLastEntity != null
+    if (this$timestampOfLastEntity == null
+        ? other$timestampOfLastEntity != null
         : !this$timestampOfLastEntity.equals(other$timestampOfLastEntity)) {
       return false;
     }
     final Object this$dataSource = getDataSource();
     final Object other$dataSource = other.getDataSource();
-    if (this$dataSource == null ? other$dataSource != null
+    if (this$dataSource == null
+        ? other$dataSource != null
         : !this$dataSource.equals(other$dataSource)) {
       return false;
     }
@@ -109,9 +116,13 @@ public abstract class ImportIndexDto<T extends DataSourceDto> implements Optimiz
 
   @Override
   public String toString() {
-    return "ImportIndexDto(lastImportExecutionTimestamp=" + getLastImportExecutionTimestamp()
-        + ", timestampOfLastEntity=" + getTimestampOfLastEntity() + ", dataSource="
-        + getDataSource() + ")";
+    return "ImportIndexDto(lastImportExecutionTimestamp="
+        + getLastImportExecutionTimestamp()
+        + ", timestampOfLastEntity="
+        + getTimestampOfLastEntity()
+        + ", dataSource="
+        + getDataSource()
+        + ")";
   }
 
   public static final class Fields {

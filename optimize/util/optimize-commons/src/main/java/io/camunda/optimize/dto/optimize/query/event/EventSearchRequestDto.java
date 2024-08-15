@@ -38,16 +38,11 @@ public class EventSearchRequestDto {
   @QueryParam("searchTerm")
   private String searchTerm;
 
-  @BeanParam
-  @Valid
-  @NotNull
-  private SortRequestDto sortRequestDto;
-  @BeanParam
-  @Valid
-  @NotNull
-  private PaginationRequestDto paginationRequestDto;
+  @BeanParam @Valid @NotNull private SortRequestDto sortRequestDto;
+  @BeanParam @Valid @NotNull private PaginationRequestDto paginationRequestDto;
 
-  public EventSearchRequestDto(final String searchTerm,
+  public EventSearchRequestDto(
+      final String searchTerm,
       @Valid @NotNull final SortRequestDto sortRequestDto,
       @Valid @NotNull final PaginationRequestDto paginationRequestDto) {
     this.searchTerm = searchTerm;
@@ -55,8 +50,7 @@ public class EventSearchRequestDto {
     this.paginationRequestDto = paginationRequestDto;
   }
 
-  public EventSearchRequestDto() {
-  }
+  public EventSearchRequestDto() {}
 
   public void validateRequest() {
     if (StringUtils.isEmpty(searchTerm)) {
@@ -78,7 +72,7 @@ public class EventSearchRequestDto {
               SortRequestDto.SORT_BY, SortRequestDto.SORT_ORDER));
     } else if (sortBy.isPresent()
         && !EventSearchRequestDto.sortableFields.contains(
-        sortBy.get().toLowerCase(Locale.ENGLISH))) {
+            sortBy.get().toLowerCase(Locale.ENGLISH))) {
       throw new BadRequestException(String.format("%s is not a sortable field", sortBy.get()));
     }
   }
@@ -140,19 +134,22 @@ public class EventSearchRequestDto {
     }
     final Object this$searchTerm = getSearchTerm();
     final Object other$searchTerm = other.getSearchTerm();
-    if (this$searchTerm == null ? other$searchTerm != null
+    if (this$searchTerm == null
+        ? other$searchTerm != null
         : !this$searchTerm.equals(other$searchTerm)) {
       return false;
     }
     final Object this$sortRequestDto = getSortRequestDto();
     final Object other$sortRequestDto = other.getSortRequestDto();
-    if (this$sortRequestDto == null ? other$sortRequestDto != null
+    if (this$sortRequestDto == null
+        ? other$sortRequestDto != null
         : !this$sortRequestDto.equals(other$sortRequestDto)) {
       return false;
     }
     final Object this$paginationRequestDto = getPaginationRequestDto();
     final Object other$paginationRequestDto = other.getPaginationRequestDto();
-    if (this$paginationRequestDto == null ? other$paginationRequestDto != null
+    if (this$paginationRequestDto == null
+        ? other$paginationRequestDto != null
         : !this$paginationRequestDto.equals(other$paginationRequestDto)) {
       return false;
     }
@@ -161,8 +158,12 @@ public class EventSearchRequestDto {
 
   @Override
   public String toString() {
-    return "EventSearchRequestDto(searchTerm=" + getSearchTerm() + ", sortRequestDto="
-        + getSortRequestDto() + ", paginationRequestDto=" + getPaginationRequestDto()
+    return "EventSearchRequestDto(searchTerm="
+        + getSearchTerm()
+        + ", sortRequestDto="
+        + getSortRequestDto()
+        + ", paginationRequestDto="
+        + getPaginationRequestDto()
         + ")";
   }
 }

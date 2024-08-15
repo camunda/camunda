@@ -18,8 +18,7 @@ public class MultipleVariableFilterDataDto implements FilterDataDto {
     this.data = data;
   }
 
-  public MultipleVariableFilterDataDto() {
-  }
+  public MultipleVariableFilterDataDto() {}
 
   public List<VariableFilterDataDto<?>> getData() {
     return data;

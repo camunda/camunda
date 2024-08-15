@@ -19,8 +19,7 @@ public class TenantDto implements OptimizeDto {
     this.engine = engine;
   }
 
-  protected TenantDto() {
-  }
+  protected TenantDto() {}
 
   public String getId() {
     return id;
@@ -88,8 +87,7 @@ public class TenantDto implements OptimizeDto {
 
   @Override
   public String toString() {
-    return "TenantDto(id=" + getId() + ", name=" + getName() + ", engine="
-        + getEngine() + ")";
+    return "TenantDto(id=" + getId() + ", name=" + getName() + ", engine=" + getEngine() + ")";
   }
 
   public static TenantDtoBuilder builder() {
@@ -102,8 +100,7 @@ public class TenantDto implements OptimizeDto {
     private String name;
     private String engine;
 
-    TenantDtoBuilder() {
-    }
+    TenantDtoBuilder() {}
 
     public TenantDtoBuilder id(final String id) {
       this.id = id;
@@ -126,8 +123,7 @@ public class TenantDto implements OptimizeDto {
 
     @Override
     public String toString() {
-      return "TenantDto.TenantDtoBuilder(id=" + id + ", name=" + name + ", engine="
-          + engine + ")";
+      return "TenantDto.TenantDtoBuilder(id=" + id + ", name=" + name + ", engine=" + engine + ")";
     }
   }
 
