@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEventBasedGateway;
@@ -24,6 +25,7 @@ public final class EventBasedGatewayProcessor
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final BpmnJobBehavior jobBehavior;
 
   public EventBasedGatewayProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -31,6 +33,7 @@ public final class EventBasedGatewayProcessor
     this.stateTransitionBehavior = stateTransitionBehavior;
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
+    jobBehavior = bpmnBehaviors.jobBehavior();
   }
 
   @Override
@@ -82,6 +85,9 @@ public final class EventBasedGatewayProcessor
   @Override
   public void onTerminate(
       final ExecutableEventBasedGateway element, final BpmnElementContext context) {
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(context);
+    }
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);

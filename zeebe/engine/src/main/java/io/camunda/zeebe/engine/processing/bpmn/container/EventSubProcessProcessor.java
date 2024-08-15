@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
@@ -25,6 +26,7 @@ public final class EventSubProcessProcessor
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final BpmnJobBehavior jobBehavior;
 
   public EventSubProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -33,6 +35,7 @@ public final class EventSubProcessProcessor
     this.stateTransitionBehavior = stateTransitionBehavior;
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
+    jobBehavior = bpmnBehaviors.jobBehavior();
   }
 
   @Override
@@ -71,6 +74,9 @@ public final class EventSubProcessProcessor
   @Override
   public void onTerminate(
       final ExecutableFlowElementContainer element, final BpmnElementContext terminating) {
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(terminating);
+    }
 
     incidentBehavior.resolveIncidents(terminating);
 

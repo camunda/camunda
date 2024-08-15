@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -31,12 +32,14 @@ public final class ExclusiveGatewayProcessor
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final ExpressionProcessor expressionBehavior;
+  private final BpmnJobBehavior jobBehavior;
 
   public ExclusiveGatewayProcessor(
       final BpmnBehaviors behaviors, final BpmnStateTransitionBehavior stateTransitionBehavior) {
+    this.stateTransitionBehavior = stateTransitionBehavior;
     expressionBehavior = behaviors.expressionBehavior();
     incidentBehavior = behaviors.incidentBehavior();
-    this.stateTransitionBehavior = stateTransitionBehavior;
+    jobBehavior = behaviors.jobBehavior();
   }
 
   @Override
@@ -76,6 +79,10 @@ public final class ExclusiveGatewayProcessor
   @Override
   public void onTerminate(
       final ExecutableExclusiveGateway element, final BpmnElementContext context) {
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(context);
+    }
+
     incidentBehavior.resolveIncidents(context);
     final var terminated =
         stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
