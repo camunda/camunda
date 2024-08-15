@@ -37,6 +37,8 @@ public class UIConfigurationResponseDto {
   private int maxNumDataSourcesForReport;
   private Integer exportCsvLimit;
   private DatabaseType optimizeDatabase;
+  private boolean validLicense;
+  private String environment;
 
   private MixpanelConfigResponseDto mixpanel = new MixpanelConfigResponseDto();
 
