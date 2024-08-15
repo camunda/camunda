@@ -8,10 +8,12 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.service.AuthorizationServices;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationAssignRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
-import io.camunda.zeebe.gateway.rest.controller.usermanagement.dto.AuthorizationAssignRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -34,13 +36,21 @@ public class AuthorizationController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> createAuthorization(
       @RequestBody final AuthorizationAssignRequest authorizationAssignRequest) {
+
+    return RequestMapper.toAuthorizationAssignRequest(authorizationAssignRequest)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignAuthorization);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> assignAuthorization(
+      final AuthorizationAssignRequest authorizationAssignRequest) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             authorizationServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .createAuthorization(
                     authorizationAssignRequest.getOwnerKey(),
-                    authorizationAssignRequest.getOwnerType(),
+                    AuthorizationOwnerType.valueOf(
+                        authorizationAssignRequest.getOwnerType().getValue()),
                     authorizationAssignRequest.getResourceKey(),
                     authorizationAssignRequest.getResourceType(),
                     authorizationAssignRequest.getPermissions()));
