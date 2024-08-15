@@ -78,10 +78,7 @@ public class JobUpdateTest {
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     // when
-    ENGINE
-        .job()
-        .withKey(jobKey)
-        .update();
+    ENGINE.job().withKey(jobKey).update();
 
     // then
     assertThat(RecordingExporter.jobRecords().limit(3))
