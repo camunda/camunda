@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
+import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessorContext;
@@ -162,6 +163,10 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
     return streamProcessingComposite.getStreamProcessor(partitionId);
   }
 
+  public StreamClock getStreamClock(final int partitionId) {
+    return streamProcessingComposite.getStreamClock(partitionId);
+  }
+
   public SynchronousLogStream getLogStream(final int partitionId) {
     return streamProcessingComposite.getLogStream(partitionId);
   }
@@ -176,6 +181,10 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
 
   public MutableProcessingState getProcessingState() {
     return streamProcessingComposite.getProcessingState();
+  }
+
+  public MutableProcessingState getProcessingState(final int partitionId) {
+    return streamProcessingComposite.getProcessingState(getLogName(partitionId));
   }
 
   public RecordStream events() {

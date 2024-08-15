@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.Engine;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -39,6 +40,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorBuilder;
@@ -63,6 +65,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -238,16 +241,22 @@ public final class TestStreams {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
 
+    final AtomicReference<StreamClock> streamClockRef = new AtomicReference<>();
+    final AtomicReference<MutableProcessingState> processingStateRef = new AtomicReference<>();
     final var recoveredLatch = new CountDownLatch(1);
     final var recoveredAwaiter =
         new StreamProcessorLifecycleAware() {
           @Override
           public void onRecovered(final ReadonlyStreamProcessorContext context) {
+            streamClockRef.set(context.getClock());
             recoveredLatch.countDown();
           }
         };
     final TypedRecordProcessorFactory wrappedFactory =
-        (ctx) -> factory.createProcessors(ctx).withListener(recoveredAwaiter);
+        (ctx) -> {
+          processingStateRef.set(ctx.getProcessingState());
+          return factory.createProcessors(ctx).withListener(recoveredAwaiter);
+        };
 
     final ZeebeDb<?> zeebeDb;
     if (snapshotWasTaken) {
@@ -287,7 +296,13 @@ public final class TestStreams {
     openFuture.join(15, TimeUnit.SECONDS);
 
     final ProcessorContext processorContext =
-        ProcessorContext.createStreamContext(streamProcessor, zeebeDb, storage, snapshot);
+        ProcessorContext.createStreamContext(
+            streamProcessor,
+            zeebeDb,
+            storage,
+            snapshot,
+            streamClockRef.get(),
+            processingStateRef.get());
     streamContextMap.put(logName, processorContext);
     closeables.manage(processorContext);
 
@@ -326,8 +341,22 @@ public final class TestStreams {
             () -> new NoSuchElementException("No stream processor found with name: " + streamName));
   }
 
+  public StreamClock getStreamClock(final String streamName) {
+    return Optional.ofNullable(streamContextMap.get(streamName))
+        .map(c -> c.streamClock)
+        .orElseThrow(
+            () -> new NoSuchElementException("No stream clock found with name: " + streamName));
+  }
+
   public void maxCommandsInBatch(final int maxCommandsInBatch) {
     this.maxCommandsInBatch = maxCommandsInBatch;
+  }
+
+  public MutableProcessingState getProcessingState(final String streamName) {
+    return Optional.ofNullable(streamContextMap.get(streamName))
+        .map(c -> c.processingState)
+        .orElseThrow(
+            () -> new NoSuchElementException("No processing state found with name: " + streamName));
   }
 
   public static class FluentLogWriter {
@@ -448,25 +477,34 @@ public final class TestStreams {
     private final StreamProcessor streamProcessor;
     private final Path runtimePath;
     private final Path snapshotPath;
+    private final StreamClock streamClock;
+    private final MutableProcessingState processingState;
     private boolean closed = false;
 
     private ProcessorContext(
         final StreamProcessor streamProcessor,
         final ZeebeDb zeebeDb,
         final Path runtimePath,
-        final Path snapshotPath) {
+        final Path snapshotPath,
+        final StreamClock streamClock,
+        final MutableProcessingState processingState) {
       this.streamProcessor = streamProcessor;
       this.zeebeDb = zeebeDb;
       this.runtimePath = runtimePath;
       this.snapshotPath = snapshotPath;
+      this.streamClock = streamClock;
+      this.processingState = processingState;
     }
 
     public static ProcessorContext createStreamContext(
         final StreamProcessor streamProcessor,
         final ZeebeDb zeebeDb,
         final Path runtimePath,
-        final Path snapshotPath) {
-      return new ProcessorContext(streamProcessor, zeebeDb, runtimePath, snapshotPath);
+        final Path snapshotPath,
+        final StreamClock streamClock,
+        final MutableProcessingState processingState) {
+      return new ProcessorContext(
+          streamProcessor, zeebeDb, runtimePath, snapshotPath, streamClock, processingState);
     }
 
     public void snapshot() {

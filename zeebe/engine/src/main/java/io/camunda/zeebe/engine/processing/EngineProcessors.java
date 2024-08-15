@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
+import io.camunda.zeebe.engine.processing.clock.ClockProcessors;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
@@ -199,6 +200,13 @@ public final class EngineProcessors {
         typedRecordProcessors,
         processingState,
         writers,
+        commandDistributionBehavior);
+
+    ClockProcessors.addClockProcessors(
+        typedRecordProcessors,
+        writers,
+        processingState.getKeyGenerator(),
+        clock,
         commandDistributionBehavior);
 
     return typedRecordProcessors;
