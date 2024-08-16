@@ -401,6 +401,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-service</artifactId>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 
