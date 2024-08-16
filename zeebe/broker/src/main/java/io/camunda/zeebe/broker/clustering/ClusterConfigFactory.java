@@ -82,10 +82,15 @@ public final class ClusterConfigFactory {
             .setPort(network.getInternalApi().getPort());
 
     if (network.getSecurity().isEnabled()) {
+      final var security = network.getSecurity();
+
       messaging
           .setTlsEnabled(true)
-          .setCertificateChain(network.getSecurity().getCertificateChainPath())
-          .setPrivateKey(network.getSecurity().getPrivateKeyPath());
+          .configureTls(
+              security.getPkcs12().getFilePath(),
+              security.getPkcs12().getPassword(),
+              security.getPrivateKeyPath(),
+              security.getCertificateChainPath());
     }
     return messaging;
   }

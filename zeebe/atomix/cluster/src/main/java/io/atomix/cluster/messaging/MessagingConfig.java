@@ -33,6 +33,8 @@ public class MessagingConfig implements Config {
   private File certificateChain;
   private File privateKey;
   private CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.NONE;
+  private File pkcs12;
+  private String pkcs12Password;
 
   /**
    * Returns the local interfaces to which to bind the node.
@@ -223,6 +225,29 @@ public class MessagingConfig implements Config {
 
     this.privateKey = privateKey;
     return this;
+  }
+
+  public MessagingConfig configureTls(
+      final File pkcs12,
+      final String pkcs12Password,
+      final File privateKey,
+      final File certificateChain) {
+    if (pkcs12 != null) {
+      this.pkcs12 = pkcs12;
+      this.pkcs12Password = pkcs12Password;
+    } else {
+      setPrivateKey(privateKey);
+      setCertificateChain(certificateChain);
+    }
+    return this;
+  }
+
+  public File getPkcs12() {
+    return pkcs12;
+  }
+
+  public String getPkcs12Password() {
+    return pkcs12Password;
   }
 
   public enum CompressionAlgorithm {
