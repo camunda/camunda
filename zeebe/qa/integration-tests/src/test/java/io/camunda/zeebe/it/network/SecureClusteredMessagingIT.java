@@ -16,6 +16,7 @@ import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
@@ -37,8 +38,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 @ZeebeIntegration
 final class SecureClusteredMessagingIT {
   private static final SelfSignedCertificate CERTIFICATE = newCertificate();
-  private final String keyStorePassword = "password";
-  private final File keyStore = createPKCS12File(certificate);
 
   @TestZeebe(autoStart = false)
   private final TestCluster cluster =
@@ -56,21 +55,9 @@ final class SecureClusteredMessagingIT {
     final var cluster = createCluster(this::configureGateway, this::configureBroker);
     // given - a cluster with 2 standalone brokers, and 1 standalone gateway
 
-    // when - note the client is using plaintext since we only care about inter-cluster TLS
-    final Topology topology =
-        cluster.newClientBuilder().build().newTopologyRequest().send().join(15, TimeUnit.SECONDS);
-
-    // then - ensure the cluster is formed correctly and all inter-cluster communication endpoints
-    // are secured using the expected certificate
-    TopologyAssert.assertThat(topology).hasBrokersCount(2).isComplete(2, 1, 2);
-    cluster.brokers().values().forEach(this::assertBrokerMessagingServicesAreSecured);
-    assertAddressIsSecured("gateway", getGatewayAddress(cluster));
-  }
-
-  @Test
-  void shouldFormAClusterWithTlsWithPKCS12File() {
-    final var cluster =
-        createCluster(this::configureGatewayWithPkcs12, this::configureBrokerWithPkcs12);
+  @ParameterizedTest
+  @MethodSource("provideTestCases")
+  void shouldFormAClusterWithTlsWithCertChain(final TestCase testCase) {
     // given - a cluster with 2 standalone brokers, and 1 standalone gateway
     cluster.brokers().values().forEach(node -> node.withBrokerConfig(testCase.brokerConfig));
     cluster.gateways().values().forEach(node -> node.withGatewayConfig(testCase.gatewayConfig));
