@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.scheduler.ActorControl;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
@@ -34,6 +33,7 @@ import io.camunda.zeebe.stream.api.ProcessingResponse;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.RecordProcessor;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache;
@@ -164,6 +164,7 @@ public final class ProcessingStateMachine {
   private final ProcessingMetrics processingMetrics;
   private final ScheduledCommandCache scheduledCommandCache;
   private volatile ErrorHandlingPhase errorHandlingPhase = ErrorHandlingPhase.NO_ERROR;
+  private final ControllableStreamClock clock;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -201,6 +202,7 @@ public final class ProcessingStateMachine {
                 recordMetadata -> recordMetadata.getRecordType() == RecordType.COMMAND)
             .and(record -> !record.shouldSkipProcessing())
             .and(context.processingFilter());
+    clock = context.getClock();
   }
 
   private void skipRecord() {
@@ -271,8 +273,7 @@ public final class ProcessingStateMachine {
       // Here we need to get the current time, since we want to calculate
       // how long it took between writing to the dispatcher and processing.
       // In all other cases we should prefer to use the Prometheus Timer API.
-      final var processingStartTime = ActorClock.currentTimeMillis();
-      metrics.processingLatency(loggedEvent.getTimestamp(), processingStartTime);
+      metrics.processingLatency(loggedEvent.getTimestamp(), clock.millis());
       processingTimer =
           metrics.startProcessingDurationTimer(metadata.getValueType(), metadata.getIntent());
 
