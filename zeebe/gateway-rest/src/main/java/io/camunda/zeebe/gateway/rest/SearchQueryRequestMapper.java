@@ -13,15 +13,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOW
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_ORDER;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.service.search.filter.ComparableValueFilter;
-import io.camunda.service.search.filter.DecisionDefinitionFilter;
-import io.camunda.service.search.filter.DecisionRequirementsFilter;
-import io.camunda.service.search.filter.FilterBase;
-import io.camunda.service.search.filter.FilterBuilders;
-import io.camunda.service.search.filter.ProcessInstanceFilter;
-import io.camunda.service.search.filter.UserFilter;
-import io.camunda.service.search.filter.UserTaskFilter;
-import io.camunda.service.search.filter.VariableValueFilter;
+import io.camunda.service.search.filter.*;
 import io.camunda.service.search.page.SearchQueryPage;
 import io.camunda.service.search.query.DecisionDefinitionQuery;
 import io.camunda.service.search.query.DecisionRequirementsQuery;
@@ -38,27 +30,16 @@ import io.camunda.service.search.sort.SortOptionBuilders;
 import io.camunda.service.search.sort.UserSort;
 import io.camunda.service.search.sort.UserTaskSort;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionFilterRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsFilterRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.PriorityValueFilter;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterRequest;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
-import io.camunda.zeebe.gateway.protocol.rest.SearchQuerySortRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserFilterRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskFilterRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.*;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import io.camunda.zeebe.util.Either;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.ProblemDetail;
 
 public final class SearchQueryRequestMapper {
@@ -147,16 +128,39 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.processInstance();
 
     if (filter != null) {
-      final var variableFilters = toVariableValueFilter(filter.getVariables());
-      if (variableFilters != null) {
-        builder.variable(variableFilters);
-      }
-      if (filter.getKey() != null && !filter.getKey().isEmpty()) {
-        builder.processInstanceKeys(filter.getKey());
-      }
+      ofNullable(filter.getRunning()).ifPresentOrElse(builder::running, builder::running);
+      ofNullable(filter.getActive()).ifPresentOrElse(builder::active, builder::active);
+      ofNullable(filter.getIncidents()).ifPresentOrElse(builder::incidents, builder::incidents);
+      ofNullable(filter.getFinished()).ifPresentOrElse(builder::finished, builder::finished);
+      ofNullable(filter.getCompleted()).ifPresentOrElse(builder::completed, builder::completed);
+      ofNullable(filter.getCanceled()).ifPresentOrElse(builder::canceled, builder::canceled);
+      ofNullable(filter.getRetriesLeft())
+          .ifPresentOrElse(builder::retriesLeft, builder::retriesLeft);
+      ofNullable(filter.getErrorMessage()).ifPresent(builder::errorMessage);
+      ofNullable(filter.getActivityId()).ifPresent(builder::activityId);
+      ofNullable(toDateValueFilter(filter.getStartDate())).ifPresent(builder::startDate);
+      ofNullable(toDateValueFilter(filter.getEndDate())).ifPresent(builder::endDate);
+      ofNullable(filter.getBpmnProcessId()).ifPresent(builder::bpmnProcessIds);
+      ofNullable(filter.getProcessDefinitionVersion())
+          .ifPresent(builder::processDefinitionVersions);
+      ofNullable(toProcessInstanceVariableFilter(filter.getVariable()))
+          .ifPresent(builder::variable);
+      ofNullable(filter.getBatchOperationId()).ifPresent(builder::batchOperationIds);
+      ofNullable(filter.getParentProcessInstanceKey())
+          .ifPresent(builder::parentProcessInstanceKeys);
+      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
 
     return builder.build();
+  }
+
+  private static ProcessInstanceVariableFilter toProcessInstanceVariableFilter(
+      final ProcessInstanceVariableFilterRequest filter) {
+    if (filter != null && filter.getName() != null) {
+      final var builder = FilterBuilders.processInstanceVariable();
+      return builder.name(filter.getName()).values(filter.getValues()).build();
+    }
+    return null;
   }
 
   private static DecisionDefinitionFilter toDecisionDefinitionFilter(
@@ -279,9 +283,20 @@ public final class SearchQueryRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "processInstanceKey" -> builder.processInstanceKey();
+        case "key" -> builder.key();
+        case "processName" -> builder.processName();
+        case "processVersion" -> builder.processVersion();
+        case "bpmnProcessId" -> builder.bpmnProcessId();
+        case "parentKey" -> builder.parentKey();
+        case "parentFlowNodeInstanceKey" -> builder.parentFlowNodeInstanceKey();
         case "startDate" -> builder.startDate();
         case "endDate" -> builder.endDate();
+        case "state" -> builder.state();
+        case "incident" -> builder.incident();
+        case "hasActiveOperation" -> builder.hasActiveOperation();
+        case "processDefinitionKey" -> builder.processDefinitionKey();
+        case "tenantId" -> builder.tenantId();
+        case "rootInstanceId" -> builder.rootInstanceId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -358,7 +373,7 @@ public final class SearchQueryRequestMapper {
     return validationErrors;
   }
 
-  private static List<VariableValueFilter> toVariableValueFilter(
+  private static List<VariableValueFilter> toVariableValueFilters(
       final List<VariableValueFilterRequest> filters) {
     if (filters != null && !filters.isEmpty()) {
       return filters.stream().map(SearchQueryRequestMapper::toVariableValueFilter).toList();
@@ -366,15 +381,21 @@ public final class SearchQueryRequestMapper {
     return null;
   }
 
-  private static VariableValueFilter toVariableValueFilter(final VariableValueFilterRequest f) {
-    return FilterBuilders.variableValue(
-        (v) ->
-            v.name(f.getName())
-                .eq(f.getEq())
-                .gt(f.getGt())
-                .gte(f.getGte())
-                .lt(f.getLt())
-                .lte(f.getLte()));
+  private static VariableValueFilter toVariableValueFilter(
+      final VariableValueFilterRequest filter) {
+    return Optional.ofNullable(filter)
+        .map(
+            f ->
+                FilterBuilders.variableValue()
+                    .name(f.getName())
+                    .eq(f.getEq())
+                    .neq(f.getNeq())
+                    .gt(f.getGt())
+                    .gte(f.getGte())
+                    .lt(f.getLt())
+                    .lte(f.getLte())
+                    .build())
+        .orElse(null);
   }
 
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(
@@ -461,6 +482,14 @@ public final class SearchQueryRequestMapper {
     } else {
       return values.toArray();
     }
+  }
+
+  private static DateValueFilter toDateValueFilter(String text) {
+    if (StringUtils.isEmpty(text)) {
+      return null;
+    }
+    final var date = OffsetDateTime.parse(text);
+    return new DateValueFilter.Builder().before(date).after(date).build();
   }
 
   private static ComparableValueFilter mapPriorityFilter(final PriorityValueFilter priority) {

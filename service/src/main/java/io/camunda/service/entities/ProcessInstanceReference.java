@@ -8,23 +8,7 @@
 package io.camunda.service.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record ProcessInstanceEntity(
-    Long key,
-    String processName,
-    Integer processVersion,
-    String bpmnProcessId,
-    Long parentProcessInstanceKey,
-    Long parentFlowNodeInstanceKey,
-    String startDate,
-    String endDate,
-    String state,
-    Boolean incident,
-    Boolean hasActiveOperation,
-    Long processDefinitionKey,
-    String tenantId,
-    String rootInstanceId,
-    List<OperationEntity> operations,
-    List<ProcessInstanceReference> callHierarchy) {}
+public record ProcessInstanceReference(
+    String instanceId, String processDefinitionId, String processDefinitionName) {}

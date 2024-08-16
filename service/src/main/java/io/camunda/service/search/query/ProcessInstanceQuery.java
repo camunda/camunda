@@ -16,7 +16,7 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;
 
-public final record ProcessInstanceQuery(
+public record ProcessInstanceQuery(
     ProcessInstanceFilter filter, ProcessInstanceSort sort, SearchQueryPage page)
     implements TypedSearchQuery<ProcessInstanceFilter, ProcessInstanceSort> {
 

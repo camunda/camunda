@@ -22,11 +22,27 @@ public class ProcessInstanceSearchQueryStub implements RequestStub<ProcessInstan
       throws Exception {
 
     final var processInstance =
-        new ProcessInstanceEntity("foo", 123L, 1, "bar", null, null, "2020-01-01", "2020-01-02");
+        new ProcessInstanceEntity(
+            123L,
+            "Demo Process",
+            5,
+            "demoProcess",
+            555L,
+            789L,
+            "2024-01-01T00:00:00Z",
+            null,
+            "ACTIVE",
+            false,
+            false,
+            777L,
+            "default",
+            null,
+            null,
+            null);
 
     final SearchQueryHit<ProcessInstanceEntity> hit =
         new SearchQueryHit.Builder<ProcessInstanceEntity>()
-            .id("1234")
+            .id("1000")
             .source(processInstance)
             .build();
 

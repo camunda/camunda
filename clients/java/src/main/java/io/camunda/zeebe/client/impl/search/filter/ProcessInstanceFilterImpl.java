@@ -15,16 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.search.filter;
 
-import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.variableValueFilter;
-
 import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
-import io.camunda.zeebe.client.api.search.filter.VariableValueFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.impl.util.CollectionUtil;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.VariableValueFilterRequest;
-import java.util.List;
-import java.util.function.Consumer;
 
 public class ProcessInstanceFilterImpl
     extends TypedSearchRequestPropertyProvider<ProcessInstanceFilterRequest>
@@ -37,26 +30,9 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter processInstanceKeys(final Long... values) {
-    return processInstanceKeys(CollectionUtil.toList(values));
-  }
-
-  @Override
-  public ProcessInstanceFilter processInstanceKeys(final List<Long> values) {
-    filter.setKey(CollectionUtil.addValuesToList(filter.getKey(), values));
+  public ProcessInstanceFilter bpmnProcessId(final String bpmnProcessId) {
+    filter.setBpmnProcessId(bpmnProcessId);
     return this;
-  }
-
-  @Override
-  public ProcessInstanceFilter variable(final VariableValueFilter value) {
-    final VariableValueFilterRequest variableFilter = provideSearchRequestProperty(value);
-    filter.addVariablesItem(variableFilter);
-    return this;
-  }
-
-  @Override
-  public ProcessInstanceFilter variable(final Consumer<VariableValueFilter> fn) {
-    return variable(variableValueFilter(fn));
   }
 
   @Override

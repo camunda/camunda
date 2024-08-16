@@ -26,6 +26,12 @@
   </properties>
 
   <dependencies>
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
+
     <!-- required to guarantee the protocol is processed earlier during the build -->
     <dependency>
       <groupId>io.camunda</groupId>
@@ -276,12 +282,6 @@
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
       <scope>test</scope>
     </dependency>
 
