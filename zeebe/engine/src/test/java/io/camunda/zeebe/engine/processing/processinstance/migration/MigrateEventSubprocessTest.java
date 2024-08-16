@@ -13,20 +13,22 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Map;
 import org.assertj.core.api.Assertions;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
 public class MigrateEventSubprocessTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
@@ -37,7 +39,7 @@ public class MigrateEventSubprocessTest {
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
-        ENGINE
+        engine
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -67,13 +69,13 @@ public class MigrateEventSubprocessTest {
                     .done())
             .deploy();
     final var processInstanceKey =
-        ENGINE
+        engine
             .processInstance()
             .ofBpmnProcessId(processId)
             .withVariable("key", helper.getCorrelationValue())
             .create();
 
-    ENGINE.message().withName("msg").withCorrelationKey(helper.getCorrelationValue()).publish();
+    engine.message().withName("msg").withCorrelationKey(helper.getCorrelationValue()).publish();
 
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
@@ -84,7 +86,7 @@ public class MigrateEventSubprocessTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     // when
-    ENGINE
+    engine
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -115,7 +117,7 @@ public class MigrateEventSubprocessTest {
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
-        ENGINE
+        engine
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -147,14 +149,14 @@ public class MigrateEventSubprocessTest {
                     .done())
             .deploy();
     final var processInstanceKey =
-        ENGINE
+        engine
             .processInstance()
             .ofBpmnProcessId(processId)
             .withVariable("key", helper.getCorrelationValue())
             .create();
 
-    ENGINE.message().withName("msg1").withCorrelationKey(helper.getCorrelationValue()).publish();
-    ENGINE.message().withName("msg1").withCorrelationKey(helper.getCorrelationValue()).publish();
+    engine.message().withName("msg1").withCorrelationKey(helper.getCorrelationValue()).publish();
+    engine.message().withName("msg1").withCorrelationKey(helper.getCorrelationValue()).publish();
 
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -168,7 +170,7 @@ public class MigrateEventSubprocessTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     // when
-    ENGINE
+    engine
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -208,7 +210,7 @@ public class MigrateEventSubprocessTest {
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
     final var deployment =
-        ENGINE
+        engine
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -240,14 +242,14 @@ public class MigrateEventSubprocessTest {
                     .done())
             .deploy();
     final var processInstanceKey =
-        ENGINE
+        engine
             .processInstance()
             .ofBpmnProcessId(processId)
             .withVariable("key", helper.getCorrelationValue())
             .create();
 
-    ENGINE.message().withName("msg").withCorrelationKey(helper.getCorrelationValue()).publish();
-    ENGINE.message().withName("msg").withCorrelationKey(helper.getCorrelationValue()).publish();
+    engine.message().withName("msg").withCorrelationKey(helper.getCorrelationValue()).publish();
+    engine.message().withName("msg").withCorrelationKey(helper.getCorrelationValue()).publish();
 
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -261,7 +263,7 @@ public class MigrateEventSubprocessTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     // when
-    ENGINE
+    engine
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -286,5 +288,357 @@ public class MigrateEventSubprocessTest {
         .allMatch(v -> v.getElementId().equals("sub2"))
         .describedAs("Expect that version number did not change")
         .allMatch(v -> v.getVersion() == 1);
+  }
+
+  @Test
+  public void shouldMigrateMessageEventSubprocess() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .eventSubProcess(
+                        "sub1",
+                        s ->
+                            s.startEvent("start1")
+                                .message(m -> m.name("msg").zeebeCorrelationKeyExpression("key1"))
+                                .serviceTask("A", t -> t.zeebeJobType("task1"))
+                                .endEvent())
+                    .startEvent("start")
+                    .userTask("userTask1")
+                    .endEvent("end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .eventSubProcess(
+                        "sub2",
+                        s ->
+                            s.startEvent("start2")
+                                .message(m -> m.name("msg").zeebeCorrelationKeyExpression("key2"))
+                                .userTask("eventSubprocessUserTask")
+                                .endEvent())
+                    .startEvent("start")
+                    .userTask("userTask2")
+                    .endEvent("end")
+                    .done())
+            .deploy();
+    final var processInstanceKey =
+        engine.processInstance().ofBpmnProcessId(processId).withVariable("key1", "key1").create();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("userTask1", "userTask2")
+        .addMappingInstruction("start1", "start2")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("msg")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("start2")
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1");
+
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("msg")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1");
+
+    engine.message().withName("msg").withCorrelationKey("key1").publish();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("eventSubprocessUserTask")
+                .getFirst())
+        .describedAs(
+            "Expect that the element inside the event subprocess in the target process is activated")
+        .isNotNull();
+  }
+
+  @Test
+  public void shouldUnsubscribeFromMessageEventSubprocess() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .eventSubProcess(
+                        "sub",
+                        s ->
+                            s.startEvent("start1")
+                                .message(m -> m.name("msg").zeebeCorrelationKeyExpression("key1"))
+                                .serviceTask("A", t -> t.zeebeJobType("task"))
+                                .endEvent())
+                    .startEvent("start")
+                    .userTask("userTask1")
+                    .endEvent("end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent("start")
+                    .userTask("userTask2")
+                    .endEvent("end")
+                    .done())
+            .deploy();
+    final var processInstanceKey =
+        engine.processInstance().ofBpmnProcessId(processId).withVariable("key1", "key1").create();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("userTask1", "userTask2")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.DELETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("msg")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(processId)
+        .hasElementId("start1")
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1");
+
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.DELETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("msg")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(processId)
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1");
+  }
+
+  @Test
+  public void shouldSubscribeToMessageEventSubprocess() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent("start")
+                    .userTask("userTask1")
+                    .endEvent("end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .eventSubProcess(
+                        "sub1",
+                        s ->
+                            s.startEvent("start1")
+                                .message(m -> m.name("msg").zeebeCorrelationKeyExpression("key1"))
+                                .userTask("eventSubprocessUserTask")
+                                .endEvent())
+                    .startEvent("start")
+                    .userTask("userTask2")
+                    .endEvent("end")
+                    .done())
+            .deploy();
+    final var processInstanceKey =
+        engine.processInstance().ofBpmnProcessId(processId).withVariable("key1", "key1").create();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("userTask1", "userTask2")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("msg")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("start1")
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1");
+
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("msg")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1");
+
+    engine.message().withName("msg").withCorrelationKey("key1").publish();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("eventSubprocessUserTask")
+                .getFirst())
+        .describedAs(
+            "Expect that the element inside the event subprocess in the target process is activated")
+        .isNotNull();
+  }
+
+  @Test
+  public void shouldResubscribeToMessageEventSubprocess() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .eventSubProcess(
+                        "sub1",
+                        s ->
+                            s.startEvent("start1")
+                                .message(m -> m.name("msg1").zeebeCorrelationKeyExpression("key1"))
+                                .serviceTask("A", t -> t.zeebeJobType("task1"))
+                                .endEvent())
+                    .startEvent("start")
+                    .userTask("userTask1")
+                    .endEvent("end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .eventSubProcess(
+                        "sub2",
+                        s ->
+                            s.startEvent("start2")
+                                .message(m -> m.name("msg2").zeebeCorrelationKeyExpression("key2"))
+                                .userTask("eventSubprocessUserTask")
+                                .endEvent())
+                    .startEvent("start")
+                    .userTask("userTask2")
+                    .endEvent("end")
+                    .done())
+            .deploy();
+    final var processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(Map.of("key1", "key1", "key2", "key2"))
+            .create();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("userTask1", "userTask2")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.DELETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("msg1")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(processId)
+        .hasElementId("start1")
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1");
+
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.DELETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("msg1")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(processId)
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key1");
+
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("msg2")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .hasElementId("start2")
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key2");
+
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("msg2")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasBpmnProcessId(targetProcessId)
+        .describedAs("Expect that the correlation key is not re-evaluated")
+        .hasCorrelationKey("key2");
+
+    engine.message().withName("msg2").withCorrelationKey("key2").publish();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("eventSubprocessUserTask")
+                .getFirst())
+        .describedAs(
+            "Expect that the element inside the event subprocess in the target process is activated")
+        .isNotNull();
   }
 }
