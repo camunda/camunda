@@ -103,7 +103,7 @@ jobs:
 
     - name: Expose Parsed Elastic Version
       run: |
-        echo "ELASTIC_VERSION=${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}" >> "$GITHUB_ENV"
+        echo "ELASTIC_VERSION=${{ steps.pom-info.outputs.x_elasticsearch_test_version }}" >> "$GITHUB_ENV"
 
     - name: Start Elastic
       uses: ./.github/actions/compose

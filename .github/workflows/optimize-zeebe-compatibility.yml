@@ -38,14 +38,14 @@ jobs:
           compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
           project_name: elasticsearch
         env:
-          ELASTIC_VERSION: ${{ inputs.es-version && inputs.es-version || steps.pom-info.outputs.x_elasticsearch8_test_version }}
+          ELASTIC_VERSION: ${{ inputs.es-version && inputs.es-version || steps.pom-info.outputs.x_elasticsearch_test_version }}
           ELASTIC_JVM_MEMORY: 2
           ELASTIC_HTTP_PORT: 9200
       - name: Parse Zeebe Version from Artifactory
         shell: bash
         run: |
           # install xmllint to use in zeebe versions script
-          sudo apt-get update -qq 
+          sudo apt-get update -qq
           sudo apt-get install -y libxml2-utils
 
           zeebe_version_to_use=$(./.github/optimize/scripts/get-zeebe-version-from-tag.sh "${{ matrix.zeebe-version }}")

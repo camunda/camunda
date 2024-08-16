@@ -59,7 +59,7 @@ jobs:
         compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
         project_name: elasticsearch
       env:
-        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}
+        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
         ELASTIC_JVM_MEMORY: 1
         ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
     - name: Setup yarn cache
