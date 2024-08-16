@@ -662,6 +662,7 @@ final class JsonSerializableToJsonTest {
               final int processInstanceKey = 1234;
               final String activityId = "activity";
               final int activityInstanceKey = 123;
+              final Set<String> changedAttributes = Set.of("bar", "foo");
 
               jobRecord
                   .setWorker(wrapString(worker))
@@ -678,7 +679,8 @@ final class JsonSerializableToJsonTest {
                   .setProcessDefinitionVersion(processDefinitionVersion)
                   .setProcessInstanceKey(processInstanceKey)
                   .setElementId(wrapString(activityId))
-                  .setElementInstanceKey(activityInstanceKey);
+                  .setElementInstanceKey(activityInstanceKey)
+                  .setChangedAttributes(changedAttributes);
 
               return record;
             },
@@ -714,7 +716,8 @@ final class JsonSerializableToJsonTest {
               "customHeaders": {},
               "deadline": 1000,
               "timeout": -1,
-              "tenantId": "<default>"
+              "tenantId": "<default>",
+              "changedAttributes": ["bar", "foo"]
             }
           ],
           "timeout": 2,
@@ -764,6 +767,7 @@ final class JsonSerializableToJsonTest {
               final int processInstanceKey = 1234;
               final String elementId = "activity";
               final int activityInstanceKey = 123;
+              final Set<String> changedAttributes = Set.of("bar", "foo");
 
               final Map<String, String> customHeaders =
                   Collections.singletonMap("workerVersion", "42");
@@ -785,7 +789,8 @@ final class JsonSerializableToJsonTest {
                       .setProcessDefinitionVersion(processDefinitionVersion)
                       .setProcessInstanceKey(processInstanceKey)
                       .setElementId(wrapString(elementId))
-                      .setElementInstanceKey(activityInstanceKey);
+                      .setElementInstanceKey(activityInstanceKey)
+                      .setChangedAttributes(changedAttributes);
 
               record.setCustomHeaders(wrapArray(MsgPackConverter.convertToMsgPack(customHeaders)));
               return record;
@@ -815,7 +820,8 @@ final class JsonSerializableToJsonTest {
           },
           "deadline": 13,
           "timeout": 14,
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "changedAttributes": ["bar", "foo"]
         }
         """
       },
@@ -847,7 +853,8 @@ final class JsonSerializableToJsonTest {
           "customHeaders": {},
           "deadline": -1,
           "timeout": -1,
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "changedAttributes": []
         }
         """
       },
@@ -884,7 +891,8 @@ final class JsonSerializableToJsonTest {
           "errorCode": "",
           "processDefinitionVersion": -1,
           "customHeaders": {},
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "changedAttributes": []
         }
         """
       },

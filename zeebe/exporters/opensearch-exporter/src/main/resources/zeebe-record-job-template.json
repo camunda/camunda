@@ -78,6 +78,9 @@
             },
             "jobListenerEventType": {
               "type": "keyword"
+            },
+            "changedAttributes": {
+              "type": "text"
             }
           }
         }

@@ -150,9 +150,6 @@ public class JobController {
         () ->
             jobServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .updateJob(
-                    updateJobRequest.jobKey(),
-                    updateJobRequest.retries(),
-                    updateJobRequest.timeout()));
+                .updateJob(updateJobRequest.jobKey(), updateJobRequest.changeset()));
   }
 }
