@@ -57,4 +57,10 @@ public final class KeyStoreCfg implements ConfigurationEntry {
     final KeyStoreCfg that = (KeyStoreCfg) o;
     return Objects.equals(filePath, that.filePath) && Objects.equals(password, that.password);
   }
+
+  @Override
+  public String toString() {
+    final var passStr = password == null ? "" : "*****";
+    return "KeyStoreCfg{" + "filePath=" + filePath + ", password='" + passStr + '\'' + '}';
+  }
 }
