@@ -8,6 +8,7 @@
 package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.stream.api.StreamClock;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -19,6 +20,11 @@ public final class UncontrolledStreamClock implements StreamClock {
 
   public UncontrolledStreamClock(final InstantSource source) {
     this.source = Objects.requireNonNull(source);
+  }
+
+  @Override
+  public Modification currentModification() {
+    return Modification.none();
   }
 
   @Override

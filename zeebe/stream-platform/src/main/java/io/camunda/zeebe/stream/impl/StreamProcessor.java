@@ -20,6 +20,8 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.RecordProcessor;
+import io.camunda.zeebe.stream.api.StreamClock;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
 import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
@@ -30,6 +32,7 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -547,6 +550,24 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   public void onRecordAvailable() {
     actor.run(processingStateMachine::tryToReadNextRecord);
   }
+
+  /**
+   * Returns an immutable clock fixed at the time of the call, and with the current modification. We
+   * do not return the instant source but really a fixed time since the instant source may not
+   * always be thread safe.
+   *
+   * <p>NOTE: this method is mostly for visibility to allow us to debug timing issues.
+   */
+  public ActorFuture<StreamClock> getClock() {
+    return actor.call(
+        () -> {
+          final var clock = streamProcessorContext.getClock();
+          return new ImmutableStreamClock(clock.instant(), clock.currentModification());
+        });
+  }
+
+  private record ImmutableStreamClock(Instant instant, Modification currentModification)
+      implements StreamClock {}
 
   private static final class AsyncProcessingScheduleServiceActor extends Actor {
 
