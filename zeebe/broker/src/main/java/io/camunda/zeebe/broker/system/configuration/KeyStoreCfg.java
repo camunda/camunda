@@ -11,7 +11,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Objects;
 
-public class KeyStoreCfg implements ConfigurationEntry {
+public final class KeyStoreCfg implements ConfigurationEntry {
   private File filePath;
   private String password;
 
