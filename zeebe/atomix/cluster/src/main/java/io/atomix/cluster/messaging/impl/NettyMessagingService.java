@@ -559,9 +559,17 @@ public final class NettyMessagingService implements ManagedMessagingService {
   }
 
   private KeyStore getKeyStore(final File keyStoreFile, final String password)
-      throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException {
+      throws KeyStoreException {
     final var keyStore = KeyStore.getInstance("PKCS12");
-    keyStore.load(new FileInputStream(keyStoreFile), password.toCharArray());
+    try {
+      keyStore.load(new FileInputStream(keyStoreFile), password.toCharArray());
+    } catch (final Exception e) {
+      throw new IllegalStateException(
+          String.format(
+              "Keystore failed to load file: %s, please ensure it is a valid PKCS12 keystore",
+              keyStoreFile.toPath()),
+          e);
+    }
 
     return keyStore;
   }
