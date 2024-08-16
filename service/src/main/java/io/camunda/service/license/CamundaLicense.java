@@ -8,7 +8,6 @@
 package io.camunda.service.license;
 
 import io.camunda.zeebe.util.VisibleForTesting;
-import io.micrometer.common.util.StringUtils;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
 import org.camunda.bpm.licensecheck.LicenseKey;
 import org.camunda.bpm.licensecheck.LicenseKeyImpl;
@@ -39,17 +38,18 @@ public class CamundaLicense {
   }
 
   public synchronized void initializeWithLicense(final String license) {
-    if (!isInitialized) {
-      if (StringUtils.isNotBlank(license)) {
-        isValid = determineLicenseValidity(license);
-        licenseType = getLicenseTypeFromProperty(license);
-      } else {
-        LOGGER.error(
-            "There was no license detected when one is expected. Please provide a license.");
-      }
-
-      isInitialized = true;
+    if (isInitialized) {
+      return;
     }
+
+    if (license != null && !license.isBlank()) {
+      isValid = determineLicenseValidity(license);
+      licenseType = getLicenseTypeFromProperty(license);
+    } else {
+      LOGGER.error("No license detected when one is expected. Please provide a license.");
+    }
+
+    isInitialized = true;
   }
 
   /**
