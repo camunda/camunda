@@ -135,13 +135,13 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   @Override
   protected CompleteJobCommandStep1 setVariablesInternal(final String variables) {
     grpcRequestObjectBuilder.setVariables(variables);
-    // this check is mandatory, otherwise gRPC requests will fail
-    // gRPC and REST are handling setting variables in a different way:
-    // - for gRPC commands we will check only if is a valid JSON and forward it to the engine.
-    //    is the engine that check if the provided string can be transformed into a Map, if not it
-    //    it will throw an error
-    // - for REST commands instead if users provides a not valid map string, an exception will be thrown
-    //    from the client
+    // This check is mandatory. Without it, gRPC requests can fail unnecessarily.
+    // gRPC and REST handle setting variables differently:
+    // - For gRPC commands, we only check if the JSON is valid and forward it to the engine.
+    //    The engine checks if the provided String can be transformed into a Map, if not it
+    //    throws an error.
+    // - For REST commands, users have to provide a valid JSON Object String.
+    //    Otherwise, the client throws an exception already.
     if (useRest) {
       httpRequestObject.setVariables(jsonMapper.fromJsonAsMap(variables));
     }
