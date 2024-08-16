@@ -12,15 +12,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
-import io.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import io.camunda.optimize.service.db.repository.ProcessInstanceRepository;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
-import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.configuration.OptimizeProfile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -36,7 +32,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -44,17 +39,15 @@ import org.springframework.stereotype.Component;
 @AllArgsConstructor
 public class CustomerOnboardingDataImportService {
 
+  private static final String CUSTOMER_ONBOARDING_DEFINITION =
+      "customer_onboarding_definition.json";
+  private static final String PROCESSED_INSTANCES = "customer_onboarding_process_instances.json";
+  private static final int BATCH_SIZE = 2000;
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
   private final ProcessInstanceWriter processInstanceWriter;
   private final ProcessInstanceRepository processInstanceRepository;
-  private final Environment environment;
-
-  private static final String CUSTOMER_ONBOARDING_DEFINITION =
-      "customer_onboarding_definition.json";
-  private static final String PROCESSED_INSTANCES = "customer_onboarding_process_instances.json";
-  private static final int BATCH_SIZE = 2000;
 
   @EventListener(ApplicationReadyEvent.class)
   public void importData() {
@@ -64,52 +57,28 @@ public class CustomerOnboardingDataImportService {
   public void importData(
       final String processInstances, final String processDefinition, final int batchSize) {
     if (configurationService.getCustomerOnboardingImport()) {
-      importCustomerOnboardingData(
-          processDefinition,
-          processInstances,
-          batchSize,
-          ConfigurationService.getOptimizeProfile(environment));
+      log.info("C8 Customer onboarding data enabled, importing data");
+      importCustomerOnboardingData(processDefinition, processInstances, batchSize);
     } else {
       log.info("C8 Customer onboarding data disabled, will not perform data import");
     }
   }
 
   private void importCustomerOnboardingData(
-      final String processDefinition,
-      final String pathToProcessInstances,
-      final int batchSize,
-      final OptimizeProfile optimizeProfile) {
-    DataSourceDto dataSource;
-    final boolean isC7mode = optimizeProfile.equals(OptimizeProfile.PLATFORM);
-    if (isC7mode) {
-      log.info(
-          "C8 Customer onboarding data enabled but running in Platform mode. Converting data to C7 test data");
-      dataSource = getC7DataSource();
-    } else {
-      // In C8 modes, the file is already generated with the "<default>" tenant and zeebe-record
-      // data source so these values
-      // don't need changing
-      dataSource = null;
-      log.info("C8 Customer onboarding data enabled, importing customer onboarding data");
-    }
-
-    try (InputStream customerOnboardingDefinition =
-        this.getClass().getClassLoader().getResourceAsStream(processDefinition)) {
+      final String processDefinition, final String pathToProcessInstances, final int batchSize) {
+    try (final InputStream customerOnboardingDefinition =
+        getClass().getClassLoader().getResourceAsStream(processDefinition)) {
       if (customerOnboardingDefinition != null) {
-        String result =
+        final String result =
             new String(customerOnboardingDefinition.readAllBytes(), StandardCharsets.UTF_8);
-        ProcessDefinitionOptimizeDto processDefinitionDto =
+        final ProcessDefinitionOptimizeDto processDefinitionDto =
             objectMapper.readValue(result, ProcessDefinitionOptimizeDto.class);
         if (processDefinitionDto != null) {
-          if (isC7mode) {
-            processDefinitionDto.setDataSource(dataSource);
-            processDefinitionDto.setTenantId(null);
-          }
           Optional.ofNullable(processDefinitionDto.getKey())
               .ifPresentOrElse(
                   key -> {
                     processDefinitionWriter.importProcessDefinitions(List.of(processDefinitionDto));
-                    readProcessInstanceJson(pathToProcessInstances, batchSize, dataSource);
+                    readProcessInstanceJson(pathToProcessInstances, batchSize);
                   },
                   () ->
                       log.error(
@@ -122,43 +91,26 @@ public class CustomerOnboardingDataImportService {
       } else {
         log.error("Process definition could not be loaded. Please validate your json file.");
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Unable to add a process definition to database", e);
     }
     log.info("Customer onboarding data import complete");
   }
 
-  private DataSourceDto getC7DataSource() {
-    return configurationService.getConfiguredEngines().entrySet().stream()
-        .findFirst()
-        .map(engine -> new EngineDataSourceDto(engine.getKey()))
-        .orElseThrow(
-            () -> new OptimizeConfigurationException("No C7 engines configured as data source"));
-  }
-
-  private void readProcessInstanceJson(
-      final String pathToProcessInstances, final int batchSize, final DataSourceDto dataSourceDto) {
-    List<ProcessInstanceDto> processInstanceDtos = new ArrayList<>();
+  private void readProcessInstanceJson(final String pathToProcessInstances, final int batchSize) {
+    final List<ProcessInstanceDto> processInstanceDtos = new ArrayList<>();
     try {
-      try (InputStream customerOnboardingProcessInstances =
-          this.getClass().getClassLoader().getResourceAsStream(pathToProcessInstances)) {
+      try (final InputStream customerOnboardingProcessInstances =
+          getClass().getClassLoader().getResourceAsStream(pathToProcessInstances)) {
         if (customerOnboardingProcessInstances != null) {
-          String result =
+          final String result =
               new String(customerOnboardingProcessInstances.readAllBytes(), StandardCharsets.UTF_8);
-          List<ProcessInstanceDto> rawProcessInstanceDtos =
+          final List<ProcessInstanceDto> rawProcessInstanceDtos =
               objectMapper.readValue(result, new TypeReference<>() {});
-          for (ProcessInstanceDto processInstance : rawProcessInstanceDtos) {
+          for (final ProcessInstanceDto processInstance : rawProcessInstanceDtos) {
             if (processInstance != null) {
-              Optional<Long> processInstanceDuration =
+              final Optional<Long> processInstanceDuration =
                   Optional.ofNullable(processInstance.getDuration());
-              if (dataSourceDto != null) {
-                processInstance.setDataSource(dataSourceDto);
-                processInstance.setTenantId(null);
-                processInstance
-                    .getFlowNodeInstances()
-                    .forEach(flowNodeInstanceDto -> flowNodeInstanceDto.setTenantId(null));
-                processInstance.getIncidents().forEach(incident -> incident.setTenantId(null));
-              }
               if (processInstance.getProcessDefinitionKey() != null
                   && (processInstanceDuration.isEmpty() || processInstanceDuration.get() >= 0)) {
                 processInstanceDtos.add(processInstance);
@@ -174,22 +126,22 @@ public class CustomerOnboardingDataImportService {
                   + "instance json file.");
         }
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Could not parse Camunda Customer Onboarding Demo process instances file.", e);
     }
   }
 
   private void loadProcessInstancesToDatabase(
       final List<ProcessInstanceDto> rawProcessInstanceDtos, final int batchSize) {
-    List<ProcessInstanceDto> processInstanceDtos = new ArrayList<>();
-    Optional<OffsetDateTime> maxOfEndAndStartDate =
+    final List<ProcessInstanceDto> processInstanceDtos = new ArrayList<>();
+    final Optional<OffsetDateTime> maxOfEndAndStartDate =
         rawProcessInstanceDtos.stream()
             .flatMap(instance -> Stream.of(instance.getStartDate(), instance.getEndDate()))
             .filter(Objects::nonNull)
             .max(OffsetDateTime::compareTo);
-    for (ProcessInstanceDto rawProcessInstance : rawProcessInstanceDtos) {
+    for (final ProcessInstanceDto rawProcessInstance : rawProcessInstanceDtos) {
       if (maxOfEndAndStartDate.isPresent()) {
-        ProcessInstanceDto processInstanceDto =
+        final ProcessInstanceDto processInstanceDto =
             modifyProcessInstanceDates(rawProcessInstance, maxOfEndAndStartDate.get());
         processInstanceDtos.add(processInstanceDto);
         if (processInstanceDtos.size() % batchSize == 0) {
@@ -205,19 +157,19 @@ public class CustomerOnboardingDataImportService {
 
   private void insertProcessInstancesToDatabase(
       final List<ProcessInstanceDto> processInstanceDtos) {
-    List<ProcessInstanceDto> completedProcessInstances =
+    final List<ProcessInstanceDto> completedProcessInstances =
         processInstanceDtos.stream()
             .filter(processInstanceDto -> processInstanceDto.getEndDate() != null)
             .collect(Collectors.toList());
-    List<ProcessInstanceDto> runningProcessInstances =
+    final List<ProcessInstanceDto> runningProcessInstances =
         processInstanceDtos.stream()
             .filter(processInstanceDto -> processInstanceDto.getEndDate() == null)
             .collect(Collectors.toList());
-    List<ImportRequestDto> completedProcessInstanceImports =
+    final List<ImportRequestDto> completedProcessInstanceImports =
         processInstanceWriter.generateCompletedProcessInstanceImports(completedProcessInstances);
     processInstanceRepository.bulkImport(
         "Completed process instances", completedProcessInstanceImports);
-    List<ImportRequestDto> runningProcessInstanceImports =
+    final List<ImportRequestDto> runningProcessInstanceImports =
         processInstanceWriter.generateRunningProcessInstanceImports(runningProcessInstances);
     if (!runningProcessInstanceImports.isEmpty()) {
       processInstanceRepository.bulkImport(
@@ -227,8 +179,8 @@ public class CustomerOnboardingDataImportService {
 
   private ProcessInstanceDto modifyProcessInstanceDates(
       final ProcessInstanceDto processInstanceDto, final OffsetDateTime maxOfEndAndStartDate) {
-    OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
-    long offset = ChronoUnit.SECONDS.between(maxOfEndAndStartDate, now);
+    final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
+    final long offset = ChronoUnit.SECONDS.between(maxOfEndAndStartDate, now);
     Optional.ofNullable(processInstanceDto.getStartDate())
         .ifPresent(startDate -> processInstanceDto.setStartDate(startDate.plusSeconds(offset)));
     Optional.ofNullable(processInstanceDto.getEndDate())
