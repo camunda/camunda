@@ -35,6 +35,11 @@ public final record UserTaskSort(List<FieldSorting> orderings) implements SortOp
       return this;
     }
 
+    public Builder priority() {
+      currentOrdering = new FieldSorting("priority", null);
+      return this;
+    }
+
     @Override
     protected Builder self() {
       return this;

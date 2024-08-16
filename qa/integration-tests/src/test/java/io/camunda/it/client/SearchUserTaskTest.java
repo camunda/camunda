@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.protocol.rest.PriorityValueFilter;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -39,10 +40,12 @@ class SearchUserTaskTest {
 
     deployProcess("process", "simple.bpmn", "test", "", "");
     deployProcess("process-2", "simple-2.bpmn", "test-2", "group", "user");
+    deployProcess("process-3", "simple-3.bpmn", "test-3", "", "", "30");
 
     startProcessInstance("process");
     startProcessInstance("process-2");
     startProcessInstance("process");
+    startProcessInstance("process-3");
 
     waitForTasksBeingExported();
   }
@@ -60,7 +63,7 @@ class SearchUserTaskTest {
   public void shouldRetrieveTaskByState() {
     final var resultCreated =
         camundaClient.newUserTaskQuery().filter(f -> f.state("CREATED")).send().join();
-    assertThat(resultCreated.items().size()).isEqualTo(2);
+    assertThat(resultCreated.items().size()).isEqualTo(3);
     resultCreated.items().forEach(item -> assertThat(item.getState()).isEqualTo("CREATED"));
 
     final var resultCompleted =
@@ -118,7 +121,7 @@ class SearchUserTaskTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(2);
+    assertThat(resultAfter.items().size()).isEqualTo(3);
     final var keyAfter = resultAfter.items().getFirst().getKey();
     // apply searchBefore
     final var resultBefore =
@@ -136,7 +139,7 @@ class SearchUserTaskTest {
     final var result =
         camundaClient.newUserTaskQuery().sort(s -> s.creationDate().asc()).send().join();
 
-    assertThat(result.items().size()).isEqualTo(3);
+    assertThat(result.items().size()).isEqualTo(4);
 
     // Assert that the creation date of item 0 is before item 1, and item 1 is before item 2
     assertThat(result.items().get(0).getCreationDate())
@@ -150,7 +153,7 @@ class SearchUserTaskTest {
     final var result =
         camundaClient.newUserTaskQuery().sort(s -> s.creationDate().desc()).send().join();
 
-    assertThat(result.items().size()).isEqualTo(3);
+    assertThat(result.items().size()).isEqualTo(4);
 
     assertThat(result.items().get(0).getCreationDate())
         .isGreaterThan(result.items().get(1).getCreationDate());
@@ -162,7 +165,7 @@ class SearchUserTaskTest {
   public void shouldRetrieveTaskByTenantId() {
     final var resultDefaultTenant =
         camundaClient.newUserTaskQuery().filter(f -> f.tentantId("<default>")).send().join();
-    assertThat(resultDefaultTenant.items().size()).isEqualTo(3);
+    assertThat(resultDefaultTenant.items().size()).isEqualTo(4);
     resultDefaultTenant
         .items()
         .forEach(item -> assertThat(item.getTenantIds()).isEqualTo("<default>"));
@@ -170,6 +173,18 @@ class SearchUserTaskTest {
     final var resultNonExistent =
         camundaClient.newUserTaskQuery().filter(f -> f.tentantId("<default123>")).send().join();
     assertThat(resultNonExistent.items().size()).isEqualTo(0);
+  }
+
+  @Test
+  public void shouldRetrieveTaskByPriority() {
+    final var resultDefaultTenant =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.priority(new PriorityValueFilter().eq(30)))
+            .send()
+            .join();
+    assertThat(resultDefaultTenant.items().size()).isEqualTo(1);
+    assertThat(resultDefaultTenant.items().getFirst().getPriority()).isEqualTo(30);
   }
 
   private static void deployProcess(
@@ -203,6 +218,39 @@ class SearchUserTaskTest {
         .join();
   }
 
+  private static void deployProcess(
+      final String processId,
+      final String resourceName,
+      final String userTaskName,
+      final String candidateGroup,
+      final String candidateUser,
+      final String priority) {
+    final DateTimeFormatter dateFormat =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    final ZoneId utcZoneId = ZoneId.of("UTC");
+
+    final LocalDateTime now = LocalDateTime.now(utcZoneId);
+    final LocalDateTime dayBefore = now.minusDays(1);
+
+    camundaClient
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask(userTaskName)
+                .zeebeTaskPriority(priority)
+                .zeebeUserTask()
+                .zeebeDueDate(dayBefore.format(dateFormat))
+                .zeebeFollowUpDate(dayBefore.format(dateFormat))
+                .zeebeCandidateGroups(candidateGroup)
+                .zeebeCandidateUsers(candidateUser)
+                .endEvent()
+                .done(),
+            resourceName)
+        .send()
+        .join();
+  }
+
   private static void startProcessInstance(final String processId) {
     camundaClient.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
   }
@@ -214,7 +262,7 @@ class SearchUserTaskTest {
         .untilAsserted(
             () -> {
               final var result = camundaClient.newUserTaskQuery().send().join();
-              assertThat(result.items().size()).isEqualTo(3);
+              assertThat(result.items().size()).isEqualTo(4);
               userTaskKeyTaskAssigned = result.items().getFirst().getKey();
             });
 
