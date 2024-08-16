@@ -43,6 +43,7 @@ public class UIConfigurationService {
   private final OptimizeVersionService versionService;
   private final TenantService tenantService;
   private final SettingsService settingService;
+  private final CamundaLicenseService camundaLicenseService;
   private final Environment environment;
   // optional as it is only available conditionally, see implementations of the interface
   private final Optional<CloudSaasMetaInfoService> cloudSaasMetaInfoService;
@@ -105,11 +106,11 @@ public class UIConfigurationService {
   }
 
   private boolean isCamundaLicenseValid() {
-    return true;
+    return camundaLicenseService.isCamundaLicenseValid();
   }
 
   private String getCamundaEnvironment() {
-    return "saas";
+    return camundaLicenseService.getCamundaLicenseType();
   }
 
   private boolean isEnterpriseMode(final OptimizeProfile optimizeProfile) {
