@@ -101,8 +101,7 @@ public class JobController {
     final var result = new CompletableFuture<ResponseEntity<Object>>();
     final var responseObserver = responseObserverProvider.apply(result);
     jobServices.activateJobs(
-        activationRequest, responseObserver,
-        responseObserver::setCancelationHandler);
+        activationRequest, responseObserver, responseObserver::setCancelationHandler);
     return result.handleAsync(
         (res, ex) -> {
           responseObserver.invokeCancelationHandler();
