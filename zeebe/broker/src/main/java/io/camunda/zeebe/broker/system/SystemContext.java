@@ -246,32 +246,43 @@ public final class SystemContext {
   private void validateNetworkSecurityConfig(final SecurityCfg security) {
     final var certificateChainPath = security.getCertificateChainPath();
     final var privateKeyPath = security.getPrivateKeyPath();
+    final var pkcs12Path = security.getPkcs12().getFilePath();
 
-    if (certificateChainPath == null) {
-      throw new IllegalArgumentException(
-          "Expected to have a valid certificate chain path for network security, but none "
-              + "configured");
-    }
+    if (pkcs12Path == null) {
+      if (certificateChainPath == null) {
+        throw new IllegalArgumentException(
+            "Expected to have a valid certificate chain path for network security, but none "
+                + "configured");
+      }
 
-    if (privateKeyPath == null) {
-      throw new IllegalArgumentException(
-          "Expected to have a valid private key path for network security, but none configured");
-    }
+      if (privateKeyPath == null) {
+        throw new IllegalArgumentException(
+            "Expected to have a valid private key path for network security, but none configured");
+      }
 
-    if (!certificateChainPath.canRead()) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected the configured network security certificate chain path '%s' to point to a"
-                  + " readable file, but it does not",
-              certificateChainPath));
-    }
+      if (!certificateChainPath.canRead()) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Expected the configured network security certificate chain path '%s' to point to a"
+                    + " readable file, but it does not",
+                certificateChainPath));
+      }
 
-    if (!privateKeyPath.canRead()) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected the configured network security private key path '%s' to point to a "
-                  + "readable file, but it does not",
-              privateKeyPath));
+      if (!privateKeyPath.canRead()) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Expected the configured network security private key path '%s' to point to a "
+                    + "readable file, but it does not",
+                privateKeyPath));
+      }
+    } else {
+      if (!pkcs12Path.canRead()) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Expected the configured network security pkcs12 file '%s' to point to a "
+                    + "readable file, but it does not",
+                pkcs12Path));
+      }
     }
   }
 
