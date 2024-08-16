@@ -33,7 +33,13 @@ public enum UserIntent implements Intent {
 
   @Override
   public boolean isEvent() {
-    return this == UserIntent.CREATED;
+    switch (this) {
+      case CREATED:
+      case UPDATED:
+        return true;
+      default:
+        return false;
+    }
   }
 
   public static Intent from(final short value) {
