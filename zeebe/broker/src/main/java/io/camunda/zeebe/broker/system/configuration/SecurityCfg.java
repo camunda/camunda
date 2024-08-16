@@ -17,6 +17,7 @@ public final class SecurityCfg implements ConfigurationEntry {
   private boolean enabled = DEFAULT_ENABLED;
   private File certificateChainPath;
   private File privateKeyPath;
+  private final Pkcs12Cfg pkcs12 = new Pkcs12Cfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -27,6 +28,24 @@ public final class SecurityCfg implements ConfigurationEntry {
 
     if (privateKeyPath != null) {
       privateKeyPath = brokerBasePath.resolve(privateKeyPath.toPath()).toFile();
+    }
+
+    pkcs12.init(globalConfig, brokerBase);
+
+    if ((certificateChainPath != null || privateKeyPath != null) && pkcs12.getFilePath() != null) {
+      throw new IllegalArgumentException(
+          String.format(
+              """
+                      Cannot provide both separate certificate chain and or private key along with a
+                      PKCS12 file, use only one approach.
+
+                      certificateChainPath: %s
+                      privateKeyPath: %s
+
+                      OR
+
+                      pkcs12Path: %s""",
+              certificateChainPath, privateKeyPath, pkcs12.getFilePath()));
     }
   }
 
@@ -55,6 +74,10 @@ public final class SecurityCfg implements ConfigurationEntry {
   public SecurityCfg setPrivateKeyPath(final File privateKeyPath) {
     this.privateKeyPath = privateKeyPath;
     return this;
+  }
+
+  public Pkcs12Cfg getPkcs12() {
+    return pkcs12;
   }
 
   @Override
