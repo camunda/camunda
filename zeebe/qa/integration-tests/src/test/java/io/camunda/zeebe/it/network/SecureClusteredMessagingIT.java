@@ -152,11 +152,9 @@ final class SecureClusteredMessagingIT {
       store.setKeyEntry("key", cert.key(), keyStorePassword.toCharArray(), chain);
 
       final var file = Files.createTempFile("id", ".p12").toFile();
-      final FileOutputStream fOut = new FileOutputStream(file);
-
-      store.store(fOut, keyStorePassword.toCharArray());
-
-      fOut.close();
+      try (final var fOut = new FileOutputStream(file)) {
+        store.store(fOut, keyStorePassword.toCharArray());
+      }
 
       return file;
 
