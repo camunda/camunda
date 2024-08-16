@@ -6,17 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import createCombinedChartOptions from './createCombinedChartOptions';
+import createHyperChartOptions from './createHyperChartOptions';
 import {createBarOptions} from '../defaultChart/createDefaultChartOptions';
 
 jest.mock('../defaultChart/createDefaultChartOptions', () => ({
   createBarOptions: jest.fn(),
 }));
 
-it('should find max duration for combined reports', () => {
+it('should find max duration for hyper reports', () => {
   const maxDuration = 99999999999;
 
-  createCombinedChartOptions({
+  createHyperChartOptions({
     report: {
       data: {visualization: 'pie', configuration: {}},
       result: {
@@ -65,7 +65,7 @@ it('should find max duration for multi measure reports', () => {
     },
   ];
 
-  createCombinedChartOptions({
+  createHyperChartOptions({
     report: {
       data: {visualization: 'pie', configuration: {}},
       result: {

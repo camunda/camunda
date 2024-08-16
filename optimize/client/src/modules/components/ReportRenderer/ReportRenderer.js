@@ -13,7 +13,6 @@ import {ErrorBoundary} from 'components';
 import {formatters, getReportResult} from 'services';
 import {t} from 'translation';
 
-import CombinedReportRenderer from './CombinedReportRenderer';
 import ProcessReportRenderer from './ProcessReportRenderer';
 import DecisionReportRenderer from './DecisionReportRenderer';
 import HyperReportRenderer from './HyperReportRenderer';
@@ -34,10 +33,7 @@ function ReportRenderer(props) {
     const isDecision = report.reportType === 'decision';
     const isHyper = result?.type === 'hyperMap';
 
-    if (report.combined) {
-      View = CombinedReportRenderer;
-      somethingMissing = checkCombined(report.data);
-    } else if (isDecision) {
+    if (isDecision) {
       View = DecisionReportRenderer;
       somethingMissing = checkDecisionReport(report.data);
     } else {
@@ -100,13 +96,6 @@ export default React.memo(ReportRenderer, (prevProps, nextProps) => {
   }
   return false;
 });
-
-function checkCombined(data) {
-  const reports = data.reports;
-  if (!reports || !reports.length) {
-    return t('report.combinedEmptyMessage');
-  }
-}
 
 function checkDecisionReport(data) {
   if (

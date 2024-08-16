@@ -34,7 +34,7 @@ export class Report extends React.Component {
   }
 
   getId = () => this.props.match.params.id;
-  isNew = () => ['new', 'new-combined', 'new-decision'].includes(this.getId());
+  isNew = () => ['new', 'new-decision'].includes(this.getId());
 
   componentDidMount = () => {
     if (this.isNew()) {

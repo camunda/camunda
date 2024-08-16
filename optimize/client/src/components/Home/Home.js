@@ -177,7 +177,6 @@ export function Home({mightFail, user}) {
                 description,
                 data,
                 reportType,
-                combined,
               } = entity;
 
               const actions = [];
@@ -221,7 +220,7 @@ export function Home({mightFail, user}) {
                 entityType,
                 link: formatLink(id, entityType),
                 icon: getEntityIcon(entityType),
-                type: formatType(entityType, reportType, combined),
+                type: formatType(entityType, reportType),
                 name,
                 meta: [
                   description,

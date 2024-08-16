@@ -6,18 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import createCombinedChartData from './createCombinedChartData';
-import createCombinedChartOptions from './createCombinedChartOptions';
+import createHyperChartData from './createHyperChartData';
+import createHyperChartOptions from './createHyperChartOptions';
 import createPlugins from '../createPlugins';
 
-export default function createCombinedChartConfig(props) {
+export default function createHyperChartConfig(props) {
   const {visualization} = props.report.data;
   const chartVisualization = ['number', 'barLine'].includes(visualization) ? 'bar' : visualization;
 
   return {
     type: chartVisualization,
-    data: createCombinedChartData(props),
-    options: createCombinedChartOptions(props),
+    data: createHyperChartData(props),
+    options: createHyperChartOptions(props),
     plugins: createPlugins(props),
   };
 }

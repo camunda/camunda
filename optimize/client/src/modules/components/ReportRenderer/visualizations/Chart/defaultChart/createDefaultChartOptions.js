@@ -133,12 +133,12 @@ export function createBarOptions({
   measures = [],
   entity,
   groupedByDurationMaxValue = false,
-  isCombined,
+  isHyper,
   visualization,
 }) {
   const {stackedBar, xLabel, yLabel, logScale, pointMarkers, horizontalBar} = configuration;
-  const isCombinedNumber = isCombined && visualization === 'number';
-  const stacked = stackedBar && isCombined && ['bar', 'barLine'].includes(visualization);
+  const isHyperNumber = isHyper && visualization === 'number';
+  const stacked = stackedBar && isHyper && ['bar', 'barLine'].includes(visualization);
   const targetLine = !stacked && targetValue && getFormattedTargetValue(targetValue);
   const hasMultipleAxes = ['frequency', 'duration'].every((prop) =>
     measures.some(({property}) => property === prop)
@@ -225,7 +225,7 @@ export function createBarOptions({
         const width = this.maxWidth / allLabels.length;
         const widthPerCharacter = 7;
 
-        if (isCombinedNumber && label.length > width / widthPerCharacter) {
+        if (isHyperNumber && label.length > width / widthPerCharacter) {
           return label.substr(0, Math.floor(width / widthPerCharacter)) + '…';
         }
 
@@ -238,7 +238,7 @@ export function createBarOptions({
         size: Math.min(12, Math.round(chart.height / 32)),
       }),
     },
-    stacked: stacked || isCombinedNumber,
+    stacked: stacked || isHyperNumber,
     ...groupBy,
   };
 

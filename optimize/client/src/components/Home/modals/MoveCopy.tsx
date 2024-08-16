@@ -49,15 +49,14 @@ export default function MoveCopy({
   }, [mightFail, parentCollection]);
 
   const getMulticopyText = () => {
-    const {entityType, data} = entity;
-    const containedReports = data?.subEntityCounts.report;
+    const containedReports = entity.data?.subEntityCounts.report;
 
     if (!containedReports) {
       return undefined;
     }
 
     const params = {
-      entityType: entityType === 'dashboard' ? t('dashboard.label') : t('home.types.combined'),
+      entityType: t('dashboard.label'),
       number: containedReports,
     };
     if (containedReports > 1) {

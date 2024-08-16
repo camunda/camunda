@@ -46,7 +46,6 @@ jest.mock('services', () => {
 const report = {
   name: 'test',
   reportType: 'process',
-  combined: false,
   data: {
     configuration: {
       xml: 'some diagram XML',

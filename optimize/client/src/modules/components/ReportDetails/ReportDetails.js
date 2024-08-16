@@ -19,13 +19,7 @@ import './ReportDetails.scss';
 export default function ReportDetails({report}) {
   return (
     <div className="ReportDetails">
-      {report.combined ? (
-        Object.values(report.result.data).map((report) => (
-          <SingleReportDetails key={report.id} showReportName report={report} />
-        ))
-      ) : (
-        <SingleReportDetails report={report} />
-      )}
+      <SingleReportDetails report={report} />
 
       <dl>
         <dt>{t('common.entity.createdBy')}</dt>

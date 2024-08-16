@@ -8,20 +8,20 @@
 
 import {getColorFor} from '../colorsUtils';
 import createDefaultChartOptions from '../defaultChart/createDefaultChartOptions';
-import createCombinedChartOptions from '../combinedChart/createCombinedChartOptions';
+import createHyperChartOptions from '../hyperChart/createHyperChartOptions';
 
 export default function createTargetLineOptions(props) {
-  if (props.report.combined) {
-    return createCombinedChartOptions(props);
+  if (props.report.hyper) {
+    return createHyperChartOptions(props);
   } else {
     return createDefaultChartOptions(props);
   }
 }
 
-export function getTargetLineOptions(color, isBelowTarget, isCombined, isDark) {
+export function getTargetLineOptions(color, isBelowTarget, isHyper, isDark) {
   return {
     targetOptions: {
-      borderColor: isCombined ? color : getColorFor('targetBar', isDark),
+      borderColor: isHyper ? color : getColorFor('targetBar', isDark),
       pointBorderColor: getColorFor('targetBar', isDark),
       backgroundColor: 'transparent',
       legendColor: color,

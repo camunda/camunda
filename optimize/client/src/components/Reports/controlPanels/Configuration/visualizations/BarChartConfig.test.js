@@ -7,6 +7,7 @@
  */
 
 import {shallow} from 'enzyme';
+
 import BarChartConfig from './BarChartConfig';
 
 const configuration = {
@@ -22,7 +23,6 @@ const configuration = {
 };
 
 const barReport = {
-  combined: false,
   data: {
     visualization: 'bar',
     view: {properties: ['frequency']},
@@ -34,22 +34,6 @@ const barReport = {
     measures: [{data: []}],
   },
 };
-
-it('should not display show instance count and color picker for combined reports', () => {
-  const node = shallow(<BarChartConfig report={barReport} />);
-
-  expect(node.find('ColorPicker')).toExist();
-
-  node.setProps({
-    report: {
-      ...barReport,
-      combined: true,
-      result: {data: {test: {data: {view: {properties: ['frequency']}}}}},
-    },
-  });
-
-  expect(node.find('ColorPicker')).not.toExist();
-});
 
 it('should not display color picker for hyper reports (distributed by userTask/assignee/candidateGroup)', () => {
   const node = shallow(
@@ -154,7 +138,7 @@ it('should set logScale to true when enabling logarithmic scale switch', () => {
   expect(spy).toHaveBeenCalledWith({logScale: {$set: true}});
 });
 
-it('should show horizontalBar option for non combined bar chart reports', () => {
+it('should show horizontalBar option only for "bar" visualization', () => {
   const node = shallow(<BarChartConfig report={barReport} />);
 
   expect(node.find({labelText: 'Horizontal bars'})).toExist();
@@ -162,9 +146,9 @@ it('should show horizontalBar option for non combined bar chart reports', () => 
   node.setProps({
     report: {
       ...barReport,
-      combined: true,
-      result: {
-        data: [{}],
+      data: {
+        ...barReport.data,
+        visualization: 'barLine',
       },
     },
   });

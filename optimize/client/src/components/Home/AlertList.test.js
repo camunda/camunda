@@ -41,7 +41,7 @@ jest.mock('services', () => {
         },
         name: 'Report 2',
       },
-      {combined: true, id: '3', data: {visualization: 'number'}, name: 'Report 3'},
+      {id: '3', data: {visualization: 'number'}, name: 'Report 3'},
     ]),
     loadAlerts: jest.fn().mockReturnValue([
       {

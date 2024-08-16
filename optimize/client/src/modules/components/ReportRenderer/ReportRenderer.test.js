@@ -10,12 +10,10 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import ReportRenderer from './ReportRenderer';
-import CombinedReportRenderer from './CombinedReportRenderer';
 import NoDataNotice from './NoDataNotice';
 import SetupNotice from './SetupNotice';
 
 const reportTemplate = {
-  combined: false,
   reportType: 'process',
   data: {
     definitions: [
@@ -52,31 +50,6 @@ it('should render DecisionReportRenderer if the report type is decision', () => 
   const node = shallow(<ReportRenderer report={report} />);
 
   expect(node.find('DecisionReportRenderer')).toExist();
-});
-
-it('should render CombinedReportRenderer if the report is combined and all reports contain data', () => {
-  const report = {
-    ...reportTemplate,
-    data: {
-      ...reportTemplate.data,
-      reports: ['reportId1'],
-    },
-    result: {
-      data: {
-        reportId1: {
-          ...reportTemplate,
-          result: {
-            ...reportTemplate.result,
-            instanceCount: 1,
-          },
-        },
-      },
-    },
-    combined: true,
-  };
-  const node = shallow(<ReportRenderer report={report} />);
-
-  expect(node.find(CombinedReportRenderer)).toExist();
 });
 
 it('should include the instance count if indicated in the config', () => {
@@ -191,20 +164,6 @@ describe('SetupNotice', () => {
     };
 
     const node = shallow(<ReportRenderer report={newReport} updateReport />);
-
-    expect(node).toMatchSnapshot();
-  });
-
-  it('should instruct to select one or more reports if no reports are selected for combined reports', () => {
-    const report = {
-      combined: true,
-      data: {
-        configuration: {},
-        reports: [],
-      },
-    };
-
-    const node = shallow(<ReportRenderer report={report} updateReport />);
 
     expect(node).toMatchSnapshot();
   });

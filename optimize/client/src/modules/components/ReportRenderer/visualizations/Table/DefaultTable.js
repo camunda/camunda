@@ -6,25 +6,24 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {getReportResult} from 'services';
 import {Table as TableRenderer} from 'components';
 
 import ColumnRearrangement from './ColumnRearrangement';
-import processCombinedData from './processCombinedData';
+import processHyperData from './processHyperData';
 import processDefaultData from './processDefaultData';
 import {rearrangeColumns} from './service';
 
 export default function DefaultTable(props) {
   const {report, updateReport, processVariables, updateSorting, loading} = props;
   const {
-    combined,
+    hyper,
     data: {groupBy, configuration},
     result,
   } = report;
 
   let tableProps;
-  if (combined) {
-    tableProps = processCombinedData(props);
+  if (hyper) {
+    tableProps = processHyperData(props);
   } else {
     tableProps = {
       ...processDefaultData(props, processVariables),
@@ -36,10 +35,9 @@ export default function DefaultTable(props) {
     };
   }
 
-  const isHyper = getReportResult(report)?.type === 'hyperMap';
   return (
     <ColumnRearrangement
-      enabled={updateReport && (isHyper || !report.combined)}
+      enabled={updateReport}
       onChange={(oldIdx, newIdx) => {
         rearrangeColumns(oldIdx, newIdx, tableProps, updateReport);
       }}

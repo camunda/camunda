@@ -85,7 +85,6 @@
       "report": {
         "default": "Bericht",
         "process": "Prozessbericht",
-        "combined": "Kombinierter Prozessbericht",
         "decision": "Entscheidungsbericht"
       }
     },
@@ -113,7 +112,6 @@
     "types": {
       "process": "Prozessbericht",
       "decision": "Entscheidungsbericht",
-      "combined": "Kombinierter Prozessbericht",
       "unknown": "Unbekannte Entität"
     },
     "roles": {
@@ -418,16 +416,11 @@
     },
     "saveConflict": {
       "header": "Inkompatible Änderungen",
-      "combined_report": {
-        "header": "Diese Änderungen sind nicht kompatibel mit diesen kombinierten Berichten:",
-        "message": "Warnung: Beim Speichern wird dieser Bericht aus den kombinierten Berichten entfernt."
-      },
       "alert": {
         "header": "Diese Änderungen sind nicht kompatibel mit diesen Alarmen:",
         "message": "Warnung: Beim Speichern werden diese Alarme gelöscht."
       }
     },
-    "combinedEmptyMessage": "Um einen Bericht anzuzeigen, wählen Sie bitte einen oder mehrere Berichte aus der Liste aus.",
     "noViewMessage": "Wählen Sie eine Option für <b>Ansicht</b> aus.",
     "noGroupByMessage": "Wählen Sie eine Option für <b>Gruppieren nach</b> aus.",
     "noVisualizationMessage": "Wählen Sie eine Option für <b>Visualisierung</b> aus.",
@@ -475,14 +468,6 @@
     "progressBar": {
       "invalid": "Ungültige Konfiguration",
       "goal": "Ziel"
-    },
-    "combined": {
-      "multiSelect": {
-        "available": "Verfügbare Berichte:",
-        "selected": "Ausgewählte Berichte:",
-        "search": "Suche nach Berichten",
-        "empty": "Keine Berichte gefunden"
-      }
     },
     "config": {
       "buttonTooltip": "Konfigurationsoptionen",
@@ -1375,7 +1360,6 @@
     "deleter": {
       "types": {
         "report": "Bericht",
-        "combined_report": "Bericht",
         "dashboard": "Dashboard",
         "alert": "Alarm",
         "user": "Benutzer",
@@ -1394,23 +1378,20 @@
       "affectedMessage": {
         "process": {
           "alert": "Diese Alarme werden gelöscht:",
-          "combined_report": "Die gelöschten Berichte werden aus diesen kombinierten Berichten entfernt:",
           "dashboard": "Die gelöschten Berichte werden aus diesen Dashboards entfernt:",
           "report": "Diese Berichte werden gelöscht:"
         },
         "source": {
           "alert": "Diese Alarme werden gelöscht:",
-          "combined_report": "Die gelöschten Berichte werden aus diesen kombinierten Berichten entfernt:",
           "dashboard": "Die gelöschten Berichte werden aus diesen Dashboards entfernt:",
           "report": "Diese Berichte werden aus der Sammlung gelöscht:"
         },
         "report": {
-          "combined_report": "Der Bericht wird aus diesen kombinierten Berichten entfernt:",
           "dashboard": "Der Bericht wird aus diesen Dashboards entfernt:",
           "alert": "Diese Alarme werden gelöscht:"
         },
         "bulk": {
-          "report": "Alle ausgewählten Berichte werden von zugehörigen Dashboards und kombinierten Berichten entfernt und ihre Alarme werden gelöscht.",
+          "report": "Alle ausgewählten Berichte werden von zugehörigen Dashboards entfernt und ihre Alarme werden gelöscht.",
           "process": "Das Entfernen von Datenquellen löscht alle zugehörigen Berichte und deren Alarme."
         }
       },

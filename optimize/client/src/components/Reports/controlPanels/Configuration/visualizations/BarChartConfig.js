@@ -14,31 +14,29 @@ import {t} from 'translation';
 
 import ChartTargetInput from './subComponents/ChartTargetInput';
 import RelativeAbsoluteSelection from './subComponents/RelativeAbsoluteSelection';
+
 import './BarChartConfig.scss';
 
 export default function BarChartConfig({onChange, report}) {
   const {
     reportType,
-    combined,
     data: {configuration, groupBy, distributedBy, visualization},
     result,
   } = report;
 
-  const durationReport = isDurationReport(combined ? Object.values(result.data)[0] : report);
-  const isMultiMeasure = combined ? false : result?.measures.length > 1;
+  const durationReport = isDurationReport(report);
+  const isMultiMeasure = result?.measures?.length > 1;
   const isStackingPossible =
-    !combined &&
     distributedBy.type !== 'none' &&
     groupBy.type !== 'none' &&
     ['barLine', 'bar'].includes(visualization);
-  const isHorizontalPossible = !combined && visualization === 'bar';
+  const isHorizontalPossible = visualization === 'bar';
   const isStacked = isStackingPossible && configuration.stackedBar;
   const isHorizontal = configuration.horizontalBar;
 
   return (
     <Stack gap={4} className="BarChartConfig">
-      {!combined &&
-        !isMultiMeasure &&
+      {!isMultiMeasure &&
         (distributedBy.type === 'none' ||
           (distributedBy.type === 'process' && groupBy.type === 'none')) && (
           <FormGroup legendText={t('report.config.colorPicker.legend')} className="colorSection">

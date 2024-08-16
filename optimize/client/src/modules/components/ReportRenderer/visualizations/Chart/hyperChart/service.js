@@ -31,7 +31,7 @@ export function generateLegendLabels(chart) {
     : [];
 }
 
-export function getCombinedChartProps(reports, data, measureIdx) {
+export function getHyperChartProps(reports, data, measureIdx) {
   return data.reports.reduce(
     (prev, {id, color}) => {
       const report = reports[id];
