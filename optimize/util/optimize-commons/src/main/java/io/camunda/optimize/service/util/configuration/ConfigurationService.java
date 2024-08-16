@@ -13,7 +13,6 @@ import static io.camunda.optimize.service.util.configuration.ConfigurationServic
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CACHES_CONFIGURATION;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CAMUNDA_OPTIMIZE_DATABASE;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_DATABASE_PROPERTY;
-import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EVENT_BASED_PROCESS_CONFIGURATION;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EXTERNAL_VARIABLE_CONFIGURATION;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
@@ -45,7 +44,6 @@ import io.camunda.optimize.service.util.configuration.archive.DataArchiveConfigu
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import io.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
 import io.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
-import io.camunda.optimize.service.util.configuration.engine.EventIngestionConfiguration;
 import io.camunda.optimize.service.util.configuration.engine.UserIdentityCacheConfiguration;
 import io.camunda.optimize.service.util.configuration.engine.UserTaskIdentityCacheConfiguration;
 import io.camunda.optimize.service.util.configuration.security.AuthConfiguration;
@@ -167,7 +165,6 @@ public class ConfigurationService {
   private UIConfiguration uiConfiguration;
   private UserTaskIdentityCacheConfiguration userTaskIdentityCacheConfiguration;
   private UserIdentityCacheConfiguration userIdentityCacheConfiguration;
-  private EventBasedProcessConfiguration eventBasedProcessConfiguration;
   private TelemetryConfiguration telemetryConfiguration;
   private ExternalVariableConfiguration externalVariableConfiguration;
   private GlobalCacheConfiguration caches;
@@ -962,40 +959,6 @@ public class ConfigurationService {
               IMPORT_USER_TASK_IDENTITY_META_DATA, UserTaskIdentityCacheConfiguration.class);
     }
     return userTaskIdentityCacheConfiguration;
-  }
-
-  @JsonIgnore
-  public IndexRolloverConfiguration getEventIndexRolloverConfiguration() {
-    return getEventBasedProcessConfiguration().getEventIndexRollover();
-  }
-
-  public EventBasedProcessConfiguration getEventBasedProcessConfiguration() {
-    if (eventBasedProcessConfiguration == null) {
-      eventBasedProcessConfiguration =
-          configJsonContext.read(
-              EVENT_BASED_PROCESS_CONFIGURATION, EventBasedProcessConfiguration.class);
-    }
-    return eventBasedProcessConfiguration;
-  }
-
-  @JsonIgnore
-  public EventImportConfiguration getEventImportConfiguration() {
-    return getEventBasedProcessConfiguration().getEventImport();
-  }
-
-  @JsonIgnore
-  public EventIngestionConfiguration getEventIngestionConfiguration() {
-    return getEventBasedProcessConfiguration().getEventIngestion();
-  }
-
-  @JsonIgnore
-  public List<String> getEventBasedProcessAccessUserIds() {
-    return getEventBasedProcessConfiguration().getAuthorizedUserIds();
-  }
-
-  @JsonIgnore
-  public List<String> getEventBasedProcessAccessGroupIds() {
-    return getEventBasedProcessConfiguration().getAuthorizedGroupIds();
   }
 
   public OptimizeApiConfiguration getOptimizeApiConfiguration() {

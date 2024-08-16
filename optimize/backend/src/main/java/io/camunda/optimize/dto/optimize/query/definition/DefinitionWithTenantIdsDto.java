@@ -30,10 +30,9 @@ public class DefinitionWithTenantIdsDto extends SimpleDefinitionDto {
       @NonNull final String key,
       final String name,
       @NonNull final DefinitionType type,
-      final Boolean isEventProcess,
       @NonNull final List<String> tenantIds,
       @NonNull final Set<String> engines) {
-    super(key, name, type, isEventProcess, engines);
+    super(key, name, type, engines);
     this.tenantIds = tenantIds;
   }
 

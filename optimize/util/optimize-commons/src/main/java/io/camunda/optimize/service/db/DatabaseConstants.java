@@ -78,7 +78,6 @@ public class DatabaseConstants {
   public static final String COMBINED_REPORT_INDEX_NAME = "combined-report";
   public static final String DASHBOARD_INDEX_NAME = "dashboard";
   public static final String COLLECTION_INDEX_NAME = "collection";
-  public static final String IMPORT_INDEX_INDEX_NAME = "import-index";
   public static final String ALERT_INDEX_NAME = "alert";
   public static final String REPORT_SHARE_INDEX_NAME = "report-share";
   public static final String DASHBOARD_SHARE_INDEX_NAME = "dashboard-share";
@@ -88,8 +87,6 @@ public class DatabaseConstants {
   public static final String UPDATE_LOG_ENTRY_INDEX_NAME = "update-log";
   public static final String TERMINATED_USER_SESSION_INDEX_NAME = "terminated-user-session";
   public static final String TENANT_INDEX_NAME = "tenant";
-  public static final String EXTERNAL_EVENTS_INDEX_NAME = "event";
-  public static final String EVENT_PROCESS_MAPPING_INDEX_NAME = "event-process-mapping";
   public static final String VARIABLE_LABEL_INDEX_NAME = "variable-label";
   public static final String PROCESS_OVERVIEW_INDEX_NAME = "process-overview";
   public static final String INSTANT_DASHBOARD_INDEX_NAME = "instant-dashboard";
@@ -100,23 +97,12 @@ public class DatabaseConstants {
   public static final String ZEEBE_INCIDENT_INDEX_NAME = "incident";
   public static final String ZEEBE_USER_TASK_INDEX_NAME = "user-task";
 
-  public static final String EVENT_PROCESS_DEFINITION_INDEX_NAME = "event-process-definition";
-  public static final String EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME = "event-process-publish-state";
   public static final String VARIABLE_UPDATE_INSTANCE_INDEX_NAME = "variable-update-instance";
   public static final String BUSINESS_KEY_INDEX_NAME = "business-key";
   public static final String SETTINGS_INDEX_NAME = "settings";
   public static final String EXTERNAL_PROCESS_VARIABLE_INDEX_NAME = "external-process-variable";
 
-  public static final String EVENT_PROCESS_INSTANCE_INDEX_PREFIX = "event-process-instance-";
-  public static final String CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX = "camunda-activity-event-";
-
   public static final String INDEX_SUFFIX_PRE_ROLLOVER = "-000001";
-
-  public static final String EVENT_SEQUENCE_COUNT_INDEX_PREFIX = "event-sequence-count-";
-  public static final String EVENT_TRACE_STATE_INDEX_PREFIX = "event-trace-state-";
-  public static final String EXTERNAL_EVENTS_INDEX_SUFFIX = "external";
-
-  public static final String EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX = "eventStateProcessing-";
 
   public static final String INDEX = "_index";
 
@@ -128,11 +114,10 @@ public class DatabaseConstants {
   public static final String ELASTICSEARCH_TASK_DESCRIPTION_DOC_SUFFIX = "[_doc]";
 
   // used to reference Optimize as the source "engine" of imported data
-  public static final String ENGINE_ALIAS_OPTIMIZE = "optimize";
+  public static final String EXTERNAL_DATA_SOURCE_ALIAS = "optimize";
 
   public static final String ENGINE_DATA_SOURCE = "engine";
   public static final String ZEEBE_DATA_SOURCE = "zeebe";
-  public static final String EVENTS_DATA_SOURCE = "events";
   public static final String INGESTED_DATA_SOURCE = "ingested";
 
   // Aggregation constants

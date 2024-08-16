@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.dto.optimize;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -26,19 +25,16 @@ public class SimpleDefinitionDto {
   @EqualsAndHashCode.Include @NonNull private String key;
   private String name;
   @EqualsAndHashCode.Include @NonNull private DefinitionType type;
-  @JsonIgnore private Boolean isEventProcess = false;
   @NonNull private Set<String> engines = new HashSet<>();
 
   public SimpleDefinitionDto(
       @NonNull final String key,
       final String name,
       @NonNull final DefinitionType type,
-      final Boolean isEventProcess,
-      @NonNull String engine) {
+      @NonNull final String engine) {
     this.key = key;
     this.name = name;
     this.type = type;
-    this.isEventProcess = isEventProcess;
-    this.engines = Collections.singleton(engine);
+    engines = Collections.singleton(engine);
   }
 }

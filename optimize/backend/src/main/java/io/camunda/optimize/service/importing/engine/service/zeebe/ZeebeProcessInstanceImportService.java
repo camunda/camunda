@@ -14,7 +14,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 
 import io.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import io.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import io.camunda.optimize.service.db.DatabaseClient;
@@ -39,14 +39,13 @@ import lombok.extern.slf4j.Slf4j;
 public class ZeebeProcessInstanceImportService
     extends ZeebeProcessInstanceSubEntityImportService<ZeebeProcessInstanceRecordDto> {
 
-  private static final Set<BpmnElementType> TYPES_TO_IGNORE =
-      Set.of(BpmnElementType.UNSPECIFIED, BpmnElementType.SEQUENCE_FLOW);
-
   public static final Set<ProcessInstanceIntent> INTENTS_TO_IMPORT =
       Set.of(
           ProcessInstanceIntent.ELEMENT_COMPLETED,
           ProcessInstanceIntent.ELEMENT_TERMINATED,
           ProcessInstanceIntent.ELEMENT_ACTIVATING);
+  private static final Set<BpmnElementType> TYPES_TO_IGNORE =
+      Set.of(BpmnElementType.UNSPECIFIED, BpmnElementType.SEQUENCE_FLOW);
 
   public ZeebeProcessInstanceImportService(
       final ConfigurationService configurationService,
@@ -65,7 +64,7 @@ public class ZeebeProcessInstanceImportService
 
   @Override
   protected List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
-      List<ZeebeProcessInstanceRecordDto> zeebeRecords) {
+      final List<ZeebeProcessInstanceRecordDto> zeebeRecords) {
     final List<ProcessInstanceDto> optimizeDtos =
         new ArrayList<>(
             zeebeRecords.stream()
@@ -148,7 +147,7 @@ public class ZeebeProcessInstanceImportService
   private void updateFlowNodeEventsForProcess(
       final ProcessInstanceDto instanceToAdd,
       final List<ZeebeProcessInstanceRecordDto> recordsForInstance) {
-    Map<Long, FlowNodeInstanceDto> flowNodeInstancesByRecordKey = new HashMap<>();
+    final Map<Long, FlowNodeInstanceDto> flowNodeInstancesByRecordKey = new HashMap<>();
     recordsForInstance.stream()
         .filter(
             zeebeRecord ->
@@ -159,7 +158,7 @@ public class ZeebeProcessInstanceImportService
         .forEach(
             zeebeFlowNodeInstanceRecord -> {
               final long recordKey = zeebeFlowNodeInstanceRecord.getKey();
-              FlowNodeInstanceDto flowNodeForKey =
+              final FlowNodeInstanceDto flowNodeForKey =
                   flowNodeInstancesByRecordKey.getOrDefault(
                       recordKey, createSkeletonFlowNodeInstance(zeebeFlowNodeInstanceRecord));
               final ProcessInstanceIntent instanceIntent = zeebeFlowNodeInstanceRecord.getIntent();
@@ -198,7 +197,8 @@ public class ZeebeProcessInstanceImportService
         .setCanceled(false);
   }
 
-  private void updateStateIfValidTransition(ProcessInstanceDto instance, String targetState) {
+  private void updateStateIfValidTransition(
+      final ProcessInstanceDto instance, final String targetState) {
     if (instance.getState() == null
         || instance.getState().equals(ProcessInstanceConstants.ACTIVE_STATE)) {
       instance.setState(targetState);

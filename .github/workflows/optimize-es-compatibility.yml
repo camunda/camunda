@@ -20,16 +20,16 @@ jobs:
       matrix:
         esVersion: ["8.9.0", "8.10.0", "8.11.0", "8.12.0", "8.13.0"]
         includedGroups:
-          [ "import,eventBasedProcess", "reportEvaluation", "", "ccsm-test" ]
+          [ "import", "reportEvaluation", "", "ccsm-test" ]
         include:
-          - includedGroups: "import,eventBasedProcess"
+          - includedGroups: "import"
             excludedGroups: ""
             profile: "it,engine-latest"
           - includedGroups: "reportEvaluation"
             excludedGroups: ""
             profile: "it,engine-latest"
           - includedGroups: ""
-            excludedGroups: "ccsm-test,import,eventBasedProcess,reportEvaluation"
+            excludedGroups: "ccsm-test,import,reportEvaluation"
             profile: "it,engine-latest"
           - includedGroups: "ccsm-test"
             excludedGroups: ""

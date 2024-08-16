@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.service.importing.ingested.handler;
 
-import io.camunda.optimize.service.importing.ExternalVariableUpdateImportIndexHandler;
 import io.camunda.optimize.service.importing.ImportIndexHandler;
 import jakarta.annotation.PostConstruct;
 import java.util.Collection;

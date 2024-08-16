@@ -184,8 +184,6 @@ public class ConfigurationServiceConstants {
 
   public static final String IDENTITY_SYNC_CONFIGURATION = "$.import.identitySync";
 
-  public static final String EVENT_BASED_PROCESS_CONFIGURATION = "$.eventBasedProcess";
-
   public static final String OPTIMIZE_API_CONFIGURATION = "$.api";
 
   public static final String TELEMETRY_CONFIGURATION = "$.telemetry";

@@ -8,11 +8,6 @@
 package io.camunda.optimize.test.it.extension.db;
 
 import static io.camunda.optimize.ApplicationContextProvider.getBean;
-import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
-import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 import static io.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGATION;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
@@ -42,14 +37,9 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 
 import com.google.common.collect.Iterables;
-import io.camunda.optimize.dto.optimize.IdentityDto;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import io.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import io.camunda.optimize.dto.optimize.query.MetadataDto;
-import io.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
-import io.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
-import io.camunda.optimize.dto.optimize.query.event.process.db.DbEventProcessPublishStateDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
@@ -62,18 +52,11 @@ import io.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableInd
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
-import io.camunda.optimize.service.db.es.schema.index.events.EventIndexES;
-import io.camunda.optimize.service.db.es.schema.index.events.EventProcessInstanceIndexES;
-import io.camunda.optimize.service.db.es.schema.index.events.EventProcessPublishStateIndexES;
-import io.camunda.optimize.service.db.es.schema.index.events.EventSequenceCountIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
-import io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
-import io.camunda.optimize.service.db.schema.index.events.EventIndex;
-import io.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.DatabaseHelper;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -116,13 +99,11 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
@@ -137,8 +118,6 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortBuilders;
-import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.xcontent.ToXContent;
 import org.elasticsearch.xcontent.XContentBuilder;
 import org.elasticsearch.xcontent.XContentType;
@@ -334,20 +313,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
                   .getOptimizeIndexAliasForIndex(new SingleProcessReportIndexES()),
           e);
     }
-  }
-
-  @Override
-  public void deleteExternalEventSequenceCountIndex() {
-    deleteIndexOfMapping(new EventSequenceCountIndexES(EXTERNAL_EVENTS_INDEX_SUFFIX));
-  }
-
-  @Override
-  public void deleteAllExternalEventIndices() {
-    final String eventIndexAlias =
-        getIndexNameService().getOptimizeIndexAliasForIndex(new EventIndexES());
-    final String[] eventIndices =
-        getOptimizeElasticClient().getAllIndicesForAlias(eventIndexAlias).toArray(String[]::new);
-    getOptimizeElasticClient().deleteIndexByRawIndexNames(eventIndices);
   }
 
   @Override
@@ -608,125 +573,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public void updateEventProcessRoles(
-      final String eventProcessId,
-      final List<IdentityDto> identityDtos,
-      final ScriptData scriptData) {
-    try {
-      final UpdateRequest request =
-          new UpdateRequest(EVENT_PROCESS_MAPPING_INDEX_NAME, eventProcessId)
-              .script(
-                  new Script(
-                      ScriptType.INLINE,
-                      Script.DEFAULT_SCRIPT_LANG,
-                      scriptData.scriptString(),
-                      scriptData.params()))
-              .setRefreshPolicy(IMMEDIATE);
-      final UpdateResponse updateResponse = getOptimizeElasticClient().update(request);
-      if (updateResponse.getShardInfo().getFailed() > 0) {
-        throw new OptimizeIntegrationTestException(
-            String.format(
-                "Was not able to update event process roles with id [%s].", eventProcessId));
-      }
-    } catch (final IOException e) {
-      throw new OptimizeIntegrationTestException("Unable to update event process roles.", e);
-    }
-  }
-
-  @Override
-  @SneakyThrows
-  public Map<String, Set<String>> getEventProcessInstanceIndicesWithAliasesFromDatabase() {
-    final OptimizeElasticsearchClient esClient = getOptimizeElasticClient();
-    final OptimizeIndexNameService indexNameService = esClient.getIndexNameService();
-    final GetIndexResponse getIndexResponse =
-        esClient
-            .getHighLevelClient()
-            .indices()
-            .get(
-                new GetIndexRequest(
-                    indexNameService.getOptimizeIndexAliasForIndex(
-                            EVENT_PROCESS_INSTANCE_INDEX_PREFIX)
-                        + "*"),
-                esClient.requestOptions());
-    return getIndexResponse.getAliases().entrySet().stream()
-        .collect(
-            Collectors.toMap(
-                Map.Entry::getKey,
-                entry ->
-                    entry.getValue().stream()
-                        .map(AliasMetadata::alias)
-                        .collect(Collectors.toSet())));
-  }
-
-  @Override
-  @SneakyThrows
-  public Optional<EventProcessPublishStateDto> getEventProcessPublishStateDtoFromDatabase(
-      final String processMappingId) {
-    final SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder()
-            .query(
-                boolQuery()
-                    .must(
-                        termQuery(
-                            EventProcessPublishStateIndexES.PROCESS_MAPPING_ID, processMappingId))
-                    .must(termQuery(EventProcessPublishStateIndexES.DELETED, false)))
-            .sort(
-                SortBuilders.fieldSort(EventProcessPublishStateIndexES.PUBLISH_DATE_TIME)
-                    .order(SortOrder.DESC))
-            .size(1);
-    final SearchResponse searchResponse =
-        getOptimizeElasticClient()
-            .search(
-                new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME)
-                    .source(searchSourceBuilder));
-
-    EventProcessPublishStateDto result = null;
-    if (searchResponse.getHits().getTotalHits().value > 0) {
-      result =
-          getObjectMapper()
-              .readValue(
-                  searchResponse.getHits().getAt(0).getSourceAsString(),
-                  DbEventProcessPublishStateDto.class)
-              .toEventProcessPublishStateDto();
-    }
-    return Optional.ofNullable(result);
-  }
-
-  @Override
-  @SneakyThrows
-  public Optional<EventProcessDefinitionDto> getEventProcessDefinitionFromDatabase(
-      final String definitionId) {
-    final GetResponse getResponse =
-        getOptimizeElasticClient()
-            .get(new GetRequest(EVENT_PROCESS_DEFINITION_INDEX_NAME).id(definitionId));
-
-    EventProcessDefinitionDto result = null;
-    if (getResponse.isExists()) {
-      result =
-          getObjectMapper()
-              .readValue(getResponse.getSourceAsString(), EventProcessDefinitionDto.class);
-    }
-
-    return Optional.ofNullable(result);
-  }
-
-  @Override
-  @SneakyThrows
-  public List<EventProcessInstanceDto> getEventProcessInstancesFromDatabaseForProcessPublishStateId(
-      final String publishStateId) {
-    final List<EventProcessInstanceDto> results = new ArrayList<>();
-    final SearchResponse searchResponse =
-        getOptimizeElasticClient()
-            .search(
-                new SearchRequest(EventProcessInstanceIndex.constructIndexName(publishStateId)));
-    for (final SearchHit hit : searchResponse.getHits().getHits()) {
-      results.add(
-          getObjectMapper().readValue(hit.getSourceAsString(), EventProcessInstanceDto.class));
-    }
-    return results;
-  }
-
-  @Override
   @SneakyThrows
   public void deleteProcessInstancesFromIndex(final String indexName, final String id) {
     final DeleteRequest request = new DeleteRequest(indexName).id(id).setRefreshPolicy(IMMEDIATE);
@@ -924,33 +770,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
         .filter(
             index -> indexNameToAliasMap.get(index).stream().anyMatch(AliasMetadata::writeIndex))
         .toList();
-  }
-
-  @Override
-  @SneakyThrows
-  public List<String> getAllIndicesWithReadOnlyAlias(final String aliasNameWithPrefix) {
-    final GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasNameWithPrefix);
-    final Map<String, Set<AliasMetadata>> indexNameToAliasMap =
-        getOptimizeElasticClient().getAlias(aliasesRequest).getAliases();
-    return indexNameToAliasMap.keySet().stream()
-        .filter(
-            index -> indexNameToAliasMap.get(index).stream().anyMatch(alias -> !alias.writeIndex()))
-        .toList();
-  }
-
-  @Override
-  public EventProcessInstanceIndex getEventInstanceIndex(String indexId) {
-    return new EventProcessInstanceIndexES(indexId);
-  }
-
-  @Override
-  public EventIndex getEventIndex() {
-    return new EventIndexES();
-  }
-
-  @Override
-  public VariableUpdateInstanceIndex getVariableUpdateInstanceIndex() {
-    return new VariableUpdateInstanceIndexES();
   }
 
   public OptimizeIndexNameService getIndexNameService() {
