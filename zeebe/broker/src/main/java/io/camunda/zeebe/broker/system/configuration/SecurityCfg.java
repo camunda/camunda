@@ -66,7 +66,7 @@ public final class SecurityCfg implements ConfigurationEntry {
 
   @Override
   public int hashCode() {
-    return Objects.hash(enabled, certificateChainPath, privateKeyPath);
+    return Objects.hash(enabled, certificateChainPath, privateKeyPath, keyStore);
   }
 
   @Override
@@ -81,7 +81,8 @@ public final class SecurityCfg implements ConfigurationEntry {
     final var that = (SecurityCfg) o;
     return enabled == that.enabled
         && Objects.equals(certificateChainPath, that.certificateChainPath)
-        && Objects.equals(privateKeyPath, that.privateKeyPath);
+        && Objects.equals(privateKeyPath, that.privateKeyPath)
+        && Objects.equals(keyStore, that.keyStore);
   }
 
   @Override
@@ -94,6 +95,8 @@ public final class SecurityCfg implements ConfigurationEntry {
         + "'"
         + ", privateKeyPath='"
         + privateKeyPath
-        + "'}";
+        + ", keyStore="
+        + keyStore
+        + '}';
   }
 }

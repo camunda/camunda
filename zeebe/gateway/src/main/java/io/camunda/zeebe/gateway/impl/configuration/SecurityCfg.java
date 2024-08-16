@@ -65,7 +65,7 @@ public final class SecurityCfg {
 
   @Override
   public int hashCode() {
-    return Objects.hash(enabled, certificateChainPath, privateKeyPath, authentication);
+    return Objects.hash(enabled, certificateChainPath, privateKeyPath, authentication, keyStore);
   }
 
   @Override
@@ -80,7 +80,8 @@ public final class SecurityCfg {
     return enabled == that.enabled
         && Objects.equals(certificateChainPath, that.certificateChainPath)
         && Objects.equals(privateKeyPath, that.privateKeyPath)
-        && Objects.equals(authentication, that.authentication);
+        && Objects.equals(authentication, that.authentication)
+        && Objects.equals(keyStore, that.keyStore);
   }
 
   @Override
@@ -94,6 +95,8 @@ public final class SecurityCfg {
         + privateKeyPath
         + ", authentication="
         + authentication
+        + ", keyStore="
+        + keyStore
         + '}';
   }
 }
