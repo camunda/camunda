@@ -160,7 +160,7 @@
       # security:
         # Enables TLS authentication between this gateway and other nodes in the cluster
         # If this setting is enabled then the certificate and private key must either be provided separately
-        # or in a pkcs12 file containing both, these options are mutually exclusive and setting both at the same time will
+        # or in a keystore file containing both, these options are mutually exclusive and setting both at the same time will
         # cause an error.
         # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_SECURITY_ENABLED.
         # enabled: false
@@ -173,15 +173,16 @@
         # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_SECURITY_PRIVATEKEYPATH.
         # privateKeyPath:
 
-        # pkcs12:
-          # Configures the pkcs12 file containing both the certificate chain and the private key.
+        # keyStore:
+          # Configures the keystore file containing both the certificate chain and the private key.
+          # Currently only supports PKCS12 format.
 
-          # The path for pkcs12 file
-          # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_SECURITY_PKCS12_FILEPATH
+          # The path for keystore file
+          # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_SECURITY_KEYSTORE_FILEPATH
           # filePath:
 
-          # Sets the password for the pkcs12 file, if not set it is assumed there is no password
-          # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_SECURITY_PKCS12_PASSWORD
+          # Sets the password for the keystore file, if not set it is assumed there is no password
+          # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_SECURITY_KEYSTORE_PASSWORD
           # password:
 
 

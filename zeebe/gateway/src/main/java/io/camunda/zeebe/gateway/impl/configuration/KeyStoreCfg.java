@@ -5,29 +5,20 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.broker.system.configuration;
+package io.camunda.zeebe.gateway.impl.configuration;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.util.Objects;
 
-public class Pkcs12Cfg implements ConfigurationEntry {
+public class KeyStoreCfg {
   private File filePath;
   private String password;
-
-  @Override
-  public void init(final BrokerCfg globalConfig, final String brokerBase) {
-    final var brokerBasePath = Path.of(brokerBase);
-    if (filePath != null) {
-      filePath = brokerBasePath.resolve(filePath.toPath()).toFile();
-    }
-  }
 
   public File getFilePath() {
     return filePath;
   }
 
-  public Pkcs12Cfg setFilePath(final File filePath) {
+  public KeyStoreCfg setFilePath(final File filePath) {
     this.filePath = filePath;
     return this;
   }
@@ -36,7 +27,7 @@ public class Pkcs12Cfg implements ConfigurationEntry {
     return password;
   }
 
-  public Pkcs12Cfg setPassword(final String password) {
+  public KeyStoreCfg setPassword(final String password) {
     this.password = password;
     return this;
   }
@@ -54,7 +45,7 @@ public class Pkcs12Cfg implements ConfigurationEntry {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final Pkcs12Cfg that = (Pkcs12Cfg) o;
+    final KeyStoreCfg that = (KeyStoreCfg) o;
     return Objects.equals(filePath, that.filePath) && Objects.equals(password, that.password);
   }
 }

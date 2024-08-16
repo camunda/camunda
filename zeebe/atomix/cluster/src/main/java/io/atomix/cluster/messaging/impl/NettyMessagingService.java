@@ -486,9 +486,9 @@ public final class NettyMessagingService implements ManagedMessagingService {
 
       final SslContextBuilder sslContextBuilder = SslContextBuilder.forClient();
 
-      if (config.getPkcs12() != null) {
+      if (config.getKeyStore() != null) {
         sslContextBuilder.trustManager(
-            getCertificateChain(config.getPkcs12(), config.getPkcs12Password()));
+            getCertificateChain(config.getKeyStore(), config.getKeyStorePassword()));
       } else {
         sslContextBuilder.trustManager(config.getCertificateChain());
       }
@@ -506,9 +506,10 @@ public final class NettyMessagingService implements ManagedMessagingService {
     try {
       final SslContextBuilder sslContextBuilder;
 
-      if (config.getPkcs12() != null) {
-        final var privateKey = getPrivateKey(config.getPkcs12(), config.getPkcs12Password());
-        final var certChain = getCertificateChain(config.getPkcs12(), config.getPkcs12Password());
+      if (config.getKeyStore() != null) {
+        final var privateKey = getPrivateKey(config.getKeyStore(), config.getKeyStorePassword());
+        final var certChain =
+            getCertificateChain(config.getKeyStore(), config.getKeyStorePassword());
 
         sslContextBuilder = SslContextBuilder.forServer(privateKey, certChain);
       } else {
@@ -533,9 +534,9 @@ public final class NettyMessagingService implements ManagedMessagingService {
     }
   }
 
-  private X509Certificate[] getCertificateChain(final File pkcs12File, final String password)
+  private X509Certificate[] getCertificateChain(final File keyStoreFile, final String password)
       throws CertificateException, KeyStoreException, IOException, NoSuchAlgorithmException {
-    final var keyStore = getKeyStore(pkcs12File, password);
+    final var keyStore = getKeyStore(keyStoreFile, password);
 
     final String alias = keyStore.aliases().nextElement();
     return Arrays.stream(keyStore.getCertificateChain(alias))
@@ -543,22 +544,22 @@ public final class NettyMessagingService implements ManagedMessagingService {
         .toArray(X509Certificate[]::new);
   }
 
-  private PrivateKey getPrivateKey(final File pkcs12File, final String password)
+  private PrivateKey getPrivateKey(final File keyStoreFile, final String password)
       throws CertificateException,
           KeyStoreException,
           IOException,
           NoSuchAlgorithmException,
           UnrecoverableKeyException {
-    final var keyStore = getKeyStore(pkcs12File, password);
+    final var keyStore = getKeyStore(keyStoreFile, password);
 
     final String alias = keyStore.aliases().nextElement();
     return (PrivateKey) keyStore.getKey(alias, password.toCharArray());
   }
 
-  private KeyStore getKeyStore(final File pkcs12File, final String password)
+  private KeyStore getKeyStore(final File keyStoreFile, final String password)
       throws KeyStoreException, IOException, CertificateException, NoSuchAlgorithmException {
     final var keyStore = KeyStore.getInstance("PKCS12");
-    keyStore.load(new FileInputStream(pkcs12File), password.toCharArray());
+    keyStore.load(new FileInputStream(keyStoreFile), password.toCharArray());
 
     return keyStore;
   }

@@ -163,8 +163,8 @@ public final class GatewayBasedConfiguration {
       messaging
           .setTlsEnabled(true)
           .configureTls(
-              security.getPkcs12().getFilePath(),
-              security.getPkcs12().getPassword(),
+              security.getKeyStore().getFilePath(),
+              security.getKeyStore().getPassword(),
               security.getPrivateKeyPath(),
               security.getCertificateChainPath());
     }

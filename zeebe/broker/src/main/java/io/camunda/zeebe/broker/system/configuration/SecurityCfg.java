@@ -17,7 +17,7 @@ public final class SecurityCfg implements ConfigurationEntry {
   private boolean enabled = DEFAULT_ENABLED;
   private File certificateChainPath;
   private File privateKeyPath;
-  private final Pkcs12Cfg pkcs12 = new Pkcs12Cfg();
+  private final KeyStoreCfg keyStore = new KeyStoreCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -30,7 +30,7 @@ public final class SecurityCfg implements ConfigurationEntry {
       privateKeyPath = brokerBasePath.resolve(privateKeyPath.toPath()).toFile();
     }
 
-    pkcs12.init(globalConfig, brokerBase);
+    keyStore.init(globalConfig, brokerBase);
   }
 
   public boolean isEnabled() {
@@ -60,8 +60,8 @@ public final class SecurityCfg implements ConfigurationEntry {
     return this;
   }
 
-  public Pkcs12Cfg getPkcs12() {
-    return pkcs12;
+  public KeyStoreCfg getKeyStore() {
+    return keyStore;
   }
 
   @Override

@@ -18,7 +18,7 @@ public final class SecurityCfg {
   private File certificateChainPath;
   private File privateKeyPath;
   private AuthenticationCfg authentication = new AuthenticationCfg();
-  private Pkcs12Cfg pkcs12 = new Pkcs12Cfg();
+  private KeyStoreCfg keyStore = new KeyStoreCfg();
 
   public boolean isEnabled() {
     return enabled;
@@ -55,12 +55,12 @@ public final class SecurityCfg {
     this.authentication = authentication;
   }
 
-  public Pkcs12Cfg getPkcs12() {
-    return pkcs12;
+  public KeyStoreCfg getKeyStore() {
+    return keyStore;
   }
 
-  public void setPkcs12(final Pkcs12Cfg pkcs12) {
-    this.pkcs12 = pkcs12;
+  public void setKeyStore(final KeyStoreCfg keyStore) {
+    this.keyStore = keyStore;
   }
 
   @Override

@@ -36,8 +36,8 @@ public class ApiMessagingServiceStep extends AbstractBrokerStartupStep {
       messagingConfig
           .setTlsEnabled(true)
           .configureTls(
-              securityCfg.getPkcs12().getFilePath(),
-              securityCfg.getPkcs12().getPassword(),
+              securityCfg.getKeyStore().getFilePath(),
+              securityCfg.getKeyStore().getPassword(),
               securityCfg.getPrivateKeyPath(),
               securityCfg.getCertificateChainPath());
     }

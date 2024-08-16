@@ -33,8 +33,8 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 final class SecureClusteredMessagingIT {
   private final SelfSignedCertificate certificate = newCertificate();
-  private final String pkcs12Password = "password";
-  private final File pkcs12 = createPKCS12File(certificate);
+  private final String keyStorePassword = "password";
+  private final File keyStore = createPKCS12File(certificate);
 
   private static TestCluster createCluster(
       final Consumer<GatewayCfg> gateCfgChanges, final Consumer<BrokerCfg> brokerCfgChanges) {
@@ -132,14 +132,14 @@ final class SecureClusteredMessagingIT {
 
   private void configureGatewayWithPkcs12(final GatewayCfg config) {
     config.getCluster().getSecurity().setEnabled(true);
-    config.getCluster().getSecurity().getPkcs12().setFilePath(pkcs12);
-    config.getCluster().getSecurity().getPkcs12().setPassword(pkcs12Password);
+    config.getCluster().getSecurity().getKeyStore().setFilePath(keyStore);
+    config.getCluster().getSecurity().getKeyStore().setPassword(keyStorePassword);
   }
 
   private void configureBrokerWithPkcs12(final BrokerCfg config) {
     config.getNetwork().getSecurity().setEnabled(true);
-    config.getNetwork().getSecurity().getPkcs12().setFilePath(pkcs12);
-    config.getNetwork().getSecurity().getPkcs12().setPassword(pkcs12Password);
+    config.getNetwork().getSecurity().getKeyStore().setFilePath(keyStore);
+    config.getNetwork().getSecurity().getKeyStore().setPassword(keyStorePassword);
   }
 
   private File createPKCS12File(final SelfSignedCertificate cert) {
@@ -149,12 +149,12 @@ final class SecureClusteredMessagingIT {
 
       final Certificate[] chain = new Certificate[] {cert.cert()};
 
-      store.setKeyEntry("key", cert.key(), pkcs12Password.toCharArray(), chain);
+      store.setKeyEntry("key", cert.key(), keyStorePassword.toCharArray(), chain);
 
       final var file = Files.createTempFile("id", ".p12").toFile();
       final FileOutputStream fOut = new FileOutputStream(file);
 
-      store.store(fOut, pkcs12Password.toCharArray());
+      store.store(fOut, keyStorePassword.toCharArray());
 
       fOut.close();
 
