@@ -51,7 +51,7 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
                   changeset,
                   JobRecord.RETRIES,
                   command.getValue().getRetries(),
-                  (retries) -> jobUpdateBehaviour.updateJobRetries(jobKey, retries, job, command),
+                  (retries) -> jobUpdateBehaviour.updateJobRetries(jobKey, retries, job),
                   errors);
               jobChange(
                   changeset,

@@ -82,7 +82,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new ArrayProperty<>("changedAttributes", StringValue::new);
 
   public JobRecord() {
-    super(20);
+    super(21);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)

@@ -52,8 +52,7 @@ public class JobUpdateBehaviour {
   public Optional<String> updateJobRetries(
       final long jobKey,
       final int retries,
-      final JobRecord jobRecord,
-      final TypedRecord<JobRecord> command) {
+      final JobRecord jobRecord) {
     if (retries < 1) {
       return Optional.of(NEGATIVE_RETRIES_MESSAGE.formatted(jobKey, retries));
     }
