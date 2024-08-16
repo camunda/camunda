@@ -39,7 +39,6 @@ let identityVersion;
 
 const commonEnv = {
   OPTIMIZE_API_ACCESS_TOKEN: 'secret',
-  OPTIMIZE_SUPER_USER_IDS: '[demo]',
 };
 
 const cloudEnv = {
