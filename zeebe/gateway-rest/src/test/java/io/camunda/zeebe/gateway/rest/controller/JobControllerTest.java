@@ -10,11 +10,11 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 import io.camunda.service.JobServices;
+import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -342,7 +342,7 @@ public class JobControllerTest extends RestControllerTest {
   @Test
   void shouldUpdateJob() {
     // given
-    when(jobServices.updateJob(anyLong(), anyMap()))
+    when(jobServices.updateJob(anyLong(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -364,13 +364,13 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(jobServices).updateJob(1L, Map.of("retries", 5, "timeout", 1000L));
+    Mockito.verify(jobServices).updateJob(1L, new UpdateJobChangeset(5, 1000L));
   }
 
   @Test
   void shouldUpdateJobWithOnlyRetries() {
     // given
-    when(jobServices.updateJob(anyLong(), anyMap()))
+    when(jobServices.updateJob(anyLong(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -391,13 +391,13 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(jobServices).updateJob(1L, Map.of("retries", 5));
+    Mockito.verify(jobServices).updateJob(1L, new UpdateJobChangeset(5, null));
   }
 
   @Test
   void shouldUpdateJobWithOnlyTimeout() {
     // given
-    when(jobServices.updateJob(anyLong(), anyMap()))
+    when(jobServices.updateJob(anyLong(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -418,7 +418,7 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(jobServices).updateJob(1L, Map.of("timeout", 1000L));
+    Mockito.verify(jobServices).updateJob(1L, new UpdateJobChangeset(null, 1000L));
   }
 
   @Test
