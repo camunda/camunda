@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
 public interface ScheduledTaskMetrics {
+
   void incrementScheduledTasks();
 
   void decrementScheduledTasks();
@@ -31,6 +32,9 @@ public interface ScheduledTaskMetrics {
 
       @Override
       public void observeScheduledTaskExecution(final long delay) {}
+
+      @Override
+      public void close() {}
     };
   }
 
@@ -38,16 +42,22 @@ public interface ScheduledTaskMetrics {
     return new ScheduledTaskMetricsImpl(registry, partition);
   }
 
+  void close();
+
   final class ScheduledTaskMetricsImpl implements ScheduledTaskMetrics {
     private final LongAdder scheduledTasksCounter = new LongAdder();
     private final Timer scheduledTaskDelay;
+    private final Gauge scheduledTasksGauge;
+    private final MeterRegistry registry;
 
     private ScheduledTaskMetricsImpl(final MeterRegistry registry, final int partition) {
+      this.registry = registry;
       final var tags = Tags.of("partition", String.valueOf(partition));
-      Gauge.builder("zeebe.processing.scheduling.tasks", scheduledTasksCounter, LongAdder::sum)
-          .tags(tags)
-          .description("The number of currently scheduled tasks")
-          .register(registry);
+      scheduledTasksGauge =
+          Gauge.builder("zeebe.processing.scheduling.tasks", scheduledTasksCounter, LongAdder::sum)
+              .tags(tags)
+              .description("The number of currently scheduled tasks")
+              .register(registry);
       scheduledTaskDelay =
           Timer.builder("zeebe.processing.scheduling.delay")
               .description("The delay of scheduled tasks")
@@ -69,6 +79,14 @@ public interface ScheduledTaskMetrics {
     @Override
     public void observeScheduledTaskExecution(final long delay) {
       scheduledTaskDelay.record(delay, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public void close() {
+      scheduledTasksGauge.close();
+      scheduledTaskDelay.close();
+      registry.remove(scheduledTasksGauge);
+      registry.remove(scheduledTaskDelay);
     }
   }
 }
