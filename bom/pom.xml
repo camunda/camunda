@@ -228,9 +228,6 @@
           <plugin>
             <groupId>com.diffplug.spotless</groupId>
             <artifactId>spotless-maven-plugin</artifactId>
-            <configuration>
-              <ratchetFrom>origin/main</ratchetFrom>
-            </configuration>
             <executions>
               <execution>
                 <id>spotless-format</id>
