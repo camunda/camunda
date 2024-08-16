@@ -31,22 +31,6 @@ public final class SecurityCfg implements ConfigurationEntry {
     }
 
     pkcs12.init(globalConfig, brokerBase);
-
-    if ((certificateChainPath != null || privateKeyPath != null) && pkcs12.getFilePath() != null) {
-      throw new IllegalArgumentException(
-          String.format(
-              """
-                      Cannot provide both separate certificate chain and or private key along with a
-                      PKCS12 file, use only one approach.
-
-                      certificateChainPath: %s
-                      privateKeyPath: %s
-
-                      OR
-
-                      pkcs12Path: %s""",
-              certificateChainPath, privateKeyPath, pkcs12.getFilePath()));
-    }
   }
 
   public boolean isEnabled() {

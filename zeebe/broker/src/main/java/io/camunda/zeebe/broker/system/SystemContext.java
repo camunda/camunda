@@ -248,6 +248,19 @@ public final class SystemContext {
     final var privateKeyPath = security.getPrivateKeyPath();
     final var pkcs12Path = security.getPkcs12().getFilePath();
 
+    if ((certificateChainPath != null || privateKeyPath != null) && pkcs12Path != null) {
+      throw new IllegalArgumentException(
+          String.format(
+              """
+                      Cannot provide both separate certificate chain and or private key along with a
+                      PKCS12 file, use only one approach.
+                      certificateChainPath: %s
+                      privateKeyPath: %s
+                      OR
+                      pkcs12Path: %s""",
+              certificateChainPath, privateKeyPath, pkcs12Path));
+    }
+
     if (pkcs12Path == null) {
       if (certificateChainPath == null) {
         throw new IllegalArgumentException(
