@@ -50,10 +50,17 @@ public final class UserTaskRequestValidator {
       final Changeset changeset = updateRequest.getChangeset();
       validateDate(changeset.getDueDate(), "due date", violations);
       validateDate(changeset.getFollowUpDate(), "follow-up date", violations);
+      validatePriority(changeset.getPriority(), violations);
     }
     if (violations.isEmpty()) {
       return Optional.empty();
     }
     return createProblemDetail(violations);
+  }
+
+  private static void validatePriority(final Integer priority, final List<String> violations) {
+    if (priority != null && (priority < 0 || priority > 100)) {
+      violations.add("Priority field must be an integer between 0 and 100. Provided: " + priority);
+    }
   }
 }

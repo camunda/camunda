@@ -232,6 +232,9 @@ public class RequestMapper {
     if (changeset.getFollowUpDate() != null) {
       record.setFollowUpDate(changeset.getFollowUpDate()).setFollowUpDateChanged();
     }
+    if (changeset.getPriority() != null) {
+      record.setPriority(changeset.getPriority()).setPriorityChanged();
+    }
     return record;
   }
 

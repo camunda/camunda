@@ -15,6 +15,14 @@
           "code": "java.method.removed",
           "old": "method boolean io.camunda.zeebe.client.CredentialsProvider::shouldRetryRequest(java.lang.Throwable)",
           "justification": "Replaced by a multi-protocol capable version, and is a known breaking change (as adding REST is a breaking change)"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.attributeValueChanged",
+          "old": "class io.camunda.zeebe.client.protocol.rest.Changeset",
+          "justification": "Inclusion of the User Task Priority field in V2 API. No compatibility issues expected.",
+          "newValue": "{\"dueDate\", \"followUpDate\", \"candidateUsers\", \"candidateGroups\", \"priority\"}",
+          "oldValue": "{\"dueDate\", \"followUpDate\", \"candidateUsers\", \"candidateGroups\"}"
         }
       ]
     }

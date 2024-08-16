@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -239,7 +240,8 @@ public class UserTaskControllerTest extends RestControllerTest {
             "candidateGroups": ["foo"],
             "candidateUsers": ["bar"],
             "dueDate": "%s",
-            "followUpDate": "%s"
+            "followUpDate": "%s",
+            "priority": 33
           }
         }"""
             .formatted(TEST_TIME, TEST_TIME);
@@ -264,11 +266,13 @@ public class UserTaskControllerTest extends RestControllerTest {
             UserTaskRecord.CANDIDATE_USERS,
             UserTaskRecord.CANDIDATE_GROUPS,
             UserTaskRecord.DUE_DATE,
-            UserTaskRecord.FOLLOW_UP_DATE)
+            UserTaskRecord.FOLLOW_UP_DATE,
+            UserTaskRecord.PRIORITY)
         .hasDueDate(TEST_TIME)
         .hasFollowUpDate(TEST_TIME)
         .hasCandidateGroupsList("foo")
-        .hasCandidateUsersList("bar");
+        .hasCandidateUsersList("bar")
+        .hasPriority(33);
   }
 
   @ParameterizedTest
@@ -362,7 +366,8 @@ public class UserTaskControllerTest extends RestControllerTest {
             "candidateGroups": ["foo"],
             "candidateUsers": ["bar"],
             "dueDate": "%s",
-            "followUpDate": "%s"
+            "followUpDate": "%s",
+            "priority": 33
           }
         }"""
             .formatted(TEST_TIME, TEST_TIME);
@@ -388,11 +393,13 @@ public class UserTaskControllerTest extends RestControllerTest {
             UserTaskRecord.CANDIDATE_USERS,
             UserTaskRecord.CANDIDATE_GROUPS,
             UserTaskRecord.DUE_DATE,
-            UserTaskRecord.FOLLOW_UP_DATE)
+            UserTaskRecord.FOLLOW_UP_DATE,
+            UserTaskRecord.PRIORITY)
         .hasDueDate(TEST_TIME)
         .hasFollowUpDate(TEST_TIME)
         .hasCandidateGroupsList("foo")
-        .hasCandidateUsersList("bar");
+        .hasCandidateUsersList("bar")
+        .hasPriority(33);
   }
 
   @ParameterizedTest
@@ -628,6 +635,55 @@ RFC 3339, section 5.6.",
         .isBadRequest()
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+
+    Mockito.verifyNoInteractions(userTaskServices);
+  }
+
+  static Stream<Arguments> urlsAndPriorityValue() {
+    return urls().flatMap(url -> Stream.of(Arguments.of(url, -1), Arguments.of(url, 101)));
+  }
+
+  @ParameterizedTest
+  @MethodSource("urlsAndPriorityValue")
+  void shouldYieldBadRequestWhenUpdateTaskWithPriorityOutOfBounds(
+      final String baseUrl, final int priority) {
+    // given
+    final var request =
+        """
+         {
+           "changeset": {
+             "priority": %d
+           }
+         }"""
+            .formatted(priority);
+
+    final var expectedBody =
+        """
+         {
+           "type": "about:blank",
+           "status": 400,
+           "title": "INVALID_ARGUMENT",
+           "detail": "Priority field must be an integer between 0 and 100. Provided: %d.",
+           "instance": "%s"
+         }"""
+            .formatted(priority, baseUrl + "/1");
+
+    // when / then
+    webClient
+        .patch()
+        .uri(baseUrl + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectStatus()
+        .isBadRequest()
         .expectBody()
         .json(expectedBody);
 
