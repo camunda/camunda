@@ -17,6 +17,13 @@ public interface TypedResponseWriter {
 
   void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, String reason);
 
+  void writeRejection(
+      final TypedRecord<?> command,
+      final RejectionType type,
+      final String reason,
+      final long requestId,
+      final int requestStreamId);
+
   void writeEvent(TypedRecord<?> event);
 
   void writeEventOnCommand(

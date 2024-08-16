@@ -35,6 +35,14 @@ public final class MessageCorrelationClient {
               .withPartitionId(message.partitionId)
               .withCorrelationKey(message.correlationKey)
               .getFirst();
+  private static final Function<Message, Record<MessageCorrelationRecordValue>>
+      REJECTION_EXPECTATION =
+          (message) ->
+              RecordingExporter.messageCorrelationRecords(MessageCorrelationIntent.CORRELATE)
+                  .onlyCommandRejections()
+                  .withPartitionId(message.partitionId)
+                  .withCorrelationKey(message.correlationKey)
+                  .getFirst();
   private static final Function<Message, Record<MessageCorrelationRecordValue>> EXPECT_NOTHING =
       (message) ->
           RecordingExporter.messageCorrelationRecords(MessageCorrelationIntent.CORRELATE)
@@ -87,6 +95,11 @@ public final class MessageCorrelationClient {
 
   public MessageCorrelationClient onPartition(final int partitionId) {
     this.partitionId = partitionId;
+    return this;
+  }
+
+  public MessageCorrelationClient expectRejection() {
+    expectation = REJECTION_EXPECTATION;
     return this;
   }
 
