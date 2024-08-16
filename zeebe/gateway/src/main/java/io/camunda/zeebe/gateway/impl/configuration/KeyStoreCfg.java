@@ -52,9 +52,6 @@ public class KeyStoreCfg {
   @Override
   public String toString() {
     final var passStr = password == null ? "" : "*****";
-    return "KeyStoreCfg{" +
-        "filePath=" + filePath +
-        ", password='" + passStr + '\'' +
-        '}';
+    return "KeyStoreCfg{" + "filePath=" + filePath + ", password='" + passStr + '\'' + '}';
   }
 }
