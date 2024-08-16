@@ -161,6 +161,8 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .maxCommandsInBatch(context.getBrokerCfg().getProcessing().getMaxCommandsInBatch())
         .setEnableAsyncScheduledTasks(
             context.getBrokerCfg().getProcessing().isEnableAsyncScheduledTasks())
+        .setScheduledTaskCheckInterval(
+            context.getBrokerCfg().getProcessing().getScheduledTaskCheckInterval())
         .processingFilter(processingFilter)
         .listener(
             processedCommand ->

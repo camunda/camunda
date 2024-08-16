@@ -18,6 +18,7 @@ import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.NoopScheduledCommandCache;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -171,6 +172,12 @@ public final class StreamProcessorBuilder {
   public StreamProcessorBuilder meterRegistry(
       final io.micrometer.core.instrument.MeterRegistry meterRegistry) {
     streamProcessorContext.meterRegistry(meterRegistry);
+    return this;
+  }
+
+  public StreamProcessorBuilder setScheduledTaskCheckInterval(
+      final Duration scheduledTaskCheckInterval) {
+    streamProcessorContext.setScheduledTaskCheckInterval(scheduledTaskCheckInterval);
     return this;
   }
 }

@@ -69,6 +69,7 @@ class ProcessingScheduleServiceTest {
             () -> testWriter,
             commandCache,
             actorScheduler.getClock(),
+            Duration.ofSeconds(1),
             ScheduledTaskMetrics.noop());
 
     scheduleService = new TestScheduleServiceActorDecorator(processingScheduleService);
@@ -164,6 +165,7 @@ class ProcessingScheduleServiceTest {
             () -> testWriter,
             new NoopScheduledCommandCache(),
             InstantSource.system(),
+            Duration.ofSeconds(1),
             ScheduledTaskMetrics.noop());
     final var mockedTask = spy(new DummyTask());
 
@@ -188,6 +190,7 @@ class ProcessingScheduleServiceTest {
                 },
                 new NoopScheduledCommandCache(),
                 InstantSource.system(),
+                Duration.ofSeconds(1),
                 ScheduledTaskMetrics.noop()));
 
     // when
@@ -641,6 +644,7 @@ class ProcessingScheduleServiceTest {
               () -> testWriter,
               new NoopScheduledCommandCache(),
               InstantSource.system(),
+              Duration.ofSeconds(1),
               ScheduledTaskMetrics.noop());
       final var mockedTask = spy(new DummyTask());
 

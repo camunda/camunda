@@ -34,13 +34,13 @@ public class ProcessingScheduleServiceImpl
 
   private static final ScheduledTask NOOP_SCHEDULED_TASK = () -> {};
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
-  private static final int PERIODIC_CHECK_INTERVAL_MS = 1000;
 
   private final Supplier<StreamProcessor.Phase> streamProcessorPhaseSupplier;
   private final BooleanSupplier abortCondition;
   private final Supplier<LogStreamWriter> writerSupplier;
   private final StageableScheduledCommandCache commandCache;
   private final InstantSource clock;
+  private final long interval;
   private final ScheduledTaskMetrics metrics;
   private final PriorityQueue<ScheduledTaskImpl> scheduledTasks = new PriorityQueue<>();
   private LogStreamWriter logStreamWriter;
@@ -54,12 +54,14 @@ public class ProcessingScheduleServiceImpl
       final Supplier<LogStreamWriter> writerSupplier,
       final StageableScheduledCommandCache commandCache,
       final InstantSource clock,
+      final Duration interval,
       final ScheduledTaskMetrics metrics) {
     this.streamProcessorPhaseSupplier = streamProcessorPhaseSupplier;
     this.abortCondition = abortCondition;
     this.writerSupplier = writerSupplier;
     this.commandCache = commandCache;
     this.clock = clock;
+    this.interval = interval.toMillis();
     this.metrics = metrics;
   }
 
@@ -116,8 +118,7 @@ public class ProcessingScheduleServiceImpl
     logStreamWriter = writerSupplier.get();
     actorControl = control;
     openFuture.complete(null);
-    actorControl.runAtFixedRate(
-        Duration.ofMillis(PERIODIC_CHECK_INTERVAL_MS), this::processScheduledTasks);
+    actorControl.runAtFixedRate(Duration.ofMillis(interval), this::processScheduledTasks);
     return openFuture;
   }
 
@@ -145,7 +146,7 @@ public class ProcessingScheduleServiceImpl
           metrics.incrementScheduledTasks();
           final var delay = timestamp - clock.millis();
           scheduledTasks.add(scheduledTask);
-          if (delay < PERIODIC_CHECK_INTERVAL_MS / 2) {
+          if (delay < interval / 2) {
             actorControl.schedule(Duration.ofMillis(delay), this::processScheduledTasks);
           }
         });

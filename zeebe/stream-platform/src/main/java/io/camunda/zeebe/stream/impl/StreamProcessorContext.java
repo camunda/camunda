@@ -23,6 +23,7 @@ import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
@@ -55,6 +56,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private EventFilter processingFilter = e -> true;
   private ControllableStreamClock clock;
   private MeterRegistry meterRegistry;
+  private Duration scheduledTaskCheckInterval = Duration.ofSeconds(1);
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -242,5 +244,15 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public MeterRegistry getMeterRegistry() {
     return meterRegistry;
+  }
+
+  public Duration getScheduledTaskCheckInterval() {
+    return scheduledTaskCheckInterval;
+  }
+
+  public StreamProcessorContext setScheduledTaskCheckInterval(
+      final Duration scheduledTaskCheckInterval) {
+    this.scheduledTaskCheckInterval = scheduledTaskCheckInterval;
+    return this;
   }
 }
