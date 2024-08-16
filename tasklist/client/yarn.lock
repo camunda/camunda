@@ -266,10 +266,10 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.2.3"
 
-"@bpmn-io/form-js-carbon-styles@1.8.8":
-  version "1.8.8"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.8.8.tgz#27735328369cb229786a41d1de8dea7e0cc3b198"
-  integrity sha512-dGldJm08sECJsCpjAWWNZYdcAx/pQZKkiG6Vzpf1F0X8NZKb5KqEZhhW3sqjlr7q2eYSv7ffsMx93YL9PHgdng==
+"@bpmn-io/form-js-carbon-styles@1.9.1":
+  version "1.9.1"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.9.1.tgz#041dbd36baeaea5ef6c8c9c2f2232186800f6a6c"
+  integrity sha512-EDwOspZX6uZnfzp5b8OdnFWDRq84CoNb5xW6RZxCOM9EcSmLfElGoEaDNhpI4iuBoRIXh5jmqqyl2UOOTKXmag==
 
 "@bpmn-io/form-js-viewer@1.8.8":
   version "1.8.8"
