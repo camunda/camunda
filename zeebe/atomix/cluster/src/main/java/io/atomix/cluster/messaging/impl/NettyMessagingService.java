@@ -552,7 +552,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     final var keyStore = getKeyStore(pkcs12File, password);
 
     final String alias = keyStore.aliases().nextElement();
-    return (PrivateKey) keyStore.getKey(alias, null);
+    return (PrivateKey) keyStore.getKey(alias, password.toCharArray());
   }
 
   private KeyStore getKeyStore(final File pkcs12File, final String password)

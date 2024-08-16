@@ -149,7 +149,7 @@ final class SecureClusteredMessagingIT {
 
       final Certificate[] chain = new Certificate[] {cert.cert()};
 
-      store.setKeyEntry("key", cert.key(), null, chain);
+      store.setKeyEntry("key", cert.key(), pkcs12Password.toCharArray(), chain);
 
       final var file = Files.createTempFile("id", ".p12").toFile();
       final FileOutputStream fOut = new FileOutputStream(file);
