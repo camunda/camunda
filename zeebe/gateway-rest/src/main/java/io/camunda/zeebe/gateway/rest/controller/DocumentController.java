@@ -76,15 +76,19 @@ public class DocumentController {
         MediaType.APPLICATION_PROBLEM_JSON_VALUE
       })
   public ResponseEntity<StreamingResponseBody> getDocumentContent(
-      @PathVariable String documentId, @RequestParam(required = false) String storeId)
-      throws IOException {
+      @PathVariable String documentId, @RequestParam(required = false) String storeId) {
 
     try (final InputStream contentInputStream = getDocumentContentStream(documentId, storeId)) {
       return ResponseEntity.ok().body(contentInputStream::transferTo);
+    } catch (IOException e) {
+      // we can't return a generic Object type when streaming a response due to Spring MVC
+      // limitations
+      // exception handling is done in the exception handler below
+      throw new DocumentContentFetchException("Failed to get document content", e);
     }
   }
 
-  @ExceptionHandler(CamundaServiceException.class)
+  @ExceptionHandler(DocumentContentFetchException.class)
   public ResponseEntity<ProblemDetail> handleDocumentContentException(CamundaServiceException e) {
     final var problemDetail =
         RestErrorMapper.createProblemDetail(
@@ -123,5 +127,11 @@ public class DocumentController {
         RestErrorMapper.createProblemDetail(
             HttpStatus.NOT_IMPLEMENTED, "Not implemented", "Not implemented");
     return RestErrorMapper.mapProblemToResponse(problemDetail);
+  }
+
+  public static class DocumentContentFetchException extends RuntimeException {
+    public DocumentContentFetchException(String message, Throwable cause) {
+      super(message, cause);
+    }
   }
 }

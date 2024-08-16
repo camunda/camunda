@@ -40,6 +40,14 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     this.documents = documents;
   }
 
+  public DocumentServices(
+      final BrokerClient brokerClient,
+      final CamundaSearchClient searchClient,
+      final ServiceTransformers transformers,
+      final Authentication authentication) {
+    this(brokerClient, searchClient, transformers, authentication, new HashMap<>());
+  }
+
   @Override
   public DocumentServices withAuthentication(final Authentication authentication) {
     return new DocumentServices(
