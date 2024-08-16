@@ -5175,13 +5175,13 @@ bpmn-js-disable-collapsed-subprocess@^0.1.7:
   dependencies:
     min-dash "^4.0.0"
 
-bpmn-js@17.8.1:
-  version "17.8.1"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-17.8.1.tgz#83e7b05e2c7053fc0ef99e975c6b7e461b09daed"
-  integrity sha512-IKcnSBCCzZiTlEevNVGj9UoWksS0nFRw82aABdePY/V2/ZmE7e3Z+5Qgz1jqgC8hUf/NSUegqlIZvoaTq195Yw==
+bpmn-js@17.9.2:
+  version "17.9.2"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-17.9.2.tgz#640595c80129e5378ec2078f1a6dc2c35430d536"
+  integrity sha512-j8exjnIK9h5GR7nqgKE01cj6bfrz5FqH1vE31lOxxg20cJxTRRa99jOBSN5JlH8gxIpTDskv+DAp08ZNwm7ZqQ==
   dependencies:
     bpmn-moddle "^8.1.0"
-    diagram-js "^14.7.1"
+    diagram-js "^14.7.2"
     diagram-js-direct-editing "^3.0.1"
     ids "^1.0.5"
     inherits-browser "^0.1.0"
@@ -6617,7 +6617,7 @@ diagram-js-direct-editing@^3.0.1:
     min-dash "^4.0.0"
     min-dom "^4.0.2"
 
-diagram-js@^14.5.4, diagram-js@^14.7.1:
+diagram-js@^14.5.4:
   version "14.7.1"
   resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-14.7.1.tgz#aa5e84b001ce0cb90084f8834b5097eb3a6b7472"
   integrity sha512-XSWuB35iRuKPUVdYdArJb7OimI1oGj61M/7AtyfyS9uwlW//Z7edm4/yNbEUA4MEGhHJZbzg3wLexB1g2N/RmA==
@@ -6631,6 +6631,21 @@ diagram-js@^14.5.4, diagram-js@^14.7.1:
     object-refs "^0.4.0"
     path-intersection "^3.0.0"
     tiny-svg "^3.0.1"
+
+diagram-js@^14.7.2:
+  version "14.8.0"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-14.8.0.tgz#90942faf7c9d0b727a8a4d28ffc88c08140f8e6c"
+  integrity sha512-HV3R6i+hl2PyhsdOQ1pqOsI+JCkX/bYJiHgO5zAaExORtuDrdGVDW7lKsEfcrcGA0fXfpEcmerjOmdH/PIvyJA==
+  dependencies:
+    "@bpmn-io/diagram-js-ui" "^0.2.3"
+    clsx "^2.1.0"
+    didi "^10.2.2"
+    inherits-browser "^0.1.0"
+    min-dash "^4.1.0"
+    min-dom "^4.2.1"
+    object-refs "^0.4.0"
+    path-intersection "^3.0.0"
+    tiny-svg "^3.1.2"
 
 diagram-js@^7.8.2:
   version "7.9.0"
