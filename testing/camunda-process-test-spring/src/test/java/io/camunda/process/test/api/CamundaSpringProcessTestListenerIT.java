@@ -36,6 +36,7 @@ public class CamundaSpringProcessTestListenerIT {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .name("start")
+            .zeebeOutputExpression("\"active\"", "status")
             .userTask()
             .name("task")
             .endEvent()
@@ -53,6 +54,7 @@ public class CamundaSpringProcessTestListenerIT {
     CamundaAssert.assertThat(processInstance)
         .isActive()
         .hasCompletedElements("start")
-        .hasActiveElements("task");
+        .hasActiveElements("task")
+        .hasVariable("status", "active");
   }
 }
