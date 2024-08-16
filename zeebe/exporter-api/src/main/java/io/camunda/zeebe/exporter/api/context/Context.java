@@ -32,8 +32,11 @@ public interface Context {
   Logger getLogger();
 
   /**
-   * @return a clock that provides the current time. Use this instead of system time to ensure that
-   *     time is controllable.
+   * A clock that provides the current time. Use this instead of system time to ensure that time is
+   * controllable. Especially relevant when comparing the "current" time against record timestamps.
+   *
+   * <p>This clock is not used by the {@link Controller} to trigger scheduled tasks, these still
+   * rely on uncontrollable system time.
    */
   InstantSource clock();
 
