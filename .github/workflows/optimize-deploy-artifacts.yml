@@ -79,7 +79,7 @@ jobs:
         project_name: smoketest
       env:
         OPTIMIZE_IMAGE_TAG: ${{ env.DOCKER_TAG }}
-        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}
+        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
 
     - name: Wait for Optimize to start
       run: ./.github/optimize/scripts/wait-for.sh http://localhost:8090/ready
