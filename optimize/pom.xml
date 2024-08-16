@@ -28,7 +28,7 @@
     <!-- database config -->
     <elasticsearch.version>7.17.23</elasticsearch.version>
     <opensearch.version>2.10.1</opensearch.version>
-    <awssdk.version>2.27.2</awssdk.version>
+    <awssdk.version>2.27.6</awssdk.version>
     <!-- The default es 8 version we are going to be testing with-->
     <elasticsearch8.test.version>8.9.0</elasticsearch8.test.version>
     <!-- The default opensearch version we are going to be testing with-->
