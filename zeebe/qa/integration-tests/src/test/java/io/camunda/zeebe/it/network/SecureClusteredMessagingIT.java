@@ -37,8 +37,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 @ZeebeIntegration
 final class SecureClusteredMessagingIT {
   private static final SelfSignedCertificate CERTIFICATE = newCertificate();
-  private final String pkcs12Password = "password";
-  private final File pkcs12 = createPKCS12File(certificate);
+  private final String keyStorePassword = "password";
+  private final File keyStore = createPKCS12File(certificate);
 
   @TestZeebe(autoStart = false)
   private final TestCluster cluster =
