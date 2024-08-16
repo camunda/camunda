@@ -113,6 +113,7 @@
       "matchFileNames": ["optimize/**"],
       "matchPackagePatterns": [
         "@carbon/react",
+        "node-fetch",
         "old-bpmn-js",
         "react",
         "react-dom",
