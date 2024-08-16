@@ -8,6 +8,7 @@
 package io.camunda.service.license;
 
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.micrometer.common.util.StringUtils;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
 import org.camunda.bpm.licensecheck.LicenseKey;
 import org.camunda.bpm.licensecheck.LicenseKeyImpl;
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory;
 public class CamundaLicense {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaLicense.class);
+  private static final String UNKNOWN_LICENSE_TYPE = "unknown";
   private boolean isValid;
   private String licenseType;
   private boolean isInitialized;
@@ -38,8 +40,13 @@ public class CamundaLicense {
 
   public synchronized void initializeWithLicense(final String license) {
     if (!isInitialized) {
-      isValid = determineLicenseValidity(license);
-      licenseType = getLicenseTypeFromProperty(license);
+      if (StringUtils.isNotBlank(license)) {
+        isValid = determineLicenseValidity(license);
+        licenseType = getLicenseTypeFromProperty(license);
+      } else {
+        LOGGER.error(
+            "There was no license detected when one is expected. Please provide a license.");
+      }
 
       isInitialized = true;
     }
@@ -54,24 +61,25 @@ public class CamundaLicense {
   private String getLicenseTypeFromProperty(final String licenseStr) {
     try {
       final LicenseKey licenseKey = getLicenseKey(licenseStr);
-      if (licenseKey.getProperties().containsKey("licenseType")) {
-        return licenseKey.getProperties().get("licenseType");
-      } else {
+      final String licenseType =
+          licenseKey.getProperties().getOrDefault("licenseType", UNKNOWN_LICENSE_TYPE);
+
+      if (UNKNOWN_LICENSE_TYPE.equals(licenseType)) {
         LOGGER.error(
             "Expected a licenseType property on the Camunda License, but none were found.");
-        return "unknown";
       }
+
+      return licenseType;
     } catch (final InvalidLicenseException e) {
       LOGGER.error(
           "Expected a valid license when determining the type of license, but encountered an invalid one instead. ",
           e);
-      return "unknown";
     } catch (final Exception e) {
       LOGGER.error(
           "Expected to determine the license type of the license, but the following unexpected error was encountered: ",
           e);
-      return "unknown";
     }
+    return UNKNOWN_LICENSE_TYPE;
   }
 
   private boolean determineLicenseValidity(final String licenseStr) {
