@@ -104,7 +104,7 @@
     "license-checker": "^25.0.1",
     "lint-staged": "^15.2.2",
     "mock-socket": "^9.3.1",
-    "node-fetch": "^2.6.7",
+    "node-fetch": "^3.0.0",
     "old-bpmn-js": "npm:bpmn-js@8.10",
     "opn": "^6.0.0",
     "prettier": "^3.3.0",
