@@ -13,7 +13,6 @@ import java.util.Locale;
 public enum ExportEntityType {
   SINGLE_PROCESS_REPORT,
   SINGLE_DECISION_REPORT,
-  COMBINED_REPORT,
   DASHBOARD;
 
   @JsonValue

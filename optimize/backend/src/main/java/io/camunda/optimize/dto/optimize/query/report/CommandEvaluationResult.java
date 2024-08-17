@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.query.report;
 
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
@@ -73,7 +73,7 @@ public abstract class CommandEvaluationResult<T> {
     // types of reports
   }
 
-  protected String getGroupByIdentifier(final SingleReportDataDto reportData) {
+  protected String getGroupByIdentifier(final ReportDataDto reportData) {
     if (reportData instanceof ProcessReportDataDto) {
       return ((ProcessReportDataDto) reportData).getGroupBy().toString();
     } else {
@@ -81,7 +81,7 @@ public abstract class CommandEvaluationResult<T> {
     }
   }
 
-  protected String getViewIdentifier(final SingleReportDataDto reportData) {
+  protected String getViewIdentifier(final ReportDataDto reportData) {
     if (reportData instanceof ProcessReportDataDto) {
       return ((ProcessReportDataDto) reportData).getView().createCommandKey().replace("-", "_");
     } else {

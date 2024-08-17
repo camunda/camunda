@@ -9,29 +9,21 @@ package io.camunda.optimize.rest.mapper;
 
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
-import io.camunda.optimize.dto.optimize.query.report.CombinedReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
-import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
-import io.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResponseDto;
-import io.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
 import io.camunda.optimize.dto.optimize.rest.report.AuthorizedReportEvaluationResponseDto;
 import io.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvaluationResponseDto;
-import io.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import io.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import io.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.util.SuppressionConstants;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,32 +51,10 @@ public class ReportRestMapper {
       resolveOwnerAndModifierNames(
           reportEvaluationResult.getEvaluationResult().getReportDefinition());
     }
-    if (reportEvaluationResult.getEvaluationResult()
-        instanceof final CombinedReportEvaluationResult combinedReportEvaluationResult) {
-      final Map<String, AuthorizedProcessReportEvaluationResponseDto<T>> reportResults =
-          combinedReportEvaluationResult.getReportEvaluationResults().stream()
-              .map(this::mapToAuthorizedProcessReportEvaluationResponseDto)
-              .map(response -> (AuthorizedProcessReportEvaluationResponseDto<T>) response)
-              .collect(
-                  Collectors.toMap(
-                      singleReportEvaluationResponse ->
-                          singleReportEvaluationResponse.getReportDefinition().getId(),
-                      Function.identity(),
-                      (x, y) -> y,
-                      LinkedHashMap::new));
-
-      return new AuthorizedCombinedReportEvaluationResponseDto<>(
-          reportEvaluationResult.getCurrentUserRole(),
-          (CombinedReportDefinitionRequestDto)
-              reportEvaluationResult.getEvaluationResult().getReportDefinition(),
-          new CombinedProcessReportResultDataDto<>(
-              reportResults, combinedReportEvaluationResult.getInstanceCount()));
-    } else {
-      final SingleReportEvaluationResult<?> singleReportEvaluationResult =
-          (SingleReportEvaluationResult<?>) reportEvaluationResult.getEvaluationResult();
-      return mapToLocalizedEvaluationResponseDto(
-          reportEvaluationResult.getCurrentUserRole(), singleReportEvaluationResult, locale);
-    }
+    final SingleReportEvaluationResult<?> singleReportEvaluationResult =
+        (SingleReportEvaluationResult<?>) reportEvaluationResult.getEvaluationResult();
+    return mapToLocalizedEvaluationResponseDto(
+        reportEvaluationResult.getCurrentUserRole(), singleReportEvaluationResult, locale);
   }
 
   public void prepareLocalizedRestResponse(
@@ -100,7 +70,7 @@ public class ReportRestMapper {
       final LocalizationService localizationService) {
     if (isManagementOrInstantPreviewReport(reportDefinitionDto)) {
       final String validLocale = localizationService.validateAndReturnValidLocale(locale);
-      if (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
+      if (((ProcessReportDefinitionRequestDto) reportDefinitionDto)
           .getData()
           .isManagementReport()) {
         Optional.ofNullable(
@@ -121,23 +91,18 @@ public class ReportRestMapper {
                     validLocale, reportDefinitionDto.getDescription()))
             .ifPresent(reportDefinitionDto::setDescription);
       }
-      localizeChartLabels(reportDefinitionDto, localizationService, validLocale);
+      localizeChartLabels(reportDefinitionDto.getData(), localizationService, validLocale);
     }
   }
 
   private static void localizeChartLabels(
-      final ReportDefinitionDto<?> reportDefinitionDto,
+      final ReportDataDto reportDataDto,
       final LocalizationService localizationService,
       final String validLocale) {
-    if (reportDefinitionDto.getData() instanceof final SingleReportDataDto reportDataDto
-        && (reportDataDto.getConfiguration() != null)) {
+    if (reportDataDto.getConfiguration() != null) {
       Optional.ofNullable(reportDataDto.getConfiguration().getXLabel())
           .map(xLabel -> localizationService.getLocalizedXLabel(validLocale, xLabel))
-          .ifPresent(
-              localizedLabel ->
-                  ((SingleReportDataDto) reportDefinitionDto.getData())
-                      .getConfiguration()
-                      .setXLabel(localizedLabel));
+          .ifPresent(localizedLabel -> reportDataDto.getConfiguration().setXLabel(localizedLabel));
       if (reportDataDto instanceof final ProcessReportDataDto processReportData) {
         Optional.ofNullable(processReportData.getConfiguration().getYLabel())
             .map(
@@ -145,23 +110,9 @@ public class ReportRestMapper {
                     localizationService.getLocalizedYLabel(
                         validLocale, yLabel, processReportData.getView().getFirstProperty()))
             .ifPresent(
-                localizedLabel ->
-                    ((SingleReportDataDto) reportDefinitionDto.getData())
-                        .getConfiguration()
-                        .setYLabel(localizedLabel));
+                localizedLabel -> reportDataDto.getConfiguration().setYLabel(localizedLabel));
       }
     }
-  }
-
-  private <T>
-      AuthorizedProcessReportEvaluationResponseDto<T>
-          mapToAuthorizedProcessReportEvaluationResponseDto(
-              final SingleReportEvaluationResult<T> singleReportEvaluationResult) {
-    return new AuthorizedProcessReportEvaluationResponseDto<>(
-        null,
-        mapToReportResultResponseDto(singleReportEvaluationResult),
-        (SingleProcessReportDefinitionRequestDto)
-            singleReportEvaluationResult.getReportDefinition());
   }
 
   private <T, R extends ReportDefinitionDto<?>>
@@ -211,11 +162,9 @@ public class ReportRestMapper {
 
   private static boolean isManagementOrInstantPreviewReport(
       final ReportDefinitionDto<?> reportDefinitionDto) {
-    return reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto
-        && (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
-                .getData()
-                .isManagementReport()
-            || ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
+    return reportDefinitionDto instanceof ProcessReportDefinitionRequestDto
+        && (((ProcessReportDefinitionRequestDto) reportDefinitionDto).getData().isManagementReport()
+            || ((ProcessReportDefinitionRequestDto) reportDefinitionDto)
                 .getData()
                 .isInstantPreviewReport());
   }

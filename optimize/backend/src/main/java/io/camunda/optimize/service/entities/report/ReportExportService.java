@@ -9,11 +9,8 @@ package io.camunda.optimize.service.entities.report;
 
 import com.google.common.collect.Sets;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import io.camunda.optimize.service.db.reader.ReportReader;
-import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.AuthorizedCollectionService;
 import io.camunda.optimize.service.security.ReportAuthorizationService;
 import jakarta.ws.rs.ForbiddenException;
@@ -92,20 +89,6 @@ public class ReportExportService {
       final ReportDefinitionDto<?> reportDef = optionalReportDef.get();
       reportDefinitions.add(reportDef);
       alreadyExportedIds.add(reportDef.getId());
-      if (reportDef.isCombined()) {
-        final List<String> singleReportIds =
-            ((CombinedReportDefinitionRequestDto) reportDef).getData().getReportIds();
-        singleReportIds.removeAll(alreadyExportedIds);
-        final List<SingleProcessReportDefinitionRequestDto> singleReportDefs =
-            reportReader.getAllSingleProcessReportsForIdsOmitXml(singleReportIds);
-        if (singleReportDefs.size() != singleReportIds.size()) {
-          throw new OptimizeRuntimeException(
-              "Could not retrieve some reports required by combined report with ID "
-                  + reportIdToExport);
-        }
-        reportDefinitions.addAll(singleReportDefs);
-        alreadyExportedIds.addAll(singleReportIds);
-      }
     }
 
     return reportDefinitions;

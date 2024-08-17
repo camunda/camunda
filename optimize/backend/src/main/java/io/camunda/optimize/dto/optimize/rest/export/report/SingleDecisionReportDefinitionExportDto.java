@@ -10,7 +10,7 @@ package io.camunda.optimize.dto.optimize.rest.export.report;
 import static io.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_DECISION_REPORT;
 
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import io.camunda.optimize.service.db.schema.index.report.SingleDecisionReportIndex;
 import jakarta.validation.constraints.NotNull;
@@ -27,7 +27,7 @@ public class SingleDecisionReportDefinitionExportDto extends ReportDefinitionExp
   @NotNull private DecisionReportDataDto data;
 
   public SingleDecisionReportDefinitionExportDto(
-      final SingleDecisionReportDefinitionRequestDto reportDefinition) {
+      final DecisionReportDefinitionRequestDto reportDefinition) {
     super(
         reportDefinition.getId(),
         SINGLE_DECISION_REPORT,

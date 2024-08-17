@@ -28,7 +28,7 @@ import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTile
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import io.camunda.optimize.dto.optimize.rest.AuthorizationType;
@@ -98,7 +98,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   @Override
   public void handleReportDeleted(final ReportDefinitionDto reportDefinition) {
     if (reportDefinition
-        instanceof final SingleProcessReportDefinitionRequestDto typeCheckedReportDefinition) {
+        instanceof final ProcessReportDefinitionRequestDto typeCheckedReportDefinition) {
       final List<ProcessVariableNameResponseDto> varNamesForReportToRemove =
           processVariableService.getVariableNamesForReportDefinitions(
               Collections.singletonList(typeCheckedReportDefinition));
@@ -124,9 +124,9 @@ public class DashboardService implements ReportReferencingService, CollectionRef
             .orElseThrow(
                 () -> new NotFoundException("Report with id [" + reportId + "] does not exist"));
     if (existingReport
-        instanceof final SingleProcessReportDefinitionRequestDto existingReportDefinition) {
-      final SingleProcessReportDefinitionRequestDto updateReportDefinition =
-          (SingleProcessReportDefinitionRequestDto) updateDefinition;
+        instanceof final ProcessReportDefinitionRequestDto existingReportDefinition) {
+      final ProcessReportDefinitionRequestDto updateReportDefinition =
+          (ProcessReportDefinitionRequestDto) updateDefinition;
       final List<ProcessVariableNameResponseDto> availableVariableNamesForExistingReport =
           processVariableService.getVariableNamesForReportDefinitions(
               Collections.singletonList(existingReportDefinition));
@@ -228,12 +228,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
                     reportCopyId =
                         reportService
                             .copyAndMoveReport(
-                                originalReportId,
-                                userId,
-                                collectionId,
-                                newReportName,
-                                uniqueReportCopies,
-                                keepReportNames)
+                                originalReportId, userId, collectionId, newReportName)
                             .getId();
                     uniqueReportCopies.put(originalReportId, reportCopyId);
                   }
@@ -286,10 +281,10 @@ public class DashboardService implements ReportReferencingService, CollectionRef
                       .map(DashboardReportTileDto::getId)
                       .filter(reportInDashboardId -> !reportId.equals(reportInDashboardId))
                       .toList();
-              final List<SingleProcessReportDefinitionRequestDto> allReportsForIdsOmitXml =
+              final List<ProcessReportDefinitionRequestDto> allReportsForIdsOmitXml =
                   reportReader.getAllReportsForIdsOmitXml(otherReportIdsInDashboard).stream()
-                      .filter(SingleProcessReportDefinitionRequestDto.class::isInstance)
-                      .map(SingleProcessReportDefinitionRequestDto.class::cast)
+                      .filter(ProcessReportDefinitionRequestDto.class::isInstance)
+                      .map(ProcessReportDefinitionRequestDto.class::cast)
                       .toList();
               final List<ProcessVariableNameResponseDto> varNamesForReportsToRemain =
                   processVariableService

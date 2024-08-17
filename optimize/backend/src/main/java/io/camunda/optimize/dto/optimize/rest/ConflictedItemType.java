@@ -12,8 +12,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public enum ConflictedItemType {
   @JsonProperty("alert")
   ALERT,
-  @JsonProperty("combined_report")
-  COMBINED_REPORT,
   @JsonProperty("dashboard")
   DASHBOARD,
   @JsonProperty("collection")

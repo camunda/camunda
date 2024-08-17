@@ -17,9 +17,8 @@ import io.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto
 import io.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import io.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import io.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import io.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
@@ -214,7 +213,7 @@ public class CollectionScopeService {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(
         userId, collectionId);
 
-    final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeDeletion =
+    final List<ReportDefinitionDto<?>> reportsAffectedByScopeDeletion =
         getAllReportsAffectedByScopeDeletion(collectionId, scopeEntryId);
     if (!force) {
       checkForConflictsOnScopeDeletion(userId, reportsAffectedByScopeDeletion);
@@ -225,22 +224,22 @@ public class CollectionScopeService {
   }
 
   private void deleteReports(
-      final String userId, final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeUpdate) {
+      final String userId, final List<ReportDefinitionDto<?>> reportsAffectedByScopeUpdate) {
     reportsAffectedByScopeUpdate.stream()
-        .map(SingleReportDefinitionDto::getId)
+        .map(ReportDefinitionDto::getId)
         .forEach(reportId -> reportService.deleteReportAsUser(userId, reportId, true));
   }
 
   public Set<ConflictedItemDto> getAllConflictsOnScopeDeletion(
       final String userId, final String collectionId, final String scopeId) {
-    final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeDeletion =
+    final List<ReportDefinitionDto<?>> reportsAffectedByScopeDeletion =
         getAllReportsAffectedByScopeDeletion(collectionId, scopeId);
     return getConflictsForReports(userId, reportsAffectedByScopeDeletion);
   }
 
   private void checkForConflictsOnScopeDeletion(
       final String userId,
-      final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeDeletion) {
+      final List<ReportDefinitionDto<?>> reportsAffectedByScopeDeletion) {
     Set<ConflictedItemDto> conflictedItems =
         getConflictsForReports(userId, reportsAffectedByScopeDeletion);
     if (!conflictedItems.isEmpty()) {
@@ -249,7 +248,7 @@ public class CollectionScopeService {
   }
 
   private Set<ConflictedItemDto> getConflictsForReports(
-      final String userId, final List<SingleReportDefinitionDto<?>> reports) {
+      final String userId, final List<ReportDefinitionDto<?>> reports) {
     return reports.stream()
         .flatMap(
             report -> {
@@ -263,20 +262,19 @@ public class CollectionScopeService {
         .collect(Collectors.toSet());
   }
 
-  private List<SingleReportDefinitionDto<?>> getAllReportsAffectedByScopeDeletion(
+  private List<ReportDefinitionDto<?>> getAllReportsAffectedByScopeDeletion(
       final String collectionId, final String scopeEntryId) {
     final CollectionScopeEntryDto scopeEntry = new CollectionScopeEntryDto(scopeEntryId);
     final List<ReportDefinitionDto> reportsInCollection =
         reportReader.getReportsForCollectionOmitXml(collectionId);
     return reportsInCollection.stream()
-        .filter(report -> !report.isCombined())
-        .map(report -> (SingleReportDefinitionDto<?>) report)
+        .map(report -> (ReportDefinitionDto<?>) report)
         .filter(report -> reportInSameScopeAsGivenScope(scopeEntry, report))
         .collect(Collectors.toList());
   }
 
   private boolean reportInSameScopeAsGivenScope(
-      final CollectionScopeEntryDto scopeEntry, final SingleReportDefinitionDto<?> report) {
+      final CollectionScopeEntryDto scopeEntry, final ReportDefinitionDto<?> report) {
     return report.getData().getDefinitions().stream()
         .map(
             definition ->
@@ -300,7 +298,7 @@ public class CollectionScopeService {
     final Set<String> tenantsThatWillBeRemoved = retrieveRemovedTenants(scopeUpdate, currentScope);
 
     updateScopeInCollection(scopeEntryId, scopeUpdate, collectionDefinition);
-    final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeUpdate =
+    final List<ReportDefinitionDto<?>> reportsAffectedByScopeUpdate =
         getReportsAffectedByScopeUpdate(collectionId, collectionDefinition);
 
     if (!force) {
@@ -321,19 +319,19 @@ public class CollectionScopeService {
   private void updateReportsWithNewTenants(
       final String userId,
       final Set<String> tenantsToBeRemoved,
-      final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeUpdate) {
+      final List<ReportDefinitionDto<?>> reportsAffectedByScopeUpdate) {
 
-    final Map<ReportType, List<SingleReportDefinitionDto<?>>> byDefinitionType =
+    final Map<ReportType, List<ReportDefinitionDto<?>>> byDefinitionType =
         reportsAffectedByScopeUpdate.stream()
             .peek(r -> r.getData().getTenantIds().removeAll(tenantsToBeRemoved))
-            .collect(Collectors.groupingBy(SingleReportDefinitionDto::getReportType));
+            .collect(Collectors.groupingBy(ReportDefinitionDto::getReportType));
     byDefinitionType.getOrDefault(ReportType.DECISION, new ArrayList<>()).stream()
-        .filter(r -> r instanceof SingleDecisionReportDefinitionRequestDto)
-        .map(r -> (SingleDecisionReportDefinitionRequestDto) r)
+        .filter(r -> r instanceof DecisionReportDefinitionRequestDto)
+        .map(r -> (DecisionReportDefinitionRequestDto) r)
         .forEach(r -> reportService.updateSingleDecisionReport(r.getId(), r, userId, true));
     byDefinitionType.getOrDefault(ReportType.PROCESS, new ArrayList<>()).stream()
-        .filter(r -> r instanceof SingleProcessReportDefinitionRequestDto)
-        .map(r -> (SingleProcessReportDefinitionRequestDto) r)
+        .filter(r -> r instanceof ProcessReportDefinitionRequestDto)
+        .map(r -> (ProcessReportDefinitionRequestDto) r)
         .forEach(r -> reportService.updateSingleProcessReport(r.getId(), r, userId, true));
   }
 
@@ -351,7 +349,7 @@ public class CollectionScopeService {
   }
 
   private void checkForConflictOnUpdate(
-      final List<SingleReportDefinitionDto<?>> reportsAffectedByUpdate) {
+      final List<ReportDefinitionDto<?>> reportsAffectedByUpdate) {
     Set<ConflictedItemDto> conflictedItems =
         reportsAffectedByUpdate.stream()
             .map(this::reportToConflictedItem)
@@ -377,7 +375,7 @@ public class CollectionScopeService {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(
         userId, collectionId);
     for (String collectionScopeId : collectionScopeIds) {
-      final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeDeletion =
+      final List<ReportDefinitionDto<?>> reportsAffectedByScopeDeletion =
           getAllReportsAffectedByScopeDeletion(collectionId, collectionScopeId);
       try {
         deleteReports(userId, reportsAffectedByScopeDeletion);
@@ -392,13 +390,12 @@ public class CollectionScopeService {
     collectionWriter.removeScopeEntries(collectionId, collectionScopesToDelete, userId);
   }
 
-  private List<SingleReportDefinitionDto<?>> getReportsAffectedByScopeUpdate(
+  private List<ReportDefinitionDto<?>> getReportsAffectedByScopeUpdate(
       final String collectionId, final CollectionDefinitionDto collectionDefinition) {
     List<ReportDefinitionDto> reportsInCollection =
         reportReader.getReportsForCollectionIncludingXml(collectionId);
     return reportsInCollection.stream()
-        .filter(report -> !report.isCombined())
-        .map(report -> (SingleReportDefinitionDto<?>) report)
+        .map(report -> (ReportDefinitionDto<?>) report)
         .filter(
             report ->
                 !reportService.isReportAllowedForCollectionScope(report, collectionDefinition))

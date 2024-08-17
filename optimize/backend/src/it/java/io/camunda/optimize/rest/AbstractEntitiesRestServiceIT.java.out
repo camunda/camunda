@@ -8,7 +8,7 @@
 // TODO recreate C8 IT equivalent of this with #13337
 
 // package io.camunda.optimize.rest;
-// 
+//
 // import static io.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.entityType;
 // import static io.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.lastModified;
 // import static io.camunda.optimize.dto.optimize.query.entity.EntityResponseDto.Fields.lastModifier;
@@ -16,7 +16,7 @@
 // import static io.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 // import static io.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 // import static io.camunda.optimize.util.SuppressionConstants.UNUSED;
-// 
+//
 // import io.camunda.optimize.AbstractPlatformIT;
 // import io.camunda.optimize.dto.optimize.ReportType;
 // import io.camunda.optimize.dto.optimize.query.IdResponseDto;
@@ -24,27 +24,27 @@
 // import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 // import io.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 // import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
-// import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
-// import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+// import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
+// import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 // import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 // import jakarta.ws.rs.core.Response;
 // import java.util.Comparator;
 // import java.util.stream.Stream;
 // import org.junit.jupiter.params.provider.Arguments;
-// 
+//
 // public abstract class AbstractEntitiesRestServiceIT extends AbstractPlatformIT {
-// 
+//
 //   protected String addCollection(final String collectionName) {
 //     final String collectionId = collectionClient.createNewCollection();
 //     collectionClient.updateCollection(
 //         collectionId, new PartialCollectionDefinitionRequestDto(collectionName));
 //     return collectionId;
 //   }
-// 
+//
 //   protected String addSingleReportToOptimize(final String name, final ReportType reportType) {
 //     return addSingleReportToOptimize(name, null, reportType, null, DEFAULT_USERNAME);
 //   }
-// 
+//
 //   protected String addSingleReportToOptimize(
 //       final String name,
 //       final ReportType reportType,
@@ -52,7 +52,7 @@
 //       final String user) {
 //     return addSingleReportToOptimize(name, null, reportType, collectionId, user);
 //   }
-// 
+//
 //   protected String addSingleReportToOptimize(
 //       final String name,
 //       final String description,
@@ -80,15 +80,15 @@
 //         throw new IllegalStateException("ReportType not allowed!");
 //     }
 //   }
-// 
+//
 //   protected String addDashboardToOptimize(String name) {
 //     return addDashboardToOptimize(name, null, DEFAULT_USERNAME);
 //   }
-// 
+//
 //   protected String addDashboardToOptimize(String name, String collectionId, String user) {
 //     return addDashboardToOptimize(name, null, collectionId, user);
 //   }
-// 
+//
 //   protected String addDashboardToOptimize(
 //       final String name, final String description, final String collectionId, final String user) {
 //     DashboardDefinitionRestDto dashboardDefinitionDto = new DashboardDefinitionRestDto();
@@ -97,11 +97,11 @@
 //     dashboardDefinitionDto.setCollectionId(collectionId);
 //     return dashboardClient.createDashboardAsUser(dashboardDefinitionDto, user, user);
 //   }
-// 
+//
 //   protected String addCombinedReport(String name) {
 //     return addCombinedReport(name, null);
 //   }
-// 
+//
 //   protected String addCombinedReport(String name, String collectionId) {
 //     CombinedReportDefinitionRequestDto combinedReportDefinitionDto =
 //         new CombinedReportDefinitionRequestDto();
@@ -114,7 +114,7 @@
 //         .execute(IdResponseDto.class, Response.Status.OK.getStatusCode())
 //         .getId();
 //   }
-// 
+//
 //   @SuppressWarnings(UNUSED)
 //   protected static Stream<Arguments> sortParamsAndExpectedComparator() {
 //     return Stream.of(

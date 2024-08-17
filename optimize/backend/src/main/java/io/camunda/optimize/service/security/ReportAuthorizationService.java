@@ -10,12 +10,10 @@ package io.camunda.optimize.service.security;
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.service.db.reader.ReportReader;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
@@ -70,22 +68,16 @@ public class ReportAuthorizationService {
   public boolean isAuthorizedToAccessReportDefinition(
       final String userId, final ReportDefinitionDto<?> report) {
     final boolean authorizedToAccessDefinition;
-    if (report instanceof SingleProcessReportDefinitionRequestDto) {
+    if (report instanceof ProcessReportDefinitionRequestDto) {
       final ProcessReportDataDto reportData =
-          ((SingleProcessReportDefinitionRequestDto) report).getData();
+          ((ProcessReportDefinitionRequestDto) report).getData();
       authorizedToAccessDefinition =
           isAuthorizedToAccessProcessReportDefinition(userId, reportData);
-    } else if (report instanceof SingleDecisionReportDefinitionRequestDto) {
+    } else if (report instanceof DecisionReportDefinitionRequestDto) {
       final DecisionReportDataDto reportData =
-          ((SingleDecisionReportDefinitionRequestDto) report).getData();
+          ((DecisionReportDefinitionRequestDto) report).getData();
       authorizedToAccessDefinition =
           isAuthorizedToAccessDecisionReportDefinition(userId, reportData);
-    } else if (report instanceof CombinedReportDefinitionRequestDto) {
-      final CombinedReportDataDto reportData =
-          ((CombinedReportDefinitionRequestDto) report).getData();
-      authorizedToAccessDefinition =
-          reportReader.getAllSingleProcessReportsForIdsOmitXml(reportData.getReportIds()).stream()
-              .allMatch(r -> isAuthorizedToAccessProcessReportDefinition(userId, r.getData()));
     } else {
       throw new OptimizeRuntimeException(
           "Unsupported report type: " + report.getClass().getSimpleName());

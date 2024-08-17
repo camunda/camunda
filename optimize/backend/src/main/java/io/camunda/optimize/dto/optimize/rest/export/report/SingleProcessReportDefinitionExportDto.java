@@ -10,7 +10,7 @@ package io.camunda.optimize.dto.optimize.rest.export.report;
 import static io.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_PROCESS_REPORT;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import io.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex;
 import jakarta.validation.constraints.NotNull;
@@ -27,7 +27,7 @@ public class SingleProcessReportDefinitionExportDto extends ReportDefinitionExpo
   @NotNull private ProcessReportDataDto data;
 
   public SingleProcessReportDefinitionExportDto(
-      final SingleProcessReportDefinitionRequestDto reportDefinition) {
+      final ProcessReportDefinitionRequestDto reportDefinition) {
     super(
         reportDefinition.getId(),
         SINGLE_PROCESS_REPORT,

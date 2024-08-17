@@ -21,7 +21,7 @@ import static io.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPo
 import static io.camunda.optimize.service.util.RoundingUtil.roundUpToNearestPowerOfTen;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
-import io.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.ReportConfigurationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.BucketUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
@@ -168,7 +168,7 @@ public class DurationAggregationService {
       return Optional.empty();
     }
 
-    final SingleReportConfigurationDto reportConfigurationDto =
+    final ReportConfigurationDto reportConfigurationDto =
         context.getReportData().getConfiguration();
 
     final CustomBucketDto customBucketDto = reportConfigurationDto.getCustomBucket();

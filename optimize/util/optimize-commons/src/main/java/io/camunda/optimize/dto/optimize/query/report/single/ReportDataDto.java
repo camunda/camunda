@@ -8,8 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.report.single;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.ReportConfigurationDto;
 import io.camunda.optimize.service.util.TenantListHandlingUtil;
 import jakarta.validation.Valid;
 import java.util.ArrayList;
@@ -27,10 +26,10 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SuperBuilder
-public abstract class SingleReportDataDto implements ReportDataDto {
+public abstract class ReportDataDto {
 
   @Getter @Setter @Builder.Default
-  private SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
+  private ReportConfigurationDto configuration = new ReportConfigurationDto();
 
   @Getter @Setter @Builder.Default @Valid
   private List<ReportDataDefinitionDto> definitions = new ArrayList<>();
@@ -81,8 +80,12 @@ public abstract class SingleReportDataDto implements ReportDataDto {
   @JsonIgnore
   public abstract List<ViewProperty> getViewProperties();
 
-  public static final class Fields {
+  @JsonIgnore
+  public abstract String createCommandKey();
 
+  public abstract List<String> createCommandKeys();
+
+  public static final class Fields {
     public static final String configuration = "configuration";
     public static final String definitions = "definitions";
   }

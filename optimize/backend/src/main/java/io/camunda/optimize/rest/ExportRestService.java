@@ -15,11 +15,11 @@ import com.google.common.collect.Sets;
 import io.camunda.optimize.dto.optimize.ReportType;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import io.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.ReportConfigurationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import io.camunda.optimize.dto.optimize.rest.AuthorizationType;
@@ -126,10 +126,9 @@ public class ExportRestService {
     validateAuthorization();
     final ZoneId timezone = extractTimezone(requestContext);
 
-    final SingleProcessReportDefinitionRequestDto reportDefinitionDto =
-        SingleProcessReportDefinitionRequestDto.builder()
+    final ProcessReportDefinitionRequestDto reportDefinitionDto =
+        ProcessReportDefinitionRequestDto.builder()
             .reportType(ReportType.PROCESS)
-            .combined(false)
             .data(
                 ProcessReportDataDto.builder()
                     .definitions(
@@ -140,7 +139,7 @@ public class ExportRestService {
                                 request.getTenantIds())))
                     .filter(request.getFilter())
                     .configuration(
-                        SingleReportConfigurationDto.builder()
+                        ReportConfigurationDto.builder()
                             .tableColumns(
                                 TableColumnDto.builder()
                                     .includeNewVariables(false)

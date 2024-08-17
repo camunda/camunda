@@ -23,7 +23,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -154,7 +154,7 @@ public class DecisionViewRawData extends DecisionViewPart {
     return ViewResult.builder().rawData(rawData).build();
   }
 
-  private Set<InputVariableEntry> getInputVariableEntries(final SingleReportDataDto reportDataDto) {
+  private Set<InputVariableEntry> getInputVariableEntries(final ReportDataDto reportDataDto) {
     return decisionVariableReader
         .getInputVariableNames(
             reportDataDto.getDefinitionKey(),
@@ -168,7 +168,7 @@ public class DecisionViewRawData extends DecisionViewPart {
         .collect(Collectors.toSet());
   }
 
-  private Set<OutputVariableEntry> getOutputVars(final SingleReportDataDto reportDataDto) {
+  private Set<OutputVariableEntry> getOutputVars(final ReportDataDto reportDataDto) {
     return decisionVariableReader
         .getOutputVariableNames(
             reportDataDto.getDefinitionKey(),

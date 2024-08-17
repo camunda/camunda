@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.service.entities;
 
-import static io.camunda.optimize.dto.optimize.rest.export.ExportEntityType.COMBINED_REPORT;
 import static io.camunda.optimize.dto.optimize.rest.export.ExportEntityType.DASHBOARD;
 import static io.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_DECISION_REPORT;
 import static io.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_PROCESS_REPORT;
@@ -21,7 +20,6 @@ import io.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefinitionExportDto;
-import io.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReportDefinitionExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import io.camunda.optimize.service.collection.CollectionService;
@@ -161,8 +159,7 @@ public class EntityImportService {
         .filter(
             entityToImport ->
                 SINGLE_PROCESS_REPORT.equals(entityToImport.getExportEntityType())
-                    || SINGLE_DECISION_REPORT.equals(entityToImport.getExportEntityType())
-                    || COMBINED_REPORT.equals(entityToImport.getExportEntityType()))
+                    || SINGLE_DECISION_REPORT.equals(entityToImport.getExportEntityType()))
         .map(
             reportToImport -> {
               if (reportToImport instanceof SingleProcessReportDefinitionExportDto
@@ -206,11 +203,7 @@ public class EntityImportService {
 
     entitiesToImport.forEach(
         entity -> {
-          if (COMBINED_REPORT.equals(entity.getExportEntityType())) {
-            requiredReportIds.addAll(
-                ((CombinedProcessReportDefinitionExportDto) entity).getData().getReportIds());
-
-          } else if (DASHBOARD.equals(entity.getExportEntityType())) {
+          if (DASHBOARD.equals(entity.getExportEntityType())) {
             requiredReportIds.addAll(((DashboardDefinitionExportDto) entity).getTileIds());
           }
         });
@@ -218,8 +211,8 @@ public class EntityImportService {
     if (!importEntityIds.containsAll(requiredReportIds)) {
       requiredReportIds.removeAll(importEntityIds);
       throw new OptimizeImportFileInvalidException(
-          "Could not import entities because the file is incomplete, some reports required by a combined "
-              + "report or dashboard are missing. The missing reports have IDs: "
+          "Could not import entities because the file is incomplete, some reports required by a"
+              + " dashboard are missing. The missing reports have IDs: "
               + requiredReportIds);
     }
   }

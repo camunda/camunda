@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.db.es.report.command.modules.distributed_by;
 
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 import io.camunda.optimize.service.db.es.report.command.exec.ExecutionContext;
 import io.camunda.optimize.service.db.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import io.camunda.optimize.service.db.es.report.command.modules.view.ViewPart;
@@ -23,7 +23,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
-public abstract class DistributedByPart<Data extends SingleReportDataDto> {
+public abstract class DistributedByPart<Data extends ReportDataDto> {
 
   @Setter @Getter protected ViewPart<Data> viewPart;
 

@@ -13,7 +13,8 @@ import java.util.Set;
 
 public interface ReportReferencingService {
 
-  Set<ConflictedItemDto> getConflictedItemsForReportDelete(ReportDefinitionDto reportDefinition);
+  Set<ConflictedItemDto> getConflictedItemsForReportDelete(
+      ReportDefinitionDto reportDefinition);
 
   void handleReportDeleted(ReportDefinitionDto reportDefinition);
 

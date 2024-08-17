@@ -9,11 +9,8 @@ package io.camunda.optimize.service.util;
 
 import static io.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
-import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
-import io.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -42,9 +39,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutingFlowNodeFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
-import io.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
-import io.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -86,27 +81,9 @@ public class ValidationHelper {
     }
   }
 
-  public static void validateCombinedReportDefinition(
-      final CombinedReportDefinitionRequestDto combinedReportDefinitionDto,
-      final RoleType currentUserRole) {
-    final AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto =
-        new AuthorizedReportDefinitionResponseDto(combinedReportDefinitionDto, currentUserRole);
-    if (combinedReportDefinitionDto.getData() == null) {
-      final OptimizeValidationException ex =
-          new OptimizeValidationException(
-              "Report data for a combined report is not allowed to be null!");
-      throw new ReportEvaluationException(authorizedReportDefinitionDto, ex);
-    } else if (combinedReportDefinitionDto.getData().getReportIds() == null) {
-      final OptimizeValidationException ex =
-          new OptimizeValidationException(
-              "Reports list for a combined report is not allowed to be null!");
-      throw new ReportEvaluationException(authorizedReportDefinitionDto, ex);
-    }
-  }
-
   private static void validateDefinitionData(final ReportDataDto data) {
-    if (data instanceof SingleReportDataDto) {
-      final SingleReportDataDto singleReportData = (SingleReportDataDto) data;
+    if (data instanceof ReportDataDto) {
+      final ReportDataDto singleReportData = (ReportDataDto) data;
       if (data instanceof ProcessReportDataDto
           && !((ProcessReportDataDto) data).isManagementReport()) {
         // it is valid for management reports to not have a key if the user has no authorization for

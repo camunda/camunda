@@ -10,28 +10,24 @@ package io.camunda.optimize.dto.optimize.query.report.single.process;
 import static java.util.Objects.nonNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.optimize.dto.optimize.query.report.Combinable;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import io.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.ReportConfigurationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessReportDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import io.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.validation.ProcessFiltersMustReferenceExistingDefinitionsConstraint;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
@@ -47,7 +43,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @SuperBuilder
 @ProcessFiltersMustReferenceExistingDefinitionsConstraint
-public class ProcessReportDataDto extends SingleReportDataDto implements Combinable {
+public class ProcessReportDataDto extends ReportDataDto {
 
   private static final String COMMAND_KEY_SEPARATOR = "_";
   private static final String MISSING_COMMAND_PART_PLACEHOLDER = "null";
@@ -112,7 +108,6 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     return view.getProperties();
   }
 
-  @JsonIgnore
   @Override
   public String createCommandKey() {
     return createCommandKeys().get(0);
@@ -125,7 +120,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     final String distributedByCommandKey = createDistributedByCommandKey();
     final String configurationCommandKey =
         Optional.ofNullable(getConfiguration())
-            .map(SingleReportConfigurationDto::createCommandKey)
+            .map(ReportConfigurationDto::createCommandKey)
             .orElse(MISSING_COMMAND_PART_PLACEHOLDER);
     return Optional.ofNullable(view)
         .map(ProcessViewDto::createCommandKeys)
@@ -147,22 +142,6 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
       return distributedBy.createCommandKey();
     }
     return null;
-  }
-
-  @Override
-  public boolean isCombinable(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof ProcessReportDataDto)) {
-      return false;
-    }
-    final ProcessReportDataDto that = (ProcessReportDataDto) o;
-    return Combinable.isCombinable(getView(), that.getView())
-        && isGroupByCombinable(that)
-        && Combinable.isCombinable(getDistributedBy(), that.getDistributedBy())
-        && Objects.equals(getVisualization(), that.getVisualization())
-        && getConfiguration().isCombinable(that.getConfiguration());
   }
 
   @JsonIgnore
@@ -195,56 +174,10 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     return filterByDefinition;
   }
 
-  private boolean isGroupByCombinable(final ProcessReportDataDto that) {
-    if (Combinable.isCombinable(groupBy, that.groupBy)) {
-      if (isGroupByDateVariableReport()) {
-        return getConfiguration()
-            .getGroupByDateVariableUnit()
-            .equals(that.getConfiguration().getGroupByDateVariableUnit());
-      } else if (isGroupByNumberReport()) {
-        return isBucketSizeCombinable(that);
-      }
-      return true;
-    }
-    return false;
-  }
-
-  private boolean isBucketSizeCombinable(final ProcessReportDataDto that) {
-    return getConfiguration().getCustomBucket().isActive()
-            && that.getConfiguration().getCustomBucket().isActive()
-            && Objects.equals(
-                getConfiguration().getCustomBucket().getBucketSize(),
-                that.getConfiguration().getCustomBucket().getBucketSize())
-        || isBucketSizeIrrelevant(this) && isBucketSizeIrrelevant(that);
-  }
-
-  private boolean isBucketSizeIrrelevant(final ProcessReportDataDto reportData) {
-    // Bucket size settings for combined reports are not relevant if custom bucket config is
-    // inactive or bucket size is null
-    if (reportData.getConfiguration().getCustomBucket().isActive()) {
-      return reportData.getConfiguration().getCustomBucket().getBucketSize() == null;
-    }
-    return true;
-  }
-
-  private boolean isGroupByDateVariableReport() {
-    return groupBy != null
-        && ProcessGroupByType.VARIABLE.equals(groupBy.getType())
-        && VariableType.DATE.equals(((VariableGroupByDto) groupBy).getValue().getType());
-  }
-
   private boolean isGroupByEndDateReport() {
     return groupBy != null
         && ProcessViewEntity.PROCESS_INSTANCE.equals(view.getEntity())
         && ProcessGroupByType.END_DATE.equals(groupBy.getType());
-  }
-
-  private boolean isGroupByNumberReport() {
-    return groupBy != null
-        && (ProcessGroupByType.VARIABLE.equals(groupBy.getType())
-                && (VariableType.getNumericTypes()
-                    .contains(((VariableGroupByDto) groupBy).getValue().getType()))
-            || ProcessGroupByType.DURATION.equals(groupBy.getType()));
   }
 
   private boolean isModelElementCommand() {

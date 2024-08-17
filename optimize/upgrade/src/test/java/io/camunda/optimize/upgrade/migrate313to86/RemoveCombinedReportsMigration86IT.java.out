@@ -1,0 +1,48 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+// TODO recreate C8 IT equivalent of this with #13337
+//package io.camunda.optimize.upgrade.migrate313to86;
+//
+//import static org.assertj.core.api.Assertions.assertThat;
+//
+//import io.camunda.optimize.service.db.DatabaseConstants;
+//import lombok.SneakyThrows;
+//import org.junit.jupiter.api.Test;
+//
+//public class RemoveCombinedReportsMigration86IT extends AbstractUpgrade86IT {
+//
+//  @SneakyThrows
+//  @Test
+//  public void combinedReportIndexIsDeleted() {
+//    // given
+//    assertThat(prefixAwareClient.exists("combined-report")).isTrue();
+//
+//    // when
+//    performUpgrade();
+//
+//    // then
+//    assertThat(prefixAwareClient.exists("combined-report")).isFalse();
+//  }
+//
+//  @Test
+//  public void removeCombinedReportFieldFromSingleReportIndex() {
+//    // given
+//    executeBulk("steps/3.13/3.13-single-process-report.json");
+//    assertThat(getAllDocumentsOfIndex(DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME))
+//        .hasSize(2)
+//        .allSatisfy(hit -> assertThat(hit.getSourceAsMap()).containsKey("combined"));
+//
+//    // when
+//    performUpgrade();
+//
+//    // then
+//    assertThat(getAllDocumentsOfIndex(DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME))
+//        .hasSize(2)
+//        .allSatisfy(hit -> assertThat(hit.getSourceAsMap()).doesNotContainKey("combined"));
+//  }
+//}

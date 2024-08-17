@@ -8,7 +8,7 @@
 // TODO recreate C8 IT equivalent of this with #13337
 
 // package io.camunda.optimize.rest;
-// 
+//
 // import static io.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 // import static io.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 // import static io.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
@@ -21,12 +21,12 @@
 // import static io.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 // import static io.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 // import static org.assertj.core.api.Assertions.assertThat;
-// 
+//
 // import io.camunda.optimize.AbstractPlatformIT;
 // import io.camunda.optimize.dto.optimize.DefinitionType;
 // import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-// import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
-// import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+// import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
+// import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 // import io.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 // import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 // import jakarta.ws.rs.core.Response;
@@ -38,14 +38,14 @@
 // import org.junit.jupiter.api.Test;
 // import org.junit.jupiter.params.ParameterizedTest;
 // import org.junit.jupiter.params.provider.MethodSource;
-// 
+//
 // @Tag(OPENSEARCH_PASSING)
 // public class CollectionRestServiceReportsIT extends AbstractPlatformIT {
-// 
+//
 //   private static Stream<DefinitionType> definitionTypes() {
 //     return Stream.of(PROCESS, DECISION);
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @MethodSource("definitionTypes")
 //   public void getStoredReports(final DefinitionType definitionType) {
@@ -54,15 +54,15 @@
 //     String collectionId1 = collectionClient.createNewCollectionWithDefaultScope(definitionType);
 //     expectedReportIds.add(createReportForCollection(collectionId1, definitionType));
 //     expectedReportIds.add(createReportForCollection(collectionId1, definitionType));
-// 
+//
 //     String collectionId2 = collectionClient.createNewCollectionWithDefaultScope(definitionType);
 //     createReportForCollection(collectionId2, definitionType);
-// 
+//
 //     // when
-// 
+//
 //     List<AuthorizedReportDefinitionResponseDto> reports =
 //         collectionClient.getReportsForCollection(collectionId1);
-// 
+//
 //     // then
 //     assertThat(reports)
 //         .hasSize(expectedReportIds.size())
@@ -71,7 +71,7 @@
 //         .allMatch(
 //             reportDto -> reportDto.getDefinitionDto().getLastModifier().equals(DEFAULT_FULLNAME));
 //   }
-// 
+//
 //   @Test
 //   public void getStoredReports_adoptTimezoneFromHeader() {
 //     // given
@@ -79,7 +79,7 @@
 //     final String collectionId =
 //         collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
 //     createReportForCollection(collectionId, DefinitionType.PROCESS);
-// 
+//
 //     // when
 //     List<AuthorizedReportDefinitionResponseDto> allReports =
 //         embeddedOptimizeExtension
@@ -88,7 +88,7 @@
 //             .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
 //             .executeAndReturnList(
 //                 AuthorizedReportDefinitionResponseDto.class, Response.Status.OK.getStatusCode());
-// 
+//
 //     // then
 //     assertThat(allReports).isNotNull().hasSize(1);
 //     ReportDefinitionDto reportDefinitionDto = allReports.get(0).getDefinitionDto();
@@ -97,20 +97,20 @@
 //     assertThat(getOffsetDiffInHours(reportDefinitionDto.getCreated(), now)).isEqualTo(1.);
 //     assertThat(getOffsetDiffInHours(reportDefinitionDto.getLastModified(), now)).isEqualTo(1.);
 //   }
-// 
+//
 //   @Test
 //   public void getNoneStoredReports() {
 //     // given
 //     String collectionId1 = collectionClient.createNewCollection();
-// 
+//
 //     // when
 //     List<AuthorizedReportDefinitionResponseDto> reports =
 //         collectionClient.getReportsForCollection(collectionId1);
-// 
+//
 //     // then
 //     assertThat(reports).isEmpty();
 //   }
-// 
+//
 //   @Test
 //   public void getReportsForNonExistentCollection() {
 //     // when
@@ -120,11 +120,11 @@
 //             .buildGetReportsForCollectionRequest("someId")
 //             .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
 //             .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
-// 
+//
 //     // then
 //     assertThat(response).contains("Collection does not exist!");
 //   }
-// 
+//
 //   @ParameterizedTest(
 //       name =
 //           "deleting a collection with reports of definition type {0} also deletes containing reports")
@@ -133,23 +133,23 @@
 //     // given
 //     final String collectionId =
 //         collectionClient.createNewCollectionWithDefaultScope(definitionType);
-// 
+//
 //     final String reportId1 = createReportForCollection(collectionId, definitionType);
 //     final String reportId2 = createReportForCollection(collectionId, definitionType);
-// 
+//
 //     // when
 //     collectionClient.deleteCollection(collectionId);
-// 
+//
 //     Response report1Response =
 //         reportClient.getSingleReportRawResponse(reportId1, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 //     Response report2Response =
 //         reportClient.getSingleReportRawResponse(reportId2, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-// 
+//
 //     // then
 //     assertThat(report1Response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
 //     assertThat(report2Response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
 //   }
-// 
+//
 //   private String createReportForCollection(
 //       final String collectionId, final DefinitionType definitionType) {
 //     switch (definitionType) {
@@ -158,13 +158,13 @@
 //             reportClient.createSingleProcessReportDefinitionDto(
 //                 collectionId, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
 //         return reportClient.createSingleProcessReport(procReport);
-// 
+//
 //       case DECISION:
 //         SingleDecisionReportDefinitionRequestDto decReport =
 //             reportClient.createSingleDecisionReportDefinitionDto(
 //                 collectionId, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
 //         return reportClient.createSingleDecisionReport(decReport);
-// 
+//
 //       default:
 //         throw new OptimizeRuntimeException("Unknown resource type provided.");
 //     }

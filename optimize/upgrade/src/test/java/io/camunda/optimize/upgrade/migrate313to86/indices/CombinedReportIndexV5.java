@@ -5,15 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.schema.index.report;
+package io.camunda.optimize.upgrade.migrate313to86.indices;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.MAPPING_ENABLED_SETTING;
 
+import io.camunda.optimize.service.db.schema.index.report.AbstractReportIndex;
 import java.io.IOException;
 import org.elasticsearch.xcontent.XContentBuilder;
 
-public abstract class CombinedReportIndex<TBuilder> extends AbstractReportIndex<TBuilder> {
+public class CombinedReportIndexV5 extends AbstractReportIndex<XContentBuilder> {
 
   public static final int VERSION = 5;
 
@@ -26,7 +26,7 @@ public abstract class CombinedReportIndex<TBuilder> extends AbstractReportIndex<
 
   @Override
   public String getIndexName() {
-    return COMBINED_REPORT_INDEX_NAME;
+    return "combined-report";
   }
 
   @Override
@@ -62,5 +62,11 @@ public abstract class CombinedReportIndex<TBuilder> extends AbstractReportIndex<
         .endObject()
         .endObject();
     // @formatter:on
+  }
+
+  @Override
+  public XContentBuilder addStaticSetting(
+      final String key, final int value, final XContentBuilder contentBuilder) throws IOException {
+    return contentBuilder.field(key, value);
   }
 }

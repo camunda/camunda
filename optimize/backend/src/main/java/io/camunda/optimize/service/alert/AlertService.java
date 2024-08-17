@@ -22,12 +22,12 @@ import io.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionVisualization;
-import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByType;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import io.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import io.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
@@ -190,19 +190,19 @@ public class AlertService implements ReportReferencingService {
       ReportDefinitionDto currentDefinition, ReportDefinitionDto updateDefinition) {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
 
-    if (currentDefinition instanceof SingleProcessReportDefinitionRequestDto) {
+    if (currentDefinition instanceof ProcessReportDefinitionRequestDto) {
       if (validateIfReportIsSuitableForAlert(
-              (SingleProcessReportDefinitionRequestDto) currentDefinition)
+              (ProcessReportDefinitionRequestDto) currentDefinition)
           && !validateIfReportIsSuitableForAlert(
-              (SingleProcessReportDefinitionRequestDto) updateDefinition)) {
+              (ProcessReportDefinitionRequestDto) updateDefinition)) {
         conflictedItems.addAll(
             mapAlertsToConflictingItems(getAlertsForReport(currentDefinition.getId())));
       }
-    } else if (currentDefinition instanceof SingleDecisionReportDefinitionRequestDto) {
+    } else if (currentDefinition instanceof DecisionReportDefinitionRequestDto) {
       if (validateIfReportIsSuitableForAlert(
-              (SingleDecisionReportDefinitionRequestDto) currentDefinition)
+              (DecisionReportDefinitionRequestDto) currentDefinition)
           && !validateIfReportIsSuitableForAlert(
-              (SingleDecisionReportDefinitionRequestDto) updateDefinition)) {
+              (DecisionReportDefinitionRequestDto) updateDefinition)) {
         conflictedItems.addAll(
             mapAlertsToConflictingItems(getAlertsForReport(currentDefinition.getId())));
       }
@@ -329,9 +329,9 @@ public class AlertService implements ReportReferencingService {
 
   /** Check if it's still evaluated as number. */
   private void deleteAlertsIfNeeded(String reportId, ReportDefinitionDto reportDefinition) {
-    if (reportDefinition instanceof SingleProcessReportDefinitionRequestDto) {
-      SingleProcessReportDefinitionRequestDto singleReport =
-          (SingleProcessReportDefinitionRequestDto) reportDefinition;
+    if (reportDefinition instanceof ProcessReportDefinitionRequestDto) {
+      ProcessReportDefinitionRequestDto singleReport =
+          (ProcessReportDefinitionRequestDto) reportDefinition;
       if (!validateIfReportIsSuitableForAlert(singleReport)) {
         this.deleteAlertsForReport(reportId);
       }
@@ -339,7 +339,7 @@ public class AlertService implements ReportReferencingService {
   }
 
   private boolean validateIfReportIsSuitableForAlert(
-      SingleProcessReportDefinitionRequestDto report) {
+      ProcessReportDefinitionRequestDto report) {
     final ProcessReportDataDto data = report.getData();
     return data != null
         && data.getGroupBy() != null
@@ -351,7 +351,7 @@ public class AlertService implements ReportReferencingService {
   }
 
   private boolean validateIfReportIsSuitableForAlert(
-      SingleDecisionReportDefinitionRequestDto report) {
+      DecisionReportDefinitionRequestDto report) {
     final DecisionReportDataDto data = report.getData();
     return data != null
         && data.getGroupBy() != null

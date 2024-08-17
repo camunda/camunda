@@ -8,20 +8,20 @@
 // TODO recreate C8 IT equivalent of this with #13337
 
 // package io.camunda.optimize.rest;
-// 
+//
 // import static io.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 // import static io.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_PER_GROUP_BY_NONE;
 // import static io.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 // import static io.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 // import static org.assertj.core.api.Assertions.assertThat;
-// 
+//
 // import io.camunda.optimize.AbstractAlertIT;
 // import io.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 // import io.camunda.optimize.dto.optimize.DefinitionType;
 // import io.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 // import io.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 // import io.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
-// import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+// import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 // import io.camunda.optimize.service.alert.AlertService;
 // import io.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 // import io.github.netmikey.logunit.api.LogCapturer;
@@ -39,21 +39,21 @@
 // import org.junit.jupiter.params.provider.MethodSource;
 // import org.junit.jupiter.params.provider.ValueSource;
 // import org.slf4j.event.Level;
-// 
+//
 // @Tag(OPENSEARCH_PASSING)
 // public class AlertRestServiceIT extends AbstractAlertIT {
-// 
+//
 //   @RegisterExtension
 //   @Order(5)
 //   protected final LogCapturer logCapturer =
 //       LogCapturer.create().forLevel(Level.DEBUG).captureForType(AlertService.class);
-// 
+//
 //   private static final String TEST = "test";
-// 
+//
 //   private static Stream<DefinitionType> definitionType() {
 //     return Stream.of(DefinitionType.PROCESS, DefinitionType.DECISION);
 //   }
-// 
+//
 //   @Test
 //   public void createNewAlertWithoutAuthentication() {
 //     // when
@@ -63,11 +63,11 @@
 //             .withoutAuthentication()
 //             .buildCreateAlertRequest(null)
 //             .execute();
-// 
+//
 //     // then the status code is not authorized
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
 //   }
-// 
+//
 //   @Test
 //   public void cantCreateWithoutReport() {
 //     // when
@@ -76,11 +76,11 @@
 //             .getRequestExecutor()
 //             .buildCreateAlertRequest(new AlertCreationRequestDto())
 //             .execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //   }
-// 
+//
 //   @ParameterizedTest(name = "cannot update alert without report with definition type {0}")
 //   @MethodSource("definitionType")
 //   public void cantUpdateWithoutReport(final DefinitionType definitionType) {
@@ -90,30 +90,30 @@
 //     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
 //     String id = alertClient.createAlert(alert);
 //     alert.setReportId(TEST);
-// 
+//
 //     // when
 //     Response response =
 //         embeddedOptimizeExtension.getRequestExecutor().buildUpdateAlertRequest(id, alert).execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //   }
-// 
+//
 //   @ParameterizedTest(name = "cannot create for private reports with definition type {0}")
 //   @MethodSource("definitionType")
 //   public void cantCreateAlertForPrivateReports(final DefinitionType definitionType) {
 //     // given
 //     String reportId = createNumberReportForCollection(null, definitionType);
 //     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
-// 
+//
 //     // when
 //     Response response =
 //         embeddedOptimizeExtension.getRequestExecutor().buildCreateAlertRequest(alert).execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //   }
-// 
+//
 //   @ParameterizedTest(name = "create new report with report definition type {0}")
 //   @MethodSource("definitionType")
 //   public void createNewAlert(final DefinitionType definitionType) {
@@ -121,18 +121,18 @@
 //     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
 //     String reportId = createNumberReportForCollection(collectionId, definitionType);
 //     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
-// 
+//
 //     // when
 //     String id =
 //         embeddedOptimizeExtension
 //             .getRequestExecutor()
 //             .buildCreateAlertRequest(alert)
 //             .execute(String.class, Response.Status.OK.getStatusCode());
-// 
+//
 //     // then
 //     assertThat(id).isNotNull();
 //   }
-// 
+//
 //   @Test
 //   public void createNewAlertWithForPercentageReport() {
 //     // given
@@ -151,18 +151,18 @@
 //     final String reportId = reportClient.createSingleProcessReport(reportDef);
 //     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
 //     alert.setThreshold(50.);
-// 
+//
 //     // when
 //     String id =
 //         embeddedOptimizeExtension
 //             .getRequestExecutor()
 //             .buildCreateAlertRequest(alert)
 //             .execute(String.class, Response.Status.OK.getStatusCode());
-// 
+//
 //     // then
 //     assertThat(id).isNotNull();
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @ValueSource(doubles = {101.0, -1.0})
 //   public void createNewAlertWithThresholdNotInValidRange(final double threshold) {
@@ -182,15 +182,15 @@
 //     final String reportId = reportClient.createSingleProcessReport(reportDef);
 //     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
 //     alert.setThreshold(threshold);
-// 
+//
 //     // when
 //     Response response =
 //         embeddedOptimizeExtension.getRequestExecutor().buildCreateAlertRequest(alert).execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //   }
-// 
+//
 //   @Test
 //   public void createNewAlertWithNullThreshold() {
 //     // given
@@ -209,15 +209,15 @@
 //     final String reportId = reportClient.createSingleProcessReport(reportDef);
 //     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
 //     alert.setThreshold(null);
-// 
+//
 //     // when
 //     Response response =
 //         embeddedOptimizeExtension.getRequestExecutor().buildCreateAlertRequest(alert).execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @ValueSource(doubles = {101.0, -1.0})
 //   public void updateAlertWithThresholdNotInValidRange(final double threshold) {
@@ -238,7 +238,7 @@
 //     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
 //     alert.setThreshold(50.);
 //     final String savedAlert = alertClient.createAlert(alert);
-// 
+//
 //     // when
 //     alert.setThreshold(threshold);
 //     Response response =
@@ -246,11 +246,11 @@
 //             .getRequestExecutor()
 //             .buildUpdateAlertRequest(savedAlert, alert)
 //             .execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //   }
-// 
+//
 //   @Test
 //   public void updateAlertWithNullThreshold() {
 //     // given
@@ -270,7 +270,7 @@
 //     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
 //     alert.setThreshold(50.);
 //     final String savedAlert = alertClient.createAlert(alert);
-// 
+//
 //     // when
 //     alert.setThreshold(null);
 //     Response response =
@@ -278,11 +278,11 @@
 //             .getRequestExecutor()
 //             .buildUpdateAlertRequest(savedAlert, alert)
 //             .execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //   }
-// 
+//
 //   @Test
 //   public void createNewAlert_atLeastOneNotificationServiceNeedsToBeDefined() {
 //     // given
@@ -290,37 +290,37 @@
 //         collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
 //     String reportId = createNumberReportForCollection(collectionId, DefinitionType.PROCESS);
 //     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
-// 
+//
 //     // when
 //     alert.setEmails(new ArrayList<>());
 //     alert.setWebhook(null);
 //     Response response =
 //         embeddedOptimizeExtension.getRequestExecutor().buildCreateAlertRequest(alert).execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //     assertThat(response.readEntity(String.class))
 //         .contains("The fields [emails] and [webhook] are not allowed to both be empty");
-// 
+//
 //     // when
 //     alert.setEmails(new ArrayList<>());
 //     alert.setWebhook("foo");
 //     response =
 //         embeddedOptimizeExtension.getRequestExecutor().buildCreateAlertRequest(alert).execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-// 
+//
 //     // when
 //     alert.setEmails(Collections.singletonList("foo@bar.com"));
 //     alert.setWebhook(null);
 //     response =
 //         embeddedOptimizeExtension.getRequestExecutor().buildCreateAlertRequest(alert).execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 //   }
-// 
+//
 //   @ParameterizedTest(name = "create new alert with max threshold and report definition type {0}")
 //   @MethodSource("definitionType")
 //   public void createNewAlertAllowsMaxDouble(final DefinitionType definitionType) {
@@ -329,18 +329,18 @@
 //     String reportId = createNumberReportForCollection(collectionId, definitionType);
 //     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
 //     alert.setThreshold(Double.MAX_VALUE);
-// 
+//
 //     // when
 //     String id =
 //         embeddedOptimizeExtension
 //             .getRequestExecutor()
 //             .buildCreateAlertRequest(alert)
 //             .execute(String.class, Response.Status.OK.getStatusCode());
-// 
+//
 //     // then
 //     assertThat(id).isNotNull();
 //   }
-// 
+//
 //   @Test
 //   public void updateAlertWithoutAuthentication() {
 //     // when
@@ -350,29 +350,29 @@
 //             .withoutAuthentication()
 //             .buildUpdateAlertRequest("1", new AlertCreationRequestDto())
 //             .execute();
-// 
+//
 //     // then the status code is not authorized
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
 //   }
-// 
+//
 //   @ParameterizedTest(name = "update existing alert for report with definition type {0}")
 //   @MethodSource("definitionType")
 //   public void updateNonExistingAlert(final DefinitionType definitionType) {
 //     // given
 //     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
 //     String reportId = createNumberReportForCollection(collectionId, definitionType);
-// 
+//
 //     // when
 //     Response response =
 //         embeddedOptimizeExtension
 //             .getRequestExecutor()
 //             .buildUpdateAlertRequest("nonExistingId", alertClient.createSimpleAlert(reportId))
 //             .execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
 //   }
-// 
+//
 //   @ParameterizedTest(name = "update alert for report with definition type {0}")
 //   @MethodSource("definitionType")
 //   public void updateAlert(final DefinitionType definitionType) {
@@ -382,15 +382,15 @@
 //     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
 //     String id = alertClient.createAlert(alert);
 //     alert.setEmails(Collections.singletonList("new@camunda.com"));
-// 
+//
 //     // when
 //     Response response =
 //         embeddedOptimizeExtension.getRequestExecutor().buildUpdateAlertRequest(id, alert).execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 //   }
-// 
+//
 //   @Test
 //   public void updateAlert_atLeastOneNotificationServiceNeedsToBeDefined() {
 //     // given
@@ -399,7 +399,7 @@
 //     String reportId = createNumberReportForCollection(collectionId, DefinitionType.PROCESS);
 //     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
 //     String alertId = alertClient.createAlert(alert);
-// 
+//
 //     // when
 //     alert.setEmails(new ArrayList<>());
 //     alert.setWebhook(null);
@@ -408,12 +408,12 @@
 //             .getRequestExecutor()
 //             .buildUpdateAlertRequest(alertId, alert)
 //             .execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //     assertThat(response.readEntity(String.class))
 //         .contains("The fields [emails] and [webhook] are not allowed to both be empty");
-// 
+//
 //     // when
 //     alert.setEmails(new ArrayList<>());
 //     alert.setWebhook("foo");
@@ -422,10 +422,10 @@
 //             .getRequestExecutor()
 //             .buildUpdateAlertRequest(alertId, alert)
 //             .execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-// 
+//
 //     // when
 //     alert.setEmails(Collections.singletonList("foo@bar.com"));
 //     alert.setWebhook(null);
@@ -434,11 +434,11 @@
 //             .getRequestExecutor()
 //             .buildUpdateAlertRequest(alertId, alert)
 //             .execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @MethodSource("definitionType")
 //   public void getStoredAlerts(final DefinitionType definitionType) {
@@ -447,16 +447,16 @@
 //     String reportId = createNumberReportForCollection(collectionId, definitionType);
 //     AlertCreationRequestDto alert = alertClient.createSimpleAlert(reportId);
 //     String id = alertClient.createAlert(alert);
-// 
+//
 //     // when
 //     List<AlertDefinitionDto> allAlerts =
 //         alertClient.getAlertsForCollectionAsDefaultUser(collectionId);
-// 
+//
 //     // then
 //     assertThat(allAlerts.size()).isEqualTo(1);
 //     assertThat(allAlerts.get(0).getId()).isEqualTo(id);
 //   }
-// 
+//
 //   @Test
 //   public void deleteAlertWithoutAuthentication() {
 //     // when
@@ -466,11 +466,11 @@
 //             .withoutAuthentication()
 //             .buildDeleteAlertRequest("1124")
 //             .execute();
-// 
+//
 //     // then the status code is not authorized
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @MethodSource("definitionType")
 //   public void deleteNewAlert(final DefinitionType definitionType) {
@@ -480,16 +480,16 @@
 //     AlertCreationRequestDto alert =
 //         alertClient.createSimpleAlert(reportId, 1, AlertIntervalUnit.HOURS);
 //     String id = alertClient.createAlert(alert);
-// 
+//
 //     // when
 //     Response response =
 //         embeddedOptimizeExtension.getRequestExecutor().buildDeleteAlertRequest(id).execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 //     assertThat(alertClient.getAllAlerts()).isEmpty();
 //   }
-// 
+//
 //   @Test
 //   public void deleteNonExistingAlert() {
 //     // when
@@ -498,11 +498,11 @@
 //             .getRequestExecutor()
 //             .buildDeleteAlertRequest("nonExistingId")
 //             .execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
 //   }
-// 
+//
 //   @Test
 //   public void bulkDeleteAlertsNoAuthentication() {
 //     // when
@@ -512,11 +512,11 @@
 //             .buildBulkDeleteAlertsRequest(Collections.emptyList())
 //             .withoutAuthentication()
 //             .execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @MethodSource("definitionType")
 //   public void bulkDeleteAlertsNoUserAuthorization(final DefinitionType definitionType) {
@@ -526,7 +526,7 @@
 //     String reportId = createNumberReportForCollection(collectionId, definitionType);
 //     String alertId1 = alertClient.createAlertForReport(reportId, 1, AlertIntervalUnit.HOURS);
 //     String alertId2 = alertClient.createAlertForReport(reportId, 1, AlertIntervalUnit.HOURS);
-// 
+//
 //     // when
 //     Response response =
 //         embeddedOptimizeExtension
@@ -534,11 +534,11 @@
 //             .buildBulkDeleteAlertsRequest(Arrays.asList(alertId1, alertId2))
 //             .withUserAuthentication(KERMIT_USER, KERMIT_USER)
 //             .execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
 //   }
-// 
+//
 //   @Test
 //   public void bulkDeleteEmptyListOfAlerts() {
 //     // when
@@ -547,20 +547,20 @@
 //             .getRequestExecutor()
 //             .buildBulkDeleteAlertsRequest(Collections.emptyList())
 //             .execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 //   }
-// 
+//
 //   @Test
 //   public void bulkDeleteNullListOfAlerts() {
 //     // when
 //     Response response = alertClient.bulkDeleteAlerts(null);
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @MethodSource("definitionType")
 //   public void bulkDeleteAlerts(final DefinitionType definitionType) {
@@ -569,15 +569,15 @@
 //     String reportId = createNumberReportForCollection(collectionId, definitionType);
 //     String alertId1 = alertClient.createAlertForReport(reportId, 1, AlertIntervalUnit.HOURS);
 //     String alertId2 = alertClient.createAlertForReport(reportId, 1, AlertIntervalUnit.HOURS);
-// 
+//
 //     // when
 //     Response response = alertClient.bulkDeleteAlerts(Arrays.asList(alertId1, alertId2));
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 //     assertThat(alertClient.getAllAlerts()).isEmpty();
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @MethodSource("definitionType")
 //   public void bulkDeleteAlertsOnlyDeletesAlertsThatExistInBulk(
@@ -587,11 +587,11 @@
 //     String reportId = createNumberReportForCollection(collectionId, definitionType);
 //     String alertId1 = alertClient.createAlertForReport(reportId, 1, AlertIntervalUnit.HOURS);
 //     String alertId2 = alertClient.createAlertForReport(reportId, 1, AlertIntervalUnit.HOURS);
-// 
+//
 //     // when
 //     Response response =
 //         alertClient.bulkDeleteAlerts(Arrays.asList(alertId1, "doesntExist", alertId2));
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 //     assertThat(alertClient.getAllAlerts()).isEmpty();

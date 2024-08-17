@@ -14,7 +14,6 @@ import io.camunda.optimize.service.db.es.filter.FilterContext;
 import io.camunda.optimize.service.db.es.report.MinMaxStatDto;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Optional;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
@@ -36,14 +35,9 @@ public class VariableAggregationContext {
   private final QueryBuilder baseQueryForMinMaxStats;
   private final List<AggregationBuilder> subAggregations;
   private MinMaxStatDto variableRangeMinMaxStats;
-  private final MinMaxStatDto combinedRangeMinMaxStats;
   @NonNull private final FilterContext filterContext;
 
-  public Optional<MinMaxStatDto> getCombinedRangeMinMaxStats() {
-    return Optional.ofNullable(combinedRangeMinMaxStats);
-  }
-
   public double getMaxVariableValue() {
-    return getCombinedRangeMinMaxStats().orElse(variableRangeMinMaxStats).getMax();
+    return variableRangeMinMaxStats.getMax();
   }
 }

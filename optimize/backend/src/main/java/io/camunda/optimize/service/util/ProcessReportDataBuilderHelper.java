@@ -26,8 +26,6 @@ import static io.camunda.optimize.service.db.es.report.command.process.util.Proc
 import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByUserTasks;
 import static io.camunda.optimize.service.db.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByVariable;
 
-import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
@@ -43,10 +41,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.view.Process
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ProcessReportDataBuilderHelper {
   private List<ReportDataDefinitionDto> definitions =
@@ -216,13 +212,6 @@ public class ProcessReportDataBuilderHelper {
   public ProcessReportDataBuilderHelper processPartEnd(String processPartEnd) {
     this.processPartEnd = processPartEnd;
     return this;
-  }
-
-  public static CombinedReportDataDto createCombinedReportData(String... reportIds) {
-    CombinedReportDataDto combinedReportDataDto = new CombinedReportDataDto();
-    combinedReportDataDto.setReports(
-        Arrays.stream(reportIds).map(CombinedReportItemDto::new).collect(Collectors.toList()));
-    return combinedReportDataDto;
   }
 
   private static ProcessPartDto createProcessPart(String start, String end) {

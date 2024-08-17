@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.dto.optimize.rest.export;
 
-import static io.camunda.optimize.dto.optimize.rest.export.ExportConstants.COMBINED_REPORT;
 import static io.camunda.optimize.dto.optimize.rest.export.ExportConstants.DASHBOARD;
 import static io.camunda.optimize.dto.optimize.rest.export.ExportConstants.SINGLE_DECISION_REPORT_STRING;
 import static io.camunda.optimize.dto.optimize.rest.export.ExportConstants.SINGLE_PROCESS_REPORT_STRING;
@@ -15,7 +14,6 @@ import static io.camunda.optimize.dto.optimize.rest.export.ExportConstants.SINGL
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefinitionExportDto;
-import io.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReportDefinitionExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import jakarta.validation.constraints.NotNull;
@@ -38,9 +36,6 @@ import lombok.NoArgsConstructor;
   @JsonSubTypes.Type(
       value = SingleDecisionReportDefinitionExportDto.class,
       name = SINGLE_DECISION_REPORT_STRING),
-  @JsonSubTypes.Type(
-      value = CombinedProcessReportDefinitionExportDto.class,
-      name = COMBINED_REPORT),
   @JsonSubTypes.Type(value = DashboardDefinitionExportDto.class, name = DASHBOARD),
 })
 public abstract class OptimizeEntityExportDto {

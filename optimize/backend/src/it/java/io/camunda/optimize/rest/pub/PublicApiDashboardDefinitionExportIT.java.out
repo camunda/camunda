@@ -8,14 +8,14 @@
 // TODO recreate C8 IT equivalent of this with #13337
 
 // package io.camunda.optimize.rest.pub;
-// 
+//
 // import static io.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 // import static org.assertj.core.api.Assertions.assertThat;
-// 
+//
 // import io.camunda.optimize.dto.optimize.ReportType;
 // import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-// import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
-// import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+// import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
+// import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 // import io.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 // import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 // import io.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefinitionExportDto;
@@ -27,11 +27,11 @@
 // import java.util.List;
 // import org.junit.jupiter.api.Tag;
 // import org.junit.jupiter.api.Test;
-// 
+//
 // @Tag(OPENSEARCH_PASSING)
 // public class PublicApiDashboardDefinitionExportIT extends AbstractDashboardDefinitionExportIT {
 //   private static final String ACCESS_TOKEN = "secret_export_token";
-// 
+//
 //   @Override
 //   protected List<OptimizeEntityExportDto> exportDashboardDefinitionAndReturnAsList(
 //       final String dashboardId) {
@@ -39,14 +39,14 @@
 //     return publicApiClient.exportDashboardsAndReturnExportDtos(
 //         Collections.singletonList(dashboardId), ACCESS_TOKEN);
 //   }
-// 
+//
 //   @Override
 //   protected Response exportDashboardDefinitionAndReturnResponse(final String dashboardId) {
 //     setAccessToken();
 //     return publicApiClient.exportDashboardDefinitions(
 //         Collections.singletonList(dashboardId), ACCESS_TOKEN);
 //   }
-// 
+//
 //   @Test
 //   public void exportMultipleDashboardDefinitions() {
 //     // given
@@ -55,13 +55,13 @@
 //     final SingleProcessReportDefinitionRequestDto processReport1 =
 //         reportClient.getSingleProcessReportById(processReportId);
 //     final SingleProcessReportDefinitionExportDto expectedProcess = createExportDto(processReport1);
-// 
+//
 //     final String decisionReportId = createSimpleReport(ReportType.DECISION);
 //     final SingleDecisionReportDefinitionRequestDto decisionReport =
 //         reportClient.getSingleDecisionReportById(decisionReportId);
 //     final SingleDecisionReportDefinitionExportDto expectedDecision =
 //         createExportDto(decisionReport);
-// 
+//
 //     final DashboardDefinitionRestDto dashboardDef1 =
 //         createDashboardDefinition(Collections.singletonList(processReportId));
 //     final String dashboardId1 = dashboardClient.createDashboard(dashboardDef1);
@@ -72,12 +72,12 @@
 //     final String dashboardId2 = dashboardClient.createDashboard(dashboardDef2);
 //     dashboardDef2.setId(dashboardId2);
 //     final DashboardDefinitionExportDto expectedDashboard2 = createExportDto(dashboardDef2);
-// 
+//
 //     // when
 //     final List<OptimizeEntityExportDto> exportedDtos =
 //         publicApiClient.exportDashboardsAndReturnExportDtos(
 //             List.of(dashboardId1, dashboardId2), ACCESS_TOKEN);
-// 
+//
 //     // then all dashboards and reports have been exported
 //     assertThat(exportedDtos)
 //         .hasSize(4)
@@ -85,20 +85,20 @@
 //         .hasSize(2)
 //         .usingRecursiveFieldByFieldElementComparator()
 //         .containsExactlyInAnyOrder(expectedDashboard1, expectedDashboard2);
-// 
+//
 //     assertThat(exportedDtos)
 //         .filteredOn(dto -> ExportEntityType.SINGLE_PROCESS_REPORT.equals(dto.getExportEntityType()))
 //         .singleElement()
 //         .usingRecursiveComparison()
 //         .isEqualTo(expectedProcess);
-// 
+//
 //     assertThat(exportedDtos)
 //         .filteredOn(
 //             dto -> ExportEntityType.SINGLE_DECISION_REPORT.equals(dto.getExportEntityType()))
 //         .singleElement()
 //         .isEqualTo(expectedDecision);
 //   }
-// 
+//
 //   @Test
 //   public void noDuplicateReportsAcrossMultipleDashboards() {
 //     // given two dashboards which both contain the same report
@@ -111,7 +111,7 @@
 //     final SingleProcessReportDefinitionRequestDto report2 =
 //         reportClient.getSingleProcessReportById(reportId2);
 //     final SingleProcessReportDefinitionExportDto expectedReport2 = createExportDto(report2);
-// 
+//
 //     final DashboardDefinitionRestDto dashboardDef1 =
 //         createDashboardDefinition(Collections.singletonList(reportId1));
 //     final String dashboardId1 = dashboardClient.createDashboard(dashboardDef1);
@@ -122,12 +122,12 @@
 //     final String dashboardId2 = dashboardClient.createDashboard(dashboardDef2);
 //     dashboardDef2.setId(dashboardId2);
 //     final DashboardDefinitionExportDto expectedDashboard2 = createExportDto(dashboardDef2);
-// 
+//
 //     // when
 //     final List<OptimizeEntityExportDto> exportedDtos =
 //         publicApiClient.exportDashboardsAndReturnExportDtos(
 //             List.of(dashboardId1, dashboardId2), ACCESS_TOKEN);
-// 
+//
 //     // then all dashboards were exported and there are no duplicate reports in the export
 //     assertThat(exportedDtos)
 //         .hasSize(4)
@@ -135,14 +135,14 @@
 //         .hasSize(2)
 //         .usingRecursiveFieldByFieldElementComparator()
 //         .containsExactlyInAnyOrder(expectedDashboard1, expectedDashboard2);
-// 
+//
 //     assertThat(exportedDtos)
 //         .filteredOn(dto -> ExportEntityType.SINGLE_PROCESS_REPORT.equals(dto.getExportEntityType()))
 //         .hasSize(2)
 //         .usingRecursiveFieldByFieldElementComparator()
 //         .containsExactlyInAnyOrder(expectedReport1, expectedReport2);
 //   }
-// 
+//
 //   @Test
 //   public void noDuplicateDashboards() {
 //     // given
@@ -153,12 +153,12 @@
 //     final String dashboardId1 = dashboardClient.createDashboard(dashboardDef);
 //     dashboardDef.setId(dashboardId1);
 //     final DashboardDefinitionExportDto expectedDashboard = createExportDto(dashboardDef);
-// 
+//
 //     // when trying to export the same dashboard twice
 //     final List<OptimizeEntityExportDto> exportedDtos =
 //         publicApiClient.exportDashboardsAndReturnExportDtos(
 //             List.of(dashboardId1, dashboardId1), ACCESS_TOKEN);
-// 
+//
 //     // then there are no duplicate reports in the export
 //     assertThat(exportedDtos)
 //         .hasSize(2)
@@ -167,7 +167,7 @@
 //         .usingRecursiveComparison()
 //         .isEqualTo(expectedDashboard);
 //   }
-// 
+//
 //   private void setAccessToken() {
 //     embeddedOptimizeExtension
 //         .getConfigurationService()

@@ -8,14 +8,14 @@
 // TODO recreate C8 IT equivalent of this with #13337
 
 // package io.camunda.optimize.rest.pub;
-// 
+//
 // import static io.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 // import static io.camunda.optimize.dto.optimize.ReportType.PROCESS;
 // import static org.assertj.core.api.Assertions.assertThat;
-// 
+//
 // import io.camunda.optimize.dto.optimize.ReportType;
 // import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-// import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+// import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 // import io.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 // import io.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 // import io.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
@@ -30,11 +30,11 @@
 // import org.junit.jupiter.api.Test;
 // import org.junit.jupiter.params.ParameterizedTest;
 // import org.junit.jupiter.params.provider.EnumSource;
-// 
+//
 // @Tag(OPENSEARCH_PASSING)
 // public class PublicApiReportDefinitionExportIT extends AbstractReportDefinitionExportIT {
 //   private static final String ACCESS_TOKEN = "secret_export_token";
-// 
+//
 //   @Override
 //   protected List<ReportDefinitionExportDto> exportReportDefinitionAndReturnAsList(
 //       final String reportId) {
@@ -42,14 +42,14 @@
 //     return publicApiClient.exportReportDefinitionsAndReturnResponse(
 //         Collections.singletonList(reportId), ACCESS_TOKEN);
 //   }
-// 
+//
 //   @Override
 //   protected Response exportReportDefinitionAndReturnResponse(final String reportId) {
 //     setAccessToken();
 //     return publicApiClient.exportReportDefinitions(
 //         Collections.singletonList(reportId), ACCESS_TOKEN);
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @EnumSource(ReportType.class)
 //   public void exportMultipleReportDefinitions(final ReportType reportType) {
@@ -80,18 +80,18 @@
 //                 reportIds.add(reportId);
 //               });
 //     }
-// 
+//
 //     // when
 //     final List<ReportDefinitionExportDto> actualExportDtos =
 //         publicApiClient.exportReportDefinitionsAndReturnResponse(reportIds, ACCESS_TOKEN);
-// 
+//
 //     // then
 //     assertThat(actualExportDtos)
 //         .hasSize(expectedExportDtos.size())
 //         .usingRecursiveFieldByFieldElementComparator()
 //         .containsExactlyInAnyOrderElementsOf(expectedExportDtos);
 //   }
-// 
+//
 //   @Test
 //   public void exportMultipleReportsNoDuplicates() {
 //     // given
@@ -107,19 +107,19 @@
 //     final SingleProcessReportDefinitionExportDto expectedReportExportDto =
 //         createExportDto(reportDef);
 //     expectedReportExportDto.setId(reportId);
-// 
+//
 //     // when
 //     final List<ReportDefinitionExportDto> actualExportDtos =
 //         publicApiClient.exportReportDefinitionsAndReturnResponse(
 //             List.of(reportId, reportId), ACCESS_TOKEN);
-// 
+//
 //     // then
 //     assertThat(actualExportDtos)
 //         .singleElement()
 //         .usingRecursiveComparison()
 //         .isEqualTo(expectedReportExportDto);
 //   }
-// 
+//
 //   private void setAccessToken() {
 //     embeddedOptimizeExtension
 //         .getConfigurationService()

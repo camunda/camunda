@@ -11,9 +11,8 @@ import static io.camunda.optimize.service.security.util.LocalDateUtil.atSameTime
 import static io.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
-import io.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
@@ -34,7 +33,7 @@ public class RawDataCommandResult<T extends RawDataInstanceDto>
   }
 
   public RawDataCommandResult(
-      @NonNull final List<T> data, @NonNull final SingleReportDataDto reportData) {
+      @NonNull final List<T> data, @NonNull final ReportDataDto reportData) {
     super(Collections.singletonList(MeasureDto.of(data)), reportData);
   }
 
@@ -51,7 +50,7 @@ public class RawDataCommandResult<T extends RawDataInstanceDto>
       final Integer offset,
       final ZoneId timezone,
       final boolean includeNewVariables) {
-    final SingleReportDataDto singleReportData = getReportDataAs(SingleReportDataDto.class);
+    final ReportDataDto singleReportData = getReportDataAs(ReportDataDto.class);
     final List<? extends RawDataInstanceDto> rawData = getFirstMeasureData();
     if (rawData.isEmpty()) {
       return CSVUtils.mapRawProcessReportInstances(

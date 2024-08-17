@@ -16,7 +16,7 @@
 // import io.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 // import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 // import
-// io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+// io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
 // import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 // import io.camunda.optimize.service.util.configuration.users.AuthorizedUserType;
 // import io.camunda.optimize.test.util.decision.DecisionReportDataBuilder;

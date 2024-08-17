@@ -15,10 +15,9 @@ import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
-import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import io.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
@@ -67,7 +66,7 @@ public class ReportRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public IdResponseDto createNewSingleProcessReport(
       @Context final ContainerRequestContext requestContext,
-      @Valid final SingleProcessReportDefinitionRequestDto definition) {
+      @Valid final ProcessReportDefinitionRequestDto definition) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     if (definition != null
         && definition.getData() != null
@@ -78,7 +77,7 @@ public class ReportRestService {
     }
     return reportService.createNewSingleProcessReport(
         userId,
-        Optional.ofNullable(definition).orElseGet(SingleProcessReportDefinitionRequestDto::new));
+        Optional.ofNullable(definition).orElseGet(ProcessReportDefinitionRequestDto::new));
   }
 
   @POST
@@ -87,26 +86,12 @@ public class ReportRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public IdResponseDto createNewSingleDecisionReport(
       @Context final ContainerRequestContext requestContext,
-      @Valid final SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto) {
+      @Valid final DecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return reportService.createNewSingleDecisionReport(
         userId,
         Optional.ofNullable(singleDecisionReportDefinitionDto)
-            .orElseGet(SingleDecisionReportDefinitionRequestDto::new));
-  }
-
-  @POST
-  @Path("/process/combined/")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public IdResponseDto createNewCombinedProcessReport(
-      @Context final ContainerRequestContext requestContext,
-      CombinedReportDefinitionRequestDto combinedReportDefinitionDto) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return reportService.createNewCombinedProcessReport(
-        userId,
-        Optional.ofNullable(combinedReportDefinitionDto)
-            .orElseGet(CombinedReportDefinitionRequestDto::new));
+            .orElseGet(DecisionReportDefinitionRequestDto::new));
   }
 
   @POST
@@ -186,8 +171,8 @@ public class ReportRestService {
       @Valid @NotNull ReportDefinitionDto reportDefinitionDto,
       @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    if (reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto
-        && ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
+    if (reportDefinitionDto instanceof ProcessReportDefinitionRequestDto
+        && ((ProcessReportDefinitionRequestDto) reportDefinitionDto)
             .getData()
             .isManagementReport()) {
       throw new OptimizeValidationException("Unsaved Management Reports cannot be evaluated");
@@ -211,7 +196,7 @@ public class ReportRestService {
       @Context final ContainerRequestContext requestContext,
       @PathParam("id") final String reportId,
       @QueryParam("force") final boolean force,
-      @NotNull @Valid final SingleProcessReportDefinitionRequestDto updatedReport) {
+      @NotNull @Valid final ProcessReportDefinitionRequestDto updatedReport) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final @Valid ProcessReportDataDto reportData = updatedReport.getData();
     if (reportData != null
@@ -233,28 +218,12 @@ public class ReportRestService {
       @Context final ContainerRequestContext requestContext,
       @PathParam("id") final String reportId,
       @QueryParam("force") final boolean force,
-      @NotNull @Valid final SingleDecisionReportDefinitionRequestDto updatedReport) {
+      @NotNull @Valid final DecisionReportDefinitionRequestDto updatedReport) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);
     updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
     reportService.updateSingleDecisionReport(reportId, updatedReport, userId, force);
-  }
-
-  @PUT
-  @Path("/process/combined/{id}")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public void updateCombinedProcessReport(
-      @Context ContainerRequestContext requestContext,
-      @PathParam("id") String reportId,
-      @QueryParam("force") boolean force,
-      @NotNull CombinedReportDefinitionRequestDto updatedReport) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    updatedReport.setId(reportId);
-    updatedReport.setLastModifier(userId);
-    updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
-    reportService.updateCombinedProcessReport(userId, reportId, updatedReport);
   }
 
   @GET

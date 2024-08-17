@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.db.es.report.command.modules.view;
 
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.service.db.es.report.command.exec.ExecutionContext;
 import io.camunda.optimize.service.db.es.report.command.modules.result.CompositeCommandResult.ViewResult;
@@ -18,7 +18,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
-public abstract class ViewPart<Data extends SingleReportDataDto> {
+public abstract class ViewPart<Data extends ReportDataDto> {
 
   public void adjustSearchRequest(
       final SearchRequest searchRequest,

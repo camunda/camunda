@@ -84,13 +84,7 @@ public class CollectionEntityService {
               if (entityCopyId == null) {
                 entityCopyId =
                     reportService
-                        .copyAndMoveReport(
-                            originalEntityId,
-                            userId,
-                            newCollectionId,
-                            e.getName(),
-                            uniqueReportCopies,
-                            true)
+                        .copyAndMoveReport(originalEntityId, userId, newCollectionId, e.getName())
                         .getId();
                 uniqueReportCopies.put(originalEntityId, entityCopyId);
               }

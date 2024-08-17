@@ -8,7 +8,7 @@
 // TODO recreate C8 IT equivalent of this with #13337
 
 // package io.camunda.optimize.rest;
-// 
+//
 // import static io.camunda.optimize.AbstractIT.OPENSEARCH_PASSING;
 // import static io.camunda.optimize.service.dashboard.ManagementDashboardService.CURRENTLY_IN_PROGRESS_NAME_LOCALIZATION_CODE;
 // import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
@@ -16,7 +16,7 @@
 // import static io.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 // import static io.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 // import static org.assertj.core.api.Assertions.assertThat;
-// 
+//
 // import io.camunda.optimize.dto.optimize.ReportType;
 // import io.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
 // import io.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
@@ -24,7 +24,7 @@
 // import io.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
 // import io.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceConfigDto;
 // import io.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
-// import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+// import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 // import io.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 // import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 // import io.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
@@ -37,10 +37,10 @@
 // import org.junit.jupiter.params.ParameterizedTest;
 // import org.junit.jupiter.params.provider.Arguments;
 // import org.junit.jupiter.params.provider.MethodSource;
-// 
+//
 // @Tag(OPENSEARCH_PASSING)
 // public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
-// 
+//
 //   @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
 //   @Test
 //   public void getEntityNames_WorksForAllPossibleEntities() {
@@ -50,18 +50,18 @@
 //     String collectionId = addCollection("aCollectionName");
 //     String eventProcessId = addEventProcessMappingToOptimize("anEventProcessName");
 //     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-// 
+//
 //     // when
 //     EntityNameResponseDto result =
 //         entitiesClient.getEntityNames(collectionId, dashboardId, reportId, eventProcessId);
-// 
+//
 //     // then
 //     assertThat(result.getCollectionName()).isEqualTo("aCollectionName");
 //     assertThat(result.getDashboardName()).isEqualTo("aDashboardName");
 //     assertThat(result.getReportName()).isEqualTo("aReportName");
 //     assertThat(result.getEventBasedProcessName()).isEqualTo("anEventProcessName");
 //   }
-// 
+//
 //   @Test
 //   public void getEntityNames_ReturnsNoResponseForEventBasedProcessIfThereIsNone() {
 //     // given
@@ -69,18 +69,18 @@
 //     String dashboardId = addDashboardToOptimize("aDashboardName");
 //     String collectionId = addCollection("aCollectionName");
 //     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-// 
+//
 //     // when
 //     EntityNameResponseDto result =
 //         entitiesClient.getEntityNames(collectionId, dashboardId, reportId, "eventProcessId");
-// 
+//
 //     // then
 //     assertThat(result.getCollectionName()).isEqualTo("aCollectionName");
 //     assertThat(result.getDashboardName()).isEqualTo("aDashboardName");
 //     assertThat(result.getReportName()).isEqualTo("aReportName");
 //     assertThat(result.getEventBasedProcessName()).isNull();
 //   }
-// 
+//
 //   @Test
 //   public void getEntityNames_SeveralReportsDoNotDistortResult() {
 //     // given
@@ -88,55 +88,55 @@
 //     addSingleReportToOptimize("aDecisionReportName", ReportType.DECISION);
 //     addCombinedReport("aCombinedReportName");
 //     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-// 
+//
 //     // when
 //     EntityNameResponseDto result = entitiesClient.getEntityNames(null, null, reportId, null);
-// 
+//
 //     // then
 //     assertThat(result.getCollectionName()).isNull();
 //     assertThat(result.getDashboardName()).isNull();
 //     assertThat(result.getReportName()).isEqualTo("aProcessReportName");
 //     assertThat(result.getEventBasedProcessName()).isNull();
 //   }
-// 
+//
 //   @Test
 //   public void getEntityNames_WorksForDecisionReports() {
 //     // given
 //     String reportId = addSingleReportToOptimize("aDecisionReportName", ReportType.DECISION);
 //     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-// 
+//
 //     // when
 //     EntityNameResponseDto result = entitiesClient.getEntityNames(null, null, reportId, null);
-// 
+//
 //     // then
 //     assertThat(result.getCollectionName()).isNull();
 //     assertThat(result.getDashboardName()).isNull();
 //     assertThat(result.getReportName()).isEqualTo("aDecisionReportName");
 //     assertThat(result.getEventBasedProcessName()).isNull();
 //   }
-// 
+//
 //   @Test
 //   public void getEntityNames_WorksForCombinedReports() {
 //     // given
 //     String reportId = addCombinedReport("aCombinedReportName");
 //     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-// 
+//
 //     // when
 //     EntityNameResponseDto result = entitiesClient.getEntityNames(null, null, reportId, null);
-// 
+//
 //     // then
 //     assertThat(result.getCollectionName()).isNull();
 //     assertThat(result.getDashboardName()).isNull();
 //     assertThat(result.getReportName()).isEqualTo("aCombinedReportName");
 //     assertThat(result.getEventBasedProcessName()).isNull();
 //   }
-// 
+//
 //   @Tag(OPENSEARCH_SHOULD_BE_PASSING)
 //   @Test
 //   public void getEntityNames_NotAvailableIdReturns404() {
 //     // given
 //     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-// 
+//
 //     // when
 //     Response response =
 //         embeddedOptimizeExtension
@@ -144,28 +144,28 @@
 //             .buildGetEntityNamesRequest(
 //                 new EntityNameRequestDto(null, null, "notAvailableRequest", null))
 //             .execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
 //   }
-// 
+//
 //   @Tag(OPENSEARCH_SHOULD_BE_PASSING)
 //   @Test
 //   public void getEntityNames_NoIdProvidedReturns400() {
 //     // given
 //     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-// 
+//
 //     // when
 //     Response response =
 //         embeddedOptimizeExtension
 //             .getRequestExecutor()
 //             .buildGetEntityNamesRequest(new EntityNameRequestDto(null, null, null, null))
 //             .execute();
-// 
+//
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @MethodSource("templatesAndExpectedLocalizedNames")
 //   public void getEntityNames_localizesInstantPreviewDashboardContent(
@@ -179,16 +179,16 @@
 //     final Optional<InstantDashboardDataDto> instantPreviewDashboard =
 //         instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, template);
 //     assertThat(instantPreviewDashboard).isPresent();
-// 
+//
 //     // when
 //     final EntityNameResponseDto result =
 //         entitiesClient.getEntityNamesLocalized(
 //             null, instantPreviewDashboard.get().getDashboardId(), null, null, locale);
-// 
+//
 //     // then
 //     assertThat(result.getDashboardName()).isEqualTo(expectedDashboardName);
 //   }
-// 
+//
 //   @ParameterizedTest
 //   @MethodSource("localizedReportName")
 //   public void managementReportNamesAreLocalized(
@@ -197,16 +197,16 @@
 //     engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram("aProcess"));
 //     importAllEngineEntitiesFromScratch();
 //     embeddedOptimizeExtension.getManagementDashboardService().init();
-// 
+//
 //     // when
 //     final EntityNameResponseDto result =
 //         entitiesClient.getEntityNamesLocalized(
 //             null, null, getIdForManagementReport(), null, locale);
-// 
+//
 //     // then
 //     assertThat(result.getReportName()).isEqualTo(expectedReportName);
 //   }
-// 
+//
 //   @SuppressWarnings(SAME_PARAM_VALUE)
 //   private String addEventProcessMappingToOptimize(final String eventProcessName) {
 //     EventProcessMappingCreateRequestDto eventBasedProcessDto =
@@ -224,13 +224,13 @@
 //             .build();
 //     return eventProcessClient.createEventProcessMapping(eventBasedProcessDto);
 //   }
-// 
+//
 //   private static Stream<Arguments> localizedReportName() {
 //     return Stream.of(
 //         Arguments.of("en", "Currently in progress"),
 //         Arguments.of("de", "Aktuell laufende Prozesse"));
 //   }
-// 
+//
 //   private static Stream<Arguments> templatesAndExpectedLocalizedNames() {
 //     return Stream.of(
 //         Arguments.of("template1.json", "en", "Instant process dashboard"),
@@ -238,7 +238,7 @@
 //         Arguments.of("template2.json", "en", "KPI dashboard"),
 //         Arguments.of("template2.json", "de", "KPI dashboard"));
 //   }
-// 
+//
 //   private String getIdForManagementReport() {
 //     return databaseIntegrationTestExtension
 //         .getAllDocumentsOfIndexAs(

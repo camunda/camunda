@@ -8,10 +8,8 @@
 package io.camunda.optimize.service.entities.report;
 
 import static io.camunda.optimize.dto.optimize.ReportConstants.API_IMPORT_OWNER_NAME;
-import static io.camunda.optimize.dto.optimize.rest.export.ExportEntityType.COMBINED_REPORT;
 import static io.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_DECISION_REPORT;
 import static io.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_PROCESS_REPORT;
-import static io.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAllOrLatest;
@@ -23,18 +21,15 @@ import io.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityType;
-import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import io.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import io.camunda.optimize.dto.optimize.rest.DefinitionExceptionItemDto;
 import io.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import io.camunda.optimize.dto.optimize.rest.ImportIndexMismatchDto;
-import io.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReportDefinitionExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import io.camunda.optimize.service.db.schema.index.report.CombinedReportIndex;
 import io.camunda.optimize.service.db.schema.index.report.SingleDecisionReportIndex;
 import io.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex;
 import io.camunda.optimize.service.db.writer.ReportWriter;
@@ -89,16 +84,8 @@ public class ReportImportService {
                     SINGLE_PROCESS_REPORT.equals(entity.getExportEntityType())
                         || SINGLE_DECISION_REPORT.equals(entity.getExportEntityType()))
             .toList();
-    final List<ReportDefinitionExportDto> combinedReportsToImport =
-        reportsToImport.stream()
-            .filter(entity -> COMBINED_REPORT.equals(entity.getExportEntityType()))
-            .toList();
 
     singleReportsToImport.forEach(
-        reportToImport ->
-            importReportIntoCollection(userId, collectionId, reportToImport, originalIdToNewIdMap));
-
-    combinedReportsToImport.forEach(
         reportToImport ->
             importReportIntoCollection(userId, collectionId, reportToImport, originalIdToNewIdMap));
   }
@@ -191,12 +178,6 @@ public class ReportImportService {
               collectionId,
               (SingleDecisionReportDefinitionExportDto) reportToImport,
               originalIdToNewIdMap);
-      case COMBINED_REPORT ->
-          importCombinedProcessReportIntoCollection(
-              Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
-              collectionId,
-              (CombinedProcessReportDefinitionExportDto) reportToImport,
-              originalIdToNewIdMap);
       default ->
           throw new OptimizeRuntimeException(
               "Unknown single report entity type: " + reportToImport.getExportEntityType());
@@ -208,21 +189,6 @@ public class ReportImportService {
       final String collectionId,
       final SingleProcessReportDefinitionExportDto reportToImport,
       final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
-    final IdResponseDto newId =
-        importReport(
-            Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
-            reportToImport,
-            collectionId);
-    originalIdToNewIdMap.put(
-        reportToImport.getId(), new EntityIdResponseDto(newId.getId(), EntityType.REPORT));
-  }
-
-  private void importCombinedProcessReportIntoCollection(
-      final String userId,
-      final String collectionId,
-      final CombinedProcessReportDefinitionExportDto reportToImport,
-      final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
-    prepareCombinedReportForImport(reportToImport, originalIdToNewIdMap);
     final IdResponseDto newId =
         importReport(
             Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
@@ -251,13 +217,6 @@ public class ReportImportService {
       final ReportDefinitionExportDto reportToImport,
       final String newCollectionId) {
     switch (reportToImport.getExportEntityType()) {
-      case COMBINED_REPORT:
-        return reportWriter.createNewCombinedReport(
-            Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
-            ((CombinedProcessReportDefinitionExportDto) reportToImport).getData(),
-            reportToImport.getName(),
-            reportToImport.getDescription(),
-            newCollectionId);
       case SINGLE_PROCESS_REPORT:
         return reportWriter.createNewSingleProcessReport(
             Optional.ofNullable(userId).orElse(API_IMPORT_OWNER_NAME),
@@ -276,21 +235,6 @@ public class ReportImportService {
         throw new IllegalStateException(
             "Unsupported entity type: " + reportToImport.getExportEntityType());
     }
-  }
-
-  private void prepareCombinedReportForImport(
-      final CombinedProcessReportDefinitionExportDto reportToImport,
-      final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
-    // Map single report items within combined report to new IDs
-    final List<CombinedReportItemDto> newSingleReportItems =
-        reportToImport.getData().getReports().stream()
-            .map(
-                reportItem ->
-                    new CombinedReportItemDto(
-                        originalIdToNewIdMap.get(reportItem.getId()).getId(),
-                        reportItem.getColor()))
-            .toList();
-    reportToImport.getData().setReports(newSingleReportItems);
   }
 
   private void removeMissingVersionsOrFailIfNoVersionsExist(
@@ -405,12 +349,6 @@ public class ReportImportService {
         }
         validateCollectionScopeOrFail(collection, decisionExport);
         populateDefinitionXml(decisionExport);
-        break;
-      case COMBINED_REPORT:
-        final CombinedProcessReportDefinitionExportDto combinedExport =
-            (CombinedProcessReportDefinitionExportDto) reportToImport;
-        validateIndexVersionOrFail(
-            CombinedReportIndex.VERSION, COMBINED_REPORT_INDEX_NAME, combinedExport);
         break;
       default:
         throw new OptimizeRuntimeException(

@@ -15,7 +15,7 @@ import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
-import io.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.ReportConfigurationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
@@ -121,7 +121,7 @@ public class ManagementDashboardService {
                     .add()
                     .buildList())
             .configuration(
-                SingleReportConfigurationDto.builder()
+                ReportConfigurationDto.builder()
                     .stackedBar(true)
                     .yLabel("pi")
                     .xLabel("endDate")

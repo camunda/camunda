@@ -7,24 +7,20 @@
  */
 package io.camunda.optimize.service.db.os.reader;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static io.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.DATA;
-import static io.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORTS;
-import static io.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORT_ITEM_ID;
 import static io.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.INSTANT_PREVIEW_REPORT;
 import static io.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
 
 import io.camunda.optimize.dto.optimize.ReportType;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
@@ -43,11 +39,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
-import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
-import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
@@ -93,7 +86,7 @@ public class ReportReaderOS implements ReportReader {
   }
 
   @Override
-  public Optional<SingleProcessReportDefinitionRequestDto> getSingleProcessReportOmitXml(
+  public Optional<ProcessReportDefinitionRequestDto> getSingleProcessReportOmitXml(
       final String reportId) {
     log.debug("Fetching single process report with id [{}]", reportId);
     final GetRequest.Builder getRequest =
@@ -102,8 +95,8 @@ public class ReportReaderOS implements ReportReader {
     final String errorMessage =
         String.format("Could not fetch single process report with id [%s]", reportId);
 
-    final GetResponse<SingleProcessReportDefinitionRequestDto> getResponse =
-        osClient.get(getRequest, SingleProcessReportDefinitionRequestDto.class, errorMessage);
+    final GetResponse<ProcessReportDefinitionRequestDto> getResponse =
+        osClient.get(getRequest, ProcessReportDefinitionRequestDto.class, errorMessage);
 
     if (!getResponse.found()) {
       return Optional.empty();
@@ -113,7 +106,7 @@ public class ReportReaderOS implements ReportReader {
   }
 
   @Override
-  public Optional<SingleDecisionReportDefinitionRequestDto> getSingleDecisionReportOmitXml(
+  public Optional<DecisionReportDefinitionRequestDto> getSingleDecisionReportOmitXml(
       final String reportId) {
     log.debug("Fetching single decision report with id [{}]", reportId);
     final GetRequest.Builder getRequest =
@@ -122,8 +115,8 @@ public class ReportReaderOS implements ReportReader {
     final String errorMessage =
         String.format("Could not fetch single decision report with id [%s]", reportId);
 
-    final GetResponse<SingleDecisionReportDefinitionRequestDto> getResponse =
-        osClient.get(getRequest, SingleDecisionReportDefinitionRequestDto.class, errorMessage);
+    final GetResponse<DecisionReportDefinitionRequestDto> getResponse =
+        osClient.get(getRequest, DecisionReportDefinitionRequestDto.class, errorMessage);
 
     if (!getResponse.found()) {
       return Optional.empty();
@@ -168,14 +161,47 @@ public class ReportReaderOS implements ReportReader {
   @Override
   public List<ReportDefinitionDto> getAllReportsForProcessDefinitionKeyOmitXml(
       final String definitionKey) {
-    final List<ReportDefinitionDto> processReportsForKey =
-        getAllProcessReportsForDefinitionKeyOmitXml(definitionKey);
-    final List<String> processReportIds =
-        processReportsForKey.stream().map(ReportDefinitionDto::getId).toList();
-    final List<CombinedReportDefinitionRequestDto> combinedReports =
-        getCombinedReportsForSimpleReports(processReportIds);
-    processReportsForKey.addAll(combinedReports);
-    return processReportsForKey;
+    log.debug(
+        "Fetching all available process reports for process definition key {}", definitionKey);
+
+    final Query processReportQuery =
+        new BoolQuery.Builder()
+            .must(
+                QueryDSL.term(
+                    String.join(
+                        ".",
+                        DATA,
+                        ReportDataDto.Fields.definitions,
+                        ReportDataDefinitionDto.Fields.key),
+                    definitionKey))
+            .build()
+            .toQuery();
+
+    final SearchRequest.Builder searchRequest =
+        getSearchRequestOmitXml(
+                processReportQuery,
+                new String[] {SINGLE_PROCESS_REPORT_INDEX_NAME},
+                LIST_FETCH_LIMIT)
+            .scroll(
+                new Time.Builder()
+                    .time(
+                        String.valueOf(
+                            configurationService
+                                .getOpenSearchConfiguration()
+                                .getScrollTimeoutInSeconds()))
+                    .build());
+
+    final OpenSearchDocumentOperations.AggregatedResult<Hit<ReportDefinitionDto>> searchResponse;
+    try {
+      searchResponse = osClient.retrieveAllScrollResults(searchRequest, ReportDefinitionDto.class);
+    } catch (final IOException e) {
+      final String reason =
+          String.format(
+              "Was not able to fetch all process reports for definition key [%s]", definitionKey);
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+    return OpensearchReaderUtil.extractAggregatedResponseValues(searchResponse);
   }
 
   @Override
@@ -213,7 +239,7 @@ public class ReportReaderOS implements ReportReader {
   }
 
   @Override
-  public List<SingleProcessReportDefinitionRequestDto> getAllSingleProcessReportsForIdsOmitXml(
+  public List<ProcessReportDefinitionRequestDto> getAllSingleProcessReportsForIdsOmitXml(
       final List<String> reportIds) {
     log.debug("Fetching all available single process reports for IDs [{}]", reportIds);
     final String[] indices = new String[] {SINGLE_PROCESS_REPORT_INDEX_NAME};
@@ -228,12 +254,6 @@ public class ReportReaderOS implements ReportReader {
   @Override
   public List<ReportDefinitionDto> getReportsForCollectionIncludingXml(final String collectionId) {
     return getReportsForCollection(collectionId, true);
-  }
-
-  @Override
-  public List<CombinedReportDefinitionRequestDto> getCombinedReportsForSimpleReport(
-      final String simpleReportId) {
-    return getCombinedReportsForSimpleReports(Collections.singletonList(simpleReportId));
   }
 
   @Override
@@ -265,94 +285,11 @@ public class ReportReaderOS implements ReportReader {
     final SearchRequest.Builder searchRequest =
         getSearchRequestOmitXml(query, new String[] {SINGLE_PROCESS_REPORT_INDEX_NAME});
     final String errorMessage = "Was not able to fetch process reports to count userTask reports.";
-    final SearchResponse<SingleProcessReportDefinitionRequestDto> searchResponse =
-        osClient.search(searchRequest, SingleProcessReportDefinitionRequestDto.class, errorMessage);
-    final List<SingleProcessReportDefinitionRequestDto> allProcessReports =
+    final SearchResponse<ProcessReportDefinitionRequestDto> searchResponse =
+        osClient.search(searchRequest, ProcessReportDefinitionRequestDto.class, errorMessage);
+    final List<ProcessReportDefinitionRequestDto> allProcessReports =
         OpensearchReaderUtil.extractResponseValues(searchResponse);
     return allProcessReports.stream().filter(report -> report.getData().isUserTaskReport()).count();
-  }
-
-  private List<ReportDefinitionDto> getAllProcessReportsForDefinitionKeyOmitXml(
-      final String definitionKey) {
-    log.debug(
-        "Fetching all available process reports for process definition key {}", definitionKey);
-
-    final Query processReportQuery =
-        new BoolQuery.Builder()
-            .must(
-                QueryDSL.term(
-                    String.join(
-                        ".",
-                        DATA,
-                        SingleReportDataDto.Fields.definitions,
-                        ReportDataDefinitionDto.Fields.key),
-                    definitionKey))
-            .build()
-            .toQuery();
-
-    final SearchRequest.Builder searchRequest =
-        getSearchRequestOmitXml(
-                processReportQuery,
-                new String[] {SINGLE_PROCESS_REPORT_INDEX_NAME},
-                LIST_FETCH_LIMIT)
-            .scroll(
-                new Time.Builder()
-                    .time(
-                        String.valueOf(
-                            configurationService
-                                .getOpenSearchConfiguration()
-                                .getScrollTimeoutInSeconds()))
-                    .build());
-
-    final OpenSearchDocumentOperations.AggregatedResult<Hit<ReportDefinitionDto>> searchResponse;
-    try {
-      searchResponse = osClient.retrieveAllScrollResults(searchRequest, ReportDefinitionDto.class);
-    } catch (final IOException e) {
-      final String reason =
-          String.format(
-              "Was not able to fetch all process reports for definition key [%s]", definitionKey);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-    return OpensearchReaderUtil.extractAggregatedResponseValues(searchResponse);
-  }
-
-  private List<CombinedReportDefinitionRequestDto> getCombinedReportsForSimpleReports(
-      final List<String> simpleReportIds) {
-    log.debug("Fetching first combined reports using simpleReports with ids {}", simpleReportIds);
-
-    final Query inner =
-        new NestedQuery.Builder()
-            .path(String.join(".", DATA, REPORTS))
-            .query(
-                QueryDSL.terms(
-                    String.join(".", DATA, REPORTS, REPORT_ITEM_ID),
-                    simpleReportIds,
-                    FieldValue::of))
-            .scoreMode(ChildScoreMode.None)
-            .build()
-            .toQuery();
-
-    final Query getCombinedReportsBySimpleReportIdQuery =
-        new NestedQuery.Builder()
-            .path(DATA)
-            .query(inner)
-            .scoreMode(ChildScoreMode.None)
-            .build()
-            .toQuery();
-
-    final SearchRequest.Builder searchRequest =
-        getSearchRequestOmitXml(
-            getCombinedReportsBySimpleReportIdQuery, new String[] {COMBINED_REPORT_INDEX_NAME});
-
-    final String errorMessage =
-        String.format(
-            "Was not able to fetch combined reports that contain reports with ids [%s]",
-            simpleReportIds);
-    final SearchResponse<CombinedReportDefinitionRequestDto> searchResponse =
-        osClient.search(searchRequest, CombinedReportDefinitionRequestDto.class, errorMessage);
-
-    return OpensearchReaderUtil.extractResponseValues(searchResponse);
   }
 
   private List<ReportDefinitionDto> getReportsForCollection(
@@ -450,7 +387,6 @@ public class ReportReaderOS implements ReportReader {
     final Map<String, String> indexesToEntitiesId = new HashMap<>();
     indexesToEntitiesId.put(SINGLE_PROCESS_REPORT_INDEX_NAME, reportId);
     indexesToEntitiesId.put(SINGLE_DECISION_REPORT_INDEX_NAME, reportId);
-    indexesToEntitiesId.put(COMBINED_REPORT_INDEX_NAME, reportId);
     return osClient.mget(ReportDefinitionDto.class, errorMessage, indexesToEntitiesId);
   }
 }

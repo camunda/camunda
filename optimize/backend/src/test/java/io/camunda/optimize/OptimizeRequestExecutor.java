@@ -68,14 +68,11 @@ import io.camunda.optimize.dto.optimize.query.processoverview.InitialProcessOwne
 import io.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
 import io.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
-import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import io.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
@@ -441,26 +438,12 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildUpdateCombinedProcessReportRequest(
-      String id, ReportDefinitionDto entity) {
-    return buildUpdateCombinedProcessReportRequest(id, entity, null);
-  }
-
-  public OptimizeRequestExecutor buildUpdateCombinedProcessReportRequest(
-      String id, ReportDefinitionDto entity, Boolean force) {
-    this.path = "report/process/combined/" + id;
-    this.body = getBody(entity);
-    this.method = PUT;
-    Optional.ofNullable(force).ifPresent(value -> addSingleQueryParam("force", value));
-    return this;
-  }
-
   public OptimizeRequestExecutor buildCreateSingleProcessReportRequest() {
     return buildCreateSingleProcessReportRequest(null);
   }
 
   public OptimizeRequestExecutor buildCreateSingleProcessReportRequest(
-      final SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto) {
+      final ProcessReportDefinitionRequestDto singleProcessReportDefinitionDto) {
     this.path = "report/process/single";
     Optional.ofNullable(singleProcessReportDefinitionDto)
         .ifPresent(definitionDto -> this.body = getBody(definitionDto));
@@ -469,22 +452,9 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildCreateSingleDecisionReportRequest(
-      final SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto) {
+      final DecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto) {
     this.path = "report/decision/single";
     Optional.ofNullable(singleDecisionReportDefinitionDto)
-        .ifPresent(definitionDto -> this.body = getBody(definitionDto));
-    this.method = POST;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildCreateCombinedReportRequest() {
-    return buildCreateCombinedReportRequest(null);
-  }
-
-  public OptimizeRequestExecutor buildCreateCombinedReportRequest(
-      final CombinedReportDefinitionRequestDto combinedReportDefinitionDto) {
-    this.path = "report/process/combined";
-    Optional.ofNullable(combinedReportDefinitionDto)
         .ifPresent(definitionDto -> this.body = getBody(definitionDto));
     this.method = POST;
     return this;
@@ -584,7 +554,7 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public <T extends SingleReportDataDto>
+  public <T extends ReportDataDto>
       OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequestWithPagination(
           T entity, PaginationRequestDto paginationDto) {
     buildEvaluateSingleUnsavedReportRequest(entity);
@@ -592,19 +562,19 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public <T extends SingleReportDataDto>
+  public <T extends ReportDataDto>
       OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequest(T entity) {
     this.path = "report/evaluate";
     if (entity instanceof ProcessReportDataDto) {
       ProcessReportDataDto dataDto = (ProcessReportDataDto) entity;
-      SingleProcessReportDefinitionRequestDto definitionDto =
-          new SingleProcessReportDefinitionRequestDto();
+      ProcessReportDefinitionRequestDto definitionDto =
+          new ProcessReportDefinitionRequestDto();
       definitionDto.setData(dataDto);
       this.body = getBody(definitionDto);
     } else if (entity instanceof DecisionReportDataDto) {
       DecisionReportDataDto dataDto = (DecisionReportDataDto) entity;
-      SingleDecisionReportDefinitionRequestDto definitionDto =
-          new SingleDecisionReportDefinitionRequestDto();
+      DecisionReportDefinitionRequestDto definitionDto =
+          new DecisionReportDefinitionRequestDto();
       definitionDto.setData(dataDto);
       this.body = getBody(definitionDto);
     } else if (entity == null) {
@@ -616,12 +586,12 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public <T extends SingleReportDefinitionDto>
+  public <T extends ReportDefinitionDto>
       OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequest(T definitionDto) {
     this.path = "report/evaluate";
-    if (definitionDto instanceof SingleProcessReportDefinitionRequestDto) {
+    if (definitionDto instanceof ProcessReportDefinitionRequestDto) {
       this.body = getBody(definitionDto);
-    } else if (definitionDto instanceof SingleDecisionReportDefinitionRequestDto) {
+    } else if (definitionDto instanceof DecisionReportDefinitionRequestDto) {
       this.body = getBody(definitionDto);
     } else if (definitionDto == null) {
       this.body = getBody(null);
@@ -629,14 +599,6 @@ public class OptimizeRequestExecutor {
       throw new OptimizeIntegrationTestException("Unknown report definition type!");
     }
     this.method = POST;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildEvaluateCombinedUnsavedReportRequest(
-      CombinedReportDataDto combinedReportData) {
-    this.path = "report/evaluate";
-    this.method = POST;
-    this.body = getBody(new CombinedReportDefinitionRequestDto(combinedReportData));
     return this;
   }
 

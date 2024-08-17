@@ -25,7 +25,7 @@ public class SingleReportEvaluationResult<T> extends ReportEvaluationResult {
   @NonNull private List<CommandEvaluationResult<T>> commandEvaluationResults;
 
   public SingleReportEvaluationResult(
-      @NonNull final SingleReportDefinitionDto<?> reportDefinition,
+      @NonNull final ReportDefinitionDto<?> reportDefinition,
       @NonNull final CommandEvaluationResult<T> commandEvaluationResult) {
     super(reportDefinition);
     this.commandEvaluationResults = Collections.singletonList(commandEvaluationResult);

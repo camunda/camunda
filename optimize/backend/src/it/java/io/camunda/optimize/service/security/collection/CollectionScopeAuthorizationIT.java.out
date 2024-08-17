@@ -52,7 +52,7 @@
 // import io.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 // import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 // import
-// io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+// io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDefinitionRequestDto;
 // import io.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 // import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 // import io.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryResponseDto;
