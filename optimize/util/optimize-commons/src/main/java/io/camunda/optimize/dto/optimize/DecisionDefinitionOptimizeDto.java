@@ -54,7 +54,8 @@ public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto
     this.outputVariableNames = outputVariableNames;
   }
 
-  public DecisionDefinitionOptimizeDto(final String dmn10Xml,
+  public DecisionDefinitionOptimizeDto(
+      final String dmn10Xml,
       final List<DecisionVariableNameResponseDto> inputVariableNames,
       final List<DecisionVariableNameResponseDto> outputVariableNames) {
     this.dmn10Xml = dmn10Xml;
@@ -128,13 +129,15 @@ public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto
     }
     final Object this$inputVariableNames = getInputVariableNames();
     final Object other$inputVariableNames = other.getInputVariableNames();
-    if (this$inputVariableNames == null ? other$inputVariableNames != null
+    if (this$inputVariableNames == null
+        ? other$inputVariableNames != null
         : !this$inputVariableNames.equals(other$inputVariableNames)) {
       return false;
     }
     final Object this$outputVariableNames = getOutputVariableNames();
     final Object other$outputVariableNames = other.getOutputVariableNames();
-    if (this$outputVariableNames == null ? other$outputVariableNames != null
+    if (this$outputVariableNames == null
+        ? other$outputVariableNames != null
         : !this$outputVariableNames.equals(other$outputVariableNames)) {
       return false;
     }
@@ -143,8 +146,12 @@ public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto
 
   @Override
   public String toString() {
-    return "DecisionDefinitionOptimizeDto(dmn10Xml=" + getDmn10Xml() + ", inputVariableNames="
-        + getInputVariableNames() + ", outputVariableNames=" + getOutputVariableNames()
+    return "DecisionDefinitionOptimizeDto(dmn10Xml="
+        + getDmn10Xml()
+        + ", inputVariableNames="
+        + getInputVariableNames()
+        + ", outputVariableNames="
+        + getOutputVariableNames()
         + ")";
   }
 
@@ -166,8 +173,7 @@ public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto
     private List<DecisionVariableNameResponseDto> inputVariableNames;
     private List<DecisionVariableNameResponseDto> outputVariableNames;
 
-    DecisionDefinitionOptimizeDtoBuilder() {
-    }
+    DecisionDefinitionOptimizeDtoBuilder() {}
 
     public DecisionDefinitionOptimizeDtoBuilder id(final String id) {
       this.id = id;
@@ -227,19 +233,45 @@ public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto
     }
 
     public DecisionDefinitionOptimizeDto build() {
-      return new DecisionDefinitionOptimizeDto(id, key, version, versionTag,
-          name, dataSource, tenantId, dmn10Xml, deleted,
-          inputVariableNames, outputVariableNames);
+      return new DecisionDefinitionOptimizeDto(
+          id,
+          key,
+          version,
+          versionTag,
+          name,
+          dataSource,
+          tenantId,
+          dmn10Xml,
+          deleted,
+          inputVariableNames,
+          outputVariableNames);
     }
 
     @Override
     public String toString() {
-      return "DecisionDefinitionOptimizeDto.DecisionDefinitionOptimizeDtoBuilder(id=" + id
-          + ", key=" + key + ", version=" + version + ", versionTag=" + versionTag
-          + ", name=" + name + ", dataSource=" + dataSource + ", tenantId="
-          + tenantId + ", dmn10Xml=" + dmn10Xml + ", deleted=" + deleted
-          + ", inputVariableNames=" + inputVariableNames + ", outputVariableNames="
-          + outputVariableNames + ")";
+      return "DecisionDefinitionOptimizeDto.DecisionDefinitionOptimizeDtoBuilder(id="
+          + id
+          + ", key="
+          + key
+          + ", version="
+          + version
+          + ", versionTag="
+          + versionTag
+          + ", name="
+          + name
+          + ", dataSource="
+          + dataSource
+          + ", tenantId="
+          + tenantId
+          + ", dmn10Xml="
+          + dmn10Xml
+          + ", deleted="
+          + deleted
+          + ", inputVariableNames="
+          + inputVariableNames
+          + ", outputVariableNames="
+          + outputVariableNames
+          + ")";
     }
   }
 
