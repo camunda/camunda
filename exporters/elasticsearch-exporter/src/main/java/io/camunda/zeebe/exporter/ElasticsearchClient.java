@@ -14,6 +14,7 @@ import io.camunda.zeebe.exporter.dto.BulkIndexResponse.Error;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Actions;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Delete;
+import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.DeleteAction;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Phases;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Policy;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyResponse;
@@ -243,7 +244,7 @@ class ElasticsearchClient implements AutoCloseable {
   static PutIndexLifecycleManagementPolicyRequest buildPutIndexLifecycleManagementPolicyRequest(
       final String minimumAge) {
     return new PutIndexLifecycleManagementPolicyRequest(
-        new Policy(new Phases(new Delete(minimumAge, new Actions(new ObjectMapper())))));
+        new Policy(new Phases(new Delete(minimumAge, new Actions(new DeleteAction())))));
   }
 
   private <T> T sendRequest(final Request request, final Class<T> responseType) throws IOException {

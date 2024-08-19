@@ -14,5 +14,7 @@ public record PutIndexLifecycleManagementPolicyRequest(Policy policy) {
 
   public record Delete(String min_age, Actions actions) {}
 
-  public record Actions(Object delete) {}
+  public record Actions(DeleteAction delete) {}
+
+  public record DeleteAction() {}
 }
