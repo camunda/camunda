@@ -21,7 +21,6 @@
 
   <properties>
     <version.java>17</version.java>
-    <commons-beanutils.version>1.9.4</commons-beanutils.version>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
     <java-jwt.version>4.4.0</java-jwt.version>
     <spring-boot-test.version>3.2.5</spring-boot-test.version>
@@ -182,14 +181,8 @@
     <dependency>
       <groupId>commons-beanutils</groupId>
       <artifactId>commons-beanutils</artifactId>
-      <version>${commons-beanutils.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>commons-collections</groupId>
-          <artifactId>commons-collections</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
+
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
