@@ -14,13 +14,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecis
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = true)
 public abstract class ReportDefinitionExportDto extends OptimizeEntityExportDto {
 
   private String collectionId;
@@ -36,6 +30,8 @@ public abstract class ReportDefinitionExportDto extends OptimizeEntityExportDto 
     this.collectionId = collectionId;
   }
 
+  public ReportDefinitionExportDto() {}
+
   public static ReportDefinitionExportDto mapReportDefinitionToExportDto(
       final ReportDefinitionDto<?> reportDef) {
     if (ReportType.PROCESS.equals(reportDef.getReportType())) {
@@ -49,6 +45,58 @@ public abstract class ReportDefinitionExportDto extends OptimizeEntityExportDto 
       return new SingleDecisionReportDefinitionExportDto(
           (SingleDecisionReportDefinitionRequestDto) reportDef);
     }
+  }
+
+  public String getCollectionId() {
+    return collectionId;
+  }
+
+  public void setCollectionId(final String collectionId) {
+    this.collectionId = collectionId;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof ReportDefinitionExportDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = super.hashCode();
+    final Object $collectionId = getCollectionId();
+    result = result * PRIME + ($collectionId == null ? 43 : $collectionId.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof ReportDefinitionExportDto)) {
+      return false;
+    }
+    final ReportDefinitionExportDto other = (ReportDefinitionExportDto) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final Object this$collectionId = getCollectionId();
+    final Object other$collectionId = other.getCollectionId();
+    if (this$collectionId == null
+        ? other$collectionId != null
+        : !this$collectionId.equals(other$collectionId)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "ReportDefinitionExportDto(collectionId=" + getCollectionId() + ")";
   }
 
   public static final class Fields {
