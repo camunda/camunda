@@ -60,7 +60,9 @@ public final class UserTaskRequestValidator {
 
   private static void validatePriority(final Integer priority, final List<String> violations) {
     if (priority != null && (priority < 0 || priority > 100)) {
-      violations.add("Priority field must be an integer between 0 and 100. Provided: " + priority);
+      violations.add(
+          ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+              "priority", priority, "within the [0,100] range"));
     }
   }
 }
