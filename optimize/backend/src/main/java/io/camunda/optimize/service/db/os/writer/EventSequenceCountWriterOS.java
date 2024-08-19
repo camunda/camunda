@@ -13,21 +13,29 @@ import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.writer.EventSequenceCountWriter;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 
-@AllArgsConstructor
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class EventSequenceCountWriterOS implements EventSequenceCountWriter {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventSequenceCountWriterOS.class);
   private final String indexKey;
   private final OptimizeOpenSearchClient osClient;
   private final ObjectMapper objectMapper;
+
+  public EventSequenceCountWriterOS(
+      final String indexKey,
+      final OptimizeOpenSearchClient osClient,
+      final ObjectMapper objectMapper) {
+    this.indexKey = indexKey;
+    this.osClient = osClient;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public void updateEventSequenceCountsWithAdjustments(
@@ -62,7 +70,7 @@ public class EventSequenceCountWriterOS implements EventSequenceCountWriter {
         .build();
   }
 
-  private String getPrefixedIndexName(String indexKey) {
+  private String getPrefixedIndexName(final String indexKey) {
     return osClient.getIndexNameService().getOptimizeIndexAliasForIndex(getIndexName(indexKey));
   }
 }

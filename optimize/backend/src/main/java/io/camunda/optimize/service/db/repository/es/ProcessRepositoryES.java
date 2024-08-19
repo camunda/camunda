@@ -28,22 +28,27 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class ProcessRepositoryES implements ProcessRepository {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ProcessRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+
+  public ProcessRepositoryES(
+      final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public Map<String, ProcessOverviewDto> getProcessOverviewsByKey(
@@ -53,18 +58,18 @@ public class ProcessRepositoryES implements ProcessRepository {
       return Collections.emptyMap();
     }
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder
         .query(QueryBuilders.idsQuery().addIds(processDefinitionKeys.toArray(new String[0])))
         .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(PROCESS_OVERVIEW_INDEX_NAME).source(searchSourceBuilder);
 
-    SearchResponse searchResponse;
+    final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format(
               "Was not able to fetch overviews for processes [%s].", processDefinitionKeys);
       log.error(reason, e);
@@ -82,17 +87,17 @@ public class ProcessRepositoryES implements ProcessRepository {
   public Map<String, ProcessDigestResponseDto> getAllActiveProcessDigestsByKey() {
     log.debug("Fetching all available process overviews.");
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder
         .query(boolQuery().must(termQuery(DIGEST + "." + ENABLED, true)))
         .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(PROCESS_OVERVIEW_INDEX_NAME).source(searchSourceBuilder);
 
-    SearchResponse searchResponse;
+    final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String reason = "Was not able to fetch process overviews.";
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
@@ -110,20 +115,20 @@ public class ProcessRepositoryES implements ProcessRepository {
   public Map<String, ProcessOverviewDto> getProcessOverviewsWithPendingOwnershipData() {
     log.debug("Fetching pending process overviews");
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder
         .query(
             QueryBuilders.prefixQuery(
                 ProcessOverviewDto.Fields.processDefinitionKey, "pendingauthcheck"))
         .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(PROCESS_OVERVIEW_INDEX_NAME).source(searchSourceBuilder);
 
-    SearchResponse searchResponse;
+    final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
-      String reason = "Was not able to fetch pending processes";
+    } catch (final IOException e) {
+      final String reason = "Was not able to fetch pending processes";
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }

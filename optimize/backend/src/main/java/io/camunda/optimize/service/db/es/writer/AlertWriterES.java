@@ -25,8 +25,6 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
@@ -38,17 +36,23 @@ import org.elasticsearch.index.engine.DocumentMissingException;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.xcontent.XContentBuilder;
 import org.elasticsearch.xcontent.XContentType;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class AlertWriterES implements AlertWriter {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(AlertWriterES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+
+  public AlertWriterES(
+      final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public AlertDefinitionDto createAlert(final AlertDefinitionDto alertDefinitionDto) {
@@ -163,6 +167,17 @@ public class AlertWriterES implements AlertWriter {
         ALERT_INDEX_NAME);
   }
 
+  /** Delete all alerts that are associated with following report ID */
+  @Override
+  public void deleteAlertsForReport(final String reportId) {
+    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
+        esClient,
+        QueryBuilders.termQuery(AlertIndex.REPORT_ID, reportId),
+        String.format("all alerts for report with ID [%s]", reportId),
+        true,
+        ALERT_INDEX_NAME);
+  }
+
   @Override
   public void writeAlertTriggeredStatus(final boolean alertStatus, final String alertId) {
     log.debug("Writing alert status for alert with id [{}] to Elasticsearch", alertId);
@@ -181,16 +196,5 @@ public class AlertWriterES implements AlertWriter {
     } catch (final Exception e) {
       log.error("Can't update status of alert [{}]", alertId, e);
     }
-  }
-
-  /** Delete all alerts that are associated with following report ID */
-  @Override
-  public void deleteAlertsForReport(final String reportId) {
-    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
-        esClient,
-        QueryBuilders.termQuery(AlertIndex.REPORT_ID, reportId),
-        String.format("all alerts for report with ID [%s]", reportId),
-        true,
-        ALERT_INDEX_NAME);
   }
 }

@@ -23,25 +23,30 @@ import io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Optional;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class ProcessDefinitionReaderOS implements ProcessDefinitionReader {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessDefinitionReaderOS.class);
   private final DefinitionReaderOS definitionReader;
   private final OptimizeOpenSearchClient osClient;
+
+  public ProcessDefinitionReaderOS(
+      final DefinitionReaderOS definitionReader, final OptimizeOpenSearchClient osClient) {
+    this.definitionReader = definitionReader;
+    this.osClient = osClient;
+  }
 
   @Override
   public Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(final String definitionId) {

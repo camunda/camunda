@@ -100,7 +100,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.utils.StringUtils;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
@@ -143,8 +142,8 @@ import org.elasticsearch.xcontent.ToXContent;
 import org.elasticsearch.xcontent.XContentBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.mockserver.integration.ClientAndServer;
+import org.slf4j.Logger;
 
-@Slf4j
 public class ElasticsearchDatabaseTestService extends DatabaseTestService {
 
   private static final ToXContent.Params XCONTENT_PARAMS_FLAT_SETTINGS =
@@ -152,6 +151,8 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   private static final String MOCKSERVER_CLIENT_KEY = "MockServer";
   private static final Map<String, OptimizeElasticsearchClient> CLIENT_CACHE = new HashMap<>();
   private static final ClientAndServer mockServerClient = initMockServer();
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ElasticsearchDatabaseTestService.class);
 
   private String elasticsearchDatabaseVersion;
 
@@ -939,7 +940,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public EventProcessInstanceIndex getEventInstanceIndex(String indexId) {
+  public EventProcessInstanceIndex getEventInstanceIndex(final String indexId) {
     return new EventProcessInstanceIndexES(indexId);
   }
 

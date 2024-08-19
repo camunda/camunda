@@ -40,8 +40,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregation;
@@ -56,15 +54,27 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.slf4j.Logger;
 
-@AllArgsConstructor
-@Slf4j
 public class EventSequenceCountReaderOS implements EventSequenceCountReader {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventSequenceCountReaderOS.class);
   private final String indexKey;
   private final OptimizeOpenSearchClient osClient;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
+
+  public EventSequenceCountReaderOS(
+      final String indexKey,
+      final OptimizeOpenSearchClient osClient,
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService) {
+    this.indexKey = indexKey;
+    this.osClient = osClient;
+    this.objectMapper = objectMapper;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public List<EventSequenceCountDto> getEventSequencesWithSourceInIncomingOrTargetInOutgoing(

@@ -29,9 +29,6 @@ import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.DocWriteResponse;
@@ -46,30 +43,52 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.xcontent.XContentType;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class DashboardWriterES implements DashboardWriter {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DashboardWriterES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
+  public DashboardWriterES(
+      final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+  }
+
   @Override
   public IdResponseDto createNewDashboard(
-      @NonNull final String userId,
-      @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto) {
+      final String userId, final DashboardDefinitionRestDto dashboardDefinitionDto) {
+    if (userId == null) {
+      throw new RuntimeException("userId cannot be null");
+    }
+    if (dashboardDefinitionDto == null) {
+      throw new RuntimeException("dashboardDefinitionDto cannot be null");
+    }
+
     return createNewDashboard(userId, dashboardDefinitionDto, IdGenerator.getNextId());
   }
 
   @Override
   public IdResponseDto createNewDashboard(
-      @NonNull final String userId,
-      @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto,
-      @NonNull final String id) {
+      final String userId,
+      final DashboardDefinitionRestDto dashboardDefinitionDto,
+      final String id) {
+    if (userId == null) {
+      throw new RuntimeException("userId cannot be null");
+    }
+    if (dashboardDefinitionDto == null) {
+      throw new RuntimeException("dashboardDefinitionDto cannot be null");
+    }
+    if (id == null) {
+      throw new RuntimeException("id cannot be null");
+    }
+
     log.debug("Writing new dashboard to Elasticsearch");
     dashboardDefinitionDto.setOwner(userId);
     dashboardDefinitionDto.setName(
@@ -80,8 +99,11 @@ public class DashboardWriterES implements DashboardWriter {
   }
 
   @Override
-  public IdResponseDto saveDashboard(
-      @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto) {
+  public IdResponseDto saveDashboard(final DashboardDefinitionRestDto dashboardDefinitionDto) {
+    if (dashboardDefinitionDto == null) {
+      throw new RuntimeException("dashboardDefinitionDto cannot be null");
+    }
+
     dashboardDefinitionDto.setCreated(LocalDateUtil.getCurrentDateTime());
     dashboardDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     final String dashboardId = dashboardDefinitionDto.getId();

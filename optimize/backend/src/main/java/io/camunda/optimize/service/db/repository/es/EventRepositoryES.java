@@ -80,8 +80,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -113,19 +111,33 @@ import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.xcontent.XContentType;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class EventRepositoryES implements EventRepository {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(EventRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
   private final DateTimeFormatter formatter;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
   private final DateTimeFormatter dateTimeFormatter;
+
+  public EventRepositoryES(
+      final OptimizeElasticsearchClient esClient,
+      final DateTimeFormatter formatter,
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService,
+      final DateTimeFormatter dateTimeFormatter) {
+    this.esClient = esClient;
+    this.formatter = formatter;
+    this.objectMapper = objectMapper;
+    this.configurationService = configurationService;
+    this.dateTimeFormatter = dateTimeFormatter;
+  }
 
   @Override
   public void upsertEvents(final List<EventDto> eventDtos) {

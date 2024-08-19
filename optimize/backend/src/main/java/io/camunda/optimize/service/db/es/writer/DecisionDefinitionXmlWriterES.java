@@ -19,28 +19,36 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import io.camunda.optimize.util.SuppressionConstants;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class DecisionDefinitionXmlWriterES implements DecisionDefinitionXmlWriter {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(DecisionDefinitionXmlWriterES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
+  public DecisionDefinitionXmlWriterES(
+      final OptimizeElasticsearchClient esClient,
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+    this.objectMapper = objectMapper;
+  }
+
   @Override
   public void importDecisionDefinitionXmls(
       final List<DecisionDefinitionOptimizeDto> decisionDefinitions) {
-    String importItemName = "decision definition XML information";
+    final String importItemName = "decision definition XML information";
     log.debug("Writing [{}] {} to ES.", decisionDefinitions.size(), importItemName);
     esClient.doImportBulkRequestWithList(
         importItemName,
@@ -55,7 +63,7 @@ public class DecisionDefinitionXmlWriterES implements DecisionDefinitionXmlWrite
     final Script updateScript =
         ElasticsearchWriterUtil.createFieldUpdateScript(
             FIELDS_TO_UPDATE, decisionDefinitionDto, objectMapper);
-    UpdateRequest updateRequest =
+    final UpdateRequest updateRequest =
         new UpdateRequest()
             .index(DECISION_DEFINITION_INDEX_NAME)
             .id(decisionDefinitionDto.getId())

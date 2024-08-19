@@ -17,20 +17,28 @@ import io.camunda.optimize.service.db.writer.EventTraceStateWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
+import org.slf4j.Logger;
 
-@AllArgsConstructor
-@Slf4j
 public class EventTraceStateWriterOS implements EventTraceStateWriter {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventTraceStateWriterOS.class);
   private final String indexKey;
   private final OptimizeOpenSearchClient osClient;
   private final ObjectMapper objectMapper;
+
+  public EventTraceStateWriterOS(
+      final String indexKey,
+      final OptimizeOpenSearchClient osClient,
+      final ObjectMapper objectMapper) {
+    this.indexKey = indexKey;
+    this.osClient = osClient;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public void upsertEventTraceStates(final List<EventTraceStateDto> eventTraceStateDtos) {
@@ -68,7 +76,7 @@ public class EventTraceStateWriterOS implements EventTraceStateWriter {
     return QueryDSL.script(updateScript(), params);
   }
 
-  private String getPrefixedIndexName(String indexKey) {
+  private String getPrefixedIndexName(final String indexKey) {
     return osClient.getIndexNameService().getOptimizeIndexAliasForIndex(getIndexName(indexKey));
   }
 }

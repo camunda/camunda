@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregationSource;
@@ -37,16 +35,34 @@ import org.opensearch.client.opensearch._types.aggregations.NestedAggregation.Bu
 import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class AssigneeAndCandidateGroupsReaderOS implements AssigneeAndCandidateGroupsReader {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AssigneeAndCandidateGroupsReaderOS.class);
   private final OptimizeOpenSearchClient osClient;
+
+  public AssigneeAndCandidateGroupsReaderOS(final OptimizeOpenSearchClient osClient) {
+    this.osClient = osClient;
+  }
+
+  @Override
+  public void consumeUserTaskFieldTermsInBatches(
+      final String indexName,
+      final String termField,
+      final String termValue,
+      final String userTaskFieldName,
+      final Consumer<List<String>> termBatchConsumer,
+      final int batchSize) {
+    final Query filterQuery = QueryDSL.term(termField, termValue);
+    consumeUserTaskFieldTermsInBatches(
+        indexName, filterQuery, userTaskFieldName, termBatchConsumer, batchSize);
+  }
 
   @Override
   public Set<String> getUserTaskFieldTerms(
@@ -62,19 +78,6 @@ public class AssigneeAndCandidateGroupsReaderOS implements AssigneeAndCandidateG
       consumeUserTaskFieldTermsInBatches(definitionQuery, userTaskFieldName, result::addAll);
     }
     return result;
-  }
-
-  @Override
-  public void consumeUserTaskFieldTermsInBatches(
-      final String indexName,
-      final String termField,
-      final String termValue,
-      final String userTaskFieldName,
-      final Consumer<List<String>> termBatchConsumer,
-      final int batchSize) {
-    final Query filterQuery = QueryDSL.term(termField, termValue);
-    consumeUserTaskFieldTermsInBatches(
-        indexName, filterQuery, userTaskFieldName, termBatchConsumer, batchSize);
   }
 
   private void consumeUserTaskFieldTermsInBatches(
@@ -109,9 +112,9 @@ public class AssigneeAndCandidateGroupsReaderOS implements AssigneeAndCandidateG
     final CompositeAggregation assigneeCompositeAgg =
         new CompositeAggregation.Builder().sources(sources).size(resolvedBatchSize).build();
 
-    NestedAggregation nestedAgg = new Builder().path(FLOW_NODE_INSTANCES).build();
+    final NestedAggregation nestedAgg = new Builder().path(FLOW_NODE_INSTANCES).build();
 
-    Aggregation userTasksAgg =
+    final Aggregation userTasksAgg =
         AggregationDSL.withSubaggregations(
             nestedAgg,
             Collections.singletonMap(COMPOSITE_AGG, assigneeCompositeAgg._toAggregation()));

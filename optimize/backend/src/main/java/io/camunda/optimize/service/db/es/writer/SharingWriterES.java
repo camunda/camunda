@@ -21,25 +21,29 @@ import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.xcontent.XContentType;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class SharingWriterES implements SharingWriter {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SharingWriterES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+
+  public SharingWriterES(
+      final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public ReportShareRestDto saveReportShare(final ReportShareRestDto createSharingDto) {

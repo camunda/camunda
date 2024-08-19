@@ -12,17 +12,18 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.snapshots.SnapshotInfo;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class BackupReaderOS implements BackupReader {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(BackupReaderOS.class);
+
+  public BackupReaderOS() {}
 
   @Override
   public void validateRepositoryExistsOrFail() {

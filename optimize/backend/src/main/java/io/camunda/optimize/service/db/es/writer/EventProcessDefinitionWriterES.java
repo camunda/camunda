@@ -20,23 +20,31 @@ import io.camunda.optimize.util.SuppressionConstants;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class EventProcessDefinitionWriterES implements EventProcessDefinitionWriter {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventProcessDefinitionWriterES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
+
+  public EventProcessDefinitionWriterES(
+      final OptimizeElasticsearchClient esClient,
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public void importEventProcessDefinitions(

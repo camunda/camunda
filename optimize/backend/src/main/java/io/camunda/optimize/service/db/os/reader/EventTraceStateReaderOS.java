@@ -22,8 +22,6 @@ import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.reader.EventTraceStateReader;
 import io.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
@@ -34,27 +32,37 @@ import org.opensearch.client.opensearch._types.query_dsl.RandomScoreFunction;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.slf4j.Logger;
 
-@AllArgsConstructor
-@Slf4j
 public class EventTraceStateReaderOS implements EventTraceStateReader {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventTraceStateReaderOS.class);
   private final String indexKey;
   private final OptimizeOpenSearchClient osClient;
   private final ObjectMapper objectMapper;
 
+  public EventTraceStateReaderOS(
+      final String indexKey,
+      final OptimizeOpenSearchClient osClient,
+      final ObjectMapper objectMapper) {
+    this.indexKey = indexKey;
+    this.osClient = osClient;
+    this.objectMapper = objectMapper;
+  }
+
   @Override
   public List<EventTraceStateDto> getEventTraceStateForTraceIds(final List<String> traceIds) {
     log.debug("Fetching event trace states for trace ids {}", traceIds);
-    SearchRequest.Builder searchRequest =
+    final SearchRequest.Builder searchRequest =
         new SearchRequest.Builder()
             .index(getIndexName(indexKey))
             .size(LIST_FETCH_LIMIT)
             .query(QueryDSL.stringTerms(EventTraceStateIndex.TRACE_ID, traceIds));
 
-    String errorMsg =
+    final String errorMsg =
         String.format("Was not able to fetch event trace states with trace ids [%s]", traceIds);
-    SearchResponse<EventTraceStateDto> searchResponse =
+    final SearchResponse<EventTraceStateDto> searchResponse =
         osClient.search(searchRequest, EventTraceStateDto.class, errorMsg);
 
     return searchResponse.hits().hits().stream().map(Hit::source).toList();
@@ -70,7 +78,7 @@ public class EventTraceStateReaderOS implements EventTraceStateReader {
 
     final Query containsStartEventQuery = createContainsAtLeastOneEventFromQuery(startEvents);
     final Query containsEndEventQuery = createContainsAtLeastOneEventFromQuery(endEvents);
-    Query functionScoreQuery =
+    final Query functionScoreQuery =
         new FunctionScoreQuery.Builder()
             .query(QueryDSL.and(containsStartEventQuery, containsEndEventQuery))
             .functions(
@@ -79,12 +87,12 @@ public class EventTraceStateReaderOS implements EventTraceStateReader {
                     .build())
             .build()
             .toQuery();
-    SearchRequest.Builder searchRequest =
+    final SearchRequest.Builder searchRequest =
         new SearchRequest.Builder()
             .index(getIndexName(indexKey))
             .query(functionScoreQuery)
             .size(maxResultsSize);
-    SearchResponse<EventTraceStateDto> searchResponse =
+    final SearchResponse<EventTraceStateDto> searchResponse =
         osClient.search(
             searchRequest, EventTraceStateDto.class, "Was not able to fetch event trace states");
     return searchResponse.hits().hits().stream().map(Hit::source).toList();
@@ -94,13 +102,13 @@ public class EventTraceStateReaderOS implements EventTraceStateReader {
   public List<EventTraceStateDto> getTracesWithTraceIdIn(final List<String> traceIds) {
     log.debug("Fetching trace states with trace ID in [{}]", traceIds);
 
-    SearchRequest.Builder searchRequest =
+    final SearchRequest.Builder searchRequest =
         new SearchRequest.Builder()
             .query(QueryDSL.stringTerms(EventTraceStateIndex.TRACE_ID, traceIds))
             .size(MAX_RESPONSE_SIZE_LIMIT)
             .index(getIndexName(indexKey));
 
-    SearchResponse<EventTraceStateDto> searchResponse =
+    final SearchResponse<EventTraceStateDto> searchResponse =
         osClient.search(
             searchRequest,
             EventTraceStateDto.class,

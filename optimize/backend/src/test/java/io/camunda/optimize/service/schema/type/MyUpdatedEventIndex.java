@@ -13,13 +13,13 @@ import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import java.io.IOException;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.xcontent.XContentBuilder;
+import org.slf4j.Logger;
 
-@Slf4j
 public abstract class MyUpdatedEventIndex<TBuilder> implements IndexMappingCreator<TBuilder> {
 
   public static final String MY_NEW_FIELD = "myAwesomeNewField";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MyUpdatedEventIndex.class);
 
   @Override
   public String getIndexName() {
@@ -36,7 +36,7 @@ public abstract class MyUpdatedEventIndex<TBuilder> implements IndexMappingCreat
     XContentBuilder source = null;
     try {
       // @formatter:off
-      XContentBuilder content =
+      final XContentBuilder content =
           jsonBuilder()
               .startObject()
               .startObject("properties")
@@ -50,8 +50,8 @@ public abstract class MyUpdatedEventIndex<TBuilder> implements IndexMappingCreat
               .endObject();
       source = content;
       // @formatter:on
-    } catch (IOException e) {
-      String message = "Could not add mapping for type '" + getIndexName() + "'!";
+    } catch (final IOException e) {
+      final String message = "Could not add mapping for type '" + getIndexName() + "'!";
       log.error(message, e);
     }
     return source;

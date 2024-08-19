@@ -25,22 +25,26 @@ import jakarta.ws.rs.BadRequestException;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.xcontent.XContentType;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
-@Slf4j
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class SettingsWriterES implements SettingsWriter {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SettingsWriterES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+
+  public SettingsWriterES(
+      final OptimizeElasticsearchClient esClient, final ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public void upsertSettings(final SettingsDto settingsDto) {
@@ -49,7 +53,7 @@ public class SettingsWriterES implements SettingsWriter {
     try {
       final UpdateRequest request = createSettingsUpsert(settingsDto);
       esClient.update(request);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String errorMessage = "There were errors while writing settings.";
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
@@ -58,7 +62,7 @@ public class SettingsWriterES implements SettingsWriter {
 
   private UpdateRequest createSettingsUpsert(final SettingsDto settingsDto)
       throws JsonProcessingException {
-    Set<String> fieldsToUpdate = new HashSet<>();
+    final Set<String> fieldsToUpdate = new HashSet<>();
     if (settingsDto.getSharingEnabled().isPresent()) {
       fieldsToUpdate.add(SHARING_ENABLED);
     }

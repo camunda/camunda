@@ -12,17 +12,23 @@ import io.camunda.optimize.service.db.repository.TaskRepository;
 import io.camunda.optimize.service.db.repository.VariableRepository;
 import java.time.OffsetDateTime;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class ExternalProcessVariableWriter {
-  private VariableRepository variableRepository;
-  private TaskRepository taskRepository;
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ExternalProcessVariableWriter.class);
+  private final VariableRepository variableRepository;
+  private final TaskRepository taskRepository;
+
+  public ExternalProcessVariableWriter(
+      final VariableRepository variableRepository, final TaskRepository taskRepository) {
+    this.variableRepository = variableRepository;
+    this.taskRepository = taskRepository;
+  }
 
   public void writeExternalProcessVariables(final List<ExternalProcessVariableDto> variables) {
     final String itemName = "external process variables";

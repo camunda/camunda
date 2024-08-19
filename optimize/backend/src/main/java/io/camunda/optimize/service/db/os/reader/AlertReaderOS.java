@@ -23,21 +23,25 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.List;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class AlertReaderOS implements AlertReader {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(AlertReaderOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
+
+  public AlertReaderOS(
+      final OptimizeOpenSearchClient osClient, final ConfigurationService configurationService) {
+    this.osClient = osClient;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public long getAlertCount() {
@@ -48,28 +52,28 @@ public class AlertReaderOS implements AlertReader {
   public List<AlertDefinitionDto> getStoredAlerts() {
     log.debug("getting all stored alerts");
 
-    SearchRequest.Builder requestBuilder =
+    final SearchRequest.Builder requestBuilder =
         searchRequestBuilder(ALERT_INDEX_NAME).query(matchAll()).size(LIST_FETCH_LIMIT);
 
     return osClient.scrollValues(requestBuilder, AlertDefinitionDto.class);
   }
 
   @Override
-  public Optional<AlertDefinitionDto> getAlert(String alertId) {
+  public Optional<AlertDefinitionDto> getAlert(final String alertId) {
     log.debug("Fetching alert with id [{}]", alertId);
 
-    String errorMsg = format("Could not fetch alert with id [%s]", alertId);
-    GetResponse<AlertDefinitionDto> result =
+    final String errorMsg = format("Could not fetch alert with id [%s]", alertId);
+    final GetResponse<AlertDefinitionDto> result =
         osClient.get(ALERT_INDEX_NAME, alertId, AlertDefinitionDto.class, errorMsg);
 
     return result.found() ? Optional.ofNullable(result.source()) : Optional.empty();
   }
 
   @Override
-  public List<AlertDefinitionDto> getAlertsForReport(String reportId) {
+  public List<AlertDefinitionDto> getAlertsForReport(final String reportId) {
     log.debug("Fetching first {} alerts using report with id {}", LIST_FETCH_LIMIT, reportId);
 
-    SearchRequest.Builder requestBuilder =
+    final SearchRequest.Builder requestBuilder =
         searchRequestBuilder(ALERT_INDEX_NAME)
             .query(term(AlertIndex.REPORT_ID, reportId))
             .size(LIST_FETCH_LIMIT);
@@ -78,10 +82,10 @@ public class AlertReaderOS implements AlertReader {
   }
 
   @Override
-  public List<AlertDefinitionDto> getAlertsForReports(List<String> reportIds) {
+  public List<AlertDefinitionDto> getAlertsForReports(final List<String> reportIds) {
     log.debug("Fetching first {} alerts using reports with ids {}", LIST_FETCH_LIMIT, reportIds);
 
-    SearchRequest.Builder requestBuilder =
+    final SearchRequest.Builder requestBuilder =
         searchRequestBuilder(ALERT_INDEX_NAME)
             .query(stringTerms(AlertIndex.REPORT_ID, reportIds))
             .size(LIST_FETCH_LIMIT);

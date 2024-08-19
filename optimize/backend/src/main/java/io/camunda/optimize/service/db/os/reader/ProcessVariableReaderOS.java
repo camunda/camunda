@@ -16,17 +16,19 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class ProcessVariableReaderOS implements ProcessVariableReader {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessVariableReaderOS.class);
+
+  public ProcessVariableReaderOS() {}
 
   @Override
   public List<ProcessVariableNameResponseDto> getVariableNames(

@@ -54,8 +54,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.FiltersAggregation;
@@ -69,19 +67,30 @@ import org.opensearch.client.opensearch.core.mget.MultiGetResponseItem;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
 import org.opensearch.client.opensearch.core.search.SourceFilter;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class EntitiesReaderOS implements EntitiesReader {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(EntitiesReaderOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService optimizeIndexNameService;
   private final LocalizationService localizationService;
+
+  public EntitiesReaderOS(
+      final OptimizeOpenSearchClient osClient,
+      final ConfigurationService configurationService,
+      final OptimizeIndexNameService optimizeIndexNameService,
+      final LocalizationService localizationService) {
+    this.osClient = osClient;
+    this.configurationService = configurationService;
+    this.optimizeIndexNameService = optimizeIndexNameService;
+    this.localizationService = localizationService;
+  }
 
   @Override
   public List<CollectionEntity> getAllPrivateEntities() {

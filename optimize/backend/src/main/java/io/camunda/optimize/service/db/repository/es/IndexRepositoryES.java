@@ -17,22 +17,30 @@ import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.xcontent.XContentBuilder;
+import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class IndexRepositoryES implements IndexRepository, ConfigurationReloadable {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(IndexRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
   private final OptimizeIndexNameService indexNameService;
   private final Set<String> indices = ConcurrentHashMap.newKeySet();
+
+  public IndexRepositoryES(
+      final OptimizeElasticsearchClient esClient,
+      final ElasticSearchSchemaManager elasticSearchSchemaManager,
+      final OptimizeIndexNameService indexNameService) {
+    this.esClient = esClient;
+    this.elasticSearchSchemaManager = elasticSearchSchemaManager;
+    this.indexNameService = indexNameService;
+  }
 
   @Override
   public void createMissingIndices(
@@ -46,28 +54,29 @@ public class IndexRepositoryES implements IndexRepository, ConfigurationReloadab
   }
 
   @Override
-  public void reloadConfiguration(final ApplicationContext context) {
-    indices.clear();
-  }
-
-  @Override
   public boolean indexExists(
       final IndexMappingCreatorBuilder indexMappingCreatorBuilder, final String key) {
     return indexExists(indexMappingCreatorBuilder.getElasticsearch().apply(key).getIndexName());
   }
 
-  private String getIndexName(IndexMappingCreator<XContentBuilder> indexMappingCreator) {
+  @Override
+  public void reloadConfiguration(final ApplicationContext context) {
+    indices.clear();
+  }
+
+  private String getIndexName(final IndexMappingCreator<XContentBuilder> indexMappingCreator) {
     return indexNameService.getOptimizeIndexNameWithVersion(indexMappingCreator);
   }
 
   private void createMissingIndex(
-      IndexMappingCreator<XContentBuilder> indexMappingCreator, final Set<String> readOnlyAliases) {
+      final IndexMappingCreator<XContentBuilder> indexMappingCreator,
+      final Set<String> readOnlyAliases) {
     log.debug("Creating index {}.", getIndexName(indexMappingCreator));
 
     elasticSearchSchemaManager.createOrUpdateOptimizeIndex(
         esClient, indexMappingCreator, readOnlyAliases);
 
-    String index = getIndexName(indexMappingCreator);
+    final String index = getIndexName(indexMappingCreator);
 
     indices.add(index);
   }

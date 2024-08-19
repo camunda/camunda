@@ -18,23 +18,31 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Collection;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.DeleteOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class EventProcessDefinitionWriterOS implements EventProcessDefinitionWriter {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventProcessDefinitionWriterOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
+
+  public EventProcessDefinitionWriterOS(
+      final OptimizeOpenSearchClient osClient,
+      final ConfigurationService configurationService,
+      final OptimizeIndexNameService indexNameService) {
+    this.osClient = osClient;
+    this.configurationService = configurationService;
+    this.indexNameService = indexNameService;
+  }
 
   @Override
   public void importEventProcessDefinitions(

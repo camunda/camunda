@@ -22,8 +22,6 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.engine.exception.NotFoundException;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
@@ -33,16 +31,20 @@ import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.UpdateResponse;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class AlertWriterOS implements AlertWriter {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(AlertWriterOS.class);
   private final OptimizeOpenSearchClient osClient;
+
+  public AlertWriterOS(final OptimizeOpenSearchClient osClient) {
+    this.osClient = osClient;
+  }
 
   @Override
   public AlertDefinitionDto createAlert(final AlertDefinitionDto alertDefinitionDto) {
@@ -136,6 +138,12 @@ public class AlertWriterOS implements AlertWriter {
     osClient.deleteByQuery(ids(alertIds), true, ALERT_INDEX_NAME);
   }
 
+  /** Delete all alerts that are associated with following report ID */
+  @Override
+  public void deleteAlertsForReport(final String reportId) {
+    osClient.deleteByQuery(term(AlertIndex.REPORT_ID, reportId), true, ALERT_INDEX_NAME);
+  }
+
   @Override
   public void writeAlertTriggeredStatus(final boolean alertStatus, final String alertId) {
     record AlertTriggered(boolean triggered) {}
@@ -164,11 +172,5 @@ public class AlertWriterOS implements AlertWriter {
     } catch (final Exception e) {
       log.error("Can't update status of alert [{}]", alertId, e);
     }
-  }
-
-  /** Delete all alerts that are associated with following report ID */
-  @Override
-  public void deleteAlertsForReport(final String reportId) {
-    osClient.deleteByQuery(term(AlertIndex.REPORT_ID, reportId), true, ALERT_INDEX_NAME);
   }
 }
