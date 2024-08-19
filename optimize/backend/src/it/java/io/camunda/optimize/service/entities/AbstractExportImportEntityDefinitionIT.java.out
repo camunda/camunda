@@ -111,7 +111,6 @@
 // import io.camunda.optimize.service.util.IdGenerator;
 // import io.camunda.optimize.service.util.ProcessReportDataType;
 // import io.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
-// import io.camunda.optimize.util.SuperUserType;
 // import jakarta.ws.rs.core.Response;
 // import java.time.OffsetDateTime;
 // import java.util.ArrayList;
@@ -136,16 +135,6 @@
 //   public static final String DEFAULT_USERNAME = "demo";
 //   public static final String DEFAULT_PASSWORD = "demo";
 //   public static final String GROUP_ID = "kermitGroup";
-//
-//   @BeforeEach
-//   public void setUp() {
-//     // only superusers are authorized to export reports
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperUserIds()
-//         .add(DEFAULT_USERNAME);
-//   }
 //
 //   @SuppressWarnings(UNUSED)
 //   protected static Stream<ReportType> reportTypes() {
@@ -615,25 +604,6 @@
 //     return reportDef;
 //   }
 //
-//   protected void setAuthorizedSuperGroup() {
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .setSuperUserIds(Collections.emptyList());
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     authorizationClient.grantKermitGroupOptimizeAccess();
-//
-// authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_PROCESS_DEFINITION);
-//
-// authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_DECISION_DEFINITION);
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperGroupIds()
-//         .add(GROUP_ID);
-//   }
-//
 //   private static ProcessDefinitionOptimizeDto createProcessDefinition(
 //       final String key, final String tenantId, final String version) {
 //     return ProcessDefinitionOptimizeDto.builder()
@@ -683,12 +653,4 @@
 //     return decisionReportData;
 //   }
 //
-//   @SuppressWarnings(UNUSED)
-//   private static Stream<Arguments> reportAndAuthType() {
-//     return Stream.of(
-//         Arguments.of(ReportType.PROCESS, SuperUserType.USER),
-//         Arguments.of(ReportType.DECISION, SuperUserType.GROUP),
-//         Arguments.of(ReportType.PROCESS, SuperUserType.GROUP),
-//         Arguments.of(ReportType.DECISION, SuperUserType.USER));
-//   }
 // }

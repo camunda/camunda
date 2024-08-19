@@ -10,7 +10,6 @@ package io.camunda.optimize.service.util.configuration.security;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.optimize.util.SuppressionConstants;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.Data;
@@ -32,12 +31,6 @@ public class AuthConfiguration {
   @JsonProperty("cookie")
   private CookieConfiguration cookieConfiguration;
 
-  @JsonProperty("superUserIds")
-  private List<String> superUserIds;
-
-  @JsonProperty("superGroupIds")
-  private List<String> superGroupIds;
-
   @JsonIgnore
   public int getTokenLifeTimeMinutes() {
     return tokenLifeTime;
@@ -50,7 +43,7 @@ public class AuthConfiguration {
   @SuppressWarnings(SuppressionConstants.UNUSED)
   @JsonProperty("token")
   private void unpackToken(final Map<String, String> token) {
-    this.tokenLifeTime = Integer.valueOf(token.get("lifeMin"));
-    this.tokenSecret = token.get("secret");
+    tokenLifeTime = Integer.valueOf(token.get("lifeMin"));
+    tokenSecret = token.get("secret");
   }
 }

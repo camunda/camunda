@@ -35,12 +35,6 @@ public class SettingsService {
             SettingsDto.builder().sharingEnabled(configurationService.getSharingEnabled()).build());
   }
 
-  public void setSettings(final String userId, final SettingsDto settingsDto) {
-    validateUserAuthorizedToConfigureSettingsOrFail(userId);
-    settingsDto.setLastModified(LocalDateUtil.getCurrentDateTime());
-    settingsWriter.upsertSettings(settingsDto);
-  }
-
   public void setSettings(final SettingsDto settingsDto) {
     settingsDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     // Make sure that the configuration service is in sync with the settings service
@@ -48,10 +42,14 @@ public class SettingsService {
     settingsWriter.upsertSettings(settingsDto);
   }
 
+  public void setSettings(final String userId, final SettingsDto settingsDto) {
+    validateUserAuthorizedToConfigureSettingsOrFail(userId);
+    settingsDto.setLastModified(LocalDateUtil.getCurrentDateTime());
+    settingsWriter.upsertSettings(settingsDto);
+  }
+
   private void validateUserAuthorizedToConfigureSettingsOrFail(final String userId) {
-    if (!identityService.isSuperUserIdentity(userId)) {
-      throw new ForbiddenException(
-          String.format("User [%s] is not authorized to configure settings.", userId));
-    }
+    throw new ForbiddenException(
+        String.format("User [%s] is not authorized to configure settings.", userId));
   }
 }

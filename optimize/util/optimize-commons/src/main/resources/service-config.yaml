@@ -39,12 +39,6 @@ security:
       # Optional secret used to sign authentication tokens, it's recommended to use at least a 64 character secret.
       # If set `null` a random secret will be generated with each startup of Optimize.
       secret: ${CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET:null}
-    # List of user ids that are granted full permission to all collections, reports & dashboards
-    # Note: For reports these users are still required to be granted access to the corresponding process/decision
-    # definitions in Camunda Platform Admin
-    superUserIds: ${OPTIMIZE_SUPER_USER_IDS:[]}
-    # List of group ids that are granted full permission to all collections, reports & dashboards
-    superGroupIds: [ ]
 
   # Configuration relating to the use of Optimize
   license:
@@ -604,7 +598,7 @@ panelNotification:
 
 entity:
   # which users are authorized to create/edit/delete Optimize entities outside of a collection.
-  # Available options: 'all', 'superuser', 'none'
+  # Available options: 'all', 'none'
   authorizedEditors: 'all'
   # Specifies the frequency with which we want to refresh the KPI values on ES
   # The given number is the interval in seconds
@@ -614,7 +608,7 @@ entity:
 
 export:
   csv:
-    # which users are authorized to download CSVs. Available options: 'all', 'superuser', 'none'
+    # which users are authorized to download CSVs. Available options: 'all', 'none'
     authorizedUsers: 'all'
     # Maximum number of records returned by CSV export
     # Note: Increasing this value comes at a memory cost for the Optimize application that varies based on the actual data.

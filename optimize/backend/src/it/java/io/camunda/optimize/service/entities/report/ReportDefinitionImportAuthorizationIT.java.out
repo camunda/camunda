@@ -22,7 +22,6 @@
 // import io.camunda.optimize.dto.optimize.rest.DefinitionExceptionResponseDto;
 // import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 // import io.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
-// import io.camunda.optimize.util.SuperUserType;
 // import jakarta.ws.rs.core.Response;
 // import java.util.Collections;
 // import org.junit.jupiter.api.Tag;
@@ -36,29 +35,7 @@
 //
 //   @ParameterizedTest
 //   @MethodSource("reportAndAuthType")
-//   public void importReport_asSuperuser(
-//       final ReportType reportType, final SuperUserType superUserType) {
-//     // given
-//     createAndSaveDefinition(reportType.toDefinitionType(), null);
-//
-//     // when
-//     final Response response;
-//     if (superUserType == SuperUserType.USER) {
-//       response = importClient.importEntity(createSimpleExportDto(reportType));
-//     } else {
-//       setAuthorizedSuperGroup();
-//       response =
-//           importClient.importEntityAsUser(
-//               KERMIT_USER, KERMIT_USER, createSimpleExportDto(reportType));
-//     }
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-//   }
-//
-//   @ParameterizedTest
-//   @MethodSource("reportAndAuthType")
-//   public void importReport_asNonSuperuser(final ReportType reportType) {
+//   public void importReport(final ReportType reportType) {
 //     // given
 //     createAndSaveDefinition(reportType.toDefinitionType(), null);
 //     authorizationClient.addKermitUserAndGrantAccessToOptimize();

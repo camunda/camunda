@@ -18,7 +18,6 @@ package io.camunda.process.test.impl.client;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import java.util.Optional;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.cookie.BasicCookieStore;
@@ -26,7 +25,6 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 
 public class OperateApiClient {
@@ -71,7 +69,7 @@ public class OperateApiClient {
             throw new IllegalStateException(
                 String.format(
                     "Failed to login. [code: %d, message: %s]",
-                    response.getCode(), getReponseAsString(response)));
+                    response.getCode(), HttpClientUtil.getReponseAsString(response)));
           }
           return null;
         });
@@ -82,13 +80,13 @@ public class OperateApiClient {
       throw new ZeebeClientNotFoundException(
           String.format(
               "Failed send request. Object not found. [code: %d, message: %s]",
-              response.getCode(), getReponseAsString(response)));
+              response.getCode(), HttpClientUtil.getReponseAsString(response)));
     }
     if (response.getCode() != 200) {
       throw new RuntimeException(
           String.format(
               "Failed send request. [code: %d, message: %s]",
-              response.getCode(), getReponseAsString(response)));
+              response.getCode(), HttpClientUtil.getReponseAsString(response)));
     }
   }
 
@@ -123,25 +121,12 @@ public class OperateApiClient {
     return objectMapper.readValue(responseBody, VariableResponseDto.class);
   }
 
-  private static String getReponseAsString(final ClassicHttpResponse response) {
-    return Optional.ofNullable(response.getEntity())
-        .map(
-            entity -> {
-              try {
-                return EntityUtils.toString(entity);
-              } catch (final Exception e) {
-                throw new RuntimeException(e);
-              }
-            })
-        .orElse("?");
-  }
-
   private String sendGetRequest(final String endpoint) throws IOException {
     return httpClient.execute(
         new HttpGet(operateRestApi + endpoint),
         response -> {
           verifyStatusCode(response);
-          return getReponseAsString(response);
+          return HttpClientUtil.getReponseAsString(response);
         });
   }
 
@@ -154,7 +139,7 @@ public class OperateApiClient {
         request,
         response -> {
           verifyStatusCode(response);
-          return getReponseAsString(response);
+          return HttpClientUtil.getReponseAsString(response);
         });
   }
 }
