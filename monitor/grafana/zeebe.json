@@ -1439,7 +1439,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "avg(sum by (context, partition) (zeebe_flow_control_cluster_load{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) > 0) ",
+              "expr": "avg(zeebe_flow_control_partition_load{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"} > 0)",
               "instant": true,
               "legendFormat": "__auto",
               "range": false,
@@ -15750,7 +15750,7 @@
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "zeebe_flow_control_cluster_load{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"} > 0",
+              "expr": "zeebe_flow_control_partition_load{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"} > 0",
               "instant": true,
               "legendFormat": "Partition: {{partition}}",
               "range": false,
@@ -22196,7 +22196,7 @@
       "type": "row"
     }
   ],
-  "refresh": "1m",
+  "refresh": "",
   "schemaVersion": 38,
   "style": "dark",
   "tags": [],

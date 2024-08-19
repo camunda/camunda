@@ -162,11 +162,11 @@ public final class LogStreamMetrics {
           .labelNames("partition")
           .register();
 
-  private static final Gauge CLUSTER_LOAD =
+  private static final Gauge PARTITION_LOAD =
       Gauge.build()
           .namespace("zeebe")
           .subsystem("flow_control")
-          .name("cluster_load")
+          .name("partition_load")
           .labelNames("partition")
           .help("The current load of the cluster.")
           .register();
@@ -185,7 +185,7 @@ public final class LogStreamMetrics {
   private final Gauge.Child exportingRate;
   private final Gauge.Child writeRateMaxLimit;
   private final Gauge.Child writeRateLimit;
-  private final Gauge.Child clusterLoad;
+  private final Gauge.Child partitionLoad;
   private final String partitionLabel;
 
   public LogStreamMetrics(final int partitionId) {
@@ -204,7 +204,7 @@ public final class LogStreamMetrics {
     exportingRate = EXPORTING_RATE.labels(partitionLabel);
     writeRateMaxLimit = WRITE_RATE_MAX_LIMIT.labels(partitionLabel);
     writeRateLimit = WRITE_RATE_LIMIT.labels(partitionLabel);
-    clusterLoad = CLUSTER_LOAD.labels(partitionLabel);
+    partitionLoad = PARTITION_LOAD.labels(partitionLabel);
   }
 
   public void increaseInflightAppends() {
@@ -270,7 +270,7 @@ public final class LogStreamMetrics {
     EXPORTING_RATE.remove(partitionLabel);
     WRITE_RATE_MAX_LIMIT.remove(partitionLabel);
     WRITE_RATE_LIMIT.remove(partitionLabel);
-    CLUSTER_LOAD.remove(partitionLabel);
+    PARTITION_LOAD.remove(partitionLabel);
     for (final var contextLabel : FlowControlOutComeLabels.allContextLabels()) {
       for (final var reasonLabel : FlowControlOutComeLabels.allReasonLabels()) {
         FLOW_CONTROL_OUTCOME.remove(partitionLabel, contextLabel, reasonLabel);
@@ -304,8 +304,8 @@ public final class LogStreamMetrics {
         .inc(batchMetadata.size());
   }
 
-  public void setClusterLoad(final float load) {
-    clusterLoad.set(load);
+  public void setPartitionLoad(final float load) {
+    partitionLoad.set(load);
   }
 
   public void setExportingRate(final long value) {
