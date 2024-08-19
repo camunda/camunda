@@ -858,6 +858,12 @@
       # The value is a comma-separated list of positions to skip. Whitespace is ignored.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_PROCESSING_SKIPPOSITIONS
       # skipPositions: ""
+
+      # Configures the rate at which a partition leader checks for expired scheduled tasks such as the due date checker.
+      # The default value is 1 second. Use a lower interval to potentially decrease delays between requested and actual execution of scheduled tasks.
+      # Using a low interval will result in unnecessary load while idle. We recommend to benchmark any changes to this setting.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_PROCESSING_SCHEDULEDTASKCHECKINTERVAL
+      # scheduledTaskCheckInterval: 1s
     # experimental
       # Be aware that all configuration's which are part of the experimental section
       # are subject to change and can be dropped at any time.
