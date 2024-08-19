@@ -35,9 +35,10 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1L);
+  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
 
   public PersistedDecision() {
-    super(8);
+    super(9);
     declareProperty(decisionIdProp)
         .declareProperty(decisionNameProp)
         .declareProperty(versionProp)
@@ -45,7 +46,8 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
         .declareProperty(decisionRequirementsIdProp)
         .declareProperty(decisionRequirementsKeyProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(deploymentKeyProp);
+        .declareProperty(deploymentKeyProp)
+        .declareProperty(versionTagProp);
   }
 
   public void wrap(final DecisionRecord record) {
@@ -57,6 +59,7 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
     decisionRequirementsKeyProp.setValue(record.getDecisionRequirementsKey());
     tenantIdProp.setValue(record.getTenantId());
     deploymentKeyProp.setValue(record.getDeploymentKey());
+    versionTagProp.setValue(record.getVersionTag());
   }
 
   public PersistedDecision copy() {
@@ -69,6 +72,7 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
     copy.decisionRequirementsKeyProp.setValue(getDecisionRequirementsKey());
     copy.tenantIdProp.setValue(getTenantId());
     copy.deploymentKeyProp.setValue(getDeploymentKey());
+    copy.versionTagProp.setValue(getVersionTag());
     return copy;
   }
 
@@ -106,5 +110,9 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
 
   public long getDeploymentKey() {
     return deploymentKeyProp.getValue();
+  }
+
+  public String getVersionTag() {
+    return bufferAsString(versionTagProp.getValue());
   }
 }

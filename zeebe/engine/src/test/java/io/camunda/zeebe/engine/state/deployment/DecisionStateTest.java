@@ -66,6 +66,17 @@ public final class DecisionStateTest {
     assertThat(persistedDecision).isEmpty();
   }
 
+  @DisplayName("should return empty if no decision with given ID and version tag is deployed")
+  @Test
+  void shouldReturnEmptyIfNoDecisionIsDeployedForDecisionIdAndVersionTag() {
+    // when
+    final var persistedDecision =
+        decisionState.findDecisionByIdAndVersionTag(TENANT_ID, wrapString("decision-1"), "v1.0");
+
+    // then
+    assertThat(persistedDecision).isEmpty();
+  }
+
   @DisplayName("should return empty if no DRG is deployed by ID")
   @Test
   void shouldReturnEmptyIfNoDrgIsDeployed() {
@@ -93,7 +104,9 @@ public final class DecisionStateTest {
     // given
     final var drg = sampleDecisionRequirementsRecord();
     final var decisionRecord =
-        sampleDecisionRecord().setDecisionRequirementsKey(drg.getDecisionRequirementsKey());
+        sampleDecisionRecord()
+            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+            .setVersionTag("v1.0");
     decisionState.storeDecisionRequirements(drg);
     decisionState.storeDecisionRecord(decisionRecord);
 
@@ -116,6 +129,27 @@ public final class DecisionStateTest {
         .isEqualTo(decisionRecord.getDecisionRequirementsKey());
     assertThat(persistedDecision.get().getDeploymentKey())
         .isEqualTo(decisionRecord.getDeploymentKey());
+    assertThat(persistedDecision.get().getVersionTag()).isEqualTo(decisionRecord.getVersionTag());
+  }
+
+  @Test
+  public void shouldNotStoreDecisionKeyByDecisionIdAndVersionTagIfVersionTagIsEmpty() {
+    // given
+    final var drg = sampleDecisionRequirementsRecord();
+    final var decisionRecord =
+        sampleDecisionRecord().setDecisionRequirementsKey(drg.getDecisionRequirementsKey());
+    assertThat(decisionRecord.getVersionTag()).isEmpty();
+    decisionState.storeDecisionRequirements(drg);
+    decisionState.storeDecisionRecord(decisionRecord);
+
+    // when
+    decisionState.storeDecisionKeyByDecisionIdAndVersionTag(decisionRecord);
+
+    // then
+    assertThat(
+            decisionState.findDecisionByIdAndVersionTag(
+                TENANT_ID, decisionRecord.getDecisionIdBuffer(), decisionRecord.getVersionTag()))
+        .isEmpty();
   }
 
   @DisplayName("should find deployed decision by ID")
@@ -263,6 +297,74 @@ public final class DecisionStateTest {
               assertThat(decision.getDeploymentKey())
                   .isEqualTo(decision1Version2.getDeploymentKey());
             });
+    assertThat(persistedDecision4).isEmpty();
+  }
+
+  @DisplayName("should find deployed decision by ID and version tag")
+  @Test
+  void shouldFindDeployedDecisionByIdAndVersionTag() {
+    // given
+    final var drg1 =
+        sampleDecisionRequirementsRecord()
+            .setDecisionRequirementsVersion(1)
+            .setDecisionRequirementsKey(1L);
+    final var drg2 =
+        sampleDecisionRequirementsRecord()
+            .setDecisionRequirementsVersion(2)
+            .setDecisionRequirementsKey(2L);
+    final var decision1Version1 =
+        sampleDecisionRecord()
+            .setDecisionId("decision-1")
+            .setVersion(1)
+            .setVersionTag("v1.0")
+            .setDecisionKey(1L)
+            .setDeploymentKey(1L)
+            .setDecisionRequirementsKey(drg1.getDecisionRequirementsKey());
+    final var decision2Version1 =
+        sampleDecisionRecord()
+            .setDecisionId("decision-2")
+            .setVersion(1)
+            .setVersionTag("v1.0")
+            .setDecisionKey(2L)
+            .setDeploymentKey(1L)
+            .setDecisionRequirementsKey(drg1.getDecisionRequirementsKey());
+    final var decision1Version2 =
+        sampleDecisionRecord()
+            .setDecisionId("decision-1")
+            .setVersion(2)
+            .setVersionTag("v2.0")
+            .setDecisionKey(3L)
+            .setDeploymentKey(2L)
+            .setDecisionRequirementsKey(drg2.getDecisionRequirementsKey());
+    decisionState.storeDecisionRequirements(drg1);
+    decisionState.storeDecisionRequirements(drg2);
+    decisionState.storeDecisionRecord(decision1Version1);
+    decisionState.storeDecisionRecord(decision2Version1);
+    decisionState.storeDecisionRecord(decision1Version2);
+    decisionState.storeDecisionKeyByDecisionIdAndVersionTag(decision1Version1);
+    decisionState.storeDecisionKeyByDecisionIdAndVersionTag(decision2Version1);
+    decisionState.storeDecisionKeyByDecisionIdAndVersionTag(decision1Version2);
+
+    // when
+    final var persistedDecision1 =
+        decisionState.findDecisionByIdAndVersionTag(TENANT_ID, wrapString("decision-1"), "v1.0");
+    final var persistedDecision2 =
+        decisionState.findDecisionByIdAndVersionTag(TENANT_ID, wrapString("decision-2"), "v1.0");
+    final var persistedDecision3 =
+        decisionState.findDecisionByIdAndVersionTag(TENANT_ID, wrapString("decision-1"), "v2.0");
+    final var persistedDecision4 =
+        decisionState.findDecisionByIdAndVersionTag(TENANT_ID, wrapString("decision-2"), "v2.0");
+
+    // then
+    assertThat(persistedDecision1)
+        .map(PersistedDecision::getDecisionKey)
+        .hasValue(decision1Version1.getDecisionKey());
+    assertThat(persistedDecision2)
+        .map(PersistedDecision::getDecisionKey)
+        .hasValue(decision2Version1.getDecisionKey());
+    assertThat(persistedDecision3)
+        .map(PersistedDecision::getDecisionKey)
+        .hasValue(decision1Version2.getDecisionKey());
     assertThat(persistedDecision4).isEmpty();
   }
 
