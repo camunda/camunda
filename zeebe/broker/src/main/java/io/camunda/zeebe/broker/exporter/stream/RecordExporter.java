@@ -10,6 +10,8 @@ package io.camunda.zeebe.broker.exporter.stream;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import java.util.List;
@@ -52,6 +54,10 @@ final class RecordExporter {
       return true;
     }
 
+    final ValueType valueType = typedEvent.getValueType();
+    exporterMetrics.exportingLatency(
+        valueType, typedEvent.getTimestamp(), ActorClock.currentTimeMillis());
+
     final int exportersCount = containers.size();
 
     // current error handling strategy is simply to repeat forever until the record can be
@@ -59,11 +65,14 @@ final class RecordExporter {
     while (exporterIndex < exportersCount) {
       final ExporterContainer container = containers.get(exporterIndex);
 
-      if (container.exportRecord(rawMetadata, typedEvent)) {
-        exporterIndex++;
-        exporterMetrics.setLastExportedPosition(container.getId(), typedEvent.getPosition());
-      } else {
-        return false;
+      try (final var timer =
+          exporterMetrics.startExportLatencyTimer(valueType, container.getId())) {
+        if (container.exportRecord(rawMetadata, typedEvent)) {
+          exporterIndex++;
+          exporterMetrics.setLastExportedPosition(container.getId(), typedEvent.getPosition());
+        } else {
+          return false;
+        }
       }
     }
 

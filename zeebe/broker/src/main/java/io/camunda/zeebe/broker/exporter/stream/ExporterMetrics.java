@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.exporter.stream;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
+import io.prometheus.client.Histogram;
 
 public final class ExporterMetrics {
 
@@ -18,6 +19,23 @@ public final class ExporterMetrics {
   private static final String LABEL_NAME_ACTION = "action";
   private static final String LABEL_NAME_VALUE_TYPE = "valueType";
   private static final String NAMESPACE_ZEEBE = "zeebe";
+
+  private static final Histogram EXPORTING_LATENCY =
+      Histogram.build()
+          .namespace(NAMESPACE_ZEEBE)
+          .name("exporting_latency")
+          .help("Time between a record is written until it is picked up for exporting (in seconds)")
+          .labelNames(LABEL_NAME_PARTITION, LABEL_NAME_VALUE_TYPE)
+          .register();
+
+  private static final Histogram EXPORTER_LATENCY =
+      Histogram.build()
+          .namespace(NAMESPACE_ZEEBE)
+          .name("exporter_latency")
+          .help("Time exporter needs to export certain record (in seconds)")
+          .labelNames(LABEL_NAME_PARTITION, LABEL_NAME_EXPORTER, LABEL_NAME_VALUE_TYPE)
+          .register();
+
   private static final Counter EXPORTER_EVENTS =
       Counter.build()
           .namespace(NAMESPACE_ZEEBE)
@@ -89,6 +107,17 @@ public final class ExporterMetrics {
 
   public void setLastExportedPosition(final String exporter, final long position) {
     LAST_EXPORTED_POSITION.labels(exporter, partitionIdLabel).set(position);
+  }
+
+  public void exportingLatency(
+      final ValueType valueType, final long written, final long exporting) {
+    EXPORTING_LATENCY
+        .labels(partitionIdLabel, valueType.name())
+        .observe((exporting - written) / 1000f);
+  }
+
+  public Histogram.Timer startExportLatencyTimer(final ValueType valueType, final String exporter) {
+    return EXPORTING_LATENCY.labels(partitionIdLabel, valueType.name(), exporter).startTimer();
   }
 
   public void initializeExporterState(final ExporterPhase state) {
