@@ -19,19 +19,23 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class UserUpdateProcessor implements DistributedTypedRecordProcessor<UserRecord> {
 
   private final UserState userState;
+  private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
 
   public UserUpdateProcessor(
+      final KeyGenerator keyGenerator,
       final ProcessingState state,
       final Writers writers,
       final CommandDistributionBehavior distributionBehavior) {
+    this.keyGenerator = keyGenerator;
     userState = state.getUserState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
@@ -54,9 +58,9 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
       return;
     }
 
-    stateWriter.appendFollowUpEvent(command.getKey(), UserIntent.UPDATED, command.getValue());
-    responseWriter.writeEventOnCommand(
-        command.getKey(), UserIntent.UPDATED, command.getValue(), command);
+    final long key = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(key, UserIntent.UPDATED, command.getValue());
+    responseWriter.writeEventOnCommand(key, UserIntent.UPDATED, command.getValue(), command);
 
     distributionBehavior.distributeCommand(command.getKey(), command);
   }
