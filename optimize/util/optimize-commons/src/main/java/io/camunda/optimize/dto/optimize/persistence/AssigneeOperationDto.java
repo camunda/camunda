@@ -10,9 +10,7 @@ package io.camunda.optimize.dto.optimize.persistence;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
-import lombok.experimental.Accessors;
 
-@Accessors(chain = true)
 public class AssigneeOperationDto implements OptimizeDto, Serializable {
 
   private String id;

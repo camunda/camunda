@@ -11,9 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
-import lombok.experimental.Accessors;
 
-@Accessors(chain = true)
 public class IncidentDto implements Serializable, OptimizeDto {
 
   protected String id;

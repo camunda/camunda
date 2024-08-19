@@ -8,13 +8,7 @@
 package io.camunda.optimize.rest.optimize.dto;
 
 import java.io.Serializable;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
 
-@Getter
-@Setter
-@Accessors(chain = true)
 public class VariableDto implements Serializable {
 
   private String type;
@@ -22,10 +16,54 @@ public class VariableDto implements Serializable {
 
   private ValueInfo valueInfo = new ValueInfo();
 
-  @Getter
-  @Setter
+  public String getType() {
+    return type;
+  }
+
+  public VariableDto setType(final String type) {
+    this.type = type;
+    return this;
+  }
+
+  public Object getValue() {
+    return value;
+  }
+
+  public VariableDto setValue(final Object value) {
+    this.value = value;
+    return this;
+  }
+
+  public ValueInfo getValueInfo() {
+    return valueInfo;
+  }
+
+  public VariableDto setValueInfo(final ValueInfo valueInfo) {
+    this.valueInfo = valueInfo;
+    return this;
+  }
+
   public static class ValueInfo {
+
     private String objectTypeName;
     private String serializationDataFormat;
+
+    public String getObjectTypeName() {
+      return objectTypeName;
+    }
+
+    public ValueInfo setObjectTypeName(final String objectTypeName) {
+      this.objectTypeName = objectTypeName;
+      return this;
+    }
+
+    public String getSerializationDataFormat() {
+      return serializationDataFormat;
+    }
+
+    public ValueInfo setSerializationDataFormat(final String serializationDataFormat) {
+      this.serializationDataFormat = serializationDataFormat;
+      return this;
+    }
   }
 }

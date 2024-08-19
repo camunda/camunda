@@ -11,9 +11,7 @@ import io.camunda.optimize.dto.optimize.OptimizeDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
-import lombok.experimental.Accessors;
 
-@Accessors(chain = true)
 public class ExternalProcessVariableRequestDto implements OptimizeDto {
 
   @NotBlank private String id;

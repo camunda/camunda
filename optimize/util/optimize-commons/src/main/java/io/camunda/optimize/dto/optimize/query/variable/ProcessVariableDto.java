@@ -11,9 +11,7 @@ import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
-import lombok.experimental.Accessors;
 
-@Accessors(chain = true)
 public class ProcessVariableDto implements OptimizeDto {
 
   private String id;

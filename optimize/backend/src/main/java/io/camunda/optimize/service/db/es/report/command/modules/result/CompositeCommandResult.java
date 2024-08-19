@@ -48,10 +48,8 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.experimental.Accessors;
 import org.apache.commons.lang3.StringUtils;
 
-@Accessors(chain = true)
 public class CompositeCommandResult {
 
   private final SingleReportDataDto reportDataDto;

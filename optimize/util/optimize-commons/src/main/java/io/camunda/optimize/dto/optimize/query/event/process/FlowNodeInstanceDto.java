@@ -17,10 +17,7 @@ import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.NonNull;
-import lombok.experimental.Accessors;
 
-@Accessors(chain = true)
 public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
 
   private String flowNodeInstanceId;
@@ -56,15 +53,37 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
 
   // engine activity instance specific ctor with mandatory and default but nullable fields
   public FlowNodeInstanceDto(
-      @NonNull final String definitionKey,
-      @NonNull final String definitionVersion,
+      final String definitionKey,
+      final String definitionVersion,
       final String tenantId,
-      @NonNull final String engine,
-      @NonNull final String processInstanceId,
-      @NonNull final String flowNodeId,
-      @NonNull final String flowNodeType,
-      @NonNull final String flowNodeInstanceId,
+      final String engine,
+      final String processInstanceId,
+      final String flowNodeId,
+      final String flowNodeType,
+      final String flowNodeInstanceId,
       final String userTaskInstanceId) {
+    if (definitionKey == null) {
+      throw new IllegalArgumentException("Definition key cannot be null");
+    }
+    if (definitionVersion == null) {
+      throw new IllegalArgumentException("Definition version cannot be null");
+    }
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (processInstanceId == null) {
+      throw new IllegalArgumentException("ProcessInstanceId cannot be null");
+    }
+    if (flowNodeId == null) {
+      throw new IllegalArgumentException("FlowNodeId cannot be null");
+    }
+    if (flowNodeType == null) {
+      throw new IllegalArgumentException("FlowNodeType cannot be null");
+    }
+    if (flowNodeInstanceId == null) {
+      throw new IllegalArgumentException("FlowNodeInstanceId cannot be null");
+    }
+
     this.flowNodeInstanceId = flowNodeInstanceId;
     this.flowNodeId = flowNodeId;
     this.flowNodeType = flowNodeType;
@@ -78,13 +97,32 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
 
   // event/zeebe process activity instance specific ctor with mandatory fields
   public FlowNodeInstanceDto(
-      @NonNull final String definitionKey,
-      @NonNull final String definitionVersion,
+      final String definitionKey,
+      final String definitionVersion,
       final String tenantId,
-      @NonNull final String processInstanceId,
-      @NonNull final String flowNodeId,
-      @NonNull final String flowNodeType,
-      @NonNull final String flowNodeInstanceId) {
+      final String processInstanceId,
+      final String flowNodeId,
+      final String flowNodeType,
+      final String flowNodeInstanceId) {
+    if (definitionKey == null) {
+      throw new IllegalArgumentException("Definition key cannot be null");
+    }
+    if (definitionVersion == null) {
+      throw new IllegalArgumentException("Definition version cannot be null");
+    }
+    if (processInstanceId == null) {
+      throw new IllegalArgumentException("ProcessInstanceId cannot be null");
+    }
+    if (flowNodeId == null) {
+      throw new IllegalArgumentException("FlowNodeId cannot be null");
+    }
+    if (flowNodeType == null) {
+      throw new IllegalArgumentException("FlowNodeType cannot be null");
+    }
+    if (flowNodeInstanceId == null) {
+      throw new IllegalArgumentException("FlowNodeInstanceId cannot be null");
+    }
+
     this.flowNodeInstanceId = flowNodeInstanceId;
     this.flowNodeId = flowNodeId;
     this.flowNodeType = flowNodeType;
@@ -96,12 +134,31 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
 
   // engine user task specific ctor with mandatory fields
   public FlowNodeInstanceDto(
-      @NonNull final String definitionKey,
-      @NonNull final String engine,
-      @NonNull final String processInstanceId,
-      @NonNull final String flowNodeId,
-      @NonNull final String flowNodeInstanceId,
-      @NonNull final String userTaskInstanceId) {
+      final String definitionKey,
+      final String engine,
+      final String processInstanceId,
+      final String flowNodeId,
+      final String flowNodeInstanceId,
+      final String userTaskInstanceId) {
+    if (definitionKey == null) {
+      throw new IllegalArgumentException("Definition key cannot be null");
+    }
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (processInstanceId == null) {
+      throw new IllegalArgumentException("ProcessInstanceId cannot be null");
+    }
+    if (flowNodeId == null) {
+      throw new IllegalArgumentException("FlowNodeId cannot be null");
+    }
+    if (flowNodeInstanceId == null) {
+      throw new IllegalArgumentException("FlowNodeInstanceId cannot be null");
+    }
+    if (userTaskInstanceId == null) {
+      throw new IllegalArgumentException("UserTaskInstanceId cannot be null");
+    }
+
     this.processInstanceId = processInstanceId;
     this.definitionKey = definitionKey;
     this.engine = engine;
@@ -113,10 +170,23 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
 
   // engine identity link log specific ctor with mandatory fields
   public FlowNodeInstanceDto(
-      @NonNull final String definitionKey,
-      @NonNull final String engine,
-      @NonNull final String processInstanceId,
-      @NonNull final String userTaskInstanceId) {
+      final String definitionKey,
+      final String engine,
+      final String processInstanceId,
+      final String userTaskInstanceId) {
+    if (definitionKey == null) {
+      throw new IllegalArgumentException("Definition key cannot be null");
+    }
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (processInstanceId == null) {
+      throw new IllegalArgumentException("ProcessInstanceId cannot be null");
+    }
+    if (userTaskInstanceId == null) {
+      throw new IllegalArgumentException("UserTaskInstanceId cannot be null");
+    }
+
     this.processInstanceId = processInstanceId;
     this.definitionKey = definitionKey;
     this.engine = engine;
