@@ -36,14 +36,17 @@ import io.camunda.zeebe.stream.impl.records.RecordBatch;
 import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.Either;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -387,6 +390,98 @@ class ProcessingScheduleServiceTest {
 
     // then
     verify(mockedTask, never()).execute(any());
+  }
+
+  @Test
+  void shouldInitializeMetrics() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var scheduleService =
+        new TestScheduleServiceActorDecorator(
+            new ProcessingScheduleServiceImpl(
+                lifecycleSupplier,
+                lifecycleSupplier,
+                () -> testWriter,
+                commandCache,
+                actorScheduler.getClock(),
+                Duration.ofSeconds(1),
+                ScheduledTaskMetrics.of(registry, 1)));
+
+    // when
+    actorScheduler.submitActor(scheduleService);
+    actorScheduler.workUntilDone();
+
+    // then
+    assertThat(registry.getMeters()).isNotEmpty();
+    assertThat(
+            registry
+                .get("zeebe.processing.scheduling.tasks")
+                .tags("partition", "1")
+                .gauge()
+                .value())
+        .isEqualTo(0);
+    assertThat(
+            registry
+                .get("zeebe.processing.scheduling.delay")
+                .tags("partition", "1")
+                .timer()
+                .count())
+        .isEqualTo(0);
+  }
+
+  @Test
+  void shouldUpdateMetricsOnScheduling() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var scheduleService =
+        new TestScheduleServiceActorDecorator(
+            new ProcessingScheduleServiceImpl(
+                lifecycleSupplier,
+                lifecycleSupplier,
+                () -> testWriter,
+                commandCache,
+                actorScheduler.getClock(),
+                Duration.ofSeconds(1),
+                ScheduledTaskMetrics.of(registry, 1)));
+    actorScheduler.submitActor(scheduleService);
+    actorScheduler.workUntilDone();
+
+    // when -- scheduling a task
+    scheduleService.runDelayed(Duration.ofMinutes(1), new DummyTask());
+    actorScheduler.workUntilDone();
+
+    // then -- count is increased
+    assertThat(registry.get("zeebe.processing.scheduling.tasks").gauge().value()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldUpdateMetricsOnExecution() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var scheduleService =
+        new TestScheduleServiceActorDecorator(
+            new ProcessingScheduleServiceImpl(
+                lifecycleSupplier,
+                lifecycleSupplier,
+                () -> testWriter,
+                commandCache,
+                actorScheduler.getClock(),
+                Duration.ofSeconds(1),
+                ScheduledTaskMetrics.of(registry, 1)));
+    actorScheduler.submitActor(scheduleService);
+    actorScheduler.workUntilDone();
+
+    // when -- scheduling and executing a task
+    scheduleService.runDelayed(Duration.ofMinutes(1), new DummyTask());
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofMinutes(2));
+    actorScheduler.workUntilDone();
+
+    // then
+    assertThat(registry.get("zeebe.processing.scheduling.tasks").gauge().value()).isEqualTo(0);
+    assertThat(registry.get("zeebe.processing.scheduling.delay").timer().count()).isEqualTo(1);
+    assertThat(registry.get("zeebe.processing.scheduling.delay").timer().max(TimeUnit.MINUTES))
+        .isCloseTo(1, Percentage.withPercentage(20));
   }
 
   /**
