@@ -274,8 +274,12 @@ public class RequestMapper {
       return new DocumentMetadataModel(
           file.getContentType(), file.getOriginalFilename(), null, Map.of());
     }
-    final var expiresAt =
-        Optional.ofNullable(metadata.getExpiresAt()).map(ZonedDateTime::parse).orElse(null);
+    final ZonedDateTime expiresAt;
+    if (metadata.getExpiresAt() == null || metadata.getExpiresAt().isBlank()) {
+      expiresAt = null;
+    } else {
+      expiresAt = ZonedDateTime.parse(metadata.getExpiresAt());
+    }
     final var fileName =
         Optional.ofNullable(metadata.getFileName()).orElse(file.getOriginalFilename());
     final var contentType =

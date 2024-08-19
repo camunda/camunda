@@ -29,6 +29,10 @@ public class DocumentValidator {
       violations.add("The file name must not be empty, if present");
     }
 
+    if (metadata.getContentType() != null && metadata.getContentType().isBlank()) {
+      violations.add("The content type must not be empty, if present");
+    }
+
     if (metadata.getExpiresAt() != null) {
       validateDate(metadata.getExpiresAt(), "expiresAt", violations);
     }
