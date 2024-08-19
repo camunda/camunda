@@ -18,22 +18,27 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.io.IOException;
 import java.util.Arrays;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.transport.TransportException;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotResponse;
 import org.opensearch.client.opensearch.snapshot.DeleteSnapshotResponse;
 import org.opensearch.client.opensearch.snapshot.SnapshotInfo;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class SnapshotRepositoryOS implements SnapshotRepository {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SnapshotRepositoryOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
+
+  public SnapshotRepositoryOS(
+      final OptimizeOpenSearchClient osClient, final ConfigurationService configurationService) {
+    this.osClient = osClient;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public void deleteOptimizeSnapshots(final Long backupId) {
@@ -86,7 +91,7 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
               backupId);
       log.error(reason, e);
     } else {
-      String reason = format("Failed to delete snapshots for backupID [%s]", backupId);
+      final String reason = format("Failed to delete snapshots for backupID [%s]", backupId);
       log.error(reason, e);
     }
   }
@@ -94,13 +99,13 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
   private void onSnapshotDeleted(
       final DeleteSnapshotResponse deleteSnapshotResponse, final Long backupId) {
     if (deleteSnapshotResponse.acknowledged()) {
-      String reason =
+      final String reason =
           format(
               "Request to delete all Optimize snapshots with the backupID [%d] successfully submitted",
               backupId);
       log.info(reason);
     } else {
-      String reason =
+      final String reason =
           format(
               "Request to delete all Optimize snapshots with the backupID [%d] was not acknowledged by Opencsearch.",
               backupId);

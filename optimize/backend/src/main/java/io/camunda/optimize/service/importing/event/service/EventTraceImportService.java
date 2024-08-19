@@ -15,11 +15,12 @@ import io.camunda.optimize.service.importing.engine.service.ImportService;
 import io.camunda.optimize.service.importing.job.EventCountAndTracesImportJob;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class EventTraceImportService implements ImportService<EventDto> {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventTraceImportService.class);
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final EventTraceStateService eventTraceStateService;
   private final DatabaseClient databaseClient;
@@ -28,7 +29,7 @@ public class EventTraceImportService implements ImportService<EventDto> {
       final ConfigurationService configurationService,
       final EventTraceStateService eventTraceStateService,
       final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.eventTraceStateService = eventTraceStateService;
     this.databaseClient = databaseClient;
@@ -39,7 +40,7 @@ public class EventTraceImportService implements ImportService<EventDto> {
       final List<EventDto> pageOfEvents, final Runnable importCompleteCallback) {
     log.trace("Importing external event traces.");
 
-    boolean newDataIsAvailable = !pageOfEvents.isEmpty();
+    final boolean newDataIsAvailable = !pageOfEvents.isEmpty();
     if (newDataIsAvailable) {
       databaseImportJobExecutor.executeImportJob(
           createDatabaseImportJob(pageOfEvents, importCompleteCallback));

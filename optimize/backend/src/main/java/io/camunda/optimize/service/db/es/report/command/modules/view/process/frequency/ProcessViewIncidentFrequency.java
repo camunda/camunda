@@ -11,17 +11,19 @@ import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-@Slf4j
-@RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessViewIncidentFrequency extends ProcessViewFrequency {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessViewIncidentFrequency.class);
+
+  public ProcessViewIncidentFrequency() {}
 
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(

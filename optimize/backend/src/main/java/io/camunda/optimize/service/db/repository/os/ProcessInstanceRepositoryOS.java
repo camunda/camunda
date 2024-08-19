@@ -56,8 +56,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Script;
@@ -69,21 +67,55 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
+
   public static final String INDEX_NOT_FOUND_ERROR_MESSAGE_KEYWORD = "index_not_found_exception";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessInstanceRepositoryOS.class);
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
   private final OptimizeOpenSearchClient osClient;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
+
+  public ProcessInstanceRepositoryOS(
+      final ConfigurationService configurationService,
+      final OptimizeIndexNameService indexNameService,
+      final OptimizeOpenSearchClient osClient,
+      final ObjectMapper objectMapper,
+      final DateTimeFormatter dateTimeFormatter) {
+    this.configurationService = configurationService;
+    this.indexNameService = indexNameService;
+    this.osClient = osClient;
+    this.objectMapper = objectMapper;
+    this.dateTimeFormatter = dateTimeFormatter;
+  }
+
+  @Override
+  public void bulkImportProcessInstances(
+      final String importItemName, final List<ProcessInstanceDto> processInstanceDtos) {
+    osClient.doImportBulkRequestWithList(
+        importItemName,
+        processInstanceDtos,
+        dto ->
+            UpdateOperation.<ProcessInstanceDto>of(
+                    operation ->
+                        operation
+                            .index(aliasForProcessDefinitionKey(dto.getProcessDefinitionKey()))
+                            .id(dto.getProcessInstanceId())
+                            .script(createUpdateStateScript(dto.getState()))
+                            .upsert(dto)
+                            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT))
+                ._toBulkOperation(),
+        configurationService.getSkipDataAfterNestedDocLimitReached());
+  }
 
   @Override
   public void updateProcessInstanceStateForProcessDefinitionId(
@@ -113,28 +145,9 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
   }
 
   @Override
-  public void bulkImportProcessInstances(
-      final String importItemName, final List<ProcessInstanceDto> processInstanceDtos) {
-    osClient.doImportBulkRequestWithList(
-        importItemName,
-        processInstanceDtos,
-        dto ->
-            UpdateOperation.<ProcessInstanceDto>of(
-                    operation ->
-                        operation
-                            .index(aliasForProcessDefinitionKey(dto.getProcessDefinitionKey()))
-                            .id(dto.getProcessInstanceId())
-                            .script(createUpdateStateScript(dto.getState()))
-                            .upsert(dto)
-                            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT))
-                ._toBulkOperation(),
-        configurationService.getSkipDataAfterNestedDocLimitReached());
-  }
-
-  @Override
   public void deleteByIds(
-      final String index, String itemName, final List<String> processInstanceIds) {
-    List<BulkOperation> bulkOperations =
+      final String index, final String itemName, final List<String> processInstanceIds) {
+    final List<BulkOperation> bulkOperations =
         processInstanceIds.stream()
             .map(
                 id ->
@@ -252,7 +265,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
               .total()
               .value()
           > 0;
-    } catch (OpenSearchException e) {
+    } catch (final OpenSearchException e) {
       if (e.getMessage().contains(INDEX_NOT_FOUND_ERROR_MESSAGE_KEYWORD)) {
         // If the index doesn't exist yet, then this exception is thrown. No need to worry, just
         // return false
@@ -268,6 +281,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
       final PageResultDto<String> previousPage,
       final Supplier<PageResultDto<String>> firstPageFetchFunction) {
     record Result(String processInstanceId) {}
+
     final int limit = previousPage.getLimit();
     if (previousPage.isLastPage()) {
       return new PageResultDto<>(limit);
@@ -308,14 +322,15 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
 
       return pageResult;
 
-    } catch (OpenSearchException e) {
+    } catch (final OpenSearchException e) {
       if (HttpStatus.NOT_FOUND.value() == e.response().status()) {
         // this error occurs when the scroll id expired in the meantime, thus just restart it
         return firstPageFetchFunction.get();
       }
       throw e;
-    } catch (IOException e) {
-      String reason = format("Could not close scroll for class [%s].", getClass().getSimpleName());
+    } catch (final IOException e) {
+      final String reason =
+          format("Could not close scroll for class [%s].", getClass().getSimpleName());
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
@@ -342,6 +357,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
   private PageResultDto<String> getFirstPageOfProcessInstanceIdsForFilter(
       final String processDefinitionKey, final Query filterQuery, final Integer limit) {
     record Result(String processInstanceId) {}
+
     final PageResultDto<String> result = new PageResultDto<>(limit);
     final Integer resolvedLimit = Optional.ofNullable(limit).orElse(MAX_RESPONSE_SIZE_LIMIT);
 
@@ -390,7 +406,7 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
         "newState", json(newState));
   }
 
-  private String aliasForProcessDefinitionKey(String processDefinitionKey) {
+  private String aliasForProcessDefinitionKey(final String processDefinitionKey) {
     return indexNameService.getOptimizeIndexAliasForIndex(
         getProcessInstanceIndexAliasName(processDefinitionKey));
   }

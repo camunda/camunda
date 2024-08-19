@@ -30,14 +30,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class ZeebeIncidentImportService
     extends ZeebeProcessInstanceSubEntityImportService<ZeebeIncidentRecordDto> {
 
   private static final Set<IncidentIntent> INTENTS_TO_IMPORT =
       Set.of(IncidentIntent.CREATED, IncidentIntent.RESOLVED);
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ZeebeIncidentImportService.class);
 
   public ZeebeIncidentImportService(
       final ConfigurationService configurationService,
@@ -56,7 +57,7 @@ public class ZeebeIncidentImportService
 
   @Override
   protected List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
-      List<ZeebeIncidentRecordDto> zeebeRecords) {
+      final List<ZeebeIncidentRecordDto> zeebeRecords) {
     final List<ProcessInstanceDto> optimizeDtos =
         zeebeRecords.stream()
             .filter(zeebeRecord -> INTENTS_TO_IMPORT.contains(zeebeRecord.getIntent()))
@@ -87,12 +88,13 @@ public class ZeebeIncidentImportService
   }
 
   private ProcessInstanceDto updateIncidents(
-      final ProcessInstanceDto instanceToAdd, List<ZeebeIncidentRecordDto> recordsForInstance) {
-    Map<Long, IncidentDto> incidentsByRecordKey = new HashMap<>();
+      final ProcessInstanceDto instanceToAdd,
+      final List<ZeebeIncidentRecordDto> recordsForInstance) {
+    final Map<Long, IncidentDto> incidentsByRecordKey = new HashMap<>();
     recordsForInstance.forEach(
         incident -> {
           final long recordKey = incident.getKey();
-          IncidentDto incidentForKey =
+          final IncidentDto incidentForKey =
               incidentsByRecordKey.getOrDefault(recordKey, createSkeletonIncident(incident));
           if (incident.getIntent() == IncidentIntent.CREATED
               && incidentForKey.getIncidentStatus() != IncidentStatus.RESOLVED) {

@@ -14,8 +14,6 @@ import io.camunda.optimize.service.db.repository.SnapshotRepository;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotResponse;
@@ -23,16 +21,23 @@ import org.elasticsearch.action.admin.cluster.snapshots.delete.DeleteSnapshotReq
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.snapshots.SnapshotInfo;
 import org.elasticsearch.transport.TransportException;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class SnapshotRepositoryES implements SnapshotRepository {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SnapshotRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
+
+  public SnapshotRepositoryES(
+      final OptimizeElasticsearchClient esClient, final ConfigurationService configurationService) {
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public void deleteOptimizeSnapshots(final Long backupId) {
@@ -62,7 +67,7 @@ public class SnapshotRepositoryES implements SnapshotRepository {
       final String snapshotName) {
     return new ActionListener<>() {
       @Override
-      public void onResponse(CreateSnapshotResponse createSnapshotResponse) {
+      public void onResponse(final CreateSnapshotResponse createSnapshotResponse) {
         final SnapshotInfo snapshotInfo = createSnapshotResponse.getSnapshotInfo();
         switch (snapshotInfo
             .state()) { // should not be null as waitForCompletion is true on snapshot request
@@ -88,7 +93,7 @@ public class SnapshotRepositoryES implements SnapshotRepository {
       }
 
       @Override
-      public void onFailure(Exception e) {
+      public void onFailure(final Exception e) {
         if (e instanceof IOException || e instanceof TransportException) {
           final String reason =
               String.format(
@@ -107,15 +112,15 @@ public class SnapshotRepositoryES implements SnapshotRepository {
       final Long backupId) {
     return new ActionListener<>() {
       @Override
-      public void onResponse(AcknowledgedResponse deleteSnapshotResponse) {
+      public void onResponse(final AcknowledgedResponse deleteSnapshotResponse) {
         if (deleteSnapshotResponse.isAcknowledged()) {
-          String reason =
+          final String reason =
               String.format(
                   "Request to delete all Optimize snapshots with the backupID [%d] successfully submitted",
                   backupId);
           log.info(reason);
         } else {
-          String reason =
+          final String reason =
               String.format(
                   "Request to delete all Optimize snapshots with the backupID [%d] was not acknowledged by Elasticsearch.",
                   backupId);
@@ -124,7 +129,7 @@ public class SnapshotRepositoryES implements SnapshotRepository {
       }
 
       @Override
-      public void onFailure(Exception e) {
+      public void onFailure(final Exception e) {
         if (e instanceof IOException || e instanceof TransportException) {
           final String reason =
               String.format(
@@ -132,7 +137,8 @@ public class SnapshotRepositoryES implements SnapshotRepository {
                   backupId);
           log.error(reason, e);
         } else {
-          String reason = String.format("Failed to delete snapshots for backupID [%s]", backupId);
+          final String reason =
+              String.format("Failed to delete snapshots for backupID [%s]", backupId);
           log.error(reason, e);
         }
       }

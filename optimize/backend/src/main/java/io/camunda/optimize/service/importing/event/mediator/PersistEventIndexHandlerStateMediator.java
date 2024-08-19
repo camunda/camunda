@@ -17,15 +17,16 @@ import io.camunda.optimize.service.importing.event.handler.EventImportIndexHandl
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 public class PersistEventIndexHandlerStateMediator
     extends AbstractStoreIndexesImportMediator<StoreIndexesEngineImportService>
     implements ImportMediator {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(PersistEventIndexHandlerStateMediator.class);
   protected EventImportIndexHandlerRegistry importIndexHandlerRegistry;
 
   protected PersistEventIndexHandlerStateMediator(
@@ -51,7 +52,7 @@ public class PersistEventIndexHandlerStateMediator
                   .getExternalEventTraceImportIndexHandler()
                   .getIndexStateDto());
       importService.executeImport(importIndices, () -> importCompleted.complete(null));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error("Could not execute import for storing event processing index handlers!", e);
     }
     return importCompleted;

@@ -15,15 +15,17 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDat
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.report.MinMaxStatsService;
 import io.camunda.optimize.service.db.es.report.command.service.DateAggregationService;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByUserTaskEndDate extends ProcessGroupByUserTaskDate {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessGroupByUserTaskEndDate.class);
 
   public ProcessGroupByUserTaskEndDate(
       final DateAggregationService dateAggregationService,

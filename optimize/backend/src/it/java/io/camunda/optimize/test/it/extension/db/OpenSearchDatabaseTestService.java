@@ -82,7 +82,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.mockserver.integration.ClientAndServer;
 import org.opensearch.client.json.JsonData;
@@ -115,14 +114,16 @@ import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
 import org.opensearch.client.opensearch.indices.get_alias.IndexAliases;
+import org.slf4j.Logger;
 import org.testcontainers.shaded.org.apache.commons.lang3.NotImplementedException;
 
-@Slf4j
 public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   private static final String MOCKSERVER_CLIENT_KEY = "MockServer";
   private static final Map<String, OptimizeOpenSearchClient> CLIENT_CACHE = new HashMap<>();
   private static final ClientAndServer mockServerClient = initMockServer();
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OpenSearchDatabaseTestService.class);
 
   private String opensearchDatabaseVersion;
 
@@ -542,7 +543,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
       return osClient.getAliasesForIndexPattern(
           indexNameService.getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX)
               + "*");
-    } catch (IOException e) {
+    } catch (final IOException e) {
       return new HashMap<>();
     }
   }
@@ -797,7 +798,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public EventProcessInstanceIndex getEventInstanceIndex(String indexId) {
+  public EventProcessInstanceIndex getEventInstanceIndex(final String indexId) {
     return new EventProcessInstanceIndexOS(indexId);
   }
 

@@ -14,22 +14,28 @@ import io.camunda.optimize.service.db.schema.MappingMetadataUtil;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class MappingMetadataRepositoryES implements MappingMetadataRepository {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(MappingMetadataRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
   private final OptimizeIndexNameService indexNameService;
 
+  public MappingMetadataRepositoryES(
+      final OptimizeElasticsearchClient esClient, final OptimizeIndexNameService indexNameService) {
+    this.esClient = esClient;
+    this.indexNameService = indexNameService;
+  }
+
   @Override
   public List<IndexMappingCreator<?>> getAllMappings() {
-    MappingMetadataUtil mappingUtil = new MappingMetadataUtil(esClient);
+    final MappingMetadataUtil mappingUtil = new MappingMetadataUtil(esClient);
     return mappingUtil.getAllMappings(indexNameService.getIndexPrefix());
   }
 }

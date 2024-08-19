@@ -60,8 +60,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.SortOptions;
@@ -91,19 +89,33 @@ import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.opensearch.client.opensearch.core.get.GetResult;
 import org.opensearch.client.opensearch.core.mget.MultiGetResponseItem;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class VariableRepositoryOS implements VariableRepository {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(VariableRepositoryOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final OptimizeIndexNameService indexNameService;
   private final ConfigurationService configurationService;
   private final DateTimeFormatter dateTimeFormatter;
   private final DecisionDefinitionReader decisionDefinitionReader;
+
+  public VariableRepositoryOS(
+      final OptimizeOpenSearchClient osClient,
+      final OptimizeIndexNameService indexNameService,
+      final ConfigurationService configurationService,
+      final DateTimeFormatter dateTimeFormatter,
+      final DecisionDefinitionReader decisionDefinitionReader) {
+    this.osClient = osClient;
+    this.indexNameService = indexNameService;
+    this.configurationService = configurationService;
+    this.dateTimeFormatter = dateTimeFormatter;
+    this.decisionDefinitionReader = decisionDefinitionReader;
+  }
 
   @Override
   public void deleteVariableDataByProcessInstanceIds(

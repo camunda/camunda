@@ -22,23 +22,60 @@ import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class ProcessOverviewRepositoryOS implements ProcessOverviewRepository {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessOverviewRepositoryOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final OptimizeIndexNameService indexNameService;
+
+  public ProcessOverviewRepositoryOS(
+      final OptimizeOpenSearchClient osClient, final OptimizeIndexNameService indexNameService) {
+    this.osClient = osClient;
+    this.indexNameService = indexNameService;
+  }
+
+  @Override
+  public void updateKpisForProcessDefinitions(final List<ProcessOverviewDto> processOverviewDtos) {
+    final List<BulkOperation> bulkOperations =
+        processOverviewDtos.stream()
+            .map(
+                processOverviewDto ->
+                    new BulkOperation.Builder()
+                        .update(
+                            new UpdateOperation.Builder<ProcessOverviewDto>()
+                                .index(
+                                    indexNameService.getOptimizeIndexAliasForIndex(
+                                        PROCESS_OVERVIEW_INDEX_NAME))
+                                .id(processOverviewDto.getProcessDefinitionKey())
+                                .upsert(processOverviewDto)
+                                .script(
+                                    script(
+                                        ProcessOverviewScriptFactory.createUpdateKpisScript(),
+                                        Map.of(
+                                            "lastKpiEvaluationResults",
+                                            processOverviewDto.getLastKpiEvaluationResults())))
+                                .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+                                .build())
+                        .build())
+            .toList();
+    osClient.doBulkRequest(
+        BulkRequest.Builder::new,
+        bulkOperations,
+        new ProcessOverviewIndexES().getIndexName(),
+        false);
+  }
 
   @Override
   public void updateProcessConfiguration(
@@ -106,37 +143,6 @@ public class ProcessOverviewRepositoryOS implements ProcessOverviewRepository {
             format(
                 "There was a problem while updating the owner for process with key: [%s] and owner ID: %s.",
                 processDefinitionKey, ownerId));
-  }
-
-  @Override
-  public void updateKpisForProcessDefinitions(final List<ProcessOverviewDto> processOverviewDtos) {
-    final List<BulkOperation> bulkOperations =
-        processOverviewDtos.stream()
-            .map(
-                processOverviewDto ->
-                    new BulkOperation.Builder()
-                        .update(
-                            new UpdateOperation.Builder<ProcessOverviewDto>()
-                                .index(
-                                    indexNameService.getOptimizeIndexAliasForIndex(
-                                        PROCESS_OVERVIEW_INDEX_NAME))
-                                .id(processOverviewDto.getProcessDefinitionKey())
-                                .upsert(processOverviewDto)
-                                .script(
-                                    script(
-                                        ProcessOverviewScriptFactory.createUpdateKpisScript(),
-                                        Map.of(
-                                            "lastKpiEvaluationResults",
-                                            processOverviewDto.getLastKpiEvaluationResults())))
-                                .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
-                                .build())
-                        .build())
-            .toList();
-    osClient.doBulkRequest(
-        BulkRequest.Builder::new,
-        bulkOperations,
-        new ProcessOverviewIndexES().getIndexName(),
-        false);
   }
 
   @Override

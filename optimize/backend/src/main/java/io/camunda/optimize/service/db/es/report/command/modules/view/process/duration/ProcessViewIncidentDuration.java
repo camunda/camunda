@@ -15,17 +15,19 @@ import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-@Slf4j
-@RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessViewIncidentDuration extends ProcessViewDuration {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessViewIncidentDuration.class);
+
+  public ProcessViewIncidentDuration() {}
 
   @Override
   protected String getReferenceDateFieldName(final ProcessReportDataDto reportData) {
@@ -40,7 +42,7 @@ public class ProcessViewIncidentDuration extends ProcessViewDuration {
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(
       final ProcessReportDataDto dataForCommandKey) {
-    ProcessViewDto view = new ProcessViewDto();
+    final ProcessViewDto view = new ProcessViewDto();
     view.setEntity(ProcessViewEntity.INCIDENT);
     view.setProperties(ViewProperty.DURATION);
     dataForCommandKey.setView(view);

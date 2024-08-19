@@ -40,10 +40,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.slf4j.Logger;
 
-@Slf4j
 public class ProcessReportCmdExecutionPlan<T>
     extends ReportCmdExecutionPlan<T, ProcessReportDataDto> {
 
@@ -55,6 +54,8 @@ public class ProcessReportCmdExecutionPlan<T>
           InstanceEndDateFilterDto.class,
           FlowNodeStartDateFilterDto.class,
           FlowNodeEndDateFilterDto.class);
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessReportCmdExecutionPlan.class);
 
   protected final ProcessDefinitionReader processDefinitionReader;
   protected final ProcessQueryFilterEnhancer queryFilterEnhancer;
@@ -91,11 +92,6 @@ public class ProcessReportCmdExecutionPlan<T>
     return multiDefinitionFilterQuery;
   }
 
-  public Optional<MinMaxStatDto> getGroupByMinMaxStats(
-      final ExecutionContext<ProcessReportDataDto> context) {
-    return groupByPart.getMinMaxStats(context, setupBaseQuery(context));
-  }
-
   @Override
   protected BoolQueryBuilder setupUnfilteredBaseQuery(
       final ExecutionContext<ProcessReportDataDto> context) {
@@ -124,6 +120,29 @@ public class ProcessReportCmdExecutionPlan<T>
     return multiDefinitionFilterQuery;
   }
 
+  @Override
+  protected String[] getIndexNames(final ExecutionContext<ProcessReportDataDto> context) {
+    if (context.getReportData().isManagementReport()) {
+      getMultiIndexAlias();
+    }
+    return InstanceIndexUtil.getProcessInstanceIndexAliasNames(context.getReportData());
+  }
+
+  @Override
+  protected String[] getMultiIndexAlias() {
+    return new String[] {PROCESS_INSTANCE_MULTI_ALIAS};
+  }
+
+  @Override
+  protected Supplier<ProcessReportDataDto> getDataDtoSupplier() {
+    return ProcessReportDataDto::new;
+  }
+
+  public Optional<MinMaxStatDto> getGroupByMinMaxStats(
+      final ExecutionContext<ProcessReportDataDto> context) {
+    return groupByPart.getMinMaxStats(context, setupBaseQuery(context));
+  }
+
   private BoolQueryBuilder buildDefinitionBaseQueryForFilters(
       final ExecutionContext<ProcessReportDataDto> context,
       final Map<String, List<ProcessFilterDto<?>>> filtersByDefinition) {
@@ -149,24 +168,6 @@ public class ProcessReportCmdExecutionPlan<T>
               multiDefinitionFilterQuery.should(definitionQuery);
             });
     return multiDefinitionFilterQuery;
-  }
-
-  @Override
-  protected String[] getIndexNames(final ExecutionContext<ProcessReportDataDto> context) {
-    if (context.getReportData().isManagementReport()) {
-      getMultiIndexAlias();
-    }
-    return InstanceIndexUtil.getProcessInstanceIndexAliasNames(context.getReportData());
-  }
-
-  @Override
-  protected String[] getMultiIndexAlias() {
-    return new String[] {PROCESS_INSTANCE_MULTI_ALIAS};
-  }
-
-  @Override
-  protected Supplier<ProcessReportDataDto> getDataDtoSupplier() {
-    return ProcessReportDataDto::new;
   }
 
   private BoolQueryBuilder createDefinitionQuery(final ReportDataDefinitionDto definitionDto) {

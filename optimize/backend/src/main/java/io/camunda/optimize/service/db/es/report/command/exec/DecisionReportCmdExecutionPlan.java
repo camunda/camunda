@@ -24,13 +24,14 @@ import io.camunda.optimize.service.util.DefinitionQueryUtilES;
 import io.camunda.optimize.service.util.InstanceIndexUtil;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.slf4j.Logger;
 
-@Slf4j
 public class DecisionReportCmdExecutionPlan<T>
     extends ReportCmdExecutionPlan<T, DecisionReportDataDto> {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(DecisionReportCmdExecutionPlan.class);
   private final DecisionDefinitionReader decisionDefinitionReader;
   private final DecisionQueryFilterEnhancer queryFilterEnhancer;
 

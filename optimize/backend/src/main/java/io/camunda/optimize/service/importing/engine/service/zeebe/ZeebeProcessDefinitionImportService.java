@@ -24,13 +24,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class ZeebeProcessDefinitionImportService
     implements ImportService<ZeebeProcessDefinitionRecordDto> {
 
   private static final Set<ProcessIntent> INTENTS_TO_IMPORT = Set.of(ProcessIntent.CREATED);
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ZeebeProcessDefinitionImportService.class);
 
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final ProcessDefinitionWriter processDefinitionWriter;
@@ -43,7 +44,7 @@ public class ZeebeProcessDefinitionImportService
       final ProcessDefinitionWriter processDefinitionWriter,
       final int partitionId,
       final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.processDefinitionWriter = processDefinitionWriter;
     this.partitionId = partitionId;
@@ -57,7 +58,7 @@ public class ZeebeProcessDefinitionImportService
       final Runnable importCompleteCallback) {
     log.trace("Importing process definitions from zeebe records...");
 
-    boolean newDataIsAvailable = !pageOfProcessDefinitions.isEmpty();
+    final boolean newDataIsAvailable = !pageOfProcessDefinitions.isEmpty();
     if (newDataIsAvailable) {
       final List<ProcessDefinitionOptimizeDto> newOptimizeEntities =
           filterAndMapZeebeRecordsToOptimizeEntities(pageOfProcessDefinitions);
@@ -73,12 +74,12 @@ public class ZeebeProcessDefinitionImportService
   }
 
   private void addDatabaseImportJobToQueue(
-      DatabaseImportJob<ProcessDefinitionOptimizeDto> databaseImportJob) {
+      final DatabaseImportJob<ProcessDefinitionOptimizeDto> databaseImportJob) {
     databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
   private List<ProcessDefinitionOptimizeDto> filterAndMapZeebeRecordsToOptimizeEntities(
-      List<ZeebeProcessDefinitionRecordDto> zeebeRecords) {
+      final List<ZeebeProcessDefinitionRecordDto> zeebeRecords) {
     final List<ProcessDefinitionOptimizeDto> optimizeDtos =
         zeebeRecords.stream()
             .filter(zeebeRecord -> INTENTS_TO_IMPORT.contains(zeebeRecord.getIntent()))
@@ -94,7 +95,7 @@ public class ZeebeProcessDefinitionImportService
   private DatabaseImportJob<ProcessDefinitionOptimizeDto> createDatabaseImportJob(
       final List<ProcessDefinitionOptimizeDto> processDefinitions,
       final Runnable importCompleteCallback) {
-    ProcessDefinitionDatabaseImportJob procDefImportJob =
+    final ProcessDefinitionDatabaseImportJob procDefImportJob =
         new ProcessDefinitionDatabaseImportJob(
             processDefinitionWriter, importCompleteCallback, databaseClient);
     procDefImportJob.setEntitiesToImport(processDefinitions);
@@ -102,9 +103,9 @@ public class ZeebeProcessDefinitionImportService
   }
 
   private ProcessDefinitionOptimizeDto mapZeebeRecordsToOptimizeEntities(
-      ZeebeProcessDefinitionRecordDto zeebeProcessDefinitionRecord) {
+      final ZeebeProcessDefinitionRecordDto zeebeProcessDefinitionRecord) {
     final ZeebeProcessDefinitionDataDto recordData = zeebeProcessDefinitionRecord.getValue();
-    String bpmn = new String(recordData.getResource(), StandardCharsets.UTF_8);
+    final String bpmn = new String(recordData.getResource(), StandardCharsets.UTF_8);
     return ProcessDefinitionOptimizeDto.builder()
         .id(String.valueOf(recordData.getProcessDefinitionKey()))
         .key(String.valueOf(recordData.getBpmnProcessId()))

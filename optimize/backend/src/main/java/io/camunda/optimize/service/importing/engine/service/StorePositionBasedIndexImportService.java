@@ -14,18 +14,17 @@ import io.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import io.camunda.optimize.service.importing.job.StorePositionBasedIndexDatabaseImportJob;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
 /**
  * Write all information of the current import index to elasticsearch. If Optimize is restarted the
  * import index can thus be restored again.
  */
-@AllArgsConstructor
-@Slf4j
 public class StorePositionBasedIndexImportService
     implements ImportService<PositionBasedImportIndexDto> {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(StorePositionBasedIndexImportService.class);
   private final PositionBasedImportIndexWriter importIndexWriter;
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final DatabaseClient databaseClient;
@@ -37,6 +36,15 @@ public class StorePositionBasedIndexImportService
     databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.importIndexWriter = importIndexWriter;
+    this.databaseClient = databaseClient;
+  }
+
+  public StorePositionBasedIndexImportService(
+      final PositionBasedImportIndexWriter importIndexWriter,
+      final DatabaseImportJobExecutor databaseImportJobExecutor,
+      final DatabaseClient databaseClient) {
+    this.importIndexWriter = importIndexWriter;
+    this.databaseImportJobExecutor = databaseImportJobExecutor;
     this.databaseClient = databaseClient;
   }
 

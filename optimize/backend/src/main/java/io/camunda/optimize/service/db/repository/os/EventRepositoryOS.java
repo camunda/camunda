@@ -75,8 +75,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opensearch.client.opensearch._types.FieldSort;
@@ -109,19 +107,33 @@ import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
 import org.opensearch.client.opensearch.core.search.SourceFilter;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class EventRepositoryOS implements EventRepository {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(EventRepositoryOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final DateTimeFormatter formatter;
   private final ConfigurationService configurationService;
   private final DateTimeFormatter dateTimeFormatter;
   private final OptimizeIndexNameService indexNameService;
+
+  public EventRepositoryOS(
+      final OptimizeOpenSearchClient osClient,
+      final DateTimeFormatter formatter,
+      final ConfigurationService configurationService,
+      final DateTimeFormatter dateTimeFormatter,
+      final OptimizeIndexNameService indexNameService) {
+    this.osClient = osClient;
+    this.formatter = formatter;
+    this.configurationService = configurationService;
+    this.dateTimeFormatter = dateTimeFormatter;
+    this.indexNameService = indexNameService;
+  }
 
   @Override
   public void upsertEvents(final List<EventDto> eventDtos) {

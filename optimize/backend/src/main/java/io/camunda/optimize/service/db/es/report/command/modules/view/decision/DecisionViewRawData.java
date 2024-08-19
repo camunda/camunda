@@ -48,8 +48,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -60,18 +58,18 @@ import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.NestedSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-@Slf4j
-@RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionViewRawData extends DecisionViewPart {
 
   public static final String INPUT_VARIABLE_PREFIX = "inputVariable:";
   public static final String OUTPUT_VARIABLE_PREFIX = "outputVariable:";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DecisionViewRawData.class);
 
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
@@ -81,9 +79,15 @@ public class DecisionViewRawData extends DecisionViewPart {
   private final RawDecisionDataResultDtoMapper rawDataSingleReportResultDtoMapper =
       new RawDecisionDataResultDtoMapper();
 
-  @Override
-  public ViewProperty getViewProperty(final ExecutionContext<DecisionReportDataDto> context) {
-    return ViewProperty.RAW_DATA;
+  public DecisionViewRawData(
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper,
+      final DatabaseClient databaseClient,
+      final DecisionVariableReader decisionVariableReader) {
+    this.configurationService = configurationService;
+    this.objectMapper = objectMapper;
+    this.databaseClient = databaseClient;
+    this.decisionVariableReader = decisionVariableReader;
   }
 
   @Override
@@ -117,6 +121,11 @@ public class DecisionViewRawData extends DecisionViewPart {
             });
 
     addSortingToQuery(context.getReportData(), searchRequest.source());
+  }
+
+  @Override
+  public ViewProperty getViewProperty(final ExecutionContext<DecisionReportDataDto> context) {
+    return ViewProperty.RAW_DATA;
   }
 
   @Override
@@ -154,6 +163,17 @@ public class DecisionViewRawData extends DecisionViewPart {
     return ViewResult.builder().rawData(rawData).build();
   }
 
+  @Override
+  public void addViewAdjustmentsForCommandKeyGeneration(
+      final DecisionReportDataDto dataForCommandKey) {
+    dataForCommandKey.setView(new DecisionViewDto(ViewProperty.RAW_DATA));
+  }
+
+  @Override
+  public ViewResult createEmptyResult(final ExecutionContext<DecisionReportDataDto> context) {
+    return ViewResult.builder().rawData(new ArrayList<>()).build();
+  }
+
   private Set<InputVariableEntry> getInputVariableEntries(final SingleReportDataDto reportDataDto) {
     return decisionVariableReader
         .getInputVariableNames(
@@ -183,17 +203,6 @@ public class DecisionViewRawData extends DecisionViewPart {
                     outputVar.getType(),
                     Collections.emptyList()))
         .collect(Collectors.toSet());
-  }
-
-  @Override
-  public ViewResult createEmptyResult(final ExecutionContext<DecisionReportDataDto> context) {
-    return ViewResult.builder().rawData(new ArrayList<>()).build();
-  }
-
-  @Override
-  public void addViewAdjustmentsForCommandKeyGeneration(
-      final DecisionReportDataDto dataForCommandKey) {
-    dataForCommandKey.setView(new DecisionViewDto(ViewProperty.RAW_DATA));
   }
 
   private void addSortingToQuery(
@@ -298,7 +307,7 @@ public class DecisionViewRawData extends DecisionViewPart {
             .map(this::getPrefixedOutputVariableId)
             .collect(toList()));
 
-    TableColumnDto tableColumns = context.getReportConfiguration().getTableColumns();
+    final TableColumnDto tableColumns = context.getReportConfiguration().getTableColumns();
     tableColumns.addNewAndRemoveUnexpectedVariableColumns(variableNames);
     tableColumns.addDtoColumns(extractAllDecisionInstanceDtoFieldKeys());
   }

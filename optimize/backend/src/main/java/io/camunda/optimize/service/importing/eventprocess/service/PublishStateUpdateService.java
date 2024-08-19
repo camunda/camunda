@@ -13,18 +13,24 @@ import io.camunda.optimize.service.db.EventProcessInstanceIndexManager;
 import io.camunda.optimize.service.db.writer.EventProcessPublishStateWriter;
 import java.math.RoundingMode;
 import java.time.Duration;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Precision;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
-@Slf4j
 @Component
 public class PublishStateUpdateService {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(PublishStateUpdateService.class);
   private final EventProcessPublishStateWriter eventProcessPublishStateWriter;
   private final EventProcessInstanceIndexManager eventProcessInstanceIndexManager;
+
+  public PublishStateUpdateService(
+      final EventProcessPublishStateWriter eventProcessPublishStateWriter,
+      final EventProcessInstanceIndexManager eventProcessInstanceIndexManager) {
+    this.eventProcessPublishStateWriter = eventProcessPublishStateWriter;
+    this.eventProcessInstanceIndexManager = eventProcessInstanceIndexManager;
+  }
 
   public void updateEventProcessPublishStates() {
     eventProcessInstanceIndexManager.getPublishedInstanceStates().stream()
@@ -50,7 +56,7 @@ public class PublishStateUpdateService {
         .forEach(eventProcessPublishStateWriter::updateEventProcessPublishState);
   }
 
-  private Double getProgressForImportSource(EventImportSourceDto eventImportSourceDto) {
+  private Double getProgressForImportSource(final EventImportSourceDto eventImportSourceDto) {
     if (eventImportSourceDto.getLastImportedEventTimestamp().toInstant().toEpochMilli() == 0) {
       return 0.0D;
     }

@@ -13,16 +13,18 @@ import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.service.db.es.report.ReportEvaluationContext;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
-@Slf4j
 @Component
 public class NotSupportedCommand implements Command<Object, ReportDefinitionDto<?>> {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(NotSupportedCommand.class);
   private final ObjectMapper objectMapper;
+
+  public NotSupportedCommand(final ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public CommandEvaluationResult<Object> evaluate(
@@ -34,7 +36,7 @@ public class NotSupportedCommand implements Command<Object, ReportDefinitionDto<
               + "{} \n "
               + "Therefore returning error result.",
           objectMapper.writeValueAsString(reportEvaluationContext.getReportDefinition()));
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       log.error("can't serialize report data", e);
     }
     throw new OptimizeValidationException(

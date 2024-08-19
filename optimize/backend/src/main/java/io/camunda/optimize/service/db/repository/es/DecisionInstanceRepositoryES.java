@@ -24,28 +24,39 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.xcontent.XContentType;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class DecisionInstanceRepositoryES implements DecisionInstanceRepository {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(DecisionInstanceRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
 
+  public DecisionInstanceRepositoryES(
+      final OptimizeElasticsearchClient esClient,
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper,
+      final DateTimeFormatter dateTimeFormatter) {
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+    this.objectMapper = objectMapper;
+    this.dateTimeFormatter = dateTimeFormatter;
+  }
+
   @Override
   public void importDecisionInstances(
-      final String importItemName, List<DecisionInstanceDto> decisionInstanceDtos) {
+      final String importItemName, final List<DecisionInstanceDto> decisionInstanceDtos) {
     esClient.doImportBulkRequestWithList(
         importItemName,
         decisionInstanceDtos,
@@ -78,7 +89,7 @@ public class DecisionInstanceRepositoryES implements DecisionInstanceRepository 
     String source = "";
     try {
       source = objectMapper.writeValueAsString(decisionInstanceDto);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       final String reason =
           String.format(
               "Error while processing JSON for decision instance DTO with ID [%s].",

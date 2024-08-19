@@ -13,20 +13,26 @@ import io.camunda.optimize.service.importing.page.TimestampBasedImportPage;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.time.OffsetDateTime;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-@Slf4j
 public class ExternalVariableUpdateInstanceFetcher {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ExternalVariableUpdateInstanceFetcher.class);
   private final ExternalVariableReader variableReader;
   private final ConfigurationService configurationService;
+
+  public ExternalVariableUpdateInstanceFetcher(
+      final ExternalVariableReader variableReader,
+      final ConfigurationService configurationService) {
+    this.variableReader = variableReader;
+    this.configurationService = configurationService;
+  }
 
   public List<ExternalProcessVariableDto> fetchVariableInstanceUpdates(
       final TimestampBasedImportPage page) {

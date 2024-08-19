@@ -11,18 +11,21 @@ import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.repository.TaskRepository;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.tasks.Status;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@AllArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class TaskRepositoryOS implements TaskRepository {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(TaskRepositoryOS.class);
   private final OptimizeOpenSearchClient osClient;
+
+  public TaskRepositoryOS(final OptimizeOpenSearchClient osClient) {
+    this.osClient = osClient;
+  }
 
   @Override
   public List<TaskProgressInfo> tasksProgress(final String action) {
@@ -41,11 +44,11 @@ public class TaskRepositoryOS implements TaskRepository {
         .toList();
   }
 
-  private static long getProcessedTasksCount(Status status) {
+  private static long getProcessedTasksCount(final Status status) {
     return status.deleted() + status.created() + status.updated();
   }
 
-  private static int getProgress(Status status) {
+  private static int getProgress(final Status status) {
     return status.total() > 0
         ? Double.valueOf((double) getProcessedTasksCount(status) / status.total() * 100.0D)
             .intValue()

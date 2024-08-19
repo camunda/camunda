@@ -32,26 +32,26 @@ import jakarta.ws.rs.BadRequestException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-@Slf4j
-@RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessViewVariable extends ProcessViewMultiAggregation {
 
   private static final String NESTED_VARIABLE_AGGREGATION = "nestedVariableAggregation";
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ProcessViewVariable.class);
+
+  public ProcessViewVariable() {}
 
   @Override
   public ViewProperty getViewProperty(final ExecutionContext<ProcessReportDataDto> context) {

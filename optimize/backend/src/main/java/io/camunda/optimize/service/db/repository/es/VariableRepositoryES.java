@@ -68,8 +68,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -95,19 +93,33 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilde
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.xcontent.XContentType;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class VariableRepositoryES implements VariableRepository {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(VariableRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
   private final DateTimeFormatter dateTimeFormatter;
   private final DecisionDefinitionReader decisionDefinitionReader;
+
+  public VariableRepositoryES(
+      final OptimizeElasticsearchClient esClient,
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService,
+      final DateTimeFormatter dateTimeFormatter,
+      final DecisionDefinitionReader decisionDefinitionReader) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.configurationService = configurationService;
+    this.dateTimeFormatter = dateTimeFormatter;
+    this.decisionDefinitionReader = decisionDefinitionReader;
+  }
 
   @Override
   public void deleteVariableDataByProcessInstanceIds(

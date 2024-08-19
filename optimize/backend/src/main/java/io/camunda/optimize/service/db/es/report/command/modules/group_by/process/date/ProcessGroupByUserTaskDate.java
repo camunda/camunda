@@ -16,12 +16,13 @@ import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.report.MinMaxStatsService;
 import io.camunda.optimize.service.db.es.report.command.exec.ExecutionContext;
 import io.camunda.optimize.service.db.es.report.command.service.DateAggregationService;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.slf4j.Logger;
 
-@Slf4j
 public abstract class ProcessGroupByUserTaskDate extends AbstractProcessGroupByModelElementDate {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessGroupByUserTaskDate.class);
   private final DefinitionService definitionService;
 
   ProcessGroupByUserTaskDate(
@@ -33,6 +34,11 @@ public abstract class ProcessGroupByUserTaskDate extends AbstractProcessGroupByM
   }
 
   @Override
+  protected String getPathToElementField() {
+    return FLOW_NODE_INSTANCES;
+  }
+
+  @Override
   protected QueryBuilder getFilterQuery(final ExecutionContext<ProcessReportDataDto> context) {
     return createModelElementAggregationFilter(
         context.getReportData(), context.getFilterContext(), definitionService);
@@ -41,10 +47,5 @@ public abstract class ProcessGroupByUserTaskDate extends AbstractProcessGroupByM
   @Override
   protected QueryBuilder getModelElementTypeFilterQuery() {
     return createUserTaskFlowNodeTypeFilter();
-  }
-
-  @Override
-  protected String getPathToElementField() {
-    return FLOW_NODE_INSTANCES;
   }
 }

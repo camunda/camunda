@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
@@ -35,10 +34,11 @@ import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.slf4j.Logger;
 
-@Slf4j
 public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ReportCmdExecutionPlan.class);
   protected ViewPart<D> viewPart;
   protected GroupByPart<D> groupByPart;
   protected DistributedByPart<D> distributedByPart;
@@ -75,11 +75,11 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
   }
 
   protected CommandEvaluationResult<T> evaluate(final ExecutionContext<D> executionContext) {
-    SearchRequest searchRequest = createBaseQuerySearchRequest(executionContext);
+    final SearchRequest searchRequest = createBaseQuerySearchRequest(executionContext);
     SearchResponse response;
     try {
       response = executeRequests(executionContext, searchRequest);
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       if (isInstanceIndexNotFoundException(e)) {
         if (executionContext.getReportData().getDefinitions().size() > 1) {
           // If there are multiple data sources, we retry with the process instance index multi
@@ -91,13 +91,13 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
           searchRequest.indices(getMultiIndexAlias());
           try {
             response = executeRequests(executionContext, searchRequest);
-          } catch (RuntimeException ex) {
+          } catch (final RuntimeException ex) {
             if (isInstanceIndexNotFoundException(e)) {
               return returnEmptyResult(executionContext);
             } else {
               throw ex;
             }
-          } catch (IOException ex) {
+          } catch (final IOException ex) {
             throw e;
           }
         } else {
@@ -106,8 +106,8 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
       } else {
         throw e;
       }
-    } catch (IOException e) {
-      String reason =
+    } catch (final IOException e) {
+      final String reason =
           String.format(
               "Could not evaluate %s %s %s report for definitions [%s]",
               viewPart.getClass().getSimpleName(),
@@ -139,10 +139,10 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
   private SearchResponse executeRequests(
       final ExecutionContext<D> executionContext, final SearchRequest searchRequest)
       throws IOException {
-    SearchResponse response;
+    final SearchResponse response;
     response = executeElasticSearchCommand(executionContext, searchRequest);
-    String[] indices = getIndexNames(executionContext);
-    BoolQueryBuilder countQuery = setupUnfilteredBaseQuery(executionContext);
+    final String[] indices = getIndexNames(executionContext);
+    final BoolQueryBuilder countQuery = setupUnfilteredBaseQuery(executionContext);
     executionContext.setUnfilteredTotalInstanceCount(databaseClient.count(indices, countQuery));
     return response;
   }
@@ -150,13 +150,14 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
   private SearchResponse executeElasticSearchCommand(
       final ExecutionContext<D> executionContext, final SearchRequest searchRequest)
       throws IOException {
-    SearchResponse response;
+    final SearchResponse response;
     SearchScrollRequest scrollRequest = null;
-    PaginationDto paginationInfo = executionContext.getPagination().orElse(new PaginationDto());
+    final PaginationDto paginationInfo =
+        executionContext.getPagination().orElse(new PaginationDto());
     if (paginationInfo instanceof PaginationScrollableDto) {
-      PaginationScrollableDto scrollableDto = (PaginationScrollableDto) paginationInfo;
-      String scrollId = scrollableDto.getScrollId();
-      Integer timeout = scrollableDto.getScrollTimeout();
+      final PaginationScrollableDto scrollableDto = (PaginationScrollableDto) paginationInfo;
+      final String scrollId = scrollableDto.getScrollId();
+      final Integer timeout = scrollableDto.getScrollTimeout();
       if (scrollId != null && !scrollId.isEmpty()) {
         scrollRequest = new SearchScrollRequest(scrollId);
         scrollRequest.scroll(TimeValue.timeValueSeconds(timeout));
@@ -175,7 +176,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
 
   private SearchRequest createBaseQuerySearchRequest(final ExecutionContext<D> executionContext) {
     final BoolQueryBuilder baseQuery = setupBaseQuery(executionContext);
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder().query(baseQuery).trackTotalHits(true).fetchSource(false);
     // The null checks below are essential to prevent NPEs in integration tests
     executionContext
@@ -187,7 +188,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
             });
     addAggregation(searchSourceBuilder, executionContext);
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(getIndexNames(executionContext)).source(searchSourceBuilder);
     groupByPart.adjustSearchRequest(searchRequest, baseQuery, executionContext);
     return searchRequest;
@@ -210,7 +211,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
         .getPagination()
         .ifPresent(
             plainPagination -> {
-              PaginationScrollableDto scrollablePagination =
+              final PaginationScrollableDto scrollablePagination =
                   PaginationScrollableDto.fromPaginationDto(plainPagination);
               scrollablePagination.setScrollId(response.getScrollId());
               reportResult.setPagination(scrollablePagination);

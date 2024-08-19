@@ -26,8 +26,6 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import jakarta.ws.rs.NotFoundException;
 import java.util.List;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
@@ -36,16 +34,23 @@ import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.UpdateResponse;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class MappingRepositoryOS implements MappingRepository {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MappingRepositoryOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final ObjectMapper objectMapper;
+
+  public MappingRepositoryOS(
+      final OptimizeOpenSearchClient osClient, final ObjectMapper objectMapper) {
+    this.osClient = osClient;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public IdResponseDto createEventProcessMapping(
@@ -93,19 +98,19 @@ public class MappingRepositoryOS implements MappingRepository {
               format("There was a problem updating the event-based process [%s].", id));
 
       if (!Result.Updated.equals(response.result())) {
-        String errorMessage =
+        final String errorMessage =
             format("Could not update event-based process [%s] in Opensearch.", id);
         log.error(errorMessage);
         throw new OptimizeRuntimeException(errorMessage);
       }
-    } catch (OpenSearchException e) {
-      String errorMessage =
+    } catch (final OpenSearchException e) {
+      final String errorMessage =
           String.format(
               "Was not able to update event-based process with id [%s]. Event-based process does not exist!",
               id);
       log.error(errorMessage, e);
       throw new NotFoundException(errorMessage, e);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String errorMessage =
           String.format("There was a problem updating the event-based process [%s].", id);
       log.error(errorMessage, e);

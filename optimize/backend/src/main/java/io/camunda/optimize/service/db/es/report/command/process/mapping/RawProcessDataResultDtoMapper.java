@@ -26,13 +26,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class RawProcessDataResultDtoMapper {
 
-  private static final String DEFAULT_VARIABLE_VALUE = "";
   public static final String OBJECT_VARIABLE_VALUE_PLACEHOLDER = "<<OBJECT_VARIABLE_VALUE>>";
+  private static final String DEFAULT_VARIABLE_VALUE = "";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(RawProcessDataResultDtoMapper.class);
 
   public List<RawDataProcessInstanceDto> mapFrom(
       final List<ProcessInstanceDto> processInstanceDtos,
@@ -44,9 +45,9 @@ public class RawProcessDataResultDtoMapper {
     final List<RawDataProcessInstanceDto> rawData = new ArrayList<>();
     processInstanceDtos.forEach(
         processInstanceDto -> {
-          Map<String, Object> variables = getVariables(processInstanceDto, objectMapper);
+          final Map<String, Object> variables = getVariables(processInstanceDto, objectMapper);
           allVariableNames.addAll(variables.keySet());
-          RawDataProcessInstanceDto dataEntry =
+          final RawDataProcessInstanceDto dataEntry =
               convertToRawDataEntry(
                   processInstanceDto,
                   variables,
@@ -116,9 +117,9 @@ public class RawProcessDataResultDtoMapper {
 
   private Map<String, Object> getVariables(
       final ProcessInstanceDto processInstanceDto, final ObjectMapper objectMapper) {
-    Map<String, Object> result = new TreeMap<>();
+    final Map<String, Object> result = new TreeMap<>();
 
-    for (SimpleProcessVariableDto variableInstance : processInstanceDto.getVariables()) {
+    for (final SimpleProcessVariableDto variableInstance : processInstanceDto.getVariables()) {
       if (variableInstance.getName() != null) {
         if (VariableType.OBJECT.getId().equalsIgnoreCase(variableInstance.getType())) {
           // Object variable value is available on demand in FE so that large values don't distort
@@ -138,7 +139,7 @@ public class RawProcessDataResultDtoMapper {
           log.debug(
               "Found variable with null name [{}]",
               objectMapper.writeValueAsString(variableInstance));
-        } catch (JsonProcessingException e) {
+        } catch (final JsonProcessingException e) {
           // nothing to do
         }
       }

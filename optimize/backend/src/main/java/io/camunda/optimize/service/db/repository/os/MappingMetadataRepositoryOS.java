@@ -14,22 +14,28 @@ import io.camunda.optimize.service.db.schema.MappingMetadataUtil;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(OpenSearchCondition.class)
 public class MappingMetadataRepositoryOS implements MappingMetadataRepository {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(MappingMetadataRepositoryOS.class);
   private final OptimizeOpenSearchClient osClient;
   private final OptimizeIndexNameService indexNameService;
 
+  public MappingMetadataRepositoryOS(
+      final OptimizeOpenSearchClient osClient, final OptimizeIndexNameService indexNameService) {
+    this.osClient = osClient;
+    this.indexNameService = indexNameService;
+  }
+
   @Override
   public List<IndexMappingCreator<?>> getAllMappings() {
-    MappingMetadataUtil mappingUtil = new MappingMetadataUtil(osClient);
+    final MappingMetadataUtil mappingUtil = new MappingMetadataUtil(osClient);
     return mappingUtil.getAllMappings(indexNameService.getIndexPrefix());
   }
 }

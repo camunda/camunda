@@ -57,8 +57,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -73,18 +71,46 @@ import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@RequiredArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessInstanceRepositoryES.class);
   private final ConfigurationService configurationService;
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
+
+  public ProcessInstanceRepositoryES(
+      final ConfigurationService configurationService,
+      final OptimizeElasticsearchClient esClient,
+      final ObjectMapper objectMapper,
+      final DateTimeFormatter dateTimeFormatter) {
+    this.configurationService = configurationService;
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.dateTimeFormatter = dateTimeFormatter;
+  }
+
+  @Override
+  public void bulkImportProcessInstances(
+      final String importItemName, final List<ProcessInstanceDto> processInstanceDtos) {
+    doImportBulkRequestWithList(
+        importItemName,
+        processInstanceDtos,
+        (request, dto) ->
+            addImportProcessInstanceRequest(
+                getProcessInstanceIndexAliasName(dto.getProcessDefinitionKey()),
+                request,
+                dto,
+                createUpdateStateScript(dto.getState()),
+                objectMapper));
+  }
 
   @Override
   public void updateProcessInstanceStateForProcessDefinitionId(
@@ -130,21 +156,6 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
         bulkRequestName,
         importRequests,
         configurationService.getSkipDataAfterNestedDocLimitReached());
-  }
-
-  @Override
-  public void bulkImportProcessInstances(
-      final String importItemName, final List<ProcessInstanceDto> processInstanceDtos) {
-    doImportBulkRequestWithList(
-        importItemName,
-        processInstanceDtos,
-        (request, dto) ->
-            addImportProcessInstanceRequest(
-                getProcessInstanceIndexAliasName(dto.getProcessDefinitionKey()),
-                request,
-                dto,
-                createUpdateStateScript(dto.getState()),
-                objectMapper));
   }
 
   @Override
@@ -233,11 +244,11 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
     try {
       response = esClient.search(searchRequest);
       return response.getHits().getHits().length > 0;
-    } catch (ElasticsearchStatusException e) {
+    } catch (final ElasticsearchStatusException e) {
       // If the index doesn't exist yet, then this exception is thrown. No need to worry, just
       // return false
       return false;
-    } catch (IOException e2) {
+    } catch (final IOException e2) {
       // If this exception is thrown, sth went wrong with ElasticSearch, so returning false and
       // logging it
       log.warn(
@@ -263,7 +274,7 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
           esClient,
           configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds(),
           previousPage.getLimit());
-    } catch (ElasticsearchStatusException e) {
+    } catch (final ElasticsearchStatusException e) {
       if (RestStatus.NOT_FOUND.equals(e.status())) {
         // this error occurs when the scroll id expired in the meantime, thus just restart it
         return firstPageFetchFunction.get();
@@ -325,9 +336,9 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
                   String.class,
                   searchHit -> (String) searchHit.getSourceAsMap().get(PROCESS_INSTANCE_ID)));
       result.setPagingState(response.getScrollId());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("Could not obtain process instance ids.", e);
-    } catch (ElasticsearchStatusException e) {
+    } catch (final ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.info(
             "Was not able to obtain process instance IDs because instance index {} does not exist. Returning empty result.",
@@ -354,10 +365,10 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
 
   private void addImportProcessInstanceRequest(
       final String index,
-      BulkRequest bulkRequest,
-      ProcessInstanceDto processInstanceDto,
-      Script updateScript,
-      ObjectMapper objectMapper) {
+      final BulkRequest bulkRequest,
+      final ProcessInstanceDto processInstanceDto,
+      final Script updateScript,
+      final ObjectMapper objectMapper) {
     bulkRequest.add(createUpdateRequestDto(index, processInstanceDto, updateScript, objectMapper));
   }
 
@@ -366,11 +377,11 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
       final ProcessInstanceDto processInstanceDto,
       final Script updateScript,
       final ObjectMapper objectMapper) {
-    String newEntryIfAbsent;
+    final String newEntryIfAbsent;
     try {
       newEntryIfAbsent = objectMapper.writeValueAsString(processInstanceDto);
-    } catch (JsonProcessingException e) {
-      String reason =
+    } catch (final JsonProcessingException e) {
+      final String reason =
           String.format(
               "Error while processing JSON for process instance DTO with ID [%s].",
               processInstanceDto.getProcessInstanceId());

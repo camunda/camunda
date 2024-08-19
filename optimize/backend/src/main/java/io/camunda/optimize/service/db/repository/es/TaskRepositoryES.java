@@ -13,23 +13,26 @@ import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.repository.TaskRepository;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksRequest;
 import org.elasticsearch.index.reindex.BulkByScrollTask;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
 public class TaskRepositoryES implements TaskRepository {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(TaskRepositoryES.class);
   private final OptimizeElasticsearchClient esClient;
+
+  public TaskRepositoryES(final OptimizeElasticsearchClient esClient) {
+    this.esClient = esClient;
+  }
 
   @Override
   public List<TaskRepository.TaskProgressInfo> tasksProgress(final String action) {
-    ListTasksRequest request = new ListTasksRequest().setActions(action).setDetailed(true);
+    final ListTasksRequest request = new ListTasksRequest().setActions(action).setDetailed(true);
     return safe(
         () ->
             esClient.getTaskList(request).getTasks().stream()
@@ -44,11 +47,11 @@ public class TaskRepositoryES implements TaskRepository {
         log);
   }
 
-  private static long getProcessedTasksCount(BulkByScrollTask.Status status) {
+  private static long getProcessedTasksCount(final BulkByScrollTask.Status status) {
     return status.getDeleted() + status.getCreated() + status.getUpdated();
   }
 
-  private static int getProgress(BulkByScrollTask.Status status) {
+  private static int getProgress(final BulkByScrollTask.Status status) {
     return status.getTotal() > 0
         ? Double.valueOf((double) getProcessedTasksCount(status) / status.getTotal() * 100.0D)
             .intValue()
