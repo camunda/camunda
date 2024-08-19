@@ -168,7 +168,8 @@ public final class LogStreamMetrics {
           .subsystem("flow_control")
           .name("partition_load")
           .labelNames("partition")
-          .help("The current load of the cluster.")
+          .help(
+              "The current load of the partition. Determined by observed write rate compared to the write rate limit")
           .register();
 
   private final Counter.Child deferredAppends;

@@ -171,6 +171,10 @@ public final class FlowControl implements AppendListener {
     if (inFlightEntry != null) {
       inFlightEntry.onWrite();
     }
+    if (writeRate.observe(highestPosition) && writeRateLimit != null && writeRateLimit.enabled()) {
+      metrics.setPartitionLoad(
+          Math.min((float) (writeRate.rate() / writeRateLimiter.getRate() * 100L), 100));
+    }
   }
 
   @Override
@@ -189,10 +193,6 @@ public final class FlowControl implements AppendListener {
       inFlightEntry.onProcessed();
     }
     lastProcessedPosition = position;
-    if (writeRate.observe(position) && writeRateLimit != null && writeRateLimit.enabled()) {
-      metrics.setPartitionLoad(
-          Math.min((float) (writeRate.rate() / writeRateLimiter.getRate() * 100L), 100));
-    }
   }
 
   public void onExported(final long position) {
