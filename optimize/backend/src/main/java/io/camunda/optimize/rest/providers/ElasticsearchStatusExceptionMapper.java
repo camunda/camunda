@@ -14,14 +14,16 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.ElasticsearchStatusException;
+import org.slf4j.Logger;
 
 @Provider
-@Slf4j
 public class ElasticsearchStatusExceptionMapper
     implements ExceptionMapper<ElasticsearchStatusException> {
+
   private static final String ELASTICSEARCH_ERROR_CODE = "elasticsearchError";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ElasticsearchStatusExceptionMapper.class);
 
   private final LocalizationService localizationService;
 

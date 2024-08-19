@@ -23,14 +23,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 public class EventProcessRoleService implements ConfigurationReloadable {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventProcessRoleService.class);
   private final EventProcessMappingWriter eventProcessMappingWriter;
   private final AbstractIdentityService identityService;
 
@@ -52,7 +53,7 @@ public class EventProcessRoleService implements ConfigurationReloadable {
     // (mostly listing endpoints for reports and process/decision definitions)
     final CacheConfiguration cacheConfiguration =
         configurationService.getCaches().getEventProcessRoles();
-    this.eventProcessRoleReadCache =
+    eventProcessRoleReadCache =
         Caffeine.newBuilder()
             .maximumSize(cacheConfiguration.getMaxSize())
             .expireAfterWrite(cacheConfiguration.getDefaultTtlMillis(), TimeUnit.MILLISECONDS)
@@ -100,6 +101,6 @@ public class EventProcessRoleService implements ConfigurationReloadable {
 
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
-    this.eventProcessRoleReadCache.invalidateAll();
+    eventProcessRoleReadCache.invalidateAll();
   }
 }

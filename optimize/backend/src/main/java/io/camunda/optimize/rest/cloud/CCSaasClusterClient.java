@@ -28,21 +28,21 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 @Conditional(CCSaaSCondition.class)
 public class CCSaasClusterClient extends AbstractCCSaaSClient {
 
   private static final String GET_CLUSTERS_TEMPLATE = GET_ORGS_TEMPLATE + "/clusters";
   private static final Set<AppName> REQUIRED_WEBAPPS_LINKS =
       Set.of(CONSOLE, OPERATE, OPTIMIZE, MODELER, TASKLIST);
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CCSaasClusterClient.class);
   private Map<AppName, String> webappsLinks;
 
   public CCSaasClusterClient(

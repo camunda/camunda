@@ -13,16 +13,18 @@ import jakarta.annotation.PreDestroy;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Conditional(CamundaCloudCondition.class)
-@Slf4j
 public class CloudEngineContextFactory implements EngineContextFactory {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CloudEngineContextFactory.class);
+
+  public CloudEngineContextFactory() {}
 
   @Override
   @PostConstruct

@@ -61,13 +61,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 
-@Slf4j
 public class EngineContext {
+
   private static final Set<String> OPTIMIZE_APPLICATION_AUTH_RESOURCE_IDS =
       Set.of(ALL_RESOURCES_RESOURCE_ID, OPTIMIZE_APPLICATION_RESOURCE_ID);
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(EngineContext.class);
   private final String engineAlias;
   private final Client engineClient;
   private final ConfigurationService configurationService;

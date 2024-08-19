@@ -21,22 +21,30 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.glassfish.jersey.client.ClientProperties;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Conditional(CamundaPlatformCondition.class)
-@Slf4j
 public class PlatformEngineContextFactory implements EngineContextFactory {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(PlatformEngineContextFactory.class);
   private final ConfigurationService configurationService;
   private final EngineObjectMapperContextResolver engineObjectMapperContextResolver;
 
   private Map<String, EngineContext> configuredEngines;
+
+  public PlatformEngineContextFactory(
+      final ConfigurationService configurationService,
+      final EngineObjectMapperContextResolver engineObjectMapperContextResolver,
+      final Map<String, EngineContext> configuredEngines) {
+    this.configurationService = configurationService;
+    this.engineObjectMapperContextResolver = engineObjectMapperContextResolver;
+    this.configuredEngines = configuredEngines;
+  }
 
   @Override
   @PostConstruct
@@ -91,6 +99,7 @@ public class PlatformEngineContextFactory implements EngineContextFactory {
 
   @Priority(Integer.MAX_VALUE)
   private static class LoggingFilter implements ClientRequestFilter {
+
     @Override
     public void filter(final ClientRequestContext requestContext) {
       if (log.isTraceEnabled()) {

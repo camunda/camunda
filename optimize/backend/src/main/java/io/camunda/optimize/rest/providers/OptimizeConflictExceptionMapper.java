@@ -15,12 +15,13 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
 @Provider
-@Slf4j
 public class OptimizeConflictExceptionMapper implements ExceptionMapper<OptimizeConflictException> {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OptimizeConflictExceptionMapper.class);
   private final LocalizationService localizationService;
 
   public OptimizeConflictExceptionMapper(@Context final LocalizationService localizationService) {
@@ -28,7 +29,7 @@ public class OptimizeConflictExceptionMapper implements ExceptionMapper<Optimize
   }
 
   @Override
-  public Response toResponse(OptimizeConflictException conflictException) {
+  public Response toResponse(final OptimizeConflictException conflictException) {
     log.info("Mapping OptimizeConflictException");
 
     return Response.status(Response.Status.CONFLICT)
@@ -37,10 +38,12 @@ public class OptimizeConflictExceptionMapper implements ExceptionMapper<Optimize
         .build();
   }
 
-  private ConflictResponseDto getConflictResponseDto(OptimizeConflictException conflictException) {
-    String errorCode = conflictException.getErrorCode();
-    String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
-    String detailedErrorMessage = conflictException.getMessage();
+  private ConflictResponseDto getConflictResponseDto(
+      final OptimizeConflictException conflictException) {
+    final String errorCode = conflictException.getErrorCode();
+    final String errorMessage =
+        localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
+    final String detailedErrorMessage = conflictException.getMessage();
 
     return new ConflictResponseDto(
         errorCode, errorMessage, detailedErrorMessage, conflictException.getConflictedItems());

@@ -40,16 +40,18 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.slf4j.Logger;
 
-@AllArgsConstructor
-@Slf4j
 public class EventProcessClient {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(EventProcessClient.class);
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public EventProcessClient(final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public boolean getIsEventBasedProcessEnabled() {
     return getRequestExecutor()

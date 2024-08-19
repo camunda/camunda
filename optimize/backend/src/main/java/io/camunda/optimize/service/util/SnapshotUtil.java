@@ -12,12 +12,10 @@ import static io.camunda.optimize.service.metadata.Version.VERSION;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
-@UtilityClass
-public class SnapshotUtil {
+public final class SnapshotUtil {
+
   public static final String REPOSITORY_MISSING_EXCEPTION_TYPE =
       "type=repository_missing_exception";
   public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "type=snapshot_missing_exception";
@@ -33,6 +31,11 @@ public class SnapshotUtil {
   private static final String COMPONENT_PREFIX_PLACEHOLDER = "{componentPrefix}";
   private static final String ID_PLACEHOLDER = "{backupId}";
   private static final String VERSION_PLACEHOLDER = "{version}";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(SnapshotUtil.class);
+
+  private SnapshotUtil() {
+    throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+  }
 
   public static String getSnapshotNameForImportIndices(final Long backupId) {
     return getSnapshotName(SNAPSHOT_1_NAME_TEMPLATE, backupId);
@@ -49,14 +52,14 @@ public class SnapshotUtil {
   }
 
   public static Long getBackupIdFromSnapshotName(final String snapshotName) {
-    Pattern pattern = Pattern.compile("^" + COMPONENT_PREFIX + "(\\d+)_.*$");
-    Matcher matcher = pattern.matcher(snapshotName);
+    final Pattern pattern = Pattern.compile("^" + COMPONENT_PREFIX + "(\\d+)_.*$");
+    final Matcher matcher = pattern.matcher(snapshotName);
 
     if (matcher.find()) {
-      String numberStr = matcher.group(1);
+      final String numberStr = matcher.group(1);
       try {
         return Long.parseLong(numberStr);
-      } catch (NumberFormatException e) {
+      } catch (final NumberFormatException e) {
         final String msg =
             String.format(
                 "Cannot retrieve backupID from snapshot [%s] because the found backupID is not a valid integer.",

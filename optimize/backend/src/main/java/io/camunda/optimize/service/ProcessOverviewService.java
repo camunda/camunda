@@ -36,17 +36,15 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class ProcessOverviewService {
 
   private static final String PENDING_OWNER_UPDATE_TEMPLATE = "pendingauthcheck#%s#%s";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ProcessOverviewService.class);
 
   private final DefinitionService definitionService;
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
@@ -55,6 +53,23 @@ public class ProcessOverviewService {
   private final AbstractIdentityService identityService;
   private final KpiService kpiService;
   private final DigestService digestService;
+
+  public ProcessOverviewService(
+      final DefinitionService definitionService,
+      final DataSourceDefinitionAuthorizationService definitionAuthorizationService,
+      final ProcessOverviewWriter processOverviewWriter,
+      final ProcessOverviewReader processOverviewReader,
+      final AbstractIdentityService identityService,
+      final KpiService kpiService,
+      final DigestService digestService) {
+    this.definitionService = definitionService;
+    this.definitionAuthorizationService = definitionAuthorizationService;
+    this.processOverviewWriter = processOverviewWriter;
+    this.processOverviewReader = processOverviewReader;
+    this.identityService = identityService;
+    this.kpiService = kpiService;
+    this.digestService = digestService;
+  }
 
   public List<ProcessOverviewResponseDto> getAllProcessOverviews(
       final String userId, final String locale) {
@@ -151,7 +166,7 @@ public class ProcessOverviewService {
               "Process definition %s has not been imported to optimize yet, so saving the "
                   + "prospective owner %s as pending",
               processDefinitionKey, ownerIdToSave));
-      String pendingProcessKey =
+      final String pendingProcessKey =
           String.format(PENDING_OWNER_UPDATE_TEMPLATE, userId, processDefinitionKey);
       processOverviewWriter.updateProcessOwnerIfNotSet(pendingProcessKey, ownerIdToSave);
     }
@@ -180,19 +195,19 @@ public class ProcessOverviewService {
   private boolean definitionHasBeenImported(final String processDefinitionKey) {
     try {
       return definitionService.getLatestVersionToKey(PROCESS, processDefinitionKey) != null;
-    } catch (NotFoundException exception) {
+    } catch (final NotFoundException exception) {
       log.info("Process with definition key {} has not yet been imported", processDefinitionKey);
       return false;
     }
   }
 
   public void confirmOrDenyOwnershipData(final String processToBeOnboarded) {
-    Map<String, ProcessOverviewDto> pendingProcesses =
+    final Map<String, ProcessOverviewDto> pendingProcesses =
         processOverviewReader.getProcessOverviewsWithPendingOwnershipData();
     pendingProcesses.keySet().stream()
         .filter(
             completeDefKey -> {
-              Pattern pattern =
+              final Pattern pattern =
                   Pattern.compile(
                       String.format(
                           PENDING_OWNER_UPDATE_TEMPLATE, "(.*)", processToBeOnboarded + "$"));
@@ -200,22 +215,22 @@ public class ProcessOverviewService {
             })
         .forEach(
             completeDefKey -> {
-              String userIdFromRequester =
+              final String userIdFromRequester =
                   extractUserIdFromPendingDefKey(completeDefKey).orElse(null);
-              String ownerId = pendingProcesses.get(completeDefKey).getOwner();
+              final String ownerId = pendingProcesses.get(completeDefKey).getOwner();
               try {
                 updateProcessOwnerIfNotSet(userIdFromRequester, processToBeOnboarded, ownerId);
                 processOverviewWriter.deleteProcessOwnerEntry(completeDefKey);
-              } catch (Exception exc) {
+              } catch (final Exception exc) {
                 log.warn(exc.getMessage(), exc);
               }
             });
   }
 
   private Optional<String> extractUserIdFromPendingDefKey(final String defKey) {
-    Pattern pattern =
+    final Pattern pattern =
         Pattern.compile(String.format(PENDING_OWNER_UPDATE_TEMPLATE, "(.*)", "(.*)$"));
-    Matcher matcher = pattern.matcher(defKey);
+    final Matcher matcher = pattern.matcher(defKey);
     if (matcher.find()) {
       return Optional.of(matcher.group(1));
     }

@@ -13,17 +13,23 @@ import io.camunda.optimize.service.db.writer.EventProcessDefinitionWriter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class EventProcessDefinitionService {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventProcessDefinitionService.class);
   private final EventProcessDefinitionReader eventProcessDefinitionReader;
   private final EventProcessDefinitionWriter eventProcessDefinitionWriter;
+
+  public EventProcessDefinitionService(
+      final EventProcessDefinitionReader eventProcessDefinitionReader,
+      final EventProcessDefinitionWriter eventProcessDefinitionWriter) {
+    this.eventProcessDefinitionReader = eventProcessDefinitionReader;
+    this.eventProcessDefinitionWriter = eventProcessDefinitionWriter;
+  }
 
   public void importEventProcessDefinitions(
       final List<EventProcessDefinitionDto> definitionOptimizeDtos) {

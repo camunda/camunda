@@ -15,13 +15,15 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
 @Provider
-@Slf4j
 public class OptimizeImportDefinitionDoesNotExistsExceptionMapper
     implements ExceptionMapper<OptimizeImportDefinitionDoesNotExistException> {
+
   public static final String ERROR_CODE = "importDefinitionForbidden";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OptimizeImportDefinitionDoesNotExistsExceptionMapper.class);
 
   private final LocalizationService localizationService;
 
@@ -41,10 +43,11 @@ public class OptimizeImportDefinitionDoesNotExistsExceptionMapper
   }
 
   private DefinitionExceptionResponseDto getMissingDefinitionResponseDto(
-      OptimizeImportDefinitionDoesNotExistException exception) {
-    String errorCode = exception.getErrorCode();
-    String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
-    String detailedErrorMessage = exception.getMessage();
+      final OptimizeImportDefinitionDoesNotExistException exception) {
+    final String errorCode = exception.getErrorCode();
+    final String errorMessage =
+        localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
+    final String detailedErrorMessage = exception.getMessage();
 
     return new DefinitionExceptionResponseDto(
         errorCode, errorMessage, detailedErrorMessage, exception.getMissingDefinitions());
