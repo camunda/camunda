@@ -22,18 +22,19 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.slf4j.Logger;
 
-@Slf4j
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DateFilterQueryUtil {
+
   private static final DateTimeFormatter formatter =
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DateFilterQueryUtil.class);
+
+  private DateFilterQueryUtil() {
+  }
 
   public static void addFilters(
       final BoolQueryBuilder query,
@@ -41,7 +42,7 @@ public class DateFilterQueryUtil {
       final String dateField,
       final ZoneId timezone) {
     if (dates != null) {
-      for (DateFilterDataDto<?> dateDto : dates) {
+      for (final DateFilterDataDto<?> dateDto : dates) {
         createRangeQuery(dateDto, dateField, timezone).ifPresent(query::filter);
       }
     }

@@ -8,16 +8,56 @@
 package io.camunda.optimize.dto.optimize.rest.report.measure;
 
 import io.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SuperBuilder
 public class NumberMeasureResponseDto extends MeasureResponseDto<Double> {
+
+  protected NumberMeasureResponseDto() {
+  }
+
+  protected NumberMeasureResponseDto(final NumberMeasureResponseDtoBuilder<?, ?> b) {
+    super(b);
+  }
+
   // overridden to make sure the type is always available and correct for these classes
   @Override
   public ResultType getType() {
     return ResultType.NUMBER;
+  }
+
+  public static NumberMeasureResponseDtoBuilder<?, ?> builder() {
+    return new NumberMeasureResponseDtoBuilderImpl();
+  }
+
+  public static abstract class NumberMeasureResponseDtoBuilder<C extends NumberMeasureResponseDto, B extends NumberMeasureResponseDtoBuilder<C, B>> extends
+      MeasureResponseDtoBuilder<Double, C, B> {
+
+    @Override
+    protected abstract B self();
+
+    @Override
+    public abstract C build();
+
+    @Override
+    public String toString() {
+      return "NumberMeasureResponseDto.NumberMeasureResponseDtoBuilder(super=" + super.toString()
+          + ")";
+    }
+  }
+
+  private static final class NumberMeasureResponseDtoBuilderImpl extends
+      NumberMeasureResponseDtoBuilder<NumberMeasureResponseDto, NumberMeasureResponseDtoBuilderImpl> {
+
+    private NumberMeasureResponseDtoBuilderImpl() {
+    }
+    
+    @Override
+    protected NumberMeasureResponseDtoBuilderImpl self() {
+      return this;
+    }
+
+    @Override
+    public NumberMeasureResponseDto build() {
+      return new NumberMeasureResponseDto(this);
+    }
   }
 }

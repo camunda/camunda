@@ -36,27 +36,27 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class IncidentFilterQueryUtil {
 
   private static final NestedDefinitionQueryBuilder NESTED_DEFINITION_QUERY_BUILDER =
       new NestedDefinitionQueryBuilder(
           INCIDENTS, INCIDENT_DEFINITION_KEY, INCIDENT_DEFINITION_VERSION, INCIDENT_TENANT_ID);
 
-  private static Map<Class<? extends ProcessFilterDto<?>>, Function<BoolQueryBuilder, QueryBuilder>>
+  private static final Map<Class<? extends ProcessFilterDto<?>>, Function<BoolQueryBuilder, QueryBuilder>>
       incidentViewFilterInstanceQueries =
-          ImmutableMap.of(
-              OpenIncidentFilterDto.class,
-              IncidentFilterQueryUtil::createOpenIncidentTermQuery,
-              ResolvedIncidentFilterDto.class,
-              IncidentFilterQueryUtil::createResolvedIncidentTermQuery);
+      ImmutableMap.of(
+          OpenIncidentFilterDto.class,
+          IncidentFilterQueryUtil::createOpenIncidentTermQuery,
+          ResolvedIncidentFilterDto.class,
+          IncidentFilterQueryUtil::createResolvedIncidentTermQuery);
+
+  private IncidentFilterQueryUtil() {
+  }
 
   public static BoolQueryBuilder createIncidentAggregationFilter(
       final ProcessReportDataDto reportData, final DefinitionService definitionService) {

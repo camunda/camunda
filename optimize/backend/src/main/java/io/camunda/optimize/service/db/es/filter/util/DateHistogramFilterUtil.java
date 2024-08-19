@@ -33,21 +33,21 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.LongBounds;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DateHistogramFilterUtil {
+
+  private DateHistogramFilterUtil() {
+  }
 
   public static BoolQueryBuilder createModelElementDateHistogramLimitingFilterFor(
       final DateAggregationContext context, final DateTimeFormatter dateTimeFormatter) {
 
-    RangeQueryBuilder queryDate =
+    final RangeQueryBuilder queryDate =
         QueryBuilders.rangeQuery(context.getDateField())
             .gte(dateTimeFormatter.format(context.getEarliestDate()))
             .lte(dateTimeFormatter.format(context.getLatestDate()))
@@ -222,9 +222,9 @@ public class DateHistogramFilterUtil {
                 .filter(RelativeDateFilterDataDto.class::isInstance)
                 .map(
                     filter -> {
-                      RelativeDateFilterStartDto startDto =
+                      final RelativeDateFilterStartDto startDto =
                           ((RelativeDateFilterDataDto) filter).getStart();
-                      OffsetDateTime startOfCurrentInterval =
+                      final OffsetDateTime startOfCurrentInterval =
                           getStartOfCurrentInterval(now, startDto.getUnit());
                       if (startDto.getValue() == 0L) {
                         return startOfCurrentInterval;

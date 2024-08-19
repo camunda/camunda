@@ -65,8 +65,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.common.TriFunction;
@@ -77,7 +75,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ModelElementFilterQueryUtil {
 
   private static final Set<Class<? extends ProcessFilterDto<?>>> FLOW_NODE_VIEW_LEVEL_FILTERS =
@@ -94,27 +91,27 @@ public class ModelElementFilterQueryUtil {
           FlowNodeEndDateFilterDto.class);
 
   private static final Map<
-          Class<? extends ProcessFilterDto<?>>, Function<BoolQueryBuilder, QueryBuilder>>
+      Class<? extends ProcessFilterDto<?>>, Function<BoolQueryBuilder, QueryBuilder>>
       FLOW_NODE_STATUS_VIEW_FILTER_INSTANCE_QUERIES =
-          Map.of(
-              RunningFlowNodesOnlyFilterDto.class,
-              ModelElementFilterQueryUtil::createRunningFlowNodesOnlyFilterQuery,
-              CompletedFlowNodesOnlyFilterDto.class,
-              ModelElementFilterQueryUtil::createCompletedFlowNodesOnlyFilterQuery,
-              CompletedOrCanceledFlowNodesOnlyFilterDto.class,
-              ModelElementFilterQueryUtil::createCompletedOrCanceledFlowNodesOnlyFilterQuery,
-              CanceledFlowNodesOnlyFilterDto.class,
-              ModelElementFilterQueryUtil::createCanceledFlowNodesOnlyFilterQuery);
+      Map.of(
+          RunningFlowNodesOnlyFilterDto.class,
+          ModelElementFilterQueryUtil::createRunningFlowNodesOnlyFilterQuery,
+          CompletedFlowNodesOnlyFilterDto.class,
+          ModelElementFilterQueryUtil::createCompletedFlowNodesOnlyFilterQuery,
+          CompletedOrCanceledFlowNodesOnlyFilterDto.class,
+          ModelElementFilterQueryUtil::createCompletedOrCanceledFlowNodesOnlyFilterQuery,
+          CanceledFlowNodesOnlyFilterDto.class,
+          ModelElementFilterQueryUtil::createCanceledFlowNodesOnlyFilterQuery);
 
   private static final Map<
-          Class<? extends ProcessFilterDto<?>>,
-          TriFunction<FlowNodeDateFilterDataDto<?>, ZoneId, BoolQueryBuilder, QueryBuilder>>
+      Class<? extends ProcessFilterDto<?>>,
+      TriFunction<FlowNodeDateFilterDataDto<?>, ZoneId, BoolQueryBuilder, QueryBuilder>>
       FLOW_NODE_DATE_VIEW_FILTER_INSTANCE_QUERIES =
-          Map.of(
-              FlowNodeStartDateFilterDto.class,
-              ModelElementFilterQueryUtil::createFlowNodeStartDateFilterQuery,
-              FlowNodeEndDateFilterDto.class,
-              ModelElementFilterQueryUtil::createFlowNodeEndDateFilterQuery);
+      Map.of(
+          FlowNodeStartDateFilterDto.class,
+          ModelElementFilterQueryUtil::createFlowNodeStartDateFilterQuery,
+          FlowNodeEndDateFilterDto.class,
+          ModelElementFilterQueryUtil::createFlowNodeEndDateFilterQuery);
 
   private static final NestedDefinitionQueryBuilder NESTED_DEFINITION_QUERY_BUILDER =
       new NestedDefinitionQueryBuilder(
@@ -122,6 +119,9 @@ public class ModelElementFilterQueryUtil {
           FLOW_NODE_DEFINITION_KEY,
           FLOW_NODE_DEFINITION_VERSION,
           FLOW_NODE_TENANT_ID);
+
+  private ModelElementFilterQueryUtil() {
+  }
 
   public static Optional<NestedQueryBuilder> addInstanceFilterForRelevantViewLevelFilters(
       final List<ProcessFilterDto<?>> filters, final FilterContext filterContext) {
@@ -131,7 +131,7 @@ public class ModelElementFilterQueryUtil {
             .filter(filter -> FLOW_NODE_VIEW_LEVEL_FILTERS.contains(filter.getClass()))
             .toList();
     if (!viewLevelFiltersForInstanceMatch.isEmpty()) {
-      BoolQueryBuilder viewFilterInstanceQuery =
+      final BoolQueryBuilder viewFilterInstanceQuery =
           createFlowNodeTypeFilterQuery(filterContext.isUserTaskReport());
       viewLevelFiltersForInstanceMatch.forEach(
           filter -> {

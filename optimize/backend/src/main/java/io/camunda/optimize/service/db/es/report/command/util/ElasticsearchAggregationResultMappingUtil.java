@@ -7,16 +7,17 @@
  */
 package io.camunda.optimize.service.db.es.report.command.util;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.elasticsearch.search.aggregations.metrics.ParsedTDigestPercentiles;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ElasticsearchAggregationResultMappingUtil {
 
+  private ElasticsearchAggregationResultMappingUtil() {
+  }
+
   public static Double mapToDoubleOrNull(
-      final ParsedTDigestPercentiles aggregation, final double percentileValue) {
-    double percentile = aggregation.percentile(percentileValue);
+      final ParsedTDigestPercentiles aggregation,
+      final double percentileValue) {
+    final double percentile = aggregation.percentile(percentileValue);
     if (Double.isNaN(percentile) || Double.isInfinite(percentile)) {
       return null;
     } else {

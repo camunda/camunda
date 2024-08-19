@@ -48,19 +48,12 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import org.apache.commons.lang3.StringUtils;
 
-@Data
-@RequiredArgsConstructor
 @Accessors(chain = true)
 public class CompositeCommandResult {
+
   private final SingleReportDataDto reportDataDto;
   private final ViewProperty viewProperty;
 
@@ -78,17 +71,23 @@ public class CompositeCommandResult {
       final Double defaultNumberValue) {
     this.reportDataDto = reportDataDto;
     this.viewProperty = viewProperty;
-    this.defaultNumberValueSupplier = () -> defaultNumberValue;
+    defaultNumberValueSupplier = () -> defaultNumberValue;
+  }
+
+  public CompositeCommandResult(final SingleReportDataDto reportDataDto,
+      final ViewProperty viewProperty) {
+    this.reportDataDto = reportDataDto;
+    this.viewProperty = viewProperty;
   }
 
   public void setGroup(final GroupByResult groupByResult) {
-    this.groups = singletonList(groupByResult);
+    groups = singletonList(groupByResult);
   }
 
   public CommandEvaluationResult<List<HyperMapResultEntryDto>> transformToHyperMap() {
     final Map<ViewMeasureIdentifier, List<HyperMapResultEntryDto>> measureDataSets =
         createMeasureMap(ArrayList::new);
-    for (GroupByResult group : groups) {
+    for (final GroupByResult group : groups) {
       final Map<ViewMeasureIdentifier, List<MapResultEntryDto>> distributionsByAggregationType =
           createMeasureMap(ArrayList::new);
       group.distributions.forEach(
@@ -134,7 +133,7 @@ public class CompositeCommandResult {
   public CommandEvaluationResult<List<MapResultEntryDto>> transformToMap() {
     final Map<ViewMeasureIdentifier, List<MapResultEntryDto>> measureDataSets =
         createMeasureMap(ArrayList::new);
-    for (GroupByResult group : groups) {
+    for (final GroupByResult group : groups) {
       group
           .getDistributions()
           .forEach(
@@ -266,7 +265,7 @@ public class CompositeCommandResult {
   private boolean isUserTaskDurationResult() {
     return reportDataDto instanceof ProcessReportDataDto
         && ProcessViewEntity.USER_TASK.equals(
-            ((ProcessReportDataDto) reportDataDto).getView().getEntity())
+        ((ProcessReportDataDto) reportDataDto).getView().getEntity())
         && ViewProperty.DURATION.equals(viewProperty);
   }
 
@@ -396,12 +395,180 @@ public class CompositeCommandResult {
         resultClass.getSimpleName(), resultClass.getSimpleName(), resultPartClass.getSimpleName());
   }
 
-  @AllArgsConstructor(access = AccessLevel.PROTECTED)
-  @Data
+  public SingleReportDataDto getReportDataDto() {
+    return reportDataDto;
+  }
+
+  public ViewProperty getViewProperty() {
+    return viewProperty;
+  }
+
+  public ReportSortingDto getGroupBySorting() {
+    return groupBySorting;
+  }
+
+  public CompositeCommandResult setGroupBySorting(final ReportSortingDto groupBySorting) {
+    this.groupBySorting = groupBySorting;
+    return this;
+  }
+
+  public ReportSortingDto getDistributedBySorting() {
+    return distributedBySorting;
+  }
+
+  public CompositeCommandResult setDistributedBySorting(
+      final ReportSortingDto distributedBySorting) {
+    this.distributedBySorting = distributedBySorting;
+    return this;
+  }
+
+  public boolean isGroupByKeyOfNumericType() {
+    return isGroupByKeyOfNumericType;
+  }
+
+  public CompositeCommandResult setGroupByKeyOfNumericType(
+      final boolean isGroupByKeyOfNumericType) {
+    this.isGroupByKeyOfNumericType = isGroupByKeyOfNumericType;
+    return this;
+  }
+
+  public boolean isDistributedByKeyOfNumericType() {
+    return isDistributedByKeyOfNumericType;
+  }
+
+  public CompositeCommandResult setDistributedByKeyOfNumericType(
+      final boolean isDistributedByKeyOfNumericType) {
+    this.isDistributedByKeyOfNumericType = isDistributedByKeyOfNumericType;
+    return this;
+  }
+
+  public Supplier<Double> getDefaultNumberValueSupplier() {
+    return defaultNumberValueSupplier;
+  }
+
+  public CompositeCommandResult setDefaultNumberValueSupplier(
+      final Supplier<Double> defaultNumberValueSupplier) {
+    this.defaultNumberValueSupplier = defaultNumberValueSupplier;
+    return this;
+  }
+
+  public List<GroupByResult> getGroups() {
+    return groups;
+  }
+
+  public CompositeCommandResult setGroups(final List<GroupByResult> groups) {
+    this.groups = groups;
+    return this;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof CompositeCommandResult;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = 1;
+    final Object $reportDataDto = getReportDataDto();
+    result = result * PRIME + ($reportDataDto == null ? 43 : $reportDataDto.hashCode());
+    final Object $viewProperty = getViewProperty();
+    result = result * PRIME + ($viewProperty == null ? 43 : $viewProperty.hashCode());
+    final Object $groupBySorting = getGroupBySorting();
+    result = result * PRIME + ($groupBySorting == null ? 43 : $groupBySorting.hashCode());
+    final Object $distributedBySorting = getDistributedBySorting();
+    result =
+        result * PRIME + ($distributedBySorting == null ? 43 : $distributedBySorting.hashCode());
+    result = result * PRIME + (isGroupByKeyOfNumericType() ? 79 : 97);
+    result = result * PRIME + (isDistributedByKeyOfNumericType() ? 79 : 97);
+    final Object $defaultNumberValueSupplier = getDefaultNumberValueSupplier();
+    result = result * PRIME + ($defaultNumberValueSupplier == null ? 43
+        : $defaultNumberValueSupplier.hashCode());
+    final Object $groups = getGroups();
+    result = result * PRIME + ($groups == null ? 43 : $groups.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof CompositeCommandResult)) {
+      return false;
+    }
+    final CompositeCommandResult other = (CompositeCommandResult) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    final Object this$reportDataDto = getReportDataDto();
+    final Object other$reportDataDto = other.getReportDataDto();
+    if (this$reportDataDto == null ? other$reportDataDto != null
+        : !this$reportDataDto.equals(other$reportDataDto)) {
+      return false;
+    }
+    final Object this$viewProperty = getViewProperty();
+    final Object other$viewProperty = other.getViewProperty();
+    if (this$viewProperty == null ? other$viewProperty != null
+        : !this$viewProperty.equals(other$viewProperty)) {
+      return false;
+    }
+    final Object this$groupBySorting = getGroupBySorting();
+    final Object other$groupBySorting = other.getGroupBySorting();
+    if (this$groupBySorting == null ? other$groupBySorting != null
+        : !this$groupBySorting.equals(other$groupBySorting)) {
+      return false;
+    }
+    final Object this$distributedBySorting = getDistributedBySorting();
+    final Object other$distributedBySorting = other.getDistributedBySorting();
+    if (this$distributedBySorting == null ? other$distributedBySorting != null
+        : !this$distributedBySorting.equals(other$distributedBySorting)) {
+      return false;
+    }
+    if (isGroupByKeyOfNumericType() != other.isGroupByKeyOfNumericType()) {
+      return false;
+    }
+    if (isDistributedByKeyOfNumericType() != other.isDistributedByKeyOfNumericType()) {
+      return false;
+    }
+    final Object this$defaultNumberValueSupplier = getDefaultNumberValueSupplier();
+    final Object other$defaultNumberValueSupplier = other.getDefaultNumberValueSupplier();
+    if (this$defaultNumberValueSupplier == null ? other$defaultNumberValueSupplier != null
+        : !this$defaultNumberValueSupplier.equals(other$defaultNumberValueSupplier)) {
+      return false;
+    }
+    final Object this$groups = getGroups();
+    final Object other$groups = other.getGroups();
+    if (this$groups == null ? other$groups != null : !this$groups.equals(other$groups)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "CompositeCommandResult(reportDataDto=" + getReportDataDto() + ", viewProperty="
+        + getViewProperty() + ", groupBySorting=" + getGroupBySorting()
+        + ", distributedBySorting=" + getDistributedBySorting()
+        + ", isGroupByKeyOfNumericType=" + isGroupByKeyOfNumericType()
+        + ", isDistributedByKeyOfNumericType=" + isDistributedByKeyOfNumericType()
+        + ", defaultNumberValueSupplier=" + getDefaultNumberValueSupplier() + ", groups="
+        + getGroups() + ")";
+  }
+
   public static class GroupByResult {
+
     private String key;
     private String label;
     private List<DistributedByResult> distributions;
+
+    protected GroupByResult(
+        final String key,
+        final String label,
+        final List<DistributedByResult> distributions) {
+      this.key = key;
+      this.label = label;
+      this.distributions = distributions;
+    }
 
     public static GroupByResult createGroupByNone(final List<DistributedByResult> distributions) {
       return new GroupByResult(GROUP_NONE_KEY, null, distributions);
@@ -425,22 +592,104 @@ public class CompositeCommandResult {
     public String getLabel() {
       return !StringUtils.isEmpty(label) ? label : key;
     }
+
+    public GroupByResult setLabel(final String label) {
+      this.label = label;
+      return this;
+    }
+
+    public String getKey() {
+      return key;
+    }
+
+    public GroupByResult setKey(final String key) {
+      this.key = key;
+      return this;
+    }
+
+    public List<DistributedByResult> getDistributions() {
+      return distributions;
+    }
+
+    public GroupByResult setDistributions(final List<DistributedByResult> distributions) {
+      this.distributions = distributions;
+      return this;
+    }
+
+    protected boolean canEqual(final Object other) {
+      return other instanceof GroupByResult;
+    }
+
+    @Override
+    public int hashCode() {
+      final int PRIME = 59;
+      int result = 1;
+      final Object $key = getKey();
+      result = result * PRIME + ($key == null ? 43 : $key.hashCode());
+      final Object $label = getLabel();
+      result = result * PRIME + ($label == null ? 43 : $label.hashCode());
+      final Object $distributions = getDistributions();
+      result = result * PRIME + ($distributions == null ? 43 : $distributions.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (o == this) {
+        return true;
+      }
+      if (!(o instanceof GroupByResult)) {
+        return false;
+      }
+      final GroupByResult other = (GroupByResult) o;
+      if (!other.canEqual((Object) this)) {
+        return false;
+      }
+      final Object this$key = getKey();
+      final Object other$key = other.getKey();
+      if (this$key == null ? other$key != null : !this$key.equals(other$key)) {
+        return false;
+      }
+      final Object this$label = getLabel();
+      final Object other$label = other.getLabel();
+      if (this$label == null ? other$label != null : !this$label.equals(other$label)) {
+        return false;
+      }
+      final Object this$distributions = getDistributions();
+      final Object other$distributions = other.getDistributions();
+      if (this$distributions == null ? other$distributions != null
+          : !this$distributions.equals(other$distributions)) {
+        return false;
+      }
+      return true;
+    }
+
+    @Override
+    public String toString() {
+      return "CompositeCommandResult.GroupByResult(key=" + getKey() + ", label="
+          + getLabel() + ", distributions=" + getDistributions() + ")";
+    }
   }
 
-  @AllArgsConstructor(access = AccessLevel.PROTECTED)
-  @Data
-  @EqualsAndHashCode
   public static class DistributedByResult {
+
     private String key;
     private String label;
     private ViewResult viewResult;
 
-    public static DistributedByResult createDistributedByNoneResult(ViewResult viewResult) {
+    protected DistributedByResult(final String key, final String label,
+        final ViewResult viewResult) {
+      this.key = key;
+      this.label = label;
+      this.viewResult = viewResult;
+    }
+
+    public static DistributedByResult createDistributedByNoneResult(final ViewResult viewResult) {
       return new DistributedByResult(null, null, viewResult);
     }
 
     public static DistributedByResult createDistributedByResult(
-        String key, String label, ViewResult viewResult) {
+        final String key, final String label, final ViewResult viewResult) {
       return new DistributedByResult(key, label, viewResult);
     }
 
@@ -448,26 +697,103 @@ public class CompositeCommandResult {
       return label != null && !label.isEmpty() ? label : key;
     }
 
+    public DistributedByResult setLabel(final String label) {
+      this.label = label;
+      return this;
+    }
+
     public List<Double> getValuesAsDouble() {
-      return this.getViewResult().getViewMeasures().stream()
+      return getViewResult().getViewMeasures().stream()
           .map(ViewMeasure::getValue)
           .collect(Collectors.toList());
     }
 
     public List<MapResultEntryDto> getValuesAsMapResultEntries() {
       return getValuesAsDouble().stream()
-          .map(value -> new MapResultEntryDto(this.key, value, this.label))
+          .map(value -> new MapResultEntryDto(key, value, label))
           .collect(Collectors.toList());
+    }
+
+    public String getKey() {
+      return key;
+    }
+
+    public DistributedByResult setKey(final String key) {
+      this.key = key;
+      return this;
+    }
+
+    public ViewResult getViewResult() {
+      return viewResult;
+    }
+
+    public DistributedByResult setViewResult(final ViewResult viewResult) {
+      this.viewResult = viewResult;
+      return this;
+    }
+
+    protected boolean canEqual(final Object other) {
+      return other instanceof DistributedByResult;
+    }
+
+    @Override
+    public int hashCode() {
+      final int PRIME = 59;
+      int result = 1;
+      final Object $key = getKey();
+      result = result * PRIME + ($key == null ? 43 : $key.hashCode());
+      final Object $label = getLabel();
+      result = result * PRIME + ($label == null ? 43 : $label.hashCode());
+      final Object $viewResult = getViewResult();
+      result = result * PRIME + ($viewResult == null ? 43 : $viewResult.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (o == this) {
+        return true;
+      }
+      if (!(o instanceof DistributedByResult)) {
+        return false;
+      }
+      final DistributedByResult other = (DistributedByResult) o;
+      if (!other.canEqual((Object) this)) {
+        return false;
+      }
+      final Object this$key = getKey();
+      final Object other$key = other.getKey();
+      if (this$key == null ? other$key != null : !this$key.equals(other$key)) {
+        return false;
+      }
+      final Object this$label = getLabel();
+      final Object other$label = other.getLabel();
+      if (this$label == null ? other$label != null : !this$label.equals(other$label)) {
+        return false;
+      }
+      final Object this$viewResult = getViewResult();
+      final Object other$viewResult = other.getViewResult();
+      if (this$viewResult == null ? other$viewResult != null
+          : !this$viewResult.equals(other$viewResult)) {
+        return false;
+      }
+      return true;
+    }
+
+    @Override
+    public String toString() {
+      return "CompositeCommandResult.DistributedByResult(key=" + getKey() + ", label="
+          + getLabel() + ", viewResult=" + getViewResult() + ")";
     }
   }
 
-  @Data
   public static class ViewResult {
 
     private List<ViewMeasure> viewMeasures;
     private List<? extends RawDataInstanceDto> rawData;
 
-    ViewResult(List<ViewMeasure> viewMeasures, List<? extends RawDataInstanceDto> rawData) {
+    ViewResult(final List<ViewMeasure> viewMeasures,
+        final List<? extends RawDataInstanceDto> rawData) {
       this.viewMeasures = viewMeasures;
       this.rawData = rawData;
     }
@@ -476,22 +802,88 @@ public class CompositeCommandResult {
       return new ViewResultBuilder();
     }
 
+    public List<ViewMeasure> getViewMeasures() {
+      return viewMeasures;
+    }
+
+    public ViewResult setViewMeasures(final List<ViewMeasure> viewMeasures) {
+      this.viewMeasures = viewMeasures;
+      return this;
+    }
+
+    public List<? extends RawDataInstanceDto> getRawData() {
+      return rawData;
+    }
+
+    public ViewResult setRawData(final List<? extends RawDataInstanceDto> rawData) {
+      this.rawData = rawData;
+      return this;
+    }
+
+    protected boolean canEqual(final Object other) {
+      return other instanceof ViewResult;
+    }
+
+    @Override
+    public int hashCode() {
+      final int PRIME = 59;
+      int result = 1;
+      final Object $viewMeasures = getViewMeasures();
+      result = result * PRIME + ($viewMeasures == null ? 43 : $viewMeasures.hashCode());
+      final Object $rawData = getRawData();
+      result = result * PRIME + ($rawData == null ? 43 : $rawData.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (o == this) {
+        return true;
+      }
+      if (!(o instanceof ViewResult)) {
+        return false;
+      }
+      final ViewResult other = (ViewResult) o;
+      if (!other.canEqual((Object) this)) {
+        return false;
+      }
+      final Object this$viewMeasures = getViewMeasures();
+      final Object other$viewMeasures = other.getViewMeasures();
+      if (this$viewMeasures == null ? other$viewMeasures != null
+          : !this$viewMeasures.equals(other$viewMeasures)) {
+        return false;
+      }
+      final Object this$rawData = getRawData();
+      final Object other$rawData = other.getRawData();
+      if (this$rawData == null ? other$rawData != null : !this$rawData.equals(other$rawData)) {
+        return false;
+      }
+      return true;
+    }
+
+    @Override
+    public String toString() {
+      return "CompositeCommandResult.ViewResult(viewMeasures=" + getViewMeasures()
+          + ", rawData=" + getRawData() + ")";
+    }
+
     public static class ViewResultBuilder {
 
       private ArrayList<ViewMeasure> viewMeasures;
       private List<? extends RawDataInstanceDto> rawData;
 
-      ViewResultBuilder() {}
+      ViewResultBuilder() {
+      }
 
-      public ViewResultBuilder viewMeasure(ViewMeasure viewMeasure) {
-        if (this.viewMeasures == null) {
-          this.viewMeasures = new ArrayList<ViewMeasure>();
+      public ViewResultBuilder viewMeasure(final ViewMeasure viewMeasure) {
+        if (viewMeasures == null) {
+          viewMeasures = new ArrayList<ViewMeasure>();
         }
-        this.viewMeasures.add(viewMeasure);
+        viewMeasures.add(viewMeasure);
         return this;
       }
 
-      public ViewResultBuilder viewMeasures(Collection<? extends ViewMeasure> viewMeasures) {
+      public ViewResultBuilder viewMeasures(final Collection<? extends ViewMeasure> viewMeasures) {
         if (viewMeasures == null) {
           throw new NullPointerException("viewMeasures cannot be null");
         }
@@ -503,19 +895,19 @@ public class CompositeCommandResult {
       }
 
       public ViewResultBuilder clearViewMeasures() {
-        if (this.viewMeasures != null) {
-          this.viewMeasures.clear();
+        if (viewMeasures != null) {
+          viewMeasures.clear();
         }
         return this;
       }
 
-      public ViewResultBuilder rawData(List<? extends RawDataInstanceDto> rawData) {
+      public ViewResultBuilder rawData(final List<? extends RawDataInstanceDto> rawData) {
         this.rawData = rawData;
         return this;
       }
 
       public ViewResult build() {
-        List<ViewMeasure> viewMeasures;
+        final List<ViewMeasure> viewMeasures;
         switch (this.viewMeasures == null ? 0 : this.viewMeasures.size()) {
           case 0:
             viewMeasures = Collections.emptyList();
@@ -528,20 +920,20 @@ public class CompositeCommandResult {
                 Collections.unmodifiableList(new ArrayList<ViewMeasure>(this.viewMeasures));
         }
 
-        return new ViewResult(viewMeasures, this.rawData);
+        return new ViewResult(viewMeasures, rawData);
       }
 
+      @Override
       public String toString() {
         return "CompositeCommandResult.ViewResult.ViewResultBuilder(viewMeasures="
-            + this.viewMeasures
+            + viewMeasures
             + ", rawData="
-            + this.rawData
+            + rawData
             + ")";
       }
     }
   }
 
-  @Data
   public static class ViewMeasure {
 
     private AggregationDto aggregationType;
@@ -549,7 +941,8 @@ public class CompositeCommandResult {
     private Double value;
 
     ViewMeasure(
-        AggregationDto aggregationType, UserTaskDurationTime userTaskDurationTime, Double value) {
+        final AggregationDto aggregationType, final UserTaskDurationTime userTaskDurationTime,
+        final Double value) {
       this.aggregationType = aggregationType;
       this.userTaskDurationTime = userTaskDurationTime;
       this.value = value;
@@ -563,55 +956,217 @@ public class CompositeCommandResult {
       return new ViewMeasureBuilder();
     }
 
+    public AggregationDto getAggregationType() {
+      return aggregationType;
+    }
+
+    public ViewMeasure setAggregationType(final AggregationDto aggregationType) {
+      this.aggregationType = aggregationType;
+      return this;
+    }
+
+    public UserTaskDurationTime getUserTaskDurationTime() {
+      return userTaskDurationTime;
+    }
+
+    public ViewMeasure setUserTaskDurationTime(final UserTaskDurationTime userTaskDurationTime) {
+      this.userTaskDurationTime = userTaskDurationTime;
+      return this;
+    }
+
+    public Double getValue() {
+      return value;
+    }
+
+    public ViewMeasure setValue(final Double value) {
+      this.value = value;
+      return this;
+    }
+
+    protected boolean canEqual(final Object other) {
+      return other instanceof ViewMeasure;
+    }
+
+    @Override
+    public int hashCode() {
+      final int PRIME = 59;
+      int result = 1;
+      final Object $aggregationType = getAggregationType();
+      result = result * PRIME + ($aggregationType == null ? 43 : $aggregationType.hashCode());
+      final Object $userTaskDurationTime = getUserTaskDurationTime();
+      result =
+          result * PRIME + ($userTaskDurationTime == null ? 43 : $userTaskDurationTime.hashCode());
+      final Object $value = getValue();
+      result = result * PRIME + ($value == null ? 43 : $value.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (o == this) {
+        return true;
+      }
+      if (!(o instanceof ViewMeasure)) {
+        return false;
+      }
+      final ViewMeasure other = (ViewMeasure) o;
+      if (!other.canEqual((Object) this)) {
+        return false;
+      }
+      final Object this$aggregationType = getAggregationType();
+      final Object other$aggregationType = other.getAggregationType();
+      if (this$aggregationType == null ? other$aggregationType != null
+          : !this$aggregationType.equals(other$aggregationType)) {
+        return false;
+      }
+      final Object this$userTaskDurationTime = getUserTaskDurationTime();
+      final Object other$userTaskDurationTime = other.getUserTaskDurationTime();
+      if (this$userTaskDurationTime == null ? other$userTaskDurationTime != null
+          : !this$userTaskDurationTime.equals(other$userTaskDurationTime)) {
+        return false;
+      }
+      final Object this$value = getValue();
+      final Object other$value = other.getValue();
+      if (this$value == null ? other$value != null : !this$value.equals(other$value)) {
+        return false;
+      }
+      return true;
+    }
+
+    @Override
+    public String toString() {
+      return "CompositeCommandResult.ViewMeasure(aggregationType=" + getAggregationType()
+          + ", userTaskDurationTime=" + getUserTaskDurationTime() + ", value="
+          + getValue() + ")";
+    }
+
     public static class ViewMeasureBuilder {
 
       private AggregationDto aggregationType;
       private UserTaskDurationTime userTaskDurationTime;
       private Double value;
 
-      ViewMeasureBuilder() {}
+      ViewMeasureBuilder() {
+      }
 
-      public ViewMeasureBuilder aggregationType(AggregationDto aggregationType) {
+      public ViewMeasureBuilder aggregationType(final AggregationDto aggregationType) {
         this.aggregationType = aggregationType;
         return this;
       }
 
-      public ViewMeasureBuilder userTaskDurationTime(UserTaskDurationTime userTaskDurationTime) {
+      public ViewMeasureBuilder userTaskDurationTime(
+          final UserTaskDurationTime userTaskDurationTime) {
         this.userTaskDurationTime = userTaskDurationTime;
         return this;
       }
 
-      public ViewMeasureBuilder value(Double value) {
+      public ViewMeasureBuilder value(final Double value) {
         this.value = value;
         return this;
       }
 
       public ViewMeasure build() {
-        return new ViewMeasure(this.aggregationType, this.userTaskDurationTime, this.value);
+        return new ViewMeasure(aggregationType, userTaskDurationTime, value);
       }
 
+      @Override
       public String toString() {
         return "CompositeCommandResult.ViewMeasure.ViewMeasureBuilder(aggregationType="
-            + this.aggregationType
+            + aggregationType
             + ", userTaskDurationTime="
-            + this.userTaskDurationTime
+            + userTaskDurationTime
             + ", value="
-            + this.value
+            + value
             + ")";
       }
     }
   }
 
-  @Data
-  @AllArgsConstructor
-  @NoArgsConstructor
   public static class ViewMeasureIdentifier {
-
-    public ViewMeasureIdentifier(final AggregationDto aggregationDto) {
-      this.aggregationType = aggregationDto;
-    }
 
     private AggregationDto aggregationType;
     private UserTaskDurationTime userTaskDurationTime;
+
+    public ViewMeasureIdentifier(final AggregationDto aggregationDto) {
+      aggregationType = aggregationDto;
+    }
+
+    public ViewMeasureIdentifier(final AggregationDto aggregationType,
+        final UserTaskDurationTime userTaskDurationTime) {
+      this.aggregationType = aggregationType;
+      this.userTaskDurationTime = userTaskDurationTime;
+    }
+
+    public ViewMeasureIdentifier() {
+    }
+
+    public AggregationDto getAggregationType() {
+      return aggregationType;
+    }
+
+    public ViewMeasureIdentifier setAggregationType(final AggregationDto aggregationType) {
+      this.aggregationType = aggregationType;
+      return this;
+    }
+
+    public UserTaskDurationTime getUserTaskDurationTime() {
+      return userTaskDurationTime;
+    }
+
+    public ViewMeasureIdentifier setUserTaskDurationTime(
+        final UserTaskDurationTime userTaskDurationTime) {
+      this.userTaskDurationTime = userTaskDurationTime;
+      return this;
+    }
+
+    protected boolean canEqual(final Object other) {
+      return other instanceof ViewMeasureIdentifier;
+    }
+
+    @Override
+    public int hashCode() {
+      final int PRIME = 59;
+      int result = 1;
+      final Object $aggregationType = getAggregationType();
+      result = result * PRIME + ($aggregationType == null ? 43 : $aggregationType.hashCode());
+      final Object $userTaskDurationTime = getUserTaskDurationTime();
+      result =
+          result * PRIME + ($userTaskDurationTime == null ? 43 : $userTaskDurationTime.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (o == this) {
+        return true;
+      }
+      if (!(o instanceof ViewMeasureIdentifier)) {
+        return false;
+      }
+      final ViewMeasureIdentifier other = (ViewMeasureIdentifier) o;
+      if (!other.canEqual((Object) this)) {
+        return false;
+      }
+      final Object this$aggregationType = getAggregationType();
+      final Object other$aggregationType = other.getAggregationType();
+      if (this$aggregationType == null ? other$aggregationType != null
+          : !this$aggregationType.equals(other$aggregationType)) {
+        return false;
+      }
+      final Object this$userTaskDurationTime = getUserTaskDurationTime();
+      final Object other$userTaskDurationTime = other.getUserTaskDurationTime();
+      if (this$userTaskDurationTime == null ? other$userTaskDurationTime != null
+          : !this$userTaskDurationTime.equals(other$userTaskDurationTime)) {
+        return false;
+      }
+      return true;
+    }
+
+    @Override
+    public String toString() {
+      return "CompositeCommandResult.ViewMeasureIdentifier(aggregationType="
+          + getAggregationType() + ", userTaskDurationTime=" + getUserTaskDurationTime()
+          + ")";
+    }
   }
 }

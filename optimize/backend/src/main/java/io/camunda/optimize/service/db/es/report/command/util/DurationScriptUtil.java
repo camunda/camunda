@@ -20,12 +20,12 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.elasticsearch.script.Script;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DurationScriptUtil {
+
+  private DurationScriptUtil() {
+  }
 
   public static Script getDurationScript(
       final long currRequestDateInMs,
@@ -35,7 +35,7 @@ public class DurationScriptUtil {
 
     return createDefaultScriptWithPrimitiveParams(
         getDurationCalculationScriptPart(
-                params, currRequestDateInMs, durationFieldName, referenceDateFieldName)
+            params, currRequestDateInMs, durationFieldName, referenceDateFieldName)
             + " return result;",
         params);
   }
@@ -61,7 +61,7 @@ public class DurationScriptUtil {
         // All duration filters operate on totalDuration
         // --> no specific userTask calculations needed, can use the general duration script
         getDurationCalculationScriptPart(
-                params, currRequestDateInMs, durationFieldName, referenceDateFieldName)
+            params, currRequestDateInMs, durationFieldName, referenceDateFieldName)
             + " return (result != null "
             + "&& result "
             + durationFilterDto.getOperator().getId()
