@@ -18,6 +18,7 @@ public class CamundaLicense {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaLicense.class);
   private static final String UNKNOWN_LICENSE_TYPE = "unknown";
+  private static final String CAMUNDA_LICENSE_ENV_VAR_KEY = "CAMUNDA_LICENSE_KEY";
   private boolean isValid;
   private String licenseType;
   private boolean isInitialized;
@@ -46,7 +47,12 @@ public class CamundaLicense {
       isValid = determineLicenseValidity(license);
       licenseType = getLicenseTypeFromProperty(license);
     } else {
-      LOGGER.error("No license detected when one is expected. Please provide a license.");
+      isValid = false;
+      licenseType = UNKNOWN_LICENSE_TYPE;
+      LOGGER.error(
+          "No license detected when one is expected. Please provide a license through the "
+              + CAMUNDA_LICENSE_ENV_VAR_KEY
+              + " environment variable.");
     }
 
     isInitialized = true;
