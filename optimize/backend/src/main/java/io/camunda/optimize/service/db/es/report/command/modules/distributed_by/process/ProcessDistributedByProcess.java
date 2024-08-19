@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -48,7 +47,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDistributedByProcess extends ProcessDistributedByPart {
 
@@ -59,6 +57,13 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
 
   private final ConfigurationService configurationService;
   private final ProcessDefinitionReader processDefinitionReader;
+
+  public ProcessDistributedByProcess(
+      final ConfigurationService configurationService,
+      final ProcessDefinitionReader processDefinitionReader) {
+    this.configurationService = configurationService;
+    this.processDefinitionReader = processDefinitionReader;
+  }
 
   @Override
   public List<AggregationBuilder> createAggregations(

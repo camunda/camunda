@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -42,27 +41,21 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByProcessInstanceRunningDate extends ProcessGroupByPart {
+
   private final DateTimeFormatter formatter;
   private final DateAggregationService dateAggregationService;
   private final MinMaxStatsService minMaxStatsService;
 
-  @Override
-  public Optional<MinMaxStatDto> getMinMaxStats(
-      final ExecutionContext<ProcessReportDataDto> context, final BoolQueryBuilder baseQuery) {
-    if (context.getReportData().getGroupBy().getValue() instanceof DateGroupByValueDto) {
-      DateGroupByValueDto groupByDate =
-          (DateGroupByValueDto) context.getReportData().getGroupBy().getValue();
-      if (AggregateByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
-        return Optional.of(
-            minMaxStatsService.getMinMaxDateRangeForCrossField(
-                context, baseQuery, getIndexNames(context), START_DATE, END_DATE));
-      }
-    }
-    return Optional.empty();
+  public ProcessGroupByProcessInstanceRunningDate(
+      final DateTimeFormatter formatter,
+      final DateAggregationService dateAggregationService,
+      final MinMaxStatsService minMaxStatsService) {
+    this.formatter = formatter;
+    this.dateAggregationService = dateAggregationService;
+    this.minMaxStatsService = minMaxStatsService;
   }
 
   @Override
@@ -91,6 +84,21 @@ public class ProcessGroupByProcessInstanceRunningDate extends ProcessGroupByPart
   }
 
   @Override
+  public Optional<MinMaxStatDto> getMinMaxStats(
+      final ExecutionContext<ProcessReportDataDto> context, final BoolQueryBuilder baseQuery) {
+    if (context.getReportData().getGroupBy().getValue() instanceof DateGroupByValueDto) {
+      final DateGroupByValueDto groupByDate =
+          (DateGroupByValueDto) context.getReportData().getGroupBy().getValue();
+      if (AggregateByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
+        return Optional.of(
+            minMaxStatsService.getMinMaxDateRangeForCrossField(
+                context, baseQuery, getIndexNames(context), START_DATE, END_DATE));
+      }
+    }
+    return Optional.empty();
+  }
+
+  @Override
   protected void addQueryResult(
       final CompositeCommandResult result,
       final SearchResponse response,
@@ -107,28 +115,28 @@ public class ProcessGroupByProcessInstanceRunningDate extends ProcessGroupByPart
     }
   }
 
+  @Override
+  protected void addGroupByAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto dataForCommandKey) {
+    dataForCommandKey.setGroupBy(new RunningDateGroupByDto());
+  }
+
   private List<CompositeCommandResult.GroupByResult> processAggregations(
       final SearchResponse response,
       final Aggregations aggregations,
       final ExecutionContext<ProcessReportDataDto> context) {
-    Filters agg = aggregations.get(FILTER_LIMITED_AGGREGATION);
+    final Filters agg = aggregations.get(FILTER_LIMITED_AGGREGATION);
 
-    List<CompositeCommandResult.GroupByResult> results = new ArrayList<>();
+    final List<CompositeCommandResult.GroupByResult> results = new ArrayList<>();
 
-    for (Filters.Bucket entry : agg.getBuckets()) {
-      String key =
+    for (final Filters.Bucket entry : agg.getBuckets()) {
+      final String key =
           formatToCorrectTimezone(entry.getKeyAsString(), context.getTimezone(), formatter);
       final List<CompositeCommandResult.DistributedByResult> distributions =
           distributedByPart.retrieveResult(response, entry.getAggregations(), context);
       results.add(CompositeCommandResult.GroupByResult.createGroupByResult(key, distributions));
     }
     return results;
-  }
-
-  @Override
-  protected void addGroupByAdjustmentsForCommandKeyGeneration(
-      final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.setGroupBy(new RunningDateGroupByDto());
   }
 
   private AggregateByDateUnit getGroupByDateUnit(final ProcessReportDataDto processReportData) {

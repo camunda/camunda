@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -38,7 +37,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
@@ -47,12 +45,40 @@ public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
   private final MinMaxStatsService minMaxStatsService;
   private final DecisionQueryFilterEnhancer queryFilterEnhancer;
 
+  public DecisionGroupByEvaluationDateTime(
+      final DateAggregationService dateAggregationService,
+      final MinMaxStatsService minMaxStatsService,
+      final DecisionQueryFilterEnhancer queryFilterEnhancer) {
+    this.dateAggregationService = dateAggregationService;
+    this.minMaxStatsService = minMaxStatsService;
+    this.queryFilterEnhancer = queryFilterEnhancer;
+  }
+
   @Override
   public List<AggregationBuilder> createAggregation(
       final SearchSourceBuilder searchSourceBuilder,
       final ExecutionContext<DecisionReportDataDto> context) {
     final AggregateByDateUnit unit = getGroupBy(context.getReportData()).getUnit();
     return createAggregation(searchSourceBuilder, context, unit);
+  }
+
+  @Override
+  public void addQueryResult(
+      final CompositeCommandResult result,
+      final SearchResponse response,
+      final ExecutionContext<DecisionReportDataDto> context) {
+    result.setGroups(processAggregations(response, context));
+    result.setGroupBySorting(
+        context
+            .getReportConfiguration()
+            .getSorting()
+            .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.DESC)));
+  }
+
+  @Override
+  protected void addGroupByAdjustmentsForCommandKeyGeneration(
+      final DecisionReportDataDto reportData) {
+    reportData.setGroupBy(new DecisionGroupByEvaluationDateTimeDto());
   }
 
   private List<AggregationBuilder> createAggregation(
@@ -81,19 +107,6 @@ public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
         .orElse(Collections.emptyList());
   }
 
-  @Override
-  public void addQueryResult(
-      final CompositeCommandResult result,
-      final SearchResponse response,
-      final ExecutionContext<DecisionReportDataDto> context) {
-    result.setGroups(processAggregations(response, context));
-    result.setGroupBySorting(
-        context
-            .getReportConfiguration()
-            .getSorting()
-            .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.DESC)));
-  }
-
   private DecisionGroupByEvaluationDateTimeValueDto getGroupBy(
       final DecisionReportDataDto reportData) {
     return ((DecisionGroupByEvaluationDateTimeDto) reportData.getGroupBy()).getValue();
@@ -110,7 +123,7 @@ public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
 
     final Optional<Aggregations> unwrappedLimitedAggregations =
         unwrapFilterLimitedAggregations(aggregations);
-    Map<String, Aggregations> keyToAggregationMap;
+    final Map<String, Aggregations> keyToAggregationMap;
     if (unwrappedLimitedAggregations.isPresent()) {
       keyToAggregationMap =
           dateAggregationService.mapDateAggregationsToKeyAggregationMap(
@@ -133,11 +146,5 @@ public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
                     distributedByPart.retrieveResult(
                         response, stringBucketEntry.getValue(), context)))
         .collect(Collectors.toList());
-  }
-
-  @Override
-  protected void addGroupByAdjustmentsForCommandKeyGeneration(
-      final DecisionReportDataDto reportData) {
-    reportData.setGroupBy(new DecisionGroupByEvaluationDateTimeDto());
   }
 }

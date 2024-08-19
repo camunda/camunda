@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -43,13 +42,18 @@ import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 
-@RequiredArgsConstructor
 public abstract class ProcessDistributedByModelElement extends ProcessDistributedByPart {
 
   private static final String MODEL_ELEMENT_ID_TERMS_AGGREGATION = "modelElement";
 
   private final ConfigurationService configurationService;
   private final DefinitionService definitionService;
+
+  public ProcessDistributedByModelElement(
+      final ConfigurationService configurationService, final DefinitionService definitionService) {
+    this.configurationService = configurationService;
+    this.definitionService = definitionService;
+  }
 
   @Override
   public List<AggregationBuilder> createAggregations(
@@ -72,12 +76,12 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
     final Map<String, FlowNodeDataDto> modelElementData =
         getModelElementData(context.getReportData());
     final List<DistributedByResult> distributedByModelElements = new ArrayList<>();
-    for (Terms.Bucket modelElementBucket : byModelElementAggregation.getBuckets()) {
+    for (final Terms.Bucket modelElementBucket : byModelElementAggregation.getBuckets()) {
       final ViewResult viewResult =
           viewPart.retrieveResult(response, modelElementBucket.getAggregations(), context);
       final String modelElementKey = modelElementBucket.getKeyAsString();
       if (modelElementData.containsKey(modelElementKey)) {
-        String label = modelElementData.get(modelElementKey).getName();
+        final String label = modelElementData.get(modelElementKey).getName();
         distributedByModelElements.add(
             createDistributedByResult(modelElementKey, label, viewResult));
         modelElementData.remove(modelElementKey);
@@ -85,6 +89,12 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
     }
     addMissingDistributions(modelElementData, distributedByModelElements, context);
     return distributedByModelElements;
+  }
+
+  @Override
+  protected void addAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto dataForCommandKey) {
+    dataForCommandKey.setDistributedBy(getDistributedBy());
   }
 
   private void addMissingDistributions(
@@ -130,7 +140,7 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
 
   private Set<String> getExcludedFlowNodes(
       final ProcessReportDataDto reportData, final Map<String, FlowNodeDataDto> modelElementNames) {
-    Set<String> excludedFlowNodes =
+    final Set<String> excludedFlowNodes =
         reportData.getFilter().stream()
             .filter(
                 filter ->
@@ -158,12 +168,6 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
         .anyMatch(
             filter ->
                 filter instanceof AssigneeFilterDto || filter instanceof CandidateGroupFilterDto);
-  }
-
-  @Override
-  protected void addAdjustmentsForCommandKeyGeneration(
-      final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.setDistributedBy(getDistributedBy());
   }
 
   protected abstract String getModelElementIdPath();

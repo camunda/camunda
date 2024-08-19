@@ -21,7 +21,6 @@ import io.camunda.optimize.service.security.util.LocalDateUtil;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -33,11 +32,18 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByDuration extends ProcessGroupByPart {
+
   private final DurationAggregationService durationAggregationService;
   private final MinMaxStatsService minMaxStatsService;
+
+  public ProcessGroupByDuration(
+      final DurationAggregationService durationAggregationService,
+      final MinMaxStatsService minMaxStatsService) {
+    this.durationAggregationService = durationAggregationService;
+    this.minMaxStatsService = minMaxStatsService;
+  }
 
   @Override
   public List<AggregationBuilder> createAggregation(
@@ -49,6 +55,12 @@ public class ProcessGroupByDuration extends ProcessGroupByPart {
             searchSourceBuilder, context, distributedByPart, durationScript)
         .map(Collections::singletonList)
         .orElse(Collections.emptyList());
+  }
+
+  @Override
+  public Optional<MinMaxStatDto> getMinMaxStats(
+      final ExecutionContext<ProcessReportDataDto> context, final BoolQueryBuilder baseQuery) {
+    return Optional.of(retrieveMinMaxDurationStats(context, baseQuery));
   }
 
   @Override
@@ -64,12 +76,6 @@ public class ProcessGroupByDuration extends ProcessGroupByPart {
     compositeCommandResult.setGroupByKeyOfNumericType(true);
     compositeCommandResult.setDistributedByKeyOfNumericType(
         distributedByPart.isKeyOfNumericType(context));
-  }
-
-  @Override
-  public Optional<MinMaxStatDto> getMinMaxStats(
-      final ExecutionContext<ProcessReportDataDto> context, final BoolQueryBuilder baseQuery) {
-    return Optional.of(retrieveMinMaxDurationStats(context, baseQuery));
   }
 
   @Override

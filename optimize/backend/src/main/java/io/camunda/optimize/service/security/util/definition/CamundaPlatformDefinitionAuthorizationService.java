@@ -31,12 +31,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Conditional(CamundaPlatformCondition.class)
 @Component
 public class CamundaPlatformDefinitionAuthorizationService
@@ -45,6 +43,41 @@ public class CamundaPlatformDefinitionAuthorizationService
   private final EngineDefinitionAuthorizationService engineDefinitionAuthorizationService;
   private final EventProcessAuthorizationService eventProcessAuthorizationService;
   private final TenantService tenantService;
+
+  public CamundaPlatformDefinitionAuthorizationService(
+      final EngineDefinitionAuthorizationService engineDefinitionAuthorizationService,
+      final EventProcessAuthorizationService eventProcessAuthorizationService,
+      final TenantService tenantService) {
+    this.engineDefinitionAuthorizationService = engineDefinitionAuthorizationService;
+    this.eventProcessAuthorizationService = eventProcessAuthorizationService;
+    this.tenantService = tenantService;
+  }
+
+  @Override
+  public boolean isAuthorizedToAccessDefinition(
+      final String identityId,
+      final IdentityType identityType,
+      final String definitionKey,
+      final DefinitionType definitionType,
+      final List<String> tenantIds) {
+    if (StringUtils.isBlank(definitionKey)) {
+      return true;
+    }
+    switch (definitionType) {
+      case PROCESS:
+        return eventProcessAuthorizationService
+            .isAuthorizedToEventProcess(identityId, definitionKey)
+            .orElseGet(
+                () ->
+                    engineDefinitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
+                        identityId, identityType, definitionKey, tenantIds));
+      case DECISION:
+        return engineDefinitionAuthorizationService.isAuthorizedToSeeDecisionDefinition(
+            identityId, identityType, definitionKey, tenantIds);
+      default:
+        throw new IllegalArgumentException("Unsupported definition type: " + definitionType);
+    }
+  }
 
   @Override
   public List<TenantDto> resolveAuthorizedTenantsForProcess(
@@ -85,32 +118,6 @@ public class CamundaPlatformDefinitionAuthorizationService
           .filter(Objects::nonNull)
           .sorted(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())))
           .toList();
-    }
-  }
-
-  @Override
-  public boolean isAuthorizedToAccessDefinition(
-      final String identityId,
-      final IdentityType identityType,
-      final String definitionKey,
-      final DefinitionType definitionType,
-      final List<String> tenantIds) {
-    if (StringUtils.isBlank(definitionKey)) {
-      return true;
-    }
-    switch (definitionType) {
-      case PROCESS:
-        return eventProcessAuthorizationService
-            .isAuthorizedToEventProcess(identityId, definitionKey)
-            .orElseGet(
-                () ->
-                    engineDefinitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
-                        identityId, identityType, definitionKey, tenantIds));
-      case DECISION:
-        return engineDefinitionAuthorizationService.isAuthorizedToSeeDecisionDefinition(
-            identityId, identityType, definitionKey, tenantIds);
-      default:
-        throw new IllegalArgumentException("Unsupported definition type: " + definitionType);
     }
   }
 

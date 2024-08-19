@@ -7,15 +7,20 @@
  */
 package io.camunda.optimize.service.db.es.report.command.exec.builder;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class ReportCmdExecutionPlanBuilder {
 
   private final ProcessExecutionPlanBuilder processExecutionPlanBuilder;
   private final DecisionExecutionPlanBuilder decisionExecutionPlanBuilder;
+
+  public ReportCmdExecutionPlanBuilder(
+      final ProcessExecutionPlanBuilder processExecutionPlanBuilder,
+      final DecisionExecutionPlanBuilder decisionExecutionPlanBuilder) {
+    this.processExecutionPlanBuilder = processExecutionPlanBuilder;
+    this.decisionExecutionPlanBuilder = decisionExecutionPlanBuilder;
+  }
 
   public DetermineCommandTypeBuilder createExecutionPlan() {
     return new DetermineCommandTypeBuilder();

@@ -50,7 +50,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -68,13 +67,19 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-@RequiredArgsConstructor
 public class ProcessDistributedByVariable extends ProcessDistributedByPart {
 
   private static final String PARENT_FILTER_AGGREGATION = "matchAllFilter";
 
   private final DateAggregationService dateAggregationService;
   private final VariableAggregationService variableAggregationService;
+
+  public ProcessDistributedByVariable(
+      final DateAggregationService dateAggregationService,
+      final VariableAggregationService variableAggregationService) {
+    this.dateAggregationService = dateAggregationService;
+    this.variableAggregationService = variableAggregationService;
+  }
 
   @Override
   public boolean isKeyOfNumericType(final ExecutionContext<ProcessReportDataDto> context) {
@@ -142,17 +147,6 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
                             .subAggregation(reverseNested(FILTERED_INSTANCE_COUNT_AGGREGATION)))));
   }
 
-  private AggregationBuilder createUndefinedOrNullVariableAggregation(
-      final ExecutionContext<ProcessReportDataDto> context) {
-    final FilterAggregationBuilder filterAggregationBuilder =
-        filter(
-            MISSING_VARIABLES_AGGREGATION,
-            createFilterForUndefinedOrNullQueryBuilder(
-                getVariableName(context), getVariableType(context)));
-    viewPart.createAggregations(context).forEach(filterAggregationBuilder::subAggregation);
-    return filterAggregationBuilder;
-  }
-
   @Override
   public List<CompositeCommandResult.DistributedByResult> retrieveResult(
       final SearchResponse response,
@@ -176,13 +170,14 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
       variableTerms = filteredParentAgg.getAggregations().get(VARIABLE_HISTOGRAM_AGGREGATION);
     }
 
-    Map<String, Aggregations> bucketAggregations =
+    final Map<String, Aggregations> bucketAggregations =
         variableAggregationService.retrieveResultBucketMap(
             filteredParentAgg, variableTerms, getVariableType(context), context.getTimezone());
 
-    List<CompositeCommandResult.DistributedByResult> distributedByResults = new ArrayList<>();
+    final List<CompositeCommandResult.DistributedByResult> distributedByResults = new ArrayList<>();
 
-    for (Map.Entry<String, Aggregations> keyToAggregationEntry : bucketAggregations.entrySet()) {
+    for (final Map.Entry<String, Aggregations> keyToAggregationEntry :
+        bucketAggregations.entrySet()) {
       final CompositeCommandResult.ViewResult viewResult =
           viewPart.retrieveResult(
               response,
@@ -197,12 +192,6 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
     addEmptyMissingDistributedByResults(distributedByResults, context);
 
     return distributedByResults;
-  }
-
-  @Override
-  protected void addAdjustmentsForCommandKeyGeneration(
-      final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.setDistributedBy(new VariableDistributedByDto());
   }
 
   @Override
@@ -255,8 +244,25 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
     context.setAllDistributedByKeys(allDistributedByKeys);
   }
 
+  @Override
+  protected void addAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto dataForCommandKey) {
+    dataForCommandKey.setDistributedBy(new VariableDistributedByDto());
+  }
+
+  private AggregationBuilder createUndefinedOrNullVariableAggregation(
+      final ExecutionContext<ProcessReportDataDto> context) {
+    final FilterAggregationBuilder filterAggregationBuilder =
+        filter(
+            MISSING_VARIABLES_AGGREGATION,
+            createFilterForUndefinedOrNullQueryBuilder(
+                getVariableName(context), getVariableType(context)));
+    viewPart.createAggregations(context).forEach(filterAggregationBuilder::subAggregation);
+    return filterAggregationBuilder;
+  }
+
   private void addEmptyMissingDistributedByResults(
-      List<CompositeCommandResult.DistributedByResult> distributedByResults,
+      final List<CompositeCommandResult.DistributedByResult> distributedByResults,
       final ExecutionContext<ProcessReportDataDto> context) {
     context.getAllDistributedByKeysAndLabels().entrySet().stream()
         .filter(

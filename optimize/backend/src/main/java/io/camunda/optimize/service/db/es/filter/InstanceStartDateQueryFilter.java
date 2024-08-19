@@ -12,13 +12,13 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.S
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import io.camunda.optimize.service.db.es.filter.util.DateFilterQueryUtil;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class InstanceStartDateQueryFilter implements QueryFilter<DateFilterDataDto<?>> {
+
+  public InstanceStartDateQueryFilter() {}
 
   @Override
   public void addFilters(

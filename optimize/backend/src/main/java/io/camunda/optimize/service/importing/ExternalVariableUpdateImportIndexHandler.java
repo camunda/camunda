@@ -10,12 +10,10 @@ package io.camunda.optimize.service.importing;
 import static io.camunda.optimize.service.db.DatabaseConstants.ENGINE_ALIAS_OPTIMIZE;
 
 import io.camunda.optimize.dto.optimize.datasource.IngestedDataSourceDto;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ExternalVariableUpdateImportIndexHandler
@@ -23,6 +21,8 @@ public class ExternalVariableUpdateImportIndexHandler
 
   public static final String EXTERNAL_VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID =
       "externalVariableUpdateImportIndex";
+
+  public ExternalVariableUpdateImportIndexHandler() {}
 
   @Override
   public String getEngineAlias() {

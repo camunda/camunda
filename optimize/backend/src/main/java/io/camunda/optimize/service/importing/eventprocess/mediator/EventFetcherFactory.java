@@ -17,15 +17,20 @@ import io.camunda.optimize.service.events.ExternalEventService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.List;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class EventFetcherFactory {
 
   private final ExternalEventService externalEventService;
   private final ExternalEventReader externalEventReader;
+
+  public EventFetcherFactory(
+      final ExternalEventService externalEventService,
+      final ExternalEventReader externalEventReader) {
+    this.externalEventService = externalEventService;
+    this.externalEventReader = externalEventReader;
+  }
 
   public EventFetcherService<?> createEventFetcherForEventImportSource(
       final EventImportSourceDto eventImportSourceDto) {

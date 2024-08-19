@@ -17,14 +17,15 @@ import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import io.camunda.optimize.service.db.es.report.MinMaxStatDto;
 import io.camunda.optimize.service.db.es.report.command.util.VariableAggregationContext;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.HistogramAggregationBuilder;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class NumberVariableAggregationService {
+
+  public NumberVariableAggregationService() {}
+
   public Optional<AggregationBuilder> createNumberVariableAggregation(
       final VariableAggregationContext context) {
     if (context.getVariableRangeMinMaxStats().isEmpty()) {

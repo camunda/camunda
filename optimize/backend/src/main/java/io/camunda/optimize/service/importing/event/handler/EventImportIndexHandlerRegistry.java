@@ -7,15 +7,17 @@
  */
 package io.camunda.optimize.service.importing.event.handler;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class EventImportIndexHandlerRegistry {
 
   private final BeanFactory beanFactory;
+
+  public EventImportIndexHandlerRegistry(final BeanFactory beanFactory) {
+    this.beanFactory = beanFactory;
+  }
 
   public ExternalEventTraceImportIndexHandler getExternalEventTraceImportIndexHandler() {
     return beanFactory.getBean(ExternalEventTraceImportIndexHandler.class);

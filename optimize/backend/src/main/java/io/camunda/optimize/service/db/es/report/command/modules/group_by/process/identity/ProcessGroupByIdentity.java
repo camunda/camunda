@@ -38,7 +38,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -51,7 +50,6 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
-@RequiredArgsConstructor
 public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
 
   private static final String GROUP_BY_IDENTITY_TERMS_AGGREGATION = "identities";
@@ -66,6 +64,17 @@ public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
   protected final LocalizationService localizationService;
   protected final DefinitionService definitionService;
   private final AssigneeCandidateGroupService assigneeCandidateGroupService;
+
+  public ProcessGroupByIdentity(
+      final ConfigurationService configurationService,
+      final LocalizationService localizationService,
+      final DefinitionService definitionService,
+      final AssigneeCandidateGroupService assigneeCandidateGroupService) {
+    this.configurationService = configurationService;
+    this.localizationService = localizationService;
+    this.definitionService = definitionService;
+    this.assigneeCandidateGroupService = assigneeCandidateGroupService;
+  }
 
   @Override
   public List<AggregationBuilder> createAggregation(

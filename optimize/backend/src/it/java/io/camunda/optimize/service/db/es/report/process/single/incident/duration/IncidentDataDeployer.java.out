@@ -47,7 +47,6 @@
 //     TWO_PARALLEL_TASKS
 //   }
 //
-//   @RequiredArgsConstructor
 //   public static class AddProcessBuilder {
 //
 //     final IncidentDataDeployer incidentDataDeployer;
@@ -187,7 +186,6 @@
 //     }
 //   }
 //
-//   @RequiredArgsConstructor
 //   private abstract static class IncidentCreationHandler {
 //
 //     final IncidentClient incidentClient;

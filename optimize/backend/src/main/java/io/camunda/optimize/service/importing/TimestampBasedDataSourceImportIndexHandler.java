@@ -13,12 +13,10 @@ import io.camunda.optimize.service.db.reader.importindex.TimestampBasedImportInd
 import jakarta.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
-@RequiredArgsConstructor
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class TimestampBasedDataSourceImportIndexHandler<T extends DataSourceDto>
     extends TimestampBasedImportIndexHandler<TimestampBasedImportIndexDto> {
@@ -28,9 +26,11 @@ public abstract class TimestampBasedDataSourceImportIndexHandler<T extends DataS
   protected OffsetDateTime lastImportExecutionTimestamp = BEGINNING_OF_TIME;
   private OffsetDateTime persistedTimestampOfLastEntity = BEGINNING_OF_TIME;
 
+  public TimestampBasedDataSourceImportIndexHandler() {}
+
   @Override
   public TimestampBasedImportIndexDto getIndexStateDto() {
-    TimestampBasedImportIndexDto indexToStore = new TimestampBasedImportIndexDto();
+    final TimestampBasedImportIndexDto indexToStore = new TimestampBasedImportIndexDto();
     indexToStore.setLastImportExecutionTimestamp(lastImportExecutionTimestamp);
     indexToStore.setTimestampOfLastEntity(persistedTimestampOfLastEntity);
     indexToStore.setDataSource(getDataSource());
@@ -43,7 +43,7 @@ public abstract class TimestampBasedDataSourceImportIndexHandler<T extends DataS
     final Optional<TimestampBasedImportIndexDto> dto =
         importIndexReader.getImportIndex(getDatabaseDocID(), getDataSource());
     if (dto.isPresent()) {
-      TimestampBasedImportIndexDto loadedImportIndex = dto.get();
+      final TimestampBasedImportIndexDto loadedImportIndex = dto.get();
       updateLastPersistedEntityTimestamp(loadedImportIndex.getTimestampOfLastEntity());
       updatePendingLastEntityTimestamp(loadedImportIndex.getTimestampOfLastEntity());
       updateLastImportExecutionTimestamp(loadedImportIndex.getLastImportExecutionTimestamp());
@@ -56,11 +56,11 @@ public abstract class TimestampBasedDataSourceImportIndexHandler<T extends DataS
 
   @Override
   protected void updateLastPersistedEntityTimestamp(final OffsetDateTime timestamp) {
-    this.persistedTimestampOfLastEntity = timestamp;
+    persistedTimestampOfLastEntity = timestamp;
   }
 
   @Override
   protected void updateLastImportExecutionTimestamp(final OffsetDateTime timestamp) {
-    this.lastImportExecutionTimestamp = timestamp;
+    lastImportExecutionTimestamp = timestamp;
   }
 }

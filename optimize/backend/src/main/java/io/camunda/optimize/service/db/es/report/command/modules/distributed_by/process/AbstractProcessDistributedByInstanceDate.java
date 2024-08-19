@@ -27,17 +27,24 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
-@RequiredArgsConstructor
 public abstract class AbstractProcessDistributedByInstanceDate extends ProcessDistributedByPart {
 
   protected final DateAggregationService dateAggregationService;
   protected final MinMaxStatsService minMaxStatsService;
   protected final ProcessQueryFilterEnhancer queryFilterEnhancer;
+
+  public AbstractProcessDistributedByInstanceDate(
+      final DateAggregationService dateAggregationService,
+      final MinMaxStatsService minMaxStatsService,
+      final ProcessQueryFilterEnhancer queryFilterEnhancer) {
+    this.dateAggregationService = dateAggregationService;
+    this.minMaxStatsService = minMaxStatsService;
+    this.queryFilterEnhancer = queryFilterEnhancer;
+  }
 
   @Override
   public List<AggregationBuilder> createAggregations(
@@ -78,7 +85,7 @@ public abstract class AbstractProcessDistributedByInstanceDate extends ProcessDi
 
     final Optional<Aggregations> unwrappedLimitedAggregations =
         unwrapFilterLimitedAggregations(aggregations);
-    Map<String, Aggregations> keyToAggregationMap;
+    final Map<String, Aggregations> keyToAggregationMap;
     if (unwrappedLimitedAggregations.isPresent()) {
       keyToAggregationMap =
           dateAggregationService.mapDateAggregationsToKeyAggregationMap(
@@ -87,8 +94,9 @@ public abstract class AbstractProcessDistributedByInstanceDate extends ProcessDi
       return Collections.emptyList();
     }
 
-    List<CompositeCommandResult.DistributedByResult> distributedByResults = new ArrayList<>();
-    for (Map.Entry<String, Aggregations> keyToAggregationEntry : keyToAggregationMap.entrySet()) {
+    final List<CompositeCommandResult.DistributedByResult> distributedByResults = new ArrayList<>();
+    for (final Map.Entry<String, Aggregations> keyToAggregationEntry :
+        keyToAggregationMap.entrySet()) {
       final CompositeCommandResult.ViewResult viewResult =
           viewPart.retrieveResult(response, keyToAggregationEntry.getValue(), context);
       distributedByResults.add(

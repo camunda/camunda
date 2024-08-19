@@ -18,7 +18,6 @@ import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.report.command.exec.ExecutionContext;
 import io.camunda.optimize.service.db.es.report.command.modules.group_by.process.ProcessGroupByPart;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
@@ -28,13 +27,17 @@ import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 
-@RequiredArgsConstructor
 public abstract class AbstractGroupByUserTask extends ProcessGroupByPart {
+
   private static final String USER_TASKS_AGGREGATION = "userTasks";
   private static final String FLOW_NODE_AGGREGATION = "flowNodes";
   private static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
 
   protected final DefinitionService definitionService;
+
+  public AbstractGroupByUserTask(final DefinitionService definitionService) {
+    this.definitionService = definitionService;
+  }
 
   protected NestedAggregationBuilder createFilteredUserTaskAggregation(
       final ExecutionContext<ProcessReportDataDto> context,

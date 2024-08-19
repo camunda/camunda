@@ -16,17 +16,24 @@ import io.camunda.optimize.dto.optimize.query.report.single.decision.filter.Outp
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import java.util.List;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class DecisionQueryFilterEnhancer implements QueryFilterEnhancer<DecisionFilterDto<?>> {
 
   private final EvaluationDateQueryFilter evaluationDateQueryFilter;
   private final DecisionInputVariableQueryFilter decisionInputVariableQueryFilter;
   private final DecisionOutputVariableQueryFilter decisionOutputVariableQueryFilter;
+
+  public DecisionQueryFilterEnhancer(
+      final EvaluationDateQueryFilter evaluationDateQueryFilter,
+      final DecisionInputVariableQueryFilter decisionInputVariableQueryFilter,
+      final DecisionOutputVariableQueryFilter decisionOutputVariableQueryFilter) {
+    this.evaluationDateQueryFilter = evaluationDateQueryFilter;
+    this.decisionInputVariableQueryFilter = decisionInputVariableQueryFilter;
+    this.decisionOutputVariableQueryFilter = decisionOutputVariableQueryFilter;
+  }
 
   @Override
   public void addFilterToQuery(

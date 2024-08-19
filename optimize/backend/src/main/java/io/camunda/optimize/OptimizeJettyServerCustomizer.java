@@ -15,7 +15,6 @@ import static io.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.optimize.jetty.CustomErrorHandler;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.rewrite.handler.HeaderPatternRule;
 import org.eclipse.jetty.rewrite.handler.RedirectPatternRule;
@@ -29,12 +28,16 @@ import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class OptimizeJettyServerCustomizer
     implements WebServerFactoryCustomizer<JettyServletWebServerFactory> {
+
   public static final String EXTERNAL_SUB_PATH = "/external";
   private static final String SUB_PATH_PATTERN_TEMPLATE = "^%s(/?)(.*)$";
   private final ConfigurationService configurationService;
+
+  public OptimizeJettyServerCustomizer(final ConfigurationService configurationService) {
+    this.configurationService = configurationService;
+  }
 
   @Override
   public void customize(final JettyServletWebServerFactory factory) {

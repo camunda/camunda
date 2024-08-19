@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -41,13 +40,40 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
-@RequiredArgsConstructor
 public abstract class AbstractProcessGroupByProcessInstanceDate extends ProcessGroupByPart {
 
   protected final ConfigurationService configurationService;
   protected final DateAggregationService dateAggregationService;
   protected final MinMaxStatsService minMaxStatsService;
   protected final ProcessQueryFilterEnhancer queryFilterEnhancer;
+
+  public AbstractProcessGroupByProcessInstanceDate(
+      final ConfigurationService configurationService,
+      final DateAggregationService dateAggregationService,
+      final MinMaxStatsService minMaxStatsService,
+      final ProcessQueryFilterEnhancer queryFilterEnhancer) {
+    this.configurationService = configurationService;
+    this.dateAggregationService = dateAggregationService;
+    this.minMaxStatsService = minMaxStatsService;
+    this.queryFilterEnhancer = queryFilterEnhancer;
+  }
+
+  @Override
+  public void adjustSearchRequest(
+      final SearchRequest searchRequest,
+      final BoolQueryBuilder baseQuery,
+      final ExecutionContext<ProcessReportDataDto> context) {
+    super.adjustSearchRequest(searchRequest, baseQuery, context);
+    baseQuery.must(existsQuery(getDateField()));
+  }
+
+  @Override
+  public List<AggregationBuilder> createAggregation(
+      final SearchSourceBuilder searchSourceBuilder,
+      final ExecutionContext<ProcessReportDataDto> context) {
+    final AggregateByDateUnit unit = getGroupByDateUnit(context.getReportData());
+    return createAggregation(searchSourceBuilder, context, unit);
+  }
 
   @Override
   public Optional<MinMaxStatDto> getMinMaxStats(
@@ -63,25 +89,35 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends ProcessG
   }
 
   @Override
-  public void adjustSearchRequest(
-      final SearchRequest searchRequest,
-      final BoolQueryBuilder baseQuery,
+  public void addQueryResult(
+      final CompositeCommandResult result,
+      final SearchResponse response,
       final ExecutionContext<ProcessReportDataDto> context) {
-    super.adjustSearchRequest(searchRequest, baseQuery, context);
-    baseQuery.must(existsQuery(getDateField()));
+    result.setGroups(processAggregations(response, response.getAggregations(), context));
+    result.setGroupBySorting(
+        context
+            .getReportConfiguration()
+            .getSorting()
+            .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC)));
+    result.setGroupByKeyOfNumericType(false);
+    result.setDistributedByKeyOfNumericType(distributedByPart.isKeyOfNumericType(context));
+    final ProcessReportDataDto reportData = context.getReportData();
+    // We sort by label for management report because keys change on every request
+    if (reportData.isManagementReport()) {
+      result.setDistributedBySorting(
+          new ReportSortingDto(ReportSortingDto.SORT_BY_LABEL, SortOrder.ASC));
+    }
+  }
+
+  @Override
+  protected void addGroupByAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto reportData) {
+    reportData.setGroupBy(getGroupByType());
   }
 
   protected abstract ProcessGroupByDto<DateGroupByValueDto> getGroupByType();
 
   public abstract String getDateField();
-
-  @Override
-  public List<AggregationBuilder> createAggregation(
-      final SearchSourceBuilder searchSourceBuilder,
-      final ExecutionContext<ProcessReportDataDto> context) {
-    final AggregateByDateUnit unit = getGroupByDateUnit(context.getReportData());
-    return createAggregation(searchSourceBuilder, context, unit);
-  }
 
   public List<AggregationBuilder> createAggregation(
       final SearchSourceBuilder searchSourceBuilder,
@@ -118,27 +154,6 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends ProcessG
         context, baseQuery, getIndexNames(context), getDateField());
   }
 
-  @Override
-  public void addQueryResult(
-      final CompositeCommandResult result,
-      final SearchResponse response,
-      final ExecutionContext<ProcessReportDataDto> context) {
-    result.setGroups(processAggregations(response, response.getAggregations(), context));
-    result.setGroupBySorting(
-        context
-            .getReportConfiguration()
-            .getSorting()
-            .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC)));
-    result.setGroupByKeyOfNumericType(false);
-    result.setDistributedByKeyOfNumericType(distributedByPart.isKeyOfNumericType(context));
-    ProcessReportDataDto reportData = context.getReportData();
-    // We sort by label for management report because keys change on every request
-    if (reportData.isManagementReport()) {
-      result.setDistributedBySorting(
-          new ReportSortingDto(ReportSortingDto.SORT_BY_LABEL, SortOrder.ASC));
-    }
-  }
-
   private List<GroupByResult> processAggregations(
       final SearchResponse response,
       final Aggregations aggregations,
@@ -151,7 +166,7 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends ProcessG
     final Optional<Aggregations> unwrappedLimitedAggregations =
         unwrapFilterLimitedAggregations(aggregations);
     if (unwrappedLimitedAggregations.isPresent()) {
-      Map<String, Aggregations> keyToAggregationMap =
+      final Map<String, Aggregations> keyToAggregationMap =
           dateAggregationService.mapDateAggregationsToKeyAggregationMap(
               unwrappedLimitedAggregations.get(), context.getTimezone());
       // enrich context with complete set of distributed by keys
@@ -161,12 +176,6 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends ProcessG
     } else {
       return Collections.emptyList();
     }
-  }
-
-  @Override
-  protected void addGroupByAdjustmentsForCommandKeyGeneration(
-      final ProcessReportDataDto reportData) {
-    reportData.setGroupBy(getGroupByType());
   }
 
   private List<GroupByResult> mapKeyToAggMapToGroupByResults(

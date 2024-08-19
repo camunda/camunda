@@ -46,7 +46,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -64,7 +63,6 @@ import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNestedAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
-@RequiredArgsConstructor
 public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto>
     extends GroupByPart<Data> {
 
@@ -72,6 +70,13 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto>
 
   private final VariableAggregationService variableAggregationService;
   private final DefinitionService definitionService;
+
+  public AbstractGroupByVariable(
+      final VariableAggregationService variableAggregationService,
+      final DefinitionService definitionService) {
+    this.variableAggregationService = variableAggregationService;
+    this.definitionService = definitionService;
+  }
 
   protected abstract String getVariableName(final ExecutionContext<Data> context);
 
@@ -87,24 +92,6 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto>
 
   protected abstract BoolQueryBuilder getVariableUndefinedOrNullQuery(
       final ExecutionContext<Data> context);
-
-  @Override
-  public Optional<MinMaxStatDto> getMinMaxStats(
-      final ExecutionContext<Data> context, final BoolQueryBuilder baseQuery) {
-    if (isGroupedByNumberVariable(getVariableType(context))
-        || VariableType.DATE.equals(getVariableType(context))) {
-      return Optional.of(
-          variableAggregationService.getVariableMinMaxStats(
-              getVariableType(context),
-              getVariableName(context),
-              getVariablePath(),
-              getNestedVariableNameFieldLabel(),
-              getNestedVariableValueFieldLabel(getVariableType(context)),
-              getIndexNames(context),
-              baseQuery));
-    }
-    return Optional.empty();
-  }
 
   @Override
   public List<AggregationBuilder> createAggregation(
@@ -170,6 +157,80 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto>
     return Arrays.asList(variableAggregation, undefinedOrNullVariableAggregation);
   }
 
+  @Override
+  public Optional<MinMaxStatDto> getMinMaxStats(
+      final ExecutionContext<Data> context, final BoolQueryBuilder baseQuery) {
+    if (isGroupedByNumberVariable(getVariableType(context))
+        || VariableType.DATE.equals(getVariableType(context))) {
+      return Optional.of(
+          variableAggregationService.getVariableMinMaxStats(
+              getVariableType(context),
+              getVariableName(context),
+              getVariablePath(),
+              getNestedVariableNameFieldLabel(),
+              getNestedVariableValueFieldLabel(getVariableType(context)),
+              getIndexNames(context),
+              baseQuery));
+    }
+    return Optional.empty();
+  }
+
+  @Override
+  public void addQueryResult(
+      final CompositeCommandResult compositeCommandResult,
+      final SearchResponse response,
+      final ExecutionContext<Data> context) {
+    if (response.getAggregations() == null) {
+      // aggregations are null if there are no instances in the report and it is grouped by date
+      // variable
+      return;
+    }
+
+    final Nested nested = response.getAggregations().get(NESTED_VARIABLE_AGGREGATION);
+    final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
+    Filter filteredParentAgg = filteredVariables.getAggregations().get(FILTER_LIMITED_AGGREGATION);
+    if (filteredParentAgg == null) {
+      filteredParentAgg = filteredVariables;
+    }
+    MultiBucketsAggregation variableTerms =
+        filteredParentAgg.getAggregations().get(VARIABLES_AGGREGATION);
+    if (variableTerms == null) {
+      variableTerms = filteredParentAgg.getAggregations().get(VARIABLE_HISTOGRAM_AGGREGATION);
+    }
+
+    final Map<String, Aggregations> bucketAggregations =
+        variableAggregationService.retrieveResultBucketMap(
+            filteredParentAgg, variableTerms, getVariableType(context), context.getTimezone());
+
+    // enrich context with complete set of distributed by keys
+    distributedByPart.enrichContextWithAllExpectedDistributedByKeys(
+        context, filteredParentAgg.getAggregations());
+
+    final List<GroupByResult> groupedData = new ArrayList<>();
+    for (final Map.Entry<String, Aggregations> keyToAggregationEntry :
+        bucketAggregations.entrySet()) {
+      final List<DistributedByResult> distribution =
+          distributedByPart.retrieveResult(
+              response,
+              variableAggregationService.retrieveSubAggregationFromBucketMapEntry(
+                  keyToAggregationEntry),
+              context);
+      groupedData.add(
+          GroupByResult.createGroupByResult(keyToAggregationEntry.getKey(), distribution));
+    }
+
+    addMissingVariableBuckets(groupedData, response, context);
+
+    compositeCommandResult.setGroups(groupedData);
+    if (VariableType.DATE.equals(getVariableType(context))) {
+      compositeCommandResult.setGroupBySorting(
+          new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC));
+    }
+    compositeCommandResult.setGroupByKeyOfNumericType(getSortByKeyIsOfNumericType(context));
+    compositeCommandResult.setDistributedByKeyOfNumericType(
+        distributedByPart.isKeyOfNumericType(context));
+  }
+
   private List<AggregationBuilder> createDistributedBySubAggregations(
       final ExecutionContext<Data> context) {
     if (distributedByPart.isFlownodeReport()) {
@@ -199,61 +260,6 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto>
     return filterAggregationBuilder;
   }
 
-  @Override
-  public void addQueryResult(
-      final CompositeCommandResult compositeCommandResult,
-      final SearchResponse response,
-      final ExecutionContext<Data> context) {
-    if (response.getAggregations() == null) {
-      // aggregations are null if there are no instances in the report and it is grouped by date
-      // variable
-      return;
-    }
-
-    final Nested nested = response.getAggregations().get(NESTED_VARIABLE_AGGREGATION);
-    final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
-    Filter filteredParentAgg = filteredVariables.getAggregations().get(FILTER_LIMITED_AGGREGATION);
-    if (filteredParentAgg == null) {
-      filteredParentAgg = filteredVariables;
-    }
-    MultiBucketsAggregation variableTerms =
-        filteredParentAgg.getAggregations().get(VARIABLES_AGGREGATION);
-    if (variableTerms == null) {
-      variableTerms = filteredParentAgg.getAggregations().get(VARIABLE_HISTOGRAM_AGGREGATION);
-    }
-
-    Map<String, Aggregations> bucketAggregations =
-        variableAggregationService.retrieveResultBucketMap(
-            filteredParentAgg, variableTerms, getVariableType(context), context.getTimezone());
-
-    // enrich context with complete set of distributed by keys
-    distributedByPart.enrichContextWithAllExpectedDistributedByKeys(
-        context, filteredParentAgg.getAggregations());
-
-    final List<GroupByResult> groupedData = new ArrayList<>();
-    for (Map.Entry<String, Aggregations> keyToAggregationEntry : bucketAggregations.entrySet()) {
-      final List<DistributedByResult> distribution =
-          distributedByPart.retrieveResult(
-              response,
-              variableAggregationService.retrieveSubAggregationFromBucketMapEntry(
-                  keyToAggregationEntry),
-              context);
-      groupedData.add(
-          GroupByResult.createGroupByResult(keyToAggregationEntry.getKey(), distribution));
-    }
-
-    addMissingVariableBuckets(groupedData, response, context);
-
-    compositeCommandResult.setGroups(groupedData);
-    if (VariableType.DATE.equals(getVariableType(context))) {
-      compositeCommandResult.setGroupBySorting(
-          new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC));
-    }
-    compositeCommandResult.setGroupByKeyOfNumericType(getSortByKeyIsOfNumericType(context));
-    compositeCommandResult.setDistributedByKeyOfNumericType(
-        distributedByPart.isKeyOfNumericType(context));
-  }
-
   private void addMissingVariableBuckets(
       final List<GroupByResult> groupedData,
       final SearchResponse response,
@@ -279,7 +285,8 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto>
     if (nestedFlowNodeAgg == null) {
       return aggregation.getAggregations(); // this is an instance report
     } else {
-      Aggregations flowNodeAggs = nestedFlowNodeAgg.getAggregations(); // this is a flownode report
+      final Aggregations flowNodeAggs =
+          nestedFlowNodeAgg.getAggregations(); // this is a flownode report
       final ParsedFilter filteredAgg = flowNodeAggs.get(FILTERED_FLOW_NODE_AGGREGATION);
       return filteredAgg.getAggregations();
     }

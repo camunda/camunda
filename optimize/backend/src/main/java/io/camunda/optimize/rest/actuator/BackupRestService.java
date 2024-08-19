@@ -28,7 +28,6 @@ import jakarta.ws.rs.NotFoundException;
 import jakarta.xml.bind.ValidationException;
 import java.util.List;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.http.HttpStatus;
@@ -45,13 +44,19 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-@RequiredArgsConstructor
 @Component
 @RestControllerEndpoint(id = "backups")
 @Conditional(CamundaCloudCondition.class)
 public class BackupRestService {
+
   private final BackupService backupService;
   private final LocalizationService localizationService;
+
+  public BackupRestService(
+      final BackupService backupService, final LocalizationService localizationService) {
+    this.backupService = backupService;
+    this.localizationService = localizationService;
+  }
 
   @PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE})
   public ResponseEntity<String> takeBackup(
@@ -144,7 +149,7 @@ public class BackupRestService {
         .body(getErrorResponseDto(exception));
   }
 
-  private ErrorResponseDto getErrorResponseDto(Throwable e) {
+  private ErrorResponseDto getErrorResponseDto(final Throwable e) {
     final Class<?> errorClass = e.getClass();
     final String errorCode;
 

@@ -22,11 +22,9 @@ import io.camunda.optimize.service.db.es.report.command.modules.view.process.Pro
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import java.util.List;
 import java.util.function.Function;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class ProcessExecutionPlanBuilder {
 
@@ -35,13 +33,24 @@ public class ProcessExecutionPlanBuilder {
   private final ProcessQueryFilterEnhancer processQueryFilterEnhancer;
   private final ProcessDefinitionReader processDefinitionReader;
 
+  public ProcessExecutionPlanBuilder(
+      final ApplicationContext context,
+      final DatabaseClient databaseClient,
+      final ProcessQueryFilterEnhancer processQueryFilterEnhancer,
+      final ProcessDefinitionReader processDefinitionReader) {
+    this.context = context;
+    this.databaseClient = databaseClient;
+    this.processQueryFilterEnhancer = processQueryFilterEnhancer;
+    this.processDefinitionReader = processDefinitionReader;
+  }
+
   AddViewPartBuilder createExecutionPlan() {
     return new AddViewPartBuilder();
   }
 
   public class AddViewPartBuilder {
 
-    public AddGroupByBuilder view(Class<? extends ProcessViewPart> viewPartClass) {
+    public AddGroupByBuilder view(final Class<? extends ProcessViewPart> viewPartClass) {
       return new AddGroupByBuilder(viewPartClass);
     }
   }
@@ -55,7 +64,7 @@ public class ProcessExecutionPlanBuilder {
     }
 
     public AddDistributedByBuilder groupBy(
-        Class<? extends GroupByPart<ProcessReportDataDto>> groupByPartClass) {
+        final Class<? extends GroupByPart<ProcessReportDataDto>> groupByPartClass) {
       return new AddDistributedByBuilder(viewPartClass, groupByPartClass);
     }
   }
@@ -73,7 +82,7 @@ public class ProcessExecutionPlanBuilder {
     }
 
     public ReportResultTypeBuilder distributedBy(
-        Class<? extends ProcessDistributedByPart> distributedByPartClass) {
+        final Class<? extends ProcessDistributedByPart> distributedByPartClass) {
       return new ReportResultTypeBuilder(viewPartClass, groupByPartClass, distributedByPartClass);
     }
   }
@@ -145,10 +154,9 @@ public class ProcessExecutionPlanBuilder {
     }
 
     public ProcessReportCmdExecutionPlan<T> build() {
-      final ProcessViewPart viewPart = context.getBean(this.viewPartClass);
-      final GroupByPart<ProcessReportDataDto> groupByPart = context.getBean(this.groupByPartClass);
-      final ProcessDistributedByPart distributedByPart =
-          context.getBean(this.distributedByPartClass);
+      final ProcessViewPart viewPart = context.getBean(viewPartClass);
+      final GroupByPart<ProcessReportDataDto> groupByPart = context.getBean(groupByPartClass);
+      final ProcessDistributedByPart distributedByPart = context.getBean(distributedByPartClass);
       return new ProcessReportCmdExecutionPlan<>(
           viewPart,
           groupByPart,

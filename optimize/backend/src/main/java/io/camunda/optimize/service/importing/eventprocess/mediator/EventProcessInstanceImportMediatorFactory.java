@@ -23,12 +23,10 @@ import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class EventProcessInstanceImportMediatorFactory {
 
   private final BeanFactory beanFactory;
@@ -38,6 +36,19 @@ public class EventProcessInstanceImportMediatorFactory {
   private final EventProcessInstanceWriter eventProcessInstanceWriter;
   private final EventFetcherFactory eventFetcherFactory;
   private final DatabaseClient databaseClient;
+
+  public EventProcessInstanceImportMediatorFactory(
+      final BeanFactory beanFactory,
+      final ConfigurationService configurationService,
+      final EventProcessInstanceWriter eventProcessInstanceWriter,
+      final EventFetcherFactory eventFetcherFactory,
+      final DatabaseClient databaseClient) {
+    this.beanFactory = beanFactory;
+    this.configurationService = configurationService;
+    this.eventProcessInstanceWriter = eventProcessInstanceWriter;
+    this.eventFetcherFactory = eventFetcherFactory;
+    this.databaseClient = databaseClient;
+  }
 
   @SuppressWarnings(UNCHECKED_CAST)
   public <T extends EventProcessEventDto>

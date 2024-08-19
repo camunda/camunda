@@ -25,7 +25,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.RequiredArgsConstructor;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
@@ -37,7 +36,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessIncidentGroupByNone extends ProcessGroupByPart {
@@ -46,6 +44,10 @@ public class ProcessIncidentGroupByNone extends ProcessGroupByPart {
   private static final String FILTERED_INCIDENT_AGGREGATION = "filteredIncidentAggregation";
 
   private final DefinitionService definitionService;
+
+  public ProcessIncidentGroupByNone(final DefinitionService definitionService) {
+    this.definitionService = definitionService;
+  }
 
   @Override
   public List<AggregationBuilder> createAggregation(
@@ -76,9 +78,15 @@ public class ProcessIncidentGroupByNone extends ProcessGroupByPart {
               final List<DistributedByResult> distributions =
                   distributedByPart.retrieveResult(
                       response, nestedIncidents.getAggregations(), context);
-              GroupByResult groupByResult = GroupByResult.createGroupByNone(distributions);
+              final GroupByResult groupByResult = GroupByResult.createGroupByNone(distributions);
               compositeCommandResult.setGroup(groupByResult);
             });
+  }
+
+  @Override
+  protected void addGroupByAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto reportData) {
+    reportData.setGroupBy(new NoneGroupByDto());
   }
 
   private Optional<Filter> getNestedIncidentsAggregation(final SearchResponse response) {
@@ -90,11 +98,5 @@ public class ProcessIncidentGroupByNone extends ProcessGroupByPart {
   private Optional<Nested> getFilteredIncidentsAggregation(final SearchResponse response) {
     return Optional.ofNullable(response.getAggregations())
         .map(aggs -> aggs.get(NESTED_INCIDENT_AGGREGATION));
-  }
-
-  @Override
-  protected void addGroupByAdjustmentsForCommandKeyGeneration(
-      final ProcessReportDataDto reportData) {
-    reportData.setGroupBy(new NoneGroupByDto());
   }
 }

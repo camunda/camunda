@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
@@ -42,10 +41,10 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class GroupByIncidentFlowNode extends ProcessGroupByPart {
+
   private static final String NESTED_INCIDENT_AGGREGATION = "nestedIncidentAggregation";
   private static final String GROUPED_BY_FLOW_NODE_ID_AGGREGATION =
       "groupedByFlowNodeIdAggregation";
@@ -53,6 +52,12 @@ public class GroupByIncidentFlowNode extends ProcessGroupByPart {
 
   private final ConfigurationService configurationService;
   private final DefinitionService definitionService;
+
+  public GroupByIncidentFlowNode(
+      final ConfigurationService configurationService, final DefinitionService definitionService) {
+    this.configurationService = configurationService;
+    this.definitionService = definitionService;
+  }
 
   @Override
   public List<AggregationBuilder> createAggregation(
@@ -84,12 +89,12 @@ public class GroupByIncidentFlowNode extends ProcessGroupByPart {
 
     final Map<String, String> flowNodeNames = getFlowNodeNames(context.getReportData());
     final List<CompositeCommandResult.GroupByResult> groupedData = new ArrayList<>();
-    for (Terms.Bucket flowNodeBucket : groupedByFlowNodeId.getBuckets()) {
+    for (final Terms.Bucket flowNodeBucket : groupedByFlowNodeId.getBuckets()) {
       final String flowNodeKey = flowNodeBucket.getKeyAsString();
       if (flowNodeNames.containsKey(flowNodeKey)) {
         final List<CompositeCommandResult.DistributedByResult> singleResult =
             distributedByPart.retrieveResult(response, flowNodeBucket.getAggregations(), context);
-        String label = flowNodeNames.get(flowNodeKey);
+        final String label = flowNodeNames.get(flowNodeKey);
         groupedData.add(
             CompositeCommandResult.GroupByResult.createGroupByResult(
                 flowNodeKey, label, singleResult));
@@ -98,6 +103,12 @@ public class GroupByIncidentFlowNode extends ProcessGroupByPart {
     }
     addMissingGroupByIncidentKeys(flowNodeNames, groupedData, context);
     compositeCommandResult.setGroups(groupedData);
+  }
+
+  @Override
+  protected void addGroupByAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto reportData) {
+    reportData.setGroupBy(new FlowNodesGroupByDto());
   }
 
   private void addMissingGroupByIncidentKeys(
@@ -116,7 +127,7 @@ public class GroupByIncidentFlowNode extends ProcessGroupByPart {
           .keySet()
           .forEach(
               flowNodeKey -> {
-                CompositeCommandResult.GroupByResult emptyResult =
+                final CompositeCommandResult.GroupByResult emptyResult =
                     CompositeCommandResult.GroupByResult.createGroupByResult(
                         flowNodeKey,
                         flowNodeNames.get(flowNodeKey),
@@ -140,11 +151,5 @@ public class GroupByIncidentFlowNode extends ProcessGroupByPart {
             .map(Optional::get)
             .map(ProcessDefinitionOptimizeDto.class::cast)
             .collect(Collectors.toList()));
-  }
-
-  @Override
-  protected void addGroupByAdjustmentsForCommandKeyGeneration(
-      final ProcessReportDataDto reportData) {
-    reportData.setGroupBy(new FlowNodesGroupByDto());
   }
 }

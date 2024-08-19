@@ -17,7 +17,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Conditional;
@@ -25,9 +24,13 @@ import org.springframework.stereotype.Component;
 
 @Conditional(CCSMCondition.class)
 @Component
-@RequiredArgsConstructor
 public class CCSMAlertRecipientValidator implements AlertRecipientValidator {
+
   private final CCSMIdentityService identityService;
+
+  public CCSMAlertRecipientValidator(final CCSMIdentityService identityService) {
+    this.identityService = identityService;
+  }
 
   @Override
   public void validateAlertRecipientEmailAddresses(final List<String> emails) {

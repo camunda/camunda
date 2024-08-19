@@ -19,7 +19,6 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -30,14 +29,16 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionGroupByMatchedRule extends DecisionGroupByPart {
 
+  private static final String MATCHED_RULES_AGGREGATION = "matchedRules";
   private final ConfigurationService configurationService;
 
-  private static final String MATCHED_RULES_AGGREGATION = "matchedRules";
+  public DecisionGroupByMatchedRule(final ConfigurationService configurationService) {
+    this.configurationService = configurationService;
+  }
 
   @Override
   public List<AggregationBuilder> createAggregation(
@@ -59,7 +60,7 @@ public class DecisionGroupByMatchedRule extends DecisionGroupByPart {
 
     final Terms matchedRuleTerms = response.getAggregations().get(MATCHED_RULES_AGGREGATION);
     final List<GroupByResult> matchedRules = new ArrayList<>();
-    for (Terms.Bucket matchedRuleBucket : matchedRuleTerms.getBuckets()) {
+    for (final Terms.Bucket matchedRuleBucket : matchedRuleTerms.getBuckets()) {
       final List<DistributedByResult> distributions =
           distributedByPart.retrieveResult(response, matchedRuleBucket.getAggregations(), context);
       matchedRules.add(

@@ -33,12 +33,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 public class SingleReportEvaluator {
 
@@ -68,6 +66,17 @@ public class SingleReportEvaluator {
             .collect(
                 Collectors.toMap(
                     Command::createCommandKey, c -> applicationContext.getBean(c.getClass())));
+  }
+
+  public SingleReportEvaluator(
+      final ConfigurationService configurationService,
+      final NotSupportedCommand notSupportedCommand,
+      final ApplicationContext applicationContext,
+      final Map<String, Command<?, ReportDefinitionDto<?>>> commandSuppliers) {
+    this.configurationService = configurationService;
+    this.notSupportedCommand = notSupportedCommand;
+    this.applicationContext = applicationContext;
+    this.commandSuppliers = commandSuppliers;
   }
 
   @SuppressWarnings(UNCHECKED_CAST)

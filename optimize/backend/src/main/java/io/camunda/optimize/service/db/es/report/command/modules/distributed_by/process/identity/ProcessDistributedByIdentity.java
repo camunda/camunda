@@ -33,7 +33,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -44,8 +43,8 @@ import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 
-@RequiredArgsConstructor
 public abstract class ProcessDistributedByIdentity extends ProcessDistributedByPart {
+
   public static final String DISTRIBUTE_BY_IDENTITY_MISSING_KEY = "unassignedUserTasks___";
   private static final String DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION = "identity";
   // temporary GROUP_BY_IDENTITY_MISSING_KEY to ensure no overlap between this label and userTask
@@ -56,6 +55,17 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
   private final LocalizationService localizationService;
   private final DefinitionService definitionService;
   private final AssigneeCandidateGroupService assigneeCandidateGroupService;
+
+  public ProcessDistributedByIdentity(
+      final ConfigurationService configurationService,
+      final LocalizationService localizationService,
+      final DefinitionService definitionService,
+      final AssigneeCandidateGroupService assigneeCandidateGroupService) {
+    this.configurationService = configurationService;
+    this.localizationService = localizationService;
+    this.definitionService = definitionService;
+    this.assigneeCandidateGroupService = assigneeCandidateGroupService;
+  }
 
   @Override
   public List<AggregationBuilder> createAggregations(
@@ -84,6 +94,61 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
             .subAggregation(identityTermsAggregation));
   }
 
+  @Override
+  public List<CompositeCommandResult.DistributedByResult> retrieveResult(
+      final SearchResponse response,
+      final Aggregations aggregations,
+      final ExecutionContext<ProcessReportDataDto> context) {
+    final Filter onlyIdentitiesRelatedToTheLatestDefinitionVersion =
+        aggregations.get(FILTERED_USER_TASKS_AGGREGATION);
+    final Terms byIdentityAggregations =
+        onlyIdentitiesRelatedToTheLatestDefinitionVersion
+            .getAggregations()
+            .get(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION);
+    final List<CompositeCommandResult.DistributedByResult> distributedByIdentity =
+        new ArrayList<>();
+
+    for (final Terms.Bucket identityBucket : byIdentityAggregations.getBuckets()) {
+      final CompositeCommandResult.ViewResult viewResult =
+          viewPart.retrieveResult(response, identityBucket.getAggregations(), context);
+
+      final String key = identityBucket.getKeyAsString();
+      if (DISTRIBUTE_BY_IDENTITY_MISSING_KEY.equals(key)) {
+        for (final CompositeCommandResult.ViewMeasure viewMeasure : viewResult.getViewMeasures()) {
+          final AggregationDto aggTypeDto = viewMeasure.getAggregationType();
+          if (aggTypeDto != null
+              && aggTypeDto.getType() == AggregationType.SUM
+              && (viewMeasure.getValue() != null && viewMeasure.getValue() == 0)) {
+            viewMeasure.setValue(null);
+          }
+        }
+      }
+
+      distributedByIdentity.add(
+          createDistributedByResult(key, resolveIdentityName(key), viewResult));
+    }
+
+    addEmptyMissingDistributedByResults(distributedByIdentity, context);
+
+    return distributedByIdentity;
+  }
+
+  @Override
+  public void enrichContextWithAllExpectedDistributedByKeys(
+      final ExecutionContext<ProcessReportDataDto> context, final Aggregations aggregations) {
+    final Filter onlyIdentitiesRelatedToTheLatestDefinitionVersion =
+        aggregations.get(FILTERED_USER_TASKS_AGGREGATION);
+    final Terms allIdentityAggregation =
+        onlyIdentitiesRelatedToTheLatestDefinitionVersion
+            .getAggregations()
+            .get(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION);
+    final Map<String, String> allDistributedByIdentityKeys =
+        allIdentityAggregation.getBuckets().stream()
+            .map(MultiBucketsAggregation.Bucket::getKeyAsString)
+            .collect(Collectors.toMap(Function.identity(), this::resolveIdentityName));
+    context.setAllDistributedByKeysAndLabels(allDistributedByIdentityKeys);
+  }
+
   private Set<String> getUserTaskIds(final ProcessReportDataDto reportData) {
     return definitionService
         .extractUserTaskIdAndNames(
@@ -106,44 +171,6 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
 
   protected abstract IdentityType getIdentityType();
 
-  @Override
-  public List<CompositeCommandResult.DistributedByResult> retrieveResult(
-      final SearchResponse response,
-      final Aggregations aggregations,
-      final ExecutionContext<ProcessReportDataDto> context) {
-    final Filter onlyIdentitiesRelatedToTheLatestDefinitionVersion =
-        aggregations.get(FILTERED_USER_TASKS_AGGREGATION);
-    final Terms byIdentityAggregations =
-        onlyIdentitiesRelatedToTheLatestDefinitionVersion
-            .getAggregations()
-            .get(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION);
-    List<CompositeCommandResult.DistributedByResult> distributedByIdentity = new ArrayList<>();
-
-    for (Terms.Bucket identityBucket : byIdentityAggregations.getBuckets()) {
-      CompositeCommandResult.ViewResult viewResult =
-          viewPart.retrieveResult(response, identityBucket.getAggregations(), context);
-
-      final String key = identityBucket.getKeyAsString();
-      if (DISTRIBUTE_BY_IDENTITY_MISSING_KEY.equals(key)) {
-        for (CompositeCommandResult.ViewMeasure viewMeasure : viewResult.getViewMeasures()) {
-          final AggregationDto aggTypeDto = viewMeasure.getAggregationType();
-          if (aggTypeDto != null
-              && aggTypeDto.getType() == AggregationType.SUM
-              && (viewMeasure.getValue() != null && viewMeasure.getValue() == 0)) {
-            viewMeasure.setValue(null);
-          }
-        }
-      }
-
-      distributedByIdentity.add(
-          createDistributedByResult(key, resolveIdentityName(key), viewResult));
-    }
-
-    addEmptyMissingDistributedByResults(distributedByIdentity, context);
-
-    return distributedByIdentity;
-  }
-
   private String resolveIdentityName(final String key) {
     if (DISTRIBUTE_BY_IDENTITY_MISSING_KEY.equals(key)) {
       return localizationService.getDefaultLocaleMessageForMissingAssigneeLabel();
@@ -155,7 +182,7 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
   }
 
   private void addEmptyMissingDistributedByResults(
-      List<CompositeCommandResult.DistributedByResult> distributedByIdentityResultList,
+      final List<CompositeCommandResult.DistributedByResult> distributedByIdentityResultList,
       final ExecutionContext<ProcessReportDataDto> context) {
     context.getAllDistributedByKeysAndLabels().entrySet().stream()
         .filter(
@@ -168,21 +195,5 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
                 createDistributedByResult(
                     entry.getKey(), entry.getValue(), viewPart.createEmptyResult(context)))
         .forEach(distributedByIdentityResultList::add);
-  }
-
-  @Override
-  public void enrichContextWithAllExpectedDistributedByKeys(
-      final ExecutionContext<ProcessReportDataDto> context, final Aggregations aggregations) {
-    final Filter onlyIdentitiesRelatedToTheLatestDefinitionVersion =
-        aggregations.get(FILTERED_USER_TASKS_AGGREGATION);
-    final Terms allIdentityAggregation =
-        onlyIdentitiesRelatedToTheLatestDefinitionVersion
-            .getAggregations()
-            .get(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION);
-    final Map<String, String> allDistributedByIdentityKeys =
-        allIdentityAggregation.getBuckets().stream()
-            .map(MultiBucketsAggregation.Bucket::getKeyAsString)
-            .collect(Collectors.toMap(Function.identity(), this::resolveIdentityName));
-    context.setAllDistributedByKeysAndLabels(allDistributedByIdentityKeys);
   }
 }
