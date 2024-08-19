@@ -11,17 +11,19 @@ import io.camunda.optimize.dto.optimize.query.TerminatedUserSessionDto;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public abstract class TerminatedUserSessionWriter {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(TerminatedUserSessionWriter.class);
 
   public void writeTerminatedUserSession(final TerminatedUserSessionDto sessionDto) {
     log.debug("Writing terminated user session with id [{}] to database.", sessionDto.getId());
     try {
       performWritingTerminatedUserSession(sessionDto);
-    } catch (IOException e) {
-      String message = "Could not write terminated user sessions to database.";
+    } catch (final IOException e) {
+      final String message = "Could not write terminated user sessions to database.";
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
@@ -31,8 +33,8 @@ public abstract class TerminatedUserSessionWriter {
     log.debug("Deleting terminated user session older than [{}] to database.", timestamp);
     try {
       performDeleteTerminatedUserSessionOlderThan(timestamp);
-    } catch (IOException e) {
-      String message =
+    } catch (final IOException e) {
+      final String message =
           String.format("Could not delete user sessions older than [%s] from database", timestamp);
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);

@@ -22,19 +22,20 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Conditional(CamundaPlatformCondition.class)
 @Component
-@Slf4j
 public class PlatformApplicationAuthorizationService
     extends AbstractCachingAuthorizationService<List<String>>
     implements ApplicationAuthorizationService {
 
   private static final List<String> RELEVANT_PERMISSIONS =
       List.of(ALL_PERMISSION, ACCESS_PERMISSION);
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(PlatformApplicationAuthorizationService.class);
 
   public PlatformApplicationAuthorizationService(
       final EngineContextFactory engineContextFactory,
@@ -48,6 +49,58 @@ public class PlatformApplicationAuthorizationService
     // no reaction to create events as a created session requires authorizations to be fetched
     // already
     // and thus a cache refresh would be redundant
+  }
+
+  @Override
+  protected List<String> fetchAuthorizationsForUserId(final String userId) {
+    final List<String> result = new ArrayList<>();
+    final List<EngineContext> failedEngines = new ArrayList<>();
+    for (final EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
+      try {
+        if (isUserAuthorizedToAccessOptimizeOnEngine(userId, engineContext)) {
+          result.add(engineContext.getEngineAlias());
+        }
+      } catch (final OptimizeRuntimeException e) {
+        log.error(
+            String.format(
+                "Unable to check user [%s] authorization for engine [%s}",
+                userId, engineContext.getEngineAlias()));
+        failedEngines.add(engineContext);
+      }
+    }
+    if (failedEngines.containsAll(engineContextFactory.getConfiguredEngines())) {
+      final String errorMessage =
+          "Failed to fetch user authorizations because all engines are down.";
+      log.warn(errorMessage);
+      throw new OptimizeRuntimeException(errorMessage);
+    }
+    return result;
+  }
+
+  @Override
+  protected List<String> fetchAuthorizationsForGroupId(final String groupId) {
+    final List<String> result = new ArrayList<>();
+    final List<EngineContext> failedEngines = new ArrayList<>();
+    for (final EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
+      try {
+        if (isGroupAuthorizedToAccessOptimizeOnEngine(groupId, engineContext)) {
+          result.add(engineContext.getEngineAlias());
+        }
+      } catch (final OptimizeRuntimeException e) {
+        log.error(
+            String.format(
+                "Unable to check group [%s] authorization for engine [%s}",
+                groupId, engineContext.getEngineAlias()));
+        failedEngines.add(engineContext);
+      }
+    }
+    if (failedEngines.containsAll(engineContextFactory.getConfiguredEngines())) {
+      final String errorMessage =
+          "Failed to fetch group authorizations because all engines are down.";
+      log.warn(errorMessage);
+      throw new OptimizeRuntimeException(errorMessage);
+    }
+    return result;
   }
 
   /**
@@ -80,56 +133,6 @@ public class PlatformApplicationAuthorizationService
   public List<String> getAuthorizedEnginesForGroup(final String groupId) {
     return Optional.ofNullable(groupAuthorizationLoadingCache.get(groupId))
         .orElseGet(ArrayList::new);
-  }
-
-  @Override
-  protected List<String> fetchAuthorizationsForUserId(final String userId) {
-    final List<String> result = new ArrayList<>();
-    final List<EngineContext> failedEngines = new ArrayList<>();
-    for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
-      try {
-        if (isUserAuthorizedToAccessOptimizeOnEngine(userId, engineContext)) {
-          result.add(engineContext.getEngineAlias());
-        }
-      } catch (OptimizeRuntimeException e) {
-        log.error(
-            String.format(
-                "Unable to check user [%s] authorization for engine [%s}",
-                userId, engineContext.getEngineAlias()));
-        failedEngines.add(engineContext);
-      }
-    }
-    if (failedEngines.containsAll(engineContextFactory.getConfiguredEngines())) {
-      String errorMessage = "Failed to fetch user authorizations because all engines are down.";
-      log.warn(errorMessage);
-      throw new OptimizeRuntimeException(errorMessage);
-    }
-    return result;
-  }
-
-  @Override
-  protected List<String> fetchAuthorizationsForGroupId(final String groupId) {
-    final List<String> result = new ArrayList<>();
-    final List<EngineContext> failedEngines = new ArrayList<>();
-    for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
-      try {
-        if (isGroupAuthorizedToAccessOptimizeOnEngine(groupId, engineContext)) {
-          result.add(engineContext.getEngineAlias());
-        }
-      } catch (OptimizeRuntimeException e) {
-        log.error(
-            String.format(
-                "Unable to check group [%s] authorization for engine [%s}",
-                groupId, engineContext.getEngineAlias()));
-        failedEngines.add(engineContext);
-      }
-    }
-    if (failedEngines.containsAll(engineContextFactory.getConfiguredEngines())) {
-      String errorMessage = "Failed to fetch group authorizations because all engines are down.";
-      log.warn(errorMessage);
-      throw new OptimizeRuntimeException(errorMessage);
-    }
-    return result;
   }
 
   private static boolean isUserAuthorizedToAccessOptimizeOnEngine(

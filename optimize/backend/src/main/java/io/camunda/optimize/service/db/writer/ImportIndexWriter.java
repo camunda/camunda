@@ -10,18 +10,21 @@ package io.camunda.optimize.service.db.writer;
 import io.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
 import io.camunda.optimize.service.db.repository.ImportRepository;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class ImportIndexWriter {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ImportIndexWriter.class);
   private final ImportRepository importRepository;
 
-  public void importIndexes(List<EngineImportIndexDto> engineImportIndexDtos) {
-    String importItemName = "import index information";
+  public ImportIndexWriter(final ImportRepository importRepository) {
+    this.importRepository = importRepository;
+  }
+
+  public void importIndexes(final List<EngineImportIndexDto> engineImportIndexDtos) {
+    final String importItemName = "import index information";
     log.debug("Writing [{}] {} to database.", engineImportIndexDtos.size(), importItemName);
     importRepository.importIndices(importItemName, engineImportIndexDtos);
   }

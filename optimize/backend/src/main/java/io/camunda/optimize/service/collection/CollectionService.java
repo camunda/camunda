@@ -33,21 +33,34 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class CollectionService {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CollectionService.class);
   private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionRelationService collectionRelationService;
   private final CollectionEntityService collectionEntityService;
   private final CollectionWriter collectionWriter;
   private final CollectionReader collectionReader;
   private final AbstractIdentityService identityService;
+
+  public CollectionService(
+      final AuthorizedCollectionService authorizedCollectionService,
+      final CollectionRelationService collectionRelationService,
+      final CollectionEntityService collectionEntityService,
+      final CollectionWriter collectionWriter,
+      final CollectionReader collectionReader,
+      final AbstractIdentityService identityService) {
+    this.authorizedCollectionService = authorizedCollectionService;
+    this.collectionRelationService = collectionRelationService;
+    this.collectionEntityService = collectionEntityService;
+    this.collectionWriter = collectionWriter;
+    this.collectionReader = collectionReader;
+    this.identityService = identityService;
+  }
 
   public IdResponseDto createNewCollectionAndReturnId(
       final String userId,
@@ -67,7 +80,7 @@ public class CollectionService {
       return Optional.of(
           collectionWriter.createNewCollectionAndReturnId(
               userId, partialCollectionDefinitionDto, presetId, automaticallyCreated));
-    } catch (OptimizeRuntimeException e) {
+    } catch (final OptimizeRuntimeException e) {
       // This can happen if the collection has been created in parallel, let's check if it already
       // exists
       if (Optional.ofNullable(getCollectionDefinition(presetId)).isEmpty()) {
@@ -133,7 +146,8 @@ public class CollectionService {
     collectionWriter.deleteCollection(collectionId);
   }
 
-  public ConflictResponseDto getDeleteConflictingItems(String userId, String collectionId) {
+  public ConflictResponseDto getDeleteConflictingItems(
+      final String userId, final String collectionId) {
     return new ConflictResponseDto(getConflictedItemsForDelete(userId, collectionId));
   }
 
@@ -156,12 +170,12 @@ public class CollectionService {
   }
 
   public IdResponseDto copyCollection(
-      String userId, String collectionId, String newCollectionName) {
-    AuthorizedCollectionDefinitionDto oldCollection =
+      final String userId, final String collectionId, final String newCollectionName) {
+    final AuthorizedCollectionDefinitionDto oldCollection =
         authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(
             userId, collectionId);
 
-    CollectionDefinitionDto newCollection =
+    final CollectionDefinitionDto newCollection =
         new CollectionDefinitionDto(
             oldCollection.getDefinitionDto().getData(),
             OffsetDateTime.now(),
@@ -173,7 +187,7 @@ public class CollectionService {
             userId,
             userId);
 
-    CollectionDefinitionRestDto oldResolvedCollection =
+    final CollectionDefinitionRestDto oldResolvedCollection =
         getCollectionDefinitionRestDto(oldCollection).getDefinitionDto();
 
     collectionWriter.createNewCollection(newCollection);
@@ -183,7 +197,8 @@ public class CollectionService {
     return new IdResponseDto(newCollection.getId());
   }
 
-  private Set<ConflictedItemDto> getConflictedItemsForDelete(String userId, String collectionId) {
+  private Set<ConflictedItemDto> getConflictedItemsForDelete(
+      final String userId, final String collectionId) {
     return collectionRelationService.getConflictedItemsForDelete(
         getCollectionDefinition(userId, collectionId).getDefinitionDto());
   }

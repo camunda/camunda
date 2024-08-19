@@ -11,15 +11,19 @@ import io.camunda.optimize.dto.optimize.query.event.process.EventProcessDefiniti
 import io.camunda.optimize.service.db.repository.EventRepository;
 import java.util.List;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class EventProcessDefinitionReader {
-  private EventRepository eventRepository;
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventProcessDefinitionReader.class);
+  private final EventRepository eventRepository;
+
+  public EventProcessDefinitionReader(final EventRepository eventRepository) {
+    this.eventRepository = eventRepository;
+  }
 
   public Optional<EventProcessDefinitionDto> getEventProcessDefinitionByKeyOmitXml(
       final String eventProcessDefinitionKey) {

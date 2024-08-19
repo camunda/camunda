@@ -13,13 +13,14 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 
-@Slf4j
 public abstract class AbstractIndexRolloverService extends AbstractScheduledService {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AbstractIndexRolloverService.class);
   protected final DatabaseClient databaseClient;
 
   protected AbstractIndexRolloverService(final DatabaseClient databaseClient) {
@@ -27,17 +28,17 @@ public abstract class AbstractIndexRolloverService extends AbstractScheduledServ
   }
 
   public List<String> triggerRollover() {
-    List<String> rolledOverIndexAliases = new ArrayList<>();
+    final List<String> rolledOverIndexAliases = new ArrayList<>();
     getAliasesToConsiderRolling()
         .forEach(
             indexAlias -> {
               try {
-                boolean isRolledOver =
+                final boolean isRolledOver =
                     databaseClient.triggerRollover(indexAlias, getMaxIndexSizeGB());
                 if (isRolledOver) {
                   rolledOverIndexAliases.add(indexAlias);
                 }
-              } catch (Exception e) {
+              } catch (final Exception e) {
                 log.warn("Failed rolling over index {}, will try again next time.", indexAlias, e);
               }
             });

@@ -34,14 +34,11 @@ import io.camunda.optimize.service.db.writer.ReportWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.Collections;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-@Slf4j
-@AllArgsConstructor
 @Component
 public class ManagementDashboardService {
 
@@ -59,10 +56,21 @@ public class ManagementDashboardService {
       "instancesEndedInLastSixMonthsName";
   public static final String ENDED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE =
       "instancesEndedInLastSixMonthsDescription";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ManagementDashboardService.class);
 
   private final DashboardWriter dashboardWriter;
   private final ReportWriter reportWriter;
   private final ConfigurationService configurationService;
+
+  public ManagementDashboardService(
+      final DashboardWriter dashboardWriter,
+      final ReportWriter reportWriter,
+      final ConfigurationService configurationService) {
+    this.dashboardWriter = dashboardWriter;
+    this.reportWriter = reportWriter;
+    this.configurationService = configurationService;
+  }
 
   @EventListener(ApplicationReadyEvent.class)
   public void init() {
@@ -177,8 +185,8 @@ public class ManagementDashboardService {
     dashboardDefinition.setName(MANAGEMENT_DASHBOARD_LOCALIZATION_CODE);
     dashboardDefinition.setTiles(reportsForDashboard);
 
-    DashboardInstanceStartDateFilterDto filterDto = new DashboardInstanceStartDateFilterDto();
-    RollingDateFilterDataDto rollingFilter =
+    final DashboardInstanceStartDateFilterDto filterDto = new DashboardInstanceStartDateFilterDto();
+    final RollingDateFilterDataDto rollingFilter =
         new RollingDateFilterDataDto(new RollingDateFilterStartDto(12L, DateUnit.MONTHS));
     filterDto.setData(new DashboardDateFilterDataDto(rollingFilter));
 

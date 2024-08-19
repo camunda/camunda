@@ -43,24 +43,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.core.Tuple;
+import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 public class DigestService implements ConfigurationReloadable {
 
   private static final String DIGEST_EMAIL_TEMPLATE = "digestEmailTemplate.ftl";
   private static final String UTM_SOURCE = "digest";
   private static final String UTM_MEDIUM = "email";
   private static final String DEFAULT_LOCALE = "en";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DigestService.class);
   private final ConfigurationService configurationService;
   private final EmailService emailService;
   private final AbstractIdentityService identityService;
@@ -72,6 +70,27 @@ public class DigestService implements ConfigurationReloadable {
   private final RootUrlGenerator rootUrlGenerator;
   private final Map<String, ScheduledFuture<?>> scheduledDigestTasks = new HashMap<>();
   private ThreadPoolTaskScheduler digestTaskScheduler;
+
+  public DigestService(
+      final ConfigurationService configurationService,
+      final EmailService emailService,
+      final AbstractIdentityService identityService,
+      final KpiService kpiService,
+      final DefinitionService definitionService,
+      final ProcessOverviewWriter processOverviewWriter,
+      final ProcessOverviewReader processOverviewReader,
+      final ReportReader reportReader,
+      final RootUrlGenerator rootUrlGenerator) {
+    this.configurationService = configurationService;
+    this.emailService = emailService;
+    this.identityService = identityService;
+    this.kpiService = kpiService;
+    this.definitionService = definitionService;
+    this.processOverviewWriter = processOverviewWriter;
+    this.processOverviewReader = processOverviewReader;
+    this.reportReader = reportReader;
+    this.rootUrlGenerator = rootUrlGenerator;
+  }
 
   @PostConstruct
   public void init() {

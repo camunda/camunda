@@ -10,14 +10,16 @@ package io.camunda.optimize.service.security;
 import io.camunda.optimize.service.util.configuration.condition.CamundaCloudCondition;
 import java.util.Collections;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Conditional(CamundaCloudCondition.class)
 @Component
-@Slf4j
 public class CloudApplicationAuthorizationService implements ApplicationAuthorizationService {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CloudApplicationAuthorizationService.class);
 
   @Override
   public boolean isUserAuthorizedToAccessOptimize(final String userId) {

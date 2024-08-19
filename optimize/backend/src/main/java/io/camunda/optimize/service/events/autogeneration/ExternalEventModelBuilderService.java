@@ -32,20 +32,22 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.GatewayDirection;
 import org.camunda.bpm.model.bpmn.builder.AbstractFlowNodeBuilder;
 import org.camunda.bpm.model.bpmn.builder.ProcessBuilder;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 public class ExternalEventModelBuilderService {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ExternalEventModelBuilderService.class);
+
+  public ExternalEventModelBuilderService() {}
 
   public AbstractFlowNodeBuilder<?, ?> createOrExtendModelWithExternalEventSource(
       final AutogenerationEventGraphDto autogenerationEventGraphDto,
@@ -71,7 +73,7 @@ public class ExternalEventModelBuilderService {
     }
 
     final List<EventTypeDto> startEvents = autogenerationEventGraphDto.getStartEvents();
-    for (EventTypeDto rootNode : startEvents) {
+    for (final EventTypeDto rootNode : startEvents) {
       final String nodeId = generateNodeId(rootNode);
       final AbstractFlowNodeBuilder<?, ?> nextBuilder;
       if (currentBuilder == null) {
@@ -116,7 +118,7 @@ public class ExternalEventModelBuilderService {
       AbstractFlowNodeBuilder<?, ?> currentNodeBuilder,
       final Map<String, EventMappingDto> mappings,
       final boolean isFinalSourceInSeries) {
-    for (EventTypeDto nodeToAdd : nodesToAdd) {
+    for (final EventTypeDto nodeToAdd : nodesToAdd) {
       final Optional<String> precedingDivergingGatewayId =
           getPrecedingDivergingGatewayId(nodeToAdd, graphDto);
       if (precedingDivergingGatewayId.isPresent()
@@ -249,7 +251,7 @@ public class ExternalEventModelBuilderService {
         currentNodeBuilder =
             addGateway(currentNodeBuilder, nodeToAdd, Converging, graphDto, sampleTraceLists);
       }
-      AbstractFlowNodeBuilder<?, ?> nextBuilder =
+      final AbstractFlowNodeBuilder<?, ?> nextBuilder =
           addIntermediateEvent(nodeToAdd, nodeId, currentNodeBuilder);
       mappings.put(nodeId, EventMappingDto.builder().start(nodeToAdd).build());
       depthTraverseOrConnect(
@@ -275,7 +277,7 @@ public class ExternalEventModelBuilderService {
 
   private Optional<EventTypeDto> findAlreadyModelledNextNodeId(
       final AbstractFlowNodeBuilder<?, ?> currentNodeBuilder, final List<EventTypeDto> nextNodes) {
-    for (EventTypeDto nextNode : nextNodes) {
+    for (final EventTypeDto nextNode : nextNodes) {
       final String nextNodeId = generateNodeId(nextNode);
       if (nodeAlreadyAddedToModel(nextNodeId, currentNodeBuilder)) {
         return Optional.of(nextNode);
@@ -285,7 +287,7 @@ public class ExternalEventModelBuilderService {
   }
 
   private AbstractFlowNodeBuilder<?, ?> addGateway(
-      AbstractFlowNodeBuilder<?, ?> currentNodeBuilder,
+      final AbstractFlowNodeBuilder<?, ?> currentNodeBuilder,
       final EventTypeDto nodeToAdd,
       final GatewayDirection gatewayDirection,
       final AutogenerationEventGraphDto graphDto,
@@ -345,9 +347,10 @@ public class ExternalEventModelBuilderService {
   }
 
   private boolean nodeAlreadyAddedToModel(
-      final String nodeId, AbstractFlowNodeBuilder<?, ?> currentNodeBuilder) {
-    BpmnModelInstance currentFlowNodeInstance = currentNodeBuilder.done();
-    ModelElementInstance existingModelElement = currentFlowNodeInstance.getModelElementById(nodeId);
+      final String nodeId, final AbstractFlowNodeBuilder<?, ?> currentNodeBuilder) {
+    final BpmnModelInstance currentFlowNodeInstance = currentNodeBuilder.done();
+    final ModelElementInstance existingModelElement =
+        currentFlowNodeInstance.getModelElementById(nodeId);
     return existingModelElement != null;
   }
 

@@ -13,18 +13,25 @@ import io.camunda.optimize.service.db.repository.Repository;
 import io.camunda.optimize.service.db.repository.TaskRepository;
 import java.time.OffsetDateTime;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
-@Slf4j
 @Component
 public class ExternalEventWriter {
 
-  private EventRepository eventRepository;
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ExternalEventWriter.class);
+  private final EventRepository eventRepository;
   private final TaskRepository taskRepository;
   private final Repository repository;
+
+  public ExternalEventWriter(
+      final EventRepository eventRepository,
+      final TaskRepository taskRepository,
+      final Repository repository) {
+    this.eventRepository = eventRepository;
+    this.taskRepository = taskRepository;
+    this.repository = repository;
+  }
 
   public void upsertEvents(final List<EventDto> eventDtos) {
     log.debug("Writing [{}] events to database", eventDtos.size());

@@ -24,20 +24,26 @@ import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.events.EventProcessPublishStateIndex;
 import io.camunda.optimize.service.util.IdGenerator;
 import java.util.Map;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class EventProcessPublishStateWriter {
-  private EventRepository eventRepository;
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventProcessPublishStateWriter.class);
+  private final EventRepository eventRepository;
   private final ObjectMapper objectMapper;
+
+  public EventProcessPublishStateWriter(
+      final EventRepository eventRepository, final ObjectMapper objectMapper) {
+    this.eventRepository = eventRepository;
+    this.objectMapper = objectMapper;
+  }
 
   public IdResponseDto createEventProcessPublishState(
       final EventProcessPublishStateDto eventProcessPublishStateDto) {
-    String id = IdGenerator.getNextId();
+    final String id = IdGenerator.getNextId();
     eventProcessPublishStateDto.setId(id);
     log.debug("Writing event process publish state [{}] to database", id);
     return eventRepository.createEventProcessPublishState(eventProcessPublishStateDto);
@@ -45,9 +51,9 @@ public class EventProcessPublishStateWriter {
 
   public void updateEventProcessPublishState(
       final EventProcessPublishStateDto eventProcessPublishStateDto) {
-    String id = eventProcessPublishStateDto.getId();
+    final String id = eventProcessPublishStateDto.getId();
     log.debug("Updating event process publish state [{}] in database.", id);
-    Map<String, Object> parameterMap =
+    final Map<String, Object> parameterMap =
         createFieldUpdateScriptParams(
             Sets.newHashSet(
                 EventProcessPublishStateIndex.EVENT_IMPORT_SOURCES,
@@ -56,7 +62,7 @@ public class EventProcessPublishStateWriter {
             DbEventProcessPublishStateDto.fromEventProcessPublishStateDto(
                 eventProcessPublishStateDto),
             objectMapper);
-    ScriptData scriptData =
+    final ScriptData scriptData =
         createScriptData(
             createUpdateFieldsScript(
                 ImmutableSet.of(
@@ -75,7 +81,7 @@ public class EventProcessPublishStateWriter {
             "event process publish state with %s [%s]",
             EventProcessPublishStateIndex.PROCESS_MAPPING_ID, eventProcessMappingId);
     log.debug("Flagging {} as deleted.", updateItem);
-    ScriptData scriptData =
+    final ScriptData scriptData =
         createScriptData(
             createUpdateFieldsScript(ImmutableSet.of(DbEventProcessPublishStateDto.Fields.deleted)),
             ImmutableMap.of(DbEventProcessPublishStateDto.Fields.deleted, true),
@@ -99,7 +105,7 @@ public class EventProcessPublishStateWriter {
         "Flagging {} as deleted, except for process publish state with ID [{}].",
         updateItem,
         publishStateIdToExclude);
-    ScriptData scriptData =
+    final ScriptData scriptData =
         createScriptData(
             createUpdateFieldsScript(ImmutableSet.of(DbEventProcessPublishStateDto.Fields.deleted)),
             ImmutableMap.of(DbEventProcessPublishStateDto.Fields.deleted, true),

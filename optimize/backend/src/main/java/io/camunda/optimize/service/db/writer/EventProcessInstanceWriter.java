@@ -14,17 +14,26 @@ import io.camunda.optimize.service.db.repository.Repository;
 import io.camunda.optimize.service.db.repository.TaskRepository;
 import java.time.OffsetDateTime;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
-@Slf4j
 @Component
 public class EventProcessInstanceWriter {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventProcessInstanceWriter.class);
   private final ProcessInstanceRepository processInstanceRepository;
   private final TaskRepository taskRepository;
   private final Repository repository;
+
+  public EventProcessInstanceWriter(
+      final ProcessInstanceRepository processInstanceRepository,
+      final TaskRepository taskRepository,
+      final Repository repository) {
+    this.processInstanceRepository = processInstanceRepository;
+    this.taskRepository = taskRepository;
+    this.repository = repository;
+  }
 
   public void importProcessInstances(
       final String index,

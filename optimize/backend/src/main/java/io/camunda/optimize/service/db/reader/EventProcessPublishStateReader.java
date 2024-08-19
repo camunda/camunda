@@ -11,16 +11,19 @@ import io.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishS
 import io.camunda.optimize.service.db.repository.EventRepository;
 import java.util.List;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class EventProcessPublishStateReader {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventProcessPublishStateReader.class);
   private final EventRepository eventRepository;
+
+  public EventProcessPublishStateReader(final EventRepository eventRepository) {
+    this.eventRepository = eventRepository;
+  }
 
   public Optional<EventProcessPublishStateDto> getEventProcessPublishStateByEventProcessId(
       final String eventProcessMappingId) {

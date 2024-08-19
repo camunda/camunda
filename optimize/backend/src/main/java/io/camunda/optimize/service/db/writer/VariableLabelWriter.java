@@ -17,16 +17,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 public class VariableLabelWriter {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(VariableLabelWriter.class);
   private final VariableRepository variableRepository;
+
+  public VariableLabelWriter(final VariableRepository variableRepository) {
+    this.variableRepository = variableRepository;
+  }
 
   public void createVariableLabelUpsertRequest(
       final DefinitionVariableLabelsDto definitionVariableLabelsDto) {
@@ -36,15 +39,15 @@ public class VariableLabelWriter {
 
     final String query =
         """
-      def existingLabels = ctx._source.labels;
-      for (label in params['labels']) {
-         existingLabels.removeIf(existingLabel -> existingLabel.variableName.equals(label.variableName)
-                                                  && existingLabel.variableType.equals(label.variableType)
-         );
-         if(label.variableLabel != null && !label.variableLabel.trim().isEmpty()) {
-              existingLabels.add(label);
-         }
-      }""";
+            def existingLabels = ctx._source.labels;
+            for (label in params['labels']) {
+               existingLabels.removeIf(existingLabel -> existingLabel.variableName.equals(label.variableName)
+                                                        && existingLabel.variableType.equals(label.variableType)
+               );
+               if(label.variableLabel != null && !label.variableLabel.trim().isEmpty()) {
+                    existingLabels.add(label);
+               }
+            }""";
 
     final ScriptData scriptData = new ScriptData(params, query);
 

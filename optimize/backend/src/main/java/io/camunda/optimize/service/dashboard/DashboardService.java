@@ -62,17 +62,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@Slf4j
-@AllArgsConstructor
 @Component
 public class DashboardService implements ReportReferencingService, CollectionReferencingService {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DashboardService.class);
   private final DashboardWriter dashboardWriter;
   private final DashboardReader dashboardReader;
   private final ProcessVariableService processVariableService;
@@ -81,6 +79,25 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   private final AbstractIdentityService identityService;
   private final ReportReader reportReader;
   private final DashboardRelationService dashboardRelationService;
+
+  public DashboardService(
+      final DashboardWriter dashboardWriter,
+      final DashboardReader dashboardReader,
+      final ProcessVariableService processVariableService,
+      final ReportService reportService,
+      final AuthorizedCollectionService collectionService,
+      final AbstractIdentityService identityService,
+      final ReportReader reportReader,
+      final DashboardRelationService dashboardRelationService) {
+    this.dashboardWriter = dashboardWriter;
+    this.dashboardReader = dashboardReader;
+    this.processVariableService = processVariableService;
+    this.reportService = reportService;
+    this.collectionService = collectionService;
+    this.identityService = identityService;
+    this.reportReader = reportReader;
+    this.dashboardRelationService = dashboardRelationService;
+  }
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForReportDelete(
@@ -98,7 +115,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   @Override
   public void handleReportDeleted(final ReportDefinitionDto reportDefinition) {
     if (reportDefinition
-        instanceof SingleProcessReportDefinitionRequestDto typeCheckedReportDefinition) {
+        instanceof final SingleProcessReportDefinitionRequestDto typeCheckedReportDefinition) {
       final List<ProcessVariableNameResponseDto> varNamesForReportToRemove =
           processVariableService.getVariableNamesForReportDefinitions(
               Collections.singletonList(typeCheckedReportDefinition));
@@ -124,7 +141,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
             .orElseThrow(
                 () -> new NotFoundException("Report with id [" + reportId + "] does not exist"));
     if (existingReport
-        instanceof SingleProcessReportDefinitionRequestDto existingReportDefinition) {
+        instanceof final SingleProcessReportDefinitionRequestDto existingReportDefinition) {
       final SingleProcessReportDefinitionRequestDto updateReportDefinition =
           (SingleProcessReportDefinitionRequestDto) updateDefinition;
       final List<ProcessVariableNameResponseDto> availableVariableNamesForExistingReport =
@@ -172,7 +189,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
         getDashboardDefinition(dashboardId, userId);
     final DashboardDefinitionRestDto dashboardDefinition = authorizedDashboard.getDefinitionDto();
 
-    String newDashboardName = name != null ? name : dashboardDefinition.getName() + " – Copy";
+    final String newDashboardName = name != null ? name : dashboardDefinition.getName() + " – Copy";
     return copyAndMoveDashboard(
         dashboardId, userId, dashboardDefinition.getCollectionId(), newDashboardName);
   }
@@ -214,7 +231,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
                 if (IdGenerator.isValidId(originalReportId)) {
                   String reportCopyId = uniqueReportCopies.get(originalReportId);
                   if (reportCopyId == null) {
-                    ReportDefinitionDto report =
+                    final ReportDefinitionDto report =
                         reportReader
                             .getReport(originalReportId)
                             .orElseThrow(
@@ -248,8 +265,8 @@ public class DashboardService implements ReportReferencingService, CollectionRef
               });
     }
 
-    String newDashboardName = name != null ? name : dashboardDefinition.getName() + " – Copy";
-    DashboardDefinitionRestDto newDashboardDefinitionDto = new DashboardDefinitionRestDto();
+    final String newDashboardName = name != null ? name : dashboardDefinition.getName() + " – Copy";
+    final DashboardDefinitionRestDto newDashboardDefinitionDto = new DashboardDefinitionRestDto();
     newDashboardDefinitionDto.setCollectionId(collectionId);
     newDashboardDefinitionDto.setName(newDashboardName);
     newDashboardDefinitionDto.setDescription(dashboardDefinition.getDescription());
@@ -335,7 +352,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   public AuthorizedDashboardDefinitionResponseDto getDashboardDefinition(
       final String dashboardId, final String userId) {
     final DashboardDefinitionRestDto dashboard = getDashboardDefinitionAsService(dashboardId);
-    RoleType currentUserRole = getUserRoleType(userId, dashboard);
+    final RoleType currentUserRole = getUserRoleType(userId, dashboard);
     return new AuthorizedDashboardDefinitionResponseDto(currentUserRole, dashboard);
   }
 
@@ -346,11 +363,12 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   }
 
   public void verifyUserHasAccessToDashboardCollection(
-      String userId, DashboardDefinitionRestDto dashboard) {
+      final String userId, final DashboardDefinitionRestDto dashboard) {
     getUserRoleType(userId, dashboard);
   }
 
-  private RoleType getUserRoleType(String userId, DashboardDefinitionRestDto dashboard) {
+  private RoleType getUserRoleType(
+      final String userId, final DashboardDefinitionRestDto dashboard) {
     RoleType currentUserRole = null;
     if (dashboard.isManagementDashboard() || dashboard.isInstantPreviewDashboard()) {
       currentUserRole = RoleType.VIEWER;
@@ -380,7 +398,8 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   }
 
   public DashboardDefinitionRestDto getDashboardDefinitionAsService(final String dashboardId) {
-    Optional<DashboardDefinitionRestDto> dashboard = dashboardReader.getDashboard(dashboardId);
+    final Optional<DashboardDefinitionRestDto> dashboard =
+        dashboardReader.getDashboard(dashboardId);
 
     if (dashboard.isEmpty()) {
       log.error("Was not able to retrieve dashboard with id [{}] from Elasticsearch.", dashboardId);

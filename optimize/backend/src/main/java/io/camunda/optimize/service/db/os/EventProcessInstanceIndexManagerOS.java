@@ -19,15 +19,16 @@ import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.concurrent.atomic.AtomicInteger;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 @Conditional(OpenSearchCondition.class)
 public class EventProcessInstanceIndexManagerOS extends EventProcessInstanceIndexManager {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventProcessInstanceIndexManagerOS.class);
   private final OptimizeOpenSearchClient optimizeOpenSearchClient;
   private final OpenSearchSchemaManager openSearchSchemaManager;
 

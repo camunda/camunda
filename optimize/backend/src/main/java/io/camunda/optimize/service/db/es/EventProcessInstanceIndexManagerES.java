@@ -19,15 +19,16 @@ import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.util.concurrent.atomic.AtomicInteger;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class EventProcessInstanceIndexManagerES extends EventProcessInstanceIndexManager {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventProcessInstanceIndexManagerES.class);
   private final OptimizeElasticsearchClient elasticsearchClient;
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
 

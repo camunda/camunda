@@ -29,24 +29,34 @@ import io.camunda.optimize.service.util.RootUrlGenerator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import java.util.Collections;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.core.List;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(CCSaaSCondition.class)
 public class CCSaaSOnboardingPanelNotificationService {
 
   public static final String INSTANT_DASHBOARD_LINK_TEMPLATE =
       "%s" + DASHBOARD_PATH + INSTANT_PREVIEW_PATH + "/%s";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CCSaaSOnboardingPanelNotificationService.class);
   private final CCSaaSNotificationClient notificationClient;
   private final ConfigurationService configurationService;
   private final DefinitionService definitionService;
   private final RootUrlGenerator rootUrlGenerator;
+
+  public CCSaaSOnboardingPanelNotificationService(
+      final CCSaaSNotificationClient notificationClient,
+      final ConfigurationService configurationService,
+      final DefinitionService definitionService,
+      final RootUrlGenerator rootUrlGenerator) {
+    this.notificationClient = notificationClient;
+    this.configurationService = configurationService;
+    this.definitionService = definitionService;
+    this.rootUrlGenerator = rootUrlGenerator;
+  }
 
   public void sendOnboardingPanelNotification(final String processKey) {
     notificationClient.sendPanelNotificationToOrg(
@@ -98,7 +108,7 @@ public class CCSaaSOnboardingPanelNotificationService {
   }
 
   public String generateRootDashboardLink() {
-    String rootUrl = rootUrlGenerator.getRootUrl();
+    final String rootUrl = rootUrlGenerator.getRootUrl();
     return String.format("%s/#", rootUrl);
   }
 

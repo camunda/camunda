@@ -15,19 +15,23 @@ import io.camunda.optimize.service.db.schema.index.events.EventProcessMappingInd
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.IdGenerator;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class EventProcessMappingWriter {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventProcessMappingWriter.class);
   private final MappingRepository mappingRepository;
+
+  public EventProcessMappingWriter(final MappingRepository mappingRepository) {
+    this.mappingRepository = mappingRepository;
+  }
 
   public IdResponseDto createEventProcessMapping(
       final EventProcessMappingDto eventProcessMappingDto) {
-    String id = IdGenerator.getNextId();
+    final String id = IdGenerator.getNextId();
     eventProcessMappingDto.setId(id);
     eventProcessMappingDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     log.debug("Writing event-based process [{}] to Database", id);

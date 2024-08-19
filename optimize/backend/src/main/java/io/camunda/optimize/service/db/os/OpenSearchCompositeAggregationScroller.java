@@ -14,7 +14,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation.Builder;
@@ -25,10 +24,12 @@ import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.slf4j.Logger;
 
-@Slf4j
 public class OpenSearchCompositeAggregationScroller {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OpenSearchCompositeAggregationScroller.class);
   private OptimizeOpenSearchClient osClient;
   private SearchRequest.Builder searchRequestBuilder;
   private Consumer<CompositeBucket> compositeBucketConsumer;
@@ -99,7 +100,7 @@ public class OpenSearchCompositeAggregationScroller {
     final CompositeAggregate compositeAggregationResult =
         extractCompositeAggregationResult(searchResponse);
 
-    Map<String, String> convertedCompositeBucketConsumer =
+    final Map<String, String> convertedCompositeBucketConsumer =
         compositeAggregationResult.afterKey().entrySet().stream()
             // Below is a workaround for a known java issue
             // https://bugs.openjdk.org/browse/JDK-8148463
@@ -115,15 +116,16 @@ public class OpenSearchCompositeAggregationScroller {
   }
 
   private HashMap<String, Aggregation> updateAfterKeyInCompositeAggregation(
-      Map<String, String> convertedCompositeBucketConsumer, Map<String, Aggregation> currentAgg) {
-    HashMap<String, Aggregation> newAggregations = new HashMap<>();
+      final Map<String, String> convertedCompositeBucketConsumer,
+      final Map<String, Aggregation> currentAgg) {
+    final HashMap<String, Aggregation> newAggregations = new HashMap<>();
 
     // find aggregation response
-    for (String aggPath : pathToAggregation) {
-      Aggregation agg = currentAgg.get(aggPath);
+    for (final String aggPath : pathToAggregation) {
+      final Aggregation agg = currentAgg.get(aggPath);
       if (agg != null) {
         if (agg.isNested()) {
-          Aggregation newNestedAgg =
+          final Aggregation newNestedAgg =
               new Builder()
                   .nested(new NestedAggregation.Builder().path(agg.nested().path()).build())
                   .aggregations(
@@ -143,8 +145,8 @@ public class OpenSearchCompositeAggregationScroller {
   }
 
   private CompositeAggregation updateCompositeAggregation(
-      Map<String, String> convertedCompositeBucketConsumer,
-      CompositeAggregation prevCompositeAggregation) {
+      final Map<String, String> convertedCompositeBucketConsumer,
+      final CompositeAggregation prevCompositeAggregation) {
     // find aggregation and adjust after key for next invocation
     return new CompositeAggregation.Builder()
         .sources(prevCompositeAggregation.sources())
@@ -158,7 +160,7 @@ public class OpenSearchCompositeAggregationScroller {
     Map<String, Aggregate> aggregations = searchResponse.aggregations();
     // find aggregation response
     for (int i = 0; i < pathToAggregation.size() - 1; i++) {
-      Aggregate agg = aggregations.get(pathToAggregation.get(i));
+      final Aggregate agg = aggregations.get(pathToAggregation.get(i));
       if (agg.isNested()) {
         aggregations = agg.nested().aggregations();
       }
@@ -187,7 +189,8 @@ public class OpenSearchCompositeAggregationScroller {
    * @param pathToAggregation a path to where to find the composite aggregation
    * @return the scroller object
    */
-  public OpenSearchCompositeAggregationScroller setPathToAggregation(String... pathToAggregation) {
+  public OpenSearchCompositeAggregationScroller setPathToAggregation(
+      final String... pathToAggregation) {
     this.pathToAggregation = new LinkedList<>(Arrays.asList(pathToAggregation));
     return this;
   }

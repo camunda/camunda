@@ -28,22 +28,34 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
-@Slf4j
 @Component
 public class EventBasedProcessesInstanceImportScheduler extends AbstractScheduledService {
-  private final ConfigurationService configurationService;
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventBasedProcessesInstanceImportScheduler.class);
+  private final ConfigurationService configurationService;
   private final EventProcessInstanceImportMediatorManager instanceImportMediatorManager;
   private final EventProcessInstanceIndexManager eventBasedProcessIndexManager;
   private final PublishStateUpdateService publishStateUpdateService;
   private final EventProcessDefinitionImportService eventProcessDefinitionImportService;
+
+  public EventBasedProcessesInstanceImportScheduler(
+      final ConfigurationService configurationService,
+      final EventProcessInstanceImportMediatorManager instanceImportMediatorManager,
+      final EventProcessInstanceIndexManager eventBasedProcessIndexManager,
+      final PublishStateUpdateService publishStateUpdateService,
+      final EventProcessDefinitionImportService eventProcessDefinitionImportService) {
+    this.configurationService = configurationService;
+    this.instanceImportMediatorManager = instanceImportMediatorManager;
+    this.eventBasedProcessIndexManager = eventBasedProcessIndexManager;
+    this.publishStateUpdateService = publishStateUpdateService;
+    this.eventProcessDefinitionImportService = eventProcessDefinitionImportService;
+  }
 
   @PostConstruct
   public void init() {
@@ -102,7 +114,7 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
                 })
             .toArray(CompletableFuture[]::new);
 
-    Optional<EventProcessPublishStateDto> pendingPublish =
+    final Optional<EventProcessPublishStateDto> pendingPublish =
         eventBasedProcessIndexManager.getPublishedInstanceStates().stream()
             .filter(s -> s.getState().equals(PUBLISH_PENDING))
             .findFirst();
@@ -127,12 +139,12 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
   }
 
   private void doBackoff(final Collection<? extends ImportMediator> mediators) {
-    long timeToSleep =
+    final long timeToSleep =
         mediators.stream().map(ImportMediator::getBackoffTimeInMs).min(Long::compare).orElse(5000L);
     try {
       log.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
       Thread.sleep(timeToSleep);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       log.warn("Scheduler was interrupted while sleeping.", e);
       Thread.currentThread().interrupt();
     }

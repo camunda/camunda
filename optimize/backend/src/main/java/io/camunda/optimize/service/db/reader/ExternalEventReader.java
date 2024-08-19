@@ -16,17 +16,19 @@ import io.camunda.optimize.service.db.repository.EventRepository;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class ExternalEventReader {
 
-  private EventRepository eventRepository;
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ExternalEventReader.class);
+  private final EventRepository eventRepository;
+
+  public ExternalEventReader(final EventRepository eventRepository) {
+    this.eventRepository = eventRepository;
+  }
 
   public List<EventDto> getEventsIngestedAfter(final Long ingestTimestamp, final int limit) {
     log.debug("Fetching events that where ingested after {}", ingestTimestamp);
