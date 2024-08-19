@@ -8,6 +8,7 @@
 package io.camunda.optimize.service;
 
 import io.camunda.service.license.CamundaLicense;
+import io.camunda.service.license.LicenseType;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,7 +17,7 @@ public class CamundaLicenseService {
   private final CamundaLicense license;
 
   public CamundaLicenseService() {
-    final String camundaLicense = System.getenv("CAMUNDA_LICENSE_KEY");
+    final String camundaLicense = System.getenv(CamundaLicense.CAMUNDA_LICENSE_ENV_VAR_KEY);
     license = new CamundaLicense(camundaLicense);
   }
 
@@ -24,7 +25,7 @@ public class CamundaLicenseService {
     return license.isValid();
   }
 
-  public String getCamundaLicenseType() {
+  public LicenseType getCamundaLicenseType() {
     return license.getLicenseType();
   }
 }

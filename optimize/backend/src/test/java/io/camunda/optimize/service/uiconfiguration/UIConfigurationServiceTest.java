@@ -29,6 +29,7 @@ import io.camunda.optimize.service.tenant.TenantService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.configuration.OptimizeProfile;
+import io.camunda.service.license.LicenseType;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -166,7 +167,7 @@ public class UIConfigurationServiceTest {
     when(identityUsers.isAvailable()).thenReturn(true);
     when(environment.getProperty(CAMUNDA_OPTIMIZE_DATABASE, ELASTICSEARCH_DATABASE_PROPERTY))
         .thenReturn(DatabaseType.ELASTICSEARCH.toString());
-    when(camundaLicenseService.getCamundaLicenseType()).thenReturn("saas");
+    when(camundaLicenseService.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
     when(camundaLicenseService.isCamundaLicenseValid()).thenReturn(true);
   }
 }
