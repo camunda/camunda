@@ -21,19 +21,22 @@ import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.Callable;
-import lombok.AllArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.http.MimeTypes;
+import org.slf4j.Logger;
 
-@Slf4j
-@AllArgsConstructor
 public class MaxRequestSizeFilter implements Filter {
 
   public static final String MESSAGE_NO_CONTENT_LENGTH = "No Content-Length header in request.";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MaxRequestSizeFilter.class);
 
   private final Callable<ObjectMapper> objectMapperProvider;
   private final Callable<Long> maxSizeProvider;
+
+  public MaxRequestSizeFilter(
+      final Callable<ObjectMapper> objectMapperProvider, final Callable<Long> maxSizeProvider) {
+    this.objectMapperProvider = objectMapperProvider;
+    this.maxSizeProvider = maxSizeProvider;
+  }
 
   @Override
   public void init(final FilterConfig filterConfig) throws ServletException {
@@ -69,24 +72,31 @@ public class MaxRequestSizeFilter implements Filter {
     }
   }
 
-  @SneakyThrows
-  public long getMaxContentLength() {
-    return maxSizeProvider.call();
-  }
-
   @Override
   public void destroy() {
     // noop
   }
 
-  @SneakyThrows
+  public long getMaxContentLength() {
+    try {
+      return maxSizeProvider.call();
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   public void writeErrorResponse(
       final HttpServletResponse httpResponse, final String errorMessage, final int statusCode) {
     httpResponse.reset();
     httpResponse.setContentType(MimeTypes.Type.APPLICATION_JSON_UTF_8.toString());
-    httpResponse
-        .getWriter()
-        .write(objectMapperProvider.call().writeValueAsString(new ErrorResponseDto(errorMessage)));
+    try {
+      httpResponse
+          .getWriter()
+          .write(
+              objectMapperProvider.call().writeValueAsString(new ErrorResponseDto(errorMessage)));
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
     httpResponse.setStatus(statusCode);
   }
 

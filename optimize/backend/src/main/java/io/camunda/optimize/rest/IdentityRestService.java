@@ -24,22 +24,26 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path(IdentityRestService.IDENTITY_RESOURCE_PATH)
 @Component
-@Slf4j
 public class IdentityRestService {
 
   public static final String IDENTITY_RESOURCE_PATH = "/identity";
   public static final String IDENTITY_SEARCH_SUB_PATH = "/search";
   public static final String CURRENT_USER_IDENTITY_SUB_PATH = "/current/user";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(IdentityRestService.class);
 
   private final AbstractIdentityService identityService;
   private final SessionService sessionService;
+
+  public IdentityRestService(
+      final AbstractIdentityService identityService, final SessionService sessionService) {
+    this.identityService = identityService;
+    this.sessionService = sessionService;
+  }
 
   @GET
   @Path(IDENTITY_SEARCH_SUB_PATH)
@@ -48,7 +52,7 @@ public class IdentityRestService {
       @QueryParam("terms") final String searchTerms,
       @QueryParam("limit") @DefaultValue("25") final int limit,
       @QueryParam("excludeUserGroups") final boolean excludeUserGroups,
-      @Context ContainerRequestContext requestContext) {
+      @Context final ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return identityService.searchForIdentitiesAsUser(
         userId, Optional.ofNullable(searchTerms).orElse(""), limit, excludeUserGroups);
@@ -58,7 +62,8 @@ public class IdentityRestService {
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   public IdentityWithMetadataResponseDto getIdentityById(
-      @PathParam("id") final String identityId, @Context ContainerRequestContext requestContext) {
+      @PathParam("id") final String identityId,
+      @Context final ContainerRequestContext requestContext) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return identityService
         .getIdentityWithMetadataForIdAsUser(userId, identityId)

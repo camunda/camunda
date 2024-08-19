@@ -44,18 +44,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.ElasticsearchStatusException;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@AllArgsConstructor
-@Slf4j
 @Path(PublicApiRestService.PUBLIC_PATH)
 @Component
 public class PublicApiRestService {
+
   public static final String PUBLIC_PATH = "/public";
 
   public static final String EXPORT_SUB_PATH = "/export";
@@ -63,16 +61,17 @@ public class PublicApiRestService {
   public static final String REPORT_SUB_PATH = "/report";
   public static final String DASHBOARD_SUB_PATH = "/dashboard";
   public static final String LABELS_SUB_PATH = "/variables/labels";
+  public static final String DASHBOARD_EXPORT_DEFINITION_SUB_PATH =
+      EXPORT_SUB_PATH + DASHBOARD_SUB_PATH + "/definition/json";
   private static final String REPORT_EXPORT_PATH = EXPORT_SUB_PATH + REPORT_SUB_PATH;
+  public static final String REPORT_EXPORT_DEFINITION_SUB_PATH =
+      REPORT_EXPORT_PATH + "/definition/json";
   private static final String REPORT_BY_ID_PATH = REPORT_SUB_PATH + "/{reportId}";
-  private static final String DASHBOARD_BY_ID_PATH = DASHBOARD_SUB_PATH + "/{dashboardId}";
   private static final String REPORT_EXPORT_BY_ID_PATH = EXPORT_SUB_PATH + REPORT_BY_ID_PATH;
   private static final String REPORT_EXPORT_DATA_SUB_PATH =
       REPORT_EXPORT_BY_ID_PATH + "/result/json";
-  public static final String REPORT_EXPORT_DEFINITION_SUB_PATH =
-      REPORT_EXPORT_PATH + "/definition/json";
-  public static final String DASHBOARD_EXPORT_DEFINITION_SUB_PATH =
-      EXPORT_SUB_PATH + DASHBOARD_SUB_PATH + "/definition/json";
+  private static final String DASHBOARD_BY_ID_PATH = DASHBOARD_SUB_PATH + "/{dashboardId}";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(PublicApiRestService.class);
 
   private final JsonReportResultExportService jsonReportResultExportService;
   private final EntityExportService entityExportService;
@@ -81,6 +80,23 @@ public class PublicApiRestService {
   private final DashboardService dashboardService;
   private final ProcessVariableLabelService processVariableLabelService;
   private final SettingsService settingsService;
+
+  public PublicApiRestService(
+      final JsonReportResultExportService jsonReportResultExportService,
+      final EntityExportService entityExportService,
+      final EntityImportService entityImportService,
+      final ReportService reportService,
+      final DashboardService dashboardService,
+      final ProcessVariableLabelService processVariableLabelService,
+      final SettingsService settingsService) {
+    this.jsonReportResultExportService = jsonReportResultExportService;
+    this.entityExportService = entityExportService;
+    this.entityImportService = entityImportService;
+    this.reportService = reportService;
+    this.dashboardService = dashboardService;
+    this.processVariableLabelService = processVariableLabelService;
+    this.settingsService = settingsService;
+  }
 
   @GET
   @Path(REPORT_SUB_PATH)
@@ -109,15 +125,15 @@ public class PublicApiRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @SneakyThrows
   public PaginatedDataExportDto exportReportData(
-      @Context ContainerRequestContext requestContext,
-      @SuppressWarnings("UnresolvedRestParam") @PathParam("reportId") String reportId,
+      @Context final ContainerRequestContext requestContext,
+      @SuppressWarnings("UnresolvedRestParam") @PathParam("reportId") final String reportId,
       @BeanParam @Valid final PaginationScrollableRequestDto paginationRequestDto) {
     final ZoneId timezone = ZoneId.of("UTC");
     try {
       return jsonReportResultExportService.getJsonForEvaluatedReportResult(
           reportId, timezone, PaginationScrollableDto.fromPaginationRequest(paginationRequestDto));
       // TODO this would be handled in the OPT-7236
-    } catch (ElasticsearchStatusException e) {
+    } catch (final ElasticsearchStatusException e) {
       // In case the user provides a parsable but invalid scroll id (e.g. scroll id was earlier
       // valid, but now
       // expired) the message from ElasticSearch is a bit cryptic. Therefore, we extract the useful
@@ -159,7 +175,7 @@ public class PublicApiRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public List<EntityIdResponseDto> importEntities(
       @Context final ContainerRequestContext requestContext,
-      @QueryParam("collectionId") String collectionId,
+      @QueryParam("collectionId") final String collectionId,
       final String exportedDtoJson) {
     validateCollectionIdNotNull(collectionId);
     final Set<OptimizeEntityExportDto> exportDtos =
@@ -189,8 +205,8 @@ public class PublicApiRestService {
   @Path(LABELS_SUB_PATH)
   @Consumes(MediaType.APPLICATION_JSON)
   public void modifyVariableLabels(
-      @Context ContainerRequestContext requestContext,
-      @Valid DefinitionVariableLabelsDto definitionVariableLabelsDto) {
+      @Context final ContainerRequestContext requestContext,
+      @Valid final DefinitionVariableLabelsDto definitionVariableLabelsDto) {
     processVariableLabelService.storeVariableLabels(definitionVariableLabelsDto);
   }
 
@@ -203,14 +219,14 @@ public class PublicApiRestService {
   @POST
   @Path(SHARE_PATH + "/enable")
   public void enableShare() {
-    SettingsDto settings = SettingsDto.builder().sharingEnabled(true).build();
+    final SettingsDto settings = SettingsDto.builder().sharingEnabled(true).build();
     settingsService.setSettings(settings);
   }
 
   @POST
   @Path(SHARE_PATH + "/disable")
   public void disableShare() {
-    SettingsDto settings = SettingsDto.builder().sharingEnabled(false).build();
+    final SettingsDto settings = SettingsDto.builder().sharingEnabled(false).build();
     settingsService.setSettings(settings);
   }
 }

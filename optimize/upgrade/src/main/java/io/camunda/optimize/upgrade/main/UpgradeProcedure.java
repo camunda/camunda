@@ -25,11 +25,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class UpgradeProcedure {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(UpgradeProcedure.class);
   protected final OptimizeElasticsearchClient esClient;
   protected final UpgradeValidationService upgradeValidationService;
   protected final SchemaUpgradeClient schemaUpgradeClient;
@@ -57,7 +57,7 @@ public class UpgradeProcedure {
         try {
           upgradeStepLogService.initializeOrUpdate(schemaUpgradeClient);
           executeUpgradePlan(upgradePlan);
-        } catch (Exception e) {
+        } catch (final Exception e) {
           log.error(
               "Error while executing update from {} to {}",
               upgradePlan.getFromVersion(),
@@ -80,10 +80,10 @@ public class UpgradeProcedure {
   private void executeUpgradePlan(final UpgradePlan upgradePlan) {
     int currentStepCount = 1;
     final List<UpgradeStep> upgradeSteps = upgradePlan.getUpgradeSteps();
-    Map<String, UpgradeStepLogEntryDto> appliedStepsById =
+    final Map<String, UpgradeStepLogEntryDto> appliedStepsById =
         upgradeStepLogService.getAllAppliedStepsForUpdateToById(
             schemaUpgradeClient, upgradePlan.getToVersion().toString());
-    for (UpgradeStep step : upgradeSteps) {
+    for (final UpgradeStep step : upgradeSteps) {
       final UpgradeStepLogEntryDto logEntryDto =
           UpgradeStepLogEntryDto.builder()
               .indexName(getIndexNameForStep(step))
@@ -104,7 +104,7 @@ public class UpgradeProcedure {
         try {
           step.execute(schemaUpgradeClient);
           upgradeStepLogService.recordAppliedStep(schemaUpgradeClient, logEntryDto);
-        } catch (UpgradeRuntimeException e) {
+        } catch (final UpgradeRuntimeException e) {
           log.error("The upgrade will be aborted. Please investigate the cause and retry it..");
           throw e;
         }

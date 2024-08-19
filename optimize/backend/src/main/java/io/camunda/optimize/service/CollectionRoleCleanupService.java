@@ -20,20 +20,28 @@ import io.camunda.optimize.service.util.configuration.condition.CamundaPlatformC
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
-@Slf4j
 @Component
 @Conditional(CamundaPlatformCondition.class)
 public class CollectionRoleCleanupService implements IdentityCacheSyncListener {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CollectionRoleCleanupService.class);
   private final CollectionReader collectionReader;
   private final CollectionWriter collectionWriter;
   private final ConfigurationService configurationService;
+
+  public CollectionRoleCleanupService(
+      final CollectionReader collectionReader,
+      final CollectionWriter collectionWriter,
+      final ConfigurationService configurationService) {
+    this.collectionReader = collectionReader;
+    this.collectionWriter = collectionWriter;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public void onFinishIdentitySync(final SearchableIdentityCache newIdentityCache) {
@@ -59,7 +67,7 @@ public class CollectionRoleCleanupService implements IdentityCacheSyncListener {
       final SearchableIdentityCache newIdentityCache, final CollectionDefinitionDto collection) {
     final Set<String> invalidIdentities = new HashSet<>();
     final CollectionDataDto collectionData = collection.getData();
-    for (CollectionRoleRequestDto role : collectionData.getRoles()) {
+    for (final CollectionRoleRequestDto role : collectionData.getRoles()) {
       final IdentityDto roleIdentity = role.getIdentity();
       switch (roleIdentity.getType()) {
         case GROUP:
@@ -86,7 +94,7 @@ public class CollectionRoleCleanupService implements IdentityCacheSyncListener {
       try {
         log.info("Removing role with ID [{}] from collection with ID [{}].", roleId, collectionId);
         collectionWriter.removeRoleFromCollection(collectionId, roleId);
-      } catch (Exception ex) {
+      } catch (final Exception ex) {
         log.error(
             "Could not remove role with ID [{}] from collection with ID [{}]",
             roleId,

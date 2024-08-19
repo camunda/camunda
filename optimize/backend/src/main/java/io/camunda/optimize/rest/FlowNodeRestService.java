@@ -23,20 +23,22 @@ import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path(FlowNodeRestService.FLOW_NODE_PATH)
 @Component
-@Slf4j
 public class FlowNodeRestService {
 
   public static final String FLOW_NODE_PATH = "/flow-node";
   public static final String FLOW_NODE_NAMES_SUB_PATH = "/flowNodeNames";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(FlowNodeRestService.class);
 
   private final DefinitionService definitionService;
+
+  public FlowNodeRestService(final DefinitionService definitionService) {
+    this.definitionService = definitionService;
+  }
 
   @POST
   @Path(FLOW_NODE_NAMES_SUB_PATH)
@@ -54,11 +56,11 @@ public class FlowNodeRestService {
             request.getTenantId());
 
     if (processDefinitionXmlDto.isPresent()) {
-      List<String> nodeIds = request.getNodeIds();
-      Map<String, String> flowNodeIdsToNames =
+      final List<String> nodeIds = request.getNodeIds();
+      final Map<String, String> flowNodeIdsToNames =
           extractFlowNodeNames(processDefinitionXmlDto.get().getFlowNodeData());
       if (nodeIds != null && !nodeIds.isEmpty()) {
-        for (String id : nodeIds) {
+        for (final String id : nodeIds) {
           result.getFlowNodeNames().put(id, flowNodeIdsToNames.get(id));
         }
       } else {

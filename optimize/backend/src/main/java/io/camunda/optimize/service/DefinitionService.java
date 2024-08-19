@@ -53,16 +53,16 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 public class DefinitionService implements ConfigurationReloadable {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DefinitionService.class);
   private final DefinitionReader definitionReader;
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final TenantService tenantService;

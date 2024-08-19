@@ -18,20 +18,22 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Set;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class CustomOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTime> {
 
-  private final DateTimeFormatter formatter;
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CustomOffsetDateTimeSerializer.class);
   private static final Set<String> AVAILABLE_ZONE_IDS = ZoneId.getAvailableZoneIds();
+  private final DateTimeFormatter formatter;
 
-  public CustomOffsetDateTimeSerializer(DateTimeFormatter formatter) {
+  public CustomOffsetDateTimeSerializer(final DateTimeFormatter formatter) {
     this.formatter = formatter;
   }
 
   @Override
-  public void serialize(OffsetDateTime value, JsonGenerator gen, SerializerProvider provider)
+  public void serialize(
+      final OffsetDateTime value, final JsonGenerator gen, final SerializerProvider provider)
       throws IOException {
     final String timezone = (String) provider.getAttribute(X_OPTIMIZE_CLIENT_TIMEZONE);
     OffsetDateTime timeZoneAdjustedDateTime = value;
@@ -45,6 +47,6 @@ public class CustomOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTim
             timezone);
       }
     }
-    gen.writeString(timeZoneAdjustedDateTime.format(this.formatter));
+    gen.writeString(timeZoneAdjustedDateTime.format(formatter));
   }
 }

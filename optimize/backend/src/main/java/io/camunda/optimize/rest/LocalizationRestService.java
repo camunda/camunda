@@ -14,18 +14,21 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path(LocalizationRestService.LOCALIZATION_PATH)
 @Component
-@Slf4j
 public class LocalizationRestService {
 
   public static final String LOCALIZATION_PATH = "/localization";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(LocalizationRestService.class);
   private final LocalizationService localizationService;
+
+  public LocalizationRestService(final LocalizationService localizationService) {
+    this.localizationService = localizationService;
+  }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)

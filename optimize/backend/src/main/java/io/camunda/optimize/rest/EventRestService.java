@@ -33,21 +33,30 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@AllArgsConstructor
 @Path("/event")
 @Component
-@Slf4j
 public class EventRestService {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(EventRestService.class);
   private final EventCountService eventCountService;
   private final ExternalEventService externalEventService;
   private final SessionService sessionService;
   private final EventProcessAuthorizationService eventProcessAuthorizationService;
+
+  public EventRestService(
+      final EventCountService eventCountService,
+      final ExternalEventService externalEventService,
+      final SessionService sessionService,
+      final EventProcessAuthorizationService eventProcessAuthorizationService) {
+    this.eventCountService = eventCountService;
+    this.externalEventService = externalEventService;
+    this.sessionService = sessionService;
+    this.eventProcessAuthorizationService = eventProcessAuthorizationService;
+  }
 
   @POST
   @Path("/count")
@@ -89,7 +98,7 @@ public class EventRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void deleteEvents(
       @Context final ContainerRequestContext requestContext,
-      @RequestBody @Valid @NotNull @Size(min = 1, max = 1000) List<String> eventIdsToDelete) {
+      @RequestBody @Valid @NotNull @Size(min = 1, max = 1000) final List<String> eventIdsToDelete) {
     validateEventProcessManagementAuthorization(requestContext);
     externalEventService.deleteEvents(eventIdsToDelete);
   }

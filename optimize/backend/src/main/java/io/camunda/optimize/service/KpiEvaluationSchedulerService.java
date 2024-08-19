@@ -21,31 +21,35 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class KpiEvaluationSchedulerService extends AbstractScheduledService {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(KpiEvaluationSchedulerService.class);
   private final ProcessOverviewWriter processOverviewWriter;
   private final DefinitionService definitionService;
   private final ConfigurationService configurationService;
   private final KpiService kpiService;
 
+  public KpiEvaluationSchedulerService(
+      final ProcessOverviewWriter processOverviewWriter,
+      final DefinitionService definitionService,
+      final ConfigurationService configurationService,
+      final KpiService kpiService) {
+    this.processOverviewWriter = processOverviewWriter;
+    this.definitionService = definitionService;
+    this.configurationService = configurationService;
+    this.kpiService = kpiService;
+  }
+
   @PostConstruct
   public void init() {
     startScheduling();
-  }
-
-  @Override
-  public synchronized boolean startScheduling() {
-    log.info("Scheduling KPI evaluation scheduler.");
-    return super.startScheduling();
   }
 
   @PreDestroy
@@ -67,14 +71,14 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
             .map(SimpleDefinitionDto::getKey)
             .collect(Collectors.toList());
 
-    Map<String, LastKpiEvaluationResultsDto> definitionKeyToKpis = new HashMap<>();
-    for (String processDefinitionKey : processDefinitionKeys) {
-      Map<String, String> reportIdToKpiValue = new HashMap<>();
-      List<KpiResultDto> kpiResultDtos = kpiService.evaluateKpiReports(processDefinitionKey);
-      for (KpiResultDto kpi : kpiResultDtos) {
+    final Map<String, LastKpiEvaluationResultsDto> definitionKeyToKpis = new HashMap<>();
+    for (final String processDefinitionKey : processDefinitionKeys) {
+      final Map<String, String> reportIdToKpiValue = new HashMap<>();
+      final List<KpiResultDto> kpiResultDtos = kpiService.evaluateKpiReports(processDefinitionKey);
+      for (final KpiResultDto kpi : kpiResultDtos) {
         reportIdToKpiValue.put(kpi.getReportId(), kpi.getValue());
       }
-      LastKpiEvaluationResultsDto lastKpiEvaluationResultsDto =
+      final LastKpiEvaluationResultsDto lastKpiEvaluationResultsDto =
           new LastKpiEvaluationResultsDto(reportIdToKpiValue);
       definitionKeyToKpis.put(processDefinitionKey, lastKpiEvaluationResultsDto);
     }
@@ -85,5 +89,11 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
   protected Trigger createScheduleTrigger() {
     return new PeriodicTrigger(
         Duration.ofSeconds(configurationService.getEntityConfiguration().getKpiRefreshInterval()));
+  }
+
+  @Override
+  public synchronized boolean startScheduling() {
+    log.info("Scheduling KPI evaluation scheduler.");
+    return super.startScheduling();
   }
 }

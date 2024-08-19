@@ -22,9 +22,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
 import java.util.Set;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class UpgradeMain {
 
   private static final Set<String> ANSWER_OPTIONS_YES =
@@ -32,12 +31,13 @@ public class UpgradeMain {
 
   private static final Set<String> ANSWER_OPTIONS_NO =
       Collections.unmodifiableSet(new HashSet<>(Arrays.asList("n", "no")));
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(UpgradeMain.class);
 
   static {
     new LoggingConfigurationReader().defineLogbackLoggingConfiguration();
   }
 
-  public static void main(String... args) {
+  public static void main(final String... args) {
     try {
       final UpgradeExecutionDependencies upgradeDependencies = createUpgradeDependencies();
       final UpgradeProcedure upgradeProcedure = UpgradeProcedureFactory.create(upgradeDependencies);
@@ -52,7 +52,7 @@ public class UpgradeMain {
               .getSequentialUpgradePlansToTargetVersion(targetVersion);
 
       if (upgradePlans.isEmpty()) {
-        String errorMessage =
+        final String errorMessage =
             "It was not possible to update Optimize to version "
                 + targetVersion
                 + ".\n"
@@ -67,7 +67,7 @@ public class UpgradeMain {
 
       log.info("Executing update...");
 
-      for (UpgradePlan upgradePlan : upgradePlans) {
+      for (final UpgradePlan upgradePlan : upgradePlans) {
         upgradeProcedure.performUpgrade(upgradePlan);
       }
       upgradeProcedure.schemaUpgradeClient.initializeSchema();
@@ -81,7 +81,7 @@ public class UpgradeMain {
     }
   }
 
-  private static void printWarning(String toVersion) {
+  private static void printWarning(final String toVersion) {
     String message =
         "\n\n"
             + "================================ WARNING! ================================ \n\n"
@@ -103,13 +103,13 @@ public class UpgradeMain {
 
     String answer = "";
     while (!ANSWER_OPTIONS_YES.contains(answer)) {
-      Scanner console = new Scanner(System.in);
+      final Scanner console = new Scanner(System.in);
       answer = console.next().trim().toLowerCase(Locale.ENGLISH);
       if (ANSWER_OPTIONS_NO.contains(answer)) {
         System.out.println("The Optimize upgrade was aborted.");
         System.exit(1);
       } else if (!ANSWER_OPTIONS_YES.contains(answer)) {
-        String text =
+        final String text =
             "Your answer was '"
                 + answer
                 + "'. The only accepted answers are '(y)es' or '(n)o'. \n"

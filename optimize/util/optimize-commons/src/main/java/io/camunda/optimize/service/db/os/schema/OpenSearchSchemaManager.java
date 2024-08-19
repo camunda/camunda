@@ -65,7 +65,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.util.set.Sets;
@@ -84,17 +83,19 @@ import org.opensearch.client.opensearch.indices.PutIndicesSettingsResponse;
 import org.opensearch.client.opensearch.indices.PutMappingRequest;
 import org.opensearch.client.opensearch.indices.PutMappingResponse;
 import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 @Conditional(OpenSearchCondition.class)
 public class OpenSearchSchemaManager
     extends DatabaseSchemaManager<OptimizeOpenSearchClient, IndexSettings.Builder> {
 
   public static final String ALL_INDEXES = "_all";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OpenSearchSchemaManager.class);
   private final OpenSearchMetadataService metadataService;
 
   @Autowired
@@ -203,7 +204,7 @@ public class OpenSearchSchemaManager
             mapping,
             indexSettings);
       }
-    } catch (OpenSearchException e) {
+    } catch (final OpenSearchException e) {
       if (e.status() == HTTP_BAD_REQUEST
           && e.getMessage().contains(INDEX_ALREADY_EXISTS_EXCEPTION_TYPE)) {
         log.debug(
@@ -212,8 +213,8 @@ public class OpenSearchSchemaManager
       } else {
         throw e;
       }
-    } catch (Exception e) {
-      String message = String.format("Could not create Index [%s]", suffixedIndexName);
+    } catch (final Exception e) {
+      final String message = String.format("Could not create Index [%s]", suffixedIndexName);
       log.warn(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
@@ -252,7 +253,7 @@ public class OpenSearchSchemaManager
             indices -> {
               try {
                 return osClient.getRichOpenSearchClient().index().indicesExist(indices);
-              } catch (IOException e) {
+              } catch (final IOException e) {
                 final String message =
                     String.format(
                         "Could not check if [%s] index(es) already exist.",
@@ -274,8 +275,8 @@ public class OpenSearchSchemaManager
     }
     try {
       createIndex(osClient, createIndexRequest.build(), indexNameWithSuffix);
-    } catch (IOException e) {
-      String message =
+    } catch (final IOException e) {
+      final String message =
           String.format("Could not create index %s from template.", indexNameWithSuffix);
       log.warn(message, e);
       throw new OptimizeRuntimeException(message, e);
@@ -458,7 +459,7 @@ public class OpenSearchSchemaManager
       final IndexMappingCreator<Builder> mappingCreator,
       final String defaultAliasName,
       final Set<String> additionalAliases,
-      IndexSettings indexSettings) {
+      final IndexSettings indexSettings) {
     final String templateName =
         indexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(mappingCreator);
     log.info("Creating or updating template with name {}", templateName);
@@ -589,7 +590,7 @@ public class OpenSearchSchemaManager
       final IndexMappingCreator<IndexSettings.Builder> mappingCreator) {
     final String defaultAliasName =
         indexNameService.getOptimizeIndexAliasForIndex(mappingCreator.getIndexName());
-    IndexSettings indexSettings = createIndexSettings(mappingCreator);
+    final IndexSettings indexSettings = createIndexSettings(mappingCreator);
     createOrUpdateTemplateWithAliases(
         osClient, mappingCreator, defaultAliasName, Sets.newHashSet(), indexSettings);
   }

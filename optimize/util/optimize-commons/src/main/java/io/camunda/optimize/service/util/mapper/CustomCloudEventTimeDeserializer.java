@@ -16,10 +16,12 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import java.io.IOException;
 import java.time.DateTimeException;
 import java.time.Instant;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class CustomCloudEventTimeDeserializer extends JsonDeserializer<Instant> {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CustomCloudEventTimeDeserializer.class);
 
   @Override
   public Instant deserialize(final JsonParser p, final DeserializationContext ctxt)
@@ -27,7 +29,7 @@ public class CustomCloudEventTimeDeserializer extends JsonDeserializer<Instant> 
     if (p.currentTokenId() == JsonTokenId.ID_STRING) {
       try {
         return ITU.parseDateTime(p.getText()).toInstant();
-      } catch (DateTimeException ex) {
+      } catch (final DateTimeException ex) {
         log.warn("There was a problem creating Instant from {}", p.getText());
       }
     }

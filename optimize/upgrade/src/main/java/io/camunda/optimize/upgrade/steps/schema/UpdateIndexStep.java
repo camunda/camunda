@@ -20,13 +20,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import lombok.EqualsAndHashCode;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
+import org.slf4j.Logger;
 
-@EqualsAndHashCode(callSuper = true)
-@Slf4j
 public class UpdateIndexStep extends UpgradeStep {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(UpdateIndexStep.class);
   private final String mappingScript;
   private final Map<String, Object> parameters;
   // expected suffix: hyphen and numbers at end of index name
@@ -68,6 +67,73 @@ public class UpdateIndexStep extends UpgradeStep {
     } else {
       migrateSingleIndex(schemaUpgradeClient);
     }
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof UpdateIndexStep;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = super.hashCode();
+    final Object $mappingScript = mappingScript;
+    result = result * PRIME + ($mappingScript == null ? 43 : $mappingScript.hashCode());
+    final Object $parameters = parameters;
+    result = result * PRIME + ($parameters == null ? 43 : $parameters.hashCode());
+    final Object $indexSuffixPattern = indexSuffixPattern;
+    result = result * PRIME + ($indexSuffixPattern == null ? 43 : $indexSuffixPattern.hashCode());
+    final Object $additionalReadAliases = additionalReadAliases;
+    result =
+        result * PRIME + ($additionalReadAliases == null ? 43 : $additionalReadAliases.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof UpdateIndexStep)) {
+      return false;
+    }
+    final UpdateIndexStep other = (UpdateIndexStep) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final Object this$mappingScript = mappingScript;
+    final Object other$mappingScript = other.mappingScript;
+    if (this$mappingScript == null
+        ? other$mappingScript != null
+        : !this$mappingScript.equals(other$mappingScript)) {
+      return false;
+    }
+    final Object this$parameters = parameters;
+    final Object other$parameters = other.parameters;
+    if (this$parameters == null
+        ? other$parameters != null
+        : !this$parameters.equals(other$parameters)) {
+      return false;
+    }
+    final Object this$indexSuffixPattern = indexSuffixPattern;
+    final Object other$indexSuffixPattern = other.indexSuffixPattern;
+    if (this$indexSuffixPattern == null
+        ? other$indexSuffixPattern != null
+        : !this$indexSuffixPattern.equals(other$indexSuffixPattern)) {
+      return false;
+    }
+    final Object this$additionalReadAliases = additionalReadAliases;
+    final Object other$additionalReadAliases = other.additionalReadAliases;
+    if (this$additionalReadAliases == null
+        ? other$additionalReadAliases != null
+        : !this$additionalReadAliases.equals(other$additionalReadAliases)) {
+      return false;
+    }
+    return true;
   }
 
   private void updateIndexTemplateAndAssociatedIndexes(
@@ -170,7 +236,7 @@ public class UpdateIndexStep extends UpgradeStep {
       final SchemaUpgradeClient schemaUpgradeClient,
       final String indexName,
       final Set<AliasMetadata> aliases) {
-    for (AliasMetadata alias : aliases) {
+    for (final AliasMetadata alias : aliases) {
       schemaUpgradeClient.addAlias(
           alias.getAlias(),
           indexName,
@@ -181,7 +247,7 @@ public class UpdateIndexStep extends UpgradeStep {
 
   private void applyAdditionalReadOnlyAliasesToIndex(
       final SchemaUpgradeClient schemaUpgradeClient, final String indexName) {
-    for (String alias : additionalReadAliases) {
+    for (final String alias : additionalReadAliases) {
       schemaUpgradeClient.addAlias(
           schemaUpgradeClient.getIndexNameService().getOptimizeIndexAliasForIndex(alias),
           indexName,

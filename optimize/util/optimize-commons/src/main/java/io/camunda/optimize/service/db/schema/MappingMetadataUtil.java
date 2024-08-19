@@ -36,11 +36,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@Slf4j
 public class MappingMetadataUtil {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MappingMetadataUtil.class);
   private final DatabaseClient dbClient;
   private final boolean isElasticSearchClient;
 

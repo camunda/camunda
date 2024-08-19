@@ -11,16 +11,19 @@ import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import java.io.IOException;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.HealthStatus;
 import org.opensearch.client.opensearch.cluster.HealthResponse;
 import org.opensearch.client.opensearch.nodes.Stats;
+import org.slf4j.Logger;
 
-@Slf4j
 public class OpenSearchClusterOperations extends OpenSearchSyncOperation {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OpenSearchClusterOperations.class);
+
   public OpenSearchClusterOperations(
-      OpenSearchClient openSearchClient, OptimizeIndexNameService indexNameService) {
+      final OpenSearchClient openSearchClient, final OptimizeIndexNameService indexNameService) {
     super(openSearchClient, indexNameService);
   }
 
@@ -30,7 +33,7 @@ public class OpenSearchClusterOperations extends OpenSearchSyncOperation {
           openSearchClient.cluster().health(h -> h.timeout(t -> t.time("500")));
       final HealthStatus status = response.status();
       return !response.timedOut() && !status.equals(HealthStatus.Red);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error(
           String.format(
               "Couldn't connect to OpenSearch due to %s. Return unhealthy state.", e.getMessage()),
