@@ -64,8 +64,8 @@
     <postgres.version>42.7.3</postgres.version>
     <mockito.version>5.12.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
-    <junit.jupiter.version>5.10.3</junit.jupiter.version>
-    <junit.platform.version>1.10.3</junit.platform.version>
+    <junit.jupiter.version>5.11.0</junit.jupiter.version>
+    <junit.platform.version>1.11.0</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
     <assertj.version>3.26.3</assertj.version>
     <google-java-format.plugin.version>1.23.0</google-java-format.plugin.version>
