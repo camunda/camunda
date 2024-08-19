@@ -31,10 +31,10 @@ jobs:
     timeout-minutes: 60
     steps:
     - name: Checkout code
-      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
     - name: Import secrets
       id: secrets
-      uses: hashicorp/vault-action@148ee648ccb26f28892776406f3c3c4cf8ac033f
+      uses: hashicorp/vault-action@8b7eaceb79bd7be97b311993e7c1cc5d051213c7
       with:
         url: ${{ secrets.VAULT_ADDR }}
         method: approle

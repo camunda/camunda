@@ -18,7 +18,7 @@ import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -26,6 +26,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class MessageSubscriptionRejectProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
+
+  private static final String SUBSCRIPTION_NOT_FOUND =
+      "Expected to find subscription for message with name '%s' and correlation key '%s', but none was found.";
 
   private final MessageState messageState;
   private final MessageSubscriptionState subscriptionState;
@@ -57,7 +60,7 @@ public final class MessageSubscriptionRejectProcessor
 
     final var foundSubscription = findSubscriptionToCorrelate(subscriptionRecord);
     if (!foundSubscription) {
-      writeNotCorrelatedResponse(subscriptionRecord);
+      writeNotCorrelatedResponse(record);
     }
   }
 
@@ -115,7 +118,8 @@ public final class MessageSubscriptionRejectProcessor
         subscription.getTenantId());
   }
 
-  private void writeNotCorrelatedResponse(final MessageSubscriptionRecord messageSubscription) {
+  private void writeNotCorrelatedResponse(final TypedRecord<MessageSubscriptionRecord> record) {
+    final var messageSubscription = record.getValue();
     final var messageKey = messageSubscription.getMessageKey();
 
     if (messageCorrelationState.existsRequestDataForMessageKey(messageKey)) {
@@ -131,11 +135,11 @@ public final class MessageSubscriptionRejectProcessor
 
       stateWriter.appendFollowUpEvent(
           messageKey, MessageCorrelationIntent.NOT_CORRELATED, messageCorrelationRecord);
-      responseWriter.writeResponse(
-          messageKey,
-          MessageCorrelationIntent.NOT_CORRELATED,
-          messageCorrelationRecord,
-          ValueType.MESSAGE_CORRELATION,
+      responseWriter.writeRejection(
+          record,
+          RejectionType.NOT_FOUND,
+          SUBSCRIPTION_NOT_FOUND.formatted(
+              messageSubscription.getMessageKey(), messageSubscription.getCorrelationKey()),
           requestData.getRequestId(),
           requestData.getRequestStreamId());
     }

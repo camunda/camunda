@@ -13,6 +13,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOW
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_ORDER;
 import static java.util.Optional.ofNullable;
 
+import io.camunda.service.search.filter.ComparableValueFilter;
 import io.camunda.service.search.filter.DecisionDefinitionFilter;
 import io.camunda.service.search.filter.DecisionRequirementsFilter;
 import io.camunda.service.search.filter.FilterBase;
@@ -38,6 +39,7 @@ import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.PriorityValueFilter;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
@@ -228,6 +230,11 @@ public final class SearchQueryRequestMapper {
       if (filter.getTenantIds() != null) {
         builder.tenantIds(filter.getTenantIds());
       }
+
+      // priority
+      if (filter.getPriority() != null) {
+        builder.priority(mapPriorityFilter(filter.getPriority()));
+      }
     }
 
     return builder.build();
@@ -296,6 +303,7 @@ public final class SearchQueryRequestMapper {
       switch (field) {
         case "creationDate" -> builder.creationDate();
         case "completionDate" -> builder.completionDate();
+        case "priority" -> builder.priority();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -405,5 +413,14 @@ public final class SearchQueryRequestMapper {
     } else {
       return values.toArray();
     }
+  }
+
+  private static ComparableValueFilter mapPriorityFilter(final PriorityValueFilter priority) {
+    return new ComparableValueFilter.Builder()
+        .eq(priority.getEq())
+        .gt(priority.getGt())
+        .lt(priority.getLt())
+        .lte(priority.getLte())
+        .build();
   }
 }

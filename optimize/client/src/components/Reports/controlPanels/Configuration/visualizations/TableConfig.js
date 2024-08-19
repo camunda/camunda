@@ -8,8 +8,6 @@
 
 import {FormGroup, Stack} from '@carbon/react';
 
-import {isDurationReport} from 'services';
-
 import ColumnSelection from './subComponents/ColumnSelection';
 import RelativeAbsoluteSelection from './subComponents/RelativeAbsoluteSelection';
 import GradientBarsSwitch from './subComponents/GradientBarsSwitch';
@@ -17,10 +15,9 @@ import GradientBarsSwitch from './subComponents/GradientBarsSwitch';
 export default function TableConfig({report, onChange, autoPreviewDisabled}) {
   let typeSpecificComponent = null;
 
-  const property = (report.combined ? Object.values(report.result.data)[0] : report).data.view
-    .properties[0];
+  const property = report.data.view.properties[0];
 
-  const groupBy = !report.combined && report.data.groupBy.type;
+  const groupBy = report.data.groupBy.type;
 
   switch (property) {
     case 'rawData':
@@ -57,13 +54,3 @@ export default function TableConfig({report, onChange, autoPreviewDisabled}) {
 
   return typeSpecificComponent;
 }
-
-// disable popover for duration tables since they currently have no configuration
-TableConfig.isDisabled = (report) => {
-  return (
-    report.combined &&
-    report.data.reports &&
-    report.data.reports.length &&
-    isDurationReport(Object.values(report.result.data)[0])
-  );
-};

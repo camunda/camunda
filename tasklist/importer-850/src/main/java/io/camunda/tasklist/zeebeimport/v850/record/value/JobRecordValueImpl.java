@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements JobRecordValue {
 
@@ -32,6 +33,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   private String tenantId;
   private JobKind jobKind;
   private JobListenerEventType jobListenerEventType;
+  private Set<String> changedAttributes;
 
   public JobRecordValueImpl() {}
 
@@ -40,7 +42,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return processInstanceKey;
   }
 
-  public void setProcessInstanceKey(long processInstanceKey) {
+  public void setProcessInstanceKey(final long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
   }
 
@@ -49,9 +51,17 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return type;
   }
 
+  public void setType(final String type) {
+    this.type = type;
+  }
+
   @Override
   public Map<String, String> getCustomHeaders() {
     return customHeaders;
+  }
+
+  public void setCustomHeaders(final Map<String, String> customHeaders) {
+    this.customHeaders = customHeaders;
   }
 
   @Override
@@ -59,9 +69,17 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return worker;
   }
 
+  public void setWorker(final String worker) {
+    this.worker = worker;
+  }
+
   @Override
   public int getRetries() {
     return retries;
+  }
+
+  public void setRetries(final int retries) {
+    this.retries = retries;
   }
 
   @Override
@@ -79,6 +97,10 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return deadline;
   }
 
+  public void setDeadline(final long deadline) {
+    this.deadline = deadline;
+  }
+
   @Override
   public long getTimeout() {
     return 0;
@@ -89,9 +111,17 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return errorMessage;
   }
 
+  public void setErrorMessage(final String errorMessage) {
+    this.errorMessage = errorMessage;
+  }
+
   @Override
   public String getErrorCode() {
     return errorCode;
+  }
+
+  public void setErrorCode(final String errorCode) {
+    this.errorCode = errorCode;
   }
 
   @Override
@@ -99,9 +129,17 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return elementId;
   }
 
+  public void setElementId(final String elementId) {
+    this.elementId = elementId;
+  }
+
   @Override
   public long getElementInstanceKey() {
     return elementInstanceKey;
+  }
+
+  public void setElementInstanceKey(final long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
   }
 
   @Override
@@ -109,9 +147,17 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return bpmnProcessId;
   }
 
+  public void setBpmnProcessId(final String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+  }
+
   @Override
   public int getProcessDefinitionVersion() {
     return processDefinitionVersion;
+  }
+
+  public void setProcessDefinitionVersion(final int processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
   }
 
   @Override
@@ -119,61 +165,26 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return processDefinitionKey;
   }
 
+  public void setProcessDefinitionKey(final long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
+
   @Override
   public String getTenantId() {
     return tenantId;
   }
 
-  public void setProcessDefinitionKey(long processDefinitionKey) {
-    this.processDefinitionKey = processDefinitionKey;
-  }
-
-  public void setProcessDefinitionVersion(int processDefinitionVersion) {
-    this.processDefinitionVersion = processDefinitionVersion;
-  }
-
-  public void setBpmnProcessId(String bpmnProcessId) {
-    this.bpmnProcessId = bpmnProcessId;
-  }
-
-  public void setElementInstanceKey(long elementInstanceKey) {
-    this.elementInstanceKey = elementInstanceKey;
-  }
-
-  public void setElementId(String elementId) {
-    this.elementId = elementId;
-  }
-
-  public void setErrorCode(String errorCode) {
-    this.errorCode = errorCode;
-  }
-
-  public void setErrorMessage(String errorMessage) {
-    this.errorMessage = errorMessage;
-  }
-
-  public void setDeadline(long deadline) {
-    this.deadline = deadline;
-  }
-
-  public void setRetries(int retries) {
-    this.retries = retries;
-  }
-
-  public void setWorker(String worker) {
-    this.worker = worker;
-  }
-
-  public void setCustomHeaders(Map<String, String> customHeaders) {
-    this.customHeaders = customHeaders;
-  }
-
-  public void setType(String type) {
-    this.type = type;
-  }
-
-  public void setTenantId(String tenantId) {
+  public void setTenantId(final String tenantId) {
     this.tenantId = tenantId;
+  }
+
+  @Override
+  public Set<String> getChangedAttributes() {
+    return changedAttributes;
+  }
+
+  public void setChangedAttributes(final Set<String> changedAttributes) {
+    this.changedAttributes = changedAttributes;
   }
 
   @Override
@@ -181,7 +192,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return jobKind;
   }
 
-  public JobRecordValueImpl setJobKind(JobKind jobKind) {
+  public JobRecordValueImpl setJobKind(final JobKind jobKind) {
     this.jobKind = jobKind;
     return this;
   }
@@ -216,11 +227,12 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         errorCode,
         tenantId,
         jobKind,
-        jobListenerEventType);
+        jobListenerEventType,
+        changedAttributes);
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -246,7 +258,8 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         && Objects.equals(errorCode, that.errorCode)
         && Objects.equals(tenantId, that.tenantId)
         && jobKind == that.jobKind
-        && jobListenerEventType == that.jobListenerEventType;
+        && jobListenerEventType == that.jobListenerEventType
+        && Objects.equals(changedAttributes, that.changedAttributes);
   }
 
   @Override
@@ -292,6 +305,8 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         + '\''
         + ", jobListenerEventType="
         + jobListenerEventType
+        + ", changedAttributes="
+        + changedAttributes
         + '}';
   }
 }

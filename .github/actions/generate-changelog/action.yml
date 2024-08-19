@@ -16,7 +16,7 @@ runs:
   using: composite
   steps:
     - name: Checkout
-      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       with:
         ref: ${{ github.event.inputs.branch }}
         fetch-depth: 0
@@ -25,7 +25,7 @@ runs:
       run: |
         echo "LAST_TAG=$(git describe --abbrev=0 --tags)" >> $GITHUB_ENV
     - name: Calculate changelog
-      uses: dlavrenuek/conventional-changelog-action@86998ff61a0b14063262141358dbf2a4e6c630e7 # v1.2.4
+      uses: dlavrenuek/conventional-changelog-action@061702b2dfd0d67c9be5779c16c35fde2e6d522c # v1.2.5
       id: changelog
       with:
         from: ${{ github.event.inputs.from || env.LAST_TAG }}

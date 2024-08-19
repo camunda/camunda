@@ -148,39 +148,6 @@
 //   }
 //
 //   @Test
-//   public void cleanupAfterIdentitySyncRemovesLastManager() {
-//     final PlatformUserIdentityCache userIdentityCacheService = getUserIdentityCacheService();
-//     try {
-//       // given
-//       userIdentityCacheService.startScheduledSync();
-//
-//       authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
-//       authorizationClient.addKermitUserWithoutAuthorizations();
-//       embeddedOptimizeExtension
-//           .getConfigurationService()
-//           .getAuthConfiguration()
-//           .getSuperUserIds()
-//           .add(DEFAULT_USERNAME);
-//
-//       userIdentityCacheService.synchronizeIdentities();
-//
-//       final String collectionId = collectionClient.createNewCollection(USER_KERMIT, USER_KERMIT);
-//
-//       // when
-//       authorizationClient.revokeSingleResourceAuthorizationsForUser(
-//           USER_KERMIT, OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION);
-//
-//       userIdentityCacheService.synchronizeIdentities();
-//
-//       // then
-//       List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRoles(collectionId);
-//       assertThat(roles).isEmpty();
-//     } finally {
-//       userIdentityCacheService.startScheduledSync();
-//     }
-//   }
-//
-//   @Test
 //   public void noCleanupOnOnEmptyIdentityCache() {
 //     // given
 //     PlatformUserIdentityCache userIdentityCacheService = getUserIdentityCacheService();

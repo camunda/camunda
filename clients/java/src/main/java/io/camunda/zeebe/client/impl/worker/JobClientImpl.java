@@ -58,7 +58,13 @@ public final class JobClientImpl implements JobClient {
   @Override
   public CompleteJobCommandStep1 newCompleteCommand(final long jobKey) {
     return new CompleteJobCommandImpl(
-        asyncStub, jsonMapper, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
+        asyncStub,
+        jsonMapper,
+        jobKey,
+        config.getDefaultRequestTimeout(),
+        retryPredicate,
+        httpClient,
+        config.preferRestOverGrpc());
   }
 
   @Override

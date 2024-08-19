@@ -156,6 +156,7 @@ public final class SearchQueryResponseMapper {
         .followUpDate(t.followUpDate())
         .externalFormReference(t.externalFormReference())
         .processDefinitionVersion(t.processDefinitionVersion())
-        .customHeaders(t.customHeaders());
+        .customHeaders(t.customHeaders())
+        .priority(t.priority());
   }
 }

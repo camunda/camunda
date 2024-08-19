@@ -31,16 +31,17 @@ public class EntitiesClient {
     return getAllEntities(null);
   }
 
-  public List<EntityResponseDto> getAllEntities(EntitySorter sorter) {
+  public List<EntityResponseDto> getAllEntities(final EntitySorter sorter) {
     return getAllEntitiesAsUser(DEFAULT_USERNAME, DEFAULT_PASSWORD, sorter);
   }
 
-  public List<EntityResponseDto> getAllEntitiesAsUser(String username, String password) {
+  public List<EntityResponseDto> getAllEntitiesAsUser(
+      final String username, final String password) {
     return getAllEntitiesAsUser(username, password, null);
   }
 
   private List<EntityResponseDto> getAllEntitiesAsUser(
-      String username, String password, final EntitySorter sorter) {
+      final String username, final String password, final EntitySorter sorter) {
     return getRequestExecutor()
         .buildGetAllEntitiesRequest(sorter)
         .withUserAuthentication(username, password)
@@ -48,43 +49,24 @@ public class EntitiesClient {
   }
 
   public EntityNameResponseDto getEntityNames(
-      String collectionId, String dashboardId, String reportId, String eventProcessId) {
+      final String collectionId, final String dashboardId, final String reportId) {
     return getEntityNamesAsUser(
-        collectionId, dashboardId, reportId, eventProcessId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-  }
-
-  public EntityNameResponseDto getEntityNamesLocalized(
-      final String collectionId,
-      final String dashboardId,
-      final String reportId,
-      final String eventProcessId,
-      final String locale) {
-    return getEntityNamesAsUser(
-        collectionId,
-        dashboardId,
-        reportId,
-        eventProcessId,
-        DEFAULT_USERNAME,
-        DEFAULT_PASSWORD,
-        locale);
+        collectionId, dashboardId, reportId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
   public EntityNameResponseDto getEntityNamesAsUser(
-      String collectionId,
-      String dashboardId,
-      String reportId,
-      String eventProcessId,
-      String username,
-      String password) {
-    return getEntityNamesAsUser(
-        collectionId, dashboardId, reportId, eventProcessId, username, password, null);
+      final String collectionId,
+      final String dashboardId,
+      final String reportId,
+      final String username,
+      final String password) {
+    return getEntityNamesAsUser(collectionId, dashboardId, reportId, username, password, null);
   }
 
   private EntityNameResponseDto getEntityNamesAsUser(
       final String collectionId,
       final String dashboardId,
       final String reportId,
-      final String eventProcessId,
       final String username,
       final String password,
       final String locale) {
@@ -93,12 +75,12 @@ public class EntitiesClient {
         .ifPresent(loc -> requestExecutor.addSingleHeader(X_OPTIMIZE_CLIENT_LOCALE, loc));
     return requestExecutor
         .withUserAuthentication(username, password)
-        .buildGetEntityNamesRequest(
-            new EntityNameRequestDto(collectionId, dashboardId, reportId, eventProcessId))
+        .buildGetEntityNamesRequest(new EntityNameRequestDto(collectionId, dashboardId, reportId))
         .execute(EntityNameResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public boolean entitiesHaveDeleteConflicts(EntitiesDeleteRequestDto entitiesDeleteRequestDto) {
+  public boolean entitiesHaveDeleteConflicts(
+      final EntitiesDeleteRequestDto entitiesDeleteRequestDto) {
     return getRequestExecutor()
         .buildCheckEntityDeleteConflictsRequest(entitiesDeleteRequestDto)
         .execute(Boolean.class, Response.Status.OK.getStatusCode());

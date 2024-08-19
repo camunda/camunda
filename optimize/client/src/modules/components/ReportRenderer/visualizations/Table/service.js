@@ -63,7 +63,7 @@ export function getBodyRows({
   return rows;
 }
 
-export function getCombinedTableProps(
+export function getHyperTableProps(
   reportResult,
   reports,
   displayRelativeValue,

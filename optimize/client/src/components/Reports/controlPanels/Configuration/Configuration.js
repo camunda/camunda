@@ -118,11 +118,11 @@ export default class Configuration extends Component {
 
   render() {
     const {report, type, disabled, autoPreviewDisabled} = this.props;
-    const {reportType, data, combined, result} = report;
+    const {reportType, data, result} = report;
     const {configuration, view, distributedBy, groupBy} = data;
     const Component = visualizations[type];
 
-    const isRawDataReport = !combined && view?.properties[0] === 'rawData';
+    const isRawDataReport = view?.properties[0] === 'rawData';
 
     const isPercentageOnly =
       view?.properties.includes('percentage') && view.properties.length === 1;
@@ -157,13 +157,11 @@ export default class Configuration extends Component {
             className="content"
           >
             <Stack gap={4}>
-              {!combined && (
-                <ShowInstanceCount
-                  showInstanceCount={configuration.showInstanceCount}
-                  onChange={this.updateConfiguration}
-                  label={reportType === 'decision' ? 'evaluation' : 'instance'}
-                />
-              )}
+              <ShowInstanceCount
+                showInstanceCount={configuration.showInstanceCount}
+                onChange={this.updateConfiguration}
+                label={reportType === 'decision' ? 'evaluation' : 'instance'}
+              />
               <DateVariableUnit
                 configuration={configuration}
                 groupBy={groupBy}

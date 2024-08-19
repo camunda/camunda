@@ -92,45 +92,6 @@
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 //   }
 //
-//   @Test
-//   public void superUserIdentityIsGrantedAddDashboard() {
-//     // given
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperUserIds()
-//         .add(KERMIT_USER);
-//
-//     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-//
-//     // when
-//     final Response response = createDashboardInCollectionAsKermit(collectionId);
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-//   }
-//
-//   @Test
-//   public void superGroupIdentityIsGrantedAddDashboard() {
-//     // given
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .setSuperGroupIds(Collections.singletonList(GROUP_ID));
-//
-//     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-//
-//     // when
-//     final Response response = createDashboardInCollectionAsKermit(collectionId);
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-//   }
-//
 //   @ParameterizedTest
 //   @MethodSource(ACCESS_ONLY_USER_ROLES)
 //   public void viewerUserIsRejectedToAddDashboardByCollectionRoleAlthoughMemberOfEditorGroup(
@@ -276,55 +237,6 @@
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
 //   }
 //
-//   @Test
-//   public void superUserIdentityIsGrantedCopyOtherPrivateDashboardToCollection() {
-//     // given
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperUserIds()
-//         .add(KERMIT_USER);
-//
-//     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-//
-//     // when
-//     final String resourceId =
-//         dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-//     final Response response = copyDashboardToCollectionAsKermit(resourceId, collectionId);
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-//     final String copyId = response.readEntity(IdResponseDto.class).getId();
-//     final DashboardDefinitionRestDto dashboardCopy = dashboardClient.getDashboard(copyId);
-//     assertThat(dashboardCopy.getOwner()).isEqualTo(DEFAULT_FULLNAME);
-//   }
-//
-//   @Test
-//   public void superGroupIdentityIsGrantedCopyOtherPrivateDashboardToCollection() {
-//     // given
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .setSuperGroupIds(Collections.singletonList(GROUP_ID));
-//
-//     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-//
-//     // when
-//     final String resourceId =
-//         dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-//     final Response response = copyDashboardToCollectionAsKermit(resourceId, collectionId);
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-//     final String copyId = response.readEntity(IdResponseDto.class).getId();
-//     final DashboardDefinitionRestDto dashboardCopy = dashboardClient.getDashboard(copyId);
-//     assertThat(dashboardCopy.getOwner()).isEqualTo(DEFAULT_FULLNAME);
-//   }
-//
 //   @ParameterizedTest
 //   @MethodSource(ACCESS_IDENTITY_ROLES)
 //   public void anyRoleIdentityIsGrantedCopyCollectionDashboardAsPrivateDashboardByCollectionRole(
@@ -348,47 +260,6 @@
 //     final DashboardDefinitionRestDto dashboardCopy =
 //         getDashboardByIdAsKermit(copyId).getDefinitionDto();
 //     assertThat(dashboardCopy.getOwner()).isEqualTo(DEFAULT_FULLNAME);
-//   }
-//
-//   @Test
-//   public void superUserIdentityIsGrantedCopyCollectionDashboardAsPrivateDashboard() {
-//     // given
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperUserIds()
-//         .add(KERMIT_USER);
-//
-//     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-//     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
-//
-//     // when
-//     final Response response = copyDashboardAsPrivateDashboardAsKermit(dashboardId);
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-//   }
-//
-//   @Test
-//   public void superGroupIdentityIsGrantedCopyCollectionDashboardAsPrivateDashboard() {
-//     // given
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .setSuperGroupIds(Collections.singletonList(GROUP_ID));
-//
-//     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-//     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
-//
-//     // when
-//     final Response response = copyDashboardAsPrivateDashboardAsKermit(dashboardId);
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 //   }
 //
 //   @Test
@@ -428,41 +299,6 @@
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
 //   }
 //
-//   @Test
-//   public void superUserCanAccessOtherPrivateDashboard() {
-//     // given
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperUserIds()
-//         .add(KERMIT_USER);
-//
-//     final String dashboardId =
-//         dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-//
-//     // when
-//     dashboardClient.getDashboard(dashboardId);
-//   }
-//
-//   @Test
-//   public void superGroupCanAccessOtherPrivateDashboard() {
-//     // given
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .setSuperGroupIds(Collections.singletonList(GROUP_ID));
-//
-//     final String dashboardId =
-//         dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-//
-//     // when
-//     dashboardClient.getDashboard(dashboardId);
-//   }
-//
 //   @ParameterizedTest
 //   @MethodSource(ACCESS_IDENTITY_ROLES)
 //   public void anyRoleIdentityIsGrantedAccessToCollectionDashboardByCollectionRole(
@@ -484,49 +320,6 @@
 //     // then
 //     assertThat(dashboard.getCurrentUserRole())
 //         .isEqualTo(getExpectedResourceRoleForCollectionRole(identityAndRole));
-//   }
-//
-//   @Test
-//   public void superUserIdentityIsGrantedAccessToCollectionDashboard() {
-//     // given
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperUserIds()
-//         .add(KERMIT_USER);
-//
-//     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-//     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
-//
-//     // when
-//     final AuthorizedDashboardDefinitionResponseDto dashboard =
-//         getDashboardByIdAsKermit(dashboardId);
-//
-//     // then
-//     assertThat(dashboard.getCurrentUserRole()).isEqualTo(RoleType.EDITOR);
-//   }
-//
-//   @Test
-//   public void superGroupIdentityIsGrantedAccessToCollectionDashboard() {
-//     // given
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .setSuperGroupIds(Collections.singletonList(GROUP_ID));
-//
-//     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-//     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
-//
-//     // when
-//     final AuthorizedDashboardDefinitionResponseDto dashboard =
-//         getDashboardByIdAsKermit(dashboardId);
-//
-//     // then
-//     assertThat(dashboard.getCurrentUserRole()).isEqualTo(RoleType.EDITOR);
 //   }
 //
 //   @Test
@@ -564,47 +357,6 @@
 //
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-//   }
-//
-//   @Test
-//   public void superUserCanUpdateOtherPrivateDashboard() {
-//     // given
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperUserIds()
-//         .add(KERMIT_USER);
-//
-//     final String dashboardId =
-//         dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-//
-//     // when
-//     final Response response = updateDashboardAsKermit(dashboardId);
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-//   }
-//
-//   @Test
-//   public void superGroupCanUpdateOtherPrivateDashboard() {
-//     // given
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .setSuperGroupIds(Collections.singletonList(GROUP_ID));
-//
-//     final String dashboardId =
-//         dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-//
-//     // when
-//     final Response response = updateDashboardAsKermit(dashboardId);
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 //   }
 //
 //   @ParameterizedTest
@@ -650,47 +402,6 @@
 //   }
 //
 //   @Test
-//   public void superUserIdentityIsGrantedUpdateCollectionDashboard() {
-//     // given
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperUserIds()
-//         .add(KERMIT_USER);
-//
-//     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-//     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
-//
-//     // when
-//     final Response response = updateDashboardAsKermit(dashboardId);
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-//   }
-//
-//   @Test
-//   public void superGroupIdentityIsGrantedUpdateCollectionDashboard() {
-//     // given
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .setSuperGroupIds(Collections.singletonList(GROUP_ID));
-//
-//     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-//     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
-//
-//     // when
-//     final Response response = updateDashboardAsKermit(dashboardId);
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-//   }
-//
-//   @Test
 //   public void noRoleIdentityIsRejectedToUpdateDashboardToCollection() {
 //     // given
 //     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -720,47 +431,6 @@
 //
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-//   }
-//
-//   @Test
-//   public void superUserCanDeleteOtherPrivateDashboard() {
-//     // given
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperUserIds()
-//         .add(KERMIT_USER);
-//
-//     final String dashboardId =
-//         dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-//
-//     // when
-//     final Response response = deleteDashboardAsKermit(dashboardId);
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-//   }
-//
-//   @Test
-//   public void superGroupCanDeleteOtherPrivateDashboard() {
-//     // given
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .setSuperGroupIds(Collections.singletonList(GROUP_ID));
-//
-//     final String dashboardId =
-//         dashboardClient.createDashboardAsUser(null, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-//
-//     // when
-//     final Response response = deleteDashboardAsKermit(dashboardId);
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 //   }
 //
 //   @ParameterizedTest
@@ -803,47 +473,6 @@
 //
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-//   }
-//
-//   @Test
-//   public void superUserIdentityIsGrantedDeleteDashboard() {
-//     // given
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperUserIds()
-//         .add(KERMIT_USER);
-//
-//     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-//     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
-//
-//     // when
-//     final Response response = deleteDashboardAsKermit(dashboardId);
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-//   }
-//
-//   @Test
-//   public void superGroupIdentityIsGrantedDeleteDashboard() {
-//     // given
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .setSuperGroupIds(Collections.singletonList(GROUP_ID));
-//
-//     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
-//     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
-//
-//     // when
-//     final Response response = deleteDashboardAsKermit(dashboardId);
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 //   }
 //
 //   @Test

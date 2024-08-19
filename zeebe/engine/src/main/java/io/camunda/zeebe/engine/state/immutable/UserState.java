@@ -15,4 +15,6 @@ public interface UserState {
   UserRecord getUser(final DirectBuffer username);
 
   UserRecord getUser(final String username);
+
+  void updateUser(final UserRecord user);
 }

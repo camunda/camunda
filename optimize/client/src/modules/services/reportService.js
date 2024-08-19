@@ -50,11 +50,9 @@ export function processResult(report) {
 
 export function isAlertCompatibleReport(report) {
   const {
-    combined,
     data: {visualization, view, configuration},
   } = report;
   return (
-    !combined &&
     visualization === 'number' &&
     view?.properties?.length === 1 &&
     (configuration.aggregationTypes.length === 1 || view.properties[0] !== 'duration')

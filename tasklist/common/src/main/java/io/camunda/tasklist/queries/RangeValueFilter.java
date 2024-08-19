@@ -35,6 +35,8 @@ public final class RangeValueFilter {
     this.lte = lte;
   }
 
+  public RangeValueFilter() {}
+
   public Object getEq() {
     return eq;
   }

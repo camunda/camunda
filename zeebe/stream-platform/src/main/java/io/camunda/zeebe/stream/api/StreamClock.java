@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.api;
 
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 import io.camunda.zeebe.stream.impl.ControllableStreamClockImpl;
 import io.camunda.zeebe.stream.impl.UncontrolledStreamClock;
 import java.time.Duration;
@@ -24,12 +25,18 @@ public interface StreamClock extends InstantSource {
   }
 
   static StreamClock system() {
-    return new UncontrolledStreamClock(InstantSource.system());
+    return uncontrolled(InstantSource.system());
   }
 
   static ControllableStreamClock controllable(final InstantSource source) {
     return new ControllableStreamClockImpl(source);
   }
+
+  /**
+   * Returns the current modification applied to the clock. If no modification is applied, {@link
+   * Modification.None} is returned.
+   */
+  Modification currentModification();
 
   /**
    * A controllable {@link StreamClock} that allows to pin the time to a specific instant or to
@@ -45,12 +52,6 @@ public interface StreamClock extends InstantSource {
      *     clock to current system time.
      */
     void applyModification(Modification modification);
-
-    /**
-     * Returns the current modification applied to the clock. If no modification is applied, {@link
-     * Modification.None} is returned.
-     */
-    Modification currentModification();
 
     /**
      * Shortcut to pin the clock to a specific instant.

@@ -11,7 +11,6 @@ import {shallow} from 'enzyme';
 import BarLineConfig from './BarLineConfig';
 
 const report = {
-  combined: false,
   data: {
     visualization: 'bar',
     view: {properties: ['frequency']},

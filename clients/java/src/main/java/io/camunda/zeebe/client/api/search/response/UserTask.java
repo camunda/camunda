@@ -75,4 +75,7 @@ public interface UserTask {
 
   /** Custom headers associated with the task */
   Map<String, String> getCustomHeaders();
+
+  /** Priority of the task */
+  Integer getPriority();
 }

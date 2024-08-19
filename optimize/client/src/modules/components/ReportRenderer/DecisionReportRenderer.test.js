@@ -21,7 +21,6 @@ jest.mock('./service', () => {
 });
 
 const report = {
-  combined: false,
   reportType: 'decision',
   data: {
     decisionDefinitionKey: 'aKey',

@@ -34,9 +34,9 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 import org.springframework.http.HttpStatus;
 
 /**
- * This quality of service filter applies to event ingestion, limiting the max number of requests
- * that can be served at a time. It is based heavily on Jetty's QoSFilter, with changes mainly in
- * the response we give on rejected requests.
+ * This quality of service filter applies to external data ingestion, limiting the max number of
+ * requests that can be served at a time. It is based heavily on Jetty's QoSFilter, with changes
+ * mainly in the response we give on rejected requests.
  * https://www.eclipse.org/jetty/javadoc/9.4.26.v20200117/org/eclipse/jetty/servlets/QoSFilter.html
  */
 @RequiredArgsConstructor

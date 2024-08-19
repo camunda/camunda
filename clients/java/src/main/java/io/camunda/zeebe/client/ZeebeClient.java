@@ -20,6 +20,7 @@ import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
@@ -295,6 +296,23 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   PublishMessageCommandStep1 newPublishMessageCommand();
+
+  /**
+   * Command to correlate a message and wait for it to be correlated against a process instance.
+   *
+   * <pre>
+   * zeebeClient
+   *  .newCorrelateMessageCommand()
+   *  .messageName("order canceled")
+   *  .correlationKey(orderId)
+   *  .variables(json)
+   *  .tenantId("tenant")
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the command
+   */
+  CorrelateMessageCommandStep1 newCorrelateMessageCommand();
 
   /**
    * Command to broadcast a signal.

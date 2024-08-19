@@ -64,11 +64,13 @@ public final class TaskDTO {
 
   @GraphQLField private TaskImplementation implementation;
 
+  private int priority;
+
   public String getId() {
     return id;
   }
 
-  public TaskDTO setId(String id) {
+  public TaskDTO setId(final String id) {
     this.id = id;
     return this;
   }
@@ -77,7 +79,7 @@ public final class TaskDTO {
     return assignee;
   }
 
-  public TaskDTO setAssignee(String assignee) {
+  public TaskDTO setAssignee(final String assignee) {
     this.assignee = assignee;
     return this;
   }
@@ -104,7 +106,7 @@ public final class TaskDTO {
     return flowNodeBpmnId;
   }
 
-  public TaskDTO setFlowNodeBpmnId(String flowNodeBpmnId) {
+  public TaskDTO setFlowNodeBpmnId(final String flowNodeBpmnId) {
     this.flowNodeBpmnId = flowNodeBpmnId;
     return this;
   }
@@ -122,7 +124,7 @@ public final class TaskDTO {
     return processDefinitionId;
   }
 
-  public TaskDTO setProcessDefinitionId(String processDefinitionId) {
+  public TaskDTO setProcessDefinitionId(final String processDefinitionId) {
     this.processDefinitionId = processDefinitionId;
     return this;
   }
@@ -131,7 +133,7 @@ public final class TaskDTO {
     return bpmnProcessId;
   }
 
-  public TaskDTO setBpmnProcessId(String bpmnProcessId) {
+  public TaskDTO setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -140,7 +142,7 @@ public final class TaskDTO {
     return creationTime;
   }
 
-  public TaskDTO setCreationTime(String creationTime) {
+  public TaskDTO setCreationTime(final String creationTime) {
     this.creationTime = creationTime;
     return this;
   }
@@ -149,7 +151,7 @@ public final class TaskDTO {
     return completionTime;
   }
 
-  public TaskDTO setCompletionTime(String completionTime) {
+  public TaskDTO setCompletionTime(final String completionTime) {
     this.completionTime = completionTime;
     return this;
   }
@@ -158,7 +160,7 @@ public final class TaskDTO {
     return taskState;
   }
 
-  public TaskDTO setTaskState(TaskState taskState) {
+  public TaskDTO setTaskState(final TaskState taskState) {
     this.taskState = taskState;
     return this;
   }
@@ -185,13 +187,13 @@ public final class TaskDTO {
     return candidateUsers;
   }
 
-  public TaskDTO setCandidateUsers(String[] candidateUsers) {
-    this.candidateUsers = candidateUsers;
-    return this;
-  }
-
   public String[] getCandidateUsers() {
     return candidateUsers;
+  }
+
+  public TaskDTO setCandidateUsers(final String[] candidateUsers) {
+    this.candidateUsers = candidateUsers;
+    return this;
   }
 
   public String getFormKey() {
@@ -207,7 +209,7 @@ public final class TaskDTO {
     return formId;
   }
 
-  public TaskDTO setFormId(String formId) {
+  public TaskDTO setFormId(final String formId) {
     this.formId = formId;
     return this;
   }
@@ -216,7 +218,7 @@ public final class TaskDTO {
     return formVersion;
   }
 
-  public TaskDTO setFormVersion(Long formVersion) {
+  public TaskDTO setFormVersion(final Long formVersion) {
     this.formVersion = formVersion;
     return this;
   }
@@ -225,7 +227,7 @@ public final class TaskDTO {
     return isFormEmbedded;
   }
 
-  public TaskDTO setIsFormEmbedded(Boolean isFormEmbedded) {
+  public TaskDTO setIsFormEmbedded(final Boolean isFormEmbedded) {
     this.isFormEmbedded = isFormEmbedded;
     return this;
   }
@@ -234,7 +236,7 @@ public final class TaskDTO {
     return tenantId;
   }
 
-  public TaskDTO setTenantId(String tenantId) {
+  public TaskDTO setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -243,7 +245,7 @@ public final class TaskDTO {
     return dueDate;
   }
 
-  public TaskDTO setDueDate(OffsetDateTime dueDate) {
+  public TaskDTO setDueDate(final OffsetDateTime dueDate) {
     this.dueDate = dueDate;
     return this;
   }
@@ -252,7 +254,7 @@ public final class TaskDTO {
     return followUpDate;
   }
 
-  public TaskDTO setFollowUpDate(OffsetDateTime followUpDate) {
+  public TaskDTO setFollowUpDate(final OffsetDateTime followUpDate) {
     this.followUpDate = followUpDate;
     return this;
   }
@@ -261,7 +263,7 @@ public final class TaskDTO {
     return variables;
   }
 
-  public TaskDTO setVariables(VariableDTO[] variables) {
+  public TaskDTO setVariables(final VariableDTO[] variables) {
     this.variables = variables;
     return this;
   }
@@ -270,17 +272,26 @@ public final class TaskDTO {
     return implementation;
   }
 
-  public TaskDTO setImplementation(TaskImplementation implementation) {
+  public TaskDTO setImplementation(final TaskImplementation implementation) {
     this.implementation = implementation;
     return this;
   }
 
-  public static TaskDTO createFrom(TaskEntity taskEntity, ObjectMapper objectMapper) {
+  public int getPriority() {
+    return priority;
+  }
+
+  public TaskDTO setPriority(final int priority) {
+    this.priority = priority;
+    return this;
+  }
+
+  public static TaskDTO createFrom(final TaskEntity taskEntity, final ObjectMapper objectMapper) {
     return createFrom(taskEntity, null, objectMapper);
   }
 
   public static TaskDTO createFrom(
-      TaskEntity taskEntity, Object[] sortValues, ObjectMapper objectMapper) {
+      final TaskEntity taskEntity, final Object[] sortValues, final ObjectMapper objectMapper) {
     final TaskDTO taskDTO =
         new TaskDTO()
             .setCreationTime(objectMapper.convertValue(taskEntity.getCreationTime(), String.class))
@@ -303,7 +314,8 @@ public final class TaskDTO {
             .setDueDate(taskEntity.getDueDate())
             .setCandidateGroups(taskEntity.getCandidateGroups())
             .setCandidateUsers(taskEntity.getCandidateUsers())
-            .setImplementation(taskEntity.getImplementation());
+            .setImplementation(taskEntity.getImplementation())
+            .setPriority(taskEntity.getPriority() == null ? 50 : taskEntity.getPriority());
     if (sortValues != null) {
       taskDTO.setSortValues(toArrayOfStrings(sortValues));
     }
@@ -311,7 +323,9 @@ public final class TaskDTO {
   }
 
   public static TaskDTO createFrom(
-      TaskSearchView taskSearchView, VariableDTO[] variables, ObjectMapper objectMapper) {
+      final TaskSearchView taskSearchView,
+      final VariableDTO[] variables,
+      final ObjectMapper objectMapper) {
     return new TaskDTO()
         .setCreationTime(objectMapper.convertValue(taskSearchView.getCreationTime(), String.class))
         .setCompletionTime(
@@ -336,10 +350,11 @@ public final class TaskDTO {
         .setSortValues(taskSearchView.getSortValues())
         .setIsFirst(taskSearchView.isFirst())
         .setVariables(variables)
-        .setImplementation(taskSearchView.getImplementation());
+        .setImplementation(taskSearchView.getImplementation())
+        .setPriority(taskSearchView.getPriority() == null ? 50 : taskSearchView.getPriority());
   }
 
-  public static TaskEntity toTaskEntity(TaskDTO taskDTO) {
+  public static TaskEntity toTaskEntity(final TaskDTO taskDTO) {
 
     final TaskEntity taskEntity;
     try {
@@ -365,14 +380,15 @@ public final class TaskDTO {
               .setDueDate(taskDTO.getDueDate())
               .setCandidateGroups(taskDTO.getCandidateGroups())
               .setCandidateUsers(taskDTO.getCandidateUsers())
-              .setImplementation(taskDTO.getImplementation());
+              .setImplementation(taskDTO.getImplementation())
+              .setPriority(taskDTO.getPriority());
 
       if (taskDTO.getCompletionTime() != null) {
         taskEntity.setCompletionTime(
             DateUtil.toOffsetDateTime(
                 DateUtil.SIMPLE_DATE_FORMAT.parse(taskDTO.getCompletionTime()).toInstant()));
       }
-    } catch (ParseException e) {
+    } catch (final ParseException e) {
       throw new TasklistRuntimeException(e);
     }
 
@@ -380,7 +396,38 @@ public final class TaskDTO {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    int result =
+        Objects.hash(
+            id,
+            processInstanceId,
+            flowNodeBpmnId,
+            flowNodeInstanceId,
+            processDefinitionId,
+            bpmnProcessId,
+            creationTime,
+            completionTime,
+            assignee,
+            taskState,
+            isFirst,
+            formKey,
+            formId,
+            formVersion,
+            isFormEmbedded,
+            tenantId,
+            dueDate,
+            followUpDate,
+            implementation,
+            priority);
+    result = 31 * result + Arrays.hashCode(candidateGroups);
+    result = 31 * result + Arrays.hashCode(candidateUsers);
+    result = 31 * result + Arrays.hashCode(sortValues);
+    result = 31 * result + Arrays.hashCode(variables);
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -410,37 +457,8 @@ public final class TaskDTO {
         && Objects.equals(tenantId, taskDTO.tenantId)
         && Objects.equals(dueDate, taskDTO.dueDate)
         && Objects.equals(followUpDate, taskDTO.followUpDate)
+        && priority == taskDTO.priority
         && Arrays.equals(variables, taskDTO.variables);
-  }
-
-  @Override
-  public int hashCode() {
-    int result =
-        Objects.hash(
-            id,
-            processInstanceId,
-            flowNodeBpmnId,
-            flowNodeInstanceId,
-            processDefinitionId,
-            bpmnProcessId,
-            creationTime,
-            completionTime,
-            assignee,
-            taskState,
-            isFirst,
-            formKey,
-            formId,
-            formVersion,
-            isFormEmbedded,
-            tenantId,
-            dueDate,
-            followUpDate,
-            implementation);
-    result = 31 * result + Arrays.hashCode(candidateGroups);
-    result = 31 * result + Arrays.hashCode(candidateUsers);
-    result = 31 * result + Arrays.hashCode(sortValues);
-    result = 31 * result + Arrays.hashCode(variables);
-    return result;
   }
 
   @Override
@@ -469,6 +487,7 @@ public final class TaskDTO {
         .add("followUpDate=" + followUpDate)
         .add("variables=" + Arrays.toString(variables))
         .add("implementation=" + implementation)
+        .add("priority=" + priority)
         .toString();
   }
 }

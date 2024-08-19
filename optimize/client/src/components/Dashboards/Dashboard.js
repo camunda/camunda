@@ -259,8 +259,8 @@ export class Dashboard extends Component {
               tile.id ||
               (tile.report &&
                 new Promise((resolve, reject) => {
-                  const {name, description, data, reportType, combined} = tile.report;
-                  const endpoint = `report/${reportType}/${combined ? 'combined' : 'single'}`;
+                  const {name, description, data, reportType} = tile.report;
+                  const endpoint = `report/${reportType}/single`;
                   this.props.mightFail(
                     createEntity(endpoint, {collectionId, name, description, data}),
                     resolve,

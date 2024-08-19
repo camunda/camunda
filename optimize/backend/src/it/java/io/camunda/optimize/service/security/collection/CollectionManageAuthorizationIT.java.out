@@ -84,45 +84,6 @@
 //   }
 //
 //   @Test
-//   public void superUserIdentityCanUpdateNameByCollectionRole() {
-//     // given
-//     final String collectionId = collectionClient.createNewCollection();
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperUserIds()
-//         .add(KERMIT_USER);
-//
-//     // when
-//     final PartialCollectionDefinitionRequestDto collectionRenameDto =
-//         new PartialCollectionDefinitionRequestDto("Test");
-//
-//     // then
-//     collectionClient.updateCollection(collectionId, collectionRenameDto);
-//   }
-//
-//   @Test
-//   public void superGroupIdentityCanUpdateNameByCollectionRole() {
-//     // given
-//     final String collectionId = collectionClient.createNewCollection();
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .setSuperGroupIds(Collections.singletonList(GROUP_ID));
-//
-//     // when
-//     final PartialCollectionDefinitionRequestDto collectionRenameDto =
-//         new PartialCollectionDefinitionRequestDto("Test");
-//
-//     // then
-//     collectionClient.updateCollection(collectionId, collectionRenameDto);
-//   }
-//
-//   @Test
 //   public void noRoleUserIsRejectedToUpdateName() {
 //     // given
 //     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -189,48 +150,6 @@
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
 //   }
 //
-//   @Test
-//   public void superUserIdentityCanCreateRoleByCollectionRole() {
-//     // given
-//     final String collectionId = collectionClient.createNewCollection();
-//
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_USER);
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperUserIds()
-//         .add(KERMIT_USER);
-//
-//     final CollectionRoleRequestDto collectionRoleDto = createJohnEditorRoleDto();
-//     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
-//
-//     // when
-//     collectionClient.addRoleToCollectionAsUser(
-//         collectionId, collectionRoleDto, KERMIT_USER, KERMIT_USER);
-//   }
-//
-//   @Test
-//   public void superGroupIdentityCanCreateRoleByCollectionRole() {
-//     // given
-//     final String collectionId = collectionClient.createNewCollection();
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     authorizationClient.grantAllResourceAuthorizationsForKermitGroup(RESOURCE_TYPE_USER);
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .setSuperGroupIds(Collections.singletonList(GROUP_ID));
-//
-//     final CollectionRoleRequestDto collectionRoleDto = createJohnEditorRoleDto();
-//     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
-//
-//     // when
-//     collectionClient.addRoleToCollectionAsUser(
-//         collectionId, collectionRoleDto, KERMIT_USER, KERMIT_USER);
-//   }
-//
 //   @ParameterizedTest
 //   @MethodSource(MANAGER_IDENTITY_ROLES)
 //   public void managerIdentityCanUpdateRoleByCollectionRole(final IdentityAndRole identityAndRole)
@@ -285,55 +204,6 @@
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
 //   }
 //
-//   @Test
-//   public void superUserIdentityCanUpdateRoleByCollectionRole() {
-//     // given
-//     final String collectionId = collectionClient.createNewCollection();
-//     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
-//     collectionClient.addRolesToCollection(collectionId, createJohnEditorRoleDto());
-//
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_USER);
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperUserIds()
-//         .add(KERMIT_USER);
-//
-//     // when
-//     collectionClient.updateCollectionRoleAsUser(
-//         collectionId,
-//         getJohnRoleId(),
-//         new CollectionRoleUpdateRequestDto(RoleType.MANAGER),
-//         KERMIT_USER,
-//         KERMIT_USER);
-//   }
-//
-//   @Test
-//   public void superGroupIdentityCanUpdateRoleByCollectionRole() {
-//     // given
-//     final String collectionId = collectionClient.createNewCollection();
-//     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
-//     collectionClient.addRolesToCollection(collectionId, createJohnEditorRoleDto());
-//
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     authorizationClient.grantAllResourceAuthorizationsForKermitGroup(RESOURCE_TYPE_USER);
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .setSuperGroupIds(Collections.singletonList(GROUP_ID));
-//
-//     // when
-//     collectionClient.updateCollectionRoleAsUser(
-//         collectionId,
-//         getJohnRoleId(),
-//         new CollectionRoleUpdateRequestDto(RoleType.MANAGER),
-//         KERMIT_USER,
-//         KERMIT_USER);
-//   }
-//
 //   @ParameterizedTest
 //   @MethodSource(MANAGER_IDENTITY_ROLES)
 //   public void managerIdentityCanDeleteRoleByCollectionRole(final IdentityAndRole identityAndRole)
@@ -378,47 +248,6 @@
 //
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-//   }
-//
-//   @Test
-//   public void superUserIdentityCanDeleteRoleByCollectionRole() {
-//     // given
-//     final String collectionId = collectionClient.createNewCollection();
-//     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
-//     collectionClient.addRolesToCollection(collectionId, createJohnEditorRoleDto());
-//
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_USER);
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperUserIds()
-//         .add(KERMIT_USER);
-//
-//     // when
-//     collectionClient.deleteCollectionRoleAsUser(
-//         collectionId, getJohnRoleId(), KERMIT_USER, KERMIT_USER);
-//   }
-//
-//   @Test
-//   public void superGroupIdentityCanDeleteRoleByCollectionRole() {
-//     // given
-//     final String collectionId = collectionClient.createNewCollection();
-//     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
-//     collectionClient.addRolesToCollection(collectionId, createJohnEditorRoleDto());
-//
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     authorizationClient.grantAllResourceAuthorizationsForKermitGroup(RESOURCE_TYPE_USER);
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .setSuperGroupIds(Collections.singletonList(GROUP_ID));
-//
-//     // when
-//     collectionClient.deleteCollectionRoleAsUser(
-//         collectionId, getJohnRoleId(), KERMIT_USER, KERMIT_USER);
 //   }
 //
 //   @ParameterizedTest
@@ -466,44 +295,6 @@
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
 //   }
 //
-//   @Test
-//   public void superUserIdentityCanCreateScopeByCollectionRole() {
-//     // given
-//     final String collectionId = collectionClient.createNewCollection();
-//
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//
-// authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_PROCESS_DEFINITION);
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperUserIds()
-//         .add(KERMIT_USER);
-//
-//     // when
-//     collectionClient.addScopeEntryToCollectionAsUser(
-//         collectionId, createProcessScope(), KERMIT_USER, KERMIT_USER);
-//   }
-//
-//   @Test
-//   public void superGroupIdentityCanCreateScopeByCollectionRole() {
-//     // given
-//     final String collectionId = collectionClient.createNewCollection();
-//
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     authorizationClient.grantAllResourceAuthorizationsForKermitGroup(
-//         RESOURCE_TYPE_PROCESS_DEFINITION);
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .setSuperGroupIds(Collections.singletonList(GROUP_ID));
-//
-//     // when
-//     collectionClient.addScopeEntryToCollectionAsUser(
-//         collectionId, createProcessScope(), KERMIT_USER, KERMIT_USER);
-//   }
-//
 //   @ParameterizedTest
 //   @MethodSource(MANAGER_IDENTITY_ROLES)
 //   public void managerIdentityCanUpdateScopeByCollectionRole(final IdentityAndRole
@@ -547,45 +338,6 @@
 //             .execute();
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-//   }
-//
-//   @Test
-//   public void superUserIdentityCanUpdateScopeByCollectionRole() {
-//     // given
-//     final String collectionId = collectionClient.createNewCollection();
-//     final CollectionScopeEntryDto scopeEntry = createProcessScope();
-//     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
-//
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperUserIds()
-//         .add(KERMIT_USER);
-//
-//     // when
-//     collectionClient.updateCollectionScopeAsKermit(
-//         collectionId, scopeEntry.getId(), Collections.singletonList("tenant1"));
-//   }
-//
-//   @Test
-//   public void superGroupIdentityCanUpdateScopeByCollectionRole() {
-//     // given
-//     final String collectionId = collectionClient.createNewCollection();
-//     final CollectionScopeEntryDto scopeEntry = createProcessScope();
-//     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
-//
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .setSuperGroupIds(Collections.singletonList(GROUP_ID));
-//
-//     // when
-//     collectionClient.updateCollectionScopeAsKermit(
-//         collectionId, scopeEntry.getId(), Collections.singletonList("tenant1"));
 //   }
 //
 //   @ParameterizedTest
@@ -636,55 +388,6 @@
 //
 //     // then
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-//   }
-//
-//   @Test
-//   public void superUserIdentityCanDeleteScopeByCollectionRole() {
-//     // given
-//     final String collectionId = collectionClient.createNewCollection();
-//     final CollectionScopeEntryDto scopeEntry = createProcessScope();
-//     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
-//
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperUserIds()
-//         .add(KERMIT_USER);
-//
-//     // when
-//     Response response =
-//         getOptimizeRequestExecutorWithKermitAuthentication()
-//             .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId())
-//             .execute();
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-//   }
-//
-//   @Test
-//   public void superGroupIdentityCanDeleteScopeByCollectionRole() {
-//     // given
-//     final String collectionId = collectionClient.createNewCollection();
-//     final CollectionScopeEntryDto scopeEntry = createProcessScope();
-//     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
-//
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .setSuperGroupIds(Collections.singletonList(GROUP_ID));
-//
-//     // when
-//     Response response =
-//         getOptimizeRequestExecutorWithKermitAuthentication()
-//             .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId())
-//             .execute();
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 //   }
 //
 //   @Test

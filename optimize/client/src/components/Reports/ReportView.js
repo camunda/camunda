@@ -71,10 +71,6 @@ export default function ReportView({report, error, loadReport}) {
   }
 
   const shouldShowCSVDownload = () => {
-    if (report.combined && typeof report.result !== 'undefined') {
-      return true;
-    }
-
     return report?.data?.visualization !== 'number' && report.result?.measures.length === 1;
   };
 
@@ -84,7 +80,7 @@ export default function ReportView({report, error, loadReport}) {
     )}.csv`;
   };
 
-  const {id, name, combined, description, currentUserRole, data} = report;
+  const {id, name, description, currentUserRole, data} = report;
 
   if (redirect) {
     return <Redirect to={redirect} />;
@@ -176,7 +172,6 @@ export default function ReportView({report, error, loadReport}) {
           </div>
         </div>
         {!isProcessReport &&
-          !combined &&
           typeof report.result !== 'undefined' &&
           report.data?.visualization !== 'table' && (
             <CollapsibleContainer
