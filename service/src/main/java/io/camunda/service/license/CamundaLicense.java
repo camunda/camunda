@@ -8,6 +8,9 @@
 package io.camunda.service.license;
 
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
 import org.camunda.bpm.licensecheck.LicenseKey;
 import org.camunda.bpm.licensecheck.LicenseKeyImpl;
@@ -109,5 +112,34 @@ public class CamundaLicense {
   @VisibleForTesting
   protected LicenseKey getLicenseKey(final String licenseStr) throws InvalidLicenseException {
     return new LicenseKeyImpl(licenseStr);
+  }
+
+  public enum LicenseType {
+    SAAS("saas"),
+    SELFMANAGED("self-managed"),
+    UNKNOWN("unknown");
+    private static final Map<String, LicenseType> ENUM_MAP;
+
+    static {
+      final Map<String, LicenseType> map = new HashMap<>();
+      for (final LicenseType instance : LicenseType.values()) {
+        map.put(instance.getName().toLowerCase(), instance);
+      }
+      ENUM_MAP = Collections.unmodifiableMap(map);
+    }
+
+    private final String name;
+
+    LicenseType(final String name) {
+      this.name = name;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public static LicenseType get(final String name) {
+      return ENUM_MAP.getOrDefault(name.toLowerCase(), LicenseType.UNKNOWN);
+    }
   }
 }

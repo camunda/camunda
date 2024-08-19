@@ -29,7 +29,7 @@ import io.camunda.optimize.service.tenant.TenantService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.configuration.OptimizeProfile;
-import io.camunda.service.license.LicenseType;
+import io.camunda.service.license.CamundaLicense.LicenseType;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Stream;

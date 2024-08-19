@@ -24,7 +24,7 @@ import io.camunda.optimize.service.tenant.TenantService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.OptimizeProfile;
 import io.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
-import io.camunda.service.license.LicenseType;
+import io.camunda.service.license.CamundaLicense.LicenseType;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
