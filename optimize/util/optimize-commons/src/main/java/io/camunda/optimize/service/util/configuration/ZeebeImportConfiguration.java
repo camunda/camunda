@@ -13,14 +13,12 @@ public class ZeebeImportConfiguration {
   private int maxEmptyPagesToImport;
 
   public ZeebeImportConfiguration(
-      final int dynamicBatchSuccessAttempts,
-      final int maxEmptyPagesToImport) {
+      final int dynamicBatchSuccessAttempts, final int maxEmptyPagesToImport) {
     this.dynamicBatchSuccessAttempts = dynamicBatchSuccessAttempts;
     this.maxEmptyPagesToImport = maxEmptyPagesToImport;
   }
 
-  protected ZeebeImportConfiguration() {
-  }
+  protected ZeebeImportConfiguration() {}
 
   public int getDynamicBatchSuccessAttempts() {
     return dynamicBatchSuccessAttempts;
@@ -75,7 +73,9 @@ public class ZeebeImportConfiguration {
   @Override
   public String toString() {
     return "ZeebeImportConfiguration(dynamicBatchSuccessAttempts="
-        + getDynamicBatchSuccessAttempts() + ", maxEmptyPagesToImport="
-        + getMaxEmptyPagesToImport() + ")";
+        + getDynamicBatchSuccessAttempts()
+        + ", maxEmptyPagesToImport="
+        + getMaxEmptyPagesToImport()
+        + ")";
   }
 }

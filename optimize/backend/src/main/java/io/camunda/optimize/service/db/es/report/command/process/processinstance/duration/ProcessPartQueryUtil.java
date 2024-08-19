@@ -41,16 +41,14 @@ public class ProcessPartQueryUtil {
   private static final String SCRIPT_AGGREGATION = "scriptAggregation";
   private static final String NESTED_AGGREGATION = "nestedAggregation";
 
-  private ProcessPartQueryUtil() {
-  }
+  private ProcessPartQueryUtil() {}
 
   public static Aggregations getProcessPartAggregations(final Aggregations aggs) {
     return ((Nested) aggs.get(NESTED_AGGREGATION)).getAggregations();
   }
 
   public static Double getProcessPartAggregationResult(
-      final Aggregations aggs,
-      final AggregationDto aggregationType) {
+      final Aggregations aggs, final AggregationDto aggregationType) {
     final Nested nested = aggs.get(NESTED_AGGREGATION);
     final ScriptedMetric scriptedMetric =
         nested.getAggregations().get(getScriptAggregationName(aggregationType));
@@ -111,7 +109,7 @@ public class ProcessPartQueryUtil {
     final String aggName =
         aggregationType.getType() == AggregationType.PERCENTILE
             ? aggregationType.getType().getId()
-            + String.valueOf(aggregationType.getValue()).replace(".", "_")
+                + String.valueOf(aggregationType.getValue()).replace(".", "_")
             : aggregationType.getType().getId();
     return String.join("_", SCRIPT_AGGREGATION, aggName);
   }

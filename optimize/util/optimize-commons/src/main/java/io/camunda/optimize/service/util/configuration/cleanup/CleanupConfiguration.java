@@ -68,8 +68,7 @@ public class CleanupConfiguration {
     this.ingestedEventCleanupConfiguration = ingestedEventCleanupConfiguration;
   }
 
-  protected CleanupConfiguration() {
-  }
+  protected CleanupConfiguration() {}
 
   public void validate() {
     if (ttl == null) {
@@ -186,17 +185,29 @@ public class CleanupConfiguration {
     final Object $ttl = getTtl();
     result = result * PRIME + ($ttl == null ? 43 : $ttl.hashCode());
     final Object $processDataCleanupConfiguration = getProcessDataCleanupConfiguration();
-    result = result * PRIME + ($processDataCleanupConfiguration == null ? 43
-        : $processDataCleanupConfiguration.hashCode());
+    result =
+        result * PRIME
+            + ($processDataCleanupConfiguration == null
+                ? 43
+                : $processDataCleanupConfiguration.hashCode());
     final Object $decisionCleanupConfiguration = getDecisionCleanupConfiguration();
-    result = result * PRIME + ($decisionCleanupConfiguration == null ? 43
-        : $decisionCleanupConfiguration.hashCode());
+    result =
+        result * PRIME
+            + ($decisionCleanupConfiguration == null
+                ? 43
+                : $decisionCleanupConfiguration.hashCode());
     final Object $ingestedEventCleanupConfiguration = getIngestedEventCleanupConfiguration();
-    result = result * PRIME + ($ingestedEventCleanupConfiguration == null ? 43
-        : $ingestedEventCleanupConfiguration.hashCode());
+    result =
+        result * PRIME
+            + ($ingestedEventCleanupConfiguration == null
+                ? 43
+                : $ingestedEventCleanupConfiguration.hashCode());
     final Object $externalVariableCleanupConfiguration = getExternalVariableCleanupConfiguration();
-    result = result * PRIME + ($externalVariableCleanupConfiguration == null ? 43
-        : $externalVariableCleanupConfiguration.hashCode());
+    result =
+        result * PRIME
+            + ($externalVariableCleanupConfiguration == null
+                ? 43
+                : $externalVariableCleanupConfiguration.hashCode());
     return result;
   }
 
@@ -214,7 +225,8 @@ public class CleanupConfiguration {
     }
     final Object this$cronTrigger = getCronTrigger();
     final Object other$cronTrigger = other.getCronTrigger();
-    if (this$cronTrigger == null ? other$cronTrigger != null
+    if (this$cronTrigger == null
+        ? other$cronTrigger != null
         : !this$cronTrigger.equals(other$cronTrigger)) {
       return false;
     }
@@ -225,27 +237,32 @@ public class CleanupConfiguration {
     }
     final Object this$processDataCleanupConfiguration = getProcessDataCleanupConfiguration();
     final Object other$processDataCleanupConfiguration = other.getProcessDataCleanupConfiguration();
-    if (this$processDataCleanupConfiguration == null ? other$processDataCleanupConfiguration != null
+    if (this$processDataCleanupConfiguration == null
+        ? other$processDataCleanupConfiguration != null
         : !this$processDataCleanupConfiguration.equals(other$processDataCleanupConfiguration)) {
       return false;
     }
     final Object this$decisionCleanupConfiguration = getDecisionCleanupConfiguration();
     final Object other$decisionCleanupConfiguration = other.getDecisionCleanupConfiguration();
-    if (this$decisionCleanupConfiguration == null ? other$decisionCleanupConfiguration != null
+    if (this$decisionCleanupConfiguration == null
+        ? other$decisionCleanupConfiguration != null
         : !this$decisionCleanupConfiguration.equals(other$decisionCleanupConfiguration)) {
       return false;
     }
     final Object this$ingestedEventCleanupConfiguration = getIngestedEventCleanupConfiguration();
-    final Object other$ingestedEventCleanupConfiguration = other.getIngestedEventCleanupConfiguration();
-    if (this$ingestedEventCleanupConfiguration == null ? other$ingestedEventCleanupConfiguration
-        != null
+    final Object other$ingestedEventCleanupConfiguration =
+        other.getIngestedEventCleanupConfiguration();
+    if (this$ingestedEventCleanupConfiguration == null
+        ? other$ingestedEventCleanupConfiguration != null
         : !this$ingestedEventCleanupConfiguration.equals(other$ingestedEventCleanupConfiguration)) {
       return false;
     }
-    final Object this$externalVariableCleanupConfiguration = getExternalVariableCleanupConfiguration();
-    final Object other$externalVariableCleanupConfiguration = other.getExternalVariableCleanupConfiguration();
-    if (this$externalVariableCleanupConfiguration == null ?
-        other$externalVariableCleanupConfiguration != null
+    final Object this$externalVariableCleanupConfiguration =
+        getExternalVariableCleanupConfiguration();
+    final Object other$externalVariableCleanupConfiguration =
+        other.getExternalVariableCleanupConfiguration();
+    if (this$externalVariableCleanupConfiguration == null
+        ? other$externalVariableCleanupConfiguration != null
         : !this$externalVariableCleanupConfiguration.equals(
             other$externalVariableCleanupConfiguration)) {
       return false;
@@ -255,11 +272,18 @@ public class CleanupConfiguration {
 
   @Override
   public String toString() {
-    return "CleanupConfiguration(cronTrigger=" + getCronTrigger() + ", ttl=" + getTtl()
-        + ", processDataCleanupConfiguration=" + getProcessDataCleanupConfiguration()
-        + ", decisionCleanupConfiguration=" + getDecisionCleanupConfiguration()
-        + ", ingestedEventCleanupConfiguration=" + getIngestedEventCleanupConfiguration()
-        + ", externalVariableCleanupConfiguration=" + getExternalVariableCleanupConfiguration()
+    return "CleanupConfiguration(cronTrigger="
+        + getCronTrigger()
+        + ", ttl="
+        + getTtl()
+        + ", processDataCleanupConfiguration="
+        + getProcessDataCleanupConfiguration()
+        + ", decisionCleanupConfiguration="
+        + getDecisionCleanupConfiguration()
+        + ", ingestedEventCleanupConfiguration="
+        + getIngestedEventCleanupConfiguration()
+        + ", externalVariableCleanupConfiguration="
+        + getExternalVariableCleanupConfiguration()
         + ")";
   }
 }

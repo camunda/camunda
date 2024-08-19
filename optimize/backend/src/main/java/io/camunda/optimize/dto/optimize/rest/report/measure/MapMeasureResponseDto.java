@@ -13,8 +13,7 @@ import java.util.List;
 
 public class MapMeasureResponseDto extends MeasureResponseDto<List<MapResultEntryDto>> {
 
-  protected MapMeasureResponseDto() {
-  }
+  protected MapMeasureResponseDto() {}
 
   protected MapMeasureResponseDto(final MapMeasureResponseDtoBuilder<?, ?> b) {
     super(b);
@@ -30,8 +29,9 @@ public class MapMeasureResponseDto extends MeasureResponseDto<List<MapResultEntr
     return new MapMeasureResponseDtoBuilderImpl();
   }
 
-  public static abstract class MapMeasureResponseDtoBuilder<C extends MapMeasureResponseDto, B extends MapMeasureResponseDtoBuilder<C, B>> extends
-      MeasureResponseDtoBuilder<List<MapResultEntryDto>, C, B> {
+  public abstract static class MapMeasureResponseDtoBuilder<
+          C extends MapMeasureResponseDto, B extends MapMeasureResponseDtoBuilder<C, B>>
+      extends MeasureResponseDtoBuilder<List<MapResultEntryDto>, C, B> {
 
     @Override
     protected abstract B self();
@@ -45,12 +45,12 @@ public class MapMeasureResponseDto extends MeasureResponseDto<List<MapResultEntr
     }
   }
 
-  private static final class MapMeasureResponseDtoBuilderImpl extends
-      MapMeasureResponseDtoBuilder<MapMeasureResponseDto, MapMeasureResponseDtoBuilderImpl> {
+  private static final class MapMeasureResponseDtoBuilderImpl
+      extends MapMeasureResponseDtoBuilder<
+          MapMeasureResponseDto, MapMeasureResponseDtoBuilderImpl> {
 
-    private MapMeasureResponseDtoBuilderImpl() {
-    }
-    
+    private MapMeasureResponseDtoBuilderImpl() {}
+
     @Override
     protected MapMeasureResponseDtoBuilderImpl self() {
       return this;

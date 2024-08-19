@@ -21,8 +21,7 @@ public class FilterLimitedAggregationUtil {
 
   public static final String FILTER_LIMITED_AGGREGATION = "filterLimitedAggregation";
 
-  private FilterLimitedAggregationUtil() {
-  }
+  private FilterLimitedAggregationUtil() {}
 
   public static FilterAggregationBuilder wrapWithFilterLimitedParentAggregation(
       final BoolQueryBuilder limitFilterQuery, final AggregationBuilder subAggregationToLimit) {

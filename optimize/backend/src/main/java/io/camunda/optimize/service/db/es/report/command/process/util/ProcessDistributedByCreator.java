@@ -22,8 +22,7 @@ import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 public class ProcessDistributedByCreator {
 
-  private ProcessDistributedByCreator() {
-  }
+  private ProcessDistributedByCreator() {}
 
   public static NoneDistributedByDto createDistributedByNone() {
     return new NoneDistributedByDto();
@@ -46,8 +45,7 @@ public class ProcessDistributedByCreator {
   }
 
   public static VariableDistributedByDto createDistributedByVariable(
-      final String variableName,
-      final VariableType variableType) {
+      final String variableName, final VariableType variableType) {
     final VariableDistributedByValueDto distributedByValueDto = new VariableDistributedByValueDto();
     distributedByValueDto.setName(variableName);
     distributedByValueDto.setType(variableType);

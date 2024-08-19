@@ -13,8 +13,7 @@ import java.util.List;
 
 public class HyperMapMeasureResponseDto extends MeasureResponseDto<List<HyperMapResultEntryDto>> {
 
-  protected HyperMapMeasureResponseDto() {
-  }
+  protected HyperMapMeasureResponseDto() {}
 
   protected HyperMapMeasureResponseDto(final HyperMapMeasureResponseDtoBuilder<?, ?> b) {
     super(b);
@@ -30,8 +29,9 @@ public class HyperMapMeasureResponseDto extends MeasureResponseDto<List<HyperMap
     return new HyperMapMeasureResponseDtoBuilderImpl();
   }
 
-  public static abstract class HyperMapMeasureResponseDtoBuilder<C extends HyperMapMeasureResponseDto, B extends HyperMapMeasureResponseDtoBuilder<C, B>> extends
-      MeasureResponseDtoBuilder<List<HyperMapResultEntryDto>, C, B> {
+  public abstract static class HyperMapMeasureResponseDtoBuilder<
+          C extends HyperMapMeasureResponseDto, B extends HyperMapMeasureResponseDtoBuilder<C, B>>
+      extends MeasureResponseDtoBuilder<List<HyperMapResultEntryDto>, C, B> {
 
     @Override
     protected abstract B self();
@@ -42,16 +42,17 @@ public class HyperMapMeasureResponseDto extends MeasureResponseDto<List<HyperMap
     @Override
     public String toString() {
       return "HyperMapMeasureResponseDto.HyperMapMeasureResponseDtoBuilder(super="
-          + super.toString() + ")";
+          + super.toString()
+          + ")";
     }
   }
 
-  private static final class HyperMapMeasureResponseDtoBuilderImpl extends
-      HyperMapMeasureResponseDtoBuilder<HyperMapMeasureResponseDto, HyperMapMeasureResponseDtoBuilderImpl> {
+  private static final class HyperMapMeasureResponseDtoBuilderImpl
+      extends HyperMapMeasureResponseDtoBuilder<
+          HyperMapMeasureResponseDto, HyperMapMeasureResponseDtoBuilderImpl> {
 
-    private HyperMapMeasureResponseDtoBuilderImpl() {
-    }
-    
+    private HyperMapMeasureResponseDtoBuilderImpl() {}
+
     @Override
     protected HyperMapMeasureResponseDtoBuilderImpl self() {
       return this;

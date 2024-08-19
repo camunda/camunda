@@ -24,10 +24,10 @@ import io.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
     include = JsonTypeInfo.As.EXISTING_PROPERTY,
     property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = MapMeasureResponseDto.class, name = MAP_RESULT_TYPE),
-    @JsonSubTypes.Type(value = HyperMapMeasureResponseDto.class, name = HYPER_MAP_RESULT_TYPE),
-    @JsonSubTypes.Type(value = NumberMeasureResponseDto.class, name = NUMBER_RESULT_TYPE),
-    @JsonSubTypes.Type(value = RawDataMeasureResponseDto.class, name = RAW_RESULT_TYPE),
+  @JsonSubTypes.Type(value = MapMeasureResponseDto.class, name = MAP_RESULT_TYPE),
+  @JsonSubTypes.Type(value = HyperMapMeasureResponseDto.class, name = HYPER_MAP_RESULT_TYPE),
+  @JsonSubTypes.Type(value = NumberMeasureResponseDto.class, name = NUMBER_RESULT_TYPE),
+  @JsonSubTypes.Type(value = RawDataMeasureResponseDto.class, name = RAW_RESULT_TYPE),
 })
 public class MeasureResponseDto<T> {
 
@@ -37,8 +37,12 @@ public class MeasureResponseDto<T> {
   private T data;
   private ResultType type;
 
-  public MeasureResponseDto(final ViewProperty property, final AggregationDto aggregationType,
-      final UserTaskDurationTime userTaskDurationTime, final T data, final ResultType type) {
+  public MeasureResponseDto(
+      final ViewProperty property,
+      final AggregationDto aggregationType,
+      final UserTaskDurationTime userTaskDurationTime,
+      final T data,
+      final ResultType type) {
     this.property = property;
     this.aggregationType = aggregationType;
     this.userTaskDurationTime = userTaskDurationTime;
@@ -46,8 +50,7 @@ public class MeasureResponseDto<T> {
     this.type = type;
   }
 
-  protected MeasureResponseDto() {
-  }
+  protected MeasureResponseDto() {}
 
   protected MeasureResponseDto(final MeasureResponseDtoBuilder<T, ?, ?> b) {
     property = b.property;
@@ -138,13 +141,15 @@ public class MeasureResponseDto<T> {
     }
     final Object this$aggregationType = getAggregationType();
     final Object other$aggregationType = other.getAggregationType();
-    if (this$aggregationType == null ? other$aggregationType != null
+    if (this$aggregationType == null
+        ? other$aggregationType != null
         : !this$aggregationType.equals(other$aggregationType)) {
       return false;
     }
     final Object this$userTaskDurationTime = getUserTaskDurationTime();
     final Object other$userTaskDurationTime = other.getUserTaskDurationTime();
-    if (this$userTaskDurationTime == null ? other$userTaskDurationTime != null
+    if (this$userTaskDurationTime == null
+        ? other$userTaskDurationTime != null
         : !this$userTaskDurationTime.equals(other$userTaskDurationTime)) {
       return false;
     }
@@ -163,16 +168,25 @@ public class MeasureResponseDto<T> {
 
   @Override
   public String toString() {
-    return "MeasureResponseDto(property=" + getProperty() + ", aggregationType="
-        + getAggregationType() + ", userTaskDurationTime=" + getUserTaskDurationTime()
-        + ", data=" + getData() + ", type=" + getType() + ")";
+    return "MeasureResponseDto(property="
+        + getProperty()
+        + ", aggregationType="
+        + getAggregationType()
+        + ", userTaskDurationTime="
+        + getUserTaskDurationTime()
+        + ", data="
+        + getData()
+        + ", type="
+        + getType()
+        + ")";
   }
 
   public static <T> MeasureResponseDtoBuilder<T, ?, ?> builder() {
     return new MeasureResponseDtoBuilderImpl<T>();
   }
 
-  public static abstract class MeasureResponseDtoBuilder<T, C extends MeasureResponseDto<T>, B extends MeasureResponseDtoBuilder<T, C, B>> {
+  public abstract static class MeasureResponseDtoBuilder<
+      T, C extends MeasureResponseDto<T>, B extends MeasureResponseDtoBuilder<T, C, B>> {
 
     private ViewProperty property;
     private AggregationDto aggregationType;
@@ -211,18 +225,26 @@ public class MeasureResponseDto<T> {
 
     @Override
     public String toString() {
-      return "MeasureResponseDto.MeasureResponseDtoBuilder(property=" + property
-          + ", aggregationType=" + aggregationType + ", userTaskDurationTime="
-          + userTaskDurationTime + ", data=" + data + ", type=" + type + ")";
+      return "MeasureResponseDto.MeasureResponseDtoBuilder(property="
+          + property
+          + ", aggregationType="
+          + aggregationType
+          + ", userTaskDurationTime="
+          + userTaskDurationTime
+          + ", data="
+          + data
+          + ", type="
+          + type
+          + ")";
     }
   }
 
-  private static final class MeasureResponseDtoBuilderImpl<T> extends
-      MeasureResponseDtoBuilder<T, MeasureResponseDto<T>, MeasureResponseDtoBuilderImpl<T>> {
+  private static final class MeasureResponseDtoBuilderImpl<T>
+      extends MeasureResponseDtoBuilder<
+          T, MeasureResponseDto<T>, MeasureResponseDtoBuilderImpl<T>> {
 
-    private MeasureResponseDtoBuilderImpl() {
-    }
-    
+    private MeasureResponseDtoBuilderImpl() {}
+
     @Override
     protected MeasureResponseDtoBuilderImpl<T> self() {
       return this;

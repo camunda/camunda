@@ -24,8 +24,7 @@ import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 public class ProcessGroupByDtoCreator {
 
-  private ProcessGroupByDtoCreator() {
-  }
+  private ProcessGroupByDtoCreator() {}
 
   public static StartDateGroupByDto createGroupByStartDateDto(
       final AggregateByDateUnit dateInterval) {

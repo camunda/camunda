@@ -47,16 +47,16 @@ public class IncidentFilterQueryUtil {
       new NestedDefinitionQueryBuilder(
           INCIDENTS, INCIDENT_DEFINITION_KEY, INCIDENT_DEFINITION_VERSION, INCIDENT_TENANT_ID);
 
-  private static final Map<Class<? extends ProcessFilterDto<?>>, Function<BoolQueryBuilder, QueryBuilder>>
+  private static final Map<
+          Class<? extends ProcessFilterDto<?>>, Function<BoolQueryBuilder, QueryBuilder>>
       incidentViewFilterInstanceQueries =
-      ImmutableMap.of(
-          OpenIncidentFilterDto.class,
-          IncidentFilterQueryUtil::createOpenIncidentTermQuery,
-          ResolvedIncidentFilterDto.class,
-          IncidentFilterQueryUtil::createResolvedIncidentTermQuery);
+          ImmutableMap.of(
+              OpenIncidentFilterDto.class,
+              IncidentFilterQueryUtil::createOpenIncidentTermQuery,
+              ResolvedIncidentFilterDto.class,
+              IncidentFilterQueryUtil::createResolvedIncidentTermQuery);
 
-  private IncidentFilterQueryUtil() {
-  }
+  private IncidentFilterQueryUtil() {}
 
   public static BoolQueryBuilder createIncidentAggregationFilter(
       final ProcessReportDataDto reportData, final DefinitionService definitionService) {

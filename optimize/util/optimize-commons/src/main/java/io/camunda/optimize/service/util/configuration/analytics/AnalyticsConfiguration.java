@@ -21,16 +21,13 @@ public class AnalyticsConfiguration {
   private OsanoConfiguration osano;
 
   public AnalyticsConfiguration(
-      final boolean enabled,
-      final MixpanelConfiguration mixpanel,
-      final OsanoConfiguration osano) {
+      final boolean enabled, final MixpanelConfiguration mixpanel, final OsanoConfiguration osano) {
     this.enabled = enabled;
     this.mixpanel = mixpanel;
     this.osano = osano;
   }
 
-  protected AnalyticsConfiguration() {
-  }
+  protected AnalyticsConfiguration() {}
 
   public boolean isEnabled() {
     return enabled;
@@ -105,7 +102,12 @@ public class AnalyticsConfiguration {
 
   @Override
   public String toString() {
-    return "AnalyticsConfiguration(enabled=" + isEnabled() + ", mixpanel=" + getMixpanel()
-        + ", osano=" + getOsano() + ")";
+    return "AnalyticsConfiguration(enabled="
+        + isEnabled()
+        + ", mixpanel="
+        + getMixpanel()
+        + ", osano="
+        + getOsano()
+        + ")";
   }
 }

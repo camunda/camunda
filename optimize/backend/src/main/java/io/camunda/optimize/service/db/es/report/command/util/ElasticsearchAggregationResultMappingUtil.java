@@ -11,12 +11,10 @@ import org.elasticsearch.search.aggregations.metrics.ParsedTDigestPercentiles;
 
 public class ElasticsearchAggregationResultMappingUtil {
 
-  private ElasticsearchAggregationResultMappingUtil() {
-  }
+  private ElasticsearchAggregationResultMappingUtil() {}
 
   public static Double mapToDoubleOrNull(
-      final ParsedTDigestPercentiles aggregation,
-      final double percentileValue) {
+      final ParsedTDigestPercentiles aggregation, final double percentileValue) {
     final double percentile = aggregation.percentile(percentileValue);
     if (Double.isNaN(percentile) || Double.isInfinite(percentile)) {
       return null;

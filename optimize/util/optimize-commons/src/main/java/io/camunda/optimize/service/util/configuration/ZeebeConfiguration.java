@@ -31,8 +31,7 @@ public class ZeebeConfiguration {
     this.importConfig = importConfig;
   }
 
-  protected ZeebeConfiguration() {
-  }
+  protected ZeebeConfiguration() {}
 
   public boolean isEnabled() {
     return enabled;
@@ -132,7 +131,8 @@ public class ZeebeConfiguration {
     }
     final Object this$importConfig = getImportConfig();
     final Object other$importConfig = other.getImportConfig();
-    if (this$importConfig == null ? other$importConfig != null
+    if (this$importConfig == null
+        ? other$importConfig != null
         : !this$importConfig.equals(other$importConfig)) {
       return false;
     }
@@ -141,9 +141,18 @@ public class ZeebeConfiguration {
 
   @Override
   public String toString() {
-    return "ZeebeConfiguration(enabled=" + isEnabled() + ", name=" + getName()
-        + ", partitionCount=" + getPartitionCount() + ", maxImportPageSize="
-        + getMaxImportPageSize() + ", includeObjectVariableValue="
-        + isIncludeObjectVariableValue() + ", importConfig=" + getImportConfig() + ")";
+    return "ZeebeConfiguration(enabled="
+        + isEnabled()
+        + ", name="
+        + getName()
+        + ", partitionCount="
+        + getPartitionCount()
+        + ", maxImportPageSize="
+        + getMaxImportPageSize()
+        + ", includeObjectVariableValue="
+        + isIncludeObjectVariableValue()
+        + ", importConfig="
+        + getImportConfig()
+        + ")";
   }
 }

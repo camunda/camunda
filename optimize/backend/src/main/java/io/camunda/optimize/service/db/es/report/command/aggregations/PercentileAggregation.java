@@ -27,15 +27,14 @@ public class PercentileAggregation extends AggregationStrategy<PercentilesAggreg
     this.percentileValue = percentileValue;
   }
 
-  public PercentileAggregation() {
-  }
+  public PercentileAggregation() {}
 
   @Override
   public ValuesSourceAggregationBuilder<PercentilesAggregationBuilder>
-  createAggregationBuilderForAggregation(final String customIdentifier) {
+      createAggregationBuilderForAggregation(final String customIdentifier) {
     return percentiles(
-        createAggregationName(
-            customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION))
+            createAggregationName(
+                customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION))
         .percentiles(percentileValue);
   }
 

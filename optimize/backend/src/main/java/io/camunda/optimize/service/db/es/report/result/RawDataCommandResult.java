@@ -33,9 +33,7 @@ public class RawDataCommandResult<T extends RawDataInstanceDto>
     }
   }
 
-  public RawDataCommandResult(
-      final List<T> data,
-      final SingleReportDataDto reportData) {
+  public RawDataCommandResult(final List<T> data, final SingleReportDataDto reportData) {
     super(Collections.singletonList(MeasureDto.of(data)), reportData);
     if (data == null) {
       throw new IllegalArgumentException("data cannot be null");
@@ -45,8 +43,7 @@ public class RawDataCommandResult<T extends RawDataInstanceDto>
     }
   }
 
-  public RawDataCommandResult() {
-  }
+  public RawDataCommandResult() {}
 
   @Override
   @SuppressWarnings(UNCHECKED_CAST)
@@ -76,7 +73,8 @@ public class RawDataCommandResult<T extends RawDataInstanceDto>
           singleReportData.getConfiguration().getTableColumns(),
           true);
     } else if (rawData.get(0) instanceof RawDataProcessInstanceDto) {
-      final List<RawDataProcessInstanceDto> rawProcessData = (List<RawDataProcessInstanceDto>) rawData;
+      final List<RawDataProcessInstanceDto> rawProcessData =
+          (List<RawDataProcessInstanceDto>) rawData;
       rawProcessData.forEach(
           raw -> {
             raw.setStartDate(atSameTimezoneOffsetDateTime(raw.getStartDate(), timezone));
@@ -89,7 +87,8 @@ public class RawDataCommandResult<T extends RawDataInstanceDto>
           singleReportData.getConfiguration().getTableColumns(),
           includeNewVariables);
     } else {
-      final List<RawDataDecisionInstanceDto> rawDecisionData = (List<RawDataDecisionInstanceDto>) rawData;
+      final List<RawDataDecisionInstanceDto> rawDecisionData =
+          (List<RawDataDecisionInstanceDto>) rawData;
       rawDecisionData.forEach(
           raw ->
               raw.setEvaluationDateTime(

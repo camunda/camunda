@@ -11,8 +11,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
 public class NumberMeasureResponseDto extends MeasureResponseDto<Double> {
 
-  protected NumberMeasureResponseDto() {
-  }
+  protected NumberMeasureResponseDto() {}
 
   protected NumberMeasureResponseDto(final NumberMeasureResponseDtoBuilder<?, ?> b) {
     super(b);
@@ -28,8 +27,9 @@ public class NumberMeasureResponseDto extends MeasureResponseDto<Double> {
     return new NumberMeasureResponseDtoBuilderImpl();
   }
 
-  public static abstract class NumberMeasureResponseDtoBuilder<C extends NumberMeasureResponseDto, B extends NumberMeasureResponseDtoBuilder<C, B>> extends
-      MeasureResponseDtoBuilder<Double, C, B> {
+  public abstract static class NumberMeasureResponseDtoBuilder<
+          C extends NumberMeasureResponseDto, B extends NumberMeasureResponseDtoBuilder<C, B>>
+      extends MeasureResponseDtoBuilder<Double, C, B> {
 
     @Override
     protected abstract B self();
@@ -39,17 +39,18 @@ public class NumberMeasureResponseDto extends MeasureResponseDto<Double> {
 
     @Override
     public String toString() {
-      return "NumberMeasureResponseDto.NumberMeasureResponseDtoBuilder(super=" + super.toString()
+      return "NumberMeasureResponseDto.NumberMeasureResponseDtoBuilder(super="
+          + super.toString()
           + ")";
     }
   }
 
-  private static final class NumberMeasureResponseDtoBuilderImpl extends
-      NumberMeasureResponseDtoBuilder<NumberMeasureResponseDto, NumberMeasureResponseDtoBuilderImpl> {
+  private static final class NumberMeasureResponseDtoBuilderImpl
+      extends NumberMeasureResponseDtoBuilder<
+          NumberMeasureResponseDto, NumberMeasureResponseDtoBuilderImpl> {
 
-    private NumberMeasureResponseDtoBuilderImpl() {
-    }
-    
+    private NumberMeasureResponseDtoBuilderImpl() {}
+
     @Override
     protected NumberMeasureResponseDtoBuilderImpl self() {
       return this;

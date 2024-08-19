@@ -41,8 +41,7 @@ import org.elasticsearch.search.aggregations.bucket.histogram.LongBounds;
 
 public class DateHistogramFilterUtil {
 
-  private DateHistogramFilterUtil() {
-  }
+  private DateHistogramFilterUtil() {}
 
   public static BoolQueryBuilder createModelElementDateHistogramLimitingFilterFor(
       final DateAggregationContext context, final DateTimeFormatter dateTimeFormatter) {

@@ -33,8 +33,7 @@ public class DateFilterQueryUtil {
       DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
   private static final Logger log = org.slf4j.LoggerFactory.getLogger(DateFilterQueryUtil.class);
 
-  private DateFilterQueryUtil() {
-  }
+  private DateFilterQueryUtil() {}
 
   public static void addFilters(
       final BoolQueryBuilder query,

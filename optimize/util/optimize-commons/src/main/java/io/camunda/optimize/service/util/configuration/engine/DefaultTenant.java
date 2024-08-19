@@ -22,8 +22,7 @@ public class DefaultTenant {
     this.name = name;
   }
 
-  protected DefaultTenant() {
-  }
+  protected DefaultTenant() {}
 
   public String getId() {
     return id;

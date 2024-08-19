@@ -27,8 +27,7 @@ import org.apache.commons.text.StringSubstitutor;
 
 public class UserTaskDurationScriptUtil {
 
-  private UserTaskDurationScriptUtil() {
-  }
+  private UserTaskDurationScriptUtil() {}
 
   public static String createUpdateUserTaskMetricsScript() {
     final StringSubstitutor substitutor =
