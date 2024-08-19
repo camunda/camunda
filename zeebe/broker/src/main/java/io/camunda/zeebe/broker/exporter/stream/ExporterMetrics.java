@@ -117,7 +117,7 @@ public final class ExporterMetrics {
   }
 
   public Histogram.Timer startExportLatencyTimer(final ValueType valueType, final String exporter) {
-    return EXPORTING_LATENCY.labels(partitionIdLabel, valueType.name(), exporter).startTimer();
+    return EXPORTER_LATENCY.labels(partitionIdLabel, exporter, valueType.name()).startTimer();
   }
 
   public void initializeExporterState(final ExporterPhase state) {
