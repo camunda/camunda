@@ -40,7 +40,7 @@ public record IncidentFilter(
     private List<String> states;
     private List<Long> jobKeys;
     private List<String> tenantIds;
-    private boolean hasActiveOperation;
+    private boolean hasActiveOperation = false;
 
     public Builder keys(final Long value, final Long... values) {
       return keys(collectValues(value, values));

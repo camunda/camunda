@@ -63,7 +63,7 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
 
   private SearchQuery getHasActiveOperationQuery(final boolean hasActiveOperation) {
     if (hasActiveOperation) {
-      return term("hasActiveOperation", false);
+      return term("hasActiveOperation", true);
     }
     return null;
   }
