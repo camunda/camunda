@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
@@ -46,17 +45,7 @@ public class UpdateUserMultiPartitionTest {
         .withPassword("password")
         .create();
 
-    ENGINE
-        .user()
-        .existingUser(
-            new UserRecord()
-                .setUsername(username)
-                .setName("Foo Bar")
-                .setEmail("foo@bar.com")
-                .setPassword("password"))
-        .withUpdatedName("Bar Foo")
-        .withUpdatedEmail("bar@foo.com")
-        .update();
+    ENGINE.user().updateUser(username).withName("Bar Foo").withEmail("bar@foo.com").update();
 
     assertThat(
             RecordingExporter.records()

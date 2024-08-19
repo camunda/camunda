@@ -26,8 +26,8 @@ public final class UserClient {
     return new UserCreationClient(writer, username);
   }
 
-  public ExistingUserClient existingUser(final UserRecordValue existingUserRecordValue) {
-    return new ExistingUserClient(writer, existingUserRecordValue);
+  public UpdateUserClient updateUser(final String username) {
+    return new UpdateUserClient(writer, username);
   }
 
   public static class UserCreationClient {
@@ -87,7 +87,7 @@ public final class UserClient {
     }
   }
 
-  public static class ExistingUserClient {
+  public static class UpdateUserClient {
     private static final Function<Long, Record<UserRecordValue>> SUCCESS_SUPPLIER =
         (position) ->
             RecordingExporter.userRecords()
@@ -106,27 +106,23 @@ public final class UserClient {
     private final UserRecord userRecord;
     private Function<Long, Record<UserRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public ExistingUserClient(
-        final CommandWriter writer, final UserRecordValue existingUserRecordValue) {
+    public UpdateUserClient(final CommandWriter writer, final String username) {
       this.writer = writer;
       userRecord = new UserRecord();
-      userRecord.setUsername(existingUserRecordValue.getUsername());
-      userRecord.setName(existingUserRecordValue.getName());
-      userRecord.setEmail(existingUserRecordValue.getEmail());
-      userRecord.setPassword(existingUserRecordValue.getPassword());
+      userRecord.setUsername(username);
     }
 
-    public ExistingUserClient withUpdatedName(final String name) {
+    public UpdateUserClient withName(final String name) {
       userRecord.setName(name);
       return this;
     }
 
-    public ExistingUserClient withUpdatedEmail(final String email) {
+    public UpdateUserClient withEmail(final String email) {
       userRecord.setEmail(email);
       return this;
     }
 
-    public ExistingUserClient withUpdatedPassword(final String password) {
+    public UpdateUserClient withPassword(final String password) {
       userRecord.setPassword(password);
       return this;
     }
@@ -136,7 +132,7 @@ public final class UserClient {
       return expectation.apply(position);
     }
 
-    public ExistingUserClient expectRejection() {
+    public UpdateUserClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }

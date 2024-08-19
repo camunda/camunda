@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.user;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
@@ -29,24 +28,22 @@ public class UpdateUserTest {
   @DisplayName("should update a user if the username exists")
   @Test
   public void shouldUpdateAUser() {
-    // when
     final var username = UUID.randomUUID().toString();
-    final var userRecord =
-        ENGINE
-            .user()
-            .newUser(username)
-            .withName("Foo Bar")
-            .withEmail("foo@bar.com")
-            .withPassword("password")
-            .create();
+    ENGINE
+        .user()
+        .newUser(username)
+        .withName("Foo Bar")
+        .withEmail("foo@bar.com")
+        .withPassword("password")
+        .create();
 
     final var updatedUser =
         ENGINE
             .user()
-            .existingUser(userRecord.getValue())
-            .withUpdatedName("Bar Foo")
-            .withUpdatedEmail("foo@bar.blah")
-            .withUpdatedPassword("Foo Bar")
+            .updateUser(username)
+            .withName("Bar Foo")
+            .withEmail("foo@bar.blah")
+            .withPassword("Foo Bar")
             .update();
 
     final var createdUser = updatedUser.getValue();
@@ -61,21 +58,22 @@ public class UpdateUserTest {
   @DisplayName("should reject user update command when username does not exist")
   @Test
   public void shouldRejectUserUpdateCommandWhenUsernameDoesNotExist() {
+    final var username = UUID.randomUUID().toString();
     final var userNotFoundRejection =
         ENGINE
             .user()
-            .existingUser(
-                new UserRecord()
-                    .setUsername("Foo Bar")
-                    .setEmail("blah@foo.com")
-                    .setName("Bar Foo")
-                    .setPassword("blah"))
+            .updateUser(username)
+            .withName("Foo Bar")
+            .withEmail("bar@foo")
+            .withPassword("password")
             .expectRejection()
             .update();
 
     assertThat(userNotFoundRejection)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to update user with username Foo Bar, but a user with this username does not exist");
+            "Expected to update user with username "
+                + username
+                + ", but a user with this username does not exist");
   }
 }
