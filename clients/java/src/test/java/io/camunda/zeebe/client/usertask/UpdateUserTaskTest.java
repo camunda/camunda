@@ -267,4 +267,33 @@ public final class UpdateUserTaskTest extends ClientRestTest {
         .hasCauseInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
+
+  @Test
+  void shouldUpdateTaskPriority() {
+    // when
+    client.newUserTaskUpdateCommand(123L).priority(95).send().join();
+
+    // then
+    final UserTaskUpdateRequest request =
+        gatewayService.getLastRequest(UserTaskUpdateRequest.class);
+    assertThat(request.getAction()).isNull();
+    assertThat(request.getChangeset()).isNotNull().containsOnly(entry("priority", 95));
+  }
+
+  @Test
+  void shouldReturnErrorOnUpdateTaskPriority() {
+    // given
+    gatewayService.errorOnRequest(
+        RestGatewayPaths.getUserTaskUpdateUrl(123L),
+        () ->
+            new ProblemDetail()
+                .title("INVALID_ARGUMENT")
+                .status(400)
+                .detail("Priority field must be an integer between 0 and 100. Provided: 120"));
+
+    // when / then
+    assertThatThrownBy(() -> client.newUserTaskUpdateCommand(123L).priority(120).send().join())
+        .hasCauseInstanceOf(ProblemException.class)
+        .hasMessageContaining("Priority field must be an integer between 0 and 100. Provided: 120");
+  }
 }

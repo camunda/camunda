@@ -1170,6 +1170,7 @@ components:
         * `candidateUsers` - reset by providing an empty list
         * `dueDate` - reset by providing an empty String
         * `followUpDate` - reset by providing an empty String
+        * `priority` - minimum 0, maximum 100, default 50
 
         Providing any of those attributes with a `null` value or omitting it preserves
         the persisted attribute's value.
@@ -1201,6 +1202,14 @@ components:
           description: The list of candidate groups of the task. Reset by providing an empty list.
           items:
             type: string
+          nullable: true
+        priority:
+          type: integer
+          format: int32
+          description: The priority of the task.
+          minimum: 0
+          default: 50
+          maximum: 100
           nullable: true
     JobActivationRequest:
       type: object

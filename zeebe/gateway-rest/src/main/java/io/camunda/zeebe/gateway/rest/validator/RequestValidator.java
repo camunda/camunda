@@ -46,6 +46,7 @@ public final class RequestValidator {
         || (changeset.getFollowUpDate() == null
             && changeset.getDueDate() == null
             && changeset.getCandidateGroups() == null
-            && changeset.getCandidateUsers() == null);
+            && changeset.getCandidateUsers() == null
+            && changeset.getPriority() == null);
   }
 }
