@@ -11,17 +11,23 @@ import io.camunda.optimize.service.db.writer.ExternalEventWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import java.time.OffsetDateTime;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class IngestedEventCleanupService extends CleanupService {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(IngestedEventCleanupService.class);
   private final ConfigurationService configurationService;
   private final ExternalEventWriter externalEventWriter;
+
+  public IngestedEventCleanupService(
+      final ConfigurationService configurationService,
+      final ExternalEventWriter externalEventWriter) {
+    this.configurationService = configurationService;
+    this.externalEventWriter = externalEventWriter;
+  }
 
   @Override
   public boolean isEnabled() {
@@ -39,6 +45,6 @@ public class IngestedEventCleanupService extends CleanupService {
   }
 
   private CleanupConfiguration getCleanupConfiguration() {
-    return this.configurationService.getCleanupServiceConfiguration();
+    return configurationService.getCleanupServiceConfiguration();
   }
 }

@@ -19,26 +19,33 @@ import io.camunda.optimize.service.db.es.report.ReportEvaluationInfo;
 import io.camunda.optimize.service.report.ReportService;
 import jakarta.ws.rs.BadRequestException;
 import java.time.ZoneId;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class JsonReportResultExportService {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(JsonReportResultExportService.class);
   private final PlainReportEvaluationHandler reportEvaluationHandler;
   private final ReportService reportService;
+
+  public JsonReportResultExportService(
+      final PlainReportEvaluationHandler reportEvaluationHandler,
+      final ReportService reportService) {
+    this.reportEvaluationHandler = reportEvaluationHandler;
+    this.reportService = reportService;
+  }
 
   public PaginatedDataExportDto getJsonForEvaluatedReportResult(
       final String reportId, final ZoneId timezone, final PaginationDto paginationInfo) {
     log.info("Exporting provided report " + reportId + " as JSON.");
-    ReportDefinitionDto<ReportDataDto> reportData = reportService.getReportDefinition(reportId);
+    final ReportDefinitionDto<ReportDataDto> reportData =
+        reportService.getReportDefinition(reportId);
     final ReportDataDto unevaluatedReportData = reportData.getData();
     // If it's a single report (not combined)
     if (unevaluatedReportData instanceof SingleReportDataDto) {
-      boolean isRawDataReport =
+      final boolean isRawDataReport =
           ((SingleReportDataDto) unevaluatedReportData)
               .getViewProperties()
               .contains(ViewProperty.RAW_DATA);

@@ -32,15 +32,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class EntitiesService {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(EntitiesService.class);
   private final CollectionService collectionService;
   private final AuthorizedEntitiesService authorizedEntitiesService;
   private final EntitiesReader entitiesReader;
@@ -48,6 +46,23 @@ public class EntitiesService {
   private final DashboardService dashboardService;
   private final AuthorizedCollectionService authorizedCollectionService;
   private final InstantPreviewDashboardService instantPreviewDashboardService;
+
+  public EntitiesService(
+      final CollectionService collectionService,
+      final AuthorizedEntitiesService authorizedEntitiesService,
+      final EntitiesReader entitiesReader,
+      final ReportService reportService,
+      final DashboardService dashboardService,
+      final AuthorizedCollectionService authorizedCollectionService,
+      final InstantPreviewDashboardService instantPreviewDashboardService) {
+    this.collectionService = collectionService;
+    this.authorizedEntitiesService = authorizedEntitiesService;
+    this.entitiesReader = entitiesReader;
+    this.reportService = reportService;
+    this.dashboardService = dashboardService;
+    this.authorizedCollectionService = authorizedCollectionService;
+    this.instantPreviewDashboardService = instantPreviewDashboardService;
+  }
 
   public List<EntityResponseDto> getAllEntities(final String userId) {
     final List<AuthorizedCollectionDefinitionDto> collectionDefinitions =
@@ -77,23 +92,26 @@ public class EntitiesService {
 
   public EntityNameResponseDto getEntityNames(
       final EntityNameRequestDto requestDto, final String locale) {
-    Optional<EntityNameResponseDto> entityNames = entitiesReader.getEntityNames(requestDto, locale);
+    final Optional<EntityNameResponseDto> entityNames =
+        entitiesReader.getEntityNames(requestDto, locale);
 
     return entityNames.orElseThrow(
         () -> {
-          String reason = String.format("Could not get entity names search request %s", requestDto);
+          final String reason =
+              String.format("Could not get entity names search request %s", requestDto);
           return new NotFoundException(reason);
         });
   }
 
   // For dashboards and collections, we only check for authorization. For reports, we also check for
   // conflicts
-  public boolean entitiesHaveConflicts(EntitiesDeleteRequestDto entities, String userId) {
+  public boolean entitiesHaveConflicts(
+      final EntitiesDeleteRequestDto entities, final String userId) {
     entities
         .getDashboards()
         .forEach(
             dashboardId -> {
-              DashboardDefinitionRestDto dashboardDefinitionRestDto =
+              final DashboardDefinitionRestDto dashboardDefinitionRestDto =
                   dashboardService.getDashboardDefinitionAsService(dashboardId);
               if (dashboardDefinitionRestDto.getCollectionId() != null) {
                 dashboardService.verifyUserHasAccessToDashboardCollection(
@@ -109,50 +127,51 @@ public class EntitiesService {
     return reportsHaveConflicts(entities, userId);
   }
 
-  public void bulkDeleteEntities(EntitiesDeleteRequestDto entities, String userId) {
-    for (String reportId : entities.getReports()) {
+  public void bulkDeleteEntities(final EntitiesDeleteRequestDto entities, final String userId) {
+    for (final String reportId : entities.getReports()) {
       try {
         reportService.deleteReportAsUser(userId, reportId, true);
-      } catch (NotFoundException | OptimizeRuntimeException e) {
+      } catch (final NotFoundException | OptimizeRuntimeException e) {
         log.debug("The report with id {} could not be deleted: {}", reportId, e);
       }
     }
 
-    for (String dashboardId : entities.getDashboards()) {
+    for (final String dashboardId : entities.getDashboards()) {
       try {
         dashboardService.deleteDashboardAsUser(dashboardId, userId);
-      } catch (NotFoundException | OptimizeRuntimeException e) {
+      } catch (final NotFoundException | OptimizeRuntimeException e) {
         log.debug("The dashboard with id {} could not be deleted: {}", dashboardId, e);
       }
     }
 
-    for (String collectionId : entities.getCollections()) {
+    for (final String collectionId : entities.getCollections()) {
       try {
         collectionService.deleteCollection(userId, collectionId, true);
-      } catch (NotFoundException | OptimizeRuntimeException e) {
+      } catch (final NotFoundException | OptimizeRuntimeException e) {
         log.debug("The collection with id {} could not be deleted: {}", collectionId, e);
       }
     }
   }
 
   private boolean conflictingItemIsUndeletedDashboard(
-      ConflictedItemDto item, EntitiesDeleteRequestDto entitiesDeleteRequestDto) {
+      final ConflictedItemDto item, final EntitiesDeleteRequestDto entitiesDeleteRequestDto) {
     return item.getType().equals(ConflictedItemType.DASHBOARD)
         && !entitiesDeleteRequestDto.getDashboards().contains(item.getId());
   }
 
   private boolean conflictingItemIsUndeletedCombinedReport(
-      ConflictedItemDto item, List<String> reportIds) {
+      final ConflictedItemDto item, final List<String> reportIds) {
     return item.getType().equals(ConflictedItemType.COMBINED_REPORT)
         && !reportIds.contains(item.getId());
   }
 
-  private boolean reportsHaveConflicts(EntitiesDeleteRequestDto entities, String userId) {
-    List<String> reportIds = entities.getReports();
+  private boolean reportsHaveConflicts(
+      final EntitiesDeleteRequestDto entities, final String userId) {
+    final List<String> reportIds = entities.getReports();
     return reportIds.stream()
         .anyMatch(
             entry -> {
-              Set<ConflictedItemDto> conflictedItemDtos =
+              final Set<ConflictedItemDto> conflictedItemDtos =
                   reportService.getConflictedItemsFromReportDefinition(userId, entry);
               return conflictedItemDtos.stream()
                   .anyMatch(

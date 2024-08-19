@@ -16,19 +16,23 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.OffsetDateTime;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 public class CleanupScheduler extends AbstractScheduledService implements ConfigurationReloadable {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CleanupScheduler.class);
   private final ConfigurationService configurationService;
   private final List<CleanupService> cleanupServices;
+
+  public CleanupScheduler(
+      final ConfigurationService configurationService, final List<CleanupService> cleanupServices) {
+    this.configurationService = configurationService;
+    this.cleanupServices = cleanupServices;
+  }
 
   @PostConstruct
   public void init() {
@@ -57,6 +61,11 @@ public class CleanupScheduler extends AbstractScheduledService implements Config
     runCleanup();
   }
 
+  @Override
+  protected CronTrigger createScheduleTrigger() {
+    return new CronTrigger(getCleanupConfiguration().getCronTrigger());
+  }
+
   public void runCleanup() {
     log.info("Running optimize history cleanup...");
     final OffsetDateTime startTime = LocalDateUtil.getCurrentDateTime();
@@ -69,7 +78,7 @@ public class CleanupScheduler extends AbstractScheduledService implements Config
                   "Running CleanupService {}", optimizeCleanupService.getClass().getSimpleName());
               try {
                 optimizeCleanupService.doCleanup(startTime);
-              } catch (Exception e) {
+              } catch (final Exception e) {
                 log.error(
                     "Execution of cleanupService {} failed",
                     optimizeCleanupService.getClass().getSimpleName(),
@@ -92,11 +101,6 @@ public class CleanupScheduler extends AbstractScheduledService implements Config
   }
 
   protected CleanupConfiguration getCleanupConfiguration() {
-    return this.configurationService.getCleanupServiceConfiguration();
-  }
-
-  @Override
-  protected CronTrigger createScheduleTrigger() {
-    return new CronTrigger(getCleanupConfiguration().getCronTrigger());
+    return configurationService.getCleanupServiceConfiguration();
   }
 }

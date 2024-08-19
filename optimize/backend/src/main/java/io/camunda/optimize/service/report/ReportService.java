@@ -72,22 +72,19 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 public class ReportService implements CollectionReferencingService {
 
   private static final String DEFAULT_REPORT_NAME = "New Report";
   private static final String REPORT_NOT_IN_SAME_COLLECTION_ERROR_MESSAGE =
       "Either the report %s does not reside in "
           + "the same collection as the combined report or both are not private entities";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ReportService.class);
 
   private final ReportWriter reportWriter;
   private final ReportReader reportReader;
@@ -96,6 +93,23 @@ public class ReportService implements CollectionReferencingService {
   private final AuthorizedCollectionService collectionService;
   private final AbstractIdentityService identityService;
   private final DefinitionService defintionService;
+
+  public ReportService(
+      final ReportWriter reportWriter,
+      final ReportReader reportReader,
+      final ReportAuthorizationService reportAuthorizationService,
+      final ReportRelationService reportRelationService,
+      final AuthorizedCollectionService collectionService,
+      final AbstractIdentityService identityService,
+      final DefinitionService defintionService) {
+    this.reportWriter = reportWriter;
+    this.reportReader = reportReader;
+    this.reportAuthorizationService = reportAuthorizationService;
+    this.reportRelationService = reportRelationService;
+    this.collectionService = collectionService;
+    this.identityService = identityService;
+    this.defintionService = defintionService;
+  }
 
   private static void copyDefinitionMetaDataToUpdate(
       final ReportDefinitionDto from, final ReportDefinitionUpdateDto to, final String userId) {
@@ -234,12 +248,22 @@ public class ReportService implements CollectionReferencingService {
    * instance.
    */
   public IdResponseDto copyAndMoveReport(
-      @NonNull final String reportId,
-      @NonNull final String userId,
+      final String reportId,
+      final String userId,
       final String collectionId,
       final String newReportName,
-      @NonNull final Map<String, String> existingReportCopies,
+      final Map<String, String> existingReportCopies,
       final boolean keepSubReportNames) {
+    if (reportId == null) {
+      throw new RuntimeException("reportId is null");
+    }
+    if (userId == null) {
+      throw new RuntimeException("userId is null");
+    }
+    if (existingReportCopies == null) {
+      throw new RuntimeException("existingReportCopies is null");
+    }
+
     final AuthorizedReportDefinitionResponseDto authorizedReportDefinition =
         getReportDefinition(reportId, userId);
     final ReportDefinitionDto originalReportDefinition =
@@ -1068,6 +1092,7 @@ public class ReportService implements CollectionReferencingService {
 
   @FunctionalInterface
   private interface CreateReportMethod<RD extends ReportDataDto> {
+
     IdResponseDto create(
         String userId, RD reportData, String reportName, String description, String collectionId);
   }

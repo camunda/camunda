@@ -15,19 +15,24 @@ import io.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import java.util.Map;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
-@AllArgsConstructor
 public class DashboardRestMapper {
 
-  private static final String TYPE_TEXT_VALUE = "text";
   public static final String TEXT_FIELD = "text";
+  private static final String TYPE_TEXT_VALUE = "text";
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DashboardRestMapper.class);
   private final AbstractIdentityService identityService;
   private final LocalizationService localizationService;
+
+  public DashboardRestMapper(
+      final AbstractIdentityService identityService,
+      final LocalizationService localizationService) {
+    this.identityService = identityService;
+    this.localizationService = localizationService;
+  }
 
   public void prepareRestResponse(
       final AuthorizedDashboardDefinitionResponseDto dashboardDefinitionDto, final String locale) {

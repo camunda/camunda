@@ -30,16 +30,18 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 @Conditional(CamundaPlatformCondition.class)
 public class PlatformIdentityService extends AbstractIdentityService implements SessionListener {
+
   private static final int CACHE_MAXIMUM_SIZE = 10_000;
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(PlatformIdentityService.class);
   private final ApplicationAuthorizationService applicationAuthorizationService;
   private final IdentityAuthorizationService identityAuthorizationService;
   private final EngineContextFactory engineContextFactory;
@@ -58,6 +60,12 @@ public class PlatformIdentityService extends AbstractIdentityService implements 
     this.engineContextFactory = engineContextFactory;
     this.syncedIdentityCache = syncedIdentityCache;
     initUserGroupCache();
+  }
+
+  @Override
+  public void reloadConfiguration(final ApplicationContext context) {
+    super.reloadConfiguration(context);
+    cleanUpUserGroupCache();
   }
 
   @Override
@@ -132,31 +140,6 @@ public class PlatformIdentityService extends AbstractIdentityService implements 
   }
 
   @Override
-  public void reloadConfiguration(final ApplicationContext context) {
-    super.reloadConfiguration(context);
-    cleanUpUserGroupCache();
-  }
-
-  @Override
-  public void onSessionCreate(final String userId) {
-    // NOOP
-  }
-
-  @Override
-  public void onSessionRefresh(final String userId) {
-    userGroupsCache.invalidate(userId);
-  }
-
-  @Override
-  public void onSessionDestroy(final String userId) {
-    userGroupsCache.invalidate(userId);
-  }
-
-  public void addIdentity(final IdentityWithMetadataResponseDto identity) {
-    syncedIdentityCache.addIdentity(identity);
-  }
-
-  @Override
   public IdentitySearchResultResponseDto searchForIdentitiesAsUser(
       final String userId,
       final String searchString,
@@ -176,6 +159,25 @@ public class PlatformIdentityService extends AbstractIdentityService implements 
               searchString, identityTypesToSearch, maxResults, result);
     }
     return new IdentitySearchResultResponseDto(filteredIdentities);
+  }
+
+  @Override
+  public void onSessionCreate(final String userId) {
+    // NOOP
+  }
+
+  @Override
+  public void onSessionRefresh(final String userId) {
+    userGroupsCache.invalidate(userId);
+  }
+
+  @Override
+  public void onSessionDestroy(final String userId) {
+    userGroupsCache.invalidate(userId);
+  }
+
+  public void addIdentity(final IdentityWithMetadataResponseDto identity) {
+    syncedIdentityCache.addIdentity(identity);
   }
 
   private void initUserGroupCache() {

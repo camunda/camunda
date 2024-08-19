@@ -36,16 +36,17 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(CamundaCloudCondition.class)
-@Slf4j
 public class CloudUserTaskIdentityService implements UserTaskIdentityService {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CloudUserTaskIdentityService.class);
   private final AbstractIdentityService identityService;
   // These caches hold the user/group IDs that we cannot find in the "real" identityCache and
   // identity provider. Since users can set any string as assignee/candidate group, these are
@@ -91,6 +92,14 @@ public class CloudUserTaskIdentityService implements UserTaskIdentityService {
   }
 
   @Override
+  public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(
+      final String id, final IdentityType type) {
+    return USER == type
+        ? Optional.of(getUserByIdAndAddToCacheIfNotFound(id))
+        : Optional.of(getGroupByIdAndAddToCacheIfNotFound(id));
+  }
+
+  @Override
   public List<IdentityWithMetadataResponseDto> getIdentities(
       final Collection<IdentityDto> identities) {
     return identities.stream()
@@ -100,14 +109,6 @@ public class CloudUserTaskIdentityService implements UserTaskIdentityService {
         .flatMap(
             entry -> getIdentitiesByIdOrReturnDefaultDto(entry.getValue(), entry.getKey()).stream())
         .toList();
-  }
-
-  @Override
-  public Optional<IdentityWithMetadataResponseDto> getIdentityByIdAndType(
-      final String id, final IdentityType type) {
-    return USER == type
-        ? Optional.of(getUserByIdAndAddToCacheIfNotFound(id))
-        : Optional.of(getGroupByIdAndAddToCacheIfNotFound(id));
   }
 
   private List<IdentityWithMetadataResponseDto> getIdentitiesByIdOrReturnDefaultDto(

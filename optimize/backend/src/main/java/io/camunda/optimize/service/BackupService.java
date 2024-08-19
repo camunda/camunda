@@ -24,24 +24,31 @@ import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.snapshots.SnapshotInfo;
 import org.elasticsearch.snapshots.SnapshotShardFailure;
 import org.elasticsearch.snapshots.SnapshotState;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 public class BackupService {
 
   private static final int EXPECTED_NUMBER_OF_SNAPSHOTS_PER_BACKUP = 2;
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(BackupService.class);
 
   private final BackupReader backupReader;
   private final BackupWriter backupWriter;
   private final ConfigurationService configurationService;
+
+  public BackupService(
+      final BackupReader backupReader,
+      final BackupWriter backupWriter,
+      final ConfigurationService configurationService) {
+    this.backupReader = backupReader;
+    this.backupWriter = backupWriter;
+    this.configurationService = configurationService;
+  }
 
   public synchronized void triggerBackup(final Long backupId) {
     validateRepositoryExists();

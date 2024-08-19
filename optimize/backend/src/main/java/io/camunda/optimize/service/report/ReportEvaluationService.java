@@ -14,16 +14,19 @@ import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import io.camunda.optimize.service.db.es.report.AuthorizationCheckReportEvaluationHandler;
 import io.camunda.optimize.service.db.es.report.ReportEvaluationInfo;
 import java.time.ZoneId;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 public class ReportEvaluationService {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ReportEvaluationService.class);
   private final AuthorizationCheckReportEvaluationHandler reportEvaluator;
+
+  public ReportEvaluationService(final AuthorizationCheckReportEvaluationHandler reportEvaluator) {
+    this.reportEvaluator = reportEvaluator;
+  }
 
   public AuthorizedReportEvaluationResult evaluateSavedReportWithAdditionalFilters(
       final String userId,
@@ -31,7 +34,7 @@ public class ReportEvaluationService {
       final String reportId,
       final AdditionalProcessReportEvaluationFilterDto filterDto,
       final PaginationDto paginationDto) {
-    ReportEvaluationInfo evaluationInfo =
+    final ReportEvaluationInfo evaluationInfo =
         ReportEvaluationInfo.builder(reportId)
             .userId(userId)
             .timezone(timezone)
@@ -52,7 +55,7 @@ public class ReportEvaluationService {
     // as no owner/modifier display names are required for unsaved reports
     reportDefinition.setOwner(null);
     reportDefinition.setLastModifier(null);
-    ReportEvaluationInfo evaluationInfo =
+    final ReportEvaluationInfo evaluationInfo =
         ReportEvaluationInfo.builder(reportDefinition)
             .userId(userId)
             .timezone(timezone)

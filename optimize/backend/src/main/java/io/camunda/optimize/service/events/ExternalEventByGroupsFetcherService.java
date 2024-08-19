@@ -11,21 +11,26 @@ import io.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import io.camunda.optimize.service.db.events.EventFetcherService;
 import io.camunda.optimize.service.db.reader.ExternalEventReader;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-@Slf4j
 public class ExternalEventByGroupsFetcherService implements EventFetcherService<EventDto> {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ExternalEventByGroupsFetcherService.class);
   private final List<String> groups;
 
   private final ExternalEventReader externalEventReader;
+
+  public ExternalEventByGroupsFetcherService(
+      final List<String> groups, final ExternalEventReader externalEventReader) {
+    this.groups = groups;
+    this.externalEventReader = externalEventReader;
+  }
 
   @Override
   public List<EventDto> getEventsIngestedAfter(final Long eventTimestamp, final int limit) {

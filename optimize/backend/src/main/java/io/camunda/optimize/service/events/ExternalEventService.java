@@ -21,19 +21,26 @@ import io.camunda.optimize.service.security.util.LocalDateUtil;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
-@AllArgsConstructor
 public class ExternalEventService implements EventFetcherService<EventDto> {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ExternalEventService.class);
   private final ExternalEventReader externalEventReader;
   private final ExternalEventWriter externalEventWriter;
   private final EventProcessInstanceWriter eventInstanceWriter;
+
+  public ExternalEventService(
+      final ExternalEventReader externalEventReader,
+      final ExternalEventWriter externalEventWriter,
+      final EventProcessInstanceWriter eventInstanceWriter) {
+    this.externalEventReader = externalEventReader;
+    this.externalEventWriter = externalEventWriter;
+    this.eventInstanceWriter = eventInstanceWriter;
+  }
 
   public Page<DeletableEventDto> getEventsForRequest(
       final EventSearchRequestDto eventSearchRequestDto) {
@@ -48,7 +55,7 @@ public class ExternalEventService implements EventFetcherService<EventDto> {
     final Long rightNow = LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli();
     // all events of a batch share the same ingestion timestamp as this is the point in time they
     // got ingested
-    for (EventDto eventDto : eventDtos) {
+    for (final EventDto eventDto : eventDtos) {
       eventDto.setIngestionTimestamp(rightNow);
     }
     externalEventWriter.upsertEvents(eventDtos);

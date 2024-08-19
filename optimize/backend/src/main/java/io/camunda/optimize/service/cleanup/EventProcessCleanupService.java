@@ -17,18 +17,26 @@ import io.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import io.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import java.time.OffsetDateTime;
 import java.util.Collection;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 public class EventProcessCleanupService extends CleanupService {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventProcessCleanupService.class);
   private final ConfigurationService configurationService;
   private final EventProcessPublishStateReader eventProcessPublishStateReader;
   private final EventProcessInstanceWriter eventProcessInstanceWriter;
+
+  public EventProcessCleanupService(
+      final ConfigurationService configurationService,
+      final EventProcessPublishStateReader eventProcessPublishStateReader,
+      final EventProcessInstanceWriter eventProcessInstanceWriter) {
+    this.configurationService = configurationService;
+    this.eventProcessPublishStateReader = eventProcessPublishStateReader;
+    this.eventProcessInstanceWriter = eventProcessInstanceWriter;
+  }
 
   @Override
   public boolean isEnabled() {
@@ -41,7 +49,7 @@ public class EventProcessCleanupService extends CleanupService {
         eventProcessPublishStateReader.getAllEventProcessPublishStates();
 
     int i = 1;
-    for (EventProcessPublishStateDto currentEventProcess : publishedEventProcesses) {
+    for (final EventProcessPublishStateDto currentEventProcess : publishedEventProcesses) {
       log.info("Event Process History Cleanup step {}/{}", i, publishedEventProcesses.size());
       performCleanupForEventProcess(startTime, currentEventProcess);
       i++;
@@ -81,6 +89,6 @@ public class EventProcessCleanupService extends CleanupService {
   }
 
   private CleanupConfiguration getCleanupConfiguration() {
-    return this.configurationService.getCleanupServiceConfiguration();
+    return configurationService.getCleanupServiceConfiguration();
   }
 }

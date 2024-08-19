@@ -7,18 +7,21 @@
  */
 package io.camunda.optimize.service.digest;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
-@RequiredArgsConstructor
-@Slf4j
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DigestTask implements Runnable {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DigestTask.class);
   private final DigestService digestService;
   private final String processDefinitionKey;
+
+  public DigestTask(final DigestService digestService, final String processDefinitionKey) {
+    this.digestService = digestService;
+    this.processDefinitionKey = processDefinitionKey;
+  }
 
   @Override
   public void run() {

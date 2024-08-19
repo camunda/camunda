@@ -36,17 +36,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.camunda.bpm.model.xml.ModelParseException;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 public class EventCountService {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(EventCountService.class);
   private final EventSequenceCountReader eventSequenceCountReader;
   private final EventProcessService eventProcessService;
 
