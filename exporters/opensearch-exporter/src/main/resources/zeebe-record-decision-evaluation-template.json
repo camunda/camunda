@@ -61,7 +61,8 @@
               "type": "long"
             },
             "evaluationFailureMessage": {
-              "type": "keyword"
+              "type": "keyword",
+              "ignore_above": 1024
             },
             "failedDecisionId": {
               "type": "keyword"
