@@ -11,7 +11,6 @@ import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.entities.IncidentEntity;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.search.query.IncidentQuery;
-import io.camunda.service.search.query.IncidentQuery.Builder;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.security.auth.Authentication;
@@ -35,7 +34,7 @@ public class IncidentServices
   }
 
   public SearchQueryResult<IncidentEntity> search(
-      final Function<Builder, ObjectBuilder<IncidentQuery>> fn) {
+      final Function<IncidentQuery.Builder, ObjectBuilder<IncidentQuery>> fn) {
     return search(SearchQueryBuilders.incidentSearchQuery(fn));
   }
 

@@ -45,7 +45,7 @@ public final class IncidentFilterTest {
     // then
     assertThat(searchQueryResult.total()).isEqualTo(1);
     assertThat(searchQueryResult.items()).hasSize(1);
-    final IncidentEntity item = searchQueryResult.items().get(0);
+    final IncidentEntity item = searchQueryResult.items().getFirst();
     assertThat(item.key()).isEqualTo(1L);
   }
 
@@ -135,7 +135,7 @@ public final class IncidentFilterTest {
 
   @Test
   public void shouldQueryByCreationTime() {
-    final var creationTime = OffsetDateTime.of(2024, 5, 23, 23, 05, 0, 0, ZoneOffset.UTC);
+    final var creationTime = OffsetDateTime.of(2024, 5, 23, 23, 5, 0, 0, ZoneOffset.UTC);
     final var creationTimeFilter =
         FilterBuilders.dateValue((d) -> d.after(creationTime).before(creationTime));
     final var filter = FilterBuilders.incident(f -> f.creationTime(creationTimeFilter));

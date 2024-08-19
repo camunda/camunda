@@ -13,11 +13,16 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.service.IncidentServices;
 import io.camunda.service.entities.IncidentEntity;
+import io.camunda.service.search.filter.DateValueFilter;
+import io.camunda.service.search.filter.IncidentFilter;
 import io.camunda.service.search.query.IncidentQuery;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.SearchQueryResult.Builder;
+import io.camunda.service.search.sort.IncidentSort;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,7 +45,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                   "type": "type",
                   "flowNodeId": "flowNodeId",
                   "flowNodeInstanceId": "flowNodeInstanceId",
-                  "creationTime": "2024",
+                  "creationTime": "2024-05-23T23:05:00.000+0000",
                   "state": "state",
                   "jobKey": 5,
                   "tenantId": "tenantId",
@@ -68,7 +73,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                       "type",
                       "flowNodeId",
                       "flowNodeInstanceId",
-                      "2024",
+                      "2024-05-23T23:05:00.000+0000",
                       "state",
                       5L,
                       "tenantId",
@@ -86,7 +91,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
   @MockBean IncidentServices incidentServices;
 
   @BeforeEach
-  void setIncidentServices() {
+  void setupIncidentServices() {
     when(incidentServices.withAuthentication(ArgumentMatchers.any(Authentication.class)))
         .thenReturn(incidentServices);
   }
@@ -108,5 +113,127 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(incidentServices).search(new IncidentQuery.Builder().build());
+  }
+
+  @Test
+  void shouldSearchIncidentWithEmptyQuery() {
+    // given
+    when(incidentServices.search(any(IncidentQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+    final var request = "{}";
+    // when / then
+    webClient
+        .post()
+        .uri(INCIDENT_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(incidentServices).search(new IncidentQuery.Builder().build());
+  }
+
+  @Test
+  void shouldSearchIncidentWithAllFilters() {
+    when(incidentServices.search(any(IncidentQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+    final var request =
+        """
+        {
+          "filter":{
+            "tenantId": "t",
+            "flowNodeId": "fni",
+            "flowNodeInstanceId": "fnii",
+            "jobKey": 1,
+            "key": 2,
+            "processDefinitionKey": 3,
+            "processInstanceKey": 4,
+            "state": "s",
+            "type": "ty",
+            "hasActiveOperation": true,
+            "creationTime": "2024-05-23T23:05:00+00:00"
+          }
+        }
+        """;
+
+    // when / then
+    webClient
+        .post()
+        .uri(INCIDENT_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    final var creationTime = OffsetDateTime.of(2024, 5, 23, 23, 5, 0, 0, ZoneOffset.UTC);
+
+    verify(incidentServices)
+        .search(
+            new IncidentQuery.Builder()
+                .filter(
+                    new IncidentFilter.Builder()
+                        .tenantIds("t")
+                        .flowNodeIds("fni")
+                        .flowNodeInstanceIds("fnii")
+                        .jobKeys(1L)
+                        .keys(2L)
+                        .processDefinitionKeys(3L)
+                        .processInstanceKeys(4L)
+                        .states("s")
+                        .types("ty")
+                        .hasActiveOperation()
+                        .creationTime(
+                            new DateValueFilter.Builder()
+                                .before(creationTime)
+                                .after(creationTime)
+                                .build())
+                        .build())
+                .build());
+  }
+
+  @Test
+  void shouldSearchIncidentWithFullSorting() {
+    when(incidentServices.search(any(IncidentQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+    final var request =
+        """
+        {
+            "sort": [
+                {
+                    "field": "key",
+                    "order": "asc"
+                }
+            ]
+        }
+        """;
+    // when / then
+    webClient
+        .post()
+        .uri(INCIDENT_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(incidentServices)
+        .search(
+            new IncidentQuery.Builder()
+                .sort(new IncidentSort.Builder().key().asc().build())
+                .build());
   }
 }

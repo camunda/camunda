@@ -11,7 +11,9 @@ import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 
 import io.camunda.util.ObjectBuilder;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 public record IncidentFilter(
@@ -141,16 +143,16 @@ public record IncidentFilter(
     @Override
     public IncidentFilter build() {
       return new IncidentFilter(
-          keys,
-          processDefinitionKeys,
-          processInstanceKeys,
-          types,
-          flowNodeIds,
-          flowNodeInstanceIds,
+          Objects.requireNonNullElse(keys, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(types, Collections.emptyList()),
+          Objects.requireNonNullElse(flowNodeIds, Collections.emptyList()),
+          Objects.requireNonNullElse(flowNodeInstanceIds, Collections.emptyList()),
           creationTimeFilter,
-          states,
-          jobKeys,
-          tenantIds,
+          Objects.requireNonNullElse(states, Collections.emptyList()),
+          Objects.requireNonNullElse(jobKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
           hasActiveOperation);
     }
   }
