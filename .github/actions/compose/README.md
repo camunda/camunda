@@ -25,7 +25,7 @@ steps:
 - name: Start Cambpm
   uses: ./.github/actions/compose
   with:
-    compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
+    compose_file: .github/actions/compose/docker-compose.cambpm.yml
     project_name: cambpm
   env:
     CAMBPM_VERSION: 7.19.0
@@ -33,7 +33,7 @@ steps:
 - name: Start Elastic - Old
   uses: ./.github/actions/compose
   with:
-    compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
+    compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
     project_name: elasticsearch-old
   env:
     ELASTIC_VERSION: 7.10.0
@@ -42,7 +42,7 @@ steps:
 - name: Start Elastic - New
   uses: ./.github/actions/compose
   with:
-    compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
+    compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
     project_name: elasticsearch-new
   env:
     ELASTIC_VERSION: 7.10.0
