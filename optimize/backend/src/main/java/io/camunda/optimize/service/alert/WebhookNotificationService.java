@@ -22,7 +22,6 @@ import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -73,7 +72,11 @@ public class WebhookNotificationService
   }
 
   @Override
-  public void notify(@NonNull final AlertNotificationDto notification) {
+  public void notify(final AlertNotificationDto notification) {
+    if (notification == null) {
+      throw new RuntimeException("Notification cannot be null");
+    }
+
     final AlertDefinitionDto alert = notification.getAlert();
     final String destination = alert.getWebhook();
     if (StringUtils.isEmpty(destination)) {

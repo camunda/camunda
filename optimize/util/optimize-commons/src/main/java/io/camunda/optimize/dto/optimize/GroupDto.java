@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-import lombok.NonNull;
 
 public class GroupDto extends IdentityWithMetadataResponseDto {
 
@@ -25,8 +24,12 @@ public class GroupDto extends IdentityWithMetadataResponseDto {
     this(id, name, null);
   }
 
-  public GroupDto(@NonNull final String id, final String name, final Long memberCount) {
+  public GroupDto(final String id, final String name, final Long memberCount) {
     super(id, IdentityType.GROUP, Optional.ofNullable(name).orElse(id));
+    if (id == null) {
+      throw new RuntimeException("id is null");
+    }
+
     this.memberCount = memberCount;
   }
 
@@ -38,6 +41,23 @@ public class GroupDto extends IdentityWithMetadataResponseDto {
 
   public void setMemberCount(final Long memberCount) {
     this.memberCount = memberCount;
+  }
+
+  @Override
+  @JsonIgnore
+  public List<Supplier<String>> getSearchableDtoFields() {
+    return List.of(this::getId, this::getName);
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof GroupDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int result = super.hashCode();
+    return result;
   }
 
   @Override
@@ -59,25 +79,8 @@ public class GroupDto extends IdentityWithMetadataResponseDto {
   }
 
   @Override
-  protected boolean canEqual(final Object other) {
-    return other instanceof GroupDto;
-  }
-
-  @Override
-  public int hashCode() {
-    final int result = super.hashCode();
-    return result;
-  }
-
-  @Override
   public String toString() {
     return "GroupDto(super=" + super.toString() + ", memberCount=" + getMemberCount() + ")";
-  }
-
-  @Override
-  @JsonIgnore
-  public List<Supplier<String>> getSearchableDtoFields() {
-    return List.of(this::getId, this::getName);
   }
 
   public static final class Fields {

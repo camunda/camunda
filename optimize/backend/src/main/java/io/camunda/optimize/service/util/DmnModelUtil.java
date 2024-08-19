@@ -17,7 +17,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import lombok.NonNull;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -58,19 +57,31 @@ public class DmnModelUtil {
   }
 
   public static List<DecisionVariableNameResponseDto> extractInputVariables(
-      final DmnModelInstance model, @NonNull final String decisionKey) {
+      final DmnModelInstance model, final String decisionKey) {
+    if (decisionKey == null) {
+      throw new IllegalArgumentException("decisionKey must not be null");
+    }
+
     return extractVariables(model, decisionKey, DmnModelUtil::extractInputVariablesFromDecision);
   }
 
   public static List<DecisionVariableNameResponseDto> extractOutputVariables(
-      final DmnModelInstance model, @NonNull final String decisionKey) {
+      final DmnModelInstance model, final String decisionKey) {
+    if (decisionKey == null) {
+      throw new IllegalArgumentException("decisionKey must not be null");
+    }
+
     return extractVariables(model, decisionKey, DmnModelUtil::extractOutputVariablesFromDecision);
   }
 
   private static List<DecisionVariableNameResponseDto> extractVariables(
       final DmnModelInstance model,
-      @NonNull final String decisionKey,
+      final String decisionKey,
       final VariableExtractionFunction extractVariables) {
+    if (decisionKey == null) {
+      throw new IllegalArgumentException("decisionKey must not be null");
+    }
+
     return model.getModelElementsByType(Decision.class).stream()
         .filter(decision -> Objects.equals(decision.getId(), decisionKey))
         .findFirst()

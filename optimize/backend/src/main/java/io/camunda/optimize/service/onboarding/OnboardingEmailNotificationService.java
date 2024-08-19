@@ -18,7 +18,6 @@ import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.util.RootUrlGenerator;
 import java.util.Map;
 import java.util.Optional;
-import lombok.NonNull;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
@@ -51,7 +50,11 @@ public class OnboardingEmailNotificationService {
     this.rootUrlGenerator = rootUrlGenerator;
   }
 
-  public void sendOnboardingEmailWithErrorHandling(@NonNull final String processKey) {
+  public void sendOnboardingEmailWithErrorHandling(final String processKey) {
+    if (processKey == null) {
+      throw new IllegalArgumentException("processKey must not be null");
+    }
+
     final Optional<ProcessOverviewDto> optProcessOverview =
         processOverviewReader.getProcessOverviewByKey(processKey);
     if (optProcessOverview.isPresent()) {

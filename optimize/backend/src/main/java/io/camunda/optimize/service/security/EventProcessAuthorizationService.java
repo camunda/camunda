@@ -19,11 +19,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.NonNull;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 public class EventProcessAuthorizationService {
 
@@ -31,7 +28,20 @@ public class EventProcessAuthorizationService {
   private final EventProcessRoleService eventProcessRoleService;
   private final AbstractIdentityService identityService;
 
-  public boolean hasEventProcessManagementAccess(@NonNull final String userId) {
+  public EventProcessAuthorizationService(
+      final ConfigurationService configurationService,
+      final EventProcessRoleService eventProcessRoleService,
+      final AbstractIdentityService identityService) {
+    this.configurationService = configurationService;
+    this.eventProcessRoleService = eventProcessRoleService;
+    this.identityService = identityService;
+  }
+
+  public boolean hasEventProcessManagementAccess(final String userId) {
+    if (userId == null) {
+      throw new IllegalArgumentException("userId cannot be null");
+    }
+
     return configurationService.getEventBasedProcessAccessUserIds().contains(userId)
         || isInGroupWithEventProcessManagementAccess(userId);
   }
@@ -45,7 +55,14 @@ public class EventProcessAuthorizationService {
    *     authorization result.
    */
   public Optional<Boolean> isAuthorizedToEventProcess(
-      @NonNull final String userId, @NonNull final String eventProcessMappingId) {
+      final String userId, final String eventProcessMappingId) {
+    if (userId == null) {
+      throw new IllegalArgumentException("userId cannot be null");
+    }
+    if (eventProcessMappingId == null) {
+      throw new IllegalArgumentException("eventProcessMappingId cannot be null");
+    }
+
     final List<EventProcessRoleRequestDto<IdentityDto>> roles =
         eventProcessRoleService.getRoles(eventProcessMappingId);
     if (!roles.isEmpty()) {
@@ -82,7 +99,11 @@ public class EventProcessAuthorizationService {
     }
   }
 
-  private boolean isInGroupWithEventProcessManagementAccess(@NonNull final String userId) {
+  private boolean isInGroupWithEventProcessManagementAccess(final String userId) {
+    if (userId == null) {
+      throw new IllegalArgumentException("userId cannot be null");
+    }
+
     final List<String> authorizedGroupIds =
         configurationService.getEventBasedProcessAccessGroupIds();
     return identityService.getAllGroupsOfUser(userId).stream()

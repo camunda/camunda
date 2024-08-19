@@ -33,7 +33,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
@@ -100,7 +99,11 @@ public class SearchableIdentityCache implements AutoCloseable {
         });
   }
 
-  public void addIdentity(@NonNull final IdentityWithMetadataResponseDto identity) {
+  public void addIdentity(final IdentityWithMetadataResponseDto identity) {
+    if (identity == null) {
+      throw new IllegalArgumentException("identity must not be null");
+    }
+
     doWithWriteLock(
         () -> {
           enforceMaxEntryLimit(1);
@@ -115,9 +118,8 @@ public class SearchableIdentityCache implements AutoCloseable {
         });
   }
 
-  public void addIdentities(
-      @NonNull final List<? extends IdentityWithMetadataResponseDto> identities) {
-    if (identities.isEmpty()) {
+  public void addIdentities(final List<? extends IdentityWithMetadataResponseDto> identities) {
+    if (identities == null || identities.isEmpty()) {
       return;
     }
 

@@ -17,7 +17,6 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 
 public class UserDto extends IdentityWithMetadataResponseDto {
@@ -49,12 +48,16 @@ public class UserDto extends IdentityWithMetadataResponseDto {
 
   @JsonCreator
   public UserDto(
-      @JsonProperty(required = true, value = "id") @NonNull final String id,
+      @JsonProperty(required = true, value = "id") final String id,
       @JsonProperty(required = false, value = "firstName") final String firstName,
       @JsonProperty(required = false, value = "lastName") final String lastName,
       @JsonProperty(required = false, value = "email") final String email,
       @JsonProperty(required = false, value = "roles") final List<String> roles) {
     super(id, IdentityType.USER, resolveName(id, firstName, lastName));
+    if (id == null) {
+      throw new IllegalArgumentException("id cannot be null");
+    }
+
     this.firstName = firstName;
     this.lastName = lastName;
     this.email = email;
@@ -105,6 +108,24 @@ public class UserDto extends IdentityWithMetadataResponseDto {
   }
 
   @Override
+  @JsonIgnore
+  public List<Supplier<String>> getSearchableDtoFields() {
+    return List.of(
+        this::getId, this::getEmail, this::getName, this::getFirstName, this::getLastName);
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof UserDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int result = super.hashCode();
+    return result;
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (o == this) {
       return true;
@@ -123,17 +144,6 @@ public class UserDto extends IdentityWithMetadataResponseDto {
   }
 
   @Override
-  protected boolean canEqual(final Object other) {
-    return other instanceof UserDto;
-  }
-
-  @Override
-  public int hashCode() {
-    final int result = super.hashCode();
-    return result;
-  }
-
-  @Override
   public String toString() {
     return "UserDto(super="
         + super.toString()
@@ -146,13 +156,6 @@ public class UserDto extends IdentityWithMetadataResponseDto {
         + ", roles="
         + getRoles()
         + ")";
-  }
-
-  @Override
-  @JsonIgnore
-  public List<Supplier<String>> getSearchableDtoFields() {
-    return List.of(
-        this::getId, this::getEmail, this::getName, this::getFirstName, this::getLastName);
   }
 
   public static final class Fields {

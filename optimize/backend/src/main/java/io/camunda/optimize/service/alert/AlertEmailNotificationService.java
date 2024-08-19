@@ -11,7 +11,6 @@ import io.camunda.optimize.dto.optimize.alert.AlertNotificationDto;
 import io.camunda.optimize.service.email.EmailService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
-import lombok.NonNull;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
@@ -30,7 +29,11 @@ public class AlertEmailNotificationService implements AlertNotificationService {
   }
 
   @Override
-  public void notify(@NonNull final AlertNotificationDto notification) {
+  public void notify(final AlertNotificationDto notification) {
+    if (notification == null) {
+      throw new IllegalArgumentException("Notification cannot be null");
+    }
+
     final List<String> recipients = notification.getAlert().getEmails();
     log.info(
         "Sending email of type {} to {} recipients for alert with ID {}",

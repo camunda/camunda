@@ -52,7 +52,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.NonNull;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -210,12 +209,20 @@ public class DefinitionService implements ConfigurationReloadable {
         .orElse(List.of());
   }
 
-  public List<DefinitionResponseDto> getFullyImportedDefinitions(@NonNull final String userId) {
+  public List<DefinitionResponseDto> getFullyImportedDefinitions(final String userId) {
+    if (userId == null) {
+      throw new ForbiddenException("userId is null");
+    }
+
     return getFullyImportedDefinitions(null, null, null, userId);
   }
 
   public List<DefinitionResponseDto> getFullyImportedDefinitions(
-      final DefinitionType definitionType, @NonNull final String userId) {
+      final DefinitionType definitionType, final String userId) {
+    if (userId == null) {
+      throw new ForbiddenException("userId is null");
+    }
+
     return getFullyImportedDefinitions(definitionType, null, null, userId);
   }
 
@@ -223,7 +230,11 @@ public class DefinitionService implements ConfigurationReloadable {
       final DefinitionType definitionType,
       final Set<String> keys,
       final List<String> tenantIds,
-      @NonNull final String userId) {
+      final String userId) {
+    if (userId == null) {
+      throw new ForbiddenException("userId is null");
+    }
+
     final Set<String> tenantsToFilterFor = resolveTenantsToFilterFor(tenantIds, userId);
     final List<DefinitionWithTenantIdsDto> fullyImportedDefinitions =
         definitionReader.getFullyImportedDefinitionsWithTenantIds(
@@ -522,7 +533,11 @@ public class DefinitionService implements ConfigurationReloadable {
   }
 
   private HashSet<String> resolveTenantsToFilterFor(
-      final List<String> tenantIds, final @NonNull String userId) {
+      final List<String> tenantIds, final String userId) {
+    if (userId == null) {
+      throw new RuntimeException("userId is null");
+    }
+
     return Sets.newHashSet(
         Optional.ofNullable(tenantIds)
             .map(ids -> filterAuthorizedTenants(userId, ids))

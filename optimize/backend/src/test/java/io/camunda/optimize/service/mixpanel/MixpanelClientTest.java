@@ -31,11 +31,11 @@ import jakarta.ws.rs.HttpMethod;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -54,21 +54,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class MixpanelClientTest {
 
+  @RegisterExtension
+  protected final LogCapturer logCapturer =
+      LogCapturer.create().captureForType(MixpanelClient.class);
+
   private final ObjectMapper objectMapper =
       new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
   private final ConfigurationService configurationService =
       ConfigurationServiceBuilder.createDefaultConfiguration();
   @Mock private CloseableHttpClient httpClient;
-
   private MixpanelClient mixpanelClient;
-
-  @RegisterExtension
-  protected final LogCapturer logCapturer =
-      LogCapturer.create().captureForType(MixpanelClient.class);
 
   @BeforeEach
   public void setup() {
-    this.mixpanelClient = new MixpanelClient(configurationService, objectMapper, httpClient);
+    mixpanelClient = new MixpanelClient(configurationService, objectMapper, httpClient);
   }
 
   @SneakyThrows
@@ -93,7 +92,7 @@ public class MixpanelClientTest {
     // when
     mixpanelClient.importEvent(
         new MixpanelEvent(EventReportingEvent.HEARTBEAT, mixpanelEventProperties));
-    ArgumentCaptor<HttpPost> requestCaptor = ArgumentCaptor.forClass(HttpPost.class);
+    final ArgumentCaptor<HttpPost> requestCaptor = ArgumentCaptor.forClass(HttpPost.class);
     verify(httpClient, times(1)).execute(requestCaptor.capture());
 
     // then
@@ -187,8 +186,11 @@ public class MixpanelClientTest {
     logCapturer.assertContains("Could not parse response from Mixpanel.");
   }
 
-  @NonNull
   private CloseableHttpResponse mockResponseWithStatus(final Response.Status status) {
+    if (status == null) {
+      throw new IllegalArgumentException("status cannot be null");
+    }
+
     final CloseableHttpResponse mockResponse = mock(CloseableHttpResponse.class);
     final StatusLine mockStatusLine = mock(StatusLine.class);
     when(mockStatusLine.getStatusCode()).thenReturn(status.getStatusCode());
@@ -200,11 +202,14 @@ public class MixpanelClientTest {
     return configurationService.getAnalytics().getMixpanel();
   }
 
-  @SneakyThrows
   private MixpanelEvent readMixpanelEventFromRequest(final ArgumentCaptor<HttpPost> requestCaptor) {
-    try (final Reader reader =
-        new InputStreamReader(requestCaptor.getValue().getEntity().getContent())) {
-      return objectMapper.readValue(CharStreams.toString(reader), MixpanelEvent[].class)[0];
+    try {
+      try (final Reader reader =
+          new InputStreamReader(requestCaptor.getValue().getEntity().getContent())) {
+        return objectMapper.readValue(CharStreams.toString(reader), MixpanelEvent[].class)[0];
+      }
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
     }
   }
 }
