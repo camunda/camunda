@@ -26,6 +26,10 @@ public final class UserClient {
     return new UserCreationClient(writer, username);
   }
 
+  public ExistingUserClient existingUser(final UserRecordValue existingUserRecordValue) {
+    return new ExistingUserClient(writer, existingUserRecordValue);
+  }
+
   public static class UserCreationClient {
 
     private static final Function<Long, Record<UserRecordValue>> SUCCESS_SUPPLIER =
@@ -78,6 +82,61 @@ public final class UserClient {
     }
 
     public UserCreationClient expectRejection() {
+      expectation = REJECTION_SUPPLIER;
+      return this;
+    }
+  }
+
+  public static class ExistingUserClient {
+    private static final Function<Long, Record<UserRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.userRecords()
+                .withIntent(UserIntent.UPDATED)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private static final Function<Long, Record<UserRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.userRecords()
+                .onlyCommandRejections()
+                .withIntent(UserIntent.UPDATE)
+                .withSourceRecordPosition(position)
+                .getFirst();
+    private final CommandWriter writer;
+    private final UserRecord userRecord;
+    private Function<Long, Record<UserRecordValue>> expectation = SUCCESS_SUPPLIER;
+
+    public ExistingUserClient(
+        final CommandWriter writer, final UserRecordValue existingUserRecordValue) {
+      this.writer = writer;
+      userRecord = new UserRecord();
+      userRecord.setUsername(existingUserRecordValue.getUsername());
+      userRecord.setName(existingUserRecordValue.getName());
+      userRecord.setEmail(existingUserRecordValue.getEmail());
+      userRecord.setPassword(existingUserRecordValue.getPassword());
+    }
+
+    public ExistingUserClient withUpdatedName(final String name) {
+      userRecord.setName(name);
+      return this;
+    }
+
+    public ExistingUserClient withUpdatedEmail(final String email) {
+      userRecord.setEmail(email);
+      return this;
+    }
+
+    public ExistingUserClient withUpdatedPassword(final String password) {
+      userRecord.setPassword(password);
+      return this;
+    }
+
+    public Record<UserRecordValue> update() {
+      final long position = writer.writeCommand(UserIntent.UPDATE, userRecord);
+      return expectation.apply(position);
+    }
+
+    public ExistingUserClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }
