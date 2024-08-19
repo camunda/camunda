@@ -665,7 +665,7 @@ RFC 3339, section 5.6.",
            "type": "about:blank",
            "status": 400,
            "title": "INVALID_ARGUMENT",
-           "detail": "Priority field must be an integer between 0 and 100. Provided: %d.",
+           "detail": "The value for priority is '%s' but must be within the [0,100] range.",
            "instance": "%s"
          }"""
             .formatted(priority, baseUrl + "/1");
