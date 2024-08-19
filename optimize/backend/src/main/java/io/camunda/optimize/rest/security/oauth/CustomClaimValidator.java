@@ -8,7 +8,6 @@
 package io.camunda.optimize.rest.security.oauth;
 
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
@@ -17,11 +16,16 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
-@AllArgsConstructor
 public class CustomClaimValidator implements OAuth2TokenValidator<Jwt> {
+
   private final String claimName;
   private final String expectedClaimValue;
   private final JwtAuthenticationConverter delegate = new JwtAuthenticationConverter();
+
+  public CustomClaimValidator(final String claimName, final String expectedClaimValue) {
+    this.claimName = claimName;
+    this.expectedClaimValue = expectedClaimValue;
+  }
 
   @Override
   public OAuth2TokenValidatorResult validate(final Jwt jwt) {

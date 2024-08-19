@@ -25,14 +25,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class AlertClient {
 
   public static final String TEST_ALERT_NAME = "test alert";
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public AlertClient(final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public String createAlertForReport(final String reportId) {
     return createAlert(createSimpleAlert(reportId));
@@ -71,11 +73,11 @@ public class AlertClient {
         .execute();
   }
 
-  public Response bulkDeleteAlerts(List<String> alertIds) {
+  public Response bulkDeleteAlerts(final List<String> alertIds) {
     return getRequestExecutor().buildBulkDeleteAlertsRequest(alertIds).execute();
   }
 
-  public void deleteAlert(String alertId) {
+  public void deleteAlert(final String alertId) {
     final Response response = deleteAlertAsUser(alertId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
@@ -84,9 +86,9 @@ public class AlertClient {
     return getAllAlerts(DEFAULT_USERNAME, DEFAULT_USERNAME);
   }
 
-  public List<AlertDefinitionDto> getAllAlerts(String username, String password) {
-    List<AlertDefinitionDto> result = new ArrayList<>();
-    List<EntityResponseDto> entities =
+  public List<AlertDefinitionDto> getAllAlerts(final String username, final String password) {
+    final List<AlertDefinitionDto> result = new ArrayList<>();
+    final List<EntityResponseDto> entities =
         getRequestExecutor()
             .buildGetAllEntitiesRequest()
             .withUserAuthentication(username, password)
@@ -96,7 +98,7 @@ public class AlertClient {
         .filter(e -> e.getEntityType().equals(EntityType.COLLECTION))
         .forEach(
             e -> {
-              List<AlertDefinitionDto> alertsOfCollection =
+              final List<AlertDefinitionDto> alertsOfCollection =
                   getRequestExecutor()
                       .buildGetAlertsForCollectionRequest(e.getId())
                       .withUserAuthentication(username, password)
@@ -108,7 +110,7 @@ public class AlertClient {
     return result;
   }
 
-  public void updateAlert(String id, AlertCreationRequestDto simpleAlert) {
+  public void updateAlert(final String id, final AlertCreationRequestDto simpleAlert) {
     getRequestExecutor()
         .buildUpdateAlertRequest(id, simpleAlert)
         .execute(Response.Status.NO_CONTENT.getStatusCode());
@@ -129,15 +131,15 @@ public class AlertClient {
         .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public AlertCreationRequestDto createSimpleAlert(String reportId) {
+  public AlertCreationRequestDto createSimpleAlert(final String reportId) {
     return createSimpleAlert(reportId, 1, AlertIntervalUnit.SECONDS);
   }
 
   public AlertCreationRequestDto createSimpleAlert(
-      String reportId, int intervalValue, AlertIntervalUnit unit) {
-    AlertCreationRequestDto alertCreationRequestDto = new AlertCreationRequestDto();
+      final String reportId, final int intervalValue, final AlertIntervalUnit unit) {
+    final AlertCreationRequestDto alertCreationRequestDto = new AlertCreationRequestDto();
 
-    AlertInterval interval = new AlertInterval();
+    final AlertInterval interval = new AlertInterval();
     interval.setUnit(unit);
     interval.setValue(intervalValue);
     alertCreationRequestDto.setCheckInterval(interval);

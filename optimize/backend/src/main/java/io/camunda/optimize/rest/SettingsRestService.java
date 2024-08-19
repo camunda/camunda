@@ -18,16 +18,20 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path("/settings")
 @Component
 public class SettingsRestService {
 
   private final SessionService sessionService;
   private final SettingsService settingsService;
+
+  public SettingsRestService(
+      final SessionService sessionService, final SettingsService settingsService) {
+    this.sessionService = sessionService;
+    this.settingsService = settingsService;
+  }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)

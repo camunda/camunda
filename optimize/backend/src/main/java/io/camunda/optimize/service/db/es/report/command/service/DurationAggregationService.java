@@ -41,7 +41,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
-import lombok.AllArgsConstructor;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -57,8 +56,8 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
 @Component
-@AllArgsConstructor
 public class DurationAggregationService {
+
   private static final String DURATION_HISTOGRAM_AGGREGATION = "durationHistogram";
   private static final int AUTOMATIC_BUCKET_LIMIT =
       NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
@@ -66,6 +65,10 @@ public class DurationAggregationService {
   private static final DurationUnit FILTER_UNIT = DurationUnit.MILLIS;
 
   private final MinMaxStatsService minMaxStatsService;
+
+  public DurationAggregationService(final MinMaxStatsService minMaxStatsService) {
+    this.minMaxStatsService = minMaxStatsService;
+  }
 
   public Optional<AggregationBuilder> createLimitedGroupByScriptedDurationAggregation(
       final SearchSourceBuilder searchSourceBuilder,
@@ -145,7 +148,7 @@ public class DurationAggregationService {
             .map(aggregations -> aggregations.get(DURATION_HISTOGRAM_AGGREGATION));
 
     if (histogramAggregationResult.isPresent()) {
-      for (MultiBucketsAggregation.Bucket durationBucket :
+      for (final MultiBucketsAggregation.Bucket durationBucket :
           histogramAggregationResult.get().getBuckets()) {
         final List<CompositeCommandResult.DistributedByResult> distributions =
             distributedByPart.retrieveResult(response, durationBucket.getAggregations(), context);

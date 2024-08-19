@@ -19,16 +19,18 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.xml.ModelParseException;
 import org.springframework.stereotype.Component;
 
 @Component
-@AllArgsConstructor
 public class EventMappingCleanupService {
 
   private final EventCountService eventCountService;
+
+  public EventMappingCleanupService(final EventCountService eventCountService) {
+    this.eventCountService = eventCountService;
+  }
 
   public Map<String, EventMappingDto> doMappingCleanup(
       final String userId, final EventMappingCleanupRequestDto requestDto) {
@@ -54,7 +56,7 @@ public class EventMappingCleanupService {
   private BpmnModelInstance parseXmlIntoBpmnModel(final String xmlString) {
     try {
       return BpmnModelUtil.parseBpmnModel(xmlString);
-    } catch (ModelParseException ex) {
+    } catch (final ModelParseException ex) {
       throw new BadRequestException("The provided xml is not valid");
     }
   }

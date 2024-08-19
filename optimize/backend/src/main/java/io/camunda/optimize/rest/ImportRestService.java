@@ -24,10 +24,8 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Set;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path("/import")
 @Component
 public class ImportRestService {
@@ -36,12 +34,21 @@ public class ImportRestService {
   private final EntityImportService entityImportService;
   private final AbstractIdentityService identityService;
 
+  public ImportRestService(
+      final SessionService sessionService,
+      final EntityImportService entityImportService,
+      final AbstractIdentityService identityService) {
+    this.sessionService = sessionService;
+    this.entityImportService = entityImportService;
+    this.identityService = identityService;
+  }
+
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<EntityIdResponseDto> importEntities(
       @Context final ContainerRequestContext requestContext,
-      @QueryParam("collectionId") String collectionId,
+      @QueryParam("collectionId") final String collectionId,
       final String exportedDtoJson) {
     final Set<OptimizeEntityExportDto> exportDtos =
         entityImportService.readExportDtoOrFailIfInvalid(exportedDtoJson);

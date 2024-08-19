@@ -24,14 +24,17 @@ import io.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRe
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class DefinitionClient {
+
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
+  public DefinitionClient(final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
+
   public DefinitionResponseDto getDefinitionByTypeAndKey(
-      DefinitionType definitionType, DefinitionOptimizeResponseDto expectedDefinition) {
+      final DefinitionType definitionType, final DefinitionOptimizeResponseDto expectedDefinition) {
     return getRequestExecutor()
         .buildGetDefinitionByTypeAndKeyRequest(definitionType.getId(), expectedDefinition.getKey())
         .execute(DefinitionResponseDto.class, Response.Status.OK.getStatusCode());
@@ -47,7 +50,8 @@ public class DefinitionClient {
         .executeAndReturnList(DefinitionKeyResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public List<DefinitionResponseDto> getAllDefinitionsAsUser(String username, String password) {
+  public List<DefinitionResponseDto> getAllDefinitionsAsUser(
+      final String username, final String password) {
     return getRequestExecutor()
         .buildGetDefinitions()
         .withUserAuthentication(username, password)
@@ -135,7 +139,7 @@ public class DefinitionClient {
   }
 
   public List<TenantWithDefinitionsResponseDto> getDefinitionsGroupedByTenantAsUser(
-      String username, String password) {
+      final String username, final String password) {
     return getRequestExecutor()
         .buildGetDefinitionsGroupedByTenant()
         .withUserAuthentication(username, password)
@@ -148,7 +152,7 @@ public class DefinitionClient {
   }
 
   public List<DecisionDefinitionOptimizeDto> getAllDecisionDefinitionsAsUser(
-      String username, String password) {
+      final String username, final String password) {
     return getRequestExecutor()
         .buildGetDecisionDefinitionsRequest()
         .withUserAuthentication(username, password)
@@ -161,7 +165,7 @@ public class DefinitionClient {
   }
 
   public List<ProcessDefinitionOptimizeDto> getAllProcessDefinitionsAsUser(
-      String username, String password) {
+      final String username, final String password) {
     return getRequestExecutor()
         .buildGetProcessDefinitionsRequest()
         .withUserAuthentication(username, password)
@@ -169,23 +173,29 @@ public class DefinitionClient {
             ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public String getDecisionDefinitionXml(String key, String version) {
+  public String getDecisionDefinitionXml(final String key, final String version) {
     return getDecisionDefinitionXml(key, version, null);
   }
 
-  public String getDecisionDefinitionXml(String key, String version, String tenant) {
+  public String getDecisionDefinitionXml(
+      final String key, final String version, final String tenant) {
     return getRequestExecutor()
         .buildGetDecisionDefinitionXmlRequest(key, version, tenant)
         .execute(String.class, Response.Status.OK.getStatusCode());
   }
 
-  public String getProcessDefinitionXml(String key, String version, String tenantId) {
+  public String getProcessDefinitionXml(
+      final String key, final String version, final String tenantId) {
     return getProcessDefinitionXmlAsUser(
         key, version, tenantId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
   public String getProcessDefinitionXmlAsUser(
-      String key, String version, String tenantId, String username, String password) {
+      final String key,
+      final String version,
+      final String tenantId,
+      final String username,
+      final String password) {
     return getRequestExecutor()
         .buildGetProcessDefinitionXmlRequest(key, version, tenantId)
         .withUserAuthentication(username, password)

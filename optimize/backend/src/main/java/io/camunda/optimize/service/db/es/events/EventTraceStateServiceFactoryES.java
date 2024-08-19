@@ -24,11 +24,9 @@ import io.camunda.optimize.service.db.writer.EventTraceStateWriter;
 import io.camunda.optimize.service.events.EventTraceStateService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class EventTraceStateServiceFactoryES implements EventTraceStateServiceFactory {
@@ -37,6 +35,17 @@ public class EventTraceStateServiceFactoryES implements EventTraceStateServiceFa
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
+
+  public EventTraceStateServiceFactoryES(
+      final OptimizeElasticsearchClient esClient,
+      final ElasticSearchSchemaManager elasticSearchSchemaManager,
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService) {
+    this.esClient = esClient;
+    this.elasticSearchSchemaManager = elasticSearchSchemaManager;
+    this.objectMapper = objectMapper;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public EventTraceStateService createEventTraceStateService(final String eventSuffix) {

@@ -16,12 +16,14 @@ import io.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class ProcessOverviewClient {
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public ProcessOverviewClient(final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public List<ProcessOverviewResponseDto> getProcessOverviews() {
     return getProcessOverviews(null);

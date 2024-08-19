@@ -31,13 +31,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 
 @Conditional(CCSMCondition.class)
-@AllArgsConstructor
 public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProcessingFilter {
 
   private final CCSMTokenService ccsmTokenService;
@@ -48,8 +46,13 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
     setAuthenticationManager(authenticationManager);
   }
 
+  public CCSMAuthenticationCookieFilter(final CCSMTokenService ccsmTokenService) {
+    this.ccsmTokenService = ccsmTokenService;
+  }
+
   @Override
-  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+  public void doFilter(
+      final ServletRequest request, final ServletResponse response, final FilterChain chain)
       throws IOException, ServletException {
     final Cookie[] cookies = ((HttpServletRequest) request).getCookies();
     if (cookies != null) {
@@ -63,10 +66,10 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
                 // If no access token cookie is present, we can try renewing the tokens using the
                 // refresh token
                 () -> tryCookieRenewal(request, response, cookiesByName));
-      } catch (TokenExpiredException expiredException) {
+      } catch (final TokenExpiredException expiredException) {
         // If the access token has expired, we try to renew the tokens using the refresh token
         tryCookieRenewal(request, response, cookiesByName);
-      } catch (IdentityException verificationException) {
+      } catch (final IdentityException verificationException) {
         // If any renewal fails or the access token is otherwise not valid, try to revoke the tokens
         // using the refresh token
         try {
@@ -74,13 +77,13 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
               .ifPresent(
                   refreshTokenCookie ->
                       ccsmTokenService.revokeToken(refreshTokenCookie.getValue()));
-        } catch (IdentityException ex) {
+        } catch (final IdentityException ex) {
           // It's possible that the revoking will fail, but we catch it so that we can still delete
           // the cookies
         } finally {
           deleteCookies(response);
         }
-      } catch (NotAuthorizedException notAuthorizedException) {
+      } catch (final NotAuthorizedException notAuthorizedException) {
         // During token verification, it could be that the user is no longer authorized to access
         // Optimize, in which
         // case we delete any existing cookies

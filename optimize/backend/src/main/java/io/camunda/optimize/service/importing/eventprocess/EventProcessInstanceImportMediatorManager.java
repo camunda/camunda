@@ -18,11 +18,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.AllArgsConstructor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 public class EventProcessInstanceImportMediatorManager implements ConfigurationReloadable {
 
@@ -31,6 +29,13 @@ public class EventProcessInstanceImportMediatorManager implements ConfigurationR
 
   private final Map<String, List<EventProcessInstanceImportMediator<EventProcessEventDto>>>
       importMediators = new ConcurrentHashMap<>();
+
+  public EventProcessInstanceImportMediatorManager(
+      final EventProcessInstanceIndexManager eventBasedProcessIndexManager,
+      final EventProcessInstanceImportMediatorFactory mediatorFactory) {
+    this.eventBasedProcessIndexManager = eventBasedProcessIndexManager;
+    this.mediatorFactory = mediatorFactory;
+  }
 
   public Collection<EventProcessInstanceImportMediator<EventProcessEventDto>> getActiveMediators() {
     return importMediators.values().stream().flatMap(Collection::stream).toList();

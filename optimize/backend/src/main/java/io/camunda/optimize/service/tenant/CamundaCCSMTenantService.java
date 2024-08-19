@@ -13,17 +13,22 @@ import io.camunda.optimize.service.security.util.tenant.CamundaCCSMTenantAuthori
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Conditional(CCSMCondition.class)
 public class CamundaCCSMTenantService implements TenantService {
 
   private final CamundaCCSMTenantAuthorizationService tenantAuthorizationService;
   private final ConfigurationService configurationService;
+
+  public CamundaCCSMTenantService(
+      final CamundaCCSMTenantAuthorizationService tenantAuthorizationService,
+      final ConfigurationService configurationService) {
+    this.tenantAuthorizationService = tenantAuthorizationService;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public boolean isAuthorizedToSeeTenant(final String userId, final String tenantId) {
@@ -32,14 +37,14 @@ public class CamundaCCSMTenantService implements TenantService {
   }
 
   @Override
-  public List<TenantDto> getTenantsForUser(final String userId) {
-    // In CCSM, we can only retrieve tenant auths for the current user using the user's token
-    return getTenantsForCurrentUser();
+  public boolean isMultiTenantEnvironment() {
+    return configurationService.isMultiTenancyEnabled();
   }
 
   @Override
-  public boolean isMultiTenantEnvironment() {
-    return configurationService.isMultiTenancyEnabled();
+  public List<TenantDto> getTenantsForUser(final String userId) {
+    // In CCSM, we can only retrieve tenant auths for the current user using the user's token
+    return getTenantsForCurrentUser();
   }
 
   private List<TenantDto> getTenantsForCurrentUser() {

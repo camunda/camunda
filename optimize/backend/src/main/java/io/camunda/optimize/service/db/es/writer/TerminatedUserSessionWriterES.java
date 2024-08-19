@@ -22,14 +22,12 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import lombok.AllArgsConstructor;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class TerminatedUserSessionWriterES extends TerminatedUserSessionWriter {
@@ -37,6 +35,15 @@ public class TerminatedUserSessionWriterES extends TerminatedUserSessionWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
+
+  public TerminatedUserSessionWriterES(
+      final OptimizeElasticsearchClient esClient,
+      final ObjectMapper objectMapper,
+      final DateTimeFormatter dateTimeFormatter) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.dateTimeFormatter = dateTimeFormatter;
+  }
 
   @Override
   protected void performWritingTerminatedUserSession(final TerminatedUserSessionDto sessionDto)

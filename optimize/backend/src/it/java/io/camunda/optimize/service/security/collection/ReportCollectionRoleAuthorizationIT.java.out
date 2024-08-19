@@ -865,7 +865,6 @@
 //   }
 //
 //   @Data
-//   @AllArgsConstructor
 //   protected static class IdentityRoleAndReportScenario {
 //
 //     IdentityAndRole identityAndRole;
@@ -873,7 +872,6 @@
 //   }
 //
 //   @Data
-//   @AllArgsConstructor
 //   protected static class ReportScenario {
 //
 //     ReportType reportType;

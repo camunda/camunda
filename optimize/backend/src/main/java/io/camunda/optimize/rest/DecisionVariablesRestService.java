@@ -21,10 +21,8 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path(DecisionVariablesRestService.DECISION_VARIABLES_PATH)
 @Component
 public class DecisionVariablesRestService {
@@ -35,6 +33,12 @@ public class DecisionVariablesRestService {
 
   private final DecisionVariableService decisionVariableService;
   private final SessionService sessionService;
+
+  public DecisionVariablesRestService(
+      final DecisionVariableService decisionVariableService, final SessionService sessionService) {
+    this.decisionVariableService = decisionVariableService;
+    this.sessionService = sessionService;
+  }
 
   @POST
   @Path(DECISION_INPUTS_NAMES_PATH)
@@ -61,7 +65,7 @@ public class DecisionVariablesRestService {
   public List<String> getInputValues(
       @Context final ContainerRequestContext requestContext,
       final DecisionVariableValueRequestDto requestDto) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return decisionVariableService.getInputVariableValues(userId, requestDto);
   }
 
@@ -72,7 +76,7 @@ public class DecisionVariablesRestService {
   public List<String> getOutputValues(
       @Context final ContainerRequestContext requestContext,
       final DecisionVariableValueRequestDto requestDto) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return decisionVariableService.getOutputVariableValues(userId, requestDto);
   }
 }

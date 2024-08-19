@@ -15,11 +15,9 @@ import io.camunda.optimize.service.importing.event.handler.EventImportIndexHandl
 import io.camunda.optimize.service.importing.event.service.EventTraceImportService;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 public class EventTraceImportMediatorFactory {
 
@@ -30,6 +28,23 @@ public class EventTraceImportMediatorFactory {
   private final ExternalEventService externalEventService;
   private final BackoffCalculator idleBackoffCalculator;
   private final DatabaseClient databaseClient;
+
+  public EventTraceImportMediatorFactory(
+      final ConfigurationService configurationService,
+      final EventImportIndexHandlerRegistry eventImportIndexHandlerRegistry,
+      final EventTraceStateServiceFactory eventTraceStateServiceFactory,
+      final BeanFactory beanFactory,
+      final ExternalEventService externalEventService,
+      final BackoffCalculator idleBackoffCalculator,
+      final DatabaseClient databaseClient) {
+    this.configurationService = configurationService;
+    this.eventImportIndexHandlerRegistry = eventImportIndexHandlerRegistry;
+    this.eventTraceStateServiceFactory = eventTraceStateServiceFactory;
+    this.beanFactory = beanFactory;
+    this.externalEventService = externalEventService;
+    this.idleBackoffCalculator = idleBackoffCalculator;
+    this.databaseClient = databaseClient;
+  }
 
   public EventTraceImportMediator createExternalEventTraceImportMediator() {
     return beanFactory.getBean(

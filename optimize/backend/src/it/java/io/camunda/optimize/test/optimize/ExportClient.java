@@ -15,17 +15,21 @@ import io.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExpor
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class ExportClient {
+
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
-  public Response exportReportAsCsv(String reportId, String fileName) {
+  public ExportClient(final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
+
+  public Response exportReportAsCsv(final String reportId, final String fileName) {
     return getRequestExecutor().buildCsvExportRequest(reportId, fileName).execute();
   }
 
-  public Response exportReportAsCsv(String reportId, String fileName, String timezone) {
+  public Response exportReportAsCsv(
+      final String reportId, final String fileName, final String timezone) {
     return getRequestExecutor()
         .buildCsvExportRequest(reportId, fileName)
         .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, timezone)

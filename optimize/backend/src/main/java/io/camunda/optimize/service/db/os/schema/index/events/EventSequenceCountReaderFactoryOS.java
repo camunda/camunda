@@ -14,11 +14,9 @@ import io.camunda.optimize.service.db.os.reader.EventSequenceCountReaderOS;
 import io.camunda.optimize.service.db.reader.EventSequenceCountReader;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Conditional(OpenSearchCondition.class)
 public class EventSequenceCountReaderFactoryOS implements EventSequenceCountReaderFactory {
@@ -26,6 +24,15 @@ public class EventSequenceCountReaderFactoryOS implements EventSequenceCountRead
   private final OptimizeOpenSearchClient osClient;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
+
+  public EventSequenceCountReaderFactoryOS(
+      final OptimizeOpenSearchClient osClient,
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService) {
+    this.osClient = osClient;
+    this.objectMapper = objectMapper;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public EventSequenceCountReader createEventSequenceCountReader(final String eventSuffix) {

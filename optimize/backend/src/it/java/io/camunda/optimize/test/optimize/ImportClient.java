@@ -20,11 +20,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class ImportClient {
+
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public ImportClient(final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public Response importEntity(final OptimizeEntityExportDto exportedDto) {
     return importEntitiesAsUser(

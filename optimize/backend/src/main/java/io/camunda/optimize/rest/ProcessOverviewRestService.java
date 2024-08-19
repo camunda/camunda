@@ -31,11 +31,9 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@AllArgsConstructor
 @Path("/process")
 @Component
 public class ProcessOverviewRestService {
@@ -43,14 +41,20 @@ public class ProcessOverviewRestService {
   private final ProcessOverviewService processOverviewService;
   private final SessionService sessionService;
 
+  public ProcessOverviewRestService(
+      final ProcessOverviewService processOverviewService, final SessionService sessionService) {
+    this.processOverviewService = processOverviewService;
+    this.sessionService = sessionService;
+  }
+
   @GET
   @Path("/overview")
   @Produces(MediaType.APPLICATION_JSON)
   public List<ProcessOverviewResponseDto> getProcessOverviews(
-      @Context ContainerRequestContext requestContext,
+      @Context final ContainerRequestContext requestContext,
       @BeanParam final ProcessOverviewSorter processOverviewSorter) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    List<ProcessOverviewResponseDto> processOverviewResponseDtos =
+    final List<ProcessOverviewResponseDto> processOverviewResponseDtos =
         processOverviewService.getAllProcessOverviews(
             userId, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
     return processOverviewSorter.applySort(processOverviewResponseDtos);
@@ -62,8 +66,8 @@ public class ProcessOverviewRestService {
   public void updateProcess(
       @Context final ContainerRequestContext requestContext,
       @PathParam("processDefinitionKey") final String processDefKey,
-      @NotNull @Valid @RequestBody ProcessUpdateDto processUpdateDto) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @NotNull @Valid @RequestBody final ProcessUpdateDto processUpdateDto) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     processOverviewService.updateProcess(userId, processDefKey, processUpdateDto);
   }
 
@@ -72,12 +76,12 @@ public class ProcessOverviewRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void setInitialProcessOwner(
       @Context final ContainerRequestContext requestContext,
-      @NotNull @Valid @RequestBody InitialProcessOwnerDto ownerDto) {
+      @NotNull @Valid @RequestBody final InitialProcessOwnerDto ownerDto) {
     Optional<String> userId;
     try {
       userId =
           Optional.ofNullable(sessionService.getRequestUserOrFailNotAuthorized(requestContext));
-    } catch (NotAuthorizedException e) {
+    } catch (final NotAuthorizedException e) {
       // If we are using a CloudSaaS Token
       userId =
           Optional.ofNullable(requestContext.getSecurityContext().getUserPrincipal().getName());

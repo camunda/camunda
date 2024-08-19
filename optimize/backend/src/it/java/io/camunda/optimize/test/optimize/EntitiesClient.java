@@ -21,26 +21,30 @@ import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class EntitiesClient {
+
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public EntitiesClient(final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public List<EntityResponseDto> getAllEntities() {
     return getAllEntities(null);
   }
 
-  public List<EntityResponseDto> getAllEntities(EntitySorter sorter) {
+  public List<EntityResponseDto> getAllEntities(final EntitySorter sorter) {
     return getAllEntitiesAsUser(DEFAULT_USERNAME, DEFAULT_PASSWORD, sorter);
   }
 
-  public List<EntityResponseDto> getAllEntitiesAsUser(String username, String password) {
+  public List<EntityResponseDto> getAllEntitiesAsUser(
+      final String username, final String password) {
     return getAllEntitiesAsUser(username, password, null);
   }
 
   private List<EntityResponseDto> getAllEntitiesAsUser(
-      String username, String password, final EntitySorter sorter) {
+      final String username, final String password, final EntitySorter sorter) {
     return getRequestExecutor()
         .buildGetAllEntitiesRequest(sorter)
         .withUserAuthentication(username, password)
@@ -48,7 +52,10 @@ public class EntitiesClient {
   }
 
   public EntityNameResponseDto getEntityNames(
-      String collectionId, String dashboardId, String reportId, String eventProcessId) {
+      final String collectionId,
+      final String dashboardId,
+      final String reportId,
+      final String eventProcessId) {
     return getEntityNamesAsUser(
         collectionId, dashboardId, reportId, eventProcessId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
@@ -70,12 +77,12 @@ public class EntitiesClient {
   }
 
   public EntityNameResponseDto getEntityNamesAsUser(
-      String collectionId,
-      String dashboardId,
-      String reportId,
-      String eventProcessId,
-      String username,
-      String password) {
+      final String collectionId,
+      final String dashboardId,
+      final String reportId,
+      final String eventProcessId,
+      final String username,
+      final String password) {
     return getEntityNamesAsUser(
         collectionId, dashboardId, reportId, eventProcessId, username, password, null);
   }
@@ -98,7 +105,8 @@ public class EntitiesClient {
         .execute(EntityNameResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public boolean entitiesHaveDeleteConflicts(EntitiesDeleteRequestDto entitiesDeleteRequestDto) {
+  public boolean entitiesHaveDeleteConflicts(
+      final EntitiesDeleteRequestDto entitiesDeleteRequestDto) {
     return getRequestExecutor()
         .buildCheckEntityDeleteConflictsRequest(entitiesDeleteRequestDto)
         .execute(Boolean.class, Response.Status.OK.getStatusCode());

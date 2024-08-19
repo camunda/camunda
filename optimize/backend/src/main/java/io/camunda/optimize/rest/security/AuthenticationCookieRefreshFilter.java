@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.core.Authentication;
@@ -31,7 +30,6 @@ import org.springframework.security.web.authentication.preauth.PreAuthenticatedA
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.GenericFilterBean;
 
-@AllArgsConstructor
 @Component
 @Conditional(CamundaPlatformCondition.class)
 @Order
@@ -40,6 +38,15 @@ public class AuthenticationCookieRefreshFilter extends GenericFilterBean {
   private final SessionService sessionService;
   private final ConfigurationService configurationService;
   private final AuthCookieService authCookieService;
+
+  public AuthenticationCookieRefreshFilter(
+      final SessionService sessionService,
+      final ConfigurationService configurationService,
+      final AuthCookieService authCookieService) {
+    this.sessionService = sessionService;
+    this.configurationService = configurationService;
+    this.authCookieService = authCookieService;
+  }
 
   @Override
   public void doFilter(

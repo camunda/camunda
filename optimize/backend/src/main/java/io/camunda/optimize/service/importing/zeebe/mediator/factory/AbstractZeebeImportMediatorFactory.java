@@ -14,10 +14,8 @@ import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
-import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.BeanFactory;
 
-@AllArgsConstructor
 public abstract class AbstractZeebeImportMediatorFactory {
 
   protected final BeanFactory beanFactory;
@@ -25,6 +23,19 @@ public abstract class AbstractZeebeImportMediatorFactory {
   protected final ConfigurationService configurationService;
   protected final ObjectMapper objectMapper;
   protected final DatabaseClient databaseClient;
+
+  public AbstractZeebeImportMediatorFactory(
+      final BeanFactory beanFactory,
+      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper,
+      final DatabaseClient databaseClient) {
+    this.beanFactory = beanFactory;
+    this.importIndexHandlerRegistry = importIndexHandlerRegistry;
+    this.configurationService = configurationService;
+    this.objectMapper = objectMapper;
+    this.databaseClient = databaseClient;
+  }
 
   public abstract List<ImportMediator> createMediators(ZeebeDataSourceDto dataSourceDto);
 }

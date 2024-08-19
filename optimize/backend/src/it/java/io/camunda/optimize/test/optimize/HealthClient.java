@@ -10,12 +10,14 @@ package io.camunda.optimize.test.optimize;
 import io.camunda.optimize.OptimizeRequestExecutor;
 import jakarta.ws.rs.core.Response;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class HealthClient {
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+
+  public HealthClient(final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
 
   public Response getReadiness() {
     return getRequestExecutor().withoutAuthentication().buildGetReadinessRequest().execute();

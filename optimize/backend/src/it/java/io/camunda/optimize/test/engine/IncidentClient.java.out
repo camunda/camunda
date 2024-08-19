@@ -7,10 +7,10 @@
  */
 // TODO recreate C8 IT equivalent of this with #13337
 // package io.camunda.optimize.test.engine;
-// 
+//
 // import static io.camunda.optimize.util.BpmnModels.getExternalTaskProcess;
 // import static io.camunda.optimize.util.BpmnModels.getTwoParallelExternalTaskProcess;
-// 
+//
 // import io.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 // import io.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 // import io.camunda.optimize.test.it.extension.EngineIntegrationExtension;
@@ -19,19 +19,18 @@
 // import lombok.AllArgsConstructor;
 // import lombok.Builder;
 // import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-// 
-// @AllArgsConstructor
+//
 // @Builder
 // public class IncidentClient {
-// 
+//
 //   private final EngineIntegrationExtension engineIntegrationExtension;
 //   private final EngineDatabaseExtension engineDatabaseExtension;
-// 
+//
 //   public void changeIncidentCreationDate(
 //       final String processInstanceId, final OffsetDateTime creationDate) {
 //     engineDatabaseExtension.changeIncidentCreationDate(processInstanceId, creationDate);
 //   }
-// 
+//
 //   public void changeIncidentCreationAndEndDateIfPresent(
 //       final String processInstanceId,
 //       final OffsetDateTime creationDate,
@@ -39,11 +38,11 @@
 //     engineDatabaseExtension.changeIncidentCreationAndEndDateIfPresent(
 //         processInstanceId, creationDate, endDate);
 //   }
-// 
+//
 //   public String deployProcessAndReturnId(final BpmnModelInstance process) {
 //     return engineIntegrationExtension.deployProcessAndGetId(process);
 //   }
-// 
+//
 //   public ProcessInstanceEngineDto deployAndStartProcessInstanceWithTenantAndWithOpenIncident(
 //       final String tenantId) {
 //     BpmnModelInstance incidentProcess = getExternalTaskProcess();
@@ -52,24 +51,24 @@
 //     createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
 //     return processInstanceEngineDto;
 //   }
-// 
+//
 //   public ProcessInstanceEngineDto deployAndStartProcessInstanceWithOpenIncident() {
 //     return deployAndStartProcessInstanceWithTenantAndWithOpenIncident(null);
 //   }
-// 
+//
 //   public ProcessInstanceEngineDto deployAndStartProcessInstanceWithResolvedIncident() {
 //     final ProcessInstanceEngineDto processInstanceEngineDto =
 //         deployAndStartProcessInstanceWithOpenIncident();
 //     engineIntegrationExtension.completeExternalTasks(processInstanceEngineDto.getId());
 //     return processInstanceEngineDto;
 //   }
-// 
+//
 //   public void deployAndStartProcessInstanceWithDeletedIncident() {
 //     final ProcessInstanceEngineDto processInstanceEngineDto =
 //         deployAndStartProcessInstanceWithOpenIncident();
 //     engineIntegrationExtension.deleteProcessInstance(processInstanceEngineDto.getId());
 //   }
-// 
+//
 //   public ProcessInstanceEngineDto deployAndStartProcessInstanceWithTwoOpenIncidents() {
 //     BpmnModelInstance incidentProcess = getTwoParallelExternalTaskProcess();
 //     final ProcessInstanceEngineDto processInstanceEngineDto =
@@ -77,21 +76,21 @@
 //     createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
 //     return processInstanceEngineDto;
 //   }
-// 
+//
 //   public ProcessInstanceEngineDto deployAndStartProcessInstanceWithDeletedResolvedIncidents() {
 //     final ProcessInstanceEngineDto processInstanceEngineDto =
 //         deployAndStartProcessInstanceWithTwoOpenIncidents();
 //     engineIntegrationExtension.deleteProcessInstance(processInstanceEngineDto.getId());
 //     return processInstanceEngineDto;
 //   }
-// 
+//
 //   public ProcessInstanceEngineDto deployAndStartProcessInstanceWithTwoResolvedIncidents() {
 //     final ProcessInstanceEngineDto processInstanceEngineDto =
 //         deployAndStartProcessInstanceWithTwoOpenIncidents();
 //     engineIntegrationExtension.completeExternalTasks(processInstanceEngineDto.getId());
 //     return processInstanceEngineDto;
 //   }
-// 
+//
 //   public ProcessInstanceEngineDto startProcessInstanceAndCreateOpenIncident(
 //       String processDefinitionId) {
 //     // start instance with unique businessKey to avoid side effects when businessKey is used as
@@ -103,7 +102,7 @@
 //     createOpenIncidentForInstancesWithBusinessKey(processInstanceEngineDto.getBusinessKey());
 //     return processInstanceEngineDto;
 //   }
-// 
+//
 //   public ProcessInstanceEngineDto startProcessInstanceAndCreateResolvedIncident(
 //       String processDefinitionId) {
 //     final ProcessInstanceEngineDto processInstanceEngineDto =
@@ -111,7 +110,7 @@
 //     engineIntegrationExtension.completeExternalTasks(processInstanceEngineDto.getId());
 //     return processInstanceEngineDto;
 //   }
-// 
+//
 //   public ProcessInstanceEngineDto startProcessInstanceAndCreateDeletedIncident(
 //       String processDefinitionId) {
 //     // start instance with unique businessKey to avoid side effects when businessKey is used as
@@ -124,11 +123,11 @@
 //     engineIntegrationExtension.deleteProcessInstance(processInstanceEngineDto.getId());
 //     return processInstanceEngineDto;
 //   }
-// 
+//
 //   public ProcessInstanceEngineDto startProcessInstanceWithoutIncident(String processDefinitionId) {
 //     return engineIntegrationExtension.startProcessInstance(processDefinitionId);
 //   }
-// 
+//
 //   public ProcessInstanceEngineDto startProcessInstanceWithCustomIncident(
 //       final String processDefinitionId, final String customIncidentType) {
 //     // start instance with unique businessKey to avoid side effects when businessKey is used as
@@ -140,7 +139,7 @@
 //     engineIntegrationExtension.createIncident(processInstanceEngineDto.getId(), customIncidentType);
 //     return processInstanceEngineDto;
 //   }
-// 
+//
 //   public void createOpenIncidentForInstancesWithBusinessKey(final String businessKey) {
 //     // Note: To create an incident, first tasks are locked and then they are failed.
 //     // The businessKey is required to lock only the tasks of the workers with that businessKey (the
@@ -150,7 +149,7 @@
 //     // instances.
 //     engineIntegrationExtension.failExternalTasks(businessKey);
 //   }
-// 
+//
 //   public void resolveOpenIncidents(final String processInstanceId) {
 //     engineIntegrationExtension.completeExternalTasks(processInstanceId);
 //   }

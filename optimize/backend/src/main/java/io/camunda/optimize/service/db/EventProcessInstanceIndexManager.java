@@ -22,10 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
-import lombok.AllArgsConstructor;
 import org.springframework.context.ApplicationContext;
 
-@AllArgsConstructor
 public abstract class EventProcessInstanceIndexManager implements ConfigurationReloadable {
 
   protected final EventProcessPublishStateReader eventProcessPublishStateReader;
@@ -34,6 +32,13 @@ public abstract class EventProcessInstanceIndexManager implements ConfigurationR
   protected final Map<String, EventProcessPublishStateDto> publishedInstanceIndices =
       new HashMap<>();
   protected final Map<String, AtomicInteger> usageCountPerIndex = new HashMap<>();
+
+  public EventProcessInstanceIndexManager(
+      final EventProcessPublishStateReader eventProcessPublishStateReader,
+      final OptimizeIndexNameService indexNameService) {
+    this.eventProcessPublishStateReader = eventProcessPublishStateReader;
+    this.indexNameService = indexNameService;
+  }
 
   public synchronized Map<String, EventProcessPublishStateDto> getPublishedInstanceStatesMap() {
     return publishedInstanceIndices;

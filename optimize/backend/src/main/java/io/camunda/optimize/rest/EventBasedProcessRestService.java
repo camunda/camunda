@@ -40,11 +40,9 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@AllArgsConstructor
 @Path("/eventBasedProcess")
 @Component
 public class EventBasedProcessRestService {
@@ -55,6 +53,21 @@ public class EventBasedProcessRestService {
   private final EventProcessAuthorizationService authenticationService;
   private final SessionService sessionService;
   private final AbstractIdentityService identityService;
+
+  public EventBasedProcessRestService(
+      final EventProcessService eventProcessService,
+      final EventProcessRoleService eventProcessRoleService,
+      final EventMappingCleanupService eventMappingCleanupService,
+      final EventProcessAuthorizationService authenticationService,
+      final SessionService sessionService,
+      final AbstractIdentityService identityService) {
+    this.eventProcessService = eventProcessService;
+    this.eventProcessRoleService = eventProcessRoleService;
+    this.eventMappingCleanupService = eventMappingCleanupService;
+    this.authenticationService = authenticationService;
+    this.sessionService = sessionService;
+    this.identityService = identityService;
+  }
 
   @GET
   @Path("/isEnabled")

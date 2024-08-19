@@ -18,17 +18,24 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 public class EventProcessDefinitionImportService {
 
   private final EventProcessDefinitionService eventProcessDefinitionService;
   private final ReportService reportService;
   private final EventProcessInstanceIndexManager eventProcessInstanceIndexManager;
+
+  public EventProcessDefinitionImportService(
+      final EventProcessDefinitionService eventProcessDefinitionService,
+      final ReportService reportService,
+      final EventProcessInstanceIndexManager eventProcessInstanceIndexManager) {
+    this.eventProcessDefinitionService = eventProcessDefinitionService;
+    this.reportService = reportService;
+    this.eventProcessInstanceIndexManager = eventProcessInstanceIndexManager;
+  }
 
   public void syncPublishedEventProcessDefinitions() {
     final Set<String> publishedStateProcessIds = new HashSet<>();

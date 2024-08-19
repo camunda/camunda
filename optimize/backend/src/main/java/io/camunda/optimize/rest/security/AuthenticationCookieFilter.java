@@ -11,11 +11,9 @@ import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.SessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
 
-@AllArgsConstructor
 public class AuthenticationCookieFilter extends AbstractPreAuthenticatedProcessingFilter {
 
   private final SessionService sessionService;
@@ -24,6 +22,10 @@ public class AuthenticationCookieFilter extends AbstractPreAuthenticatedProcessi
       final SessionService sessionService, final AuthenticationManager authenticationManager) {
     this.sessionService = sessionService;
     setAuthenticationManager(authenticationManager);
+  }
+
+  public AuthenticationCookieFilter(final SessionService sessionService) {
+    this.sessionService = sessionService;
   }
 
   @Override

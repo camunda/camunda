@@ -14,7 +14,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.TimeZone;
-import lombok.AllArgsConstructor;
 
 /**
  * This class is a util builder that helps to freeze the date for testing, e.g if you want to test
@@ -25,8 +24,9 @@ import lombok.AllArgsConstructor;
  * nanoseconds and the handling becomes a bit trickier. This class abstracts all this away so you
  * don't have to think the correct date handling.
  */
-@AllArgsConstructor
 public class DateCreationFreezer {
+
+  public DateCreationFreezer() {}
 
   public static InnerDateFreezerBuilder dateFreezer() {
     return new DateCreationFreezer().createNewDateFreezerBuilder().setDateToFreezeToNow();

@@ -562,7 +562,6 @@
 //   }
 //
 //   @Data
-//   @AllArgsConstructor
 //   protected static class UserAndReportScenario {
 //
 //     AbstractCollectionRoleIT.IdentityAndRole identityAndRole;
@@ -570,7 +569,6 @@
 //   }
 //
 //   @Data
-//   @AllArgsConstructor
 //   protected static class ReportScenario {
 //
 //     ReportType reportType;

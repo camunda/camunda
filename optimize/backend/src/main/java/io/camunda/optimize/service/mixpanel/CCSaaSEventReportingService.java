@@ -9,16 +9,18 @@ package io.camunda.optimize.service.mixpanel;
 
 import io.camunda.optimize.service.mixpanel.client.EventReportingEvent;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
-import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(CCSaaSCondition.class)
-@AllArgsConstructor
 public class CCSaaSEventReportingService implements EventReportingService {
 
   private final MixpanelReportingService mixpanelReportingService;
+
+  public CCSaaSEventReportingService(final MixpanelReportingService mixpanelReportingService) {
+    this.mixpanelReportingService = mixpanelReportingService;
+  }
 
   @Override
   public void sendEntityEvent(final EventReportingEvent event, final String entityId) {

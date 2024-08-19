@@ -22,11 +22,9 @@ import io.camunda.optimize.service.db.writer.EventTraceStateWriter;
 import io.camunda.optimize.service.events.EventTraceStateService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 @Conditional(OpenSearchCondition.class)
 public class EventTraceStateServiceFactoryOS implements EventTraceStateServiceFactory {
@@ -35,6 +33,17 @@ public class EventTraceStateServiceFactoryOS implements EventTraceStateServiceFa
   private final OpenSearchSchemaManager openSearchSchemaManager;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
+
+  public EventTraceStateServiceFactoryOS(
+      final OptimizeOpenSearchClient osClient,
+      final OpenSearchSchemaManager openSearchSchemaManager,
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService) {
+    this.osClient = osClient;
+    this.openSearchSchemaManager = openSearchSchemaManager;
+    this.objectMapper = objectMapper;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public EventTraceStateService createEventTraceStateService(final String eventSuffix) {

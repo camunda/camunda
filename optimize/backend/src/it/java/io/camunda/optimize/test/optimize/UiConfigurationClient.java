@@ -17,14 +17,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public class UiConfigurationClient {
-  private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
   public static final String TEST_WEBHOOK_HOST = "127.0.0.1";
-  private static final String TEST_WEBHOOK_URL = "http://" + TEST_WEBHOOK_HOST + ":%d";
   public static final String TEST_WEBHOOK_NAME = "testWebhook";
   public static final String TEST_WEBHOOK_WITH_PROXY_NAME = "testProxyWebhook";
   public static final String TEST_CUSTOM_CONTENT_TYPE_WEBHOOK_NAME =
@@ -34,9 +30,16 @@ public class UiConfigurationClient {
   public static final String TEST_WEBHOOK_URL_INVALID_PORT =
       "http://" + TEST_WEBHOOK_HOST + ":1080";
   public static final String TEST_WEBHOOK_URL_PATH = "/webhookpath";
+  private static final String TEST_WEBHOOK_URL = "http://" + TEST_WEBHOOK_HOST + ":%d";
+  private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
-  public Map<String, WebhookConfiguration> createSimpleWebhookConfigurationMap(Set<String> names) {
-    Map<String, WebhookConfiguration> webhookMap = new HashMap<>();
+  public UiConfigurationClient(final Supplier<OptimizeRequestExecutor> requestExecutorSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+  }
+
+  public Map<String, WebhookConfiguration> createSimpleWebhookConfigurationMap(
+      final Set<String> names) {
+    final Map<String, WebhookConfiguration> webhookMap = new HashMap<>();
     names.forEach(name -> webhookMap.put(name, createSimpleWebhookConfiguration()));
     return webhookMap;
   }
@@ -69,7 +72,7 @@ public class UiConfigurationClient {
       final String httpMethod,
       final String payload,
       final ProxyConfiguration proxyConfiguration) {
-    WebhookConfiguration webhookConfiguration = new WebhookConfiguration();
+    final WebhookConfiguration webhookConfiguration = new WebhookConfiguration();
     webhookConfiguration.setUrl(url);
     webhookConfiguration.setHeaders(headers);
     webhookConfiguration.setHttpMethod(httpMethod);

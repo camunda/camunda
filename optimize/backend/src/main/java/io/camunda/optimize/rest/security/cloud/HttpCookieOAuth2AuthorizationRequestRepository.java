@@ -12,7 +12,6 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 
@@ -21,7 +20,6 @@ import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequ
  *
  * <p>Originates from https://stackoverflow.com/q/49095383.
  */
-@AllArgsConstructor
 public class HttpCookieOAuth2AuthorizationRequestRepository
     implements AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
 
@@ -30,6 +28,13 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
 
   private final ConfigurationService configurationService;
   private final AuthorizationRequestCookieValueMapper authorizationRequestCookieValueMapper;
+
+  public HttpCookieOAuth2AuthorizationRequestRepository(
+      final ConfigurationService configurationService,
+      final AuthorizationRequestCookieValueMapper authorizationRequestCookieValueMapper) {
+    this.configurationService = configurationService;
+    this.authorizationRequestCookieValueMapper = authorizationRequestCookieValueMapper;
+  }
 
   @Override
   public OAuth2AuthorizationRequest loadAuthorizationRequest(final HttpServletRequest request) {
@@ -60,7 +65,7 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
 
   @Override
   public OAuth2AuthorizationRequest removeAuthorizationRequest(
-      HttpServletRequest request, HttpServletResponse response) {
+      final HttpServletRequest request, final HttpServletResponse response) {
     final OAuth2AuthorizationRequest authorizationRequest = loadAuthorizationRequest(request);
     deleteCookie(request, response);
     return authorizationRequest;
@@ -80,7 +85,7 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
       final HttpServletRequest request, final HttpServletResponse response) {
     final Cookie[] cookies = request.getCookies();
     if (cookies != null && cookies.length > 0) {
-      for (Cookie cookie : cookies) {
+      for (final Cookie cookie : cookies) {
         if (cookie.getName().equals(REQUEST_COOKIE_NAME)) {
           cookie.setValue("");
           cookie.setPath("/");
@@ -94,7 +99,7 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
   private static Optional<Cookie> getAuthorizationRequestCookie(final HttpServletRequest request) {
     final Cookie[] cookies = request.getCookies();
     if (cookies != null && cookies.length > 0) {
-      for (Cookie cookie : cookies) {
+      for (final Cookie cookie : cookies) {
         if (cookie.getName().equals(REQUEST_COOKIE_NAME)) {
           return Optional.of(cookie);
         }

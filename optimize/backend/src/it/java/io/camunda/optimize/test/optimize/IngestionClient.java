@@ -20,15 +20,21 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
-import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
 
-@AllArgsConstructor
 public class IngestionClient {
+
   private static final Random RANDOM = new Random();
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
   private final Supplier<String> accessTokenSupplier;
+
+  public IngestionClient(
+      final Supplier<OptimizeRequestExecutor> requestExecutorSupplier,
+      final Supplier<String> accessTokenSupplier) {
+    this.requestExecutorSupplier = requestExecutorSupplier;
+    this.accessTokenSupplier = accessTokenSupplier;
+  }
 
   public Response ingestVariablesAndReturnResponse(
       final List<ExternalProcessVariableRequestDto> variables) {
