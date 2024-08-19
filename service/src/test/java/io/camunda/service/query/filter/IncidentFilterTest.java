@@ -18,6 +18,7 @@ import io.camunda.service.search.filter.IncidentFilter.Builder;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.util.StubbedCamundaSearchClient;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -134,8 +135,9 @@ public final class IncidentFilterTest {
 
   @Test
   public void shouldQueryByCreationTime() {
+    final var creationTime = OffsetDateTime.of(2024, 5, 23, 23, 05, 0, 0, ZoneOffset.UTC);
     final var creationTimeFilter =
-        FilterBuilders.dateValue((d) -> d.after(OffsetDateTime.now()).before(OffsetDateTime.now()));
+        FilterBuilders.dateValue((d) -> d.after(creationTime).before(creationTime));
     final var filter = FilterBuilders.incident(f -> f.creationTime(creationTimeFilter));
     final var searchQuery = SearchQueryBuilders.incidentSearchQuery(q -> q.filter(filter));
 
@@ -151,6 +153,8 @@ public final class IncidentFilterTest {
             SearchRangeQuery.class,
             t -> {
               assertThat(t.field()).isEqualTo("creationTime");
+              assertThat(t.gte()).isEqualTo("2024-05-23T23:05:00.000+0000");
+              assertThat(t.lt()).isEqualTo("2024-05-23T23:05:00.000+0000");
             });
   }
 
