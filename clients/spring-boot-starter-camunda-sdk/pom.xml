@@ -158,7 +158,6 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-aop</artifactId>
-      <version>${version.spring}</version>
       <scope>provided</scope>
     </dependency>
 
