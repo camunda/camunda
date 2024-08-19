@@ -73,7 +73,7 @@ public class UIConfigurationService {
         configurationService.getUiConfiguration().getMaxNumDataSourcesForReport());
     uiConfigurationDto.setOptimizeDatabase(ConfigurationService.getDatabaseType(environment));
     uiConfigurationDto.setValidLicense(isCamundaLicenseValid());
-    uiConfigurationDto.setEnvironment(getCamundaEnvironment());
+    uiConfigurationDto.setLicenseType(getLicenseType());
 
     final MixpanelConfigResponseDto mixpanel = uiConfigurationDto.getMixpanel();
     mixpanel.setEnabled(configurationService.getAnalytics().isEnabled());
@@ -110,7 +110,7 @@ public class UIConfigurationService {
     return camundaLicenseService.isCamundaLicenseValid();
   }
 
-  private LicenseType getCamundaEnvironment() {
+  private LicenseType getLicenseType() {
     return camundaLicenseService.getCamundaLicenseType();
   }
 

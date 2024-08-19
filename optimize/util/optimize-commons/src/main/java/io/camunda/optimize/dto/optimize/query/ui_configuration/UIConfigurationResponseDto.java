@@ -39,7 +39,7 @@ public class UIConfigurationResponseDto {
   private Integer exportCsvLimit;
   private DatabaseType optimizeDatabase;
   private boolean validLicense;
-  private LicenseType environment;
+  private LicenseType licenseType;
 
   private MixpanelConfigResponseDto mixpanel = new MixpanelConfigResponseDto();
 
