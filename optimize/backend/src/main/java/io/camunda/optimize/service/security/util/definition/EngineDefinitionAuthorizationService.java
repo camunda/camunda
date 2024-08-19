@@ -43,7 +43,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import lombok.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -52,6 +51,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class EngineDefinitionAuthorizationService
     extends AbstractCachingAuthorizationService<Map<String, EngineAuthorizations>> {
+
   private static final List<String> RELEVANT_PERMISSIONS =
       List.of(ALL_PERMISSION, READ_HISTORY_PERMISSION);
   private static final List<String> SINGLETON_LIST_NOT_DEFINED_TENANT =
@@ -80,7 +80,7 @@ public class EngineDefinitionAuthorizationService
     // (mostly listing endpoints for reports and process/decision definitions)
     final CacheConfiguration cacheConfiguration =
         configurationService.getCaches().getDefinitionEngines();
-    this.definitionEnginesReadCache =
+    definitionEnginesReadCache =
         Caffeine.newBuilder()
             .maximumSize(cacheConfiguration.getMaxSize())
             .expireAfterWrite(cacheConfiguration.getDefaultTtlMillis(), TimeUnit.MILLISECONDS)
@@ -88,6 +88,12 @@ public class EngineDefinitionAuthorizationService
                 typeAndKey ->
                     definitionReader.getDefinitionEngines(
                         typeAndKey.getType(), typeAndKey.getKey()));
+  }
+
+  @Override
+  public void reloadConfiguration(final ApplicationContext context) {
+    super.reloadConfiguration(context);
+    definitionEnginesReadCache.invalidateAll();
   }
 
   @Override
@@ -132,12 +138,6 @@ public class EngineDefinitionAuthorizationService
               }
             });
     return result;
-  }
-
-  @Override
-  public void reloadConfiguration(final ApplicationContext context) {
-    super.reloadConfiguration(context);
-    definitionEnginesReadCache.invalidateAll();
   }
 
   public boolean isAuthorizedToSeeDefinition(
@@ -222,9 +222,9 @@ public class EngineDefinitionAuthorizationService
                     Collectors.mapping(TenantAndEnginePair::getTenantId, Collectors.toSet())));
 
     final Set<String> authorizedTenants = new HashSet<>();
-    for (Map.Entry<String, Set<String>> engineAndTenants : tenantsPerEngine.entrySet()) {
+    for (final Map.Entry<String, Set<String>> engineAndTenants : tenantsPerEngine.entrySet()) {
       final String engineId = engineAndTenants.getKey();
-      for (String tenantId : engineAndTenants.getValue()) {
+      for (final String tenantId : engineAndTenants.getValue()) {
         if (isAuthorizedToSeeFullyQualifiedDefinition(
             identityId, identityType, definitionKey, definitionType, tenantId, engineId)) {
           authorizedTenants.add(tenantId);
@@ -363,15 +363,125 @@ public class EngineDefinitionAuthorizationService
         .toList();
   }
 
-  @Value
-  private static class TenantAndEnginePair {
-    String tenantId;
-    String engine;
+  private static final class TenantAndEnginePair {
+
+    private final String tenantId;
+    private final String engine;
+
+    public TenantAndEnginePair(final String tenantId, final String engine) {
+      this.tenantId = tenantId;
+      this.engine = engine;
+    }
+
+    public String getTenantId() {
+      return tenantId;
+    }
+
+    public String getEngine() {
+      return engine;
+    }
+
+    @Override
+    public int hashCode() {
+      final int PRIME = 59;
+      int result = 1;
+      final Object $tenantId = getTenantId();
+      result = result * PRIME + ($tenantId == null ? 43 : $tenantId.hashCode());
+      final Object $engine = getEngine();
+      result = result * PRIME + ($engine == null ? 43 : $engine.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (o == this) {
+        return true;
+      }
+      if (!(o instanceof TenantAndEnginePair)) {
+        return false;
+      }
+      final TenantAndEnginePair other = (TenantAndEnginePair) o;
+      final Object this$tenantId = getTenantId();
+      final Object other$tenantId = other.getTenantId();
+      if (this$tenantId == null ? other$tenantId != null : !this$tenantId.equals(other$tenantId)) {
+        return false;
+      }
+      final Object this$engine = getEngine();
+      final Object other$engine = other.getEngine();
+      if (this$engine == null ? other$engine != null : !this$engine.equals(other$engine)) {
+        return false;
+      }
+      return true;
+    }
+
+    @Override
+    public String toString() {
+      return "EngineDefinitionAuthorizationService.TenantAndEnginePair(tenantId="
+          + getTenantId()
+          + ", engine="
+          + getEngine()
+          + ")";
+    }
   }
 
-  @Value
-  private static class DefinitionTypeAndKey {
-    DefinitionType type;
-    String key;
+  private static final class DefinitionTypeAndKey {
+
+    private final DefinitionType type;
+    private final String key;
+
+    public DefinitionTypeAndKey(final DefinitionType type, final String key) {
+      this.type = type;
+      this.key = key;
+    }
+
+    public DefinitionType getType() {
+      return type;
+    }
+
+    public String getKey() {
+      return key;
+    }
+
+    @Override
+    public int hashCode() {
+      final int PRIME = 59;
+      int result = 1;
+      final Object $type = getType();
+      result = result * PRIME + ($type == null ? 43 : $type.hashCode());
+      final Object $key = getKey();
+      result = result * PRIME + ($key == null ? 43 : $key.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (o == this) {
+        return true;
+      }
+      if (!(o instanceof DefinitionTypeAndKey)) {
+        return false;
+      }
+      final DefinitionTypeAndKey other = (DefinitionTypeAndKey) o;
+      final Object this$type = getType();
+      final Object other$type = other.getType();
+      if (this$type == null ? other$type != null : !this$type.equals(other$type)) {
+        return false;
+      }
+      final Object this$key = getKey();
+      final Object other$key = other.getKey();
+      if (this$key == null ? other$key != null : !this$key.equals(other$key)) {
+        return false;
+      }
+      return true;
+    }
+
+    @Override
+    public String toString() {
+      return "EngineDefinitionAuthorizationService.DefinitionTypeAndKey(type="
+          + getType()
+          + ", key="
+          + getKey()
+          + ")";
+    }
   }
 }
