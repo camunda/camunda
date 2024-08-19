@@ -9,14 +9,16 @@ package io.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.camunda.optimize.dto.optimize.ReportConstants;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 public enum FilterApplicationLevel {
   INSTANCE(ReportConstants.INSTANCE),
   VIEW(ReportConstants.VIEW);
 
   private final String id;
+
+  private FilterApplicationLevel(final String id) {
+    this.id = id;
+  }
 
   @JsonValue
   public String getId() {

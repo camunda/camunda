@@ -13,16 +13,14 @@ import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityType;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import lombok.experimental.SuperBuilder;
 
-@SuperBuilder
 public class CombinedReportDefinitionRequestDto extends ReportDefinitionDto<CombinedReportDataDto> {
 
   public CombinedReportDefinitionRequestDto() {
     this(new CombinedReportDataDto());
   }
 
-  public CombinedReportDefinitionRequestDto(CombinedReportDataDto data) {
+  public CombinedReportDefinitionRequestDto(final CombinedReportDataDto data) {
     super(data, true, ReportType.PROCESS);
   }
 
@@ -34,5 +32,45 @@ public class CombinedReportDefinitionRequestDto extends ReportDefinitionDto<Comb
         .setSubEntityCounts(
             ImmutableMap.of(EntityType.REPORT, (long) getData().getReports().size()));
     return entityDto;
+  }
+
+  public static CombinedReportDefinitionRequestDtoBuilder<?, ?> builder() {
+    return new CombinedReportDefinitionRequestDtoBuilderImpl();
+  }
+
+  public abstract static class CombinedReportDefinitionRequestDtoBuilder<
+          C extends CombinedReportDefinitionRequestDto,
+          B extends CombinedReportDefinitionRequestDtoBuilder<C, B>>
+      extends ReportDefinitionDtoBuilder<CombinedReportDataDto, C, B> {
+
+    @Override
+    protected abstract B self();
+
+    @Override
+    public abstract C build();
+
+    @Override
+    public String toString() {
+      return "CombinedReportDefinitionRequestDto.CombinedReportDefinitionRequestDtoBuilder(super="
+          + super.toString()
+          + ")";
+    }
+  }
+
+  private static final class CombinedReportDefinitionRequestDtoBuilderImpl
+      extends CombinedReportDefinitionRequestDtoBuilder<
+          CombinedReportDefinitionRequestDto, CombinedReportDefinitionRequestDtoBuilderImpl> {
+
+    private CombinedReportDefinitionRequestDtoBuilderImpl() {}
+
+    @Override
+    protected CombinedReportDefinitionRequestDtoBuilderImpl self() {
+      return this;
+    }
+
+    @Override
+    public CombinedReportDefinitionRequestDto build() {
+      return new CombinedReportDefinitionRequestDto(this.getData());
+    }
   }
 }

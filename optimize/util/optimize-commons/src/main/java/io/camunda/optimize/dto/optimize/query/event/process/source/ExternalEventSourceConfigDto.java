@@ -15,7 +15,7 @@ public class ExternalEventSourceConfigDto extends EventSourceConfigDto {
   public ExternalEventSourceConfigDto() {}
 
   protected ExternalEventSourceConfigDto(final ExternalEventSourceConfigDtoBuilder<?, ?> b) {
-    super(b);
+    super();
     group = b.group;
     includeAllGroups = b.includeAllGroups;
   }
@@ -26,6 +26,21 @@ public class ExternalEventSourceConfigDto extends EventSourceConfigDto {
 
   public boolean isIncludeAllGroups() {
     return includeAllGroups;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof ExternalEventSourceConfigDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = super.hashCode();
+    final Object $group = getGroup();
+    result = result * PRIME + ($group == null ? 43 : $group.hashCode());
+    result = result * PRIME + (isIncludeAllGroups() ? 79 : 97);
+    return result;
   }
 
   @Override
@@ -52,21 +67,6 @@ public class ExternalEventSourceConfigDto extends EventSourceConfigDto {
       return false;
     }
     return true;
-  }
-
-  @Override
-  protected boolean canEqual(final Object other) {
-    return other instanceof ExternalEventSourceConfigDto;
-  }
-
-  @Override
-  public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $group = getGroup();
-    result = result * PRIME + ($group == null ? 43 : $group.hashCode());
-    result = result * PRIME + (isIncludeAllGroups() ? 79 : 97);
-    return result;
   }
 
   public static ExternalEventSourceConfigDtoBuilder<?, ?> builder() {

@@ -16,18 +16,20 @@ import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import java.time.OffsetDateTime;
 import java.util.List;
-import lombok.experimental.UtilityClass;
 
-@UtilityClass
-public class OptimizeMetrics {
+public final class OptimizeMetrics {
 
   public static final String RECORD_TYPE_TAG = "RECORD_TYPE";
   public static final String PARTITION_ID_TAG = "PARTITION_ID";
   public static final String METRICS_ENDPOINT = "metrics";
 
+  private OptimizeMetrics() {
+    throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+  }
+
   public static <T extends ZeebeRecordDto<?, ?>> void recordOverallEntitiesImportTime(
-      List<T> entities) {
-    OffsetDateTime currentTime = LocalDateUtil.getCurrentDateTime();
+      final List<T> entities) {
+    final OffsetDateTime currentTime = LocalDateUtil.getCurrentDateTime();
     entities.forEach(
         entity ->
             getTimer(
@@ -38,7 +40,8 @@ public class OptimizeMetrics {
                     currentTime.toInstant().toEpochMilli() - entity.getTimestamp(), MILLISECONDS));
   }
 
-  public static Timer getTimer(MetricEnum metric, String recordType, Integer partitionId) {
+  public static Timer getTimer(
+      final MetricEnum metric, final String recordType, final Integer partitionId) {
     return Timer.builder(metric.getName())
         .description(metric.getDescription())
         .tag(RECORD_TYPE_TAG, recordType)

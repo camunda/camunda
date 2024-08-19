@@ -7,12 +7,13 @@
  */
 package io.camunda.optimize.util;
 
-import lombok.experimental.UtilityClass;
+public final class MarkdownUtil {
 
-@UtilityClass
-public class MarkdownUtil {
+  private MarkdownUtil() {
+    throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+  }
 
-  public String getMarkdownForTextReport(final String markdownText) {
+  public static String getMarkdownForTextReport(final String markdownText) {
     return "{\n"
         + "         \"configuration\":{\n"
         + "            \"text\":{\n"

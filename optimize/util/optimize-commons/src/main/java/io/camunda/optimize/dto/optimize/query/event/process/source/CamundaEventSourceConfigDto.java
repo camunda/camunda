@@ -9,20 +9,35 @@ package io.camunda.optimize.dto.optimize.query.event.process.source;
 
 import java.util.ArrayList;
 import java.util.List;
-import lombok.Builder;
-import lombok.experimental.SuperBuilder;
 
-@SuperBuilder // TODO: not sure how to delombok this
 public class CamundaEventSourceConfigDto extends EventSourceConfigDto {
 
   private String processDefinitionKey;
   private String processDefinitionName;
-  @Builder.Default private List<String> versions = new ArrayList<>();
-  @Builder.Default private List<String> tenants = new ArrayList<>();
+  private List<String> versions = new ArrayList<>();
+  private List<String> tenants = new ArrayList<>();
   private boolean tracedByBusinessKey;
   private String traceVariable;
 
   public CamundaEventSourceConfigDto() {}
+
+  protected CamundaEventSourceConfigDto(final CamundaEventSourceConfigDtoBuilder<?, ?> b) {
+    super();
+    processDefinitionKey = b.processDefinitionKey;
+    processDefinitionName = b.processDefinitionName;
+    if (b.versions$set) {
+      versions = b.versions$value;
+    } else {
+      versions = $default$versions();
+    }
+    if (b.tenants$set) {
+      tenants = b.tenants$value;
+    } else {
+      tenants = $default$tenants();
+    }
+    tracedByBusinessKey = b.tracedByBusinessKey;
+    traceVariable = b.traceVariable;
+  }
 
   public String getProcessDefinitionKey() {
     return processDefinitionKey;
@@ -149,6 +164,18 @@ public class CamundaEventSourceConfigDto extends EventSourceConfigDto {
     return true;
   }
 
+  private static List<String> $default$versions() {
+    return new ArrayList<>();
+  }
+
+  private static List<String> $default$tenants() {
+    return new ArrayList<>();
+  }
+
+  public static CamundaEventSourceConfigDtoBuilder<?, ?> builder() {
+    return new CamundaEventSourceConfigDtoBuilderImpl();
+  }
+
   public static final class Fields {
 
     public static final String processDefinitionKey = "processDefinitionKey";
@@ -157,5 +184,93 @@ public class CamundaEventSourceConfigDto extends EventSourceConfigDto {
     public static final String tenants = "tenants";
     public static final String tracedByBusinessKey = "tracedByBusinessKey";
     public static final String traceVariable = "traceVariable";
+  }
+
+  public abstract static class CamundaEventSourceConfigDtoBuilder<
+          C extends CamundaEventSourceConfigDto, B extends CamundaEventSourceConfigDtoBuilder<C, B>>
+      extends EventSourceConfigDtoBuilder<C, B> {
+
+    private String processDefinitionKey;
+    private String processDefinitionName;
+    private List<String> versions$value;
+    private boolean versions$set;
+    private List<String> tenants$value;
+    private boolean tenants$set;
+    private boolean tracedByBusinessKey;
+    private String traceVariable;
+
+    public B processDefinitionKey(final String processDefinitionKey) {
+      this.processDefinitionKey = processDefinitionKey;
+      return self();
+    }
+
+    public B processDefinitionName(final String processDefinitionName) {
+      this.processDefinitionName = processDefinitionName;
+      return self();
+    }
+
+    public B versions(final List<String> versions) {
+      versions$value = versions;
+      versions$set = true;
+      return self();
+    }
+
+    public B tenants(final List<String> tenants) {
+      tenants$value = tenants;
+      tenants$set = true;
+      return self();
+    }
+
+    public B tracedByBusinessKey(final boolean tracedByBusinessKey) {
+      this.tracedByBusinessKey = tracedByBusinessKey;
+      return self();
+    }
+
+    public B traceVariable(final String traceVariable) {
+      this.traceVariable = traceVariable;
+      return self();
+    }
+
+    @Override
+    protected abstract B self();
+
+    @Override
+    public abstract C build();
+
+    @Override
+    public String toString() {
+      return "CamundaEventSourceConfigDto.CamundaEventSourceConfigDtoBuilder(super="
+          + super.toString()
+          + ", processDefinitionKey="
+          + processDefinitionKey
+          + ", processDefinitionName="
+          + processDefinitionName
+          + ", versions$value="
+          + versions$value
+          + ", tenants$value="
+          + tenants$value
+          + ", tracedByBusinessKey="
+          + tracedByBusinessKey
+          + ", traceVariable="
+          + traceVariable
+          + ")";
+    }
+  }
+
+  private static final class CamundaEventSourceConfigDtoBuilderImpl
+      extends CamundaEventSourceConfigDtoBuilder<
+          CamundaEventSourceConfigDto, CamundaEventSourceConfigDtoBuilderImpl> {
+
+    private CamundaEventSourceConfigDtoBuilderImpl() {}
+
+    @Override
+    protected CamundaEventSourceConfigDtoBuilderImpl self() {
+      return this;
+    }
+
+    @Override
+    public CamundaEventSourceConfigDto build() {
+      return new CamundaEventSourceConfigDto(this);
+    }
   }
 }

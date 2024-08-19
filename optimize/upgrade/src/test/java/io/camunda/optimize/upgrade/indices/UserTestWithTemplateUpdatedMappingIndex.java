@@ -10,14 +10,14 @@ package io.camunda.optimize.upgrade.indices;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import java.io.IOException;
-import lombok.AllArgsConstructor;
 import org.elasticsearch.xcontent.XContentBuilder;
 
-@AllArgsConstructor
 public class UserTestWithTemplateUpdatedMappingIndex
     extends DefaultIndexMappingCreator<XContentBuilder> {
 
   private static final int VERSION = 2;
+
+  public UserTestWithTemplateUpdatedMappingIndex() {}
 
   @Override
   public String getIndexName() {
@@ -40,7 +40,7 @@ public class UserTestWithTemplateUpdatedMappingIndex
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+  public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
         .startObject("password")
         .field("type", "keyword")

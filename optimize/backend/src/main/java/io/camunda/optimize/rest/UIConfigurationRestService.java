@@ -13,10 +13,8 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Path(UIConfigurationRestService.UI_CONFIGURATION_PATH)
 @Component
 public class UIConfigurationRestService {
@@ -24,6 +22,10 @@ public class UIConfigurationRestService {
   public static final String UI_CONFIGURATION_PATH = "/ui-configuration";
 
   private final UIConfigurationService uiConfigurationService;
+
+  public UIConfigurationRestService(final UIConfigurationService uiConfigurationService) {
+    this.uiConfigurationService = uiConfigurationService;
+  }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)

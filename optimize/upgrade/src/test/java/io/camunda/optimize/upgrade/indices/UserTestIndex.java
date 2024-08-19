@@ -9,13 +9,15 @@ package io.camunda.optimize.upgrade.indices;
 
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import java.io.IOException;
-import lombok.AllArgsConstructor;
 import org.elasticsearch.xcontent.XContentBuilder;
 
-@AllArgsConstructor
 public class UserTestIndex extends DefaultIndexMappingCreator<XContentBuilder> {
 
   private int version = 1;
+
+  public UserTestIndex(final int version) {
+    this.version = version;
+  }
 
   @Override
   public String getIndexName() {
@@ -28,7 +30,7 @@ public class UserTestIndex extends DefaultIndexMappingCreator<XContentBuilder> {
   }
 
   @Override
-  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+  public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
         .startObject("password")
         .field("type", "keyword")

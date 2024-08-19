@@ -362,6 +362,10 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
     private boolean combined;
     private ReportType reportType;
 
+    public @Valid D getData() {
+      return data;
+    }
+
     public B id(final String id) {
       this.id = id;
       return self();
