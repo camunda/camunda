@@ -44,7 +44,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import lombok.SneakyThrows;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
@@ -101,7 +100,6 @@ public class PublicApiRestService {
   @GET
   @Path(REPORT_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
-  @SneakyThrows
   public List<IdResponseDto> getReportIds(
       final @Context ContainerRequestContext requestContext,
       final @QueryParam("collectionId") String collectionId) {
@@ -112,7 +110,6 @@ public class PublicApiRestService {
   @GET
   @Path(DASHBOARD_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
-  @SneakyThrows
   public List<IdResponseDto> getDashboardIds(
       final @Context ContainerRequestContext requestContext,
       final @QueryParam("collectionId") String collectionId) {
@@ -123,7 +120,6 @@ public class PublicApiRestService {
   @GET
   @Path(REPORT_EXPORT_DATA_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
-  @SneakyThrows
   public PaginatedDataExportDto exportReportData(
       @Context final ContainerRequestContext requestContext,
       @SuppressWarnings("UnresolvedRestParam") @PathParam("reportId") final String reportId,
@@ -139,11 +135,15 @@ public class PublicApiRestService {
       // expired) the message from ElasticSearch is a bit cryptic. Therefore, we extract the useful
       // information so
       // that the user gets an appropriate response.
-      throw Optional.ofNullable(e.getCause())
-          .filter(pag -> pag.getMessage().contains("search_context_missing_exception"))
-          .map(pag -> (Exception) new BadRequestException(pag.getMessage()))
-          // In case the exception happened for another reason, just re-throw it as is
-          .orElse(e);
+      try {
+        throw Optional.ofNullable(e.getCause())
+            .filter(pag -> pag.getMessage().contains("search_context_missing_exception"))
+            .map(pag -> (Exception) new BadRequestException(pag.getMessage()))
+            // In case the exception happened for another reason, just re-throw it as is
+            .orElse(e);
+      } catch (final Exception ex) {
+        throw new RuntimeException(ex);
+      }
     }
   }
 

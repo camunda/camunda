@@ -15,7 +15,6 @@ import io.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 
 public class UpgradeStepLogService {
 
@@ -23,7 +22,6 @@ public class UpgradeStepLogService {
     schemaUpgradeClient.createOrUpdateIndex(new UpdateLogEntryIndex());
   }
 
-  @SneakyThrows
   public void recordAppliedStep(
       final SchemaUpgradeClient schemaUpgradeClient, final UpgradeStepLogEntryDto logEntryDto) {
     logEntryDto.setAppliedDate(LocalDateUtil.getCurrentDateTime().toInstant());

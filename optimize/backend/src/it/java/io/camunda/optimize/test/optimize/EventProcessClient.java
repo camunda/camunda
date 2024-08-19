@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 
@@ -137,7 +136,6 @@ public class EventProcessClient {
         .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  @SneakyThrows
   public void waitForEventProcessPublish(final String eventProcessMappingId) {
     EventProcessMappingResponseDto eventProcessMapping;
     do {
@@ -147,7 +145,11 @@ public class EventProcessClient {
           eventProcessMapping.getId(),
           eventProcessMapping.getState(),
           eventProcessMapping.getPublishingProgress());
-      Thread.sleep(1000L);
+      try {
+        Thread.sleep(1000L);
+      } catch (final InterruptedException e) {
+        throw new RuntimeException(e);
+      }
     } while (!EventProcessState.PUBLISHED.equals(eventProcessMapping.getState()));
   }
 
@@ -206,7 +208,6 @@ public class EventProcessClient {
         .buildUpdateEventProcessRolesRequest(eventProcessMappingId, roleRestDtos);
   }
 
-  @SneakyThrows
   public EventProcessMappingDto buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
       final Map<String, EventMappingDto> flowNodeEventMappingsDto,
       final String name,
@@ -218,7 +219,6 @@ public class EventProcessClient {
         flowNodeEventMappingsDto, name, xml, externalEventSource);
   }
 
-  @SneakyThrows
   public EventProcessMappingDto buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
       final Map<String, EventMappingDto> flowNodeEventMappingsDto,
       final String name,

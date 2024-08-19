@@ -13,7 +13,6 @@ import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import lombok.SneakyThrows;
 import org.elasticsearch.index.query.QueryBuilder;
 
 public class UpdateDataStep extends UpgradeStep {
@@ -55,10 +54,13 @@ public class UpdateDataStep extends UpgradeStep {
   }
 
   @Override
-  @SneakyThrows
   public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
     if (paramMapProvider != null) {
-      parameters = paramMapProvider.call();
+      try {
+        parameters = paramMapProvider.call();
+      } catch (final Exception e) {
+        throw new RuntimeException(e);
+      }
     }
     schemaUpgradeClient.updateDataByIndexName(index, query, updateScript, parameters);
   }

@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.FailsafeException;
 import net.jodah.failsafe.FailsafeExecutor;
@@ -756,9 +755,12 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   }
 
   @Override
-  @SneakyThrows
   public void setDefaultRequestOptions() {
-    highLevelClient.info(RequestOptions.DEFAULT);
+    try {
+      highLevelClient.info(RequestOptions.DEFAULT);
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override

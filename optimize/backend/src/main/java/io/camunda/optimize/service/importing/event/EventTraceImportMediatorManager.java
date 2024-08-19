@@ -17,12 +17,9 @@ import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.AllArgsConstructor;
-import lombok.SneakyThrows;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
 public class EventTraceImportMediatorManager implements ConfigurationReloadable {
 
@@ -30,7 +27,11 @@ public class EventTraceImportMediatorManager implements ConfigurationReloadable 
 
   private final Map<String, EventTraceImportMediator> mediators = new ConcurrentHashMap<>();
 
-  @SneakyThrows
+  public EventTraceImportMediatorManager(
+      final EventTraceImportMediatorFactory eventTraceImportMediatorFactory) {
+    this.eventTraceImportMediatorFactory = eventTraceImportMediatorFactory;
+  }
+
   public List<EventTraceImportMediator> getEventTraceImportMediators() {
     refreshMediators();
     return ImmutableList.copyOf(mediators.values());

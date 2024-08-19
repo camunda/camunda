@@ -31,6 +31,7 @@ import io.camunda.optimize.test.it.extension.db.TermsQueryContainer;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -38,7 +39,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,7 +89,7 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    ProcessInstanceDto savedProcessInstance =
+    final ProcessInstanceDto savedProcessInstance =
         getProcessInstanceForId(String.valueOf(processInstanceKey));
     assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance);
   }
@@ -138,7 +138,7 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    ProcessInstanceDto savedProcessInstance =
+    final ProcessInstanceDto savedProcessInstance =
         getProcessInstanceForId(String.valueOf(processInstanceEvent.getProcessInstanceKey()));
     assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance);
   }
@@ -157,7 +157,7 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     ProcessInstanceDto savedProcessInstance =
         getProcessInstanceForId(String.valueOf(startedInstanceKey));
 
-    String flowNodeId =
+    final String flowNodeId =
         getFlowNodeInstanceIdFromProcessInstanceForActivity(savedProcessInstance, SERVICE_TASK);
     zeebeExtension.addVariablesToScope(Long.parseLong(flowNodeId), Map.of("var1", false), true);
     waitUntilMinimumVariableDocumentsExportedCount(2);
@@ -180,14 +180,14 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
   @Test
   public void zeebeVariableImport_addNonLocalVariableToFlowNodeInstance() {
     // given
-    Map<String, Object> processVariable = Map.of("var1", "someValue");
+    final Map<String, Object> processVariable = Map.of("var1", "someValue");
     final ProcessInstanceEvent startedInstance = deployProcessAndStartProcessInstance();
     waitUntilMinimumProcessInstanceEventsExportedCount(4);
     importAllZeebeEntitiesFromScratch();
     ProcessInstanceDto savedProcessInstance =
         getProcessInstanceForId(String.valueOf(startedInstance.getProcessInstanceKey()));
 
-    String flowNodeId =
+    final String flowNodeId =
         getFlowNodeInstanceIdFromProcessInstanceForActivity(savedProcessInstance, SERVICE_TASK);
     zeebeExtension.addVariablesToScope(Long.parseLong(flowNodeId), processVariable, false);
     waitUntilMinimumVariableDocumentsExportedCount(1);
@@ -218,9 +218,9 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    ProcessInstanceDto savedProcessInstance1 =
+    final ProcessInstanceDto savedProcessInstance1 =
         getProcessInstanceForId(String.valueOf(deployedInstanceKey1));
-    ProcessInstanceDto savedProcessInstance2 =
+    final ProcessInstanceDto savedProcessInstance2 =
         getProcessInstanceForId(String.valueOf(deployedInstanceKey2));
     assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance1);
     assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance2);
@@ -244,9 +244,9 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromLastIndex();
 
     // then
-    ProcessInstanceDto savedProcessInstance1 =
+    final ProcessInstanceDto savedProcessInstance1 =
         getProcessInstanceForId(String.valueOf(startedInstanceKey1));
-    ProcessInstanceDto savedProcessInstance2 =
+    final ProcessInstanceDto savedProcessInstance2 =
         getProcessInstanceForId(String.valueOf(startedInstanceKey2));
     assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance1);
     assertThatVariablesHaveBeenImportedForProcessInstance(savedProcessInstance2);
@@ -255,7 +255,7 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
   @Test
   public void zeebeVariableImport_unsupportedTypesGetIgnored() {
     // given
-    Map<String, Object> supportedAndUnsupportedVariables = new HashMap<>();
+    final Map<String, Object> supportedAndUnsupportedVariables = new HashMap<>();
     supportedAndUnsupportedVariables.put("nullValue", null);
     supportedAndUnsupportedVariables.put("supportedVariable", "someValue");
 
@@ -270,7 +270,7 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    ProcessInstanceDto savedProcessInstance =
+    final ProcessInstanceDto savedProcessInstance =
         getProcessInstanceForId(String.valueOf(processInstanceKey));
     assertThat(savedProcessInstance.getVariables())
         .extracting(
@@ -281,7 +281,6 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
             Tuple.tuple("supportedVariable", Collections.singletonList("someValue"), STRING_TYPE));
   }
 
-  @SneakyThrows
   @Test
   public void zeebeVariableImport_importObjectVariables() {
     // given
@@ -331,7 +330,6 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
             Tuple.tuple("objectVar.likes._listSize", LONG.getId(), Collections.singletonList("2")));
   }
 
-  @SneakyThrows
   @Test
   public void
       zeebeVariableImport_importObjectVariablesWhenObjectVariablesAreExcludedInConfiguration() {
@@ -363,7 +361,6 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
             Tuple.tuple("boolVar", BOOLEAN.getId(), Collections.singletonList("true")));
   }
 
-  @SneakyThrows
   @Test
   public void zeebeVariableImport_importListVariables() {
     // given
@@ -398,7 +395,7 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
         .getConfiguredZeebe()
         .setMaxImportPageSize(1);
     embeddedOptimizeExtension.reloadConfiguration();
-    Map<String, Object> processVariables = Map.of("var1", "someValue1", "var2", "someValue2");
+    final Map<String, Object> processVariables = Map.of("var1", "someValue1", "var2", "someValue2");
     final Process deployedProcess =
         zeebeExtension.deployProcess(createSimpleServiceTaskProcess(PROCESS_ID));
     final long startedInstanceKey =
@@ -429,7 +426,6 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
   }
 
   @Test
-  @SneakyThrows
   public void zeebeVariableImport_importZeebeVariableDataFromMultipleDays() {
     // given
     final Process deployedProcess =
@@ -438,7 +434,11 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
         zeebeExtension.startProcessInstanceWithVariables(
             deployedProcess.getBpmnProcessId(), Map.of("var1", "someValue1"));
 
-    zeebeExtension.setClock(Instant.now().plus(1, ChronoUnit.DAYS));
+    try {
+      zeebeExtension.setClock(Instant.now().plus(1, ChronoUnit.DAYS));
+    } catch (final IOException | InterruptedException e) {
+      throw new RuntimeException(e);
+    }
     zeebeExtension.addVariablesToScope(startedInstanceKey, Map.of("var2", "someValue2"), false);
 
     // when
@@ -447,7 +447,7 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    ProcessInstanceDto savedProcessInstance =
+    final ProcessInstanceDto savedProcessInstance =
         getProcessInstanceForId(String.valueOf(startedInstanceKey));
     assertThat(savedProcessInstance.getVariables())
         .hasSize(2)
@@ -473,7 +473,7 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
   }
 
   private void waitUntilMinimumVariableDocumentsExportedCount(final int minExportedEventCount) {
-    TermsQueryContainer variableBoolQuery = new TermsQueryContainer();
+    final TermsQueryContainer variableBoolQuery = new TermsQueryContainer();
     variableBoolQuery.addTermQuery(
         ZeebeVariableRecordDto.Fields.intent, VariableIntent.CREATED.name());
 

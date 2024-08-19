@@ -26,7 +26,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import lombok.SneakyThrows;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.slf4j.Logger;
 import org.springframework.http.HttpStatus;
@@ -43,13 +42,11 @@ public class IngestionQoSFilter implements Filter {
   private static final String TOO_MANY_REQUESTS = "Too many requests";
   private static final Logger log = org.slf4j.LoggerFactory.getLogger(IngestionQoSFilter.class);
   private long waitMs = 50;
-  private final String suspended =
-      "IngestionQoSFilter@" + Integer.toHexString(hashCode()) + ".SUSPENDED";
   private long suspendMs = 500;
-  private final String resumed =
-      "IngestionQoSFilter@" + Integer.toHexString(hashCode()) + ".RESUMED";
   private int maxRequests = 10;
   private Semaphore passes;
+  private final String suspended =
+      "IngestionQoSFilter@" + Integer.toHexString(hashCode()) + ".SUSPENDED";
   private Queue<AsyncContext>[] queues;
   private AsyncListener[] listeners;
   private final Callable<Integer> maxRequestCountProvider;
@@ -57,6 +54,9 @@ public class IngestionQoSFilter implements Filter {
   public IngestionQoSFilter(final Callable<Integer> maxRequestCountProvider) {
     this.maxRequestCountProvider = maxRequestCountProvider;
   }
+
+  private final String resumed =
+      "IngestionQoSFilter@" + Integer.toHexString(hashCode()) + ".RESUMED";
 
   @Override
   public void init(final FilterConfig filterConfig) {
@@ -71,7 +71,6 @@ public class IngestionQoSFilter implements Filter {
     passes = new Semaphore(maxRequests, true);
   }
 
-  @SneakyThrows
   @Override
   public void doFilter(
       final ServletRequest request, final ServletResponse response, final FilterChain chain)
@@ -103,7 +102,11 @@ public class IngestionQoSFilter implements Filter {
           // Spring Security wraps the asyncContext into
           // HttpServlet3RequestFactory$SecurityContextAsyncContext
           // we need to unwrap it for the filter to work properly
-          asyncContext = (AsyncContext) FieldUtils.readField(asyncContext, "asyncContext", true);
+          try {
+            asyncContext = (AsyncContext) FieldUtils.readField(asyncContext, "asyncContext", true);
+          } catch (final IllegalAccessException e) {
+            throw new RuntimeException(e);
+          }
 
           queues[priority].add(asyncContext);
           log.debug("Suspended {}", request);
@@ -189,9 +192,12 @@ public class IngestionQoSFilter implements Filter {
         .sendError(HttpStatus.TOO_MANY_REQUESTS.value(), TOO_MANY_REQUESTS);
   }
 
-  @SneakyThrows
   private int getMaxRequestsFromProvider() {
-    return maxRequestCountProvider.call();
+    try {
+      return maxRequestCountProvider.call();
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public String getSuspended() {

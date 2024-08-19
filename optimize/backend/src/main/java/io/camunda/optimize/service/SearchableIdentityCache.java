@@ -33,7 +33,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -78,13 +77,16 @@ public class SearchableIdentityCache implements AutoCloseable {
 
   private final AtomicLong entryCount = new AtomicLong(0);
 
-  @SneakyThrows(IOException.class)
   public SearchableIdentityCache(final Supplier<Long> maxEntryLimitSupplier) {
     this.maxEntryLimitSupplier = maxEntryLimitSupplier;
     memoryDirectory = new ByteBuffersDirectory();
     // this is needed for the directory to be accessible by a reader in cases where no write has
     // happened yet
-    new IndexWriter(memoryDirectory, new IndexWriterConfig(getIndexAnalyzer())).close();
+    try {
+      new IndexWriter(memoryDirectory, new IndexWriterConfig(getIndexAnalyzer())).close();
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
@@ -361,11 +363,14 @@ public class SearchableIdentityCache implements AutoCloseable {
     return Optional.ofNullable(result.get());
   }
 
-  @SneakyThrows
   private void writeIdentityDto(
       final IndexWriter indexWriter, final IdentityWithMetadataResponseDto identity) {
-    indexWriter.updateDocument(
-        new Term(IdentityDto.Fields.id, identity.getId()), mapIdentityDtoToDocument(identity));
+    try {
+      indexWriter.updateDocument(
+          new Term(IdentityDto.Fields.id, identity.getId()), mapIdentityDtoToDocument(identity));
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private BooleanQuery createSearchIdentityQuery(
@@ -429,31 +434,43 @@ public class SearchableIdentityCache implements AutoCloseable {
     return searchBuilder.build();
   }
 
-  @SneakyThrows(IOException.class)
   private static List<String> tokenizeSearchQuery(final String searchTerms) {
     final List<String> tokens = new ArrayList<>();
-    try (final TokenStream tokenStream =
-        getSearchTermAnalyzer().tokenStream(null, new StringReader(searchTerms))) {
-      tokenStream.reset();
-      while (tokenStream.incrementToken()) {
-        tokens.add(tokenStream.getAttribute(CharTermAttribute.class).toString());
+    try {
+      try (final TokenStream tokenStream =
+          getSearchTermAnalyzer().tokenStream(null, new StringReader(searchTerms))) {
+        tokenStream.reset();
+        while (tokenStream.incrementToken()) {
+          tokens.add(tokenStream.getAttribute(CharTermAttribute.class).toString());
+        }
       }
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
     }
     return tokens;
   }
 
-  @SneakyThrows(IOException.class)
   private static Analyzer getIndexAnalyzer() {
-    return CustomAnalyzer.builder()
-        .withTokenizer("whitespace")
-        .addTokenFilter("lowercase")
-        .addTokenFilter("ngram", "minGramSize", "1", "maxGramSize", "16")
-        .build();
+    try {
+      return CustomAnalyzer.builder()
+          .withTokenizer("whitespace")
+          .addTokenFilter("lowercase")
+          .addTokenFilter("ngram", "minGramSize", "1", "maxGramSize", "16")
+          .build();
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  @SneakyThrows(IOException.class)
   private static Analyzer getSearchTermAnalyzer() {
-    return CustomAnalyzer.builder().withTokenizer("whitespace").addTokenFilter("lowercase").build();
+    try {
+      return CustomAnalyzer.builder()
+          .withTokenizer("whitespace")
+          .addTokenFilter("lowercase")
+          .build();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private static Document mapIdentityDtoToDocument(final IdentityWithMetadataResponseDto identity) {

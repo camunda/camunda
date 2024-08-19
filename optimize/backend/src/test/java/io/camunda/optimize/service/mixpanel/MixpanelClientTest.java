@@ -36,7 +36,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import lombok.SneakyThrows;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -70,7 +69,6 @@ public class MixpanelClientTest {
     mixpanelClient = new MixpanelClient(configurationService, objectMapper, httpClient);
   }
 
-  @SneakyThrows
   @Test
   public void mixpanelEventImportWithExpectedParametersAndPayload() {
     // given
@@ -81,7 +79,11 @@ public class MixpanelClientTest {
 
     final CloseableHttpResponse mockResponse = mockResponseWithStatus(Response.Status.OK);
     when(mockResponse.getEntity()).thenReturn(new StringEntity("{}", ContentType.APPLICATION_JSON));
-    when(httpClient.execute(any())).thenReturn(mockResponse);
+    try {
+      when(httpClient.execute(any())).thenReturn(mockResponse);
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
 
     final String stage = "unit-test";
     final String organizationId = "orgId";
@@ -93,7 +95,11 @@ public class MixpanelClientTest {
     mixpanelClient.importEvent(
         new MixpanelEvent(EventReportingEvent.HEARTBEAT, mixpanelEventProperties));
     final ArgumentCaptor<HttpPost> requestCaptor = ArgumentCaptor.forClass(HttpPost.class);
-    verify(httpClient, times(1)).execute(requestCaptor.capture());
+    try {
+      verify(httpClient, times(1)).execute(requestCaptor.capture());
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
 
     // then
     assertThat(requestCaptor.getValue().getURI().toString())
@@ -119,7 +125,6 @@ public class MixpanelClientTest {
     assertThat(recordedMixpanelEvent.getProperties()).isEqualTo(mixpanelEventProperties);
   }
 
-  @SneakyThrows
   @Test
   public void mixpanelEventImportFailsOnNonOkStatusCode() {
     // given
@@ -130,7 +135,11 @@ public class MixpanelClientTest {
 
     final CloseableHttpResponse mockResponse = mockResponseWithStatus(Response.Status.BAD_REQUEST);
     when(mockResponse.getEntity()).thenReturn(new StringEntity("{}", ContentType.APPLICATION_JSON));
-    when(httpClient.execute(any())).thenReturn(mockResponse);
+    try {
+      when(httpClient.execute(any())).thenReturn(mockResponse);
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
 
     // when
     final MixpanelEvent event =
@@ -141,7 +150,6 @@ public class MixpanelClientTest {
         .hasMessage("Unexpected response status on a mixpanel import: 400, response body: {}");
   }
 
-  @SneakyThrows
   @Test
   public void mixpanelEventImportFailsOnErrorInResponseBody() {
     // given
@@ -153,7 +161,11 @@ public class MixpanelClientTest {
     final CloseableHttpResponse mockResponse = mockResponseWithStatus(Response.Status.OK);
     when(mockResponse.getEntity())
         .thenReturn(new StringEntity("{\"error\":\"failure\"}", ContentType.APPLICATION_JSON));
-    when(httpClient.execute(any())).thenReturn(mockResponse);
+    try {
+      when(httpClient.execute(any())).thenReturn(mockResponse);
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
 
     // when
     final MixpanelEvent event =
@@ -164,7 +176,6 @@ public class MixpanelClientTest {
         .hasMessage("Mixpanel import was not successful, error: failure");
   }
 
-  @SneakyThrows
   @Test
   public void mixpanelEventImportInvalidJsonResponseIsHandledGracefullyButLogged() {
     // given
@@ -176,7 +187,11 @@ public class MixpanelClientTest {
     final CloseableHttpResponse mockResponse = mockResponseWithStatus(Response.Status.OK);
     when(mockResponse.getEntity())
         .thenReturn(new StringEntity("{\"error\":", ContentType.APPLICATION_JSON));
-    when(httpClient.execute(any())).thenReturn(mockResponse);
+    try {
+      when(httpClient.execute(any())).thenReturn(mockResponse);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
 
     // when
     mixpanelClient.importEvent(

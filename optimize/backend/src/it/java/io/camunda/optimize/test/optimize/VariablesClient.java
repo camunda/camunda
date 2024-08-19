@@ -11,6 +11,7 @@ import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FOR
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.VARIABLE_TYPE_JSON;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.VARIABLE_TYPE_OBJECT;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.collect.ImmutableList;
@@ -27,9 +28,9 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import lombok.SneakyThrows;
 
 public class VariablesClient {
+
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
   private final ObjectMapper objectMapper;
 
@@ -42,7 +43,7 @@ public class VariablesClient {
   }
 
   public List<ProcessVariableNameResponseDto> getProcessVariableNames(
-      ProcessVariableNameRequestDto variableRequestDtos) {
+      final ProcessVariableNameRequestDto variableRequestDtos) {
     return getRequestExecutor()
         .buildProcessVariableNamesRequest(variableRequestDtos)
         .executeAndReturnList(
@@ -65,13 +66,13 @@ public class VariablesClient {
   }
 
   public List<ProcessVariableNameResponseDto> getProcessVariableNames(
-      String key, List<String> versions) {
-    ProcessToQueryDto processToQuery = new ProcessToQueryDto();
+      final String key, final List<String> versions) {
+    final ProcessToQueryDto processToQuery = new ProcessToQueryDto();
     processToQuery.setProcessDefinitionKey(key);
     processToQuery.setProcessDefinitionVersions(versions);
 
-    List<ProcessToQueryDto> processesToQuery = List.of(processToQuery);
-    ProcessVariableNameRequestDto variableRequestDto =
+    final List<ProcessToQueryDto> processesToQuery = List.of(processToQuery);
+    final ProcessVariableNameRequestDto variableRequestDto =
         new ProcessVariableNameRequestDto(processesToQuery);
 
     return getProcessVariableNames(variableRequestDto);
@@ -88,43 +89,53 @@ public class VariablesClient {
         .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
   }
 
-  @SneakyThrows
   public VariableDto createMapJsonObjectVariableDto(final Map<String, Object> variable) {
-    return createJsonObjectVariableDto(
-        objectMapper.writeValueAsString(variable), "java.util.HashMap");
+    try {
+      return createJsonObjectVariableDto(
+          objectMapper.writeValueAsString(variable), "java.util.HashMap");
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  @SneakyThrows
   public VariableDto createListJsonObjectVariableDto(final List<Object> variable) {
-    return createJsonObjectVariableDto(
-        objectMapper.writeValueAsString(variable), "java.util.ArrayList");
+    try {
+      return createJsonObjectVariableDto(
+          objectMapper.writeValueAsString(variable), "java.util.ArrayList");
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  @SneakyThrows
   public VariableDto createJsonObjectVariableDto(final String value, final String objectTypeName) {
-    VariableDto objectVariableDto = new VariableDto();
+    final VariableDto objectVariableDto = new VariableDto();
     objectVariableDto.setType(VARIABLE_TYPE_OBJECT);
     objectVariableDto.setValue(value);
-    VariableDto.ValueInfo info = new VariableDto.ValueInfo();
+    final VariableDto.ValueInfo info = new VariableDto.ValueInfo();
     info.setObjectTypeName(objectTypeName);
     info.setSerializationDataFormat(MediaType.APPLICATION_JSON);
     objectVariableDto.setValueInfo(info);
     return objectVariableDto;
   }
 
-  @SneakyThrows
   public VariableDto createNativeJsonVariableDto(final Map<String, Object> variable) {
-    return createNativeJsonVariableDto(objectMapper.writeValueAsString(variable));
+    try {
+      return createNativeJsonVariableDto(objectMapper.writeValueAsString(variable));
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  @SneakyThrows
   public VariableDto createNativeJsonVariableDto(final List<Object> variable) {
-    return createNativeJsonVariableDto(objectMapper.writeValueAsString(variable));
+    try {
+      return createNativeJsonVariableDto(objectMapper.writeValueAsString(variable));
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  @SneakyThrows
   public VariableDto createNativeJsonVariableDto(final String value) {
-    VariableDto nativeJsonVariableDto = new VariableDto();
+    final VariableDto nativeJsonVariableDto = new VariableDto();
     nativeJsonVariableDto.setType(VARIABLE_TYPE_JSON);
     nativeJsonVariableDto.setValue(value);
     return nativeJsonVariableDto;

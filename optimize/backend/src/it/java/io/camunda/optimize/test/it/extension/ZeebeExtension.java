@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.SneakyThrows;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -97,7 +96,6 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     destroyClient();
   }
 
-  @SneakyThrows
   public void createClient() {
     if (isZeebeVersionPre85()) {
       zeebeClient =
@@ -188,12 +186,10 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     zeebeClient.newCancelInstanceCommand(processInstanceKey).send().join();
   }
 
-  @SneakyThrows
   public void completeTaskForInstanceWithJobType(final String jobType) {
     completeTaskForInstanceWithJobType(jobType, null);
   }
 
-  @SneakyThrows
   public void completeTaskForInstanceWithJobType(
       final String jobType, final Map<String, Object> variables) {
     handleSingleJob(

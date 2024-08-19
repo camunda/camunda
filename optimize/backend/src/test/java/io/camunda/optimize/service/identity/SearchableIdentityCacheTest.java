@@ -17,12 +17,13 @@ import io.camunda.optimize.dto.optimize.UserDto;
 import io.camunda.optimize.service.SearchableIdentityCache;
 import io.camunda.optimize.service.exceptions.MaxEntryLimitHitException;
 import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -291,12 +292,16 @@ public class SearchableIdentityCacheTest {
         () -> cache.addIdentities(Lists.newArrayList(new GroupDto("zzzz", "zzzz", 5L))));
   }
 
-  @SneakyThrows
   private void insert100kUsers() {
-    final List<String> lines =
-        FileUtils.readLines(
-            new File(SearchableIdentityCacheTest.class.getResource("/fakeNames100k.csv").toURI()),
-            StandardCharsets.UTF_8);
+    final List<String> lines;
+    try {
+      lines =
+          FileUtils.readLines(
+              new File(SearchableIdentityCacheTest.class.getResource("/fakeNames100k.csv").toURI()),
+              StandardCharsets.UTF_8);
+    } catch (final IOException | URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
     final List<IdentityWithMetadataResponseDto> users =
         lines.stream()
             .parallel()

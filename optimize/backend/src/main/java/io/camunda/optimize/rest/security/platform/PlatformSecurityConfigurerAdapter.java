@@ -35,7 +35,6 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.ext.RuntimeDelegate;
 import java.util.Optional;
-import lombok.SneakyThrows;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -87,7 +86,6 @@ public class PlatformSecurityConfigurerAdapter extends AbstractSecurityConfigure
             .build());
   }
 
-  @SneakyThrows
   @Bean
   @Order(1)
   protected SecurityFilterChain configurePublicApi(final HttpSecurity http) {
@@ -101,52 +99,56 @@ public class PlatformSecurityConfigurerAdapter extends AbstractSecurityConfigure
     return applyPublicApiOptions(httpSecurityBuilder);
   }
 
-  @SneakyThrows
   @Bean
   @Order(2)
   protected SecurityFilterChain configureWebSecurity(final HttpSecurity http) {
-    return super.configureGenericSecurityOptions(http)
-        // Then we configure the specific web security for CCSM
-        .authorizeHttpRequests(
-            requests ->
-                requests
-                    // static resources
-                    .requestMatchers(
-                        new AntPathRequestMatcher("/"),
-                        new AntPathRequestMatcher("/index*"),
-                        new AntPathRequestMatcher(STATIC_RESOURCE_PATH + "/**"),
-                        new AntPathRequestMatcher("/*.js"),
-                        new AntPathRequestMatcher("/*.ico"))
-                    .permitAll()
-                    // public resources
-                    .requestMatchers(
-                        new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/"),
-                        new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/index*"),
-                        new AntPathRequestMatcher(EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**"),
-                        new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/*.js"),
-                        new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/*.ico"))
-                    .permitAll()
-                    // public share related resources (API)
-                    .requestMatchers(
-                        new AntPathRequestMatcher(
-                            createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)))
-                    .permitAll()
-                    // common public api resources
-                    .requestMatchers(
-                        new AntPathRequestMatcher(createApiPath(READYZ_PATH)),
-                        new AntPathRequestMatcher(createApiPath(UI_CONFIGURATION_PATH)),
-                        new AntPathRequestMatcher(createApiPath(LOCALIZATION_PATH)),
-                        new AntPathRequestMatcher(createApiPath(AUTHENTICATION_PATH)))
-                    .permitAll()
-                    // everything else requires authentication
-                    .anyRequest()
-                    .authenticated())
-        .addFilterBefore(
-            authenticationCookieFilter(http), AbstractPreAuthenticatedProcessingFilter.class)
-        .addFilterAfter(authenticationCookieRefreshFilter, SessionManagementFilter.class)
-        .exceptionHandling(
-            exceptionHandling -> exceptionHandling.authenticationEntryPoint(this::failureHandler))
-        .build();
+    try {
+      return super.configureGenericSecurityOptions(http)
+          // Then we configure the specific web security for CCSM
+          .authorizeHttpRequests(
+              requests ->
+                  requests
+                      // static resources
+                      .requestMatchers(
+                          new AntPathRequestMatcher("/"),
+                          new AntPathRequestMatcher("/index*"),
+                          new AntPathRequestMatcher(STATIC_RESOURCE_PATH + "/**"),
+                          new AntPathRequestMatcher("/*.js"),
+                          new AntPathRequestMatcher("/*.ico"))
+                      .permitAll()
+                      // public resources
+                      .requestMatchers(
+                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/"),
+                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/index*"),
+                          new AntPathRequestMatcher(
+                              EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**"),
+                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/*.js"),
+                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/*.ico"))
+                      .permitAll()
+                      // public share related resources (API)
+                      .requestMatchers(
+                          new AntPathRequestMatcher(
+                              createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)))
+                      .permitAll()
+                      // common public api resources
+                      .requestMatchers(
+                          new AntPathRequestMatcher(createApiPath(READYZ_PATH)),
+                          new AntPathRequestMatcher(createApiPath(UI_CONFIGURATION_PATH)),
+                          new AntPathRequestMatcher(createApiPath(LOCALIZATION_PATH)),
+                          new AntPathRequestMatcher(createApiPath(AUTHENTICATION_PATH)))
+                      .permitAll()
+                      // everything else requires authentication
+                      .anyRequest()
+                      .authenticated())
+          .addFilterBefore(
+              authenticationCookieFilter(http), AbstractPreAuthenticatedProcessingFilter.class)
+          .addFilterAfter(authenticationCookieRefreshFilter, SessionManagementFilter.class)
+          .exceptionHandling(
+              exceptionHandling -> exceptionHandling.authenticationEntryPoint(this::failureHandler))
+          .build();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override

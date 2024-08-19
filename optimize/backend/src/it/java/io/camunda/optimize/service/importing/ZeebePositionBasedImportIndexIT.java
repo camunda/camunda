@@ -31,7 +31,6 @@ import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 import org.apache.commons.text.StringSubstitutor;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -75,7 +74,6 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
   }
 
   @Test
-  @SneakyThrows
   public void latestPositionImportIndexesAreRestoredAfterRestartOfOptimize() {
     // given
     deployZeebeData();
@@ -100,7 +98,6 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
   }
 
   @Test
-  @SneakyThrows
   public void latestSequenceImportIndexesAreRestoredAfterRestartOfOptimize() {
     // given
     deployZeebeData();
@@ -472,7 +469,6 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
         .collect(Collectors.toList());
   }
 
-  @SneakyThrows
   private List<ZeebeProcessInstanceRecordDto> getZeebeExportedProcessInstances() {
     final String expectedIndex =
         zeebeExtension.getZeebeRecordPrefix()
