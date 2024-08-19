@@ -60,6 +60,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import wiremock.net.minidev.json.JSONObject;
 
 @Component
 @Conditional(OpenSearchCondition.class)
@@ -711,5 +712,56 @@ public class RetryOpenSearchClient {
           openSearchClient.indices().putMapping(request);
           return true;
         });
+  }
+
+  public JsonObject getExplainIndexResponse(final String indexName) {
+    final Request request = new Request("GET", "/_plugins/_ism/explain/" + indexName);
+    try {
+      final Response response = opensearchRestClient.performRequest(request);
+
+      // Parse the response entity into a JsonObject
+      final InputStream responseStream = response.getEntity().getContent();
+      final JsonReader jsonReader = Json.createReader(responseStream);
+      final JsonObject responseObject = jsonReader.readObject();
+      jsonReader.close();
+
+      return responseObject.getJsonObject(
+          indexName); // Ensure this extracts the correct JSON object
+    } catch (final ResponseException e) {
+      if (e.getResponse().getStatusLine().getStatusCode() == HttpStatus.NOT_FOUND.value()) {
+        return null; // No ISM policy found for the index
+      } else {
+        throw new TasklistRuntimeException("Communication error with OpenSearch", e);
+      }
+    } catch (final IOException e) {
+      // Handle other I/O errors
+      throw new TasklistRuntimeException("Communication error with OpenSearch", e);
+    }
+  }
+
+  public void addISMPolicyToIndex(final String indexName, final String policyId) {
+    final Request request = new Request("POST", "/_plugins/_ism/add/" + indexName);
+
+    // Create the JSON object to assign the policy
+    final JSONObject policyAssignment = new JSONObject();
+    policyAssignment.put("policy_id", policyId);
+
+    request.setJsonEntity(policyAssignment.toString());
+
+    try {
+      opensearchRestClient.performRequest(request);
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException("Failed to apply ISM policy to index: " + indexName, e);
+    }
+  }
+
+  public void removeISMPolicyFromIndex(final String indexName) {
+    final Request request = new Request("POST", "/_plugins/_ism/remove/" + indexName);
+
+    try {
+      opensearchRestClient.performRequest(request);
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException("Failed to remove ISM policy from index: " + indexName, e);
+    }
   }
 }
