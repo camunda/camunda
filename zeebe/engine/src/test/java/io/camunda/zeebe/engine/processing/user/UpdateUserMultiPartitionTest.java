@@ -45,7 +45,17 @@ public class UpdateUserMultiPartitionTest {
         .withPassword("password")
         .create();
 
-    ENGINE.user().updateUser(username).withName("Bar Foo").withEmail("bar@foo.com").update();
+    ENGINE
+        .user()
+        .updateUser(username)
+        .withName("Bar Foo")
+        .withEmail("bar@foo.com")
+        .withPassword("password")
+        .update();
+
+    RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
+        .withDistributionIntent(UserIntent.CREATE)
+        .await();
 
     assertThat(
             RecordingExporter.records()
