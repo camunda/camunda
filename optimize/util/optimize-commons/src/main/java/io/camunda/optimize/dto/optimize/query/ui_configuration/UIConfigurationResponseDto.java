@@ -9,7 +9,6 @@ package io.camunda.optimize.dto.optimize.query.ui_configuration;
 
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.configuration.OptimizeProfile;
-import io.camunda.service.license.LicenseType;
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
@@ -39,7 +38,7 @@ public class UIConfigurationResponseDto {
   private Integer exportCsvLimit;
   private DatabaseType optimizeDatabase;
   private boolean validLicense;
-  private LicenseType licenseType;
+  private String licenseType;
 
   private MixpanelConfigResponseDto mixpanel = new MixpanelConfigResponseDto();
 

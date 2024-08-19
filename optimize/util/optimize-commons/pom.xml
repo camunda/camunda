@@ -213,11 +213,6 @@
       <groupId>jakarta.ws.rs</groupId>
       <artifactId>jakarta.ws.rs-api</artifactId>
     </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-service</artifactId>
-      <version>${project.version}</version>
-    </dependency>
 
   </dependencies>
 

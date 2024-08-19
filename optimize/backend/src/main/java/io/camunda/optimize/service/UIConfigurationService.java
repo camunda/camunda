@@ -73,7 +73,7 @@ public class UIConfigurationService {
         configurationService.getUiConfiguration().getMaxNumDataSourcesForReport());
     uiConfigurationDto.setOptimizeDatabase(ConfigurationService.getDatabaseType(environment));
     uiConfigurationDto.setValidLicense(isCamundaLicenseValid());
-    uiConfigurationDto.setLicenseType(getLicenseType());
+    uiConfigurationDto.setLicenseType(getLicenseType().getName());
 
     final MixpanelConfigResponseDto mixpanel = uiConfigurationDto.getMixpanel();
     mixpanel.setEnabled(configurationService.getAnalytics().isEnabled());
