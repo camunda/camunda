@@ -11,7 +11,6 @@ import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import java.util.Locale;
-import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -21,7 +20,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OptimizeIndexNameService implements ConfigurationReloadable {
 
-  @Getter private String indexPrefix;
+  private String indexPrefix;
 
   @Autowired
   public OptimizeIndexNameService(
@@ -38,7 +37,7 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
     this.indexPrefix = indexPrefix;
   }
 
-  public String getOptimizeIndexAliasForIndex(String index) {
+  public String getOptimizeIndexAliasForIndex(final String index) {
     return getOptimizeIndexAliasForIndexNameAndPrefix(index, indexPrefix);
   }
 
@@ -91,17 +90,17 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
 
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
-    ConfigurationService configurationService = context.getBean(ConfigurationService.class);
+    final ConfigurationService configurationService = context.getBean(ConfigurationService.class);
     setIndexPrefix(
         configurationService, ConfigurationService.getDatabaseType(context.getEnvironment()));
   }
 
   private void setIndexPrefix(
-      ConfigurationService configurationService, DatabaseType databaseProfile) {
+      final ConfigurationService configurationService, final DatabaseType databaseProfile) {
     if (databaseProfile.equals(DatabaseType.OPENSEARCH)) {
-      this.indexPrefix = configurationService.getOpenSearchConfiguration().getIndexPrefix();
+      indexPrefix = configurationService.getOpenSearchConfiguration().getIndexPrefix();
     } else {
-      this.indexPrefix = configurationService.getElasticSearchConfiguration().getIndexPrefix();
+      indexPrefix = configurationService.getElasticSearchConfiguration().getIndexPrefix();
     }
   }
 
@@ -118,5 +117,9 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
       original = String.join("-", indexPrefix, indexName);
     }
     return original.toLowerCase(Locale.ENGLISH);
+  }
+
+  public String getIndexPrefix() {
+    return indexPrefix;
   }
 }

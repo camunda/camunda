@@ -20,6 +20,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import io.camunda.optimize.service.db.es.report.command.exec.ExecutionContext;
 import io.camunda.optimize.service.db.es.report.command.modules.result.CompositeCommandResult;
+import io.camunda.optimize.service.db.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import io.camunda.optimize.service.db.es.report.command.modules.view.process.duration.ProcessViewUserTaskDuration;
 import io.camunda.optimize.service.db.es.report.command.modules.view.process.frequency.ProcessViewFrequency;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
@@ -33,8 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.search.SearchResponse;
@@ -92,10 +91,10 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
       final SearchResponse response,
       final Aggregations aggregations,
       final ExecutionContext<ProcessReportDataDto> context) {
-    List<CompositeCommandResult.DistributedByResult> results = new ArrayList<>();
-    Map<String, List<ProcessBucket>> bucketsByDefKey =
+    final List<CompositeCommandResult.DistributedByResult> results = new ArrayList<>();
+    final Map<String, List<ProcessBucket>> bucketsByDefKey =
         extractBucketsByDefKey(response, aggregations, context);
-    for (ReportDataDefinitionDto definition : context.getReportData().getDefinitions()) {
+    for (final ReportDataDefinitionDto definition : context.getReportData().getDefinitions()) {
       final CompositeCommandResult.ViewResult result;
       if (bucketsByDefKey.containsKey(definition.getKey())) {
         result = calculateMergedResult(bucketsByDefKey, definition, context);
@@ -107,6 +106,12 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
               definition.getIdentifier(), definition.getDisplayName(), result));
     }
     return results;
+  }
+
+  @Override
+  protected void addAdjustmentsForCommandKeyGeneration(
+      final ProcessReportDataDto dataForCommandKey) {
+    dataForCommandKey.setDistributedBy(new ProcessDistributedByDto());
   }
 
   @Override
@@ -131,7 +136,7 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
     if (processBuckets.isEmpty()) {
       return viewPart.createEmptyResult(context);
     }
-    List<CompositeCommandResult.ViewMeasure> viewMeasures = new ArrayList<>();
+    final List<CompositeCommandResult.ViewMeasure> viewMeasures = new ArrayList<>();
     if (viewPart instanceof ProcessViewFrequency) {
       final Double totalCount =
           processBuckets.stream()
@@ -140,11 +145,11 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
               .sum();
       viewMeasures.add(CompositeCommandResult.ViewMeasure.builder().value(totalCount).build());
     } else if (viewPart instanceof ProcessViewUserTaskDuration) {
-      for (UserTaskDurationTime userTaskDurationTime :
+      for (final UserTaskDurationTime userTaskDurationTime :
           context.getReportConfiguration().getUserTaskDurationTimes()) {
-        for (AggregationDto aggregationType :
+        for (final AggregationDto aggregationType :
             context.getReportConfiguration().getAggregationTypes()) {
-          Double mergedAggResult =
+          final Double mergedAggResult =
               calculateMergedAggregationResult(
                   processBuckets, aggregationType, userTaskDurationTime);
           viewMeasures.add(
@@ -156,9 +161,9 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
         }
       }
     } else {
-      for (AggregationDto aggregationType :
+      for (final AggregationDto aggregationType :
           context.getReportConfiguration().getAggregationTypes()) {
-        Double mergedAggResult =
+        final Double mergedAggResult =
             calculateMergedAggregationResult(processBuckets, aggregationType, null);
         viewMeasures.add(
             CompositeCommandResult.ViewMeasure.builder()
@@ -174,13 +179,13 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
       final List<ProcessBucket> processBuckets,
       final AggregationDto aggregationType,
       final UserTaskDurationTime userTaskDurationTime) {
-    Map<AggregationDto, List<CompositeCommandResult.ViewMeasure>> measuresByAggType =
+    final Map<AggregationDto, List<CompositeCommandResult.ViewMeasure>> measuresByAggType =
         processBuckets.stream()
             .map(ProcessBucket::getResult)
             .flatMap(results -> results.getViewMeasures().stream())
             .filter(measure -> measure.getUserTaskDurationTime() == userTaskDurationTime)
             .collect(Collectors.groupingBy(CompositeCommandResult.ViewMeasure::getAggregationType));
-    Double mergedAggResult;
+    final Double mergedAggResult;
     switch (aggregationType.getType()) {
       case MAX:
         mergedAggResult =
@@ -284,13 +289,13 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
       final SearchResponse response,
       final Aggregations aggregations,
       final ExecutionContext<ProcessReportDataDto> context) {
-    Map<String, List<ProcessBucket>> bucketsByDefKey = new HashMap<>();
+    final Map<String, List<ProcessBucket>> bucketsByDefKey = new HashMap<>();
     final Terms procDefKeyAgg = aggregations.get(PROC_DEF_KEY_AGG);
     if (procDefKeyAgg != null) {
-      for (Terms.Bucket keyBucket : procDefKeyAgg.getBuckets()) {
+      for (final Terms.Bucket keyBucket : procDefKeyAgg.getBuckets()) {
         final Terms procDefVersionAgg = keyBucket.getAggregations().get(PROC_DEF_VERSION_AGG);
         if (procDefVersionAgg != null) {
-          for (Terms.Bucket versionBucket : procDefVersionAgg.getBuckets()) {
+          for (final Terms.Bucket versionBucket : procDefVersionAgg.getBuckets()) {
             final Terms tenantTermsAgg = versionBucket.getAggregations().get(TENANT_AGG);
             if (tenantTermsAgg != null) {
               final List<ProcessBucket> bucketsForKey =
@@ -342,19 +347,45 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
     return context.getReportData().getView().getEntity() == ProcessViewEntity.PROCESS_INSTANCE;
   }
 
-  @Override
-  protected void addAdjustmentsForCommandKeyGeneration(
-      final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.setDistributedBy(new ProcessDistributedByDto());
-  }
-
-  @AllArgsConstructor
-  @Getter
   private static class ProcessBucket {
+
     private final String procDefKey;
     private final String version;
     private final String tenant;
     private final long docCount;
     private final CompositeCommandResult.ViewResult result;
+
+    public ProcessBucket(
+        final String procDefKey,
+        final String version,
+        final String tenant,
+        final long docCount,
+        final ViewResult result) {
+      this.procDefKey = procDefKey;
+      this.version = version;
+      this.tenant = tenant;
+      this.docCount = docCount;
+      this.result = result;
+    }
+
+    public String getProcDefKey() {
+      return procDefKey;
+    }
+
+    public String getVersion() {
+      return version;
+    }
+
+    public String getTenant() {
+      return tenant;
+    }
+
+    public long getDocCount() {
+      return docCount;
+    }
+
+    public ViewResult getResult() {
+      return result;
+    }
   }
 }

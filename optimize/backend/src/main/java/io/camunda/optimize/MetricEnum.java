@@ -7,8 +7,6 @@
  */
 package io.camunda.optimize;
 
-import lombok.Getter;
-
 public enum MetricEnum {
   OVERALL_IMPORT_TIME_METRIC(
       "overallImportTime",
@@ -20,13 +18,25 @@ public enum MetricEnum {
       "newPageFetchTime",
       "Records the time spent for fetching next import page from Zeebe Elasticsearch");
   private static final String IMPORT_METRICS_PREFIX = "optimize.import";
-  @Getter private final String id;
-  @Getter private final String name;
-  @Getter private final String description;
+  private final String id;
+  private final String name;
+  private final String description;
 
-  MetricEnum(String id, String description) {
+  MetricEnum(final String id, final String description) {
     this.id = id;
     this.description = description;
-    this.name = IMPORT_METRICS_PREFIX + "." + id;
+    name = IMPORT_METRICS_PREFIX + "." + id;
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public String getDescription() {
+    return description;
   }
 }

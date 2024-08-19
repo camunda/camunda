@@ -21,19 +21,19 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-@Slf4j
 public class EventProcessInstanceImportMediator<T extends EventProcessEventDto>
     extends TimestampBasedImportMediator<EventProcessInstanceImportSourceIndexHandler, T> {
 
-  @Getter private final String publishedProcessStateId;
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventProcessInstanceImportMediator.class);
+  private final String publishedProcessStateId;
   private final EventFetcherService<T> eventFetcherService;
 
   public EventProcessInstanceImportMediator(
@@ -83,5 +83,9 @@ public class EventProcessInstanceImportMediator<T extends EventProcessEventDto>
   @Override
   public MediatorRank getRank() {
     return MediatorRank.INSTANCE;
+  }
+
+  public String getPublishedProcessStateId() {
+    return publishedProcessStateId;
   }
 }

@@ -16,20 +16,17 @@ import io.camunda.optimize.service.importing.page.PositionBasedImportPage;
 import jakarta.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.util.Optional;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
-@Slf4j
-@Getter
-@RequiredArgsConstructor
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class PositionBasedImportIndexHandler
     implements ZeebeImportIndexHandler<PositionBasedImportPage, PositionBasedImportIndexDto> {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(PositionBasedImportIndexHandler.class);
   protected ZeebeDataSourceDto dataSource;
   private OffsetDateTime lastImportExecutionTimestamp = BEGINNING_OF_TIME;
   private OffsetDateTime timestampOfLastPersistedEntity = BEGINNING_OF_TIME;
@@ -40,18 +37,7 @@ public abstract class PositionBasedImportIndexHandler
   private boolean hasSeenSequenceField = false;
   @Autowired private PositionBasedImportIndexReader positionBasedImportIndexReader;
 
-  @Override
-  public PositionBasedImportIndexDto getIndexStateDto() {
-    final PositionBasedImportIndexDto indexToStore = new PositionBasedImportIndexDto();
-    indexToStore.setDataSource(dataSource);
-    indexToStore.setLastImportExecutionTimestamp(lastImportExecutionTimestamp);
-    indexToStore.setPositionOfLastEntity(persistedPositionOfLastEntity);
-    indexToStore.setSequenceOfLastEntity(persistedSequenceOfLastEntity);
-    indexToStore.setTimestampOfLastEntity(timestampOfLastPersistedEntity);
-    indexToStore.setHasSeenSequenceField(hasSeenSequenceField);
-    indexToStore.setEsTypeIndexRefersTo(getDatabaseDocID());
-    return indexToStore;
-  }
+  public PositionBasedImportIndexHandler() {}
 
   @PostConstruct
   protected void init() {
@@ -70,17 +56,6 @@ public abstract class PositionBasedImportIndexHandler
   }
 
   @Override
-  public void resetImportIndex() {
-    lastImportExecutionTimestamp = BEGINNING_OF_TIME;
-    timestampOfLastPersistedEntity = BEGINNING_OF_TIME;
-    persistedPositionOfLastEntity = 0;
-    persistedSequenceOfLastEntity = 0;
-    pendingPositionOfLastEntity = 0;
-    pendingSequenceOfLastEntity = 0;
-    hasSeenSequenceField = false;
-  }
-
-  @Override
   public ZeebeDataSourceDto getDataSource() {
     return dataSource;
   }
@@ -92,6 +67,30 @@ public abstract class PositionBasedImportIndexHandler
     page.setSequence(pendingSequenceOfLastEntity);
     page.setHasSeenSequenceField(hasSeenSequenceField);
     return page;
+  }
+
+  @Override
+  public PositionBasedImportIndexDto getIndexStateDto() {
+    final PositionBasedImportIndexDto indexToStore = new PositionBasedImportIndexDto();
+    indexToStore.setDataSource(dataSource);
+    indexToStore.setLastImportExecutionTimestamp(lastImportExecutionTimestamp);
+    indexToStore.setPositionOfLastEntity(persistedPositionOfLastEntity);
+    indexToStore.setSequenceOfLastEntity(persistedSequenceOfLastEntity);
+    indexToStore.setTimestampOfLastEntity(timestampOfLastPersistedEntity);
+    indexToStore.setHasSeenSequenceField(hasSeenSequenceField);
+    indexToStore.setEsTypeIndexRefersTo(getDatabaseDocID());
+    return indexToStore;
+  }
+
+  @Override
+  public void resetImportIndex() {
+    lastImportExecutionTimestamp = BEGINNING_OF_TIME;
+    timestampOfLastPersistedEntity = BEGINNING_OF_TIME;
+    persistedPositionOfLastEntity = 0;
+    persistedSequenceOfLastEntity = 0;
+    pendingPositionOfLastEntity = 0;
+    pendingSequenceOfLastEntity = 0;
+    hasSeenSequenceField = false;
   }
 
   /** States the database document name where the index information should be stored. */
@@ -124,5 +123,37 @@ public abstract class PositionBasedImportIndexHandler
 
   public void updateTimestampOfLastPersistedEntity(final OffsetDateTime timestamp) {
     timestampOfLastPersistedEntity = timestamp;
+  }
+
+  public OffsetDateTime getLastImportExecutionTimestamp() {
+    return lastImportExecutionTimestamp;
+  }
+
+  public OffsetDateTime getTimestampOfLastPersistedEntity() {
+    return timestampOfLastPersistedEntity;
+  }
+
+  public long getPersistedPositionOfLastEntity() {
+    return persistedPositionOfLastEntity;
+  }
+
+  public long getPersistedSequenceOfLastEntity() {
+    return persistedSequenceOfLastEntity;
+  }
+
+  public long getPendingPositionOfLastEntity() {
+    return pendingPositionOfLastEntity;
+  }
+
+  public long getPendingSequenceOfLastEntity() {
+    return pendingSequenceOfLastEntity;
+  }
+
+  public boolean isHasSeenSequenceField() {
+    return hasSeenSequenceField;
+  }
+
+  public PositionBasedImportIndexReader getPositionBasedImportIndexReader() {
+    return positionBasedImportIndexReader;
   }
 }

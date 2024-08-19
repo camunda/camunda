@@ -14,7 +14,6 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +28,7 @@ public abstract class TimestampBasedImportIndexHandler<INDEX_DTO>
 
   @Autowired protected ConfigurationService configurationService;
 
-  @Getter protected OffsetDateTime timestampOfLastEntity = BEGINNING_OF_TIME;
+  protected OffsetDateTime timestampOfLastEntity = BEGINNING_OF_TIME;
 
   public void updateTimestampOfLastEntity(final OffsetDateTime timestamp) {
     final OffsetDateTime backOffWindowStart =
@@ -89,5 +88,9 @@ public abstract class TimestampBasedImportIndexHandler<INDEX_DTO>
 
   protected int getTipOfTimeBackoffMilliseconds() {
     return configurationService.getCurrentTimeBackoffMilliseconds();
+  }
+
+  public OffsetDateTime getTimestampOfLastEntity() {
+    return timestampOfLastEntity;
   }
 }

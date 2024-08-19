@@ -66,19 +66,18 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.mockserver.integration.ClientAndServer;
+import org.slf4j.Logger;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
-@Slf4j
 public abstract class DatabaseTestService {
 
   protected static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(DatabaseTestService.class);
   protected final String customIndexPrefix;
   protected boolean haveToClean;
-  @Getter private TestIndexRepository testIndexRepository;
+  private TestIndexRepository testIndexRepository;
 
   protected DatabaseTestService(final String customIndexPrefix, final boolean haveToClean) {
     this.customIndexPrefix = customIndexPrefix;
@@ -284,10 +283,6 @@ public abstract class DatabaseTestService {
         DECISION_INSTANCE_MULTI_ALIAS, instanceIds, DecisionInstanceDto.class);
   }
 
-  protected void setTestIndexRepository(final TestIndexRepository testIndexRepository) {
-    this.testIndexRepository = testIndexRepository;
-  }
-
   public <T extends DecisionInstanceDto> List<T> getDecisionInstancesById(
       final String indexName, final List<String> instanceIds, final Class<T> type) {
     return getInstancesById(
@@ -362,4 +357,12 @@ public abstract class DatabaseTestService {
   public abstract EventIndex getEventIndex();
 
   public abstract VariableUpdateInstanceIndex getVariableUpdateInstanceIndex();
+
+  public TestIndexRepository getTestIndexRepository() {
+    return testIndexRepository;
+  }
+
+  protected void setTestIndexRepository(final TestIndexRepository testIndexRepository) {
+    this.testIndexRepository = testIndexRepository;
+  }
 }

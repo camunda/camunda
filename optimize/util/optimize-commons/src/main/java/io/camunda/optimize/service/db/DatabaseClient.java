@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import lombok.Getter;
 import org.apache.tika.utils.StringUtils;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.ClearScrollResponse;
@@ -32,7 +31,7 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
 
   protected static final String NESTED_DOC_LIMIT_MESSAGE =
       "The number of nested documents has exceeded the allowed limit of";
-  @Getter protected OptimizeIndexNameService indexNameService;
+  protected OptimizeIndexNameService indexNameService;
 
   /**
    * Get all the aliases for the indexes matching the indexNamePattern
@@ -41,7 +40,6 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
    * @return A Map where the keys are the name of the matching indexes and the value is a set
    *     containing the aliases for the respective index. This map can have multiple keys because
    *     indexNamePattern may contain wildcards
-   * @throws IOException
    */
   public abstract Map<String, Set<String>> getAliasesForIndexPattern(final String indexNamePattern)
       throws IOException;
@@ -144,5 +142,9 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
       final RequestType type, final String fieldName) {
     return String.format(
         "The %s param of ImportRequestDto is not valid for request type %s", fieldName, type);
+  }
+
+  public OptimizeIndexNameService getIndexNameService() {
+    return indexNameService;
   }
 }

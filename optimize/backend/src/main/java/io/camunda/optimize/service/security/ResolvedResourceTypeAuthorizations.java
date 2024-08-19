@@ -9,20 +9,18 @@ package io.camunda.optimize.service.security;
 
 import java.util.HashSet;
 import java.util.Set;
-import lombok.Getter;
-import lombok.Setter;
 
 public class ResolvedResourceTypeAuthorizations {
 
-  @Getter @Setter private String engine;
+  private String engine;
   private boolean canSeeAll = false;
   private final Set<String> authorizedResources = new HashSet<>();
   private final Set<String> prohibitedResources = new HashSet<>();
 
   public void merge(final ResolvedResourceTypeAuthorizations authorizationsToMerge) {
-    this.canSeeAll = this.canSeeAll || authorizationsToMerge.canSeeAll;
-    this.authorizedResources.addAll(authorizationsToMerge.authorizedResources);
-    this.prohibitedResources.addAll(authorizationsToMerge.prohibitedResources);
+    canSeeAll = canSeeAll || authorizationsToMerge.canSeeAll;
+    authorizedResources.addAll(authorizationsToMerge.authorizedResources);
+    prohibitedResources.addAll(authorizationsToMerge.prohibitedResources);
   }
 
   public void grantToSeeAllResources() {
@@ -53,5 +51,13 @@ public class ResolvedResourceTypeAuthorizations {
     } else {
       return authorizedResources.contains(resourceId);
     }
+  }
+
+  public String getEngine() {
+    return engine;
+  }
+
+  public void setEngine(final String engine) {
+    this.engine = engine;
   }
 }

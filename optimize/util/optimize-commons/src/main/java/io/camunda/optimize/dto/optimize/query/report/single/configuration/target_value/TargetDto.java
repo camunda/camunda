@@ -8,13 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
 import java.util.Objects;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
 
-@Getter
-@Setter
-@ToString
 public class TargetDto {
 
   private TargetValueUnit unit = TargetValueUnit.HOURS;
@@ -37,6 +31,41 @@ public class TargetDto {
     return unit == targetDto.unit
         && Objects.equals(isBelow, targetDto.isBelow)
         && Objects.equals(value, targetDto.value);
+  }
+
+  @Override
+  public String toString() {
+    return "TargetDto(unit="
+        + getUnit()
+        + ", value="
+        + getValue()
+        + ", isBelow="
+        + getIsBelow()
+        + ")";
+  }
+
+  public TargetValueUnit getUnit() {
+    return unit;
+  }
+
+  public void setUnit(final TargetValueUnit unit) {
+    this.unit = unit;
+  }
+
+  public String getValue() {
+    return value;
+  }
+
+  public void setValue(final String value) {
+    this.value = value;
+  }
+
+  public Boolean getIsBelow() {
+    return isBelow;
+  }
+
+  public void setIsBelow(final Boolean isBelow) {
+    this.isBelow = isBelow;
   }
 
   public static final class Fields {

@@ -7,13 +7,6 @@
  */
 package io.camunda.optimize.service.db.es.report;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
-
-@Getter
-@Setter
-@ToString
 public class MinMaxStatDto {
 
   private double min;
@@ -56,5 +49,50 @@ public class MinMaxStatDto {
   public boolean isEmpty() {
     // occurs when there is no data to be evaluated for min and max fields
     return !isMinValid() && !isMaxValid();
+  }
+
+  public double getMin() {
+    return min;
+  }
+
+  public void setMin(final double min) {
+    this.min = min;
+  }
+
+  public double getMax() {
+    return max;
+  }
+
+  public void setMax(final double max) {
+    this.max = max;
+  }
+
+  public String getMinAsString() {
+    return minAsString;
+  }
+
+  public void setMinAsString(final String minAsString) {
+    this.minAsString = minAsString;
+  }
+
+  public String getMaxAsString() {
+    return maxAsString;
+  }
+
+  public void setMaxAsString(final String maxAsString) {
+    this.maxAsString = maxAsString;
+  }
+
+  @Override
+  public String toString() {
+    return "MinMaxStatDto(min="
+        + getMin()
+        + ", max="
+        + getMax()
+        + ", minAsString="
+        + getMinAsString()
+        + ", maxAsString="
+        + getMaxAsString()
+        + ")";
   }
 }

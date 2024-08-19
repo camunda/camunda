@@ -13,17 +13,29 @@ import io.camunda.optimize.service.db.os.schema.index.DecisionInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import java.util.function.Function;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import org.elasticsearch.xcontent.XContentBuilder;
 import org.opensearch.client.opensearch.indices.IndexSettings;
+import org.opensearch.client.opensearch.indices.IndexSettings.Builder;
 
-@AllArgsConstructor
-@Getter
 public enum IndexMappingCreatorBuilder {
   DECISION_INSTANCE_INDEX(DecisionInstanceIndexES::new, DecisionInstanceIndexOS::new),
   PROCESS_INSTANCE_INDEX(ProcessInstanceIndexES::new, ProcessInstanceIndexOS::new);
 
   private final Function<String, IndexMappingCreator<XContentBuilder>> elasticsearch;
   private final Function<String, IndexMappingCreator<IndexSettings.Builder>> opensearch;
+
+  private IndexMappingCreatorBuilder(
+      final Function<String, IndexMappingCreator<XContentBuilder>> elasticsearch,
+      final Function<String, IndexMappingCreator<Builder>> opensearch) {
+    this.elasticsearch = elasticsearch;
+    this.opensearch = opensearch;
+  }
+
+  public Function<String, IndexMappingCreator<XContentBuilder>> getElasticsearch() {
+    return elasticsearch;
+  }
+
+  public Function<String, IndexMappingCreator<Builder>> getOpensearch() {
+    return opensearch;
+  }
 }

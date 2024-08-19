@@ -15,8 +15,6 @@ import io.camunda.optimize.service.db.es.report.command.modules.view.process.dur
 import io.camunda.optimize.service.db.es.report.command.modules.view.process.frequency.ProcessViewFlowNodeFrequency;
 import java.util.HashMap;
 import java.util.List;
-import lombok.Getter;
-import lombok.Setter;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -25,7 +23,7 @@ import org.elasticsearch.search.aggregations.Aggregations;
 
 public abstract class DistributedByPart<Data extends SingleReportDataDto> {
 
-  @Setter @Getter protected ViewPart<Data> viewPart;
+  protected ViewPart<Data> viewPart;
 
   public abstract boolean isKeyOfNumericType(final ExecutionContext<Data> context);
 
@@ -61,4 +59,12 @@ public abstract class DistributedByPart<Data extends SingleReportDataDto> {
   }
 
   protected abstract void addAdjustmentsForCommandKeyGeneration(final Data dataForCommandKey);
+
+  public ViewPart<Data> getViewPart() {
+    return viewPart;
+  }
+
+  public void setViewPart(final ViewPart<Data> viewPart) {
+    this.viewPart = viewPart;
+  }
 }

@@ -38,10 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.FailsafeException;
 import net.jodah.failsafe.FailsafeExecutor;
@@ -124,6 +121,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.xcontent.XContentType;
+import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 
 /**
@@ -136,7 +134,6 @@ import org.springframework.context.ApplicationContext;
  * <p>For low level operations it still exposes the underlying {@link RestHighLevelClient}, as well
  * as the {@link OptimizeIndexNameService}.
  */
-@Slf4j
 public class OptimizeElasticsearchClient extends DatabaseClient {
 
   // we had to introduce our own options due to a regression with the client's behaviour with the
@@ -149,11 +146,12 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
               IndicesOptions.Option.FORBID_CLOSED_INDICES, IndicesOptions.Option.IGNORE_THROTTLED),
           EnumSet.of(IndicesOptions.WildcardStates.OPEN));
   private static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(OptimizeElasticsearchClient.class);
   private final ObjectMapper objectMapper;
-  @Getter private RestHighLevelClient highLevelClient;
+  private RestHighLevelClient highLevelClient;
   private RequestOptionsProvider requestOptionsProvider;
 
-  @Setter
   private int snapshotInProgressRetryDelaySeconds = DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY;
 
   public OptimizeElasticsearchClient(
@@ -879,5 +877,14 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
       }
     }
     return requestWithPrefix;
+  }
+
+  public RestHighLevelClient getHighLevelClient() {
+    return highLevelClient;
+  }
+
+  public void setSnapshotInProgressRetryDelaySeconds(
+      final int snapshotInProgressRetryDelaySeconds) {
+    this.snapshotInProgressRetryDelaySeconds = snapshotInProgressRetryDelaySeconds;
   }
 }

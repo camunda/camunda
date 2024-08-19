@@ -20,21 +20,29 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
-@Slf4j
 @Component
 public class EventTraceStateProcessingScheduler extends AbstractScheduledService {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventTraceStateProcessingScheduler.class);
   private final ConfigurationService configurationService;
 
   private final EventTraceImportMediatorManager eventTraceImportMediatorManager;
-  @Getter private final PersistEventIndexHandlerStateMediator eventProcessingProgressMediator;
+  private final PersistEventIndexHandlerStateMediator eventProcessingProgressMediator;
+
+  public EventTraceStateProcessingScheduler(
+      final ConfigurationService configurationService,
+      final EventTraceImportMediatorManager eventTraceImportMediatorManager,
+      final PersistEventIndexHandlerStateMediator eventProcessingProgressMediator) {
+    this.configurationService = configurationService;
+    this.eventTraceImportMediatorManager = eventTraceImportMediatorManager;
+    this.eventProcessingProgressMediator = eventProcessingProgressMediator;
+  }
 
   @PostConstruct
   public void init() {
@@ -107,12 +115,12 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
   }
 
   private void doBackoff(final List<ImportMediator> mediators) {
-    long timeToSleep =
+    final long timeToSleep =
         mediators.stream().map(ImportMediator::getBackoffTimeInMs).min(Long::compare).orElse(5000L);
     try {
       log.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
       Thread.sleep(timeToSleep);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       log.warn("Scheduler was interrupted while sleeping.", e);
       Thread.currentThread().interrupt();
     }
@@ -120,5 +128,9 @@ public class EventTraceStateProcessingScheduler extends AbstractScheduledService
 
   private EventBasedProcessConfiguration getEventBasedProcessConfiguration() {
     return configurationService.getEventBasedProcessConfiguration();
+  }
+
+  public PersistEventIndexHandlerStateMediator getEventProcessingProgressMediator() {
+    return eventProcessingProgressMediator;
   }
 }

@@ -7,11 +7,6 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.single.configuration.process_part;
 
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
 public class ProcessPartDto {
 
   protected String start;
@@ -24,5 +19,21 @@ public class ProcessPartDto {
   @Override
   public String toString() {
     return "ProcessPartDto{" + "start='" + start + '\'' + ", end='" + end + '\'' + '}';
+  }
+
+  public String getStart() {
+    return start;
+  }
+
+  public void setStart(final String start) {
+    this.start = start;
+  }
+
+  public String getEnd() {
+    return end;
+  }
+
+  public void setEnd(final String end) {
+    this.end = end;
   }
 }

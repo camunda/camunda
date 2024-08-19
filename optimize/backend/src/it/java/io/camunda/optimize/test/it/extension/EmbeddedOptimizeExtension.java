@@ -13,6 +13,7 @@ import static io.camunda.optimize.service.util.configuration.ConfigurationServic
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
 import static io.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -72,22 +73,19 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.slf4j.Logger;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@Slf4j
 public class EmbeddedOptimizeExtension
     implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, AfterAllCallback {
 
@@ -95,12 +93,14 @@ public class EmbeddedOptimizeExtension
   private static final ObjectMapper configObjectMapper =
       new ObjectMapper().registerModules(new JavaTimeModule(), new Jdk8Module());
   private static String serializedDefaultConfiguration;
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EmbeddedOptimizeExtension.class);
   private final boolean beforeAllMode;
   private ApplicationContext applicationContext;
   private OptimizeRequestExecutor requestExecutor;
   private ObjectMapper objectMapper;
   private boolean resetImportOnStart = true;
-  @Getter @Setter private boolean closeContextAfterTest = false;
+  private boolean closeContextAfterTest = false;
 
   public EmbeddedOptimizeExtension() {
     this(false);
@@ -113,14 +113,17 @@ public class EmbeddedOptimizeExtension
     this.beforeAllMode = beforeAllMode;
   }
 
-  @SneakyThrows
   @Override
   public void beforeAll(final ExtensionContext extensionContext) {
     setApplicationContext(SpringExtension.getApplicationContext(extensionContext));
     if (serializedDefaultConfiguration == null) {
       // store the default configuration to restore it later
-      serializedDefaultConfiguration =
-          configObjectMapper.writeValueAsString(getConfigurationService());
+      try {
+        serializedDefaultConfiguration =
+            configObjectMapper.writeValueAsString(getConfigurationService());
+      } catch (final JsonProcessingException e) {
+        throw new RuntimeException(e);
+      }
     }
     if (beforeAllMode) {
       setupOptimize();
@@ -232,7 +235,6 @@ public class EmbeddedOptimizeExtension
     getImportSchedulerManager().stopSchedulers();
   }
 
-  @SneakyThrows
   public void importIngestedDataFromScratch() {
     try {
       resetPositionBasedImportStartIndexes();
@@ -241,17 +243,23 @@ public class EmbeddedOptimizeExtension
     }
     final IngestedDataImportScheduler scheduler =
         getImportSchedulerManager().getIngestedDataImportScheduler().orElseThrow();
-    scheduler.runImportRound(true).get();
+    try {
+      scheduler.runImportRound(true).get();
+    } catch (final InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  @SneakyThrows
   public void importIngestedDataFromLastIndex() {
     final IngestedDataImportScheduler scheduler =
         getImportSchedulerManager().getIngestedDataImportScheduler().orElseThrow();
-    scheduler.runImportRound(true).get();
+    try {
+      scheduler.runImportRound(true).get();
+    } catch (final InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  @SneakyThrows
   public void importAllZeebeEntitiesFromScratch() {
     try {
       resetPositionBasedImportStartIndexes();
@@ -261,13 +269,16 @@ public class EmbeddedOptimizeExtension
     importAllZeebeEntitiesFromLastIndex();
   }
 
-  @SneakyThrows
   public void importAllZeebeEntitiesFromLastIndex() {
-    getImportSchedulerManager()
-        .getZeebeImportScheduler()
-        .orElseThrow(() -> new OptimizeIntegrationTestException("No Zeebe Scheduler present"))
-        .runImportRound(true)
-        .get();
+    try {
+      getImportSchedulerManager()
+          .getZeebeImportScheduler()
+          .orElseThrow(() -> new OptimizeIntegrationTestException("No Zeebe Scheduler present"))
+          .runImportRound(true)
+          .get();
+    } catch (final InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public void storeImportIndexesToElasticsearch() {
@@ -498,16 +509,23 @@ public class EmbeddedOptimizeExtension
     return getBean(PlatformIdentityService.class);
   }
 
-  @SneakyThrows
   public void processEvents() {
     final EventTraceStateProcessingScheduler eventProcessingScheduler =
         getEventProcessingScheduler();
 
     // run one cycle
-    eventProcessingScheduler.runImportRound(true).get();
+    try {
+      eventProcessingScheduler.runImportRound(true).get();
+    } catch (final InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
 
     // do final progress update
-    eventProcessingScheduler.getEventProcessingProgressMediator().runImport().get();
+    try {
+      eventProcessingScheduler.getEventProcessingProgressMediator().runImport().get();
+    } catch (final InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public ExternalEventService getEventService() {
@@ -564,8 +582,19 @@ public class EmbeddedOptimizeExtension
     return getDateTimeFormatter().format(truncateToStartOfUnit(offsetDateTime, unit));
   }
 
-  @SneakyThrows
   public String toJsonString(final Object object) {
-    return getObjectMapper().writeValueAsString(object);
+    try {
+      return getObjectMapper().writeValueAsString(object);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public boolean isCloseContextAfterTest() {
+    return closeContextAfterTest;
+  }
+
+  public void setCloseContextAfterTest(final boolean closeContextAfterTest) {
+    this.closeContextAfterTest = closeContextAfterTest;
   }
 }

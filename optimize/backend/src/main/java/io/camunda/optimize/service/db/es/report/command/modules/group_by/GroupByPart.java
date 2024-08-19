@@ -15,8 +15,6 @@ import io.camunda.optimize.service.db.es.report.command.modules.result.Composite
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-import lombok.Getter;
-import lombok.Setter;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -25,7 +23,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 public abstract class GroupByPart<Data extends SingleReportDataDto> {
 
-  @Setter @Getter protected DistributedByPart<Data> distributedByPart;
+  protected DistributedByPart<Data> distributedByPart;
 
   public void adjustSearchRequest(
       final SearchRequest searchRequest,
@@ -80,4 +78,12 @@ public abstract class GroupByPart<Data extends SingleReportDataDto> {
 
   protected abstract void addGroupByAdjustmentsForCommandKeyGeneration(
       final Data dataForCommandKey);
+
+  public DistributedByPart<Data> getDistributedByPart() {
+    return distributedByPart;
+  }
+
+  public void setDistributedByPart(final DistributedByPart<Data> distributedByPart) {
+    this.distributedByPart = distributedByPart;
+  }
 }

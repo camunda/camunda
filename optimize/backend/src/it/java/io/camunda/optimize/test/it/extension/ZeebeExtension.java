@@ -33,29 +33,28 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.Getter;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.slf4j.Logger;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 /** Embedded Zeebe Extension */
-@Slf4j
 public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
 
   private static final String ZEEBE_CONFIG_PATH = "zeebe/zeebe-application.yml";
   private static final String ZEEBE_VERSION =
       IntegrationTestConfigurationUtil.getZeebeDockerVersion();
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ZeebeExtension.class);
 
   private ZeebeContainer zeebeContainer;
   private ZeebeClient zeebeClient;
 
-  @Getter private String zeebeRecordPrefix;
+  private String zeebeRecordPrefix;
 
   public ZeebeExtension() {
     final int databasePort;
@@ -285,5 +284,9 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   private void destroyClient() {
     zeebeClient.close();
     zeebeClient = null;
+  }
+
+  public String getZeebeRecordPrefix() {
+    return zeebeRecordPrefix;
   }
 }

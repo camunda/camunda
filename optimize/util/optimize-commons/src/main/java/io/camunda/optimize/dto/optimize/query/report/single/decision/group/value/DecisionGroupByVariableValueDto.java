@@ -10,28 +10,46 @@ package io.camunda.optimize.dto.optimize.query.report.single.decision.group.valu
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import java.util.Objects;
 import java.util.Optional;
-import lombok.Getter;
-import lombok.Setter;
 
 public class DecisionGroupByVariableValueDto implements DecisionGroupByValueDto {
 
-  @Getter @Setter protected String id;
-  @Setter protected String name;
-  @Getter @Setter protected VariableType type;
+  protected String id;
+  protected String name;
+  protected VariableType type;
 
   public Optional<String> getName() {
     return Optional.ofNullable(name);
   }
 
+  public void setName(final String name) {
+    this.name = name;
+  }
+
   @Override
-  public boolean isCombinable(Object o) {
+  public boolean isCombinable(final Object o) {
     if (this == o) {
       return true;
     }
     if (!(o instanceof DecisionGroupByVariableValueDto)) {
       return false;
     }
-    DecisionGroupByVariableValueDto that = (DecisionGroupByVariableValueDto) o;
+    final DecisionGroupByVariableValueDto that = (DecisionGroupByVariableValueDto) o;
     return Objects.equals(id, that.id);
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(final String id) {
+    this.id = id;
+  }
+
+  public VariableType getType() {
+    return type;
+  }
+
+  public void setType(final VariableType type) {
+    this.type = type;
   }
 }

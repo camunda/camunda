@@ -17,9 +17,6 @@ import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Dat
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 import java.time.OffsetDateTime;
 import java.util.List;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -30,9 +27,6 @@ import lombok.Setter;
   @JsonSubTypes.Type(value = RollingFlowNodeDateFilterDataDto.class, name = ROLLING_DATE_FILTER),
   @JsonSubTypes.Type(value = RelativeFlowNodeDateFilterDataDto.class, name = RELATIVE_DATE_FILTER),
 })
-@Getter
-@Setter
-@EqualsAndHashCode(callSuper = true)
 public abstract class FlowNodeDateFilterDataDto<START> extends DateFilterDataDto<START> {
 
   protected List<String> flowNodeIds;
@@ -44,6 +38,53 @@ public abstract class FlowNodeDateFilterDataDto<START> extends DateFilterDataDto
       final OffsetDateTime end) {
     super(type, start, end);
     this.flowNodeIds = flowNodeIds;
+  }
+
+  public List<String> getFlowNodeIds() {
+    return flowNodeIds;
+  }
+
+  public void setFlowNodeIds(final List<String> flowNodeIds) {
+    this.flowNodeIds = flowNodeIds;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof FlowNodeDateFilterDataDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = super.hashCode();
+    final Object $flowNodeIds = getFlowNodeIds();
+    result = result * PRIME + ($flowNodeIds == null ? 43 : $flowNodeIds.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof FlowNodeDateFilterDataDto)) {
+      return false;
+    }
+    final FlowNodeDateFilterDataDto<?> other = (FlowNodeDateFilterDataDto<?>) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final Object this$flowNodeIds = getFlowNodeIds();
+    final Object other$flowNodeIds = other.getFlowNodeIds();
+    if (this$flowNodeIds == null
+        ? other$flowNodeIds != null
+        : !this$flowNodeIds.equals(other$flowNodeIds)) {
+      return false;
+    }
+    return true;
   }
 
   public static final class Fields {

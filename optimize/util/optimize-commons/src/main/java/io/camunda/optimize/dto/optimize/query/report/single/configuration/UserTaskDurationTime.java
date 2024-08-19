@@ -15,11 +15,7 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.U
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 
-@AllArgsConstructor
-@Getter
 public enum UserTaskDurationTime {
   IDLE(IDLE_USER_TASK_DURATION_TIME, USER_TASK_IDLE_DURATION),
   WORK(WORK_USER_TASK_DURATION_TIME, USER_TASK_WORK_DURATION),
@@ -29,6 +25,11 @@ public enum UserTaskDurationTime {
   private final String id;
   private final String durationFieldName;
 
+  private UserTaskDurationTime(final String id, final String durationFieldName) {
+    this.id = id;
+    this.durationFieldName = durationFieldName;
+  }
+
   @JsonValue
   public String getId() {
     return id;
@@ -37,5 +38,9 @@ public enum UserTaskDurationTime {
   @Override
   public String toString() {
     return getId();
+  }
+
+  public String getDurationFieldName() {
+    return durationFieldName;
   }
 }

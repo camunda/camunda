@@ -13,14 +13,11 @@ import jakarta.annotation.PostConstruct;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class IngestedImportIndexHandlerProvider {
@@ -28,7 +25,11 @@ public class IngestedImportIndexHandlerProvider {
   private final BeanFactory beanFactory;
 
   private Map<String, ImportIndexHandler<?, ?>> allHandlers;
-  @Getter private ExternalVariableUpdateImportIndexHandler externalVariableUpdateImportIndexHandler;
+  private ExternalVariableUpdateImportIndexHandler externalVariableUpdateImportIndexHandler;
+
+  public IngestedImportIndexHandlerProvider(final BeanFactory beanFactory) {
+    this.beanFactory = beanFactory;
+  }
 
   @PostConstruct
   public void init() {
@@ -44,8 +45,8 @@ public class IngestedImportIndexHandlerProvider {
     return allHandlers.values();
   }
 
-  private <R, C extends Class<R>> R getImportIndexHandlerInstance(C requiredType) {
-    R result;
+  private <R, C extends Class<R>> R getImportIndexHandlerInstance(final C requiredType) {
+    final R result;
     if (isInstantiated(requiredType)) {
       result = requiredType.cast(allHandlers.get(requiredType.getSimpleName()));
     } else {
@@ -54,7 +55,11 @@ public class IngestedImportIndexHandlerProvider {
     return result;
   }
 
-  private boolean isInstantiated(Class<?> handlerClass) {
+  private boolean isInstantiated(final Class<?> handlerClass) {
     return allHandlers.get(handlerClass.getSimpleName()) != null;
+  }
+
+  public ExternalVariableUpdateImportIndexHandler getExternalVariableUpdateImportIndexHandler() {
+    return externalVariableUpdateImportIndexHandler;
   }
 }
