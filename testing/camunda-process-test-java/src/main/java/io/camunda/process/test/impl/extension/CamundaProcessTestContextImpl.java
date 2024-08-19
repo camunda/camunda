@@ -16,21 +16,27 @@
 package io.camunda.process.test.impl.extension;
 
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.impl.client.ZeebeManagementClient;
 import io.camunda.process.test.impl.containers.ZeebeContainer;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.function.Consumer;
 
 public class CamundaProcessTestContextImpl implements CamundaProcessTestContext {
 
   private final ZeebeContainer zeebeContainer;
   private final Consumer<ZeebeClient> clientCreationCallback;
+  private final ZeebeManagementClient zeebeManagementClient;
 
   public CamundaProcessTestContextImpl(
       final ZeebeContainer zeebeContainer, final Consumer<ZeebeClient> clientCreationCallback) {
     this.zeebeContainer = zeebeContainer;
     this.clientCreationCallback = clientCreationCallback;
+
+    zeebeManagementClient = new ZeebeManagementClient(zeebeContainer.getMonitoringApiAddress());
   }
 
   @Override
@@ -62,5 +68,15 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public URI getZeebeRestAddress() {
     return zeebeContainer.getRestApiAddress();
+  }
+
+  @Override
+  public Instant getCurrentTime() {
+    return zeebeManagementClient.getCurrentTime();
+  }
+
+  @Override
+  public void increaseTime(final Duration timeToAdd) {
+    zeebeManagementClient.increaseTime(timeToAdd);
   }
 }
