@@ -84,7 +84,7 @@ if "%1"=="start" (
     echo (Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)
     echo.
     set ELASTICSEARCH_LOG_FILE=%PARENTDIR%\log\elasticsearch.log
-    start "" cmd /c "%PARENTDIR%\elasticsearch-%ELASTICSEARCH_VERSION%\bin\elasticsearch.bat -E xpack.ml.enabled=false -E xpack.security.enabled=false > "%ELASTICSEARCH_LOG_FILE%" 2>>&1
+    start /I "" cmd /c "%PARENTDIR%\elasticsearch-%ELASTICSEARCH_VERSION%\bin\elasticsearch.bat -E xpack.ml.enabled=false -E xpack.security.enabled=false > %ELASTICSEARCH_LOG_FILE% 2>>&1"
     echo %! > "%ELASTIC_PID_PATH%"
 
     REM check if a Camunda Run instance is already in operation
