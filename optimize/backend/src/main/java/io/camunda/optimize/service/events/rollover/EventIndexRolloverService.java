@@ -13,9 +13,9 @@ import static io.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_I
 
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import java.io.IOException;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -47,16 +47,20 @@ public class EventIndexRolloverService extends AbstractIndexRolloverService {
     return configurationService.getEventIndexRolloverConfiguration().getScheduleIntervalInMinutes();
   }
 
-  @SneakyThrows
   private Set<String> getCamundaActivityEventsIndexAliases() {
-    return databaseClient
-        .getAliasesForIndexPattern(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*")
-        .values()
-        .stream()
-        .flatMap(Set::stream)
-        .map(
-            alias ->
-                alias.substring(databaseClient.getIndexNameService().getIndexPrefix().length() + 1))
-        .collect(Collectors.toSet());
+    try {
+      return databaseClient
+          .getAliasesForIndexPattern(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*")
+          .values()
+          .stream()
+          .flatMap(Set::stream)
+          .map(
+              alias ->
+                  alias.substring(
+                      databaseClient.getIndexNameService().getIndexPrefix().length() + 1))
+          .collect(Collectors.toSet());
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

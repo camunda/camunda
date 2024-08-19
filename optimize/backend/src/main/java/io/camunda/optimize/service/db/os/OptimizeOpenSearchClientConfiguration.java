@@ -12,7 +12,7 @@ import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import lombok.SneakyThrows;
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -43,10 +43,16 @@ public class OptimizeOpenSearchClientConfiguration {
     return createOptimizeOpenSearchClient(backoffCalculator);
   }
 
-  @SneakyThrows
   public OptimizeOpenSearchClient createOptimizeOpenSearchClient(
       final BackoffCalculator backoffCalculator) {
-    return OptimizeOpenSearchClientFactory.create(
-        configurationService, optimizeIndexNameService, openSearchSchemaManager, backoffCalculator);
+    try {
+      return OptimizeOpenSearchClientFactory.create(
+          configurationService,
+          optimizeIndexNameService,
+          openSearchSchemaManager,
+          backoffCalculator);
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }
