@@ -402,6 +402,16 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-service</artifactId>
       <version>${project.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>io.camunda</groupId>
+          <artifactId>zeebe-scheduler</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.camunda</groupId>
+          <artifactId>zeebe-gateway-protocol-impl</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 
