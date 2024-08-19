@@ -24,7 +24,7 @@
     <commons-beanutils.version>1.9.4</commons-beanutils.version>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
     <java-jwt.version>4.4.0</java-jwt.version>
-    <junit-platform-commons.version>1.10.3</junit-platform-commons.version>
+    <junit-platform-commons.version>1.11.0</junit-platform-commons.version>
     <spring-boot-test.version>3.2.5</spring-boot-test.version>
     <wiremock-standalone.version>3.9.1</wiremock-standalone.version>
   </properties>
