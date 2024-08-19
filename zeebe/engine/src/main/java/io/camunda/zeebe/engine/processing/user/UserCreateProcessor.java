@@ -45,7 +45,6 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
 
   @Override
   public void processNewCommand(final TypedRecord<UserRecord> command) {
-    final long key = keyGenerator.nextKey();
     final var username = command.getValue().getUsernameBuffer();
     final var user = userState.getUser(username);
 
@@ -63,6 +62,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
       return;
     }
 
+    final long key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, UserIntent.CREATED, command.getValue());
     responseWriter.writeEventOnCommand(key, UserIntent.CREATED, command.getValue(), command);
 
