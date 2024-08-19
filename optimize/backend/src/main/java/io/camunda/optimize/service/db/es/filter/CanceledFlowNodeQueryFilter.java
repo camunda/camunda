@@ -17,34 +17,37 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CanceledFlowNodeFilterDataDto;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 public class CanceledFlowNodeQueryFilter implements QueryFilter<CanceledFlowNodeFilterDataDto> {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CanceledFlowNodeQueryFilter.class);
 
   @Override
   public void addFilters(
       final BoolQueryBuilder query,
       final List<CanceledFlowNodeFilterDataDto> flowNodeFilter,
       final FilterContext filterContext) {
-    List<QueryBuilder> filters = query.filter();
-    for (CanceledFlowNodeFilterDataDto executedFlowNode : flowNodeFilter) {
+    final List<QueryBuilder> filters = query.filter();
+    for (final CanceledFlowNodeFilterDataDto executedFlowNode : flowNodeFilter) {
       filters.add(createFilterQueryBuilder(executedFlowNode));
     }
   }
 
-  private QueryBuilder createFilterQueryBuilder(CanceledFlowNodeFilterDataDto flowNodeFilter) {
-    BoolQueryBuilder boolQueryBuilder = boolQuery();
+  private QueryBuilder createFilterQueryBuilder(
+      final CanceledFlowNodeFilterDataDto flowNodeFilter) {
+    final BoolQueryBuilder boolQueryBuilder = boolQuery();
     final BoolQueryBuilder isCanceledQuery =
         boolQuery()
             .must(existsQuery(nestedCanceledFieldLabel()))
             .must(termQuery(nestedCanceledFieldLabel(), true));
-    for (String value : flowNodeFilter.getValues()) {
+    for (final String value : flowNodeFilter.getValues()) {
       boolQueryBuilder.should(
           nestedQuery(
               FLOW_NODE_INSTANCES,

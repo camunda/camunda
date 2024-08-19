@@ -11,17 +11,19 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.MultipleVariableFilterDataDto;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
-@Slf4j
 @Component
 public class ProcessMultiVariableQueryFilter extends AbstractProcessVariableQueryFilter
     implements QueryFilter<MultipleVariableFilterDataDto> {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessMultiVariableQueryFilter.class);
+
+  public ProcessMultiVariableQueryFilter() {}
 
   @Override
   public void addFilters(
@@ -29,8 +31,8 @@ public class ProcessMultiVariableQueryFilter extends AbstractProcessVariableQuer
       final List<MultipleVariableFilterDataDto> multiVariableFilters,
       final FilterContext filterContext) {
     if (multiVariableFilters != null) {
-      List<QueryBuilder> filters = query.filter();
-      for (MultipleVariableFilterDataDto multiVariableFilter : multiVariableFilters) {
+      final List<QueryBuilder> filters = query.filter();
+      for (final MultipleVariableFilterDataDto multiVariableFilter : multiVariableFilters) {
         filters.add(buildMultiVariableFilterQuery(multiVariableFilter, filterContext));
       }
     }

@@ -62,16 +62,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockserver.integration.ClientAndServer;
+import org.slf4j.Logger;
 
-@Slf4j
 public class DatabaseIntegrationTestExtension implements BeforeEachCallback, AfterEachCallback {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(DatabaseIntegrationTestExtension.class);
   private final DatabaseTestService databaseTestService;
 
   public DatabaseIntegrationTestExtension() {

@@ -44,8 +44,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -62,18 +60,27 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class ReportReaderES implements ReportReader {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(ReportReaderES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
+
+  public ReportReaderES(
+      final OptimizeElasticsearchClient esClient,
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public Optional<ReportDefinitionDto> getReport(final String reportId) {
@@ -208,6 +215,11 @@ public class ReportReaderES implements ReportReader {
   }
 
   @Override
+  public List<ReportDefinitionDto> getReportsForCollectionIncludingXml(final String collectionId) {
+    return getReportsForCollection(collectionId, true);
+  }
+
+  @Override
   public List<SingleProcessReportDefinitionRequestDto> getAllSingleProcessReportsForIdsOmitXml(
       final List<String> reportIds) {
     log.debug("Fetching all available single process reports for IDs [{}]", reportIds);
@@ -220,11 +232,6 @@ public class ReportReaderES implements ReportReader {
   @Override
   public List<ReportDefinitionDto> getReportsForCollectionOmitXml(final String collectionId) {
     return getReportsForCollection(collectionId, false);
-  }
-
-  @Override
-  public List<ReportDefinitionDto> getReportsForCollectionIncludingXml(final String collectionId) {
-    return getReportsForCollection(collectionId, true);
   }
 
   @Override

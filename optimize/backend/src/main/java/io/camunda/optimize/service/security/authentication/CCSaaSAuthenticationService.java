@@ -15,17 +15,18 @@ import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import jakarta.ws.rs.NotSupportedException;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Response;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(CCSaaSCondition.class)
-@Slf4j
 public class CCSaaSAuthenticationService extends AbstractAuthenticationService {
 
   public static final String INVALID_ENDPOINT_MESSAGE =
       "Requests to this endpoint are not valid in Cloud mode";
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CCSaaSAuthenticationService.class);
 
   public CCSaaSAuthenticationService(
       final SessionService sessionService, final AuthCookieService authCookieService) {

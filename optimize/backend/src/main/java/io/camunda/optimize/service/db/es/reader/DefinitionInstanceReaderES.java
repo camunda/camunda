@@ -22,8 +22,6 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -33,17 +31,22 @@ import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class DefinitionInstanceReaderES extends DefinitionInstanceReader {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(DefinitionInstanceReaderES.class);
   private final OptimizeElasticsearchClient esClient;
+
+  public DefinitionInstanceReaderES(final OptimizeElasticsearchClient esClient) {
+    this.esClient = esClient;
+  }
 
   @Override
   public Set<String> getAllExistingDefinitionKeys(
@@ -67,11 +70,11 @@ public class DefinitionInstanceReaderES extends DefinitionInstanceReader {
     final SearchResponse response;
     try {
       response = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(
           String.format("Was not able to retrieve definition keys for instances of type %s", type),
           e);
-    } catch (ElasticsearchStatusException e) {
+    } catch (final ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(type, e)) {
         log.info(
             "Was not able to retrieve definition keys for instances because no {} instance indices exist. "

@@ -12,14 +12,16 @@ import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_SHARDS_
 import static io.camunda.optimize.service.db.os.OptimizeOpenSearchUtil.addStaticSetting;
 
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.indices.IndexSettings;
+import org.slf4j.Logger;
 
-@Slf4j
 public class MyUpdatedEventIndexOS extends MyUpdatedEventIndex<IndexSettings.Builder> {
+
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(MyUpdatedEventIndexOS.class);
+
   @Override
   public IndexSettings.Builder getStaticSettings(
-      IndexSettings.Builder contentBuilder, ConfigurationService configurationService) {
+      final IndexSettings.Builder contentBuilder, final ConfigurationService configurationService) {
     return addStaticSetting(NUMBER_OF_SHARDS_SETTING, DEFAULT_SHARD_NUMBER, contentBuilder);
   }
 }

@@ -43,8 +43,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -60,15 +58,27 @@ import org.elasticsearch.search.aggregations.bucket.composite.TermsValuesSourceB
 import org.elasticsearch.search.aggregations.metrics.Sum;
 import org.elasticsearch.search.aggregations.metrics.SumAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.slf4j.Logger;
 
-@AllArgsConstructor
-@Slf4j
 public class EventSequenceCountReaderES implements EventSequenceCountReader {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventSequenceCountReaderES.class);
   private final String indexKey;
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
+
+  public EventSequenceCountReaderES(
+      final String indexKey,
+      final OptimizeElasticsearchClient esClient,
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService) {
+    this.indexKey = indexKey;
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public List<EventSequenceCountDto> getEventSequencesWithSourceInIncomingOrTargetInOutgoing(

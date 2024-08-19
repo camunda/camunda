@@ -22,38 +22,46 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class BusinessKeyReaderES implements BusinessKeyReader {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(BusinessKeyReaderES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
 
+  public BusinessKeyReaderES(
+      final OptimizeElasticsearchClient esClient,
+      final ObjectMapper objectMapper,
+      final ConfigurationService configurationService) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.configurationService = configurationService;
+  }
+
   @Override
-  public List<BusinessKeyDto> getBusinessKeysForProcessInstanceIds(Set<String> processInstanceIds) {
+  public List<BusinessKeyDto> getBusinessKeysForProcessInstanceIds(
+      final Set<String> processInstanceIds) {
     log.debug("Fetching business keys for [{}] process instances", processInstanceIds.size());
 
     if (processInstanceIds.isEmpty()) {
       return Collections.emptyList();
     }
 
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(QueryBuilders.idsQuery().addIds(processInstanceIds.toArray(new String[0])))
             .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(DatabaseConstants.BUSINESS_KEY_INDEX_NAME)
             .source(searchSourceBuilder)
             .scroll(
@@ -62,10 +70,10 @@ public class BusinessKeyReaderES implements BusinessKeyReader {
                         .getElasticSearchConfiguration()
                         .getScrollTimeoutInSeconds()));
 
-    SearchResponse searchResponse;
+    final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Was not able to retrieve business keys!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve event business keys!", e);
     }

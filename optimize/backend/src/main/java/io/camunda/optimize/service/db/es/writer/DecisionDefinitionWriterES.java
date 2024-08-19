@@ -31,36 +31,43 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class DecisionDefinitionWriterES implements DecisionDefinitionWriter {
 
-  private final ObjectMapper objectMapper;
-  private final OptimizeElasticsearchClient esClient;
-  private final ConfigurationService configurationService;
-
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(DecisionDefinitionWriterES.class);
   private static final Script MARK_AS_DELETED_SCRIPT =
       new Script(
           ScriptType.INLINE,
           Script.DEFAULT_SCRIPT_LANG,
           "ctx._source.deleted = true",
           Collections.emptyMap());
+  private final ObjectMapper objectMapper;
+  private final OptimizeElasticsearchClient esClient;
+  private final ConfigurationService configurationService;
+
+  public DecisionDefinitionWriterES(
+      final ObjectMapper objectMapper,
+      final OptimizeElasticsearchClient esClient,
+      final ConfigurationService configurationService) {
+    this.objectMapper = objectMapper;
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public void importDecisionDefinitions(
-      List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
+      final List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
     log.debug(
         "Writing [{}] decision definitions to elasticsearch",
         decisionDefinitionOptimizeDtos.size());
@@ -78,7 +85,7 @@ public class DecisionDefinitionWriterES implements DecisionDefinitionWriter {
               .script(MARK_AS_DELETED_SCRIPT)
               .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
       esClient.update(updateRequest);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OptimizeRuntimeException(
           String.format(
               "There was a problem when trying to mark decision definition with ID %s as deleted",
@@ -132,8 +139,8 @@ public class DecisionDefinitionWriterES implements DecisionDefinitionWriter {
   }
 
   private void writeDecisionDefinitionInformation(
-      List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
-    String importItemName = "decision definition information";
+      final List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
+    final String importItemName = "decision definition information";
     log.debug("Writing [{}] {} to ES.", decisionDefinitionOptimizeDtos.size(), importItemName);
     esClient.doImportBulkRequestWithList(
         importItemName,

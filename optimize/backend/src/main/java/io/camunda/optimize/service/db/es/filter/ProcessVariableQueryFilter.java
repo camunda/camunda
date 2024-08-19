@@ -9,17 +9,19 @@ package io.camunda.optimize.service.db.es.filter;
 
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
-@Slf4j
 @Component
 public class ProcessVariableQueryFilter extends AbstractProcessVariableQueryFilter
     implements QueryFilter<VariableFilterDataDto<?>> {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessVariableQueryFilter.class);
+
+  public ProcessVariableQueryFilter() {}
 
   @Override
   public void addFilters(
@@ -27,8 +29,8 @@ public class ProcessVariableQueryFilter extends AbstractProcessVariableQueryFilt
       final List<VariableFilterDataDto<?>> variables,
       final FilterContext filterContext) {
     if (variables != null) {
-      List<QueryBuilder> filters = query.filter();
-      for (VariableFilterDataDto<?> variable : variables) {
+      final List<QueryBuilder> filters = query.filter();
+      for (final VariableFilterDataDto<?> variable : variables) {
         filters.add(createFilterQueryBuilder(variable, filterContext.getTimezone()));
       }
     }

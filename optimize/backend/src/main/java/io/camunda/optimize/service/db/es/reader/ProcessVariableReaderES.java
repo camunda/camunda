@@ -58,8 +58,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -79,25 +77,39 @@ import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class ProcessVariableReaderES implements ProcessVariableReader {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessVariableReaderES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ProcessDefinitionReader processDefinitionReader;
   private final ConfigurationService configurationService;
   private final VariableLabelReader variableLabelReader;
   private final ProcessQueryFilterEnhancer processQueryFilterEnhancer;
 
+  public ProcessVariableReaderES(
+      final OptimizeElasticsearchClient esClient,
+      final ProcessDefinitionReader processDefinitionReader,
+      final ConfigurationService configurationService,
+      final VariableLabelReader variableLabelReader,
+      final ProcessQueryFilterEnhancer processQueryFilterEnhancer) {
+    this.esClient = esClient;
+    this.processDefinitionReader = processDefinitionReader;
+    this.configurationService = configurationService;
+    this.variableLabelReader = variableLabelReader;
+    this.processQueryFilterEnhancer = processQueryFilterEnhancer;
+  }
+
   @Override
   public List<ProcessVariableNameResponseDto> getVariableNames(
       final ProcessVariableNameRequestDto variableNameRequest) {
-    Map<String, List<String>> logEntries = new HashMap<>();
+    final Map<String, List<String>> logEntries = new HashMap<>();
     variableNameRequest
         .getProcessesToQuery()
         .forEach(
@@ -120,16 +132,16 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
       return Collections.emptyList();
     }
 
-    List<String> processDefinitionKeys =
+    final List<String> processDefinitionKeys =
         validNameRequests.stream()
             .map(ProcessToQueryDto::getProcessDefinitionKey)
             .distinct()
             .toList();
 
-    Map<String, DefinitionVariableLabelsDto> definitionLabelsDtos =
+    final Map<String, DefinitionVariableLabelsDto> definitionLabelsDtos =
         variableLabelReader.getVariableLabelsByKey(processDefinitionKeys);
 
-    BoolQueryBuilder query = boolQuery().minimumShouldMatch(1);
+    final BoolQueryBuilder query = boolQuery().minimumShouldMatch(1);
     validNameRequests.forEach(
         request ->
             query.should(
@@ -156,7 +168,7 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
       final List<String> processDefinitionKeysToTarget,
       final BoolQueryBuilder baseQuery,
       final Map<String, DefinitionVariableLabelsDto> definitionLabelsDtos) {
-    List<CompositeValuesSourceBuilder<?>> variableNameAndTypeTerms = new ArrayList<>();
+    final List<CompositeValuesSourceBuilder<?>> variableNameAndTypeTerms = new ArrayList<>();
     variableNameAndTypeTerms.add(
         new TermsValuesSourceBuilder(NAME_AGGREGATION).field(getNestedVariableNameField()));
     variableNameAndTypeTerms.add(
@@ -164,7 +176,7 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
     variableNameAndTypeTerms.add(
         new TermsValuesSourceBuilder(INDEX_AGGREGATION).field(INDEX_AGGREGATION));
 
-    CompositeAggregationBuilder varNameAndTypeAgg =
+    final CompositeAggregationBuilder varNameAndTypeAgg =
         new CompositeAggregationBuilder(VAR_NAME_AND_TYPE_COMPOSITE_AGG, variableNameAndTypeTerms)
             .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit());
 
@@ -174,13 +186,14 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
             .aggregation(nested(VARIABLES, VARIABLES).subAggregation(varNameAndTypeAgg))
             .size(0);
 
-    String[] indicesToTarget =
+    final String[] indicesToTarget =
         processDefinitionKeysToTarget.stream()
             .map(InstanceIndexUtil::getProcessInstanceIndexAliasName)
             .toArray(String[]::new);
-    SearchRequest searchRequest = new SearchRequest(indicesToTarget).source(searchSourceBuilder);
+    final SearchRequest searchRequest =
+        new SearchRequest(indicesToTarget).source(searchSourceBuilder);
 
-    List<ProcessVariableNameResponseDto> variableNames = new ArrayList<>();
+    final List<ProcessVariableNameResponseDto> variableNames = new ArrayList<>();
     ElasticsearchCompositeAggregationScroller.create()
         .setEsClient(esClient)
         .setSearchRequest(searchRequest)
@@ -193,8 +206,8 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
 
   @Override
   public String extractProcessDefinitionKeyFromIndexName(final String indexName) {
-    int firstIndex = indexName.indexOf(PROCESS_INSTANCE_INDEX_NAME_SUBSECTION);
-    int lastIndex = indexName.lastIndexOf(PROCESS_INSTANCE_INDEX_NAME_SUBSECTION);
+    final int firstIndex = indexName.indexOf(PROCESS_INSTANCE_INDEX_NAME_SUBSECTION);
+    final int lastIndex = indexName.lastIndexOf(PROCESS_INSTANCE_INDEX_NAME_SUBSECTION);
     if (firstIndex != lastIndex) {
       log.warn(
           "Skipping fetching variables for process definition with index name: {}.", indexName);
@@ -250,14 +263,14 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
       final Aggregations aggregations = searchResponse.getAggregations();
 
       return extractVariableValues(aggregations, requestDto);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String reason =
           String.format(
               "Was not able to fetch values for variable [%s] with type [%s] ",
               requestDto.getName(), requestDto.getType().getId());
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (ElasticsearchStatusException e) {
+    } catch (final ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.info(
             "Was not able to fetch variable values because no instance indices exist. Returning empty list.");
@@ -288,7 +301,7 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
     String labelValue = null;
     if (processDefinitionKey != null && definitionLabelsByKey.containsKey(processDefinitionKey)) {
       final List<LabelDto> labels = definitionLabelsByKey.get(processDefinitionKey).getLabels();
-      for (LabelDto label : labels) {
+      for (final LabelDto label : labels) {
         if (label.getVariableName().equals(variableName)
             && label.getVariableType().toString().equalsIgnoreCase(variableType)) {
           labelValue = label.getVariableLabel();
@@ -302,15 +315,15 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
 
   private List<String> extractVariableValues(
       final Aggregations aggregations, final ProcessVariableValuesQueryDto requestDto) {
-    Nested variablesFromType = aggregations.get(VARIABLES);
-    Filter filteredVariables =
+    final Nested variablesFromType = aggregations.get(VARIABLES);
+    final Filter filteredVariables =
         variablesFromType.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
-    Terms valueTerms = filteredVariables.getAggregations().get(VALUE_AGGREGATION);
-    List<String> allValues = new ArrayList<>();
-    for (Terms.Bucket valueBucket : valueTerms.getBuckets()) {
+    final Terms valueTerms = filteredVariables.getAggregations().get(VALUE_AGGREGATION);
+    final List<String> allValues = new ArrayList<>();
+    for (final Terms.Bucket valueBucket : valueTerms.getBuckets()) {
       allValues.add(valueBucket.getKeyAsString());
     }
-    int lastIndex =
+    final int lastIndex =
         Math.min(allValues.size(), requestDto.getResultOffset() + requestDto.getNumResults());
     return allValues.subList(requestDto.getResultOffset(), lastIndex);
   }
@@ -348,11 +361,11 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
       final VariableType variableType,
       final String valueFilter,
       final BoolQueryBuilder filterQuery) {
-    boolean isStringVariable = VariableType.STRING.equals(variableType);
-    boolean valueFilterIsConfigured = valueFilter != null && !valueFilter.isEmpty();
+    final boolean isStringVariable = VariableType.STRING.equals(variableType);
+    final boolean valueFilterIsConfigured = valueFilter != null && !valueFilter.isEmpty();
     if (isStringVariable && valueFilterIsConfigured) {
       final String lowerCaseValue = valueFilter.toLowerCase(Locale.ENGLISH);
-      QueryBuilder filter =
+      final QueryBuilder filter =
           (lowerCaseValue.length() > MAX_GRAM)
               /*
                 using the slow wildcard query for uncommonly large filter strings (> 10 chars)

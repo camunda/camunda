@@ -27,16 +27,17 @@ import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
 @Conditional(CCSMCondition.class)
-@Slf4j
 public class CCSMAuthenticationService extends AbstractAuthenticationService {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CCSMAuthenticationService.class);
   private final ConfigurationService configurationService;
   private final CCSMTokenService ccsmTokenService;
 
@@ -65,7 +66,7 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
     try {
       tokens = ccsmTokenService.exchangeAuthCode(authCode, requestContext);
       accessToken = ccsmTokenService.verifyToken(tokens.getAccessToken());
-    } catch (NotAuthorizedException ex) {
+    } catch (final NotAuthorizedException ex) {
       return Response.status(Response.Status.FORBIDDEN)
           .entity(
               "User has no authorization to access Optimize. Please check your Identity configuration")
@@ -88,7 +89,7 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
       try {
         Optional.ofNullable(cookies.get(OPTIMIZE_REFRESH_TOKEN))
             .ifPresent(refreshCookie -> ccsmTokenService.revokeToken(refreshCookie.getValue()));
-      } catch (IdentityException exception) {
+      } catch (final IdentityException exception) {
         // We catch the exception even if the token revoke failed, so we can still delete the
         // Optimize cookies
       } finally {

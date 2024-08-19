@@ -26,16 +26,17 @@ import java.io.IOException;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 public class CombinedReportEvaluator {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(CombinedReportEvaluator.class);
   private final SingleReportEvaluator singleReportEvaluatorInjected;
   private final DatabaseClient databaseClient;
 

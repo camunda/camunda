@@ -31,25 +31,30 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import java.io.IOException;
 import java.util.Optional;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class ProcessDefinitionReaderES implements ProcessDefinitionReader {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessDefinitionReaderES.class);
   private final DefinitionReaderES definitionReader;
   private final OptimizeElasticsearchClient esClient;
+
+  public ProcessDefinitionReaderES(
+      final DefinitionReaderES definitionReader, final OptimizeElasticsearchClient esClient) {
+    this.definitionReader = definitionReader;
+    this.esClient = esClient;
+  }
 
   @Override
   public Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(final String definitionId) {
@@ -63,7 +68,7 @@ public class ProcessDefinitionReaderES implements ProcessDefinitionReader {
   @Override
   public Set<String> getAllNonOnboardedProcessDefinitionKeys() {
     final String defKeyAgg = "keyAgg";
-    SearchSourceBuilder searchSourceBuilder =
+    final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(
                 boolQuery()
@@ -73,14 +78,14 @@ public class ProcessDefinitionReaderES implements ProcessDefinitionReader {
             .aggregation(terms(defKeyAgg).field(ProcessDefinitionIndex.PROCESS_DEFINITION_KEY))
             .fetchSource(false)
             .size(MAX_RESPONSE_SIZE_LIMIT);
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         new SearchRequest(PROCESS_DEFINITION_INDEX_NAME).source(searchSourceBuilder);
 
-    SearchResponse searchResponse;
+    final SearchResponse searchResponse;
     try {
       searchResponse = esClient.search(searchRequest);
-    } catch (IOException e) {
-      String reason = "Was not able to fetch non-onboarded process definition keys.";
+    } catch (final IOException e) {
+      final String reason = "Was not able to fetch non-onboarded process definition keys.";
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }

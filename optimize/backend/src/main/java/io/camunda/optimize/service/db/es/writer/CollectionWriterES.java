@@ -38,8 +38,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.DocWriteResponse;
@@ -53,43 +51,26 @@ import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.xcontent.XContentType;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class CollectionWriterES implements CollectionWriter {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(CollectionWriterES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter formatter;
 
-  @Override
-  public void persistCollection(
-      final String id, final CollectionDefinitionDto collectionDefinitionDto) {
-    try {
-      final IndexRequest request =
-          new IndexRequest(COLLECTION_INDEX_NAME)
-              .id(id)
-              .source(objectMapper.writeValueAsString(collectionDefinitionDto), XContentType.JSON)
-              .setRefreshPolicy(IMMEDIATE);
-
-      final IndexResponse indexResponse = esClient.index(request);
-
-      if (!indexResponse.getResult().equals(DocWriteResponse.Result.CREATED)) {
-        final String message = "Could not write collection to Elasticsearch. ";
-        log.error(message);
-        throw new OptimizeRuntimeException(message);
-      }
-    } catch (final IOException e) {
-      final String errorMessage = "Could not create collection.";
-      log.error(errorMessage, e);
-      throw new OptimizeRuntimeException(errorMessage, e);
-    }
-
-    log.debug("Collection with id [{}] has successfully been created.", id);
+  public CollectionWriterES(
+      final OptimizeElasticsearchClient esClient,
+      final ObjectMapper objectMapper,
+      final DateTimeFormatter formatter) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.formatter = formatter;
   }
 
   @Override
@@ -221,64 +202,6 @@ public class CollectionWriterES implements CollectionWriter {
   }
 
   @Override
-  public void removeScopeEntry(
-      final String collectionId, final String scopeEntryId, final String userId)
-      throws NotFoundException {
-    try {
-      final Map<String, Object> params = new HashMap<>();
-      params.put("id", scopeEntryId);
-      params.put("lastModifier", userId);
-      params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
-
-      final Script updateEntityScript =
-          ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-              REMOVE_SCOPE_ENTRY_SCRIPT_CODE, params);
-
-      final UpdateResponse updateResponse =
-          executeUpdateRequest(
-              collectionId, updateEntityScript, "Was not able to update collection with id [%s].");
-
-      if (updateResponse.getResult().equals(DocWriteResponse.Result.NOOP)) {
-        final String message =
-            String.format("Scope entry for id [%s] doesn't exist.", scopeEntryId);
-        log.warn(message);
-        throw new NotFoundException(message);
-      }
-
-    } catch (final IOException e) {
-      final String errorMessage =
-          String.format("Was not able to update collection with id [%s].", collectionId);
-      log.error(errorMessage, e);
-      throw new OptimizeRuntimeException(errorMessage, e);
-    }
-  }
-
-  @Override
-  public void removeScopeEntries(
-      final String collectionId, final List<String> scopeEntryIds, final String userId)
-      throws NotFoundException {
-    final Map<String, Object> params = new HashMap<>();
-    params.put("ids", scopeEntryIds);
-    params.put("lastModifier", userId);
-    params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
-
-    final Script updateEntityScript =
-        ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-            REMOVE_SCOPE_ENTRIES_SCRIPT_CODE, params);
-    try {
-      executeUpdateRequest(
-          collectionId, updateEntityScript, "Was not able to update collection with id [%s].");
-    } catch (final IOException e) {
-      final String errorMessage =
-          String.format(
-              "The scope with ids %s could not be removed from the collection %s.",
-              scopeEntryIds, collectionId);
-      log.error(errorMessage, e);
-      throw new OptimizeRuntimeException(errorMessage, e);
-    }
-  }
-
-  @Override
   public void updateScopeEntity(
       final String collectionId,
       final CollectionScopeEntryUpdateDto scopeEntry,
@@ -314,25 +237,62 @@ public class CollectionWriterES implements CollectionWriter {
     }
   }
 
-  private UpdateResponse executeUpdateRequest(
-      final String collectionId, final Script updateEntityScript, final String errorMessage)
-      throws IOException {
-    final UpdateRequest request =
-        new UpdateRequest()
-            .index(COLLECTION_INDEX_NAME)
-            .id(collectionId)
-            .script(updateEntityScript)
-            .setRefreshPolicy(IMMEDIATE)
-            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+  @Override
+  public void removeScopeEntries(
+      final String collectionId, final List<String> scopeEntryIds, final String userId)
+      throws NotFoundException {
+    final Map<String, Object> params = new HashMap<>();
+    params.put("ids", scopeEntryIds);
+    params.put("lastModifier", userId);
+    params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
 
-    final UpdateResponse updateResponse = esClient.update(request);
-
-    if (updateResponse.getShardInfo().getFailed() > 0) {
-      final String message = String.format(errorMessage, collectionId);
-      log.error(message, collectionId);
-      throw new OptimizeRuntimeException(message);
+    final Script updateEntityScript =
+        ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+            REMOVE_SCOPE_ENTRIES_SCRIPT_CODE, params);
+    try {
+      executeUpdateRequest(
+          collectionId, updateEntityScript, "Was not able to update collection with id [%s].");
+    } catch (final IOException e) {
+      final String errorMessage =
+          String.format(
+              "The scope with ids %s could not be removed from the collection %s.",
+              scopeEntryIds, collectionId);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
     }
-    return updateResponse;
+  }
+
+  @Override
+  public void removeScopeEntry(
+      final String collectionId, final String scopeEntryId, final String userId)
+      throws NotFoundException {
+    try {
+      final Map<String, Object> params = new HashMap<>();
+      params.put("id", scopeEntryId);
+      params.put("lastModifier", userId);
+      params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
+
+      final Script updateEntityScript =
+          ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
+              REMOVE_SCOPE_ENTRY_SCRIPT_CODE, params);
+
+      final UpdateResponse updateResponse =
+          executeUpdateRequest(
+              collectionId, updateEntityScript, "Was not able to update collection with id [%s].");
+
+      if (updateResponse.getResult().equals(DocWriteResponse.Result.NOOP)) {
+        final String message =
+            String.format("Scope entry for id [%s] doesn't exist.", scopeEntryId);
+        log.warn(message);
+        throw new NotFoundException(message);
+      }
+
+    } catch (final IOException e) {
+      final String errorMessage =
+          String.format("Was not able to update collection with id [%s].", collectionId);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
   }
 
   @Override
@@ -427,6 +387,12 @@ public class CollectionWriterES implements CollectionWriter {
   }
 
   @Override
+  public void removeRoleFromCollection(final String collectionId, final String roleEntryId) {
+    final Map<String, Object> params = constructParamsForRoleUpdateScript(roleEntryId, null);
+    removeRoleFromCollection(collectionId, roleEntryId, params);
+  }
+
+  @Override
   public void removeRoleFromCollectionUnlessIsLastManager(
       final String collectionId, final String roleEntryId, final String userId)
       throws OptimizeConflictException {
@@ -435,9 +401,50 @@ public class CollectionWriterES implements CollectionWriter {
   }
 
   @Override
-  public void removeRoleFromCollection(final String collectionId, final String roleEntryId) {
-    final Map<String, Object> params = constructParamsForRoleUpdateScript(roleEntryId, null);
-    removeRoleFromCollection(collectionId, roleEntryId, params);
+  public void persistCollection(
+      final String id, final CollectionDefinitionDto collectionDefinitionDto) {
+    try {
+      final IndexRequest request =
+          new IndexRequest(COLLECTION_INDEX_NAME)
+              .id(id)
+              .source(objectMapper.writeValueAsString(collectionDefinitionDto), XContentType.JSON)
+              .setRefreshPolicy(IMMEDIATE);
+
+      final IndexResponse indexResponse = esClient.index(request);
+
+      if (!indexResponse.getResult().equals(DocWriteResponse.Result.CREATED)) {
+        final String message = "Could not write collection to Elasticsearch. ";
+        log.error(message);
+        throw new OptimizeRuntimeException(message);
+      }
+    } catch (final IOException e) {
+      final String errorMessage = "Could not create collection.";
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+
+    log.debug("Collection with id [{}] has successfully been created.", id);
+  }
+
+  private UpdateResponse executeUpdateRequest(
+      final String collectionId, final Script updateEntityScript, final String errorMessage)
+      throws IOException {
+    final UpdateRequest request =
+        new UpdateRequest()
+            .index(COLLECTION_INDEX_NAME)
+            .id(collectionId)
+            .script(updateEntityScript)
+            .setRefreshPolicy(IMMEDIATE)
+            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+
+    final UpdateResponse updateResponse = esClient.update(request);
+
+    if (updateResponse.getShardInfo().getFailed() > 0) {
+      final String message = String.format(errorMessage, collectionId);
+      log.error(message, collectionId);
+      throw new OptimizeRuntimeException(message);
+    }
+    return updateResponse;
   }
 
   private void removeRoleFromCollection(

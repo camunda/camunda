@@ -28,8 +28,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.repositories.get.GetRepositoriesRequest;
@@ -37,17 +35,23 @@ import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsResponse;
 import org.elasticsearch.snapshots.SnapshotInfo;
 import org.elasticsearch.transport.TransportException;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class BackupReaderES implements BackupReader {
 
+  private static final Logger log = org.slf4j.LoggerFactory.getLogger(BackupReaderES.class);
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
+
+  public BackupReaderES(
+      final OptimizeElasticsearchClient esClient, final ConfigurationService configurationService) {
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+  }
 
   @Override
   public void validateRepositoryExistsOrFail() {
@@ -62,7 +66,7 @@ public class BackupReaderES implements BackupReader {
           new GetRepositoriesRequest().repositories(new String[] {repositoryName});
       try {
         esClient.verifyRepositoryExists(getRepositoriesRequest);
-      } catch (ElasticsearchStatusException e) {
+      } catch (final ElasticsearchStatusException e) {
         if (e.getDetailedMessage().contains(REPOSITORY_MISSING_EXCEPTION_TYPE)) {
           final String reason =
               String.format("No repository with name [%s] could be found.", repositoryName);
@@ -76,7 +80,7 @@ public class BackupReaderES implements BackupReader {
           log.error(reason, e);
           throw new OptimizeRuntimeException(reason, e);
         }
-      } catch (IOException | TransportException e) {
+      } catch (final IOException | TransportException e) {
         final String reason =
             String.format(
                 "Encountered an error connecting to Elasticsearch while retrieving repository with name [%s].",
@@ -126,10 +130,10 @@ public class BackupReaderES implements BackupReader {
   private List<SnapshotInfo> getOptimizeSnapshots(final String[] snapshots) {
     final GetSnapshotsRequest snapshotsStatusRequest =
         new GetSnapshotsRequest().repository(getRepositoryName()).snapshots(snapshots);
-    GetSnapshotsResponse response;
+    final GetSnapshotsResponse response;
     try {
       response = esClient.getSnapshots(snapshotsStatusRequest);
-    } catch (ElasticsearchStatusException e) {
+    } catch (final ElasticsearchStatusException e) {
       if (e.getDetailedMessage().contains(SNAPSHOT_MISSING_EXCEPTION_TYPE)) {
         // no snapshot with given backupID exists
         return Collections.emptyList();
@@ -140,7 +144,7 @@ public class BackupReaderES implements BackupReader {
               String.join(", ", snapshots));
       log.error(reason);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (IOException | TransportException e) {
+    } catch (final IOException | TransportException e) {
       final String reason =
           String.format(
               "Encountered an error connecting to Elasticsearch while retrieving snapshots with names [%s].",

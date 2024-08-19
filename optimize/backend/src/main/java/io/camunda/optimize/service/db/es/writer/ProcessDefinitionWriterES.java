@@ -31,16 +31,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
     implements ProcessDefinitionWriter {
@@ -58,6 +57,8 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
           Script.DEFAULT_SCRIPT_LANG,
           "ctx._source.onboarded = true",
           Collections.emptyMap());
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ProcessDefinitionWriterES.class);
 
   private final ConfigurationService configurationService;
 
@@ -70,7 +71,7 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
   }
 
   @Override
-  public void importProcessDefinitions(List<ProcessDefinitionOptimizeDto> procDefs) {
+  public void importProcessDefinitions(final List<ProcessDefinitionOptimizeDto> procDefs) {
     log.debug("Writing [{}] process definitions to elasticsearch", procDefs.size());
     writeProcessDefinitionInformation(procDefs);
   }
@@ -86,7 +87,7 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
               .script(MARK_AS_DELETED_SCRIPT)
               .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
       esClient.update(updateRequest);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OptimizeRuntimeException(
           String.format(
               "There was a problem when trying to mark process definition with ID %s as deleted",
@@ -156,8 +157,9 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
         FIELDS_TO_UPDATE, processDefinitionDto, objectMapper);
   }
 
-  private void writeProcessDefinitionInformation(List<ProcessDefinitionOptimizeDto> procDefs) {
-    String importItemName = "process definition information";
+  private void writeProcessDefinitionInformation(
+      final List<ProcessDefinitionOptimizeDto> procDefs) {
+    final String importItemName = "process definition information";
     log.debug("Writing [{}] {} to ES.", procDefs.size(), importItemName);
 
     esClient.doImportBulkRequestWithList(

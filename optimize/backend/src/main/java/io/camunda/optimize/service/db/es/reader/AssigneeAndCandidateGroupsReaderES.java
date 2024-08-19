@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -37,16 +35,34 @@ import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregati
 import org.elasticsearch.search.aggregations.bucket.composite.TermsValuesSourceBuilder;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class AssigneeAndCandidateGroupsReaderES implements AssigneeAndCandidateGroupsReader {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AssigneeAndCandidateGroupsReaderES.class);
   private final OptimizeElasticsearchClient esClient;
+
+  public AssigneeAndCandidateGroupsReaderES(final OptimizeElasticsearchClient esClient) {
+    this.esClient = esClient;
+  }
+
+  @Override
+  public void consumeUserTaskFieldTermsInBatches(
+      final String indexName,
+      final String termField,
+      final String termValue,
+      final String userTaskFieldName,
+      final Consumer<List<String>> termBatchConsumer,
+      final int batchSize) {
+    final TermQueryBuilder filterQuery = termQuery(termField, termValue);
+    consumeUserTaskFieldTermsInBatches(
+        indexName, filterQuery, userTaskFieldName, termBatchConsumer, batchSize);
+  }
 
   @Override
   public Set<String> getUserTaskFieldTerms(
@@ -62,19 +78,6 @@ public class AssigneeAndCandidateGroupsReaderES implements AssigneeAndCandidateG
       consumeUserTaskFieldTermsInBatches(definitionQuery, userTaskFieldName, result::addAll);
     }
     return result;
-  }
-
-  @Override
-  public void consumeUserTaskFieldTermsInBatches(
-      final String indexName,
-      final String termField,
-      final String termValue,
-      final String userTaskFieldName,
-      final Consumer<List<String>> termBatchConsumer,
-      final int batchSize) {
-    final TermQueryBuilder filterQuery = termQuery(termField, termValue);
-    consumeUserTaskFieldTermsInBatches(
-        indexName, filterQuery, userTaskFieldName, termBatchConsumer, batchSize);
   }
 
   private void consumeUserTaskFieldTermsInBatches(

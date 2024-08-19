@@ -17,13 +17,16 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import java.time.ZoneId;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.slf4j.Logger;
 
-@Slf4j
 public abstract class AbstractVariableQueryFilter {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(AbstractVariableQueryFilter.class);
+
   protected void validateMultipleValuesFilterDataDto(
       final OperatorMultipleValuesVariableFilterDataDto dto) {
     if (CollectionUtils.isEmpty(dto.getData().getValues())) {
@@ -74,7 +77,7 @@ public abstract class AbstractVariableQueryFilter {
     }
   }
 
-  protected Object retrieveValue(OperatorMultipleValuesVariableFilterDataDto dto) {
+  protected Object retrieveValue(final OperatorMultipleValuesVariableFilterDataDto dto) {
     final String value = dto.getData().getValues().get(0);
     try {
       if (value != null) {

@@ -17,8 +17,6 @@ import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCon
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -26,16 +24,26 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.xcontent.XContentType;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 
-@AllArgsConstructor
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class EventSequenceCountWriterES implements EventSequenceCountWriter {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventSequenceCountWriterES.class);
   private final String indexKey;
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+
+  public EventSequenceCountWriterES(
+      final String indexKey,
+      final OptimizeElasticsearchClient esClient,
+      final ObjectMapper objectMapper) {
+    this.indexKey = indexKey;
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public void updateEventSequenceCountsWithAdjustments(
@@ -46,7 +54,7 @@ public class EventSequenceCountWriterES implements EventSequenceCountWriter {
     eventSequenceCountDtos.forEach(EventSequenceCountDto::generateIdForEventSequenceCountDto);
 
     final BulkRequest bulkRequest = new BulkRequest();
-    for (EventSequenceCountDto eventSequenceCountDto : eventSequenceCountDtos) {
+    for (final EventSequenceCountDto eventSequenceCountDto : eventSequenceCountDtos) {
       bulkRequest.add(createEventSequenceCountUpsertRequest(eventSequenceCountDto));
     }
 
@@ -60,7 +68,7 @@ public class EventSequenceCountWriterES implements EventSequenceCountWriter {
                   bulkResponse.buildFailureMessage());
           throw new OptimizeRuntimeException(errorMessage);
         }
-      } catch (IOException e) {
+      } catch (final IOException e) {
         final String errorMessage = "There were errors while writing event sequence counts.";
         log.error(errorMessage, e);
         throw new OptimizeRuntimeException(errorMessage, e);
@@ -76,12 +84,12 @@ public class EventSequenceCountWriterES implements EventSequenceCountWriter {
           new IndexRequest(getIndexName(indexKey))
               .id(eventSequenceCountDto.getId())
               .source(objectMapper.writeValueAsString(eventSequenceCountDto), XContentType.JSON);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       final String errorMessage =
           "There were errors while json processing of creating of the event sequence counts.";
       log.error(errorMessage, e);
     }
-    UpdateRequest updateRequest;
+    final UpdateRequest updateRequest;
     updateRequest =
         new UpdateRequest()
             .index(getIndexName(indexKey))

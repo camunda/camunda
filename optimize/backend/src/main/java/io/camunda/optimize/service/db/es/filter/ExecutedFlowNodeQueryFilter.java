@@ -16,35 +16,38 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 /**
  * The executed flow node catches any flow nodes that are completed or still running, including
  * those that are marked as canceled
  */
-@Slf4j
 @Component
 public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNodeFilterDataDto> {
+
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ExecutedFlowNodeQueryFilter.class);
 
   @Override
   public void addFilters(
       final BoolQueryBuilder query,
       final List<ExecutedFlowNodeFilterDataDto> flowNodeFilter,
       final FilterContext filterContext) {
-    List<QueryBuilder> filters = query.filter();
-    for (ExecutedFlowNodeFilterDataDto executedFlowNode : flowNodeFilter) {
+    final List<QueryBuilder> filters = query.filter();
+    for (final ExecutedFlowNodeFilterDataDto executedFlowNode : flowNodeFilter) {
       filters.add(createFilterQueryBuilder(executedFlowNode));
     }
   }
 
-  private QueryBuilder createFilterQueryBuilder(ExecutedFlowNodeFilterDataDto flowNodeFilter) {
-    BoolQueryBuilder boolQueryBuilder = boolQuery();
+  private QueryBuilder createFilterQueryBuilder(
+      final ExecutedFlowNodeFilterDataDto flowNodeFilter) {
+    final BoolQueryBuilder boolQueryBuilder = boolQuery();
     if (MembershipFilterOperator.IN == flowNodeFilter.getOperator()) {
-      for (String value : flowNodeFilter.getValues()) {
+      for (final String value : flowNodeFilter.getValues()) {
         boolQueryBuilder.should(
             nestedQuery(
                 FLOW_NODE_INSTANCES,
@@ -52,7 +55,7 @@ public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNode
                 ScoreMode.None));
       }
     } else if (MembershipFilterOperator.NOT_IN == flowNodeFilter.getOperator()) {
-      for (String value : flowNodeFilter.getValues()) {
+      for (final String value : flowNodeFilter.getValues()) {
         boolQueryBuilder.mustNot(
             nestedQuery(
                 FLOW_NODE_INSTANCES,

@@ -22,30 +22,38 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.xcontent.XContentType;
+import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 
-@AllArgsConstructor
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class EventTraceStateWriterES implements EventTraceStateWriter {
 
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(EventTraceStateWriterES.class);
   private final String indexKey;
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+
+  public EventTraceStateWriterES(
+      final String indexKey,
+      final OptimizeElasticsearchClient esClient,
+      final ObjectMapper objectMapper) {
+    this.indexKey = indexKey;
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public void upsertEventTraceStates(final List<EventTraceStateDto> eventTraceStateDtos) {
     log.debug("Writing [{}] event trace states to elasticsearch", eventTraceStateDtos.size());
 
     final BulkRequest bulkRequest = new BulkRequest();
-    for (EventTraceStateDto eventTraceStateDto : eventTraceStateDtos) {
+    for (final EventTraceStateDto eventTraceStateDto : eventTraceStateDtos) {
       bulkRequest.add(createEventTraceStateUpsertRequest(eventTraceStateDto));
     }
 
@@ -59,7 +67,7 @@ public class EventTraceStateWriterES implements EventTraceStateWriter {
                   bulkResponse.buildFailureMessage());
           throw new OptimizeRuntimeException(errorMessage);
         }
-      } catch (IOException e) {
+      } catch (final IOException e) {
         final String errorMessage = "There were errors while writing event trace states.";
         log.error(errorMessage, e);
         throw new OptimizeRuntimeException(errorMessage, e);
@@ -76,7 +84,7 @@ public class EventTraceStateWriterES implements EventTraceStateWriter {
           .script(createUpdateScript(eventTraceStateDto))
           .upsert(objectMapper.writeValueAsString(eventTraceStateDto), XContentType.JSON)
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-    } catch (JsonProcessingException ex) {
+    } catch (final JsonProcessingException ex) {
       final String errorMessage =
           String.format(
               "There was a problem creating an upsert for the event trace state with id [%s].",
