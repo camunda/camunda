@@ -85,7 +85,6 @@ jest.mock('./service', () => ({
       owner: 'user_id',
       lastModifier: 'user_id',
       reportType: 'process', // or "decision"
-      combined: false,
       entityType: 'report',
       data: {
         subEntityCounts: {},

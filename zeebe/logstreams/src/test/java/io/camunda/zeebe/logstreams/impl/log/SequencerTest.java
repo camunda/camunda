@@ -19,6 +19,7 @@ import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import io.camunda.zeebe.logstreams.util.TestEntry;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.LockSupport;
@@ -44,6 +45,7 @@ final class SequencerTest {
             logStorage,
             initialPosition,
             16,
+            InstantSource.system(),
             new SequencerMetrics(1),
             new FlowControl(logStreamMetrics));
 
@@ -65,6 +67,7 @@ final class SequencerTest {
             logStorage,
             initialPosition,
             16,
+            InstantSource.system(),
             new SequencerMetrics(1),
             new FlowControl(logStreamMetrics));
     final var entries =
@@ -86,7 +89,12 @@ final class SequencerTest {
     final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
         new Sequencer(
-            logStorage, 1, 16, new SequencerMetrics(1), new FlowControl(logStreamMetrics));
+            logStorage,
+            1,
+            16,
+            InstantSource.system(),
+            new SequencerMetrics(1),
+            new FlowControl(logStreamMetrics));
     final var entry = TestEntry.ofDefaults();
 
     // when
@@ -103,7 +111,12 @@ final class SequencerTest {
     final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
         new Sequencer(
-            logStorage, 1, 16, new SequencerMetrics(1), new FlowControl(logStreamMetrics));
+            logStorage,
+            1,
+            16,
+            InstantSource.system(),
+            new SequencerMetrics(1),
+            new FlowControl(logStreamMetrics));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
 
@@ -121,7 +134,12 @@ final class SequencerTest {
     final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
         new Sequencer(
-            logStorage, 1, 16, new SequencerMetrics(1), new FlowControl(logStreamMetrics));
+            logStorage,
+            1,
+            16,
+            InstantSource.system(),
+            new SequencerMetrics(1),
+            new FlowControl(logStreamMetrics));
     final var entry = TestEntry.ofDefaults();
     final var testFailures = new ConcurrentLinkedQueue<Throwable>();
 
@@ -143,7 +161,12 @@ final class SequencerTest {
     final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
         new Sequencer(
-            logStorage, 1, 16, new SequencerMetrics(1), new FlowControl(logStreamMetrics));
+            logStorage,
+            1,
+            16,
+            InstantSource.system(),
+            new SequencerMetrics(1),
+            new FlowControl(logStreamMetrics));
     final var entry = TestEntry.ofDefaults();
     final var testFailures = new ConcurrentLinkedQueue<Throwable>();
 
@@ -170,7 +193,12 @@ final class SequencerTest {
     final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
         new Sequencer(
-            logStorage, 1, 16, new SequencerMetrics(1), new FlowControl(logStreamMetrics));
+            logStorage,
+            1,
+            16,
+            InstantSource.system(),
+            new SequencerMetrics(1),
+            new FlowControl(logStreamMetrics));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
     final var testFailures = new ConcurrentLinkedQueue<Throwable>();
@@ -192,7 +220,12 @@ final class SequencerTest {
     final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
         new Sequencer(
-            logStorage, 1, 16, new SequencerMetrics(1), new FlowControl(logStreamMetrics));
+            logStorage,
+            1,
+            16,
+            InstantSource.system(),
+            new SequencerMetrics(1),
+            new FlowControl(logStreamMetrics));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
     final var testFailures = new ConcurrentLinkedQueue<Throwable>();

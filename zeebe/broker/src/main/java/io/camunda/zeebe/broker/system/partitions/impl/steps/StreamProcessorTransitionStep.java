@@ -184,6 +184,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .streamProcessorMode(streamProcessorMode)
         .partitionCommandSender(context.getPartitionCommandSender())
         .scheduledCommandCache(scheduledCommandCache)
+        .clock(context.getStreamClock())
         .build();
   }
 }

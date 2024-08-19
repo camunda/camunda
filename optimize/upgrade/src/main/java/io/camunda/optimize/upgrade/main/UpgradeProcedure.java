@@ -9,6 +9,7 @@ package io.camunda.optimize.upgrade.main;
 
 import static io.camunda.optimize.upgrade.steps.UpgradeStepType.REINDEX;
 import static io.camunda.optimize.upgrade.steps.UpgradeStepType.SCHEMA_DELETE_INDEX;
+import static io.camunda.optimize.upgrade.steps.UpgradeStepType.SCHEMA_DELETE_TEMPLATE;
 
 import com.vdurmont.semver4j.Semver;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -20,6 +21,7 @@ import io.camunda.optimize.upgrade.service.UpgradeStepLogService;
 import io.camunda.optimize.upgrade.service.UpgradeValidationService;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
+import io.camunda.optimize.upgrade.steps.schema.DeleteIndexTemplateIfExistsStep;
 import io.camunda.optimize.upgrade.steps.schema.ReindexStep;
 import java.time.Instant;
 import java.util.List;
@@ -149,6 +151,8 @@ public class UpgradeProcedure {
               .getOptimizeIndexNameWithVersion(reindexStep.getTargetIndex()));
     } else if (SCHEMA_DELETE_INDEX.equals(step.getType())) {
       return ((DeleteIndexIfExistsStep) step).getVersionedIndexName();
+    } else if (SCHEMA_DELETE_TEMPLATE.equals(step.getType())) {
+      return ((DeleteIndexTemplateIfExistsStep) step).getVersionedTemplateNameWithTemplateSuffix();
     } else {
       return esClient.getIndexNameService().getOptimizeIndexNameWithVersion(step.getIndex());
     }

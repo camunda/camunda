@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
@@ -43,6 +44,7 @@ public final class CallActivityProcessor
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
+  private final BpmnJobBehavior jobBehavior;
 
   public CallActivityProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -54,6 +56,7 @@ public final class CallActivityProcessor
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
+    jobBehavior = bpmnBehaviors.jobBehavior();
   }
 
   @Override
@@ -126,6 +129,10 @@ public final class CallActivityProcessor
 
   @Override
   public void onTerminate(final ExecutableCallActivity element, final BpmnElementContext context) {
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(context);
+    }
+
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
     stateTransitionBehavior.terminateChildProcessInstance(this, element, context);

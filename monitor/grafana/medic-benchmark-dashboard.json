@@ -755,7 +755,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
+        "h": 8,
         "w": 8,
         "x": 0,
         "y": 18
@@ -787,7 +787,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark.*\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -882,7 +882,7 @@
           "refId": "B"
         }
       ],
-      "title": "p90 Latency",
+      "title": "Normal Benchmark p90",
       "type": "stat"
     },
     {
@@ -970,7 +970,183 @@
           "refId": "B"
         }
       ],
-      "title": "p99 Latency",
+      "title": "Normal benchmark p99",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "90th percentile process instance execution latency",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "red",
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "color": "red",
+                  "text": "0"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.4
+              },
+              {
+                "color": "red",
+                "value": 0.6
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 8,
+        "y": 22
+      },
+      "id": 305,
+      "links": [],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "titleSize": 10
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.1.5",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark-latency\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "{{namespace}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Latency Benchmark p90",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "99th percentile process instance execution latency",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "red",
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "color": "red",
+                  "text": "0"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.6
+              },
+              {
+                "color": "red",
+                "value": 0.8
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 22
+      },
+      "id": 306,
+      "links": [],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "titleSize": 10
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.1.5",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark-latency\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "{{namespace}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Latency benchmark p99 Latency",
       "type": "stat"
     },
     {
@@ -995,7 +1171,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 22
+        "y": 26
       },
       "hiddenSeries": false,
       "id": 288,
@@ -1097,7 +1273,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 30
+        "y": 34
       },
       "id": 284,
       "panels": [],
@@ -1301,7 +1477,7 @@
         "h": 10,
         "w": 11,
         "x": 0,
-        "y": 31
+        "y": 35
       },
       "id": 243,
       "options": {
@@ -1460,7 +1636,7 @@
         "h": 5,
         "w": 13,
         "x": 11,
-        "y": 31
+        "y": 35
       },
       "id": 272,
       "options": {
@@ -1571,7 +1747,7 @@
         "h": 5,
         "w": 13,
         "x": 11,
-        "y": 36
+        "y": 40
       },
       "hiddenSeries": false,
       "id": 39,
@@ -1707,7 +1883,7 @@
         "h": 4,
         "w": 13,
         "x": 11,
-        "y": 41
+        "y": 45
       },
       "id": 295,
       "options": {
@@ -1802,7 +1978,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 45
+        "y": 49
       },
       "id": 290,
       "panels": [],
@@ -1837,8 +2013,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
-                "value": null
+                "color": "red"
               },
               {
                 "color": "green",
@@ -1854,7 +2029,7 @@
         "h": 4,
         "w": 8,
         "x": 0,
-        "y": 46
+        "y": 50
       },
       "id": 291,
       "links": [],
@@ -1921,8 +2096,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
-                "value": null
+                "color": "red"
               },
               {
                 "color": "green",
@@ -1938,7 +2112,7 @@
         "h": 4,
         "w": 8,
         "x": 8,
-        "y": 46
+        "y": 50
       },
       "id": 292,
       "links": [],
@@ -2005,8 +2179,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
-                "value": null
+                "color": "red"
               }
             ]
           },
@@ -2018,7 +2191,7 @@
         "h": 4,
         "w": 8,
         "x": 16,
-        "y": 46
+        "y": 50
       },
       "id": 293,
       "links": [],
@@ -2085,8 +2258,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "yellow",
@@ -2106,7 +2278,7 @@
         "h": 4,
         "w": 8,
         "x": 0,
-        "y": 50
+        "y": 54
       },
       "id": 301,
       "links": [],
@@ -2173,8 +2345,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "yellow",
@@ -2194,7 +2365,7 @@
         "h": 4,
         "w": 8,
         "x": 8,
-        "y": 50
+        "y": 54
       },
       "id": 302,
       "links": [],
@@ -2261,8 +2432,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "yellow",
@@ -2282,7 +2452,7 @@
         "h": 4,
         "w": 8,
         "x": 16,
-        "y": 50
+        "y": 54
       },
       "id": 303,
       "links": [],
@@ -2345,8 +2515,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               }
             ]
           }
@@ -2399,8 +2568,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green",
-                      "value": null
+                      "color": "green"
                     },
                     {
                       "color": "red",
@@ -2460,8 +2628,7 @@
                   "mode": "absolute",
                   "steps": [
                     {
-                      "color": "green",
-                      "value": null
+                      "color": "green"
                     },
                     {
                       "color": "semi-dark-orange",
@@ -2506,7 +2673,7 @@
         "h": 9,
         "w": 11,
         "x": 0,
-        "y": 54
+        "y": 58
       },
       "id": 294,
       "options": {
@@ -2634,7 +2801,7 @@
         "h": 5,
         "w": 13,
         "x": 11,
-        "y": 54
+        "y": 58
       },
       "hiddenSeries": false,
       "id": 296,
@@ -2880,6 +3047,6 @@
   "timezone": "",
   "title": "Zeebe Medic Benchmarks",
   "uid": "zeebe-medic-benchmark",
-  "version": 4,
+  "version": 5,
   "weekStart": ""
 }

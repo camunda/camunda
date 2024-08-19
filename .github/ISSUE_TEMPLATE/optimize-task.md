@@ -5,7 +5,8 @@ about: Describe a task for the technical issue - it may be individual issue or b
 title: ""
 labels: ["kind/task", "component/optimize"]
 assignees: ""
--------------
+
+---
 
 ### Context
 
@@ -63,6 +64,6 @@ commands by writing `/help` as a comment on this issue.
 ### Completion
 
 - [ ] All Review stages are successfully completed
-- [ ] All associated PRs are merged to the main branch(es) and maintenance branches
+- [ ] All associated PRs are merged to the main branch(es) and stable branches
 - [ ] The correct version labels are applied to the issue
 

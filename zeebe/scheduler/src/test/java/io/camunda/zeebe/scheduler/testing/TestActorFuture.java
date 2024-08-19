@@ -12,6 +12,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -108,13 +109,34 @@ public final class TestActorFuture<V> implements ActorFuture<V> {
   }
 
   @Override
-  public ActorFuture<V> andThen(final Supplier<ActorFuture<V>> next, final Executor executor) {
+  public <U> ActorFuture<U> andThen(final Supplier<ActorFuture<U>> next, final Executor executor) {
     throw new UnsupportedOperationException("Not yet implemented");
   }
 
   @Override
-  public ActorFuture<V> andThen(final Function<V, ActorFuture<V>> next, final Executor executor) {
+  public <U> ActorFuture<U> andThen(
+      final Function<V, ActorFuture<U>> next, final Executor executor) {
     throw new UnsupportedOperationException("Not yet implemented");
+  }
+
+  @Override
+  public <U> ActorFuture<U> thenApply(final Function<V, U> next, final Executor executor) {
+    final ActorFuture<U> nextFuture = new TestActorFuture<>();
+    onComplete(
+        (value, error) -> {
+          if (error != null) {
+            nextFuture.completeExceptionally(error);
+            return;
+          }
+
+          try {
+            nextFuture.complete(next.apply(value));
+          } catch (final Exception e) {
+            nextFuture.completeExceptionally(new CompletionException(e));
+          }
+        },
+        executor);
+    return nextFuture;
   }
 
   private void triggerOnCompleteListeners() {

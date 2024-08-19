@@ -28,7 +28,6 @@ jest.mock('services', () => {
 });
 
 const report = {
-  combined: false,
   reportType: 'process',
   data: {
     processDefinitionKey: 'aKey',
@@ -60,7 +59,6 @@ it('should provide an errorMessage property to the component', () => {
 });
 
 const exampleDurationReport = {
-  combined: false,
   reportType: 'process',
   data: {
     processDefinitionKey: 'aKey',

@@ -28,7 +28,7 @@
     <!-- database config -->
     <elasticsearch.version>7.17.23</elasticsearch.version>
     <opensearch.version>2.10.1</opensearch.version>
-    <awssdk.version>2.27.2</awssdk.version>
+    <awssdk.version>2.27.7</awssdk.version>
     <!-- The default es 8 version we are going to be testing with-->
     <elasticsearch8.test.version>8.9.0</elasticsearch8.test.version>
     <!-- The default opensearch version we are going to be testing with-->
@@ -44,7 +44,7 @@
     <jsonpath.version>2.9.0</jsonpath.version>
     <apache.http5-client.version>5.3.1</apache.http5-client.version>
     <apache.http5-core.version>5.2.5</apache.http5-core.version>
-    <guava.version>33.2.0-jre</guava.version>
+    <guava.version>33.3.0-jre</guava.version>
     <spring.boot.version>3.3.0</spring.boot.version>
     <spring.version>6.1.12</spring.version>
     <httpclient.version>4.5.14</httpclient.version>
@@ -52,8 +52,8 @@
     <jakarta.rs-api.version>4.0.0</jakarta.rs-api.version>
     <netty.version>4.1.112.Final</netty.version>
     <lombok.version>1.18.34</lombok.version>
-    <logback.version>1.5.6</logback.version>
-    <slf4j.version>2.0.15</slf4j.version>
+    <logback.version>1.5.7</logback.version>
+    <slf4j.version>2.0.16</slf4j.version>
     <commons.io.version>2.16.1</commons.io.version>
 
     <version.node>v20.9.0</version.node>
@@ -86,7 +86,6 @@
     <!-- client should be built before distro -->
     <module>client</module>
     <module>util</module>
-    <module>plugins</module>
     <module>backend</module>
     <module>../optimize-distro</module>
     <module>upgrade</module>
@@ -552,8 +551,8 @@
         <configuration>
           <gitFlowConfig>
             <productionBranch>optimize-latest</productionBranch>
-            <developmentBranch>test-optimize-release</developmentBranch>
-            <supportBranchPrefix>maintenance/</supportBranchPrefix>
+            <developmentBranch>main</developmentBranch>
+            <supportBranchPrefix>stable/</supportBranchPrefix>
             <releaseBranchPrefix>release/optimize-</releaseBranchPrefix>
           </gitFlowConfig>
           <commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>

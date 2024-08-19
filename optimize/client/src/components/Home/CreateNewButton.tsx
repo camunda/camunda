@@ -6,12 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useState, ComponentProps} from 'react';
-import {Link} from 'react-router-dom';
+import {ComponentProps} from 'react';
 import {MenuButton, MenuItem} from '@carbon/react';
 
 import {t} from 'translation';
-import {getOptimizeProfile} from 'config';
 
 interface CreateNewButtonProps {
   create: (type: 'report' | 'dashboard' | 'kpi' | 'collection') => void;
@@ -28,14 +26,6 @@ export default function CreateNewButton({
   kind = 'tertiary',
   size = 'md',
 }: CreateNewButtonProps): JSX.Element {
-  const [optimizeProfile, setOptimizeProfile] = useState<'platform' | 'cloud' | 'ccsm'>();
-
-  useEffect(() => {
-    (async () => {
-      setOptimizeProfile(await getOptimizeProfile());
-    })();
-  }, []);
-
   return (
     <MenuButton
       size={size}
@@ -53,35 +43,14 @@ export default function CreateNewButton({
         onClick={() => create('dashboard')}
         label={t('home.createBtn.dashboard').toString()}
       />
-      {optimizeProfile === 'platform' ? (
-        <MenuItem label={t('home.createBtn.report.default').toString()}>
-          <MenuItem
-            onClick={() => create('report')}
-            label={t('home.createBtn.report.process').toString()}
-          />
-          <MenuItem
-            onClick={() => create('kpi')}
-            label={t('report.kpiTemplates.processKpi').toString()}
-          />
-          <Link to="report/new-combined/edit">
-            <MenuItem label={t('home.createBtn.report.combined').toString()} />
-          </Link>
-          <Link to="report/new-decision/edit">
-            <MenuItem label={t('home.createBtn.report.decision').toString()} />
-          </Link>
-        </MenuItem>
-      ) : (
-        <>
-          <MenuItem
-            onClick={() => create('report')}
-            label={t('home.createBtn.report.default').toString()}
-          />
-          <MenuItem
-            onClick={() => create('kpi')}
-            label={t('report.kpiTemplates.processKpi').toString()}
-          />
-        </>
-      )}
+      <MenuItem
+        onClick={() => create('report')}
+        label={t('home.createBtn.report.default').toString()}
+      />
+      <MenuItem
+        onClick={() => create('kpi')}
+        label={t('report.kpiTemplates.processKpi').toString()}
+      />
       <MenuItem onClick={importEntity} label={t('common.importReportDashboard').toString()} />
     </MenuButton>
   );

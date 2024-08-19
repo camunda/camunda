@@ -266,15 +266,15 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.2.3"
 
-"@bpmn-io/form-js-carbon-styles@1.8.8":
-  version "1.8.8"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.8.8.tgz#27735328369cb229786a41d1de8dea7e0cc3b198"
-  integrity sha512-dGldJm08sECJsCpjAWWNZYdcAx/pQZKkiG6Vzpf1F0X8NZKb5KqEZhhW3sqjlr7q2eYSv7ffsMx93YL9PHgdng==
+"@bpmn-io/form-js-carbon-styles@1.9.1":
+  version "1.9.1"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.9.1.tgz#041dbd36baeaea5ef6c8c9c2f2232186800f6a6c"
+  integrity sha512-EDwOspZX6uZnfzp5b8OdnFWDRq84CoNb5xW6RZxCOM9EcSmLfElGoEaDNhpI4iuBoRIXh5jmqqyl2UOOTKXmag==
 
-"@bpmn-io/form-js-viewer@1.8.8":
-  version "1.8.8"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.8.8.tgz#37340ab0baf8ca9a12d3e63b363b2dfd96c665e7"
-  integrity sha512-sYM2oa5yclSILOcBADL+PB12ok4ThphKPxo5i/v7hB5A7hj1D4shY7ir4zbmeQZyFp6H4f1mWvU2OmyanR9Zmw==
+"@bpmn-io/form-js-viewer@1.9.1":
+  version "1.9.1"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.9.1.tgz#83c4a9a75c20345f8d1ff1b8cb40fb084f5d185f"
+  integrity sha512-Ue2WkqD4JQ1L+KpqS7vLIGNg7kEFJdcyIMsz+uvxbRpsdcPOSi+1tkfrKOSq9aWAm0yBL6Hef2YXq6hlmdRf+g==
   dependencies:
     "@carbon/grid" "^11.22.0"
     big.js "^6.2.1"
@@ -286,7 +286,8 @@
     flatpickr "^4.6.13"
     ids "^1.0.5"
     lodash "^4.17.21"
-    marked "^12.0.2"
+    luxon "^3.5.0"
+    marked "^13.0.0"
     min-dash "^4.2.1"
     preact "^10.5.14"
 
@@ -982,12 +983,12 @@
   resolved "https://registry.yarnpkg.com/@pkgr/core/-/core-0.1.1.tgz#1ec17e2edbec25c8306d424ecfbf13c7de1aaa31"
   integrity sha512-cq8o4cWH0ibXh9VGi5P20Tu9XF/0fFXl9EUinr9QfTM7a7p0oTA4iJRCQWppXR1Pg8dSM0UCItCkPwsk9qWWYA==
 
-"@playwright/test@1.46.0":
-  version "1.46.0"
-  resolved "https://registry.yarnpkg.com/@playwright/test/-/test-1.46.0.tgz#ccea6d22c40ee7fa567e4192fafbdf2a907e2714"
-  integrity sha512-/QYft5VArOrGRP5pgkrfKksqsKA6CEFyGQ/gjNe6q0y4tZ1aaPfq4gIjudr1s3D+pXyrPRdsy4opKDrjBabE5w==
+"@playwright/test@1.46.1":
+  version "1.46.1"
+  resolved "https://registry.yarnpkg.com/@playwright/test/-/test-1.46.1.tgz#a8dfdcd623c4c23bb1b7ea588058aad41055c188"
+  integrity sha512-Fq6SwLujA/DOIvNC2EL/SojJnkKf/rAwJ//APpJJHRyMi1PdKrY3Az+4XNQ51N4RTbItbIByQ0jgd1tayq1aeA==
   dependencies:
-    playwright "1.46.0"
+    playwright "1.46.1"
 
 "@polka/url@^1.0.0-next.24":
   version "1.0.0-next.25"
@@ -1457,12 +1458,12 @@
   dependencies:
     undici-types "~5.26.4"
 
-"@types/node@20.14.15":
-  version "20.14.15"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.14.15.tgz#e59477ab7bc7db1f80c85540bfd192a0becc588b"
-  integrity sha512-Fz1xDMCF/B00/tYSVMlmK7hVeLh7jE5f3B7X1/hmV0MJBwE27KlS7EvD/Yp+z1lm8mVhwV5w+n8jOZG8AfTlKw==
+"@types/node@20.16.0":
+  version "20.16.0"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.16.0.tgz#02e5cd414f76bf345874ee65a1e5590d755d894f"
+  integrity sha512-vDxceJcoZhIVh67S568bm1UGZO0DX0hpplJZxzeXMKwIPLn190ec5RRxQ69BKhX44SUGIxxgMdDY557lGLKprQ==
   dependencies:
-    undici-types "~5.26.4"
+    undici-types "~6.19.2"
 
 "@types/postcss-modules-local-by-default@^4.0.2":
   version "4.0.2"
@@ -3476,9 +3477,9 @@ i18next-browser-languagedetector@^8.0.0:
     "@babel/runtime" "^7.23.2"
 
 i18next@^23.12.1:
-  version "23.12.3"
-  resolved "https://registry.yarnpkg.com/i18next/-/i18next-23.12.3.tgz#e0b811ef218f6d3fdb0b91f1a1eed099a1f7c48b"
-  integrity sha512-DyigQmrR10V9U2N6pjhbfahW13GY7n8BQD9swN09JuRRropgsksWVi4vRLeex0Qf7zCPnBfIqQfhcBzdZBQBYw==
+  version "23.13.0"
+  resolved "https://registry.yarnpkg.com/i18next/-/i18next-23.13.0.tgz#d3cba6c5611b9826ff988f97a4929638a91875f6"
+  integrity sha512-B+g0/KTKmN3+NeMKPljQxdrih6Q6lyDF5O2e/Ofd0JQsTLojJD/BSTTN04iw6OVc0yBiHeypu5hoBNV6ag44Zw==
   dependencies:
     "@babel/runtime" "^7.23.2"
 
@@ -3985,6 +3986,11 @@ luxon@^3.4.4:
   resolved "https://registry.yarnpkg.com/luxon/-/luxon-3.4.4.tgz#cf20dc27dc532ba41a169c43fdcc0063601577af"
   integrity sha512-zobTr7akeGHnv7eBOXcRgMeCP6+uyYsczwmeRCauvpvaAltgNyTbLH/+VaEAPUeWBT+1GuNmz4wC/6jtQzbbVA==
 
+luxon@^3.5.0:
+  version "3.5.0"
+  resolved "https://registry.yarnpkg.com/luxon/-/luxon-3.5.0.tgz#6b6f65c5cd1d61d1fd19dbf07ee87a50bf4b8e20"
+  integrity sha512-rh+Zjr6DNfUYR3bPwJEnuwDdqMbxZW7LOQfUN4B54+Cl+0o5zaU9RJ6bcidfDtC1cWCZXQ+nvX8bf6bAji37QQ==
+
 lz-string@^1.5.0:
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/lz-string/-/lz-string-1.5.0.tgz#c1ab50f77887b712621201ba9fd4e3a6ed099941"
@@ -4021,10 +4027,10 @@ make-dir@^4.0.0:
   dependencies:
     semver "^7.5.3"
 
-marked@^12.0.2:
-  version "12.0.2"
-  resolved "https://registry.yarnpkg.com/marked/-/marked-12.0.2.tgz#b31578fe608b599944c69807b00f18edab84647e"
-  integrity sha512-qXUm7e/YKFoqFPYPa3Ukg9xlI5cyAtGmyEIzMfW//m6kXwCy2Ps9DYf5ioijFKQ8qyuscrHoY04iJGctu2Kg0Q==
+marked@^13.0.0:
+  version "13.0.3"
+  resolved "https://registry.yarnpkg.com/marked/-/marked-13.0.3.tgz#5c5b4a5d0198060c7c9bc6ef9420a7fed30f822d"
+  integrity sha512-rqRix3/TWzE9rIoFGIn8JmsVfhiuC8VIQ8IdX5TfzmeBucdY05/0UlzKaw0eVtpcN/OdVFpBk7CjKGo9iHJ/zA==
 
 mathml-tag-names@^2.1.3:
   version "2.1.3"
@@ -4757,17 +4763,17 @@ pify@^4.0.1:
   resolved "https://registry.yarnpkg.com/pify/-/pify-4.0.1.tgz#4b2cd25c50d598735c50292224fd8c6df41e3231"
   integrity sha512-uB80kBFb/tfd68bVleG9T5GGsGPjJrLAUpR5PZIrhBnIaRTQRjqdJSsIKkOP6OAIFbj7GOrcudc5pNjZ+geV2g==
 
-playwright-core@1.46.0:
-  version "1.46.0"
-  resolved "https://registry.yarnpkg.com/playwright-core/-/playwright-core-1.46.0.tgz#2336ac453a943abf0dc95a76c117f9d3ebd390eb"
-  integrity sha512-9Y/d5UIwuJk8t3+lhmMSAJyNP1BUC/DqP3cQJDQQL/oWqAiuPTLgy7Q5dzglmTLwcBRdetzgNM/gni7ckfTr6A==
+playwright-core@1.46.1:
+  version "1.46.1"
+  resolved "https://registry.yarnpkg.com/playwright-core/-/playwright-core-1.46.1.tgz#28f3ab35312135dda75b0c92a3e5c0e7edb9cc8b"
+  integrity sha512-h9LqIQaAv+CYvWzsZ+h3RsrqCStkBHlgo6/TJlFst3cOTlLghBQlJwPOZKQJTKNaD3QIB7aAVQ+gfWbN3NXB7A==
 
-playwright@1.46.0:
-  version "1.46.0"
-  resolved "https://registry.yarnpkg.com/playwright/-/playwright-1.46.0.tgz#c7ff490deae41fc1e814bf2cb62109dd9351164d"
-  integrity sha512-XYJ5WvfefWONh1uPAUAi0H2xXV5S3vrtcnXe6uAOgdGi3aSpqOSXX08IAjXW34xitfuOJsvXU5anXZxPSEQiJw==
+playwright@1.46.1:
+  version "1.46.1"
+  resolved "https://registry.yarnpkg.com/playwright/-/playwright-1.46.1.tgz#ea562bc48373648e10420a10c16842f0b227c218"
+  integrity sha512-oPcr1yqoXLCkgKtD5eNUPLiN40rYEM39odNpIb6VE6S7/15gJmA1NzVv6zJYusV0e7tzvkU/utBFNa/Kpxmwng==
   dependencies:
-    playwright-core "1.46.0"
+    playwright-core "1.46.1"
   optionalDependencies:
     fsevents "2.3.2"
 
@@ -5970,6 +5976,11 @@ undici-types@~5.26.4:
   version "5.26.5"
   resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-5.26.5.tgz#bcd539893d00b56e964fd2657a4866b221a65617"
   integrity sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==
+
+undici-types@~6.19.2:
+  version "6.19.6"
+  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-6.19.6.tgz#e218c3df0987f4c0e0008ca00d6b6472d9b89b36"
+  integrity sha512-e/vggGopEfTKSvj4ihnOLTsqhrKRN3LeO6qSN/GxohhuRv8qH9bNQ4B8W7e/vFL+0XTnmHPB4/kegunZGA4Org==
 
 unified@^10.0.0:
   version "10.1.2"

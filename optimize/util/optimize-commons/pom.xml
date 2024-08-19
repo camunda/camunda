@@ -13,12 +13,6 @@
 
   <dependencies>
 
-    <dependency>
-      <groupId>io.camunda.optimize</groupId>
-      <artifactId>plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
     <!-- REST -->
     <dependency>
       <groupId>jakarta.validation</groupId>
@@ -187,7 +181,7 @@
     <dependency>
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-java-sdk-core</artifactId>
-      <version>1.12.768</version>
+      <version>1.12.769</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -214,6 +208,10 @@
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>auth</artifactId>
       <version>${awssdk.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.ws.rs</groupId>
+      <artifactId>jakarta.ws.rs-api</artifactId>
     </dependency>
 
   </dependencies>

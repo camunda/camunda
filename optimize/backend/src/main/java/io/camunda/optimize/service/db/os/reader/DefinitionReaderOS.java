@@ -40,7 +40,6 @@ import io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
 import io.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
 import io.camunda.optimize.service.db.os.schema.index.DecisionDefinitionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessDefinitionIndexOS;
-import io.camunda.optimize.service.db.os.schema.index.events.EventProcessDefinitionIndexOS;
 import io.camunda.optimize.service.db.reader.DefinitionReader;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -343,7 +342,6 @@ public class DefinitionReaderOS implements DefinitionReader {
                             definitionKey,
                             definitionName,
                             resolveDefinitionTypeFromIndexAlias(indexAliasName),
-                            resolveIsEventProcessFromIndexAlias(indexAliasName),
                             engines);
                       })
                   .toList();
@@ -767,7 +765,6 @@ public class DefinitionReaderOS implements DefinitionReader {
                       .map(StringTermsBucket::key)
                       .orElse(null),
                   resolveDefinitionTypeFromIndexAlias(indexAliasName),
-                  resolveIsEventProcessFromIndexAlias(indexAliasName),
                   tenantResult.buckets().array().stream()
                       .map(StringTermsBucket::key)
                       // convert null bucket back to a `null` id
@@ -896,18 +893,13 @@ public class DefinitionReaderOS implements DefinitionReader {
   }
 
   private DefinitionType resolveDefinitionTypeFromIndexAlias(final String indexName) {
-    if (indexName.equals(getOptimizeIndexNameForIndex(new ProcessDefinitionIndexOS()))
-        || indexName.equals(getOptimizeIndexNameForIndex(new EventProcessDefinitionIndexOS()))) {
+    if (indexName.equals(getOptimizeIndexNameForIndex(new ProcessDefinitionIndexOS()))) {
       return DefinitionType.PROCESS;
     } else if (indexName.equals(getOptimizeIndexNameForIndex(new DecisionDefinitionIndexOS()))) {
       return DefinitionType.DECISION;
     } else {
       throw new OptimizeRuntimeException("Unexpected definition index name: " + indexName);
     }
-  }
-
-  private boolean resolveIsEventProcessFromIndexAlias(final String indexName) {
-    return indexName.equals(getOptimizeIndexNameForIndex(new EventProcessDefinitionIndexOS()));
   }
 
   private String getOptimizeIndexNameForIndex(final DefaultIndexMappingCreator index) {
@@ -918,17 +910,16 @@ public class DefinitionReaderOS implements DefinitionReader {
       Function<Hit<T>, T> createMappingFunctionForDefinitionType(final Class<T> type) {
     return hit -> {
       try {
-        T definitionDto = hit.source();
+        final T definitionDto = hit.source();
         if (ProcessDefinitionOptimizeDto.class.equals(type)) {
-          ProcessDefinitionOptimizeDto processDefinition =
+          final ProcessDefinitionOptimizeDto processDefinition =
               (ProcessDefinitionOptimizeDto) definitionDto;
           processDefinition.setType(DefinitionType.PROCESS);
-          processDefinition.setEventBased(resolveIsEventProcessFromIndexAlias(hit.index()));
         } else {
           definitionDto.setType(DefinitionType.DECISION);
         }
         return definitionDto;
-      } catch (Exception e) {
+      } catch (final Exception e) {
         final String reason =
             "While mapping search results to class {} "
                 + "it was not possible to deserialize a hit from OpenSearch!"

@@ -41,20 +41,18 @@ public class ImportRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public List<EntityIdResponseDto> importEntities(
       @Context final ContainerRequestContext requestContext,
-      @QueryParam("collectionId") String collectionId,
+      @QueryParam("collectionId") final String collectionId,
       final String exportedDtoJson) {
     final Set<OptimizeEntityExportDto> exportDtos =
         entityImportService.readExportDtoOrFailIfInvalid(exportedDtoJson);
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    validateUserAuthorization(userId, collectionId);
+    validateUserAuthorization(collectionId);
     return entityImportService.importEntitiesAsUser(userId, collectionId, exportDtos);
   }
 
-  private void validateUserAuthorization(final String userId, final String collectionId) {
+  private void validateUserAuthorization(final String collectionId) {
     if (collectionId == null
-        && !identityService
-            .getUserAuthorizations(userId)
-            .contains(AuthorizationType.ENTITY_EDITOR)) {
+        && !identityService.getEnabledAuthorizations().contains(AuthorizationType.ENTITY_EDITOR)) {
       throw new ForbiddenException("User not authorized to create reports outside of a collection");
     }
   }

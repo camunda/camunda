@@ -37,7 +37,6 @@ it('should return correct chart data object for a single report', () => {
         view: {properties: ['duration'], entity: 'flowNode'},
       },
       targetValue: false,
-      combined: false,
       reportType: 'process',
     },
     theme: 'light',
@@ -60,7 +59,6 @@ it('should return correct chart data object for multi-measure report', () => {
           view: {properties: ['frequency', 'duration'], entity: 'flowNode'},
         },
         targetValue: false,
-        combined: false,
         result: {
           measures: [
             {
@@ -125,7 +123,6 @@ it('should assign line/bar visualization to dataset according to measureVisualiz
         view: {properties: ['frequency', 'duration'], entity: 'flowNode'},
       },
       targetValue: false,
-      combined: false,
       reportType: 'process',
     },
     theme: 'light',

@@ -1104,12 +1104,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:20.14.15":
-  version: 20.14.15
-  resolution: "@types/node@npm:20.14.15"
+"@types/node@npm:20.16.0":
+  version: 20.16.0
+  resolution: "@types/node@npm:20.16.0"
   dependencies:
-    undici-types: "npm:~5.26.4"
-  checksum: 10c0/093713db52dc544f3931a3dec9d7d8ef661f323e57becd083a7918c778cef1eb6ec32d1017bf5ade06bb06dc5c7551f4f4d749a14e40868cce44d51e54acd8ed
+    undici-types: "npm:~6.19.2"
+  checksum: 10c0/ad8e11e654af99b3556397c87a495cf3cf5d3e8e8bfa1f60e14d255763e9cde7e703d7309fb7c39e89c1191281f2759cb8314f36dee2ae0bf8779123fc85d90c
   languageName: node
   linkType: hard
 
@@ -2477,12 +2477,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"i18next@npm:23.12.3":
-  version: 23.12.3
-  resolution: "i18next@npm:23.12.3"
+"i18next@npm:23.13.0":
+  version: 23.13.0
+  resolution: "i18next@npm:23.13.0"
   dependencies:
     "@babel/runtime": "npm:^7.23.2"
-  checksum: 10c0/8c17d448130a1f0ea81d4684bdbb791ebc5df0defdb65e0103e0084fe802d2e36451da8721a39dea29401f709de79e34e6a8079913bf38018a698203f606f2b0
+  checksum: 10c0/359c8ea9fc7c2046b349ccf4c1e836d38a69814b69f9691e63521779871cb1c6cdfc5c9b5897086e2a6d2480f3c10d5a27ef59391d81b973a4c52c66699dd9d2
   languageName: node
   linkType: hard
 
@@ -2502,7 +2502,7 @@ __metadata:
     "@camunda/camunda-composite-components": "npm:0.8.1"
     "@carbon/react": "npm:1.63.2"
     "@types/event-source-polyfill": "npm:1.0.5"
-    "@types/node": "npm:20.14.15"
+    "@types/node": "npm:20.16.0"
     "@types/react": "npm:18.3.3"
     "@types/react-dom": "npm:18.3.0"
     "@types/react-transition-group": "npm:4.4.11"
@@ -2513,7 +2513,7 @@ __metadata:
     eslint-plugin-react-hooks: "npm:4.6.2"
     eslint-plugin-react-refresh: "npm:0.4.9"
     event-source-polyfill: "npm:1.0.31"
-    i18next: "npm:23.12.3"
+    i18next: "npm:23.13.0"
     license-checker: "npm:25.0.1"
     prettier: "npm:3.3.3"
     react: "npm:18.3.1"
@@ -4593,10 +4593,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"undici-types@npm:~5.26.4":
-  version: 5.26.5
-  resolution: "undici-types@npm:5.26.5"
-  checksum: 10c0/bb673d7876c2d411b6eb6c560e0c571eef4a01c1c19925175d16e3a30c4c428181fb8d7ae802a261f283e4166a0ac435e2f505743aa9e45d893f9a3df017b501
+"undici-types@npm:~6.19.2":
+  version: 6.19.6
+  resolution: "undici-types@npm:6.19.6"
+  checksum: 10c0/9b2264c5700e7169c6c62c643aac56cd8984c5fd7e18ed31ff11780260e137f6340dee8317a2e6e0ae3c49f5e5ef6fa577ea07193cbaa535265cba76a267cae9
   languageName: node
   linkType: hard
 

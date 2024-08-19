@@ -20,8 +20,8 @@ public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceD
   protected long positionOfLastEntity = 0;
   protected long sequenceOfLastEntity = 0;
   protected String esTypeIndexRefersTo;
-  protected boolean hasSeenSequenceField =
-      false; // flag to indicate whether at least one record with a sequence field has been imported
+  // flag to indicate whether at least one record with a sequence field has been imported
+  protected boolean hasSeenSequenceField = false;
 
   public static final class Fields {
 

@@ -82,21 +82,6 @@ public class ConfigurationServiceConstants {
       "$.import.data.user-task-worker.metadata";
   public static final String CUSTOMER_ONBOARDING_DATA = "$.import.customer-onboarding";
 
-  public static final String PLUGIN_BASE_DIRECTORY = "$.plugin.directory";
-  public static final String VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES =
-      "$.plugin.variableImport.basePackages";
-  public static final String ENGINE_REST_FILTER_PLUGIN_BASE_PACKAGES =
-      "$.plugin.engineRestFilter.basePackages";
-  public static final String AUTHENTICATION_EXTRACTOR_BASE_PACKAGES =
-      "$.plugin.authenticationExtractor.basePackages";
-  public static final String DECISION_INPUT_IMPORT_PLUGIN_BASE_PACKAGES =
-      "$.plugin.decisionInputImport.basePackages";
-  public static final String DECISION_OUTPUT_IMPORT_PLUGIN_BASE_PACKAGES =
-      "$.plugin.decisionOutputImport.basePackages";
-  public static final String BUSINESS_KEY_IMPORT_PLUGIN_BASE_PACKAGES =
-      "$.plugin.businessKeyImport.basePackages";
-  public static final String ELASTICSEARCH_CUSTOM_HEADER_BASE_PACKAGES =
-      "$.plugin.elasticsearchCustomHeader.basePackages";
   public static final String ELASTICSEARCH_CONNECTION_TIMEOUT =
       ELASTICSEARCH + ".connection.timeout";
   public static final String ELASTICSEARCH_RESPONSE_CONSUMER_BUFFER_LIMIT_MB =
@@ -198,8 +183,6 @@ public class ConfigurationServiceConstants {
   public static final String UI_CONFIGURATION = "$.ui";
 
   public static final String IDENTITY_SYNC_CONFIGURATION = "$.import.identitySync";
-
-  public static final String EVENT_BASED_PROCESS_CONFIGURATION = "$.eventBasedProcess";
 
   public static final String OPTIMIZE_API_CONFIGURATION = "$.api";
 

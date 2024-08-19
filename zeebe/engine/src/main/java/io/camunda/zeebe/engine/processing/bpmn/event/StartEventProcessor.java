@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
@@ -28,6 +29,7 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnStateBehavior stateBehavior;
+  private final BpmnJobBehavior jobBehavior;
 
   public StartEventProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -37,6 +39,7 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     stateBehavior = bpmnBehaviors.stateBehavior();
+    jobBehavior = bpmnBehaviors.jobBehavior();
   }
 
   @Override
@@ -76,6 +79,10 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
 
   @Override
   public void onTerminate(final ExecutableStartEvent element, final BpmnElementContext context) {
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(context);
+    }
+
     final var terminated =
         stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
 

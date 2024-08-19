@@ -33,7 +33,6 @@ it('should create two datasets with the same data for line chart with target val
         },
         view: {properties: ['frequency'], entity: 'flowNode'},
       },
-      combined: false,
     },
     theme: 'light',
     targetValue,
@@ -43,7 +42,7 @@ it('should create two datasets with the same data for line chart with target val
   expect(chartData.datasets[1].data).toEqual([123, 5]);
 });
 
-it('should create two datasets for each report in combined line charts with target values', () => {
+it('should create two datasets for each report in hyper line charts reports with target values', () => {
   const data = [
     {key: 'foo', value: 123},
     {key: 'bar', value: 5},
@@ -80,7 +79,7 @@ it('should create two datasets for each report in combined line charts with targ
           value: '',
         },
       },
-      combined: true,
+      hyper: true,
     },
     targetValue,
     theme: 'light',

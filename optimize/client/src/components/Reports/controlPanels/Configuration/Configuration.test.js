@@ -52,22 +52,6 @@ it('should be disabled if specified', () => {
   expect(node.find('.configurationPopover').prop('trigger').props.disabled).toBe(true);
 });
 
-it('should be disabled if the report is combined with a duration view', () => {
-  const node = shallow(
-    <Configuration
-      report={{
-        combined: true,
-        data: {reports: [{id: 'test'}], view: {properties: []}, configuration: {}},
-        result: {
-          data: [{data: {view: {properties: ['duration']}}}],
-        },
-      }}
-    />
-  );
-
-  expect(node.find('.configurationPopover').prop('trigger').props.disabled).toBe(true);
-});
-
 it('should contain the Component from the visualizations based on the type', () => {
   const node = shallow(
     <Configuration

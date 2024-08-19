@@ -18,7 +18,7 @@ public class CamundaLicense {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaLicense.class);
   private boolean isValid;
-  private boolean isSelfManaged;
+  private String licenseType;
   private boolean isInitialized;
 
   @VisibleForTesting
@@ -32,39 +32,45 @@ public class CamundaLicense {
     return isValid;
   }
 
-  public synchronized boolean isSelfManaged() {
-    return isSelfManaged;
+  public synchronized String getLicenseType() {
+    return licenseType;
   }
 
   public synchronized void initializeWithLicense(final String license) {
     if (!isInitialized) {
       isValid = determineLicenseValidity(license);
-      isSelfManaged = determineIfLicenseEnvModeIsSelfManaged(license);
+      licenseType = getLicenseTypeFromProperty(license);
 
       isInitialized = true;
     }
   }
 
   /**
-   * SaaS mode is determined through the properties of the passed in license.
+   * Camunda licenses will have a license type property, fetch that out of the license and return
+   * the value
    *
    * <p>Self-managed mode is any other possibility. (ex, blank license, prop missing, etc)
    */
-  private boolean determineIfLicenseEnvModeIsSelfManaged(final String licenseStr) {
+  private String getLicenseTypeFromProperty(final String licenseStr) {
     try {
       final LicenseKey licenseKey = getLicenseKey(licenseStr);
-      return licenseKey.getProperties().entrySet().stream()
-          .noneMatch(x -> x.getKey().equals("licenseType") && x.getValue().equals("saas"));
+      if (licenseKey.getProperties().containsKey("licenseType")) {
+        return licenseKey.getProperties().get("licenseType");
+      } else {
+        LOGGER.error(
+            "Expected a licenseType property on the Camunda License, but none were found.");
+        return "unknown";
+      }
     } catch (final InvalidLicenseException e) {
       LOGGER.error(
           "Expected a valid license when determining the type of license, but encountered an invalid one instead. ",
           e);
-      return true;
+      return "unknown";
     } catch (final Exception e) {
       LOGGER.error(
           "Expected to determine the license type of the license, but the following unexpected error was encountered: ",
           e);
-      return true;
+      return "unknown";
     }
   }
 

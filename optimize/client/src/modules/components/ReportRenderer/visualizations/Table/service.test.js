@@ -10,7 +10,7 @@ import {
   sortColumns,
   getFormattedLabels,
   getBodyRows,
-  getCombinedTableProps,
+  getHyperTableProps,
   isVisibleColumn,
   rearrangeColumns,
 } from './service';
@@ -133,10 +133,9 @@ it('should return correct table label structure', () => {
   ]);
 });
 
-it('should return correct combined table report data properties', () => {
+it('should return correct hyper table report data properties', () => {
   const report = {
     name: 'report A',
-    combined: false,
     data: {
       view: {
         properties: ['frequency'],
@@ -164,8 +163,8 @@ it('should return correct combined table report data properties', () => {
     },
   };
 
-  const combinedReport = {
-    combined: true,
+  const hyperReport = {
+    hyper: true,
     data: {
       configuration: {sorting: null},
       reports: [{id: 'report A'}, {id: 'report B'}],
@@ -175,12 +174,7 @@ it('should return correct combined table report data properties', () => {
       'report B': report,
     },
   };
-  const tableProps = getCombinedTableProps(
-    combinedReport.result,
-    combinedReport.data.reports,
-    false,
-    true
-  );
+  const tableProps = getHyperTableProps(hyperReport.result, hyperReport.data.reports, false, true);
 
   expect(tableProps).toEqual({
     combinedResult: [
@@ -216,7 +210,6 @@ it('should return correct combined table report data properties', () => {
 it('should default empty header id to non empty value', () => {
   const report = {
     name: 'report A',
-    combined: false,
     data: {
       view: {
         properties: ['frequency'],
@@ -260,8 +253,8 @@ it('should default empty header id to non empty value', () => {
     },
   };
 
-  const combinedReport = {
-    combined: true,
+  const hyperReport = {
+    hyper: true,
     data: {
       configuration: {sorting: null},
       reports: [{id: ''}, {id: 'missing'}],
@@ -272,12 +265,7 @@ it('should default empty header id to non empty value', () => {
     },
   };
 
-  const tableProps = getCombinedTableProps(
-    combinedReport.result,
-    combinedReport.data.reports,
-    true,
-    true
-  );
+  const tableProps = getHyperTableProps(hyperReport.result, hyperReport.data.reports, true, true);
 
   expect(`${tableProps.reportsIds[0]}`).toEqual('0');
   expect(tableProps.reportsIds[1]).toEqual('missing');

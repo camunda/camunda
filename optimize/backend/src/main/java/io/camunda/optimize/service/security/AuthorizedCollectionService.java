@@ -85,7 +85,7 @@ public class AuthorizedCollectionService {
   public void verifyUserAuthorizedToEditCollectionRole(
       final String userId, final String collectionId, final String roleId)
       throws NotFoundException, ForbiddenException {
-    AuthorizedCollectionDefinitionDto authCollectionDto =
+    final AuthorizedCollectionDefinitionDto authCollectionDto =
         getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
 
     authCollectionDto.getDefinitionDto().getData().getRoles().stream()
@@ -122,36 +122,30 @@ public class AuthorizedCollectionService {
 
   private Optional<AuthorizedCollectionDefinitionDto> resolveToAuthorizedCollection(
       final String userId, final CollectionDefinitionDto collectionDefinition) {
-    final boolean isSuperUser = identityService.isSuperUserIdentity(userId);
 
     final Optional<RoleType> userRole;
-    if (isSuperUser) {
-      userRole = Optional.of(RoleType.MANAGER);
-    } else {
-      final List<CollectionRoleRequestDto> collectionRoles =
-          collectionDefinition.getData().getRoles();
-      final Set<String> userGroupIds =
-          identityService.getAllGroupsOfUser(userId).stream()
-              .map(GroupDto::getId)
-              .collect(Collectors.toSet());
+    final List<CollectionRoleRequestDto> collectionRoles =
+        collectionDefinition.getData().getRoles();
+    final Set<String> userGroupIds =
+        identityService.getAllGroupsOfUser(userId).stream()
+            .map(GroupDto::getId)
+            .collect(Collectors.toSet());
 
-      Optional<CollectionRoleRequestDto> highestGrantedAuthorization =
+    Optional<CollectionRoleRequestDto> highestGrantedAuthorization =
+        collectionRoles.stream()
+            .filter(roleDto -> roleDto.getIdentity().getType().equals(IdentityType.USER))
+            .filter(roleDto -> userId.equals(roleDto.getIdentity().getId()))
+            .reduce(BinaryOperator.maxBy(Comparator.comparing(CollectionRoleRequestDto::getRole)));
+    // user roles have priority so we only fetch groups if no user role is defined
+    if (highestGrantedAuthorization.isEmpty()) {
+      highestGrantedAuthorization =
           collectionRoles.stream()
-              .filter(roleDto -> roleDto.getIdentity().getType().equals(IdentityType.USER))
-              .filter(roleDto -> userId.equals(roleDto.getIdentity().getId()))
+              .filter(roleDto -> roleDto.getIdentity().getType().equals(IdentityType.GROUP))
+              .filter(roleDto -> userGroupIds.contains(roleDto.getIdentity().getId()))
               .reduce(
                   BinaryOperator.maxBy(Comparator.comparing(CollectionRoleRequestDto::getRole)));
-      // user roles have priority so we only fetch groups if no user role is defined
-      if (highestGrantedAuthorization.isEmpty()) {
-        highestGrantedAuthorization =
-            collectionRoles.stream()
-                .filter(roleDto -> roleDto.getIdentity().getType().equals(IdentityType.GROUP))
-                .filter(roleDto -> userGroupIds.contains(roleDto.getIdentity().getId()))
-                .reduce(
-                    BinaryOperator.maxBy(Comparator.comparing(CollectionRoleRequestDto::getRole)));
-      }
-      userRole = highestGrantedAuthorization.map(CollectionRoleRequestDto::getRole);
     }
+    userRole = highestGrantedAuthorization.map(CollectionRoleRequestDto::getRole);
     return userRole.map(
         roleType -> new AuthorizedCollectionDefinitionDto(roleType, collectionDefinition));
   }

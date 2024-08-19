@@ -18,13 +18,7 @@ import java.util.Objects;
 public final class ControllableStreamClockImpl implements StreamClock.ControllableStreamClock {
 
   private final InstantSource source;
-  private Modification modification;
-
-  /**
-   * Internal field to optimize {@link #millis()} calls. For {@link Pin}, it stores the pinned time
-   * in millis. For {@link Offset}, it stores the offset in millis. For {@link None}, it stores 0.
-   */
-  private long millis;
+  private volatile Modification modification;
 
   public ControllableStreamClockImpl(final InstantSource source) {
     this.source = Objects.requireNonNull(source);
@@ -34,12 +28,6 @@ public final class ControllableStreamClockImpl implements StreamClock.Controllab
   @Override
   public void applyModification(final Modification modification) {
     this.modification = modification;
-    millis =
-        switch (modification) {
-          case None() -> 0;
-          case Offset(final var offset) -> offset.toMillis();
-          case Pin(final var pinnedAt) -> pinnedAt.toEpochMilli();
-        };
   }
 
   @Override
@@ -59,9 +47,9 @@ public final class ControllableStreamClockImpl implements StreamClock.Controllab
   @Override
   public long millis() {
     return switch (modification) {
-      case final None ignored -> source.millis();
-      case final Pin ignored -> millis;
-      case final Offset ignored -> source.millis() + millis;
+      case None() -> source.millis();
+      case Pin(final var at) -> at.toEpochMilli();
+      case Offset(final var offset) -> source.millis() + offset.toMillis();
     };
   }
 

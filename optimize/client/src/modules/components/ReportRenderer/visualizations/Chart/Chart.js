@@ -9,14 +9,14 @@
 import React from 'react';
 import ChartRenderer from './ChartRenderer';
 import createDefaultChartConfig from './defaultChart';
-import createCombinedChartConfig from './combinedChart';
+import createHyperChartConfig from './hyperChart';
 import createTargetLineConfig from './targetLineChart';
 import {themed} from 'theme';
 
 export function Chart(props) {
   const {
     report: {
-      combined,
+      hyper,
       result,
       data: {configuration, visualization, view},
     },
@@ -32,8 +32,8 @@ export function Chart(props) {
   let createConfig;
   if (targetValue && visualization === 'line') {
     createConfig = createTargetLineConfig;
-  } else if (combined) {
-    createConfig = createCombinedChartConfig;
+  } else if (hyper) {
+    createConfig = createHyperChartConfig;
   } else {
     createConfig = createDefaultChartConfig;
   }

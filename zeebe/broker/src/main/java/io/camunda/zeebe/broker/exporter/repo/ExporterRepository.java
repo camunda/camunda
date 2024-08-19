@@ -15,6 +15,7 @@ import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.camunda.zeebe.util.jar.ExternalJarRepository;
 import io.camunda.zeebe.util.jar.ThreadContextUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.InstantSource;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -92,7 +93,11 @@ public final class ExporterRepository {
       final Exporter instance = descriptor.newInstance();
       final ExporterContext context =
           new ExporterContext(
-              LOG, descriptor.getConfiguration(), NULL_PARTITION_ID, new SimpleMeterRegistry());
+              LOG,
+              descriptor.getConfiguration(),
+              NULL_PARTITION_ID,
+              new SimpleMeterRegistry(),
+              InstantSource.system());
 
       ThreadContextUtil.runCheckedWithClassLoader(
           () -> instance.configure(context), instance.getClass().getClassLoader());

@@ -12,6 +12,7 @@ import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.executi
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.SERVICE_TASK_TYPE;
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.START_EL_TYPE;
 import static io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution.ExecutionListenerTest.createProcessInstance;
+import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -25,8 +26,10 @@ import io.camunda.zeebe.model.bpmn.builder.BoundaryEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -234,6 +237,44 @@ public class ExecutionListenerBoundaryEventElementTest {
           ExpectedValidationResult.expect(
               BoundaryEvent.class,
               "Execution listeners of type 'start' are not supported by boundary events"));
+    }
+
+    @Test
+    public void shouldCancelActiveEndElJobAfterProcessInstanceCancellation() {
+      // given
+      final var modelInstance =
+          scenario
+              .processBuilder
+              .apply(Bpmn.createExecutableProcess(PROCESS_ID).startEvent())
+              .boundaryEvent("boundary", b -> scenario.boundaryEventBuilderFunction.apply(b))
+              .zeebeEndExecutionListener(END_EL_TYPE)
+              .endEvent("boundary_end")
+              .moveToActivity(BOUNDARY_OWNER_ID)
+              .endEvent("main_end")
+              .done();
+
+      final long processInstanceKey = createProcessInstance(ENGINE, modelInstance);
+
+      // trigger boundary event
+      scenario.triggerEvent.accept(processInstanceKey);
+
+      jobRecords(JobIntent.CREATED)
+          .withProcessInstanceKey(processInstanceKey)
+          .withType(END_EL_TYPE)
+          .await();
+
+      // when
+      ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+      // then: end EL job should be canceled
+      assertThat(
+              jobRecords(JobIntent.CANCELED)
+                  .withProcessInstanceKey(processInstanceKey)
+                  .withJobKind(JobKind.EXECUTION_LISTENER)
+                  .onlyEvents()
+                  .getFirst())
+          .extracting(r -> r.getValue().getType())
+          .isEqualTo(END_EL_TYPE);
     }
 
     private record BoundaryEventTestScenario(

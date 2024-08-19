@@ -22,7 +22,6 @@ const configuration = {
 };
 
 const lineReport = {
-  combined: false,
   data: {visualization: 'line', view: {properties: ['frequency']}, configuration},
 };
 
@@ -48,7 +47,6 @@ it('it should display correct configuration for linechart', () => {
   expect(node.find('BarChartConfig').props()).toEqual({
     onChange: undefined,
     report: {
-      combined: false,
       data: {
         configuration: {
           color: '#1991c8',

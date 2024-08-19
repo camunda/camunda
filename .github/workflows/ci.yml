@@ -320,18 +320,6 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           docker-secret-path: secret/data/products/camunda/ci/github-actions
-      - uses: ./.github/actions/build-frontend
-        id: build-operate-fe
-        with:
-          directory: ./operate/client
-      - uses: ./.github/actions/build-frontend
-        id: build-tasklist-fe
-        with:
-          directory: ./tasklist/client
-      - uses: ./.github/actions/build-frontend
-        id: build-identity-fe
-        with:
-          directory: ./identity/client
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:

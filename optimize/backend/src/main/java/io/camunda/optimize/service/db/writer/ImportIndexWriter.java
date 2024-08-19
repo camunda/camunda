@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.db.writer;
 
-import io.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
+import io.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import io.camunda.optimize.service.db.repository.ImportRepository;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -20,9 +20,9 @@ import org.springframework.stereotype.Component;
 public class ImportIndexWriter {
   private final ImportRepository importRepository;
 
-  public void importIndexes(List<EngineImportIndexDto> engineImportIndexDtos) {
+  public void importIndexes(List<TimestampBasedImportIndexDto> timestampBasedImportIndexDtos) {
     String importItemName = "import index information";
-    log.debug("Writing [{}] {} to database.", engineImportIndexDtos.size(), importItemName);
-    importRepository.importIndices(importItemName, engineImportIndexDtos);
+    log.debug("Writing [{}] {} to database.", timestampBasedImportIndexDtos.size(), importItemName);
+    importRepository.importIndices(importItemName, timestampBasedImportIndexDtos);
   }
 }

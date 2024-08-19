@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.Set;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -42,77 +44,104 @@ public class JobUpdateTest {
   public void shouldUpdateJob() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
-    final int retries = 5;
-    final long timeout = Duration.ofMinutes(5).toMillis();
 
     final var batchRecord = ENGINE.jobs().withType(jobType).activate();
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     // when
-    ENGINE.job().withKey(jobKey).withRetries(retries).withTimeout(timeout).update();
+    ENGINE
+        .job()
+        .withKey(jobKey)
+        .withRetries(5)
+        .withTimeout(Duration.ofMinutes(5).toMillis())
+        .withChangeset(Set.of("retries", "timeout"))
+        .update();
 
     // then
-    assertThat(RecordingExporter.jobRecords().limit(4))
-        .extracting(Record::getIntent)
+    assertThat(RecordingExporter.jobRecords().limit(3))
+        .extracting(
+            Record::getIntent,
+            record -> record.getValue().getRetries(),
+            record -> record.getValue().getTimeout())
         .containsSubsequence(
-            JobIntent.CREATED,
-            JobIntent.UPDATE,
-            JobIntent.RETRIES_UPDATED,
-            JobIntent.TIMEOUT_UPDATED);
+            tuple(JobIntent.CREATED, 3, -1L),
+            tuple(JobIntent.UPDATE, 5, 300000L),
+            tuple(JobIntent.UPDATED, 5, -1L));
+  }
+
+  @Test
+  public void shouldUpdateJobWithNoChanges() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+
+    final var batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    ENGINE.job().withKey(jobKey).update();
+
+    // then
+    assertThat(RecordingExporter.jobRecords().limit(3))
+        .extracting(Record::getIntent)
+        .containsSubsequence(JobIntent.CREATED, JobIntent.UPDATE, JobIntent.UPDATED);
   }
 
   @Test
   public void shouldUpdateJobWithOnlyRetries() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
-    final int retries = 5;
 
     final var batchRecord = ENGINE.jobs().withType(jobType).activate();
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     // when
-    ENGINE.job().withKey(jobKey).withRetries(retries).update();
+    ENGINE.job().withKey(jobKey).withRetries(5).withChangeset(Set.of("retries")).update();
 
     // then
-    assertThat(RecordingExporter.jobRecords().limit(4))
-        .extracting(Record::getIntent)
-        .containsSubsequence(JobIntent.CREATED, JobIntent.UPDATE, JobIntent.RETRIES_UPDATED)
-        .doesNotContain(JobIntent.TIMEOUT_UPDATED);
+    assertThat(RecordingExporter.jobRecords().limit(3))
+        .extracting(Record::getIntent, record -> record.getValue().getRetries())
+        .containsSubsequence(
+            tuple(JobIntent.CREATED, 3), tuple(JobIntent.UPDATE, 5), tuple(JobIntent.UPDATED, 5));
   }
 
   @Test
   public void shouldUpdateJobWithOnlyTimeout() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
-    final long timeout = Duration.ofMinutes(5).toMillis();
 
     final var batchRecord = ENGINE.jobs().withType(jobType).activate();
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     // when
-    ENGINE.job().withKey(jobKey).withTimeout(timeout).update();
+    ENGINE
+        .job()
+        .withKey(jobKey)
+        .withTimeout(Duration.ofMinutes(5).toMillis())
+        .withChangeset(Set.of("timeout"))
+        .update();
 
     // then
-    assertThat(RecordingExporter.jobRecords().limit(4))
-        .extracting(Record::getIntent)
-        .containsSubsequence(JobIntent.CREATED, JobIntent.UPDATE, JobIntent.TIMEOUT_UPDATED)
-        .doesNotContain(JobIntent.RETRIES_UPDATED);
+    assertThat(RecordingExporter.jobRecords().limit(3))
+        .extracting(Record::getIntent, record -> record.getValue().getTimeout())
+        .containsSubsequence(
+            tuple(JobIntent.CREATED, -1L),
+            tuple(JobIntent.UPDATE, 300000L),
+            tuple(JobIntent.UPDATED, -1L));
   }
 
   @Test
   public void shouldRejectUpdateTimoutIfJobNotFound() {
     // given
     final long jobKey = 123L;
-    final int retries = 3;
-    final long timeout = Duration.ofMinutes(10).toMillis();
 
     // when
     final var jobRecord =
         ENGINE
             .job()
             .withKey(jobKey)
-            .withRetries(retries)
-            .withTimeout(timeout)
+            .withRetries(5)
+            .withTimeout(Duration.ofMinutes(5).toMillis())
+            .withChangeset(Set.of("retries", "timeout"))
             .expectRejection()
             .update();
 

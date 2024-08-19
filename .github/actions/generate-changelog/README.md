@@ -10,7 +10,7 @@ This actions gets a branch for which we want to generate changelog, finds last t
 
 | Input  |                   Description                    | Required | Default |
 |--------|--------------------------------------------------|----------|---------|
-| branch | A branch for which we want to generate changelog | true     | master  |
+| branch | A branch for which we want to generate changelog | true     | main    |
 
 ### Outputs
 
@@ -29,7 +29,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         with:
-          ref: ${{ github.event.inputs.branch || 'master' }}
+          ref: ${{ github.event.inputs.branch || 'main' }}
       - name: Calculate changelog
         uses: ./.github/actions/generate-changelog
         id: changelog

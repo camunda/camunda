@@ -10,7 +10,6 @@ package io.camunda.zeebe.logstreams.impl.log;
 import static io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata.copyMetadata;
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FRAME_ALIGNMENT;
 import static io.camunda.zeebe.logstreams.impl.serializer.SequencedBatchSerializer.calculateBatchLength;
-import static io.camunda.zeebe.scheduler.clock.ActorClock.currentTimeMillis;
 
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection;
@@ -22,6 +21,7 @@ import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.util.Either;
 import java.io.Closeable;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
@@ -41,6 +41,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
   private volatile boolean isClosed = false;
   private final ReentrantLock lock = new ReentrantLock();
   private final LogStorage logStorage;
+  private final InstantSource clock;
   private final SequencerMetrics sequencerMetrics;
   private final FlowControl flowControl;
 
@@ -48,10 +49,12 @@ final class Sequencer implements LogStreamWriter, Closeable {
       final LogStorage logStorage,
       final long initialPosition,
       final int maxFragmentSize,
+      final InstantSource clock,
       final SequencerMetrics sequencerMetrics,
       final FlowControl flowControl) {
-    this.logStorage = logStorage;
     LOG.trace("Starting new sequencer at position {}", initialPosition);
+    this.logStorage = logStorage;
+    this.clock = Objects.requireNonNull(clock);
     position = initialPosition;
     this.maxFragmentSize = maxFragmentSize;
     this.sequencerMetrics =
@@ -110,7 +113,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
       final var highestPosition = currentPosition + batchSize - 1;
       final var sequencedBatch =
           new SequencedBatch(
-              currentTimeMillis(), currentPosition, sourcePosition, appendEntries, batchLength);
+              clock.millis(), currentPosition, sourcePosition, appendEntries, batchLength);
       flowControl.onAppend(inFlightEntry, highestPosition);
       logStorage.append(currentPosition, highestPosition, sequencedBatch, flowControl);
       position = currentPosition + batchSize;

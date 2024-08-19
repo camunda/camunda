@@ -52,7 +52,7 @@ public class CollectionService {
   public IdResponseDto createNewCollectionAndReturnId(
       final String userId,
       final PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {
-    if (!identityService.getUserAuthorizations(userId).contains(AuthorizationType.ENTITY_EDITOR)) {
+    if (!identityService.getEnabledAuthorizations().contains(AuthorizationType.ENTITY_EDITOR)) {
       throw new ForbiddenException("User is not an authorized entity editor");
     }
     return collectionWriter.createNewCollectionAndReturnId(userId, partialCollectionDefinitionDto);
@@ -67,7 +67,7 @@ public class CollectionService {
       return Optional.of(
           collectionWriter.createNewCollectionAndReturnId(
               userId, partialCollectionDefinitionDto, presetId, automaticallyCreated));
-    } catch (OptimizeRuntimeException e) {
+    } catch (final OptimizeRuntimeException e) {
       // This can happen if the collection has been created in parallel, let's check if it already
       // exists
       if (Optional.ofNullable(getCollectionDefinition(presetId)).isEmpty()) {
@@ -133,7 +133,8 @@ public class CollectionService {
     collectionWriter.deleteCollection(collectionId);
   }
 
-  public ConflictResponseDto getDeleteConflictingItems(String userId, String collectionId) {
+  public ConflictResponseDto getDeleteConflictingItems(
+      final String userId, final String collectionId) {
     return new ConflictResponseDto(getConflictedItemsForDelete(userId, collectionId));
   }
 
@@ -156,12 +157,12 @@ public class CollectionService {
   }
 
   public IdResponseDto copyCollection(
-      String userId, String collectionId, String newCollectionName) {
-    AuthorizedCollectionDefinitionDto oldCollection =
+      final String userId, final String collectionId, final String newCollectionName) {
+    final AuthorizedCollectionDefinitionDto oldCollection =
         authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(
             userId, collectionId);
 
-    CollectionDefinitionDto newCollection =
+    final CollectionDefinitionDto newCollection =
         new CollectionDefinitionDto(
             oldCollection.getDefinitionDto().getData(),
             OffsetDateTime.now(),
@@ -173,7 +174,7 @@ public class CollectionService {
             userId,
             userId);
 
-    CollectionDefinitionRestDto oldResolvedCollection =
+    final CollectionDefinitionRestDto oldResolvedCollection =
         getCollectionDefinitionRestDto(oldCollection).getDefinitionDto();
 
     collectionWriter.createNewCollection(newCollection);
@@ -183,7 +184,8 @@ public class CollectionService {
     return new IdResponseDto(newCollection.getId());
   }
 
-  private Set<ConflictedItemDto> getConflictedItemsForDelete(String userId, String collectionId) {
+  private Set<ConflictedItemDto> getConflictedItemsForDelete(
+      final String userId, final String collectionId) {
     return collectionRelationService.getConflictedItemsForDelete(
         getCollectionDefinition(userId, collectionId).getDefinitionDto());
   }

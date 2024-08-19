@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.service.db.es;
 
-import io.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.BackoffCalculator;
@@ -29,7 +28,6 @@ public class OptimizeElasticsearchClientConfiguration {
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService optimizeIndexNameService;
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
-  private final ElasticsearchCustomHeaderProvider elasticsearchCustomHeaderProvider;
 
   @Bean(destroyMethod = "close")
   public OptimizeElasticsearchClient optimizeElasticsearchClient(
@@ -44,7 +42,6 @@ public class OptimizeElasticsearchClientConfiguration {
         configurationService,
         optimizeIndexNameService,
         elasticSearchSchemaManager,
-        elasticsearchCustomHeaderProvider,
         backoffCalculator);
   }
 }

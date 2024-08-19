@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.optimize.AbstractCCSMIT;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
-import io.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskDataDto;
 import io.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskRecordDto;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;

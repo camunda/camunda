@@ -9,8 +9,6 @@ package io.camunda.optimize.upgrade.util;
 
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 
-import io.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
-import io.camunda.optimize.plugin.PluginJarFileLoader;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import io.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
@@ -38,7 +36,7 @@ public class UpgradeUtil {
 
   public static UpgradeExecutionDependencies createUpgradeDependenciesWithAdditionalConfigLocation(
       final String... configLocations) {
-    ConfigurationService configurationService;
+    final ConfigurationService configurationService;
     if (configLocations == null || configLocations.length == 0) {
       configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
     } else {
@@ -51,38 +49,34 @@ public class UpgradeUtil {
 
   public static UpgradeExecutionDependencies createUpgradeDependenciesWithAConfigurationService(
       final ConfigurationService configurationService) {
-    OptimizeIndexNameService indexNameService =
+    final OptimizeIndexNameService indexNameService =
         new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH);
-    ElasticsearchCustomHeaderProvider customHeaderProvider =
-        new ElasticsearchCustomHeaderProvider(
-            configurationService, new PluginJarFileLoader(configurationService));
-    customHeaderProvider.initPlugins();
-    OptimizeElasticsearchClient esClient =
+    final OptimizeElasticsearchClient esClient =
         new OptimizeElasticsearchClient(
             ElasticsearchHighLevelRestClientBuilder.build(configurationService),
             indexNameService,
-            new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService),
+            new RequestOptionsProvider(configurationService),
             OPTIMIZE_MAPPER);
-    ElasticSearchMetadataService metadataService =
+    final ElasticSearchMetadataService metadataService =
         new ElasticSearchMetadataService(OPTIMIZE_MAPPER);
     return new UpgradeExecutionDependencies(
         configurationService, indexNameService, esClient, OPTIMIZE_MAPPER, metadataService);
   }
 
-  public static String readClasspathFileAsString(String filePath) {
+  public static String readClasspathFileAsString(final String filePath) {
     String data = null;
-    try (InputStream inputStream =
+    try (final InputStream inputStream =
         UpgradeUtil.class.getClassLoader().getResourceAsStream(filePath)) {
       data = readFromInputStream(inputStream);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("can't read [{}] from classpath", filePath, e);
     }
     return data;
   }
 
-  private static String readFromInputStream(InputStream inputStream) throws IOException {
-    try (ByteArrayOutputStream result = new ByteArrayOutputStream()) {
-      byte[] buffer = new byte[1024];
+  private static String readFromInputStream(final InputStream inputStream) throws IOException {
+    try (final ByteArrayOutputStream result = new ByteArrayOutputStream()) {
+      final byte[] buffer = new byte[1024];
       int length;
       while ((length = inputStream.read(buffer)) != -1) {
         result.write(buffer, 0, length);

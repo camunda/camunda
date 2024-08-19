@@ -12,7 +12,7 @@ jobs:
       DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
       DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
     steps:
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
     - name: Install common tooling (buildx)  # required on self-hosted runners
       uses: camunda/infra-global-github-actions/common-tooling@main
       with:
@@ -34,7 +34,7 @@ jobs:
           echo "DOCKER_LATEST_TAG=${{ steps.define-values.outputs.latest_tag }}"
           echo "DOCKER_TAG=${{ steps.define-values.outputs.image_tag }}"
           echo "VERSION=${{ steps.pom-info.outputs.project_version }}"
-          echo "PUSH_LATEST_TAG=${{ steps.define-values.outputs.is_main_or_maintenance_branch }}"
+          echo "PUSH_LATEST_TAG=${{ steps.define-values.outputs.is_main_or_stable_branch }}"
           echo "IS_MAIN=${{ steps.define-values.outputs.is_main_branch }}"
           echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
         } >> "$GITHUB_ENV"
@@ -44,7 +44,7 @@ jobs:
         secrets: ${{ toJSON(secrets) }}
     - name: Import secrets
       id: secrets
-      uses: hashicorp/vault-action@148ee648ccb26f28892776406f3c3c4cf8ac033f
+      uses: hashicorp/vault-action@8b7eaceb79bd7be97b311993e7c1cc5d051213c7
       with:
         url: ${{ secrets.VAULT_ADDR }}
         method: approle
@@ -91,7 +91,7 @@ jobs:
         version: ${{ env.VERSION }}
         date: ${{ env.DATE }}
         revision: ${{ env.REVISION }}
-    # We're running under the same condition of main / maintenance
+    # We're running under the same condition of main / stable
     # We have all dependencies presents, therefore doesn't justify another job
     - name: Deploy to Artifactory
       uses: ./.github/actions/run-maven

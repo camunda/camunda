@@ -14,7 +14,7 @@ import generateLegends from './generateLegends';
 import fadeOnHover from './fadeOnHover';
 import drawLine from './drawLine';
 
-export default function createPlugins({updateReport, report: {combined, data, result}}) {
+export default function createPlugins({updateReport, report: {hyper, data, result}}) {
   const plugins = [
     drawLine(data.configuration.horizontalBar),
     drawPieEmptyState,
@@ -23,7 +23,7 @@ export default function createPlugins({updateReport, report: {combined, data, re
   ];
 
   if (
-    !combined &&
+    !hyper &&
     updateReport &&
     ['startDate', 'evaluationDateTime', 'endDate'].includes(data.groupBy.type) &&
     ['line', 'bar'].includes(data.visualization) &&
