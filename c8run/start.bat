@@ -1,5 +1,5 @@
 
-@echo off
+@echo on
 
 :checkCamundaStartup
 set RETRIES=24
