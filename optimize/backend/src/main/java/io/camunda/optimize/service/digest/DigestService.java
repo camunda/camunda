@@ -43,7 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -210,21 +209,22 @@ public class DigestService implements ConfigurationReloadable {
       final List<KpiResultDto> currentKpiReportResults,
       final Map<String, String> previousKpiReportResults) {
     return Map.of(
-        "ownerName", ownerName,
-        "processName", processDefinitionName,
+        "ownerName",
+        ownerName,
+        "processName",
+        processDefinitionName,
         "hasTimeKpis",
-            currentKpiReportResults.stream()
-                .anyMatch(kpiResult -> TIME.equals(kpiResult.getType())),
+        currentKpiReportResults.stream().anyMatch(kpiResult -> TIME.equals(kpiResult.getType())),
         "hasQualityKpis",
-            currentKpiReportResults.stream()
-                .anyMatch(kpiResult -> QUALITY.equals(kpiResult.getType())),
-        "successfulTimeKPIPercent", calculateSuccessfulKpiInPercent(TIME, currentKpiReportResults),
+        currentKpiReportResults.stream().anyMatch(kpiResult -> QUALITY.equals(kpiResult.getType())),
+        "successfulTimeKPIPercent",
+        calculateSuccessfulKpiInPercent(TIME, currentKpiReportResults),
         "successfulQualityKPIPercent",
-            calculateSuccessfulKpiInPercent(QUALITY, currentKpiReportResults),
+        calculateSuccessfulKpiInPercent(QUALITY, currentKpiReportResults),
         "kpiResults",
-            getKpiSummaryDtos(
-                processDefinitionName, currentKpiReportResults, previousKpiReportResults),
-        "optimizeHomePageLink", getOptimizeHomePageLink());
+        getKpiSummaryDtos(processDefinitionName, currentKpiReportResults, previousKpiReportResults),
+        "optimizeHomePageLink",
+        getOptimizeHomePageLink());
   }
 
   private int calculateSuccessfulKpiInPercent(
@@ -306,14 +306,20 @@ public class DigestService implements ConfigurationReloadable {
         .toList();
   }
 
-  public enum KpiChangeType {
-    GOOD, // compared to previous report value, new value is closer to KPI target
-    NEUTRAL, // no change
-    BAD // compared to previous report value, new value is further away from KPI target
+  private static double calculatePercentageChange(
+      final KpiResultDto kpiResult, final double previousValueAsDouble) {
+    try {
+      return 100
+          * ((Double.parseDouble(kpiResult.getValue()) - previousValueAsDouble)
+              / previousValueAsDouble);
+    } catch (final NumberFormatException exception) {
+      throw new OptimizeRuntimeException(
+          "Value could not be parsed to number: " + kpiResult.getValue());
+    }
   }
 
-  @Data
   public static class DigestTemplateKpiSummaryDto {
+
     private final String reportName;
     private final String reportLink;
     private final String kpiType;
@@ -402,17 +408,151 @@ public class DigestService implements ConfigurationReloadable {
         return changeInPercent > 0. ? KpiChangeType.GOOD : KpiChangeType.BAD;
       }
     }
+
+    public String getReportName() {
+      return reportName;
+    }
+
+    public String getReportLink() {
+      return reportLink;
+    }
+
+    public String getKpiType() {
+      return kpiType;
+    }
+
+    public boolean isTargetMet() {
+      return targetMet;
+    }
+
+    public String getTarget() {
+      return target;
+    }
+
+    public String getCurrent() {
+      return current;
+    }
+
+    public Double getChangeInPercent() {
+      return changeInPercent;
+    }
+
+    public KpiChangeType getChangeType() {
+      return changeType;
+    }
+
+    protected boolean canEqual(final Object other) {
+      return other instanceof DigestTemplateKpiSummaryDto;
+    }
+
+    @Override
+    public int hashCode() {
+      final int PRIME = 59;
+      int result = 1;
+      final Object $reportName = getReportName();
+      result = result * PRIME + ($reportName == null ? 43 : $reportName.hashCode());
+      final Object $reportLink = getReportLink();
+      result = result * PRIME + ($reportLink == null ? 43 : $reportLink.hashCode());
+      final Object $kpiType = getKpiType();
+      result = result * PRIME + ($kpiType == null ? 43 : $kpiType.hashCode());
+      result = result * PRIME + (isTargetMet() ? 79 : 97);
+      final Object $target = getTarget();
+      result = result * PRIME + ($target == null ? 43 : $target.hashCode());
+      final Object $current = getCurrent();
+      result = result * PRIME + ($current == null ? 43 : $current.hashCode());
+      final Object $changeInPercent = getChangeInPercent();
+      result = result * PRIME + ($changeInPercent == null ? 43 : $changeInPercent.hashCode());
+      final Object $changeType = getChangeType();
+      result = result * PRIME + ($changeType == null ? 43 : $changeType.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (o == this) {
+        return true;
+      }
+      if (!(o instanceof DigestTemplateKpiSummaryDto)) {
+        return false;
+      }
+      final DigestTemplateKpiSummaryDto other = (DigestTemplateKpiSummaryDto) o;
+      if (!other.canEqual((Object) this)) {
+        return false;
+      }
+      final Object this$reportName = getReportName();
+      final Object other$reportName = other.getReportName();
+      if (this$reportName == null
+          ? other$reportName != null
+          : !this$reportName.equals(other$reportName)) {
+        return false;
+      }
+      final Object this$reportLink = getReportLink();
+      final Object other$reportLink = other.getReportLink();
+      if (this$reportLink == null
+          ? other$reportLink != null
+          : !this$reportLink.equals(other$reportLink)) {
+        return false;
+      }
+      final Object this$kpiType = getKpiType();
+      final Object other$kpiType = other.getKpiType();
+      if (this$kpiType == null ? other$kpiType != null : !this$kpiType.equals(other$kpiType)) {
+        return false;
+      }
+      if (isTargetMet() != other.isTargetMet()) {
+        return false;
+      }
+      final Object this$target = getTarget();
+      final Object other$target = other.getTarget();
+      if (this$target == null ? other$target != null : !this$target.equals(other$target)) {
+        return false;
+      }
+      final Object this$current = getCurrent();
+      final Object other$current = other.getCurrent();
+      if (this$current == null ? other$current != null : !this$current.equals(other$current)) {
+        return false;
+      }
+      final Object this$changeInPercent = getChangeInPercent();
+      final Object other$changeInPercent = other.getChangeInPercent();
+      if (this$changeInPercent == null
+          ? other$changeInPercent != null
+          : !this$changeInPercent.equals(other$changeInPercent)) {
+        return false;
+      }
+      final Object this$changeType = getChangeType();
+      final Object other$changeType = other.getChangeType();
+      if (this$changeType == null
+          ? other$changeType != null
+          : !this$changeType.equals(other$changeType)) {
+        return false;
+      }
+      return true;
+    }
+
+    @Override
+    public String toString() {
+      return "DigestService.DigestTemplateKpiSummaryDto(reportName="
+          + getReportName()
+          + ", reportLink="
+          + getReportLink()
+          + ", kpiType="
+          + getKpiType()
+          + ", targetMet="
+          + isTargetMet()
+          + ", target="
+          + getTarget()
+          + ", current="
+          + getCurrent()
+          + ", changeInPercent="
+          + getChangeInPercent()
+          + ", changeType="
+          + getChangeType()
+          + ")";
+    }
   }
 
-  private static double calculatePercentageChange(
-      KpiResultDto kpiResult, double previousValueAsDouble) {
-    try {
-      return 100
-          * ((Double.parseDouble(kpiResult.getValue()) - previousValueAsDouble)
-              / previousValueAsDouble);
-    } catch (final NumberFormatException exception) {
-      throw new OptimizeRuntimeException(
-          "Value could not be parsed to number: " + kpiResult.getValue());
-    }
+  public enum KpiChangeType {
+    GOOD, // compared to previous report value, new value is closer to KPI target
+    NEUTRAL, // no change
+    BAD // compared to previous report value, new value is further away from KPI target
   }
 }

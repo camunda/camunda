@@ -20,20 +20,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.Data;
 
-@Data
 public class OpenSearchConfiguration {
 
   private DatabaseConnection connection;
-
   private DatabaseBackup backup;
-
   private DatabaseSecurity security;
-
   private int scrollTimeoutInSeconds;
-
   private DatabaseSettings settings;
+
+  public OpenSearchConfiguration() {}
 
   @JsonIgnore
   public Integer getConnectionTimeout() {
@@ -61,6 +57,11 @@ public class OpenSearchConfiguration {
   }
 
   @JsonIgnore
+  public void setRefreshInterval(final String refreshInterval) {
+    settings.getIndex().setRefreshInterval(refreshInterval);
+  }
+
+  @JsonIgnore
   public Integer getNumberOfShards() {
     return settings.getIndex().getNumberOfShards();
   }
@@ -71,10 +72,20 @@ public class OpenSearchConfiguration {
   }
 
   @JsonIgnore
+  public void setNumberOfReplicas(final int replicaCount) {
+    settings.getIndex().setNumberOfReplicas(replicaCount);
+  }
+
+  @JsonIgnore
   public Integer getNestedDocumentsLimit() {
-    Integer values = settings.getIndex().getNestedDocumentsLimit();
+    final Integer values = settings.getIndex().getNestedDocumentsLimit();
     ensureGreaterThanZero(values);
     return values;
+  }
+
+  @JsonIgnore
+  public void setNestedDocumentsLimit(final int nestedDocumentLimit) {
+    settings.getIndex().setNestedDocumentsLimit(nestedDocumentLimit);
   }
 
   @JsonIgnore
@@ -113,7 +124,7 @@ public class OpenSearchConfiguration {
 
   @JsonIgnore
   public List<String> getSecuritySSLCertificateAuthorities() {
-    List<String> securitySSLCertificateAuthorities =
+    final List<String> securitySSLCertificateAuthorities =
         security.getSsl().getCertificateAuthorities().stream()
             .map(a -> resolvePathAsAbsoluteUrl(a).getPath())
             .collect(Collectors.toList());
@@ -131,6 +142,11 @@ public class OpenSearchConfiguration {
   }
 
   @JsonIgnore
+  public void setAggregationBucketLimit(final int bucketLimit) {
+    settings.setAggregationBucketLimit(bucketLimit);
+  }
+
+  @JsonIgnore
   public DatabaseConnectionNodeConfiguration getFirstConnectionNode() {
     return getConnectionNodes().get(0);
   }
@@ -141,27 +157,122 @@ public class OpenSearchConfiguration {
   }
 
   @JsonIgnore
-  public void setAggregationBucketLimit(final int bucketLimit) {
-    settings.setAggregationBucketLimit(bucketLimit);
-  }
-
-  @JsonIgnore
   public void setIndexPrefix(final String prefix) {
     settings.getIndex().setPrefix(prefix);
   }
 
-  @JsonIgnore
-  public void setRefreshInterval(final String refreshInterval) {
-    settings.getIndex().setRefreshInterval(refreshInterval);
+  public DatabaseConnection getConnection() {
+    return connection;
   }
 
-  @JsonIgnore
-  public void setNumberOfReplicas(final int replicaCount) {
-    settings.getIndex().setNumberOfReplicas(replicaCount);
+  public void setConnection(final DatabaseConnection connection) {
+    this.connection = connection;
   }
 
-  @JsonIgnore
-  public void setNestedDocumentsLimit(final int nestedDocumentLimit) {
-    settings.getIndex().setNestedDocumentsLimit(nestedDocumentLimit);
+  public DatabaseBackup getBackup() {
+    return backup;
+  }
+
+  public void setBackup(final DatabaseBackup backup) {
+    this.backup = backup;
+  }
+
+  public DatabaseSecurity getSecurity() {
+    return security;
+  }
+
+  public void setSecurity(final DatabaseSecurity security) {
+    this.security = security;
+  }
+
+  public int getScrollTimeoutInSeconds() {
+    return scrollTimeoutInSeconds;
+  }
+
+  public void setScrollTimeoutInSeconds(final int scrollTimeoutInSeconds) {
+    this.scrollTimeoutInSeconds = scrollTimeoutInSeconds;
+  }
+
+  public DatabaseSettings getSettings() {
+    return settings;
+  }
+
+  public void setSettings(final DatabaseSettings settings) {
+    this.settings = settings;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof OpenSearchConfiguration;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = 1;
+    final Object $connection = getConnection();
+    result = result * PRIME + ($connection == null ? 43 : $connection.hashCode());
+    final Object $backup = getBackup();
+    result = result * PRIME + ($backup == null ? 43 : $backup.hashCode());
+    final Object $security = getSecurity();
+    result = result * PRIME + ($security == null ? 43 : $security.hashCode());
+    result = result * PRIME + getScrollTimeoutInSeconds();
+    final Object $settings = getSettings();
+    result = result * PRIME + ($settings == null ? 43 : $settings.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof OpenSearchConfiguration)) {
+      return false;
+    }
+    final OpenSearchConfiguration other = (OpenSearchConfiguration) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    final Object this$connection = getConnection();
+    final Object other$connection = other.getConnection();
+    if (this$connection == null
+        ? other$connection != null
+        : !this$connection.equals(other$connection)) {
+      return false;
+    }
+    final Object this$backup = getBackup();
+    final Object other$backup = other.getBackup();
+    if (this$backup == null ? other$backup != null : !this$backup.equals(other$backup)) {
+      return false;
+    }
+    final Object this$security = getSecurity();
+    final Object other$security = other.getSecurity();
+    if (this$security == null ? other$security != null : !this$security.equals(other$security)) {
+      return false;
+    }
+    if (getScrollTimeoutInSeconds() != other.getScrollTimeoutInSeconds()) {
+      return false;
+    }
+    final Object this$settings = getSettings();
+    final Object other$settings = other.getSettings();
+    if (this$settings == null ? other$settings != null : !this$settings.equals(other$settings)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "OpenSearchConfiguration(connection="
+        + getConnection()
+        + ", backup="
+        + getBackup()
+        + ", security="
+        + getSecurity()
+        + ", scrollTimeoutInSeconds="
+        + getScrollTimeoutInSeconds()
+        + ", settings="
+        + getSettings()
+        + ")";
   }
 }
