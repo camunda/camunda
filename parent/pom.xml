@@ -1438,6 +1438,12 @@
         <version>${version.wiremock}</version>
       </dependency>
 
+      <dependency>
+        <groupId>org.wiremock</groupId>
+        <artifactId>wiremock-standalone</artifactId>
+        <version>${version.wiremock}</version>
+      </dependency>
+
       <!-- Testcontainers & Docker for container based integration tests -->
       <dependency>
         <groupId>org.testcontainers</groupId>

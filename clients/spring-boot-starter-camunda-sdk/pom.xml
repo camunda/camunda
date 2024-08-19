@@ -22,7 +22,6 @@
   <properties>
     <version.java>17</version.java>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
-    <wiremock-standalone.version>3.9.1</wiremock-standalone.version>
   </properties>
 
   <dependencies>
@@ -189,7 +188,6 @@
     <dependency>
       <groupId>org.wiremock</groupId>
       <artifactId>wiremock-standalone</artifactId>
-      <version>${wiremock-standalone.version}</version>
       <scope>test</scope>
     </dependency>
 
