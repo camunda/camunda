@@ -11,10 +11,9 @@ import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
-import lombok.EqualsAndHashCode;
 
-@EqualsAndHashCode(callSuper = true)
 public class InsertDataStep extends UpgradeStep {
+
   private final String data;
 
   public InsertDataStep(final IndexMappingCreator index, final String data) {
@@ -30,5 +29,42 @@ public class InsertDataStep extends UpgradeStep {
   @Override
   public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
     schemaUpgradeClient.insertDataByIndexName(index, data);
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof InsertDataStep;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = super.hashCode();
+    final Object $data = data;
+    result = result * PRIME + ($data == null ? 43 : $data.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof InsertDataStep)) {
+      return false;
+    }
+    final InsertDataStep other = (InsertDataStep) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final Object this$data = data;
+    final Object other$data = other.data;
+    if (this$data == null ? other$data != null : !this$data.equals(other$data)) {
+      return false;
+    }
+    return true;
   }
 }

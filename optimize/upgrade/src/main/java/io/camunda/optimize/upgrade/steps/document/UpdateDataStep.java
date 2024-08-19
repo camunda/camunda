@@ -13,12 +13,11 @@ import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import org.elasticsearch.index.query.QueryBuilder;
 
-@EqualsAndHashCode(callSuper = true)
 public class UpdateDataStep extends UpgradeStep {
+
   private final QueryBuilder query;
   private final String updateScript;
   private Map<String, Object> parameters;
@@ -57,10 +56,74 @@ public class UpdateDataStep extends UpgradeStep {
 
   @Override
   @SneakyThrows
-  public void execute(SchemaUpgradeClient schemaUpgradeClient) {
+  public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
     if (paramMapProvider != null) {
       parameters = paramMapProvider.call();
     }
     schemaUpgradeClient.updateDataByIndexName(index, query, updateScript, parameters);
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof UpdateDataStep;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = super.hashCode();
+    final Object $query = query;
+    result = result * PRIME + ($query == null ? 43 : $query.hashCode());
+    final Object $updateScript = updateScript;
+    result = result * PRIME + ($updateScript == null ? 43 : $updateScript.hashCode());
+    final Object $parameters = parameters;
+    result = result * PRIME + ($parameters == null ? 43 : $parameters.hashCode());
+    final Object $paramMapProvider = paramMapProvider;
+    result = result * PRIME + ($paramMapProvider == null ? 43 : $paramMapProvider.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof UpdateDataStep)) {
+      return false;
+    }
+    final UpdateDataStep other = (UpdateDataStep) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final Object this$query = query;
+    final Object other$query = other.query;
+    if (this$query == null ? other$query != null : !this$query.equals(other$query)) {
+      return false;
+    }
+    final Object this$updateScript = updateScript;
+    final Object other$updateScript = other.updateScript;
+    if (this$updateScript == null
+        ? other$updateScript != null
+        : !this$updateScript.equals(other$updateScript)) {
+      return false;
+    }
+    final Object this$parameters = parameters;
+    final Object other$parameters = other.parameters;
+    if (this$parameters == null
+        ? other$parameters != null
+        : !this$parameters.equals(other$parameters)) {
+      return false;
+    }
+    final Object this$paramMapProvider = paramMapProvider;
+    final Object other$paramMapProvider = other.paramMapProvider;
+    if (this$paramMapProvider == null
+        ? other$paramMapProvider != null
+        : !this$paramMapProvider.equals(other$paramMapProvider)) {
+      return false;
+    }
+    return true;
   }
 }

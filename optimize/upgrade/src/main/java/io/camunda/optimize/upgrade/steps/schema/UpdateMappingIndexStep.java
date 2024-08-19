@@ -11,9 +11,7 @@ import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
-import lombok.EqualsAndHashCode;
 
-@EqualsAndHashCode(callSuper = true)
 public class UpdateMappingIndexStep extends UpgradeStep {
 
   public UpdateMappingIndexStep(final IndexMappingCreator index) {
@@ -28,5 +26,34 @@ public class UpdateMappingIndexStep extends UpgradeStep {
   @Override
   public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
     schemaUpgradeClient.updateIndexDynamicSettingsAndMappings(index);
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof UpdateMappingIndexStep;
+  }
+
+  @Override
+  public int hashCode() {
+    final int result = super.hashCode();
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (!(o instanceof UpdateMappingIndexStep)) {
+      return false;
+    }
+    final UpdateMappingIndexStep other = (UpdateMappingIndexStep) o;
+    if (!other.canEqual((Object) this)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    return true;
   }
 }
