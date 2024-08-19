@@ -11,6 +11,7 @@ import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -123,6 +124,31 @@ public class ZeebeUserTaskImportIT extends TasklistZeebeIntegrationTest {
         .extractingListContent(objectMapper, VariableSearchResponse.class)
         .extracting("name", "previewValue", "value")
         .containsExactly(tuple("varA", "null", "null"));
+  }
+
+  @Test
+  public void shouldImportZeebeUserTaskWithCustomHeaders() {
+    final String bpmnProcessId = "testProcess";
+    final String flowNodeBpmnId = "taskA";
+    final String taskId =
+        tester
+            .createAndDeploySimpleProcess(
+                bpmnProcessId,
+                flowNodeBpmnId,
+                AbstractUserTaskBuilder::zeebeUserTask,
+                t -> t.zeebeTaskHeader("testKey", "testValue"))
+            .processIsDeployed()
+            .then()
+            .startProcessInstance(bpmnProcessId)
+            .then()
+            .taskIsCreated(flowNodeBpmnId)
+            .getTaskId();
+    // then
+    assertNotNull(taskId);
+    final TaskEntity taskEntity = taskStore.getTask(taskId);
+    assertEquals(TaskImplementation.ZEEBE_USER_TASK, taskEntity.getImplementation());
+    assertTrue(taskEntity.getCustomHeaders().containsKey("testKey"));
+    assertEquals("testValue", taskEntity.getCustomHeaders().get("testKey"));
   }
 
   private static Stream<Arguments> priorityOptions() {
