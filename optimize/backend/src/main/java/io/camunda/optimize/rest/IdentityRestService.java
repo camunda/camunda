@@ -82,6 +82,6 @@ public class IdentityRestService {
         identityService
             .getCurrentUserById(userId, requestContext)
             .orElseGet(() -> new UserDto(userId));
-    return new UserResponseDto(currentUserDto, identityService.getUserAuthorizations(userId));
+    return new UserResponseDto(currentUserDto, identityService.getEnabledAuthorizations());
   }
 }

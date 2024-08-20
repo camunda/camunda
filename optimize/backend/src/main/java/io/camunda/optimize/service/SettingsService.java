@@ -58,9 +58,7 @@ public class SettingsService {
   }
 
   private void validateUserAuthorizedToConfigureSettingsOrFail(final String userId) {
-    if (!identityService.isSuperUserIdentity(userId)) {
-      throw new ForbiddenException(
-          String.format("User [%s] is not authorized to configure settings.", userId));
-    }
+    throw new ForbiddenException(
+        String.format("User [%s] is not authorized to configure settings.", userId));
   }
 }

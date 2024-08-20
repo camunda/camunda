@@ -36,7 +36,7 @@
 		"react": "17.0.2",
 		"react-dom": "17.0.2",
 		"sass": "^1.77.2",
-		"sass-loader": "^14.1.1",
+		"sass-loader": "^16.0.0",
 		"storybook": "^8.1.4",
 		"typescript": "5.5.4"
 	},

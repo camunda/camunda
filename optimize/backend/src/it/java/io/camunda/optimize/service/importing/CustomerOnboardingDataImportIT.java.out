@@ -62,36 +62,6 @@
 //         .isFalse();
 //   }
 //
-//   @Test
-//   public void dataImportDataGetsConvertedWithWarningIfEnabledInConfigButRunningInPlatformMode() {
-//     // given
-//     embeddedOptimizeExtension.getConfigurationService().setCustomerOnboardingImport(true);
-//     embeddedOptimizeExtension.reloadConfiguration();
-//
-//     // when
-//     addDataToOptimize(
-//         CUSTOMER_ONBOARDING_PROCESS_INSTANCES, CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME);
-//
-//     // then
-//     assertThat(
-//             databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
-//                 PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class))
-//         .singleElement()
-//         .satisfies(
-//             def -> {
-//               assertThat(def.getTenantId()).isNull();
-//               assertThat(def.getDataSource().getType()).isEqualTo(DataImportSourceType.ENGINE);
-//               assertThat(def.getDataSource().getName()).isEqualTo("camunda-bpm");
-//             });
-//     assertThat(
-//             indexExist(
-//                 ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME)))
-//         .isTrue();
-//     logCapturer.assertContains(
-//         "C8 Customer onboarding data enabled but running in Platform mode. Converting data to C7
-// test data");
-//   }
-//
 //   protected boolean indexExist(final String indexName) {
 //     return embeddedOptimizeExtension
 //         .getDatabaseSchemaManager()

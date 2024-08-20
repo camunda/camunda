@@ -238,9 +238,6 @@ public class DefinitionRestService {
         final ProcessDefinitionOptimizeDto processDef =
             (ProcessDefinitionOptimizeDto) definitionDto.get();
         responseBuilder.entity(processDef.getBpmn20Xml());
-        if (processDef.isEventBased()) {
-          addNoStoreCacheHeader(responseBuilder);
-        }
         break;
       case DECISION:
         final DecisionDefinitionOptimizeDto decisionDef =
@@ -286,20 +283,10 @@ public class DefinitionRestService {
   private List<DefinitionResponseDto> getDefinitions(
       final DefinitionType type, final String collectionId, final String userId) {
     if (collectionId != null) {
-      return getDefinitionKeysForCollection(type, userId, collectionId);
+      return collectionScopeService.getCollectionDefinitions(type, userId, collectionId);
     } else {
-      return getDefinitionKeys(type, userId);
+      return definitionService.getFullyImportedDefinitions(type, userId);
     }
-  }
-
-  private List<DefinitionResponseDto> getDefinitionKeys(
-      final DefinitionType type, final String userId) {
-    return definitionService.getFullyImportedDefinitions(type, userId);
-  }
-
-  private List<DefinitionResponseDto> getDefinitionKeysForCollection(
-      final DefinitionType type, final String userId, final String collectionId) {
-    return collectionScopeService.getCollectionDefinitions(type, userId, collectionId);
   }
 
   private void addNoStoreCacheHeader(final Response.ResponseBuilder processResponse) {

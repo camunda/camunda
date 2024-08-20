@@ -65,7 +65,7 @@ public class CollectionService {
   public IdResponseDto createNewCollectionAndReturnId(
       final String userId,
       final PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {
-    if (!identityService.getUserAuthorizations(userId).contains(AuthorizationType.ENTITY_EDITOR)) {
+    if (!identityService.getEnabledAuthorizations().contains(AuthorizationType.ENTITY_EDITOR)) {
       throw new ForbiddenException("User is not an authorized entity editor");
     }
     return collectionWriter.createNewCollectionAndReturnId(userId, partialCollectionDefinitionDto);

@@ -20,21 +20,17 @@ public class EntityNameRequestDto {
   @QueryParam("reportId")
   private String reportId;
 
-  @QueryParam("eventBasedProcessId")
-  private String eventBasedProcessId;
-
   public EntityNameRequestDto(
       final String collectionId,
       final String dashboardId,
-      final String reportId,
-      final String eventBasedProcessId) {
+      final String reportId) {
     this.collectionId = collectionId;
     this.dashboardId = dashboardId;
     this.reportId = reportId;
-    this.eventBasedProcessId = eventBasedProcessId;
   }
 
-  public EntityNameRequestDto() {}
+  public EntityNameRequestDto() {
+  }
 
   public String getCollectionId() {
     return collectionId;
@@ -60,14 +56,6 @@ public class EntityNameRequestDto {
     this.reportId = reportId;
   }
 
-  public String getEventBasedProcessId() {
-    return eventBasedProcessId;
-  }
-
-  public void setEventBasedProcessId(final String eventBasedProcessId) {
-    this.eventBasedProcessId = eventBasedProcessId;
-  }
-
   protected boolean canEqual(final Object other) {
     return other instanceof EntityNameRequestDto;
   }
@@ -82,8 +70,6 @@ public class EntityNameRequestDto {
     result = result * PRIME + ($dashboardId == null ? 43 : $dashboardId.hashCode());
     final Object $reportId = getReportId();
     result = result * PRIME + ($reportId == null ? 43 : $reportId.hashCode());
-    final Object $eventBasedProcessId = getEventBasedProcessId();
-    result = result * PRIME + ($eventBasedProcessId == null ? 43 : $eventBasedProcessId.hashCode());
     return result;
   }
 
@@ -118,13 +104,6 @@ public class EntityNameRequestDto {
     if (this$reportId == null ? other$reportId != null : !this$reportId.equals(other$reportId)) {
       return false;
     }
-    final Object this$eventBasedProcessId = getEventBasedProcessId();
-    final Object other$eventBasedProcessId = other.getEventBasedProcessId();
-    if (this$eventBasedProcessId == null
-        ? other$eventBasedProcessId != null
-        : !this$eventBasedProcessId.equals(other$eventBasedProcessId)) {
-      return false;
-    }
     return true;
   }
 
@@ -136,15 +115,12 @@ public class EntityNameRequestDto {
         + getDashboardId()
         + ", reportId="
         + getReportId()
-        + ", eventBasedProcessId="
-        + getEventBasedProcessId()
         + ")";
   }
 
   public enum Fields {
     collectionId,
     dashboardId,
-    reportId,
-    eventBasedProcessId
+    reportId
   }
 }

@@ -15,7 +15,6 @@
 //
 // import io.camunda.optimize.dto.optimize.DefinitionType;
 // import io.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
-// import io.camunda.optimize.util.SuperUserType;
 // import jakarta.ws.rs.core.Response;
 // import java.util.Collections;
 // import org.junit.jupiter.api.Tag;
@@ -32,35 +31,8 @@
 // public class DashboardDefinitionExportAuthorizationIT
 //     extends AbstractExportImportEntityDefinitionIT {
 //
-//   @ParameterizedTest
-//   @EnumSource(SuperUserType.class)
-//   public void exportDashboardAsJson_asSuperuser(SuperUserType superUserType) {
-//     // given
-//     final String dashboardId = dashboardClient.createEmptyDashboard(null);
-//
-//     // when
-//     final Response response;
-//     if (superUserType == SuperUserType.USER) {
-//       response = exportClient.exportDashboardAsUser("demo", "demo", dashboardId, "my_file.json");
-//     } else {
-//       authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//       authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-//       embeddedOptimizeExtension
-//           .getConfigurationService()
-//           .getAuthConfiguration()
-//           .getSuperGroupIds()
-//           .add(GROUP_ID);
-//       response =
-//           exportClient.exportDashboardAsUser(KERMIT_USER, KERMIT_USER, dashboardId,
-// "my_file.json");
-//     }
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-//   }
-//
 //   @Test
-//   public void exportDashboardAsJson_asNonSuperuser() {
+//   public void exportDashboardAsJson() {
 //     // given
 //     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 //     final String dashboardId = dashboardClient.createEmptyDashboard(null);
@@ -74,31 +46,4 @@
 //     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 //   }
 //
-//   @Test
-//   public void exportDashboardAsJson_withoutReportDefinitionAuth() {
-//     // given a dashboard with a report that Kermit is not authorized to access
-//     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-//     embeddedOptimizeExtension
-//         .getConfigurationService()
-//         .getAuthConfiguration()
-//         .getSuperUserIds()
-//         .add(KERMIT_USER);
-//     final String defKey =
-//         engineIntegrationExtension
-//             .deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram())
-//             .getKey();
-//     final String reportId =
-//         reportClient.createSingleReport(
-//             null, DefinitionType.PROCESS, defKey, Collections.emptyList());
-//     final String dashboardId =
-//         dashboardClient.createDashboard(null, Collections.singletonList(reportId));
-//
-//     // when
-//     final Response response =
-//         exportClient.exportDashboardAsUser(KERMIT_USER, KERMIT_USER, dashboardId,
-// "my_file.json");
-//
-//     // then
-//     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
-//   }
 // }

@@ -67,7 +67,6 @@ public class KpiEvaluationSchedulerService extends AbstractScheduledService {
     log.debug("Scheduling KPI evaluation tasks for all existing processes.");
     final List<String> processDefinitionKeys =
         definitionService.getAllDefinitionsWithTenants(PROCESS).stream()
-            .filter(def -> !def.getIsEventProcess())
             .map(SimpleDefinitionDto::getKey)
             .collect(Collectors.toList());
 

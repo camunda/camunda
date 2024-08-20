@@ -17,7 +17,7 @@ public final class ClockRecord extends UnifiedRecordValue implements ClockRecord
   private final LongProperty timeProperty = new LongProperty("time", 0);
 
   public ClockRecord() {
-    super(2);
+    super(1);
     declareProperty(timeProperty);
   }
 

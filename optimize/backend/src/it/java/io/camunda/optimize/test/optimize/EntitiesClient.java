@@ -54,44 +54,24 @@ public class EntitiesClient {
   public EntityNameResponseDto getEntityNames(
       final String collectionId,
       final String dashboardId,
-      final String reportId,
-      final String eventProcessId) {
+      final String reportId) {
     return getEntityNamesAsUser(
-        collectionId, dashboardId, reportId, eventProcessId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-  }
-
-  public EntityNameResponseDto getEntityNamesLocalized(
-      final String collectionId,
-      final String dashboardId,
-      final String reportId,
-      final String eventProcessId,
-      final String locale) {
-    return getEntityNamesAsUser(
-        collectionId,
-        dashboardId,
-        reportId,
-        eventProcessId,
-        DEFAULT_USERNAME,
-        DEFAULT_PASSWORD,
-        locale);
+        collectionId, dashboardId, reportId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
   public EntityNameResponseDto getEntityNamesAsUser(
       final String collectionId,
       final String dashboardId,
       final String reportId,
-      final String eventProcessId,
       final String username,
       final String password) {
-    return getEntityNamesAsUser(
-        collectionId, dashboardId, reportId, eventProcessId, username, password, null);
+    return getEntityNamesAsUser(collectionId, dashboardId, reportId, username, password, null);
   }
 
   private EntityNameResponseDto getEntityNamesAsUser(
       final String collectionId,
       final String dashboardId,
       final String reportId,
-      final String eventProcessId,
       final String username,
       final String password,
       final String locale) {
@@ -100,8 +80,7 @@ public class EntitiesClient {
         .ifPresent(loc -> requestExecutor.addSingleHeader(X_OPTIMIZE_CLIENT_LOCALE, loc));
     return requestExecutor
         .withUserAuthentication(username, password)
-        .buildGetEntityNamesRequest(
-            new EntityNameRequestDto(collectionId, dashboardId, reportId, eventProcessId))
+        .buildGetEntityNamesRequest(new EntityNameRequestDto(collectionId, dashboardId, reportId))
         .execute(EntityNameResponseDto.class, Response.Status.OK.getStatusCode());
   }
 

@@ -21,10 +21,9 @@ public class DefinitionWithTenantIdsDto extends SimpleDefinitionDto {
       final String key,
       final String name,
       final DefinitionType type,
-      final Boolean isEventProcess,
       final List<String> tenantIds,
       final Set<String> engines) {
-    super(key, name, type, isEventProcess, engines);
+    super(key, name, type, engines);
     if (key == null) {
       throw new IllegalArgumentException("Key cannot be null");
     }
@@ -48,7 +47,8 @@ public class DefinitionWithTenantIdsDto extends SimpleDefinitionDto {
     this.tenantIds = tenantIds;
   }
 
-  protected DefinitionWithTenantIdsDto() {}
+  protected DefinitionWithTenantIdsDto() {
+  }
 
   public List<String> getTenantIds() {
     return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);

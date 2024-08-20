@@ -10,7 +10,6 @@ package io.camunda.optimize.service.util.configuration.security;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.optimize.util.SuppressionConstants;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -30,14 +29,6 @@ public class AuthConfiguration {
 
   @JsonProperty("cookie")
   private CookieConfiguration cookieConfiguration;
-
-  @JsonProperty("superUserIds")
-  private List<String> superUserIds;
-
-  @JsonProperty("superGroupIds")
-  private List<String> superGroupIds;
-
-  public AuthConfiguration() {}
 
   @JsonIgnore
   public int getTokenLifeTimeMinutes() {
@@ -96,24 +87,6 @@ public class AuthConfiguration {
     this.cookieConfiguration = cookieConfiguration;
   }
 
-  public List<String> getSuperUserIds() {
-    return superUserIds;
-  }
-
-  @JsonProperty("superUserIds")
-  public void setSuperUserIds(final List<String> superUserIds) {
-    this.superUserIds = superUserIds;
-  }
-
-  public List<String> getSuperGroupIds() {
-    return superGroupIds;
-  }
-
-  @JsonProperty("superGroupIds")
-  public void setSuperGroupIds(final List<String> superGroupIds) {
-    this.superGroupIds = superGroupIds;
-  }
-
   protected boolean canEqual(final Object other) {
     return other instanceof AuthConfiguration;
   }
@@ -135,10 +108,6 @@ public class AuthConfiguration {
     result = result * PRIME + ($tokenSecret == null ? 43 : $tokenSecret.hashCode());
     final Object $cookieConfiguration = getCookieConfiguration();
     result = result * PRIME + ($cookieConfiguration == null ? 43 : $cookieConfiguration.hashCode());
-    final Object $superUserIds = getSuperUserIds();
-    result = result * PRIME + ($superUserIds == null ? 43 : $superUserIds.hashCode());
-    final Object $superGroupIds = getSuperGroupIds();
-    result = result * PRIME + ($superGroupIds == null ? 43 : $superGroupIds.hashCode());
     return result;
   }
 
@@ -189,20 +158,6 @@ public class AuthConfiguration {
         : !this$cookieConfiguration.equals(other$cookieConfiguration)) {
       return false;
     }
-    final Object this$superUserIds = getSuperUserIds();
-    final Object other$superUserIds = other.getSuperUserIds();
-    if (this$superUserIds == null
-        ? other$superUserIds != null
-        : !this$superUserIds.equals(other$superUserIds)) {
-      return false;
-    }
-    final Object this$superGroupIds = getSuperGroupIds();
-    final Object other$superGroupIds = other.getSuperGroupIds();
-    if (this$superGroupIds == null
-        ? other$superGroupIds != null
-        : !this$superGroupIds.equals(other$superGroupIds)) {
-      return false;
-    }
     return true;
   }
 
@@ -218,10 +173,6 @@ public class AuthConfiguration {
         + getTokenSecret()
         + ", cookieConfiguration="
         + getCookieConfiguration()
-        + ", superUserIds="
-        + getSuperUserIds()
-        + ", superGroupIds="
-        + getSuperGroupIds()
         + ")";
   }
 }

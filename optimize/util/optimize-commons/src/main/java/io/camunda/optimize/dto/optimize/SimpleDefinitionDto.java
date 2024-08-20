@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.dto.optimize;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -17,30 +16,26 @@ public class SimpleDefinitionDto {
   private String key;
   private String name;
   private DefinitionType type;
-  @JsonIgnore private Boolean isEventProcess = false;
   private Set<String> engines = new HashSet<>();
 
   public SimpleDefinitionDto(
       final String key,
       final String name,
       final DefinitionType type,
-      final Boolean isEventProcess,
       final String engine) {
     if (key == null) {
       throw new IllegalArgumentException("key cannot be null");
     }
-    this.key = key;
-    this.name = name;
-    this.type = type;
     if (type == null) {
       throw new IllegalArgumentException("type cannot be null");
     }
-
-    this.isEventProcess = isEventProcess;
     if (engine == null) {
       throw new IllegalArgumentException("engine cannot be null");
     }
 
+    this.key = key;
+    this.name = name;
+    this.type = type;
     engines = Collections.singleton(engine);
   }
 
@@ -48,7 +43,6 @@ public class SimpleDefinitionDto {
       final String key,
       final String name,
       final DefinitionType type,
-      final Boolean isEventProcess,
       final Set<String> engines) {
     if (key == null) {
       throw new IllegalArgumentException("key cannot be null");
@@ -61,7 +55,6 @@ public class SimpleDefinitionDto {
       throw new IllegalArgumentException("type cannot be null");
     }
 
-    this.isEventProcess = isEventProcess;
     if (engines == null) {
       throw new IllegalArgumentException("engines cannot be null");
     }
@@ -69,7 +62,8 @@ public class SimpleDefinitionDto {
     this.engines = engines;
   }
 
-  protected SimpleDefinitionDto() {}
+  protected SimpleDefinitionDto() {
+  }
 
   public String getKey() {
     return key;
@@ -101,15 +95,6 @@ public class SimpleDefinitionDto {
     }
 
     this.type = type;
-  }
-
-  public Boolean getIsEventProcess() {
-    return isEventProcess;
-  }
-
-  @JsonIgnore
-  public void setIsEventProcess(final Boolean isEventProcess) {
-    this.isEventProcess = isEventProcess;
   }
 
   public Set<String> getEngines() {
@@ -171,8 +156,6 @@ public class SimpleDefinitionDto {
         + getName()
         + ", type="
         + getType()
-        + ", isEventProcess="
-        + getIsEventProcess()
         + ", engines="
         + getEngines()
         + ")";

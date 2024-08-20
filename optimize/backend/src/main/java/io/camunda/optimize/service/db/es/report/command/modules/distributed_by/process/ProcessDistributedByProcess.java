@@ -10,7 +10,7 @@ package io.camunda.optimize.service.db.es.report.command.modules.distributed_by.
 import static io.camunda.optimize.service.db.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import io.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
@@ -276,7 +276,7 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
             bucketForKey ->
                 (definition.getTenantIds().contains(bucketForKey.getTenant()))
                     || (bucketForKey.getTenant().equals(MISSING_TENANT_KEY)
-                        && definition.getTenantIds().contains(null)))
+                    && definition.getTenantIds().contains(null)))
         .collect(Collectors.toList());
   }
 

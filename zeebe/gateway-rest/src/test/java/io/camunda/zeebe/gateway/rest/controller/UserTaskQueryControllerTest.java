@@ -55,7 +55,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                   "followUpDate": "00:00:00.000Z+00:00",
                   "externalFormReference": "efr",
                   "processDefinitionVersion": 1,
-                  "customHeaders": {}
+                  "customHeaders": {},
+                  "priority": 50
               }
           ],
           "page": {
@@ -91,7 +92,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       new ArrayList<>(), // candidateUsers
                       "efr", // externalFormReference
                       1, // processDefinitionVersion
-                      Collections.emptyMap() // customHeaders
+                      Collections.emptyMap(), // customHeaders
+                      50 // priority
                       )))
           .sortValues(new Object[] {"v"})
           .build();

@@ -96,42 +96,6 @@
     "reportType": "process",
     "currentUserRole": "editor"
   },
-  "new-combined": {
-    "result": {
-      "data": {},
-      "type": null
-    },
-    "id": "new-combined",
-    "data": {
-      "configuration": {
-        "pointMarkers": true,
-        "logScale": false,
-        "hideRelativeValue": false,
-        "hideAbsoluteValue": false,
-        "alwaysShowRelative": false,
-        "alwaysShowAbsolute": false,
-        "targetValue": {
-          "countChart": {
-            "isBelow": false,
-            "value": "100"
-          },
-          "active": false,
-          "durationChart": {
-            "unit": "hours",
-            "isBelow": false,
-            "value": "2"
-          }
-        },
-        "ylabel": "",
-        "xlabel": ""
-      },
-      "visualization": null,
-      "reports": []
-    },
-    "combined": true,
-    "reportType": "process",
-    "currentUserRole": "editor"
-  },
   "new-decision": {
     "id": "new-decision",
     "data": {
@@ -213,7 +177,6 @@
       "visualization": null,
       "distributedBy": {"type": "none", "value": null}
     },
-    "combined": false,
     "reportType": "decision",
     "currentUserRole": "editor"
   }

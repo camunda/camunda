@@ -39,6 +39,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.resolver.dns.BiDnsQueryLifecycleObserverFactory;
 import io.netty.resolver.dns.DnsAddressResolverGroup;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
@@ -220,6 +221,7 @@ public class NettyUnicastService implements ManagedUnicastService {
                               new BiDnsQueryLifecycleObserverFactory(
                                   ignored -> metrics,
                                   new LoggingDnsQueryLifeCycleObserverFactory()))
+                          .socketChannelType(NioSocketChannel.class)
                           .channelType(NioDatagramChannel.class));
             })
         .thenApply(

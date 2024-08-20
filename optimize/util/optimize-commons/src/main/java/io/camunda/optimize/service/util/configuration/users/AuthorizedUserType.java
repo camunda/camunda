@@ -12,12 +12,11 @@ import java.util.Locale;
 
 public enum AuthorizedUserType {
   ALL,
-  SUPERUSER,
   NONE;
 
   @JsonValue
   public String getId() {
-    return this.name().toLowerCase(Locale.ENGLISH);
+    return name().toLowerCase(Locale.ENGLISH);
   }
 
   @Override

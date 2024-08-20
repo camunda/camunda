@@ -107,7 +107,7 @@ public class ExportRestService {
       @PathParam("reportId") final String reportId,
       @PathParam("fileName") final String fileName) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    validateUserAuthorization(userId);
+    validateAuthorization();
     final ZoneId timezone = extractTimezone(requestContext);
 
     final Optional<byte[]> csvForReport =
@@ -132,7 +132,7 @@ public class ExportRestService {
       @PathParam("fileName") final String fileName,
       @Valid final ProcessRawDataCsvExportRequestDto request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    validateUserAuthorization(userId);
+    validateAuthorization();
     final ZoneId timezone = extractTimezone(requestContext);
 
     final SingleProcessReportDefinitionRequestDto reportDefinitionDto =
@@ -169,8 +169,8 @@ public class ExportRestService {
             userId, reportDefinitionDto, timezone));
   }
 
-  private void validateUserAuthorization(final String userId) {
-    if (!identityService.getUserAuthorizations(userId).contains(AuthorizationType.CSV_EXPORT)) {
+  private void validateAuthorization() {
+    if (!identityService.getEnabledAuthorizations().contains(AuthorizationType.CSV_EXPORT)) {
       throw new ForbiddenException("User not authorized to export CSVs");
     }
   }

@@ -10,7 +10,6 @@ package io.camunda.optimize.service.db.es.reader;
 import static io.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
@@ -248,8 +247,6 @@ public class EntitiesReaderES implements EntitiesReader {
               getLocalizedDashboardName((DashboardDefinitionRestDto) entity, locale));
         } else if (entityId.equals(requestDto.getReportId())) {
           result.setReportName(getLocalizedReportName(localizationService, entity, locale));
-        } else if (entityId.equals(requestDto.getEventBasedProcessId())) {
-          result.setEventBasedProcessName(entity.getName());
         }
       }
     }
@@ -305,8 +302,6 @@ public class EntitiesReaderES implements EntitiesReader {
     addGetEntityToRequest(request, requestDto.getReportId(), COMBINED_REPORT_INDEX_NAME);
     addGetEntityToRequest(request, requestDto.getDashboardId(), DASHBOARD_INDEX_NAME);
     addGetEntityToRequest(request, requestDto.getCollectionId(), COLLECTION_INDEX_NAME);
-    addGetEntityToRequest(
-        request, requestDto.getEventBasedProcessId(), EVENT_PROCESS_MAPPING_INDEX_NAME);
     if (request.getItems().isEmpty()) {
       throw new BadRequestException("No ids for entity name request provided");
     }

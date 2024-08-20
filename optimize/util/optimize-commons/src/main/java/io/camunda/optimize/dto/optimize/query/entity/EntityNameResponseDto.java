@@ -12,7 +12,6 @@ public class EntityNameResponseDto {
   private String collectionName;
   private String dashboardName;
   private String reportName;
-  private String eventBasedProcessName;
 
   public EntityNameResponseDto(
       final String collectionName,
@@ -22,10 +21,10 @@ public class EntityNameResponseDto {
     this.collectionName = collectionName;
     this.dashboardName = dashboardName;
     this.reportName = reportName;
-    this.eventBasedProcessName = eventBasedProcessName;
   }
 
-  public EntityNameResponseDto() {}
+  public EntityNameResponseDto() {
+  }
 
   public String getCollectionName() {
     return collectionName;
@@ -51,14 +50,6 @@ public class EntityNameResponseDto {
     this.reportName = reportName;
   }
 
-  public String getEventBasedProcessName() {
-    return eventBasedProcessName;
-  }
-
-  public void setEventBasedProcessName(final String eventBasedProcessName) {
-    this.eventBasedProcessName = eventBasedProcessName;
-  }
-
   protected boolean canEqual(final Object other) {
     return other instanceof EntityNameResponseDto;
   }
@@ -73,9 +64,6 @@ public class EntityNameResponseDto {
     result = result * PRIME + ($dashboardName == null ? 43 : $dashboardName.hashCode());
     final Object $reportName = getReportName();
     result = result * PRIME + ($reportName == null ? 43 : $reportName.hashCode());
-    final Object $eventBasedProcessName = getEventBasedProcessName();
-    result =
-        result * PRIME + ($eventBasedProcessName == null ? 43 : $eventBasedProcessName.hashCode());
     return result;
   }
 
@@ -112,13 +100,6 @@ public class EntityNameResponseDto {
         : !this$reportName.equals(other$reportName)) {
       return false;
     }
-    final Object this$eventBasedProcessName = getEventBasedProcessName();
-    final Object other$eventBasedProcessName = other.getEventBasedProcessName();
-    if (this$eventBasedProcessName == null
-        ? other$eventBasedProcessName != null
-        : !this$eventBasedProcessName.equals(other$eventBasedProcessName)) {
-      return false;
-    }
     return true;
   }
 
@@ -130,8 +111,6 @@ public class EntityNameResponseDto {
         + getDashboardName()
         + ", reportName="
         + getReportName()
-        + ", eventBasedProcessName="
-        + getEventBasedProcessName()
         + ")";
   }
 }

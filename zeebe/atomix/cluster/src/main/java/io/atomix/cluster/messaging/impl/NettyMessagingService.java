@@ -117,7 +117,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private EventLoopGroup serverGroup;
   private EventLoopGroup clientGroup;
   private Class<? extends ServerChannel> serverChannelClass;
-  private Class<? extends Channel> clientChannelClass;
+  private Class<? extends SocketChannel> clientChannelClass;
   private Class<? extends DatagramChannel> clientDataGramChannelClass;
 
   private Channel serverChannel;
@@ -386,6 +386,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
                               new BiDnsQueryLifecycleObserverFactory(
                                   ignored -> metrics,
                                   new LoggingDnsQueryLifeCycleObserverFactory()))
+                          .socketChannelType(clientChannelClass)
                           .channelType(clientDataGramChannelClass));
               timeoutExecutor =
                   Executors.newSingleThreadScheduledExecutor(

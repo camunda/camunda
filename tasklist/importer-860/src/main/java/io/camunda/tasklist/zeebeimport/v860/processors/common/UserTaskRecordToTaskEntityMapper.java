@@ -185,6 +185,7 @@ public class UserTaskRecordToTaskEntityMapper {
             case "dueDate" -> updateFields.put(TaskTemplate.DUE_DATE, entity.getDueDate());
             case "followUpDate" ->
                 updateFields.put(TaskTemplate.FOLLOW_UP_DATE, entity.getFollowUpDate());
+            case "priority" -> updateFields.put(TaskTemplate.PRIORITY, entity.getPriority());
             default -> {
               LOGGER.warn(
                   "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}", attribute);

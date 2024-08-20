@@ -15,7 +15,7 @@ import {showError} from 'notifications';
 import {deleteEntity} from 'services';
 import {t} from 'translation';
 
-const sectionOrder = ['report', 'combined_report', 'dashboard', 'alert', 'collection'];
+const sectionOrder = ['report', 'dashboard', 'alert', 'collection'];
 
 export default withErrorHandling(
   class Deleter extends React.Component {

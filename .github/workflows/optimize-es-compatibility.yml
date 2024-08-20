@@ -20,23 +20,23 @@ jobs:
       matrix:
         esVersion: ["8.9.0", "8.10.0", "8.11.0", "8.12.0", "8.13.0"]
         includedGroups:
-          [ "import,eventBasedProcess", "reportEvaluation", "", "ccsm-test" ]
+          [ "import", "reportEvaluation", "", "ccsm-test" ]
         include:
-          - includedGroups: "import,eventBasedProcess"
+          - includedGroups: "import"
             excludedGroups: ""
             profile: "it,engine-latest"
           - includedGroups: "reportEvaluation"
             excludedGroups: ""
             profile: "it,engine-latest"
           - includedGroups: ""
-            excludedGroups: "ccsm-test,import,eventBasedProcess,reportEvaluation"
+            excludedGroups: "ccsm-test,import,reportEvaluation"
             profile: "it,engine-latest"
           - includedGroups: "ccsm-test"
             excludedGroups: ""
             profile: "ccsm-it"
 
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
       - name: "Read Java Info"
         id: "pom-info"

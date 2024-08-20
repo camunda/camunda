@@ -12,34 +12,24 @@ import static io.camunda.optimize.dto.optimize.ProcessInstanceConstants.ACTIVE_S
 import static io.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
-import static io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
-import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLE_ID;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
-import static java.lang.String.format;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import io.camunda.optimize.dto.optimize.importing.EventProcessGatewayDto;
 import io.camunda.optimize.dto.optimize.query.PageResultDto;
-import io.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
@@ -53,7 +43,6 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -65,10 +54,8 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
@@ -96,51 +83,7 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
     this.objectMapper = objectMapper;
     this.dateTimeFormatter = dateTimeFormatter;
   }
-
-  @Override
-  public void bulkImportProcessInstances(
-      final String importItemName, final List<ProcessInstanceDto> processInstanceDtos) {
-    doImportBulkRequestWithList(
-        importItemName,
-        processInstanceDtos,
-        (request, dto) ->
-            addImportProcessInstanceRequest(
-                getProcessInstanceIndexAliasName(dto.getProcessDefinitionKey()),
-                request,
-                dto,
-                createUpdateStateScript(dto.getState()),
-                objectMapper));
-  }
-
-  @Override
-  public void updateProcessInstanceStateForProcessDefinitionId(
-      final String importItemName,
-      final String definitionKey,
-      final String processDefinitionId,
-      final String state) {
-    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-        esClient,
-        format(
-            "%s with %s: %s",
-            importItemName, ProcessInstanceDto.Fields.processDefinitionId, processDefinitionId),
-        createUpdateStateScript(state),
-        termsQuery(ProcessInstanceDto.Fields.processDefinitionId, processDefinitionId),
-        getProcessInstanceIndexAliasName(definitionKey));
-  }
-
-  @Override
-  public void updateAllProcessInstancesStates(
-      final String importItemName, final String definitionKey, final String state) {
-    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-        esClient,
-        format(
-            "%s with %s: %s",
-            importItemName, ProcessInstanceDto.Fields.processDefinitionKey, definitionKey),
-        createUpdateStateScript(state),
-        matchAllQuery(),
-        getProcessInstanceIndexAliasName(definitionKey));
-  }
-
+  
   @Override
   public void deleteByIds(
       final String index, final String itemName, final List<String> processInstanceIds) {
@@ -156,77 +99,6 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
         bulkRequestName,
         importRequests,
         configurationService.getSkipDataAfterNestedDocLimitReached());
-  }
-
-  @Override
-  public void bulkImportEvents(
-      final String index,
-      final String importItemName,
-      final List<EventProcessInstanceDto> processInstanceDtos,
-      final List<EventProcessGatewayDto> gatewayLookup) {
-    final List<Map> gatewayLookupMaps =
-        gatewayLookup.stream()
-            .map(gateway -> objectMapper.convertValue(gateway, new TypeReference<Map>() {}))
-            .toList();
-    final BiConsumer<BulkRequest, EventProcessInstanceDto> addDtoToRequestConsumer =
-        (request, dto) -> {
-          final Map<String, Object> params =
-              Map.of(
-                  "processInstance", dto,
-                  "gatewayLookup", gatewayLookupMaps,
-                  "dateFormatPattern", OPTIMIZE_DATE_FORMAT);
-
-          final Script script =
-              createDefaultScriptWithSpecificDtoParams(
-                  ProcessInstanceScriptFactory.createEventInlineUpdateScript(),
-                  params,
-                  objectMapper);
-
-          addImportProcessInstanceRequest(index, request, dto, script, objectMapper);
-        };
-
-    doImportBulkRequestWithList(importItemName, processInstanceDtos, addDtoToRequestConsumer);
-  }
-
-  @Override
-  public void deleteEndedBefore(
-      final String index, final OffsetDateTime endDate, final String deletedItemIdentifier) {
-    final BoolQueryBuilder filterQuery =
-        boolQuery().filter(rangeQuery(END_DATE).lt(dateTimeFormatter.format(endDate)));
-    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
-        esClient, filterQuery, deletedItemIdentifier, false, index);
-  }
-
-  @Override
-  public void deleteVariablesOfInstancesThatEndedBefore(
-      final String index, final OffsetDateTime endDate, final String updateItem) {
-    final BoolQueryBuilder filterQuery =
-        boolQuery()
-            .filter(rangeQuery(END_DATE).lt(dateTimeFormatter.format(endDate)))
-            .filter(
-                nestedQuery(VARIABLES, existsQuery(VARIABLES + "." + VARIABLE_ID), ScoreMode.None));
-    final Script script = new Script(ProcessInstanceScriptFactory.createVariableClearScript());
-    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
-        esClient, updateItem, script, filterQuery, index);
-  }
-
-  @Override
-  public void deleteEventsWithIdsInFromAllInstances(
-      final String index, final List<String> eventIdsToDelete, final String updateItem) {
-    final Map<String, Object> params = Map.of("eventIdsToDelete", eventIdsToDelete);
-    final Script script =
-        new Script(
-            ScriptType.INLINE,
-            Script.DEFAULT_SCRIPT_LANG,
-            ProcessInstanceScriptFactory.createDeleteEventsWithIdsInScript(),
-            params);
-    final NestedQueryBuilder query =
-        nestedQuery(
-            FLOW_NODE_INSTANCES,
-            termsQuery(
-                FLOW_NODE_INSTANCES + "." + FLOW_NODE_INSTANCE_ID, eventIdsToDelete.toArray()),
-            ScoreMode.None);
-    ElasticsearchWriterUtil.tryUpdateByQueryRequest(esClient, updateItem, script, query, index);
   }
 
   @Override

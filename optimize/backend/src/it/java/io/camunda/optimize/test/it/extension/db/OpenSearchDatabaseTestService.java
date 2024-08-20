@@ -8,11 +8,6 @@
 package io.camunda.optimize.test.it.extension.db;
 
 import static io.camunda.optimize.ApplicationContextProvider.getBean;
-import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
-import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 import static io.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGATION;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
@@ -23,20 +18,13 @@ import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInsta
 import static io.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithPercentileInterpolation;
 
 import com.google.common.collect.Iterables;
-import io.camunda.optimize.dto.optimize.IdentityDto;
-import io.camunda.optimize.dto.optimize.OptimizeDto;
 import io.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import io.camunda.optimize.dto.optimize.query.MetadataDto;
-import io.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
-import io.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
-import io.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
-import io.camunda.optimize.dto.optimize.query.event.process.db.DbEventProcessPublishStateDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.es.schema.index.events.EventProcessPublishStateIndexES;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
@@ -47,18 +35,12 @@ import io.camunda.optimize.service.db.os.schema.index.ExternalProcessVariableInd
 import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TerminatedUserSessionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.VariableUpdateInstanceIndexOS;
-import io.camunda.optimize.service.db.os.schema.index.events.EventIndexOS;
-import io.camunda.optimize.service.db.os.schema.index.events.EventProcessInstanceIndexOS;
-import io.camunda.optimize.service.db.os.schema.index.events.EventSequenceCountIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.report.SingleProcessReportIndexOS;
 import io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
-import io.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
-import io.camunda.optimize.service.db.schema.index.events.EventIndex;
-import io.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.DatabaseHelper;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -76,7 +58,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -84,9 +65,7 @@ import java.util.stream.StreamSupport;
 import org.jetbrains.annotations.NotNull;
 import org.mockserver.integration.ClientAndServer;
 import org.opensearch.client.json.JsonData;
-import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.Refresh;
-import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
@@ -98,7 +77,6 @@ import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
-import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
@@ -249,7 +227,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   public Integer getDocumentCountOf(final String indexName) {
     try {
       return Long.valueOf(
-              getOptimizeOpenSearchClient().count(new String[] {indexName}, QueryDSL.matchAll()))
+              getOptimizeOpenSearchClient().count(new String[]{indexName}, QueryDSL.matchAll()))
           .intValue();
     } catch (final IOException e) {
       throw new OptimizeIntegrationTestException(
@@ -296,26 +274,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
             QueryDSL.matchAll(),
             true,
             getIndexNameService().getOptimizeIndexAliasForIndex(new SingleProcessReportIndexOS()));
-  }
-
-  @Override
-  public void deleteExternalEventSequenceCountIndex() {
-    deleteIndexOfMapping(new EventSequenceCountIndexOS(EXTERNAL_EVENTS_INDEX_SUFFIX));
-  }
-
-  @Override
-  public void deleteAllExternalEventIndices() {
-    final String eventIndexAlias =
-        getIndexNameService().getOptimizeIndexAliasForIndex(new EventIndexOS());
-    try {
-      final String[] eventIndices =
-          getOptimizeOpenSearchClient()
-              .getAllIndicesForAlias(eventIndexAlias)
-              .toArray(String[]::new);
-      deleteIndices(eventIndices);
-    } catch (final Exception e) {
-      // Nothing to do here, this only happens if the indices do not exist in the first place
-    }
   }
 
   @Override
@@ -502,7 +460,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
       final TermsQueryContainer queryContainer, final String expectedIndex) {
     try {
       return getOptimizeOpenSearchClient()
-          .count(new String[] {expectedIndex}, queryContainer.toOpenSearchQuery());
+          .count(new String[]{expectedIndex}, queryContainer.toOpenSearchQuery());
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
@@ -528,133 +486,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  @Override
-  public void updateEventProcessRoles(
-      final String eventProcessId,
-      final List<IdentityDto> identityDtos,
-      final ScriptData scriptData) {
-    getOptimizeOpenSearchClient()
-        .update(EVENT_PROCESS_MAPPING_INDEX_NAME, eventProcessId, scriptData);
-  }
-
-  @Override
-  public Map<String, Set<String>> getEventProcessInstanceIndicesWithAliasesFromDatabase() {
-    final OptimizeOpenSearchClient osClient = getOptimizeOpenSearchClient();
-    final OptimizeIndexNameService indexNameService = osClient.getIndexNameService();
-    try {
-      return osClient.getAliasesForIndexPattern(
-          indexNameService.getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX)
-              + "*");
-    } catch (final IOException e) {
-      return new HashMap<>();
-    }
-  }
-
-  @Override
-  public Optional<EventProcessPublishStateDto> getEventProcessPublishStateDtoFromDatabase(
-      final String processMappingId) {
-    final SearchRequest.Builder searchRequest =
-        new Builder()
-            .index(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME)
-            .query(
-                QueryDSL.and(
-                    QueryDSL.term(
-                        EventProcessPublishStateIndexES.PROCESS_MAPPING_ID, processMappingId),
-                    QueryDSL.term(EventProcessPublishStateIndexES.DELETED, false)))
-            .sort(
-                new SortOptions.Builder()
-                    .field(
-                        new FieldSort.Builder()
-                            .field(EventProcessPublishStateIndexES.PUBLISH_DATE_TIME)
-                            .order(org.opensearch.client.opensearch._types.SortOrder.Desc)
-                            .build())
-                    .build());
-    final SearchResponse<DbEventProcessPublishStateDto> searchResponse =
-        getOptimizeOpenSearchClient()
-            .search(
-                searchRequest,
-                DbEventProcessPublishStateDto.class,
-                "there was an error while "
-                    + "retrieving the event process publish state from the database");
-    EventProcessPublishStateDto result = null;
-    if (!searchResponse.hits().hits().isEmpty()) {
-      result =
-          Objects.requireNonNull(searchResponse.hits().hits().get(0).source())
-              .toEventProcessPublishStateDto();
-    }
-    return Optional.ofNullable(result);
-  }
-
-  @Override
-  public Optional<EventProcessDefinitionDto> getEventProcessDefinitionFromDatabase(
-      final String definitionId) {
-    return Optional.ofNullable(
-        getOptimizeOpenSearchClient()
-            .get(
-                RequestDSL.getRequest(EVENT_PROCESS_DEFINITION_INDEX_NAME, definitionId),
-                EventProcessDefinitionDto.class,
-                "Could not retrieve entry from index "
-                    + EVENT_PROCESS_DEFINITION_INDEX_NAME
-                    + " with id "
-                    + definitionId)
-            .source());
-  }
-
-  @Override
-  public List<EventProcessInstanceDto> getEventProcessInstancesFromDatabaseForProcessPublishStateId(
-      final String publishStateId) {
-    return getAllDocumentsOfIndicesAs(
-        new String[] {EventProcessInstanceIndex.constructIndexName(publishStateId)},
-        EventProcessInstanceDto.class,
-        QueryDSL.matchAll());
-  }
-
-  @Override
-  public void deleteProcessInstancesFromIndex(final String indexName, final String id) {
-    getOptimizeOpenSearchClient().getRichOpenSearchClient().doc().delete(indexName, id);
-  }
-
-  @Override
-  public DatabaseType getDatabaseVendor() {
-    return DatabaseType.OPENSEARCH;
-  }
-
-  @Override
-  protected <T extends OptimizeDto> List<T> getInstancesById(
-      final String indexName,
-      final List<String> instanceIds,
-      final String idField,
-      final Class<T> type) {
-    return getAllDocumentsOfIndicesAs(
-        new String[] {indexName}, type, QueryDSL.stringTerms(idField, instanceIds));
-  }
-
-  @Override
-  public <T> Optional<T> getDatabaseEntryById(
-      final String indexName, final String entryId, final Class<T> type) {
-    return Optional.ofNullable(
-        getOptimizeOpenSearchClient()
-            .get(
-                RequestDSL.getRequest(indexName, entryId),
-                type,
-                "Could not retrieve entry from index " + indexName + " with id " + entryId)
-            .source());
-  }
-
-  @Override
-  public String getDatabaseVersion() {
-    if (opensearchDatabaseVersion == null) {
-      try {
-        opensearchDatabaseVersion =
-            OpenSearchClientBuilder.getCurrentOSVersion(
-                getOptimizeOpenSearchClient().getOpenSearchClient());
-      } catch (final IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-    return opensearchDatabaseVersion;
   }
 
   @Override
@@ -794,39 +625,6 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
         .toList();
   }
 
-  @Override
-  public List<String> getAllIndicesWithReadOnlyAlias(final String aliasNameWithPrefix) {
-    final GetAliasResponse aliasResponse;
-    try {
-      aliasResponse = getOptimizeOpenSearchClient().getAlias(aliasNameWithPrefix);
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
-    }
-    final Map<String, IndexAliases> indexNameToAliasMap = aliasResponse.result();
-    return indexNameToAliasMap.entrySet().stream()
-        .filter(
-            entry ->
-                entry.getValue().aliases().values().stream()
-                    .anyMatch(alias -> alias.isWriteIndex() != null && !alias.isWriteIndex()))
-        .map(Map.Entry::getKey)
-        .toList();
-  }
-
-  @Override
-  public EventProcessInstanceIndex getEventInstanceIndex(final String indexId) {
-    return new EventProcessInstanceIndexOS(indexId);
-  }
-
-  @Override
-  public EventIndex getEventIndex() {
-    return new EventIndexOS();
-  }
-
-  @Override
-  public VariableUpdateInstanceIndex getVariableUpdateInstanceIndex() {
-    return new VariableUpdateInstanceIndexOS();
-  }
-
   private OptimizeOpenSearchClient getOptimizeOpenSearchClient() {
     return prefixAwareOptimizeOpenSearchClient;
   }
@@ -882,7 +680,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   private <T> List<T> getAllDocumentsOfIndexAs(
       final String indexName, final Class<T> type, final Query query) {
-    return getAllDocumentsOfIndicesAs(new String[] {indexName}, type, query);
+    return getAllDocumentsOfIndicesAs(new String[]{indexName}, type, query);
   }
 
   private OptimizeIndexNameService getIndexNameService() {
@@ -908,7 +706,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     try {
       return Long.valueOf(
               getOptimizeOpenSearchClient()
-                  .count(new String[] {PROCESS_INSTANCE_MULTI_ALIAS}, query))
+                  .count(new String[]{PROCESS_INSTANCE_MULTI_ALIAS}, query))
           .intValue();
     } catch (final IOException e) {
       throw new OptimizeIntegrationTestException(
@@ -923,7 +721,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   private void deleteIndexOfMapping(final IndexMappingCreator<IndexSettings.Builder> indexMapping) {
-    deleteIndices(new String[] {indexMapping.getIndexName()});
+    deleteIndices(new String[]{indexMapping.getIndexName()});
   }
 
   private void deleteIndices(final String[] indicesToDelete) {

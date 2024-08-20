@@ -20,8 +20,6 @@ import static io.camunda.optimize.rest.CandidateGroupRestService.CANDIDATE_GROUP
 import static io.camunda.optimize.rest.IdentityRestService.CURRENT_USER_IDENTITY_SUB_PATH;
 import static io.camunda.optimize.rest.IdentityRestService.IDENTITY_RESOURCE_PATH;
 import static io.camunda.optimize.rest.IdentityRestService.IDENTITY_SEARCH_SUB_PATH;
-import static io.camunda.optimize.rest.IngestionRestService.CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH;
-import static io.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
 import static io.camunda.optimize.rest.PublicApiRestService.DASHBOARD_EXPORT_DEFINITION_SUB_PATH;
@@ -50,7 +48,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import io.camunda.optimize.dto.optimize.IdentityDto;
 import io.camunda.optimize.dto.optimize.SettingsDto;
 import io.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import io.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
@@ -67,11 +64,6 @@ import io.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupD
 import io.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntitiesDeleteRequestDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
-import io.camunda.optimize.dto.optimize.query.event.EventGroupRequestDto;
-import io.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
-import io.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
-import io.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
-import io.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import io.camunda.optimize.dto.optimize.query.processoverview.InitialProcessOwnerDto;
 import io.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
 import io.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
@@ -97,9 +89,6 @@ import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameReques
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import io.camunda.optimize.dto.optimize.rest.BackupRequestDto;
-import io.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
-import io.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
-import io.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import io.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import io.camunda.optimize.dto.optimize.rest.GetVariableNamesForReportsRequestDto;
 import io.camunda.optimize.dto.optimize.rest.Page;
@@ -108,7 +97,6 @@ import io.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRe
 import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import io.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
-import io.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
 import io.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
 import io.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -604,15 +592,15 @@ public class OptimizeRequestExecutor {
   }
 
   public <T extends SingleReportDataDto>
-      OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequestWithPagination(
-          final T entity, final PaginationRequestDto paginationDto) {
+  OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequestWithPagination(
+      final T entity, final PaginationRequestDto paginationDto) {
     buildEvaluateSingleUnsavedReportRequest(entity);
     Optional.ofNullable(paginationDto).ifPresent(this::addPaginationParams);
     return this;
   }
 
   public <T extends SingleReportDataDto>
-      OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequest(final T entity) {
+  OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequest(final T entity) {
     path = "report/evaluate";
     if (entity instanceof ProcessReportDataDto) {
       final ProcessReportDataDto dataDto = (ProcessReportDataDto) entity;
@@ -636,7 +624,7 @@ public class OptimizeRequestExecutor {
   }
 
   public <T extends SingleReportDefinitionDto>
-      OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequest(final T definitionDto) {
+  OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequest(final T definitionDto) {
     path = "report/evaluate";
     if (definitionDto instanceof SingleProcessReportDefinitionRequestDto) {
       body = getBody(definitionDto);
@@ -770,16 +758,8 @@ public class OptimizeRequestExecutor {
     return buildGetCollectionEntitiesRequest(id, null);
   }
 
-  public OptimizeRequestExecutor bulkDeleteEventProcessMappingsRequest(
-      final List<String> eventProcessIds) {
-    path = "eventBasedProcess/delete";
-    body = getBody(eventProcessIds);
-    method = POST;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildGetCollectionEntitiesRequest(
-      final String id, final EntitySorter sorter) {
+  public OptimizeRequestExecutor buildGetCollectionEntitiesRequest(final String id,
+      final EntitySorter sorter) {
     path = "collection/" + id + "/entities";
     method = GET;
     Optional.ofNullable(sorter).ifPresent(sortParams -> addSortParams(sorter.getSortRequestDto()));
@@ -811,9 +791,6 @@ public class OptimizeRequestExecutor {
     addSingleQueryParam(
         EntityNameRequestDto.Fields.dashboardId.name(), requestDto.getDashboardId());
     addSingleQueryParam(EntityNameRequestDto.Fields.reportId.name(), requestDto.getReportId());
-    addSingleQueryParam(
-        EntityNameRequestDto.Fields.eventBasedProcessId.name(),
-        requestDto.getEventBasedProcessId());
     return this;
   }
 
@@ -1362,22 +1339,14 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetDefinitionKeysByType(final String type) {
-    return buildGetDefinitionKeysByType(type, null, null);
+    return buildGetDefinitionKeysByType(type, null);
   }
 
   public OptimizeRequestExecutor buildGetDefinitionKeysByType(
       final String type, final String filterByCollectionScope) {
-    return buildGetDefinitionKeysByType(type, filterByCollectionScope, null);
-  }
-
-  public OptimizeRequestExecutor buildGetDefinitionKeysByType(
-      final String type,
-      final String filterByCollectionScope,
-      final Boolean camundaEventImportedOnly) {
     path = "/definition/" + type + "/keys";
     method = GET;
     addSingleQueryParam("filterByCollectionScope", filterByCollectionScope);
-    addSingleQueryParam("camundaEventImportedOnly", camundaEventImportedOnly);
     return this;
   }
 
@@ -1572,86 +1541,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetIsEventProcessEnabledRequest() {
-    path = "eventBasedProcess/isEnabled";
-    method = GET;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildCreateEventProcessMappingRequest(
-      final EventProcessMappingCreateRequestDto eventProcessMappingCreateRequestDto) {
-    path = "eventBasedProcess/";
-    body = getBody(eventProcessMappingCreateRequestDto);
-    method = POST;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildGetEventProcessMappingRequest(final String eventProcessId) {
-    path = "eventBasedProcess/" + eventProcessId;
-    method = GET;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildGetAllEventProcessMappingsRequests() {
-    path = "eventBasedProcess";
-    method = GET;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildUpdateEventProcessMappingRequest(
-      final String eventProcessId, final EventProcessMappingDto eventProcessMappingDto) {
-    path = "eventBasedProcess/" + eventProcessId;
-    body = getBody(eventProcessMappingDto);
-    method = PUT;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildUpdateEventProcessRolesRequest(
-      final String eventProcessId,
-      final List<EventProcessRoleRequestDto<IdentityDto>> roleRestDtos) {
-    path = "eventBasedProcess/" + eventProcessId + "/role";
-    method = PUT;
-    body = getBody(roleRestDtos);
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildPublishEventProcessMappingRequest(
-      final String eventProcessId) {
-    path = "eventBasedProcess/" + eventProcessId + "/_publish";
-    method = POST;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildCancelPublishEventProcessMappingRequest(
-      final String eventProcessId) {
-    path = "eventBasedProcess/" + eventProcessId + "/_cancelPublish";
-    method = POST;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildCheckBulkDeleteConflictsForEventProcessMappingRequest(
-      final List<String> eventBasedProcessConflictIds) {
-    path = "eventBasedProcess/delete-conflicts";
-    method = POST;
-    body = getBody(eventBasedProcessConflictIds);
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildGetEventProcessMappingRolesRequest(
-      final String eventProcessId) {
-    path = "eventBasedProcess/" + eventProcessId + "/role";
-    method = GET;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildCleanupEventProcessMappingRequest(
-      final EventMappingCleanupRequestDto cleanupRequestDto) {
-    path = "eventBasedProcess/_mappingCleanup";
-    body = getBody(cleanupRequestDto);
-    method = POST;
-    return this;
-  }
-
   public OptimizeRequestExecutor buildGetScopeForCollectionRequest(final String collectionId) {
     path = "collection/" + collectionId + "/scope";
     method = GET;
@@ -1762,86 +1651,6 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildCopyCollectionRequest(final String collectionId) {
     path = "/collection/" + collectionId + "/copy";
     method = POST;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildIngestEventBatch(
-      final List<CloudEventRequestDto> eventDtos, final String secret) {
-    return buildIngestEventBatchWithMediaType(
-        eventDtos, secret, CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH);
-  }
-
-  public OptimizeRequestExecutor buildIngestEventBatchWithMediaType(
-      final List<CloudEventRequestDto> eventDtos, final String secret, final String mediaType) {
-    path = INGESTION_PATH + EVENT_BATCH_SUB_PATH;
-    method = POST;
-    Optional.ofNullable(secret)
-        .ifPresent(
-            s -> addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + s));
-    this.mediaType = mediaType;
-    body = getBody(eventDtos);
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildIngestEventWithBody(
-      final String bodyJson, final String secret) {
-    path = INGESTION_PATH + EVENT_BATCH_SUB_PATH;
-    method = POST;
-    addSingleHeader(HttpHeaders.AUTHORIZATION, AUTH_COOKIE_TOKEN_VALUE_PREFIX + secret);
-    mediaType = CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH;
-    body = Entity.json(bodyJson);
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildPostEventCountRequest(
-      final EventCountRequestDto eventCountRequestDto) {
-    return buildPostEventCountRequest(null, null, eventCountRequestDto);
-  }
-
-  public OptimizeRequestExecutor buildPostEventCountRequest(
-      final EventCountSorter eventCountSorter,
-      final String searchTerm,
-      final EventCountRequestDto eventCountRequestDto) {
-    path = "event/count";
-    method = POST;
-    Optional.ofNullable(searchTerm).ifPresent(term -> addSingleQueryParam("searchTerm", term));
-    Optional.ofNullable(eventCountSorter)
-        .ifPresent(
-            sorter -> {
-              sorter.getSortBy().ifPresent(sortBy -> addSingleQueryParam("sortBy", sortBy));
-              sorter
-                  .getSortOrder()
-                  .ifPresent(sortOrder -> addSingleQueryParam("sortOrder", sortOrder));
-            });
-    body = Optional.ofNullable(eventCountRequestDto).map(this::getBody).orElse(null);
-    return this;
-  }
-
-  public OptimizeRequestExecutor getEventGroupsRequest(final EventGroupRequestDto groupRequestDto) {
-    path = "event/groups";
-    method = GET;
-    Optional.ofNullable(groupRequestDto.getSearchTerm())
-        .ifPresent(term -> addSingleQueryParam("searchTerm", term));
-    addSingleQueryParam("limit", groupRequestDto.getLimit());
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildGetEventListRequest(
-      final EventSearchRequestDto eventSearchRequestDto) {
-    path = "event/";
-    method = GET;
-    Optional.ofNullable(eventSearchRequestDto.getSearchTerm())
-        .ifPresent(term -> addSingleQueryParam("searchTerm", term));
-    Optional.ofNullable(eventSearchRequestDto.getPaginationRequestDto())
-        .ifPresent(this::addPaginationParams);
-    Optional.ofNullable(eventSearchRequestDto.getSortRequestDto()).ifPresent(this::addSortParams);
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildDeleteEventsRequest(final List<String> eventIdsToDelete) {
-    path = "event/delete";
-    method = POST;
-    body = Optional.ofNullable(eventIdsToDelete).map(this::getBody).orElse(null);
     return this;
   }
 

@@ -21,6 +21,7 @@ import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import io.camunda.zeebe.client.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.client.protocol.rest.MessageCorrelationResponse;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.protocol.rest.TopologyResponse;
 import java.util.List;
@@ -67,6 +68,19 @@ public class RestGatewayService {
         .register(
             WireMock.get(RestGatewayPaths.getTopologyUrl())
                 .willReturn(WireMock.okJson(JSON_MAPPER.toJson(topologyResponse))));
+  }
+
+  /**
+   * Register the given response for a message correlation request.
+   *
+   * @param response the response to provide upon a message correlation request
+   */
+  public void onCorrelateMessageRequest(final MessageCorrelationResponse response) {
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.get(RestGatewayPaths.getMessageCorrelationUrl())
+                .willReturn(WireMock.okJson(JSON_MAPPER.toJson(response))));
   }
 
   /**

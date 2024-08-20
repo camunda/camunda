@@ -66,7 +66,7 @@ public class ReportServiceConflictTest {
             collectionService,
             abstractIdentityService,
             definitionService);
-    when(abstractIdentityService.getUserAuthorizations(any()))
+    when(abstractIdentityService.getEnabledAuthorizations())
         .thenReturn(List.of(AuthorizationType.values()));
   }
 

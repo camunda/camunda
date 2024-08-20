@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.importing;
 
-import static io.camunda.optimize.service.importing.TimestampBasedImportIndexHandler.BEGINNING_OF_TIME;
+import static io.camunda.optimize.service.importing.ingested.handler.ExternalVariableUpdateImportIndexHandler.BEGINNING_OF_TIME;
 
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;

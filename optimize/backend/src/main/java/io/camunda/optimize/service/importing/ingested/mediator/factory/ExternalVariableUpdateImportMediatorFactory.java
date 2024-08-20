@@ -13,7 +13,7 @@ import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.service.ObjectVariableService;
 import io.camunda.optimize.service.importing.ingested.fetcher.ExternalVariableUpdateInstanceFetcher;
-import io.camunda.optimize.service.importing.ingested.mediator.ExternalVariableUpdateEngineImportMediator;
+import io.camunda.optimize.service.importing.ingested.mediator.ExternalVariableUpdateImportMediator;
 import io.camunda.optimize.service.importing.ingested.service.ExternalVariableUpdateImportService;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -47,8 +47,8 @@ public class ExternalVariableUpdateImportMediatorFactory
     return List.of(createVariableUpdateEngineImportMediator());
   }
 
-  public ExternalVariableUpdateEngineImportMediator createVariableUpdateEngineImportMediator() {
-    return new ExternalVariableUpdateEngineImportMediator(
+  public ExternalVariableUpdateImportMediator createVariableUpdateEngineImportMediator() {
+    return new ExternalVariableUpdateImportMediator(
         importIndexHandlerRegistry.getExternalVariableUpdateImportIndexHandler(),
         beanFactory.getBean(ExternalVariableUpdateInstanceFetcher.class),
         new ExternalVariableUpdateImportService(

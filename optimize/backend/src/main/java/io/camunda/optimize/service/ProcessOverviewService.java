@@ -75,7 +75,6 @@ public class ProcessOverviewService {
       final String userId, final String locale) {
     final Map<String, String> procDefKeysAndName =
         definitionService.getAllDefinitionsWithTenants(PROCESS).stream()
-            .filter(def -> !def.getIsEventProcess())
             .filter(
                 def ->
                     definitionAuthorizationService.isAuthorizedToAccessDefinition(
@@ -243,10 +242,7 @@ public class ProcessOverviewService {
         .getProcessDefinitionWithTenants(processDefKey)
         .ifPresentOrElse(
             definition -> {
-              if (definition.getIsEventProcess() == Boolean.TRUE) {
-                throw new BadRequestException(
-                    "Event-based processes cannot have owners nor digests configured");
-              } else if (!definitionAuthorizationService.isAuthorizedToAccessDefinition(
+              if (!definitionAuthorizationService.isAuthorizedToAccessDefinition(
                   userId, PROCESS, definition.getKey(), definition.getTenantIds())) {
                 throw new ForbiddenException(
                     "User is not authorized to access the process definition with key "

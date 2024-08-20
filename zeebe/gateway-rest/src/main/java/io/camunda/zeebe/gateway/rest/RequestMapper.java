@@ -17,6 +17,7 @@ import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.v
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
 import io.camunda.service.JobServices.ActivateJobsRequest;
+import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.security.auth.Authentication.Builder;
@@ -169,8 +170,9 @@ public class RequestMapper {
         () ->
             new UpdateJobRequest(
                 jobKey,
-                getIntOrZero(updateRequest, r -> updateRequest.getChangeset().getRetries()),
-                getLongOrZero(updateRequest, r -> updateRequest.getChangeset().getTimeout())));
+                new UpdateJobChangeset(
+                    updateRequest.getChangeset().getRetries(),
+                    updateRequest.getChangeset().getTimeout())));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
@@ -230,6 +232,9 @@ public class RequestMapper {
     if (changeset.getFollowUpDate() != null) {
       record.setFollowUpDate(changeset.getFollowUpDate()).setFollowUpDateChanged();
     }
+    if (changeset.getPriority() != null) {
+      record.setPriority(changeset.getPriority()).setPriorityChanged();
+    }
     return record;
   }
 
@@ -280,5 +285,5 @@ public class RequestMapper {
 
   public record CompleteJobRequest(long jobKey, Map<String, Object> variables) {}
 
-  public record UpdateJobRequest(long jobKey, Integer retries, Long timeout) {}
+  public record UpdateJobRequest(long jobKey, UpdateJobChangeset changeset) {}
 }

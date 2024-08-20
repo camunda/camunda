@@ -8,7 +8,6 @@
 package io.camunda.optimize.service.db.reader;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
-import static io.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
 import static io.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
@@ -45,11 +44,7 @@ public interface DefinitionReader {
   String DEFINITION_KEY_AND_TYPE_AGGREGATION = "definitionKeyAndType";
   String DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION = "definitionKeyAndTypeAndTenant";
   String NAME_AGGREGATION = "definitionName";
-  String[] ALL_DEFINITION_INDEXES = {
-    PROCESS_DEFINITION_INDEX_NAME,
-    DECISION_DEFINITION_INDEX_NAME,
-    EVENT_PROCESS_DEFINITION_INDEX_NAME
-  };
+  String[] ALL_DEFINITION_INDEXES = {PROCESS_DEFINITION_INDEX_NAME, DECISION_DEFINITION_INDEX_NAME};
   String TENANT_NOT_DEFINED_VALUE = "null";
 
   Optional<DefinitionWithTenantIdsDto> getDefinitionWithAvailableTenants(
@@ -106,8 +101,7 @@ public interface DefinitionReader {
     }
 
     return switch (type) {
-      case PROCESS ->
-          new String[] {PROCESS_DEFINITION_INDEX_NAME, EVENT_PROCESS_DEFINITION_INDEX_NAME};
+      case PROCESS -> new String[] {PROCESS_DEFINITION_INDEX_NAME};
       case DECISION -> new String[] {DECISION_DEFINITION_INDEX_NAME};
       default -> throw new OptimizeRuntimeException("Unsupported definition type:" + type);
     };

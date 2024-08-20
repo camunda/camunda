@@ -9,7 +9,7 @@ package io.camunda.optimize.service.db.reader.importindex;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 
-import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
+import io.camunda.optimize.dto.optimize.datasource.IngestedDataSourceDto;
 import io.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import io.camunda.optimize.service.db.repository.ImportRepository;
 import java.util.List;
@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class TimestampBasedImportIndexReader
-    implements ImportIndexReader<TimestampBasedImportIndexDto, DataSourceDto> {
+    implements ImportIndexReader<TimestampBasedImportIndexDto, IngestedDataSourceDto> {
 
   private static final Logger log =
       org.slf4j.LoggerFactory.getLogger(TimestampBasedImportIndexReader.class);
@@ -31,7 +31,7 @@ public class TimestampBasedImportIndexReader
 
   @Override
   public Optional<TimestampBasedImportIndexDto> getImportIndex(
-      final String typeIndexComesFrom, final DataSourceDto dataSourceDto) {
+      final String typeIndexComesFrom, final IngestedDataSourceDto dataSourceDto) {
     return importRepository.getImportIndex(
         TIMESTAMP_BASED_IMPORT_INDEX_NAME,
         "timestamp based",

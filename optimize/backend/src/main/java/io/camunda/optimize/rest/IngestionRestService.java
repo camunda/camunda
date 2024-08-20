@@ -9,13 +9,9 @@ package io.camunda.optimize.rest;
 
 import static io.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto.toExternalProcessVariableDtos;
 import static io.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
-import static java.util.stream.Collectors.toList;
 
 import io.camunda.optimize.dto.optimize.ReportConstants;
-import io.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import io.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
-import io.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
-import io.camunda.optimize.service.events.ExternalEventService;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.VariableHelper;
 import io.camunda.optimize.service.variable.ExternalVariableService;
@@ -25,11 +21,9 @@ import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -42,7 +36,6 @@ import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -51,30 +44,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 public class IngestionRestService {
 
   public static final String INGESTION_PATH = "/ingestion";
-  public static final String EVENT_BATCH_SUB_PATH = "/event/batch";
   public static final String VARIABLE_SUB_PATH = "/variable";
-  public static final String CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH =
-      "application/cloudevents-batch+json";
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(IngestionRestService.class);
 
-  private final ExternalEventService externalEventService;
   private final ExternalVariableService externalVariableService;
 
   public IngestionRestService(
-      final ExternalEventService externalEventService,
       final ExternalVariableService externalVariableService) {
-    this.externalEventService = externalEventService;
     this.externalVariableService = externalVariableService;
-  }
-
-  @POST
-  @Path(EVENT_BATCH_SUB_PATH)
-  @Consumes({CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH, MediaType.APPLICATION_JSON})
-  @Produces(MediaType.APPLICATION_JSON)
-  public void ingestCloudEvents(
-      final @Context ContainerRequestContext requestContext,
-      final @NotNull @Valid @RequestBody ValidList<CloudEventRequestDto> cloudEventDtos) {
-    externalEventService.saveEventBatch(mapToEventDto(cloudEventDtos));
   }
 
   @POST
@@ -99,33 +75,12 @@ public class IngestionRestService {
     }
   }
 
-  private static List<EventDto> mapToEventDto(final List<CloudEventRequestDto> cloudEventDtos) {
-    final Instant rightNow = LocalDateUtil.getCurrentDateTime().toInstant();
-    return cloudEventDtos.stream()
-        .map(
-            cloudEventDto ->
-                EventDto.builder()
-                    .id(cloudEventDto.getId())
-                    .eventName(cloudEventDto.getType())
-                    .timestamp(
-                        cloudEventDto
-                            .getTime()
-                            .orElse(rightNow) // In case no time was passed as a parameter, use the
-                            // current time instead
-                            .toEpochMilli())
-                    .traceId(cloudEventDto.getTraceid())
-                    .group(cloudEventDto.getGroup().orElse(null))
-                    .source(cloudEventDto.getSource())
-                    .data(cloudEventDto.getData())
-                    .build())
-        .collect(toList());
-  }
-
   private static class ValidList<E> implements List<E> {
 
     private List<E> list = new ArrayList<>();
 
-    public ValidList() {}
+    public ValidList() {
+    }
 
     public List<E> getList() {
       return list;

@@ -178,7 +178,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       final String userId, final DashboardDefinitionRestDto dashboardDefinitionDto) {
     collectionService.verifyUserAuthorizedToEditCollectionResources(
         userId, dashboardDefinitionDto.getCollectionId());
-    validateEntityEditorAuthorization(dashboardDefinitionDto.getCollectionId(), userId);
+    validateEntityEditorAuthorization(dashboardDefinitionDto.getCollectionId());
     validateDashboardFilters(userId, dashboardDefinitionDto);
     return dashboardWriter.createNewDashboard(userId, dashboardDefinitionDto);
   }
@@ -216,15 +216,15 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     }
 
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
-    validateEntityEditorAuthorization(dashboardDefinition.getCollectionId(), userId);
+    validateEntityEditorAuthorization(dashboardDefinition.getCollectionId());
 
     final List<DashboardReportTileDto> newDashboardReports =
         new ArrayList<>(dashboardDefinition.getTiles());
     if (!isSameCollection(collectionId, dashboardDefinition.getCollectionId())) {
       newDashboardReports.clear();
       containingReportsComplyWithNewCollectionScope(userId, collectionId, dashboardDefinition);
-      dashboardDefinition.getTiles().stream()
-          .sequential()
+      dashboardDefinition
+          .getTiles()
           .forEach(
               reportLocationDto -> {
                 final String originalReportId = reportLocationDto.getId();
@@ -379,8 +379,6 @@ public class DashboardService implements ReportReferencingService, CollectionRef
               .orElse(null);
     } else if (dashboard.getOwner().equals(userId)) {
       currentUserRole = RoleType.EDITOR;
-    } else if (identityService.isSuperUserIdentity(userId)) {
-      currentUserRole = RoleType.EDITOR;
     }
 
     if (currentUserRole == null) {
@@ -427,7 +425,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
             "Management and Instant preview dashboards cannot be edited");
       } else {
         validateEntityEditorAuthorization(
-            dashboardWithEditAuthorization.getDefinitionDto().getCollectionId(), userId);
+            dashboardWithEditAuthorization.getDefinitionDto().getCollectionId());
       }
     }
 
@@ -466,7 +464,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final DashboardDefinitionRestDto dashboardDefinitionDto =
         getDashboardWithEditAuthorization(dashboardId, userId).getDefinitionDto();
     validateEntityCanBeDeletedByUser(dashboardDefinitionDto);
-    validateEntityEditorAuthorization(dashboardDefinitionDto.getCollectionId(), userId);
+    validateEntityEditorAuthorization(dashboardDefinitionDto.getCollectionId());
     deleteDashboard(dashboardId, dashboardDefinitionDto);
   }
 
@@ -661,11 +659,9 @@ public class DashboardService implements ReportReferencingService, CollectionRef
             });
   }
 
-  private void validateEntityEditorAuthorization(final String collectionId, final String userId) {
+  private void validateEntityEditorAuthorization(final String collectionId) {
     if (collectionId == null
-        && !identityService
-            .getUserAuthorizations(userId)
-            .contains(AuthorizationType.ENTITY_EDITOR)) {
+        && !identityService.getEnabledAuthorizations().contains(AuthorizationType.ENTITY_EDITOR)) {
       throw new ForbiddenException("User is not an authorized entity editor");
     }
   }

@@ -17,7 +17,7 @@ import io.camunda.optimize.service.util.CronNormalizerUtil;
 import java.time.Period;
 import java.util.Optional;
 
-@JsonIgnoreProperties(ignoreUnknown = false)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CleanupConfiguration {
 
   @JsonProperty("cronTrigger")
@@ -32,9 +32,6 @@ public class CleanupConfiguration {
   @JsonProperty("decisionDataCleanup")
   private DecisionCleanupConfiguration decisionCleanupConfiguration;
 
-  @JsonProperty("ingestedEventCleanup")
-  private IngestedEventCleanupConfiguration ingestedEventCleanupConfiguration;
-
   @JsonProperty("externalVariableCleanup")
   private ExternalVariableCleanupConfiguration externalVariableCleanupConfiguration;
 
@@ -47,28 +44,14 @@ public class CleanupConfiguration {
       final Period ttl,
       final ProcessCleanupConfiguration processDataCleanupConfiguration,
       final DecisionCleanupConfiguration decisionCleanupConfiguration) {
-    this(
-        cronTrigger,
-        ttl,
-        processDataCleanupConfiguration,
-        decisionCleanupConfiguration,
-        new IngestedEventCleanupConfiguration());
-  }
-
-  public CleanupConfiguration(
-      final String cronTrigger,
-      final Period ttl,
-      final ProcessCleanupConfiguration processDataCleanupConfiguration,
-      final DecisionCleanupConfiguration decisionCleanupConfiguration,
-      final IngestedEventCleanupConfiguration ingestedEventCleanupConfiguration) {
     setCronTrigger(cronTrigger);
     this.ttl = ttl;
     this.processDataCleanupConfiguration = processDataCleanupConfiguration;
     this.decisionCleanupConfiguration = decisionCleanupConfiguration;
-    this.ingestedEventCleanupConfiguration = ingestedEventCleanupConfiguration;
   }
 
-  protected CleanupConfiguration() {}
+  protected CleanupConfiguration() {
+  }
 
   public void validate() {
     if (ttl == null) {
@@ -84,9 +67,7 @@ public class CleanupConfiguration {
   // not relevant for serialization but only for application logic
   @JsonIgnore
   public boolean isEnabled() {
-    return processDataCleanupConfiguration.isEnabled()
-        || decisionCleanupConfiguration.isEnabled()
-        || ingestedEventCleanupConfiguration.isEnabled();
+    return processDataCleanupConfiguration.isEnabled() || decisionCleanupConfiguration.isEnabled();
   }
 
   public ProcessDefinitionCleanupConfiguration getProcessDefinitionCleanupConfigurationForKey(
@@ -152,16 +133,6 @@ public class CleanupConfiguration {
     this.decisionCleanupConfiguration = decisionCleanupConfiguration;
   }
 
-  public IngestedEventCleanupConfiguration getIngestedEventCleanupConfiguration() {
-    return ingestedEventCleanupConfiguration;
-  }
-
-  @JsonProperty("ingestedEventCleanup")
-  public void setIngestedEventCleanupConfiguration(
-      final IngestedEventCleanupConfiguration ingestedEventCleanupConfiguration) {
-    this.ingestedEventCleanupConfiguration = ingestedEventCleanupConfiguration;
-  }
-
   public ExternalVariableCleanupConfiguration getExternalVariableCleanupConfiguration() {
     return externalVariableCleanupConfiguration;
   }
@@ -188,26 +159,21 @@ public class CleanupConfiguration {
     result =
         result * PRIME
             + ($processDataCleanupConfiguration == null
-                ? 43
-                : $processDataCleanupConfiguration.hashCode());
+            ? 43
+            : $processDataCleanupConfiguration.hashCode());
     final Object $decisionCleanupConfiguration = getDecisionCleanupConfiguration();
     result =
         result * PRIME
             + ($decisionCleanupConfiguration == null
-                ? 43
-                : $decisionCleanupConfiguration.hashCode());
-    final Object $ingestedEventCleanupConfiguration = getIngestedEventCleanupConfiguration();
-    result =
-        result * PRIME
-            + ($ingestedEventCleanupConfiguration == null
-                ? 43
-                : $ingestedEventCleanupConfiguration.hashCode());
+            ? 43
+            : $decisionCleanupConfiguration.hashCode());
+
     final Object $externalVariableCleanupConfiguration = getExternalVariableCleanupConfiguration();
     result =
         result * PRIME
             + ($externalVariableCleanupConfiguration == null
-                ? 43
-                : $externalVariableCleanupConfiguration.hashCode());
+            ? 43
+            : $externalVariableCleanupConfiguration.hashCode());
     return result;
   }
 
@@ -249,14 +215,6 @@ public class CleanupConfiguration {
         : !this$decisionCleanupConfiguration.equals(other$decisionCleanupConfiguration)) {
       return false;
     }
-    final Object this$ingestedEventCleanupConfiguration = getIngestedEventCleanupConfiguration();
-    final Object other$ingestedEventCleanupConfiguration =
-        other.getIngestedEventCleanupConfiguration();
-    if (this$ingestedEventCleanupConfiguration == null
-        ? other$ingestedEventCleanupConfiguration != null
-        : !this$ingestedEventCleanupConfiguration.equals(other$ingestedEventCleanupConfiguration)) {
-      return false;
-    }
     final Object this$externalVariableCleanupConfiguration =
         getExternalVariableCleanupConfiguration();
     final Object other$externalVariableCleanupConfiguration =
@@ -280,8 +238,6 @@ public class CleanupConfiguration {
         + getProcessDataCleanupConfiguration()
         + ", decisionCleanupConfiguration="
         + getDecisionCleanupConfiguration()
-        + ", ingestedEventCleanupConfiguration="
-        + getIngestedEventCleanupConfiguration()
         + ", externalVariableCleanupConfiguration="
         + getExternalVariableCleanupConfiguration()
         + ")";

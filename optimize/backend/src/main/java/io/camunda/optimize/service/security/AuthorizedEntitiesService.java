@@ -39,14 +39,10 @@ public class AuthorizedEntitiesService {
   public List<EntityResponseDto> getAuthorizedPrivateEntities(final String userId) {
 
     final List<CollectionEntity> collectionEntities;
-    if (identityService.isSuperUserIdentity(userId)) {
-      collectionEntities = entitiesReader.getAllPrivateEntities();
-    } else {
-      collectionEntities = entitiesReader.getAllPrivateEntitiesForOwnerId(userId);
-    }
+    collectionEntities = entitiesReader.getAllPrivateEntitiesForOwnerId(userId);
 
     final RoleType roleForUser =
-        identityService.getUserAuthorizations(userId).contains(AuthorizationType.ENTITY_EDITOR)
+        identityService.getEnabledAuthorizations().contains(AuthorizationType.ENTITY_EDITOR)
             ? RoleType.EDITOR
             : RoleType.VIEWER;
     return collectionEntities.stream()

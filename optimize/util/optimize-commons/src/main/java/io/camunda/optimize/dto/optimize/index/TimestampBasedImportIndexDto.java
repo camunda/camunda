@@ -8,11 +8,12 @@
 package io.camunda.optimize.dto.optimize.index;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
+import io.camunda.optimize.dto.optimize.OptimizeDto;
+import io.camunda.optimize.dto.optimize.datasource.IngestedDataSourceDto;
 import java.time.OffsetDateTime;
 
-public class TimestampBasedImportIndexDto extends ImportIndexDto<DataSourceDto>
-    implements EngineImportIndexDto {
+public class TimestampBasedImportIndexDto extends ImportIndexDto<IngestedDataSourceDto>
+    implements OptimizeDto {
 
   protected String esTypeIndexRefersTo;
 
@@ -20,20 +21,19 @@ public class TimestampBasedImportIndexDto extends ImportIndexDto<DataSourceDto>
       final OffsetDateTime lastImportExecutionTimestamp,
       final OffsetDateTime timestampOfLastEntity,
       final String esTypeIndexRefersTo,
-      final DataSourceDto dataSourceDto) {
+      final IngestedDataSourceDto dataSourceDto) {
     super(lastImportExecutionTimestamp, timestampOfLastEntity, dataSourceDto);
     this.esTypeIndexRefersTo = esTypeIndexRefersTo;
   }
 
-  public TimestampBasedImportIndexDto() {}
+  public TimestampBasedImportIndexDto() {
+  }
 
-  @Override
   @JsonIgnore
-  public String getEngine() {
+  public String getDataSourceName() {
     return dataSource.getName();
   }
 
-  @Override
   public String getEsTypeIndexRefersTo() {
     return esTypeIndexRefersTo;
   }
@@ -43,8 +43,17 @@ public class TimestampBasedImportIndexDto extends ImportIndexDto<DataSourceDto>
   }
 
   @Override
-  public String toString() {
-    return "TimestampBasedImportIndexDto(esTypeIndexRefersTo=" + getEsTypeIndexRefersTo() + ")";
+  protected boolean canEqual(final Object other) {
+    return other instanceof TimestampBasedImportIndexDto;
+  }
+
+  @Override
+  public int hashCode() {
+    final int PRIME = 59;
+    int result = super.hashCode();
+    final Object $esTypeIndexRefersTo = getEsTypeIndexRefersTo();
+    result = result * PRIME + ($esTypeIndexRefersTo == null ? 43 : $esTypeIndexRefersTo.hashCode());
+    return result;
   }
 
   @Override
@@ -73,17 +82,8 @@ public class TimestampBasedImportIndexDto extends ImportIndexDto<DataSourceDto>
   }
 
   @Override
-  protected boolean canEqual(final Object other) {
-    return other instanceof TimestampBasedImportIndexDto;
-  }
-
-  @Override
-  public int hashCode() {
-    final int PRIME = 59;
-    int result = super.hashCode();
-    final Object $esTypeIndexRefersTo = getEsTypeIndexRefersTo();
-    result = result * PRIME + ($esTypeIndexRefersTo == null ? 43 : $esTypeIndexRefersTo.hashCode());
-    return result;
+  public String toString() {
+    return "TimestampBasedImportIndexDto(esTypeIndexRefersTo=" + getEsTypeIndexRefersTo() + ")";
   }
 
   public static final class Fields {

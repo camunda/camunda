@@ -72,4 +72,13 @@ public class DbUserState implements UserState, MutableUserState {
   public UserRecord getUser(final String username) {
     return getUser(wrapString(username));
   }
+
+  @Override
+  public void updateUser(final UserRecord user) {
+    username.wrapBuffer(user.getUsernameBuffer());
+    final var key = userKeyByUsernameColumnFamily.get(username);
+    persistedUser.setUser(user);
+
+    userByUserKeyColumnFamily.update(key, persistedUser);
+  }
 }

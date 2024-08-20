@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.service.db.repository.es;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.IMPORT_INDEX_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.POSITION_BASED_IMPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
@@ -16,17 +15,13 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.optimize.dto.optimize.OptimizeDto;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
-import io.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
-import io.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
 import io.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import io.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import io.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import io.camunda.optimize.service.db.repository.ImportRepository;
-import io.camunda.optimize.service.db.schema.index.index.ImportIndexIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.DatabaseHelper;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -42,8 +37,6 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.xcontent.XContentBuilder;
-import org.elasticsearch.xcontent.XContentFactory;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
@@ -142,11 +135,12 @@ public class ImportRepositoryES implements ImportRepository {
 
   @Override
   public void importIndices(
-      final String importItemName, final List<EngineImportIndexDto> engineImportIndexDtos) {
+      final String importItemName,
+      final List<TimestampBasedImportIndexDto> timestampBasedImportIndexDtos) {
     esClient.doImportBulkRequestWithList(
         importItemName,
-        engineImportIndexDtos,
-        this::addImportIndexRequest,
+        timestampBasedImportIndexDtos,
+        (bulkRequest, optimizeDto) -> bulkRequest.add(createTimestampBasedRequest(optimizeDto)),
         configurationService.getSkipDataAfterNestedDocLimitReached());
   }
 
@@ -171,17 +165,9 @@ public class ImportRepositoryES implements ImportRepository {
     }
   }
 
-  private void addImportIndexRequest(final BulkRequest bulkRequest, final OptimizeDto optimizeDto) {
-    if (optimizeDto instanceof final TimestampBasedImportIndexDto timestampBasedIndexDto) {
-      bulkRequest.add(createTimestampBasedRequest(timestampBasedIndexDto));
-    } else if (optimizeDto instanceof final AllEntitiesBasedImportIndexDto entitiesBasedIndexDto) {
-      bulkRequest.add(createAllEntitiesBasedRequest(entitiesBasedIndexDto));
-    }
-  }
-
   private IndexRequest createTimestampBasedRequest(final TimestampBasedImportIndexDto importIndex) {
-    final String currentTimeStamp =
-        dateTimeFormatter.format(importIndex.getTimestampOfLastEntity());
+    final String currentTimeStamp = dateTimeFormatter.format(
+        importIndex.getTimestampOfLastEntity());
     log.debug(
         "Writing timestamp based import index [{}] of type [{}] with execution timestamp [{}] to elasticsearch",
         currentTimeStamp,
@@ -200,34 +186,8 @@ public class ImportRepositoryES implements ImportRepository {
     }
   }
 
-  private String getId(final EngineImportIndexDto importIndex) {
+  private String getId(final TimestampBasedImportIndexDto importIndex) {
     return DatabaseHelper.constructKey(
-        importIndex.getEsTypeIndexRefersTo(), importIndex.getEngine());
-  }
-
-  private IndexRequest createAllEntitiesBasedRequest(
-      final AllEntitiesBasedImportIndexDto importIndex) {
-    log.debug(
-        "Writing all entities based import index type [{}] to elasticsearch. "
-            + "Starting from [{}]",
-        importIndex.getEsTypeIndexRefersTo(),
-        importIndex.getImportIndex());
-    try {
-      final XContentBuilder sourceToAdjust =
-          XContentFactory.jsonBuilder()
-              .startObject()
-              .field(ImportIndexIndex.ENGINE, importIndex.getEngine())
-              .field(ImportIndexIndex.IMPORT_INDEX, importIndex.getImportIndex())
-              .endObject();
-      return new IndexRequest(IMPORT_INDEX_INDEX_NAME)
-          .id(getId(importIndex))
-          .source(sourceToAdjust);
-    } catch (final IOException e) {
-      log.error(
-          "Was not able to write all entities based import index of type [{}] to Elasticsearch. Reason: {}",
-          importIndex.getEsTypeIndexRefersTo(),
-          e);
-      return new IndexRequest();
-    }
+        importIndex.getEsTypeIndexRefersTo(), importIndex.getDataSourceName());
   }
 }

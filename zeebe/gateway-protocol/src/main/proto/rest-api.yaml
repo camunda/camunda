@@ -37,6 +37,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TopologyResponse"
+  /license:
+    get:
+      tags:
+        - License
+      summary: Get status of Camunda License
+      description: Obtains the status of the current Camunda License
+      responses:
+        '200':
+          description: Obtains the current status of the Camunda license
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LicenseResponse"
   /jobs/activation:
     post:
       tags:
@@ -819,6 +832,10 @@ components:
           type: string
         bpmnDefinitionId:
           type: string
+        priority:
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/PriorityValueFilter"
     UserTaskItem:
       type: object
       properties:
@@ -876,6 +893,11 @@ components:
           type: object
           additionalProperties:
             type: string
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 100
+          default: 50
     ProcessInstanceSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -1035,6 +1057,17 @@ components:
           description: The version of the Zeebe Gateway.
           type: string
           nullable: true
+    LicenseResponse:
+      description: The response of a license request.
+      type: object
+      properties:
+        validLicense:
+          description: True if the Camunda License is valid, false if otherwise
+          type: boolean
+          nullable: false
+        licenseType:
+          description: Will return the license type property of the Camunda License
+          type: string
     BrokerInfo:
       description: Provides information on a broker node.
       type: object
@@ -1137,6 +1170,7 @@ components:
         * `candidateUsers` - reset by providing an empty list
         * `dueDate` - reset by providing an empty String
         * `followUpDate` - reset by providing an empty String
+        * `priority` - minimum 0, maximum 100, default 50
 
         Providing any of those attributes with a `null` value or omitting it preserves
         the persisted attribute's value.
@@ -1168,6 +1202,14 @@ components:
           description: The list of candidate groups of the task. Reset by providing an empty list.
           items:
             type: string
+          nullable: true
+        priority:
+          type: integer
+          format: int32
+          description: The priority of the task.
+          minimum: 0
+          default: 50
+          maximum: 100
           nullable: true
     JobActivationRequest:
       type: object
@@ -1535,7 +1577,7 @@ components:
         correlationKey:
           description: The correlation key of the message
           type: string
-          nullable: true
+          default: ""
         variables:
           description: The message variables as JSON document
           additionalProperties: true
@@ -1562,6 +1604,29 @@ components:
             description: The key of the first process instance the message correlated with
             type: integer
             format: int64
+    PriorityValueFilter:
+      type: object
+      properties:
+        eq:
+          type: integer
+          minimum: 0
+          maximum: 100
+        gt:
+          type: integer
+          minimum: 0
+          maximum: 100
+        gte:
+          type: integer
+          minimum: 0
+          maximum: 100
+        lt:
+          type: integer
+          minimum: 0
+          maximum: 100
+        lte:
+          type: integer
+          minimum: 0
+          maximum: 100
   securitySchemes:
     bearerAuth:
       type: http

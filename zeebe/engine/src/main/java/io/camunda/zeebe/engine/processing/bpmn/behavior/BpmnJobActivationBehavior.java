@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
 import java.util.Optional;
@@ -66,6 +67,7 @@ public class BpmnJobActivationBehavior {
     wrappedJobRecord.wrapWithoutVariables(jobRecord);
 
     final String jobType = wrappedJobRecord.getType();
+    final JobKind jobKind = wrappedJobRecord.getJobKind();
     final String tenantId = wrappedJobRecord.getTenantId();
     final Optional<JobStream> optionalJobStream =
         jobStreamer.streamFor(
@@ -93,24 +95,23 @@ public class BpmnJobActivationBehavior {
       sideEffectWriter.appendSideEffect(
           () -> {
             jobStream.push(activatedJob);
-            jobMetrics.jobPush(jobType);
+            jobMetrics.jobPush(jobType, jobKind);
             return true;
           });
     } else {
-      notifyJobAvailable(jobType);
+      notifyJobAvailable(jobType, jobKind);
     }
   }
 
   public void notifyJobAvailableAsSideEffect(final JobRecord jobRecord) {
-    final String jobType = jobRecord.getType();
-    notifyJobAvailable(jobType);
+    notifyJobAvailable(jobRecord.getType(), jobRecord.getJobKind());
   }
 
-  private void notifyJobAvailable(final String jobType) {
+  private void notifyJobAvailable(final String jobType, final JobKind jobKind) {
     sideEffectWriter.appendSideEffect(
         () -> {
           jobStreamer.notifyWorkAvailable(jobType);
-          jobMetrics.jobNotification(jobType);
+          jobMetrics.jobNotification(jobType, jobKind);
           return true;
         });
   }

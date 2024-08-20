@@ -32,11 +32,6 @@ import io.camunda.optimize.service.db.es.schema.index.TenantIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.VariableLabelIndexES;
 import io.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
-import io.camunda.optimize.service.db.es.schema.index.events.EventIndexES;
-import io.camunda.optimize.service.db.es.schema.index.events.EventProcessDefinitionIndexES;
-import io.camunda.optimize.service.db.es.schema.index.events.EventProcessMappingIndexES;
-import io.camunda.optimize.service.db.es.schema.index.events.EventProcessPublishStateIndexES;
-import io.camunda.optimize.service.db.es.schema.index.index.ImportIndexIndexES;
 import io.camunda.optimize.service.db.es.schema.index.index.PositionBasedImportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.index.TimestampBasedImportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.CombinedReportIndexES;
@@ -82,7 +77,6 @@ public class ElasticSearchSchemaManager
   private static final String INDEX_READ_ONLY_SETTING = "index.blocks.read_only_allow_delete";
   private static final Logger log =
       org.slf4j.LoggerFactory.getLogger(ElasticSearchSchemaManager.class);
-
   protected final ElasticSearchMetadataService metadataService;
 
   @Autowired
@@ -277,7 +271,7 @@ public class ElasticSearchSchemaManager
             Iterables.partition(indexNames, INDEX_EXIST_BATCH_SIZE).spliterator(), true)
         .allMatch(
             indices -> {
-              final GetIndexRequest request = new GetIndexRequest(indices.toArray(new String[] {}));
+              final GetIndexRequest request = new GetIndexRequest(indices.toArray(new String[]{}));
               try {
                 return esClient.exists(request);
               } catch (final IOException e) {
@@ -479,11 +473,6 @@ public class ElasticSearchSchemaManager
         new TenantIndexES(),
         new TerminatedUserSessionIndexES(),
         new VariableUpdateInstanceIndexES(),
-        new EventIndexES(),
-        new EventProcessDefinitionIndexES(),
-        new EventProcessMappingIndexES(),
-        new EventProcessPublishStateIndexES(),
-        new ImportIndexIndexES(),
         new TimestampBasedImportIndexES(),
         new PositionBasedImportIndexES(),
         new CombinedReportIndexES(),

@@ -45,7 +45,6 @@ import io.camunda.optimize.service.db.es.ElasticsearchCompositeAggregationScroll
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.schema.index.DecisionDefinitionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessDefinitionIndexES;
-import io.camunda.optimize.service.db.es.schema.index.events.EventProcessDefinitionIndexES;
 import io.camunda.optimize.service.db.reader.DefinitionReader;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -169,11 +168,11 @@ public class DefinitionReaderES implements DefinitionReader {
 
   @Override
   public <T extends DefinitionOptimizeResponseDto>
-      Optional<T> getFirstFullyImportedDefinitionFromTenantsIfAvailable(
-          final DefinitionType type,
-          final String definitionKey,
-          final List<String> definitionVersions,
-          final List<String> tenantIds) {
+  Optional<T> getFirstFullyImportedDefinitionFromTenantsIfAvailable(
+      final DefinitionType type,
+      final String definitionKey,
+      final List<String> definitionVersions,
+      final List<String> tenantIds) {
     if (definitionKey == null || definitionVersions == null || definitionVersions.isEmpty()) {
       return Optional.empty();
     }
@@ -196,8 +195,8 @@ public class DefinitionReaderES implements DefinitionReader {
 
   @Override
   public <T extends DefinitionOptimizeResponseDto>
-      List<T> getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
-          final DefinitionType type, final String definitionKey) {
+  List<T> getLatestFullyImportedDefinitionsFromTenantsIfAvailable(
+      final DefinitionType type, final String definitionKey) {
     if (definitionKey == null) {
       return Collections.emptyList();
     }
@@ -223,9 +222,9 @@ public class DefinitionReaderES implements DefinitionReader {
 
     final SearchRequest searchRequest =
         new SearchRequest(
-                DefinitionType.PROCESS.equals(type)
-                    ? PROCESS_DEFINITION_INDEX_NAME
-                    : DECISION_DEFINITION_INDEX_NAME)
+            DefinitionType.PROCESS.equals(type)
+                ? PROCESS_DEFINITION_INDEX_NAME
+                : DECISION_DEFINITION_INDEX_NAME)
             .source(searchSourceBuilder);
 
     final SearchResponse searchResponse;
@@ -269,7 +268,7 @@ public class DefinitionReaderES implements DefinitionReader {
 
     final CompositeAggregationBuilder keyAndTypeAndTenantAggregation =
         new CompositeAggregationBuilder(
-                DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION, keyAndTypeAndTenantSources)
+            DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION, keyAndTypeAndTenantSources)
             .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
             .subAggregation(nameAggregation)
             .subAggregation(enginesAggregation);
@@ -315,16 +314,15 @@ public class DefinitionReaderES implements DefinitionReader {
                         final String definitionName =
                             ((Terms) parsedBucket.getAggregations().get(NAME_AGGREGATION))
                                 .getBuckets().stream()
-                                    .findFirst()
-                                    .map(Terms.Bucket::getKeyAsString)
-                                    .orElse(null);
+                                .findFirst()
+                                .map(Terms.Bucket::getKeyAsString)
+                                .orElse(null);
                         final Terms enginesResult =
                             parsedBucket.getAggregations().get(ENGINE_AGGREGATION);
                         return new SimpleDefinitionDto(
                             definitionKey,
                             definitionName,
                             resolveDefinitionTypeFromIndexAlias(indexAliasName),
-                            resolveIsEventProcessFromIndexAlias(indexAliasName),
                             enginesResult.getBuckets().stream()
                                 .map(Terms.Bucket::getKeyAsString)
                                 .collect(Collectors.toSet()));
@@ -465,7 +463,7 @@ public class DefinitionReaderES implements DefinitionReader {
   public <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(
       final DefinitionType type, final BoolQueryBuilder filteredQuery, final boolean withXml) {
     final String xmlField = resolveXmlFieldFromType(type);
-    final String[] fieldsToExclude = withXml ? null : new String[] {xmlField};
+    final String[] fieldsToExclude = withXml ? null : new String[]{xmlField};
     final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(filteredQuery)
@@ -583,8 +581,8 @@ public class DefinitionReaderES implements DefinitionReader {
   }
 
   private <T extends DefinitionOptimizeResponseDto>
-      List<T> getLatestFullyImportedDefinitionPerTenant(
-          final DefinitionType type, final String key) {
+  List<T> getLatestFullyImportedDefinitionPerTenant(
+      final DefinitionType type, final String key) {
     log.debug(
         "Fetching latest fully imported [{}] definitions for key [{}] on each tenant", type, key);
 
@@ -706,7 +704,6 @@ public class DefinitionReaderES implements DefinitionReader {
                       .map(Terms.Bucket::getKeyAsString)
                       .orElse(null),
                   resolveDefinitionTypeFromIndexAlias(indexAliasName),
-                  resolveIsEventProcessFromIndexAlias(indexAliasName),
                   tenantResult.getBuckets().stream()
                       .map(Terms.Bucket::getKeyAsString)
                       // convert null bucket back to a `null` id
@@ -773,8 +770,8 @@ public class DefinitionReaderES implements DefinitionReader {
   }
 
   private <T extends DefinitionOptimizeResponseDto>
-      List<T> retrieveResultsFromLatestDefinitionPerTenant(
-          final DefinitionType type, final SearchResponse searchResponse) {
+  List<T> retrieveResultsFromLatestDefinitionPerTenant(
+      final DefinitionType type, final SearchResponse searchResponse) {
     final Class<T> typeClass = resolveDefinitionClassFromType(type);
     final List<T> results = new ArrayList<>();
     final ParsedFilter filteredDefsAgg =
@@ -799,7 +796,7 @@ public class DefinitionReaderES implements DefinitionReader {
   }
 
   private <T extends DefinitionOptimizeResponseDto>
-      Function<SearchHit, T> createMappingFunctionForDefinitionType(final Class<T> type) {
+  Function<SearchHit, T> createMappingFunctionForDefinitionType(final Class<T> type) {
     return hit -> {
       final String sourceAsString = hit.getSourceAsString();
       try {
@@ -808,7 +805,6 @@ public class DefinitionReaderES implements DefinitionReader {
           final ProcessDefinitionOptimizeDto processDefinition =
               (ProcessDefinitionOptimizeDto) definitionDto;
           processDefinition.setType(DefinitionType.PROCESS);
-          processDefinition.setEventBased(resolveIsEventProcessFromIndexAlias(hit.getIndex()));
         } else {
           definitionDto.setType(DefinitionType.DECISION);
         }
@@ -826,18 +822,13 @@ public class DefinitionReaderES implements DefinitionReader {
   }
 
   private DefinitionType resolveDefinitionTypeFromIndexAlias(final String indexName) {
-    if (indexName.equals(getOptimizeIndexNameForIndex(new ProcessDefinitionIndexES()))
-        || indexName.equals(getOptimizeIndexNameForIndex(new EventProcessDefinitionIndexES()))) {
+    if (indexName.equals(getOptimizeIndexNameForIndex(new ProcessDefinitionIndexES()))) {
       return DefinitionType.PROCESS;
     } else if (indexName.equals(getOptimizeIndexNameForIndex(new DecisionDefinitionIndexES()))) {
       return DefinitionType.DECISION;
     } else {
       throw new OptimizeRuntimeException("Unexpected definition index name: " + indexName);
     }
-  }
-
-  private boolean resolveIsEventProcessFromIndexAlias(final String indexName) {
-    return indexName.equals(getOptimizeIndexNameForIndex(new EventProcessDefinitionIndexES()));
   }
 
   private String getOptimizeIndexNameForIndex(final DefaultIndexMappingCreator index) {

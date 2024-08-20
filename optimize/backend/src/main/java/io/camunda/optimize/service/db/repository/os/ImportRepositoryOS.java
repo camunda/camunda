@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.service.db.repository.os;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.IMPORT_INDEX_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.POSITION_BASED_IMPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
@@ -17,8 +16,6 @@ import static java.lang.String.format;
 
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
-import io.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
-import io.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
 import io.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import io.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import io.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
@@ -115,10 +112,11 @@ public class ImportRepositoryOS implements ImportRepository {
 
   @Override
   public void importIndices(
-      final String importItemName, final List<EngineImportIndexDto> engineImportIndexDtos) {
+      final String importItemName,
+      final List<TimestampBasedImportIndexDto> timestampBasedImportIndexDtos) {
     osClient.doImportBulkRequestWithList(
         importItemName,
-        engineImportIndexDtos,
+        timestampBasedImportIndexDtos,
         this::addImportIndexRequest,
         configurationService.getSkipDataAfterNestedDocLimitReached());
   }
@@ -149,8 +147,6 @@ public class ImportRepositoryOS implements ImportRepository {
   private BulkOperation addImportIndexRequest(final OptimizeDto optimizeDto) {
     if (optimizeDto instanceof final TimestampBasedImportIndexDto timestampBasedIndexDto) {
       return createTimestampBasedRequest(timestampBasedIndexDto);
-    } else if (optimizeDto instanceof final AllEntitiesBasedImportIndexDto entitiesBasedIndexDto) {
-      return createAllEntitiesBasedRequest(entitiesBasedIndexDto);
     } else {
       throw new OptimizeRuntimeException(
           format(
@@ -179,26 +175,8 @@ public class ImportRepositoryOS implements ImportRepository {
         .build();
   }
 
-  private String getId(final EngineImportIndexDto importIndex) {
+  private String getId(final TimestampBasedImportIndexDto importIndex) {
     return DatabaseHelper.constructKey(
-        importIndex.getEsTypeIndexRefersTo(), importIndex.getEngine());
-  }
-
-  private BulkOperation createAllEntitiesBasedRequest(
-      final AllEntitiesBasedImportIndexDto importIndex) {
-    record Doc(String engine, long importIndex) {}
-
-    log.debug(
-        "Writing all entities based import index type [{}] to opensearch. Starting from [{}]",
-        importIndex.getEsTypeIndexRefersTo(),
-        importIndex.getImportIndex());
-    return new BulkOperation.Builder()
-        .index(
-            new IndexOperation.Builder<Doc>()
-                .index(indexNameService.getOptimizeIndexAliasForIndex(IMPORT_INDEX_INDEX_NAME))
-                .id(getId(importIndex))
-                .document(new Doc(importIndex.getEngine(), importIndex.getImportIndex()))
-                .build())
-        .build();
+        importIndex.getEsTypeIndexRefersTo(), importIndex.getDataSourceName());
   }
 }

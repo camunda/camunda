@@ -14,7 +14,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 
 import io.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import io.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import io.camunda.optimize.service.db.DatabaseClient;
@@ -45,6 +45,7 @@ public class ZeebeProcessInstanceImportService
           ProcessInstanceIntent.ELEMENT_ACTIVATING);
   private static final Set<BpmnElementType> TYPES_TO_IGNORE =
       Set.of(BpmnElementType.UNSPECIFIED, BpmnElementType.SEQUENCE_FLOW);
+
   private static final Logger log =
       org.slf4j.LoggerFactory.getLogger(ZeebeProcessInstanceImportService.class);
 
@@ -182,19 +183,19 @@ public class ZeebeProcessInstanceImportService
     final ZeebeProcessInstanceDataDto zeebeInstanceRecord =
         zeebeProcessInstanceRecordDto.getValue();
     return new FlowNodeInstanceDto(
-            String.valueOf(zeebeInstanceRecord.getBpmnProcessId()),
-            String.valueOf(zeebeInstanceRecord.getVersion()),
-            zeebeInstanceRecord.getTenantId(),
-            String.valueOf(zeebeInstanceRecord.getProcessInstanceKey()),
-            zeebeInstanceRecord.getElementId(),
-            zeebeInstanceRecord
-                .getBpmnElementType()
-                .getElementTypeName()
-                .orElseThrow(
-                    () ->
-                        new OptimizeRuntimeException(
-                            "Cannot create flow node instances for records without element types")),
-            String.valueOf(zeebeProcessInstanceRecordDto.getKey()))
+        String.valueOf(zeebeInstanceRecord.getBpmnProcessId()),
+        String.valueOf(zeebeInstanceRecord.getVersion()),
+        zeebeInstanceRecord.getTenantId(),
+        String.valueOf(zeebeInstanceRecord.getProcessInstanceKey()),
+        zeebeInstanceRecord.getElementId(),
+        zeebeInstanceRecord
+            .getBpmnElementType()
+            .getElementTypeName()
+            .orElseThrow(
+                () ->
+                    new OptimizeRuntimeException(
+                        "Cannot create flow node instances for records without element types")),
+        String.valueOf(zeebeProcessInstanceRecordDto.getKey()))
         .setCanceled(false);
   }
 

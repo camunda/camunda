@@ -44,12 +44,6 @@ public class DefinitionClient {
     return getAllDefinitionsAsUser(DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
-  public List<DefinitionKeyResponseDto> getCamundaEventImportedProcessDefinitionKeys() {
-    return getRequestExecutor()
-        .buildGetDefinitionKeysByType(DefinitionType.PROCESS.getId(), null, true)
-        .executeAndReturnList(DefinitionKeyResponseDto.class, Response.Status.OK.getStatusCode());
-  }
-
   public List<DefinitionResponseDto> getAllDefinitionsAsUser(
       final String username, final String password) {
     return getRequestExecutor()
@@ -115,18 +109,18 @@ public class DefinitionClient {
   }
 
   public List<DefinitionWithTenantsResponseDto>
-      resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
-          final DefinitionType type, final MultiDefinitionTenantsRequestDto request) {
+  resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
+      final DefinitionType type, final MultiDefinitionTenantsRequestDto request) {
     return resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
         type, request, DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
   public List<DefinitionWithTenantsResponseDto>
-      resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
-          final DefinitionType type,
-          final MultiDefinitionTenantsRequestDto request,
-          final String username,
-          final String password) {
+  resolveDefinitionTenantsByTypeMultipleKeyAndVersions(
+      final DefinitionType type,
+      final MultiDefinitionTenantsRequestDto request,
+      final String username,
+      final String password) {
     return getRequestExecutor()
         .buildResolveDefinitionTenantsByTypeMultipleKeysAndVersionsRequest(type.getId(), request)
         .withUserAuthentication(username, password)

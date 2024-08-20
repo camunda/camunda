@@ -385,7 +385,7 @@ public class ReportService implements CollectionReferencingService {
         getReportWithEditAuthorization(userId, currentReportVersion);
     final String combinedReportCollectionId =
         authorizedCombinedReport.getDefinitionDto().getCollectionId();
-    validateEntityEditorAuthorization(combinedReportCollectionId, userId);
+    validateEntityEditorAuthorization(combinedReportCollectionId);
 
     final CombinedProcessReportDefinitionUpdateDto reportUpdate =
         convertToCombinedProcessReportUpdate(updatedReport, userId);
@@ -416,7 +416,7 @@ public class ReportService implements CollectionReferencingService {
     getReportWithEditAuthorization(userId, currentReportVersion);
     ensureCompliesWithCollectionScope(
         userId, currentReportVersion.getCollectionId(), updatedReport);
-    validateEntityEditorAuthorization(currentReportVersion.getCollectionId(), userId);
+    validateEntityEditorAuthorization(currentReportVersion.getCollectionId());
 
     final SingleProcessReportDefinitionUpdateDto reportUpdate =
         convertToSingleProcessReportUpdate(updatedReport, userId);
@@ -449,7 +449,7 @@ public class ReportService implements CollectionReferencingService {
     getReportWithEditAuthorization(userId, currentReportVersion);
     ensureCompliesWithCollectionScope(
         userId, currentReportVersion.getCollectionId(), updatedReport);
-    validateEntityEditorAuthorization(currentReportVersion.getCollectionId(), userId);
+    validateEntityEditorAuthorization(currentReportVersion.getCollectionId());
 
     final SingleDecisionReportDefinitionUpdateDto reportUpdate =
         convertToSingleDecisionReportUpdate(updatedReport, userId);
@@ -483,7 +483,7 @@ public class ReportService implements CollectionReferencingService {
           "Management and Instant Preview Reports cannot be deleted");
     }
     getReportWithEditAuthorization(userId, reportDefinition);
-    validateEntityEditorAuthorization(reportDefinition.getCollectionId(), userId);
+    validateEntityEditorAuthorization(reportDefinition.getCollectionId());
 
     if (!force) {
       final Set<ConflictedItemDto> conflictedItems =
@@ -583,7 +583,7 @@ public class ReportService implements CollectionReferencingService {
     final Optional<T> optionalProvidedDefinition = Optional.ofNullable(reportDefinition);
     final String collectionId =
         optionalProvidedDefinition.map(ReportDefinitionDto::getCollectionId).orElse(null);
-    validateEntityEditorAuthorization(collectionId, userId);
+    validateEntityEditorAuthorization(collectionId);
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
 
     return createReportMethod.create(
@@ -677,7 +677,7 @@ public class ReportService implements CollectionReferencingService {
       final Map<String, String> existingReportCopies,
       final boolean keepSubReportNames) {
     final String oldCollectionId = originalReportDefinition.getCollectionId();
-    validateEntityEditorAuthorization(oldCollectionId, userId);
+    validateEntityEditorAuthorization(oldCollectionId);
 
     if (!originalReportDefinition.isCombined()) {
       switch (originalReportDefinition.getReportType()) {
@@ -884,11 +884,9 @@ public class ReportService implements CollectionReferencingService {
     }
   }
 
-  private void validateEntityEditorAuthorization(final String collectionId, final String userId) {
+  private void validateEntityEditorAuthorization(final String collectionId) {
     if (collectionId == null
-        && !identityService
-            .getUserAuthorizations(userId)
-            .contains(AuthorizationType.ENTITY_EDITOR)) {
+        && !identityService.getEnabledAuthorizations().contains(AuthorizationType.ENTITY_EDITOR)) {
       throw new ForbiddenException("User is not an authorized entity editor");
     }
   }

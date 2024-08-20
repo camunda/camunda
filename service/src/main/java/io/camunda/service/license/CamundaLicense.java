@@ -17,8 +17,10 @@ import org.slf4j.LoggerFactory;
 public class CamundaLicense {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaLicense.class);
+  private static final String UNKNOWN_LICENSE_TYPE = "unknown";
+  private static final String CAMUNDA_LICENSE_ENV_VAR_KEY = "CAMUNDA_LICENSE_KEY";
   private boolean isValid;
-  private boolean isSelfManaged;
+  private String licenseType;
   private boolean isInitialized;
 
   @VisibleForTesting
@@ -32,40 +34,58 @@ public class CamundaLicense {
     return isValid;
   }
 
-  public synchronized boolean isSelfManaged() {
-    return isSelfManaged;
+  public synchronized String getLicenseType() {
+    return licenseType;
   }
 
   public synchronized void initializeWithLicense(final String license) {
-    if (!isInitialized) {
-      isValid = determineLicenseValidity(license);
-      isSelfManaged = determineIfLicenseEnvModeIsSelfManaged(license);
-
-      isInitialized = true;
+    if (isInitialized) {
+      return;
     }
+
+    if (license != null && !license.isBlank()) {
+      isValid = determineLicenseValidity(license);
+      licenseType = getLicenseTypeFromProperty(license);
+    } else {
+      isValid = false;
+      licenseType = UNKNOWN_LICENSE_TYPE;
+      LOGGER.error(
+          "No license detected when one is expected. Please provide a license through the "
+              + CAMUNDA_LICENSE_ENV_VAR_KEY
+              + " environment variable.");
+    }
+
+    isInitialized = true;
   }
 
   /**
-   * SaaS mode is determined through the properties of the passed in license.
+   * Camunda licenses will have a license type property, fetch that out of the license and return
+   * the value
    *
    * <p>Self-managed mode is any other possibility. (ex, blank license, prop missing, etc)
    */
-  private boolean determineIfLicenseEnvModeIsSelfManaged(final String licenseStr) {
+  private String getLicenseTypeFromProperty(final String licenseStr) {
     try {
       final LicenseKey licenseKey = getLicenseKey(licenseStr);
-      return licenseKey.getProperties().entrySet().stream()
-          .noneMatch(x -> x.getKey().equals("licenseType") && x.getValue().equals("saas"));
+      final String licenseType =
+          licenseKey.getProperties().getOrDefault("licenseType", UNKNOWN_LICENSE_TYPE);
+
+      if (UNKNOWN_LICENSE_TYPE.equals(licenseType)) {
+        LOGGER.error(
+            "Expected a licenseType property on the Camunda License, but none were found.");
+      }
+
+      return licenseType;
     } catch (final InvalidLicenseException e) {
       LOGGER.error(
           "Expected a valid license when determining the type of license, but encountered an invalid one instead. ",
           e);
-      return true;
     } catch (final Exception e) {
       LOGGER.error(
           "Expected to determine the license type of the license, but the following unexpected error was encountered: ",
           e);
-      return true;
     }
+    return UNKNOWN_LICENSE_TYPE;
   }
 
   private boolean determineLicenseValidity(final String licenseStr) {

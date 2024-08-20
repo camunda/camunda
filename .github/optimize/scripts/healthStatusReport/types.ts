@@ -34,11 +34,6 @@ export type Config = {
     repository: string;
     workflows: GithubWorkflow[];
   };
-  argoCd: {
-    title?: string;
-    url: string;
-    projects: string[];
-  };
   githubPrs: {
     title?: string;
     organization: string;

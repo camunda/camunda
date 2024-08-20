@@ -22,10 +22,9 @@ public class DefinitionResponseDto extends SimpleDefinitionDto {
       final String key,
       final String name,
       final DefinitionType type,
-      final Boolean isEventProcess,
       final List<TenantDto> tenants,
       final String engine) {
-    super(key, name, type, isEventProcess, Collections.singleton(engine));
+    super(key, name, type, Collections.singleton(engine));
     if (key == null) {
       throw new IllegalArgumentException("Key cannot be null");
     }
@@ -49,10 +48,9 @@ public class DefinitionResponseDto extends SimpleDefinitionDto {
       final String key,
       final String name,
       final DefinitionType type,
-      final Boolean isEventProcess,
       final List<TenantDto> tenants,
       final Set<String> engines) {
-    super(key, name, type, isEventProcess, engines);
+    super(key, name, type, engines);
     if (key == null) {
       throw new IllegalArgumentException("Key cannot be null");
     }
@@ -72,33 +70,8 @@ public class DefinitionResponseDto extends SimpleDefinitionDto {
     this.tenants = tenants;
   }
 
-  public DefinitionResponseDto(
-      final String key,
-      final String name,
-      final DefinitionType type,
-      final List<TenantDto> tenants,
-      final String engine) {
-    super(key, name, type, false, Collections.singleton(engine));
-    if (key == null) {
-      throw new IllegalArgumentException("Key cannot be null");
-    }
-
-    if (type == null) {
-      throw new IllegalArgumentException("Type cannot be null");
-    }
-
-    if (tenants == null) {
-      throw new IllegalArgumentException("Tenants cannot be null");
-    }
-
-    if (engine == null) {
-      throw new IllegalArgumentException("Engine cannot be null");
-    }
-
-    this.tenants = tenants;
+  protected DefinitionResponseDto() {
   }
-
-  protected DefinitionResponseDto() {}
 
   public static DefinitionResponseDto from(
       final DefinitionWithTenantIdsDto definitionWithTenantIdsDto,
@@ -107,7 +80,6 @@ public class DefinitionResponseDto extends SimpleDefinitionDto {
         definitionWithTenantIdsDto.getKey(),
         definitionWithTenantIdsDto.getName(),
         definitionWithTenantIdsDto.getType(),
-        definitionWithTenantIdsDto.getIsEventProcess(),
         authorizedTenants,
         definitionWithTenantIdsDto.getEngines());
   }

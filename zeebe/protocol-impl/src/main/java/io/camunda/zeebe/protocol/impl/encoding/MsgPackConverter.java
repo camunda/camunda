@@ -48,6 +48,8 @@ public final class MsgPackConverter {
       new TypeReference<>() {};
   private static final TypeReference<HashMap<String, String>> STRING_MAP_TYPE_REFERENCE =
       new TypeReference<>() {};
+  private static final TypeReference<HashMap<String, Number>> NUMBER_MAP_TYPE_REFERENCE =
+      new TypeReference<>() {};
 
   /*
    * Extract from jackson doc:
@@ -164,6 +166,10 @@ public final class MsgPackConverter {
 
   public static Map<String, String> convertToStringMap(final DirectBuffer buffer) {
     return convertToMap(STRING_MAP_TYPE_REFERENCE, buffer);
+  }
+
+  public static Map<String, Number> convertToNumberMap(final DirectBuffer buffer) {
+    return convertToMap(NUMBER_MAP_TYPE_REFERENCE, buffer);
   }
 
   private static <T extends Object> Map<String, T> convertToMap(

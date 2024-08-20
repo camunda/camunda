@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.db.writer;
 
-import io.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
+import io.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import io.camunda.optimize.service.db.repository.ImportRepository;
 import java.util.List;
 import org.slf4j.Logger;
@@ -23,9 +23,10 @@ public class ImportIndexWriter {
     this.importRepository = importRepository;
   }
 
-  public void importIndexes(final List<EngineImportIndexDto> engineImportIndexDtos) {
+  public void importIndexes(
+      final List<TimestampBasedImportIndexDto> timestampBasedImportIndexDtos) {
     final String importItemName = "import index information";
-    log.debug("Writing [{}] {} to database.", engineImportIndexDtos.size(), importItemName);
-    importRepository.importIndices(importItemName, engineImportIndexDtos);
+    log.debug("Writing [{}] {} to database.", timestampBasedImportIndexDtos.size(), importItemName);
+    importRepository.importIndices(importItemName, timestampBasedImportIndexDtos);
   }
 }

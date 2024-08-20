@@ -10,22 +10,14 @@ package io.camunda.optimize.service.db.repository.os;
 import static io.camunda.optimize.dto.optimize.ProcessInstanceConstants.ACTIVE_STATE;
 import static io.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.and;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.exists;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.json;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.lt;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.matchAll;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.nested;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.script;
 import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.sourceInclude;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.stringTerms;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
 import static io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
-import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLE_ID;
@@ -33,13 +25,9 @@ import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInsta
 import static java.lang.Math.min;
 import static java.lang.String.format;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
-import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import io.camunda.optimize.dto.optimize.importing.EventProcessGatewayDto;
 import io.camunda.optimize.dto.optimize.query.PageResultDto;
-import io.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.repository.ProcessInstanceRepository;
 import io.camunda.optimize.service.db.repository.script.ProcessInstanceScriptFactory;
@@ -54,7 +42,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -66,7 +53,6 @@ import org.opensearch.client.opensearch.core.ScrollResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
-import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.http.HttpStatus;
@@ -99,52 +85,6 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
   }
 
   @Override
-  public void bulkImportProcessInstances(
-      final String importItemName, final List<ProcessInstanceDto> processInstanceDtos) {
-    osClient.doImportBulkRequestWithList(
-        importItemName,
-        processInstanceDtos,
-        dto ->
-            UpdateOperation.<ProcessInstanceDto>of(
-                    operation ->
-                        operation
-                            .index(aliasForProcessDefinitionKey(dto.getProcessDefinitionKey()))
-                            .id(dto.getProcessInstanceId())
-                            .script(createUpdateStateScript(dto.getState()))
-                            .upsert(dto)
-                            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT))
-                ._toBulkOperation(),
-        configurationService.getSkipDataAfterNestedDocLimitReached());
-  }
-
-  @Override
-  public void updateProcessInstanceStateForProcessDefinitionId(
-      final String importItemName,
-      final String definitionKey,
-      final String processDefinitionId,
-      final String state) {
-    osClient.updateByQueryTask(
-        format(
-            "%s with %s: %s",
-            importItemName, ProcessInstanceDto.Fields.processDefinitionId, processDefinitionId),
-        createUpdateStateScript(state),
-        term(ProcessInstanceDto.Fields.processDefinitionId, processDefinitionId),
-        aliasForProcessDefinitionKey(definitionKey));
-  }
-
-  @Override
-  public void updateAllProcessInstancesStates(
-      final String importItemName, final String definitionKey, final String state) {
-    osClient.updateByQueryTask(
-        format(
-            "%s with %s: %s",
-            importItemName, ProcessInstanceDto.Fields.processDefinitionKey, definitionKey),
-        createUpdateStateScript(state),
-        matchAll(),
-        aliasForProcessDefinitionKey(definitionKey));
-  }
-
-  @Override
   public void deleteByIds(
       final String index, final String itemName, final List<String> processInstanceIds) {
     final List<BulkOperation> bulkOperations =
@@ -172,81 +112,6 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
   }
 
   @Override
-  public void bulkImportEvents(
-      final String index,
-      final String importItemName,
-      final List<EventProcessInstanceDto> processInstanceDtos,
-      final List<EventProcessGatewayDto> gatewayLookup) {
-    final List<Map> gatewayLookupMaps =
-        gatewayLookup.stream()
-            .map(gateway -> objectMapper.convertValue(gateway, new TypeReference<Map>() {}))
-            .toList();
-    final Function<EventProcessInstanceDto, Script> scriptBuilder =
-        dto -> {
-          final Map<String, JsonData> params =
-              Map.of(
-                  "processInstance", json(dto),
-                  "gatewayLookup", json(gatewayLookupMaps),
-                  "dateFormatPattern", json(OPTIMIZE_DATE_FORMAT));
-          return createDefaultScriptWithPrimitiveParams(
-              ProcessInstanceScriptFactory.createEventInlineUpdateScript(), params);
-        };
-
-    osClient.doImportBulkRequestWithList(
-        importItemName,
-        processInstanceDtos,
-        dto ->
-            UpdateOperation.<ProcessInstanceDto>of(
-                    operation ->
-                        operation
-                            .scriptedUpsert(true)
-                            .index(indexNameService.getOptimizeIndexAliasForIndex(index))
-                            .id(dto.getProcessInstanceId())
-                            .script(scriptBuilder.apply(dto))
-                            .upsert(dto)
-                            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT))
-                ._toBulkOperation(),
-        configurationService.getSkipDataAfterNestedDocLimitReached());
-  }
-
-  @Override
-  public void deleteEndedBefore(
-      final String index, final OffsetDateTime endDate, final String deletedItemIdentifier) {
-    osClient.deleteByQueryTask(
-        deletedItemIdentifier,
-        lt(END_DATE, dateTimeFormatter.format(endDate)),
-        false,
-        indexNameService.getOptimizeIndexAliasForIndex(index));
-  }
-
-  @Override
-  public void deleteVariablesOfInstancesThatEndedBefore(
-      final String index, final OffsetDateTime endDate, final String updateItem) {
-    osClient.updateByQueryTask(
-        updateItem,
-        script(ProcessInstanceScriptFactory.createVariableClearScript(), Map.of()),
-        and(
-            lt(END_DATE, dateTimeFormatter.format(endDate)),
-            nested(VARIABLES, exists(VARIABLES + "." + VARIABLE_ID), ChildScoreMode.None)),
-        indexNameService.getOptimizeIndexAliasForIndex(index));
-  }
-
-  @Override
-  public void deleteEventsWithIdsInFromAllInstances(
-      final String index, final List<String> eventIdsToDelete, final String updateItem) {
-    osClient.updateByQueryTask(
-        updateItem,
-        script(
-            ProcessInstanceScriptFactory.createDeleteEventsWithIdsInScript(),
-            Map.of("eventIdsToDelete", eventIdsToDelete)),
-        nested(
-            FLOW_NODE_INSTANCES,
-            stringTerms(FLOW_NODE_INSTANCES + "." + FLOW_NODE_INSTANCE_ID, eventIdsToDelete),
-            ChildScoreMode.None),
-        indexNameService.getOptimizeIndexAliasForIndex(index));
-  }
-
-  @Override
   public boolean processDefinitionHasStartedInstances(final String processDefinitionKey) {
     final SearchRequest.Builder requestBuilder =
         new SearchRequest.Builder()
@@ -259,11 +124,11 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
 
     try {
       return osClient
-              .search(
-                  requestBuilder, Object.class, "Failed querying for started process instances!")
-              .hits()
-              .total()
-              .value()
+          .search(
+              requestBuilder, Object.class, "Failed querying for started process instances!")
+          .hits()
+          .total()
+          .value()
           > 0;
     } catch (final OpenSearchException e) {
       if (e.getMessage().contains(INDEX_NOT_FOUND_ERROR_MESSAGE_KEYWORD)) {
@@ -280,7 +145,9 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
   public PageResultDto<String> getNextPageOfProcessInstanceIds(
       final PageResultDto<String> previousPage,
       final Supplier<PageResultDto<String>> firstPageFetchFunction) {
-    record Result(String processInstanceId) {}
+    record Result(String processInstanceId) {
+
+    }
 
     final int limit = previousPage.getLimit();
     if (previousPage.isLastPage()) {
@@ -356,7 +223,9 @@ class ProcessInstanceRepositoryOS implements ProcessInstanceRepository {
 
   private PageResultDto<String> getFirstPageOfProcessInstanceIdsForFilter(
       final String processDefinitionKey, final Query filterQuery, final Integer limit) {
-    record Result(String processInstanceId) {}
+    record Result(String processInstanceId) {
+
+    }
 
     final PageResultDto<String> result = new PageResultDto<>(limit);
     final Integer resolvedLimit = Optional.ofNullable(limit).orElse(MAX_RESPONSE_SIZE_LIMIT);

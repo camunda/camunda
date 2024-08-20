@@ -11,7 +11,7 @@ import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.writer.ImportIndexWriter;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
-import io.camunda.optimize.service.importing.engine.service.StoreIndexesEngineImportService;
+import io.camunda.optimize.service.importing.engine.service.StoreTimestampBasedImportIndexImportService;
 import io.camunda.optimize.service.importing.ingested.mediator.StoreIngestedImportProgressMediator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.List;
@@ -41,7 +41,7 @@ public class StoreIngestedImportProgressMediatorFactory
     return List.of(
         new StoreIngestedImportProgressMediator(
             importIndexHandlerRegistry,
-            new StoreIndexesEngineImportService(
+            new StoreTimestampBasedImportIndexImportService(
                 configurationService, importIndexWriter, databaseClient),
             configurationService));
   }

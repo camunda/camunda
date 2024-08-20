@@ -100,6 +100,6 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
     job.setVariables(command.getValue().getVariablesBuffer());
 
     commandControl.accept(JobIntent.COMPLETED, job);
-    jobMetrics.jobCompleted(job.getType());
+    jobMetrics.jobCompleted(job.getType(), job.getJobKind());
   }
 }

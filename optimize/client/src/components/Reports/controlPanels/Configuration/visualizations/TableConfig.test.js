@@ -14,7 +14,6 @@ it('should render ColumnSelection for raw data views', () => {
   const node = shallow(
     <TableConfig
       report={{
-        combined: false,
         data: {view: {properties: ['rawData']}, groupBy: {type: 'none'}, configuration: {}},
       }}
     />
@@ -27,7 +26,6 @@ it('should render relative abolute selection for count views', () => {
   const node = shallow(
     <TableConfig
       report={{
-        combined: false,
         data: {view: {properties: ['frequency']}, groupBy: {type: 'startDate'}, configuration: {}},
       }}
     />
@@ -40,7 +38,6 @@ it('should render GradientBarsSwitch for group by rules', () => {
   const node = shallow(
     <TableConfig
       report={{
-        combined: false,
         data: {
           view: {properties: ['frequency']},
           groupBy: {type: 'matchedRule'},

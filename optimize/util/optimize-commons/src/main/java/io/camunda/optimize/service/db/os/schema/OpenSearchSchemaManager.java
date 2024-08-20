@@ -32,11 +32,6 @@ import io.camunda.optimize.service.db.os.schema.index.TenantIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TerminatedUserSessionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.VariableLabelIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.VariableUpdateInstanceIndexOS;
-import io.camunda.optimize.service.db.os.schema.index.events.EventIndexOS;
-import io.camunda.optimize.service.db.os.schema.index.events.EventProcessDefinitionIndexOS;
-import io.camunda.optimize.service.db.os.schema.index.events.EventProcessMappingIndexOS;
-import io.camunda.optimize.service.db.os.schema.index.events.EventProcessPublishStateIndexOS;
-import io.camunda.optimize.service.db.os.schema.index.index.ImportIndexIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.index.PositionBasedImportIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.index.TimestampBasedImportIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.report.CombinedReportIndexOS;
@@ -659,11 +654,6 @@ public class OpenSearchSchemaManager
         new TerminatedUserSessionIndexOS(),
         new VariableUpdateInstanceIndexOS(),
         new TenantIndexOS(),
-        new EventIndexOS(),
-        new EventProcessDefinitionIndexOS(),
-        new EventProcessMappingIndexOS(),
-        new EventProcessPublishStateIndexOS(),
-        new ImportIndexIndexOS(),
         new TimestampBasedImportIndexOS(),
         new PositionBasedImportIndexOS(),
         new CombinedReportIndexOS(),

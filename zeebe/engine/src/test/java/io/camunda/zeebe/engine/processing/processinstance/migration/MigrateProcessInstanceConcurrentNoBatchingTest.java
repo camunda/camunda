@@ -977,6 +977,8 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
         .await();
 
     // we generate a key for the intermediate catch event so we can activate it using events
+    // this requires us to pause processing to avoid concurrent database transaction modification
+    ENGINE.pauseProcessing(1);
     final var keyGenerator =
         ((MutableProcessingState) ENGINE.getProcessingState()).getKeyGenerator();
     final var intermediateCatchEventKey = keyGenerator.nextKey();
