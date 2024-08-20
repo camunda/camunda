@@ -8,7 +8,7 @@
 package io.camunda.exporter.utils;
 
 public class ExporterUtils {
-  public static String DEFAULT_TENANT_ID = "<default>";
+  public static final String DEFAULT_TENANT_ID = "<default>";
 
   public static String tenantOrDefault(final String tenantId) {
     if (tenantId == null || tenantId.isEmpty()) {
