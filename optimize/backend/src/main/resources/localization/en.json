@@ -44,7 +44,6 @@
     "timezone": "Date and time displayed in local timezone:"
   },
   "license": {
-    "nonProduction": "Non-Production License",
     "referTo": "If you would like information on production usage, please refer to our",
     "terms": "terms & conditions",
     "contactSales": "contact sales"

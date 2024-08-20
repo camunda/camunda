@@ -13,8 +13,8 @@ import {
   C3UserConfigurationProvider,
   C3NavigationProps,
   C3NavigationElementProps,
+  C3NavigationNavBarProps,
 } from '@camunda/camunda-composite-components';
-import {Link as CarbonLink} from '@carbon/react';
 
 // @ts-ignore
 import {NavItem} from 'components';
@@ -129,8 +129,8 @@ function createNavBarProps(
   enterpriseMode: boolean,
   pathname: string,
   optimizeDatabase?: string
-): C3NavigationProps['navbar'] {
-  const elements: C3NavigationProps['navbar']['elements'] = [
+): C3NavigationNavBarProps {
+  const elements: C3NavigationNavBarProps['elements'] = [
     {
       key: 'dashboards',
       label: t('navigation.dashboards').toString(),
@@ -171,39 +171,7 @@ function createNavBarProps(
     },
   ];
 
-  const tags: C3NavigationProps['navbar']['tags'] = [];
-  if (!enterpriseMode) {
-    tags.push({
-      key: 'licenseWarning',
-      label: t('license.nonProduction').toString(),
-      tooltip: {
-        content: (
-          <span>
-            {t('license.referTo')}{' '}
-            <CarbonLink
-              inline
-              target="_blank"
-              rel="noopener noreferrer"
-              href="https://camunda.com/legal/terms/cloud-terms-and-conditions/camunda-cloud-self-managed-free-edition-terms/"
-            >
-              {t('license.terms')}
-            </CarbonLink>{' '}
-            {t('common.or')}{' '}
-            <CarbonLink
-              href="https://camunda.com/contact/"
-              target="_blank"
-              rel="noopener noreferrer"
-              inline
-            >
-              {t('license.contactSales')}
-            </CarbonLink>
-          </span>
-        ),
-        buttonLabel: t('license.nonProduction').toString(),
-      },
-      color: 'red',
-    });
-  }
+  const tags: C3NavigationNavBarProps['tags'] = [];
 
   if (optimizeDatabase === 'opensearch') {
     tags.push({
@@ -217,9 +185,15 @@ function createNavBarProps(
     });
   }
 
+  const licenseTag: C3NavigationNavBarProps['licenseTag'] = {
+    show: false,
+    isProductionLicense: false,
+  };
+
   return {
     elements,
     tags,
+    licenseTag,
   };
 }
 
