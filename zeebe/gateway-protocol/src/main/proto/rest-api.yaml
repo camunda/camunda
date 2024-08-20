@@ -784,6 +784,197 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /documents:
+    post:
+      tags:
+        - Documents
+      summary: Upload document (experimental)
+      description: |
+        Upload a document to the Camunda 8 cluster.
+
+        :::note
+        This endpoint is experimental. It currently only supports an in-memory document store, which
+        is not meant for production use.
+        :::
+      parameters:
+        - name: storeId
+          in: query
+          required: false
+          description: The ID of the document store to upload the document to.
+          schema:
+            type: string
+        - name: documentId
+          in: query
+          required: false
+          description: >
+            The ID of the document to upload. If not provided, a new ID will be generated.
+            Specifying an existing ID will result in an error if the document already exists.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                metadata:
+                  $ref: "#/components/schemas/DocumentMetadata"
+              required:
+                - file
+            encoding:
+              metadata:
+                contentType: application/json
+      responses:
+        '201':
+          description: The document was uploaded successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentReference"
+        '400':
+          description: >
+            The document upload failed. More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /documents/{documentId}:
+    get:
+      tags:
+        - Documents
+      summary: Download document (experimental)
+      description: |
+        Download a document from the Camunda 8 cluster.
+
+        :::note
+        This endpoint is experimental. It currently only supports an in-memory document store, which
+        is not meant for production use.
+        :::
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          description: The ID of the document to download.
+          schema:
+            type: string
+        - name: storeId
+          in: query
+          required: false
+          description: The ID of the document store to download the document from.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The document was downloaded successfully.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: >
+            The document with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+    delete:
+      tags:
+        - Documents
+      summary: Delete document (experimental)
+      description: |
+        Delete a document from the Camunda 8 cluster.
+
+        :::note
+        This endpoint is experimental. It currently only supports an in-memory document store, which
+        is not meant for production use.
+        :::
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          description: The ID of the document to delete.
+          schema:
+            type: string
+        - name: storeId
+          in: query
+          required: false
+          description: The ID of the document store to delete the document from.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The document was deleted successfully.
+        '404':
+          description: >
+            The document with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        '500':
+          description: >
+            An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /document/{documentId}/links:
+    post:
+      tags:
+        - Documents
+      summary: Create document link (experimental)
+      description: |
+        Create a link to a document in the Camunda 8 cluster.
+
+        :::note
+        This endpoint is experimental. It currently only supports an in-memory document store, which
+        is not meant for production use.
+        :::
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          description: The ID of the document to link.
+          schema:
+            type: string
+        - name: storeId
+          in: query
+          required: false
+          description: The ID of the document store to link the document from.
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentLinkRequest"
+      responses:
+        '201':
+          description: The document link was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentLink"
+        '400':
+          description: >
+            The document link creation failed. More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 
   /users/search:
     post:
@@ -1256,6 +1447,7 @@ components:
         * `candidateUsers` - reset by providing an empty list
         * `dueDate` - reset by providing an empty String
         * `followUpDate` - reset by providing an empty String
+        * `priority` - minimum 0, maximum 100, default 50
 
         Providing any of those attributes with a `null` value or omitting it preserves
         the persisted attribute's value.
@@ -1287,6 +1479,14 @@ components:
           description: The list of candidate groups of the task. Reset by providing an empty list.
           items:
             type: string
+          nullable: true
+        priority:
+          type: integer
+          format: int32
+          description: The priority of the task.
+          minimum: 0
+          default: 50
+          maximum: 100
           nullable: true
     JobActivationRequest:
       type: object
@@ -1704,9 +1904,56 @@ components:
           type: integer
           minimum: 0
           maximum: 100
+    DocumentReference:
+      type: object
+      properties:
+        documentType:
+          type: string
+          description: Document discriminator. Always set to "camunda".
+          enum:
+            - camunda
+        storeId:
+          type: string
+          description: The ID of the document store.
+        documentId:
+          type: string
+          description: The ID of the document.
+        metadata:
+          $ref: "#/components/schemas/DocumentMetadata"
+    DocumentMetadata:
+      type: object
+      additionalProperties: true
+      properties:
+        contentType:
+          type: string
+          description: The content type of the document.
+        fileName:
+          type: string
+          description: The name of the file.
+        expiresAt:
+          type: string
+          format: date-time
+          description: The date and time when the document expires.
+    DocumentLinkRequest:
+      type: object
+      properties:
+        expiresAt:
+          type: string
+          format: date-time
+          description: The date and time when the link expires.
+          nullable: true
+    DocumentLink:
+      type: object
+      properties:
+        url:
+          type: string
+          description: The link to the document.
+        expiresAt:
+          type: string
+          format: date-time
+          description: The date and time when the link expires.
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-

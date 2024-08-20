@@ -172,7 +172,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
       if (!startedExporters.containsKey(exporter)) {
         context
             .getExporterDirector()
-            .enableExporter(exporter.getId(), exporterEntry.getValue(), exporter);
+            .enableExporterWithRetry(exporter.getId(), exporterEntry.getValue(), exporter);
       }
     }
   }

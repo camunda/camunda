@@ -43,7 +43,7 @@
     <version.camunda-license-check>2.9.0</version.camunda-license-check>
     <version.checkstyle>10.17.0</version.checkstyle>
     <version.commons-lang>3.16.0</version.commons-lang>
-    <version.commons-logging>1.3.3</version.commons-logging>
+    <version.commons-logging>1.3.4</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.17.1</version.commons-codec>
     <version.commons-compress>1.27.0</version.commons-compress>
@@ -63,10 +63,10 @@
     <version.httpcore5>5.2.5</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.identity>8.5.4</version.identity>
-    <version.surefire>3.3.1</version.surefire>
+    <version.surefire>3.4.0</version.surefire>
     <version.jackson>2.17.2</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
-    <version.junit>5.10.3</version.junit>
+    <version.junit>5.11.0</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.23.1</version.log4j>
     <version.minlog>1.3.1</version.minlog>
@@ -97,7 +97,7 @@
     <version.dmn-scala>1.9.0</version.dmn-scala>
     <version.rest-assured>5.5.0</version.rest-assured>
     <version.spring>6.1.12</version.spring>
-    <version.spring-security>6.3.1</version.spring-security>
+    <version.spring-security>6.3.2</version.spring-security>
     <version.spring-boot>3.3.2</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.0</version.kryo>
@@ -124,7 +124,7 @@
     <version.feign>13.3</version.feign>
     <version.google-sdk>26.44.0</version.google-sdk>
     <version.azure-sdk>1.2.26</version.azure-sdk>
-    <version.awssdk>2.27.7</version.awssdk>
+    <version.awssdk>2.27.8</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -174,7 +174,7 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>9.40</version.nimbus-jose-jwt>
-    <version.keycloak>25.0.2</version.keycloak>
+    <version.keycloak>25.0.4</version.keycloak>
     <version.jna>5.14.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
 
@@ -214,7 +214,7 @@
     <plugin.version.shade>3.6.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.8.6.2</plugin.version.spotbugs>
-    <plugin.version.surefire>3.3.1</plugin.version.surefire>
+    <plugin.version.surefire>3.4.0</plugin.version.surefire>
     <plugin.version.versions>2.17.1</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.0</plugin.version.frontend-maven>
     <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
@@ -2643,7 +2643,7 @@
         <plugin>
           <groupId>org.openapitools</groupId>
           <artifactId>openapi-generator-maven-plugin</artifactId>
-          <version>7.7.0</version>
+          <version>7.8.0</version>
           <configuration>
             <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
             <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/spring.md -->

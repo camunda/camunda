@@ -65,7 +65,7 @@ jobs:
       - name: Start Cambpm
         uses: ./.github/actions/compose
         with:
-          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
+          compose_file: .github/actions/compose/docker-compose.cambpm.yml
           project_name: cambpm
         env:
           CAMBPM_VERSION: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
@@ -74,7 +74,7 @@ jobs:
       - name: Start OpenSearch
         uses: ./.github/actions/compose
         with:
-          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.opensearch.yml
+          compose_file: .github/actions/compose/docker-compose.opensearch.yml
           project_name: opensearch
         env:
           OPENSEARCH_VERSION: ${{ matrix.osVersion }}
