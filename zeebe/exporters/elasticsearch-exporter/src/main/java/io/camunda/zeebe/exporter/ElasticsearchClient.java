@@ -27,6 +27,7 @@ import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer.Sample;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Optional;
@@ -46,6 +47,13 @@ class ElasticsearchClient implements AutoCloseable {
   private final MeterRegistry meterRegistry;
 
   private ElasticsearchMetrics metrics;
+
+  /**
+   * Sample to measure the lifetime of the first record in the current bulk.
+   *
+   * <p>Used to approximate of how long a record has to stay in the buffer, before flushed.
+   */
+  private Sample recordBufferLifetimeMeasurement;
 
   ElasticsearchClient(
       final ElasticsearchExporterConfiguration configuration, final MeterRegistry meterRegistry) {
@@ -86,6 +94,10 @@ class ElasticsearchClient implements AutoCloseable {
       metrics = new ElasticsearchMetrics(record.getPartitionId(), meterRegistry);
     }
 
+    if (bulkIndexRequest.isEmpty()) {
+      recordBufferLifetimeMeasurement = metrics.startRecordBufferLifetimeMeasurement();
+    }
+
     final BulkIndexAction action =
         new BulkIndexAction(
             indexRouter.indexFor(record),
@@ -111,6 +123,7 @@ class ElasticsearchClient implements AutoCloseable {
         () -> {
           try {
             exportBulk();
+            metrics.stopRecordBufferLifetimeMeasurement(recordBufferLifetimeMeasurement);
 
             bulkIndexRequest.clear();
           } catch (final ElasticsearchExporterException e) {

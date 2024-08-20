@@ -24,6 +24,7 @@ public class ElasticsearchMetrics {
   private final Timer flushDuration;
   private final DistributionSummary bulkSize;
   private final Counter failedFlush;
+  private final Timer recordBufferLifetime;
 
   public ElasticsearchMetrics(final int partitionId, final MeterRegistry registry) {
     partitionIdLabel = String.valueOf(partitionId);
@@ -53,6 +54,14 @@ public class ElasticsearchMetrics {
             .description("Number of failed flush operations")
             .tags(PARTITION_LABEL, partitionIdLabel)
             .register(meterRegistry);
+
+    recordBufferLifetime =
+        Timer.builder(meterName("record.buffer.lifetime"))
+            .description(
+                "Approximation of how long a record (the first) has to spent in the exporter buffer, before flushing.")
+            .tags(PARTITION_LABEL, partitionIdLabel)
+            .publishPercentileHistogram()
+            .register(meterRegistry);
   }
 
   public void measureFlushDuration(final Runnable flushFunction) {
@@ -73,5 +82,13 @@ public class ElasticsearchMetrics {
 
   private String meterName(final String name) {
     return NAMESPACE + "." + name;
+  }
+
+  public Timer.Sample startRecordBufferLifetimeMeasurement() {
+    return Timer.start(meterRegistry);
+  }
+
+  public void stopRecordBufferLifetimeMeasurement(final Timer.Sample sample) {
+    sample.stop(recordBufferLifetime);
   }
 }
