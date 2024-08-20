@@ -23,7 +23,8 @@ public class UserTaskProperties {
   private Expression formId;
   private Expression priority;
   private Map<String, String> taskHeaders = Map.of();
-  private ZeebeBindingType bindingType;
+  private ZeebeBindingType formBindingType;
+  private String formVersionTag;
 
   public Expression getAssignee() {
     return assignee;
@@ -89,12 +90,12 @@ public class UserTaskProperties {
     this.taskHeaders = taskHeaders;
   }
 
-  public ZeebeBindingType getBindingType() {
-    return bindingType;
+  public ZeebeBindingType getFormBindingType() {
+    return formBindingType;
   }
 
-  public void setBindingType(final ZeebeBindingType bindingType) {
-    this.bindingType = bindingType;
+  public void setFormBindingType(final ZeebeBindingType bindingType) {
+    formBindingType = bindingType;
   }
 
   public Expression getPriority() {
@@ -103,6 +104,14 @@ public class UserTaskProperties {
 
   public void setPriority(final Expression priority) {
     this.priority = priority;
+  }
+
+  public String getFormVersionTag() {
+    return formVersionTag;
+  }
+
+  public void setFormVersionTag(final String versionTag) {
+    formVersionTag = versionTag;
   }
 
   public void wrap(final UserTaskProperties userTaskProperties) {
@@ -114,7 +123,8 @@ public class UserTaskProperties {
     setFollowUpDate(userTaskProperties.getFollowUpDate());
     setFormId(userTaskProperties.getFormId());
     setTaskHeaders(userTaskProperties.getTaskHeaders());
-    setBindingType(userTaskProperties.getBindingType());
+    setFormBindingType(userTaskProperties.getFormBindingType());
     setPriority(userTaskProperties.getPriority());
+    setFormVersionTag(userTaskProperties.getFormVersionTag());
   }
 }

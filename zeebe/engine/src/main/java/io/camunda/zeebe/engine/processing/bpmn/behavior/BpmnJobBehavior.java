@@ -123,9 +123,10 @@ public final class BpmnJobBehavior {
                 userTaskBehavior
                     .evaluateFormIdExpressionToFormKey(
                         jobWorkerProps.getFormId(),
-                        scopeKey,
-                        jobWorkerProps.getBindingType(),
-                        context)
+                        jobWorkerProps.getFormBindingType(),
+                        jobWorkerProps.getFormVersionTag(),
+                        context,
+                        scopeKey)
                     .map(key -> Objects.toString(key, null))
                     .map(p::formKey));
   }
