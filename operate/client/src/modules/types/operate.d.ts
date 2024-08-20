@@ -104,8 +104,9 @@ interface DecisionInstanceEntity {
 interface ListenerEntity {
   listenerType: 'EXECUTION' | 'USER_TASK';
   listenerKey: number;
-  state: string;
+  state: 'ACTIVE' | 'COMPLETED' | 'FAILED';
   jobType: 'UNSPECIFIED' | 'START' | 'END';
   event: string;
   time: string;
+  sortValues: ReadonlyArray<string>;
 }

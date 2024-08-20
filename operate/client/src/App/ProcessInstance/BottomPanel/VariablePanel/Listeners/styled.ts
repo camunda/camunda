@@ -12,12 +12,14 @@ import styled from 'styled-components';
 const Content = styled.div`
   position: relative;
   height: 100%;
+  display: flex;
   .cds--loading-overlay {
     position: absolute;
   }
 `;
 
 const StructuredList = styled(BaseStructuredList)`
+  padding: var(--cds-spacing-05);
   [role='table'] {
     table-layout: fixed;
   }

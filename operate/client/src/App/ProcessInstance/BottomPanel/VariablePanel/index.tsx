@@ -38,7 +38,11 @@ const VariablePanel = observer(function VariablePanel() {
 
   useEffect(() => {
     if (flowNodeId) {
-      fetchListeners('initial', processInstanceId, {flowNodeId});
+      fetchListeners({
+        fetchType: 'initial',
+        processInstanceId: processInstanceId,
+        payload: {flowNodeId},
+      });
     }
   }, [fetchListeners, processInstanceId, flowNodeId]);
 
@@ -82,7 +86,7 @@ const VariablePanel = observer(function VariablePanel() {
                       id: 'listeners',
                       label: 'Listeners',
                       content: <Listeners listeners={listeners} />,
-                      onClick: () => {},
+                      removePadding: true,
                     },
                   ]
                 : []),

@@ -9,10 +9,15 @@
 import {observer} from 'mobx-react';
 import {CellContainer, Content, StructuredList} from './styled';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
+import {
+  MAX_LISTENERS_STORED,
+  processInstanceListenersStore,
+} from 'modules/stores/processInstanceListeners';
 
 type Props = {
   listeners: ListenerEntity[];
 };
+const ROW_HEIGHT = 46;
 
 const Listeners: React.FC<Props> = observer(({listeners}) => {
   return (
@@ -30,8 +35,38 @@ const Listeners: React.FC<Props> = observer(({listeners}) => {
         headerSize="sm"
         verticalCellPadding="var(--cds-spacing-02)"
         label="Listeners List"
-        // onVerticalScrollStartReach={() => {}} // @TODO: INFINITE SCROLL
-        // onVerticalScrollEndReach={() => {}} // @TODO: INFINITE SCROLL
+        onVerticalScrollStartReach={async (scrollDown) => {
+          if (
+            processInstanceListenersStore.shouldFetchPreviousListeners() ===
+            false
+          ) {
+            return;
+          }
+
+          await processInstanceListenersStore.fetchPreviousInstances();
+
+          if (
+            processInstanceListenersStore.state.listeners.length ===
+              MAX_LISTENERS_STORED &&
+            processInstanceListenersStore.state.latestFetch?.listenersCount !==
+              0 &&
+            processInstanceListenersStore.state.latestFetch !== null
+          ) {
+            scrollDown(
+              processInstanceListenersStore.state.latestFetch.listenersCount *
+                ROW_HEIGHT,
+            );
+          }
+        }}
+        onVerticalScrollEndReach={() => {
+          if (
+            processInstanceListenersStore.shouldFetchNextListeners() === false
+          ) {
+            return;
+          }
+
+          processInstanceListenersStore.fetchNextInstances();
+        }}
         rows={listeners.map(
           ({listenerType, listenerKey, state, jobType, event, time}) => {
             return {
