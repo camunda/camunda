@@ -3,20 +3,20 @@
 .PHONY: env-up
 env-up:
 	@mvn clean install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
-	@docker-compose up -d elasticsearch zeebe
+	@docker compose up -d elasticsearch zeebe
 	@mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneTasklist" -Dspring.profiles.active=dev,dev-data,auth
 
 .PHONY: env-up-os
 env-up-os:
 	@mvn clean install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
-	@docker-compose up -d opensearch zeebe-opensearch
+	@docker compose up -d opensearch zeebe-opensearch
 	@mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneTasklist" -Dspring.profiles.active=dev,dev-data,auth -Dcamunda.tasklist.database=opensearch
 
 # Set the env var ZEEBE_TASKLIST_AUTH0_CLIENTSECRET in your shell please, eg: export ZEEBE_TASKLIST_AUTH0_CLIENTSECRET=<client-secret>
 .PHONY: env-sso-up
 env-sso-up:
 	@mvn clean install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
-	@docker-compose up -d elasticsearch zeebe
+	@docker compose up -d elasticsearch zeebe
 	@CAMUNDA_TASKLIST_AUTH0_CLAIMNAME=https://camunda.com/orgs
 	   CAMUNDA_TASKLIST_AUTH0_CLIENTID=CLGSo9RQ1K290Fvy2ohDomndvLR3Qgl3 \
        CAMUNDA_TASKLIST_AUTH0_CLIENTSECRET=DBXQsK6Csz7Y_jCV5xSN6FbYv1ZiOSgnIuaaJ-JVYnZqBPFm78Cuez2S-7QahBr6 \
@@ -31,11 +31,11 @@ env-sso-up:
 
 .PHONY: operate-up
 operate-up:
-	@docker-compose up -d operate
+	@docker compose up -d operate
 
 .PHONY: env-identity-up
 env-identity-up:
-	@docker-compose -f ./config/docker-compose.identity.yml up -d identity elasticsearch zeebe
+	@docker compose -f ./config/docker-compose.identity.yml up -d identity elasticsearch zeebe
 	@mvn install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
 	@CAMUNDA_IDENTITY_ISSUER=http://localhost:18080/auth/realms/camunda-platform \
 		CAMUNDA_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform \
@@ -50,7 +50,7 @@ env-identity-up:
 
 .PHONY: env-identity-up
 env-identity-os-up:
-	@docker-compose -f ./config/docker-compose.identity.yml up -d identity opensearch zeebe-opensearch
+	@docker compose -f ./config/docker-compose.identity.yml up -d identity opensearch zeebe-opensearch
 	@mvn install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
 	@CAMUNDA_IDENTITY_ISSUER=http://localhost:18080/auth/realms/camunda-platform \
 		CAMUNDA_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform \
@@ -70,7 +70,7 @@ env-identity-os-up:
 
 .PHONY: env-identity-mt-up
 env-identity-mt-up:
-	@docker-compose -f ./config/docker-compose.identity.mt.yml up -d identity elasticsearch zeebe
+	@docker compose -f ./config/docker-compose.identity.mt.yml up -d identity elasticsearch zeebe
 	@mvn install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
 	@CAMUNDA_TASKLIST_IDENTITY_ISSUERURL=http://localhost:18080/auth/realms/camunda-platform \
 		CAMUNDA_TASKLIST_IDENTITY_ISSUERBACKENDURL=http://localhost:18080/auth/realms/camunda-platform \
@@ -90,13 +90,13 @@ env-identity-mt-up:
 
 .PHONY: env-down
 env-down:
-	@docker-compose -f ./config/docker-compose.identity.yml down
-	@docker-compose down -v
+	@docker compose -f ./config/docker-compose.identity.yml down
+	@docker compose down -v
 	@mvn clean
 
 .PHONY: env-status
 env-status:
-	@docker-compose ps
+	@docker compose ps
 
 .PHONY: env-clean
 env-clean: env-down
@@ -106,7 +106,7 @@ env-clean: env-down
 start-e2e:
 	@curl --request DELETE --url http://localhost:9200/e2e* \
     && docker rm -f zeebe-e2e || true \
-    && docker-compose up --force-recreate -d elasticsearch zeebe-e2e \
+    && docker compose up --force-recreate -d elasticsearch zeebe-e2e \
     && mvn install -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild  \
     && CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX=e2etasklist \
        CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX=e2e \
