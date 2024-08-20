@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.service.UserServices;
-import io.camunda.service.entities.CamundaUserEntity;
+import io.camunda.service.entities.UserEntity;
 import io.camunda.service.search.filter.FilterBuilders;
 import io.camunda.service.search.filter.UserFilter;
 import io.camunda.service.search.filter.UserFilter.Builder;
@@ -52,7 +52,7 @@ public class UserFilterTest {
     // then
     assertThat(searchQueryResult.total()).isEqualTo(2);
     assertThat(searchQueryResult.items()).hasSize(2);
-    final CamundaUserEntity item = searchQueryResult.items().get(0);
+    final UserEntity item = searchQueryResult.items().get(0);
     assertThat(item.value().name()).isEqualTo("name1");
   }
 

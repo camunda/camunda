@@ -9,10 +9,10 @@ package io.camunda.zeebe.gateway.rest;
 
 import static java.util.Optional.ofNullable;
 
-import io.camunda.service.entities.CamundaUserEntity;
 import io.camunda.service.entities.DecisionDefinitionEntity;
 import io.camunda.service.entities.DecisionRequirementsEntity;
 import io.camunda.service.entities.ProcessInstanceEntity;
+import io.camunda.service.entities.UserEntity;
 import io.camunda.service.entities.UserTaskEntity;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
@@ -81,7 +81,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static UserSearchResponse toUserSearchQueryResponse(
-      final SearchQueryResult<CamundaUserEntity> result) {
+      final SearchQueryResult<UserEntity> result) {
     final var response = new UserSearchResponse();
     final var total = result.total();
     final var sortValues = result.sortValues();
@@ -188,12 +188,12 @@ public final class SearchQueryResponseMapper {
   }
 
   public static Either<ProblemDetail, List<CamundaUserResponse>> toUsers(
-      final List<CamundaUserEntity> users) {
+      final List<UserEntity> users) {
     return Either.right(
         users.stream().map(SearchQueryResponseMapper::toUser).map(Either::get).toList());
   }
 
-  public static Either<ProblemDetail, CamundaUserResponse> toUser(final CamundaUserEntity user) {
+  public static Either<ProblemDetail, CamundaUserResponse> toUser(final UserEntity user) {
     return Either.right(
         new CamundaUserResponse()
             .username(user.value().username())

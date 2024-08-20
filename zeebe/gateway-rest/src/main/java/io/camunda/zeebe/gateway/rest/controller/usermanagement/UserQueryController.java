@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.service.UserServices;
 import io.camunda.service.search.query.UserQuery;
-import io.camunda.zeebe.gateway.protocol.rest.CamundaUserSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
@@ -37,7 +37,7 @@ public class UserQueryController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<UserSearchResponse> searchUsers(
-      @RequestBody(required = false) final CamundaUserSearchQueryRequest query) {
+      @RequestBody(required = false) final UserSearchQueryRequest query) {
     return SearchQueryRequestMapper.toUserQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }

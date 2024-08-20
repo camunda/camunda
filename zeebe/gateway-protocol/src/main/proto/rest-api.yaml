@@ -795,7 +795,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CamundaUserSearchQueryRequest"
+              $ref: "#/components/schemas/UserSearchQueryRequest"
         required: true
       responses:
         "200":
@@ -1076,7 +1076,7 @@ components:
           type: "string"
         email:
           type: "string"
-    CamundaUserSearchQueryRequest:
+    UserSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
