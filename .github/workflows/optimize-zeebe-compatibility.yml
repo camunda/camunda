@@ -35,7 +35,7 @@ jobs:
       - name: Start Elastic
         uses: ./.github/actions/compose
         with:
-          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
+          compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
           project_name: elasticsearch
         env:
           ELASTIC_VERSION: ${{ inputs.es-version && inputs.es-version || steps.pom-info.outputs.x_elasticsearch8_test_version }}

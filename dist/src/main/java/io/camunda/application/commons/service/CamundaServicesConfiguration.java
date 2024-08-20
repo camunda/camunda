@@ -11,6 +11,7 @@ import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.CamundaServices;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.DecisionRequirementsServices;
+import io.camunda.service.DocumentServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.MessageServices;
@@ -86,5 +87,10 @@ public class CamundaServicesConfiguration {
   @Bean
   public MessageServices messageServices(final CamundaServices camundaServices) {
     return camundaServices.messageServices();
+  }
+
+  @Bean
+  public DocumentServices documentServices(final CamundaServices camundaServices) {
+    return camundaServices.documentServices();
   }
 }

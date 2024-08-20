@@ -15,10 +15,14 @@
  */
 package io.camunda.process.test.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.time.Duration;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
 @CamundaProcessTest
@@ -26,6 +30,7 @@ public class CamundaProcessTestExtensionIT {
 
   // to be injected
   private ZeebeClient client;
+  private CamundaProcessTestContext processTestContext;
 
   @Test
   void shouldCreateProcessInstance() {
@@ -54,5 +59,47 @@ public class CamundaProcessTestExtensionIT {
         .hasCompletedElements("start")
         .hasActiveElements("task")
         .hasVariable("status", "active");
+  }
+
+  @Test
+  void shouldTriggerTimerEvent() {
+    // given
+    final Duration timerDuration = Duration.ofHours(1);
+
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .name("start")
+            .userTask("A")
+            .name("A")
+            .endEvent()
+            // attach boundary timer event
+            .moveToActivity("A")
+            .boundaryEvent()
+            .timerWithDuration(timerDuration.toString())
+            .userTask()
+            .name("B")
+            .endEvent()
+            .done();
+
+    client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+
+    final ProcessInstanceEvent processInstance =
+        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
+
+    // when
+    CamundaAssert.assertThat(processInstance).hasActiveElements("A");
+
+    final Instant timeBefore = processTestContext.getCurrentTime();
+
+    processTestContext.increaseTime(timerDuration);
+
+    final Instant timeAfter = processTestContext.getCurrentTime();
+
+    // then
+    CamundaAssert.assertThat(processInstance).hasTerminatedElements("A").hasActiveElements("B");
+
+    assertThat(Duration.between(timeBefore, timeAfter))
+        .isCloseTo(timerDuration, Duration.ofSeconds(10));
   }
 }

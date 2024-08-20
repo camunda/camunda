@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
@@ -16,6 +17,8 @@ import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.vali
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 
+import io.camunda.service.DocumentServices.DocumentCreateRequest;
+import io.camunda.service.DocumentServices.DocumentMetadataModel;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
@@ -24,6 +27,7 @@ import io.camunda.service.security.auth.Authentication.Builder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
@@ -35,14 +39,19 @@ import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.util.Either;
+import java.io.IOException;
+import java.io.InputStream;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 
 public class RequestMapper {
 
@@ -175,6 +184,26 @@ public class RequestMapper {
                     updateRequest.getChangeset().getTimeout())));
   }
 
+  public static Either<ProblemDetail, DocumentCreateRequest> toDocumentCreateRequest(
+      final String documentId,
+      final String storeId,
+      final MultipartFile file,
+      final DocumentMetadata metadata) {
+    final InputStream inputStream;
+    try {
+      inputStream = file.getInputStream();
+    } catch (IOException e) {
+      return Either.left(
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), "Failed to read document content"));
+    }
+    final var validationResponse = validateDocumentMetadata(metadata);
+    final var internalMetadata = toInternalDocumentMetadata(metadata, file);
+    return getResult(
+        validationResponse,
+        () -> new DocumentCreateRequest(documentId, storeId, inputStream, internalMetadata));
+  }
+
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
       final Supplier<CompletableFuture<BrokerResponseT>> method,
       final Function<BrokerResponseT, ResponseEntity<Object>> result) {
@@ -232,7 +261,32 @@ public class RequestMapper {
     if (changeset.getFollowUpDate() != null) {
       record.setFollowUpDate(changeset.getFollowUpDate()).setFollowUpDateChanged();
     }
+    if (changeset.getPriority() != null) {
+      record.setPriority(changeset.getPriority()).setPriorityChanged();
+    }
     return record;
+  }
+
+  private static DocumentMetadataModel toInternalDocumentMetadata(
+      DocumentMetadata metadata, MultipartFile file) {
+
+    if (metadata == null) {
+      return new DocumentMetadataModel(
+          file.getContentType(), file.getOriginalFilename(), null, Map.of());
+    }
+    final ZonedDateTime expiresAt;
+    if (metadata.getExpiresAt() == null || metadata.getExpiresAt().isBlank()) {
+      expiresAt = null;
+    } else {
+      expiresAt = ZonedDateTime.parse(metadata.getExpiresAt());
+    }
+    final var fileName =
+        Optional.ofNullable(metadata.getFileName()).orElse(file.getOriginalFilename());
+    final var contentType =
+        Optional.ofNullable(metadata.getContentType()).orElse(file.getContentType());
+
+    return new DocumentMetadataModel(
+        contentType, fileName, expiresAt, metadata.getAdditionalProperties());
   }
 
   private static <R> Map<String, Object> getMapOrEmpty(

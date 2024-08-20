@@ -6,15 +6,11 @@
       "differences": [
         {
           "ignore": true,
-          "code": "java.method.removed",
-          "old": "method void io.camunda.zeebe.client.CredentialsProvider::applyCredentials(io.grpc.Metadata) throws java.io.IOException",
-          "justification": "Replaced by a multi-protocol capable version, and is a known breaking change (as adding REST is a breaking change)"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method boolean io.camunda.zeebe.client.CredentialsProvider::shouldRetryRequest(java.lang.Throwable)",
-          "justification": "Replaced by a multi-protocol capable version, and is a known breaking change (as adding REST is a breaking change)"
+          "code": "java.annotation.attributeValueChanged",
+          "old": "class io.camunda.zeebe.client.protocol.rest.Changeset",
+          "justification": "Inclusion of the User Task Priority field in UpdateUserTaskCommand's Changeset. No compatibility issues expected.",
+          "newValue": "{\"dueDate\", \"followUpDate\", \"candidateUsers\", \"candidateGroups\", \"priority\"}",
+          "oldValue": "{\"dueDate\", \"followUpDate\", \"candidateUsers\", \"candidateGroups\"}"
         }
       ]
     }
