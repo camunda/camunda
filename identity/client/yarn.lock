@@ -2011,12 +2011,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-react-refresh@npm:0.4.9":
-  version: 0.4.9
-  resolution: "eslint-plugin-react-refresh@npm:0.4.9"
+"eslint-plugin-react-refresh@npm:0.4.10":
+  version: 0.4.10
+  resolution: "eslint-plugin-react-refresh@npm:0.4.10"
   peerDependencies:
     eslint: ">=7"
-  checksum: 10c0/5be0677746e32d14d2711d8cba30d59b9ffec5d4a46ccae94602f7812176ac491e47a13e9331a3beeb20f29e15fcb2c69295141b582523843ee386e8b716bb30
+  checksum: 10c0/e9a6e8a6b86f8a2e2f7be200b8da09dc1b98bd65a3239624c9ded1bc35e0a24e22aa0d085d2e9513e073d71faec567c58d0c1d2218f7eadfcf748bef6f187b88
   languageName: node
   linkType: hard
 
@@ -2511,7 +2511,7 @@ __metadata:
     "@vitejs/plugin-react": "npm:4.3.1"
     eslint: "npm:8.57.0"
     eslint-plugin-react-hooks: "npm:4.6.2"
-    eslint-plugin-react-refresh: "npm:0.4.9"
+    eslint-plugin-react-refresh: "npm:0.4.10"
     event-source-polyfill: "npm:1.0.31"
     i18next: "npm:23.14.0"
     license-checker: "npm:25.0.1"
