@@ -703,7 +703,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CamundaUserWithPasswordRequest"
+              $ref: "#/components/schemas/UserWithPasswordRequest"
         required: true
       responses:
         "204":
@@ -1253,7 +1253,7 @@ components:
           format: int64
         tenantId:
           type: string
-    CamundaUserWithPasswordRequest:
+    UserWithPasswordRequest:
       type: "object"
       properties:
         password:
@@ -1274,8 +1274,8 @@ components:
       properties:
         filter:
           allOf:
-            - $ref: "#/components/schemas/CamundaUserFilterRequest"
-    CamundaUserFilterRequest:
+            - $ref: "#/components/schemas/UserFilterRequest"
+    UserFilterRequest:
       type: object
       properties:
         username:
@@ -1284,7 +1284,7 @@ components:
           type: "string"
         email:
           type: "string"
-    CamundaUserResponse:
+    UserResponse:
       type: "object"
       properties:
         id:
@@ -1304,7 +1304,7 @@ components:
         items:
           type: array
           items:
-            $ref: "#/components/schemas/CamundaUserResponse"
+            $ref: "#/components/schemas/UserResponse"
     TopologyResponse:
       description: The response of a topology request.
       type: object

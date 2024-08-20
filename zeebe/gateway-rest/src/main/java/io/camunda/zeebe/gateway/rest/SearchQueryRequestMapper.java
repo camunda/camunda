@@ -38,7 +38,6 @@ import io.camunda.service.search.sort.SortOptionBuilders;
 import io.camunda.service.search.sort.UserSort;
 import io.camunda.service.search.sort.UserTaskSort;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.zeebe.gateway.protocol.rest.CamundaUserFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsFilterRequest;
@@ -48,6 +47,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
@@ -260,7 +260,7 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static UserFilter toUserFilter(final CamundaUserFilterRequest filter) {
+  private static UserFilter toUserFilter(final UserFilterRequest filter) {
     return Optional.ofNullable(filter)
         .map(
             f ->

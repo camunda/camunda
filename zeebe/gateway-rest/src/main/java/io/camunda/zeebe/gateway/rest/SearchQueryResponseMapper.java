@@ -15,7 +15,6 @@ import io.camunda.service.entities.ProcessInstanceEntity;
 import io.camunda.service.entities.UserEntity;
 import io.camunda.service.entities.UserTaskEntity;
 import io.camunda.service.search.query.SearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsItem;
@@ -24,6 +23,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResponse;
@@ -187,15 +187,14 @@ public final class SearchQueryResponseMapper {
         .priority(t.priority());
   }
 
-  public static Either<ProblemDetail, List<CamundaUserResponse>> toUsers(
-      final List<UserEntity> users) {
+  public static Either<ProblemDetail, List<UserResponse>> toUsers(final List<UserEntity> users) {
     return Either.right(
         users.stream().map(SearchQueryResponseMapper::toUser).map(Either::get).toList());
   }
 
-  public static Either<ProblemDetail, CamundaUserResponse> toUser(final UserEntity user) {
+  public static Either<ProblemDetail, UserResponse> toUser(final UserEntity user) {
     return Either.right(
-        new CamundaUserResponse()
+        new UserResponse()
             .username(user.value().username())
             .email(user.value().email())
             .name(user.value().name()));
