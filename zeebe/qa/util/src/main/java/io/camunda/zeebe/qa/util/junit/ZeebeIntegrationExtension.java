@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>See {@link TestZeebe} for annotation parameters.
  */
-final class ZeebeIntegrationExtension
+public final class ZeebeIntegrationExtension
     implements BeforeAllCallback, BeforeEachCallback, TestWatcher {
 
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeIntegrationExtension.class);
