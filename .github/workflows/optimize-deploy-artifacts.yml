@@ -74,7 +74,7 @@ jobs:
     - name: Start Smoketest
       uses: ./.github/actions/compose
       with:
-        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.smoketest.yml
+        compose_file: .github/actions/compose/docker-compose.smoketest.yml
         project_name: smoketest
       env:
         OPTIMIZE_IMAGE_TAG: ${{ env.DOCKER_TAG }}
