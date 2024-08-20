@@ -26,7 +26,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class MigrateEventSubprocessTest {
+public class MigrateMessageEventSubprocessTest {
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
@@ -186,6 +186,7 @@ public class MigrateEventSubprocessTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
                 .limit(2))
+        .hasSize(2)
         .extracting(Record::getValue)
         .describedAs("Expect that process definition key is changed")
         .allMatch(v -> v.getProcessDefinitionKey() == targetProcessDefinitionKey)
@@ -280,6 +281,7 @@ public class MigrateEventSubprocessTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
                 .limit(2))
+        .hasSize(2)
         .extracting(Record::getValue)
         .describedAs("Expect that process definition key is changed")
         .allMatch(v -> v.getProcessDefinitionKey() == targetProcessDefinitionKey)
