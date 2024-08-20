@@ -24,7 +24,6 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Set;
 
@@ -59,7 +58,7 @@ public class MetricsExporter implements Exporter {
         new ExecutionLatencyMetrics(),
         new TtlKeyCache(TIME_TO_LIVE.toMillis()),
         new TtlKeyCache(TIME_TO_LIVE.toMillis()),
-        new SimpleMeterRegistry());
+        null);
   }
 
   @VisibleForTesting
