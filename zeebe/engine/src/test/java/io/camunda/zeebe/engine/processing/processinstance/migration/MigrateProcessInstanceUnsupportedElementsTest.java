@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -35,7 +36,7 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
-  public void shouldRejectMigrationForActiveTimerIntermediateCatchEvent() {
+  public void shouldRejectMigrationForActiveSignalIntermediateCatchEvent() {
     // given
     final var deployment =
         ENGINE
@@ -43,13 +44,13 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(SOURCE_PROCESS)
                     .startEvent()
-                    .intermediateCatchEvent("timer1", c -> c.timerWithDuration("PT10S"))
+                    .intermediateCatchEvent("catch1", c -> c.signal("signal1"))
                     .endEvent()
                     .done())
             .withXmlResource(
                 Bpmn.createExecutableProcess(TARGET_PROCESS)
                     .startEvent()
-                    .intermediateCatchEvent("timer2", c -> c.timerWithDuration("PT10M"))
+                    .intermediateCatchEvent("catch2", c -> c.signal("signal1"))
                     .endEvent()
                     .done())
             .deploy();
@@ -58,9 +59,8 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
     final var processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(SOURCE_PROCESS).create();
 
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementId("timer1")
+    RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+        .withCatchEventId("catch1")
         .await();
 
     // when
@@ -70,7 +70,7 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
             .withInstanceKey(processInstanceKey)
             .migration()
             .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-            .addMappingInstruction("timer1", "timer2")
+            .addMappingInstruction("catch1", "catch2")
             .expectRejection()
             .migrate();
 
@@ -83,7 +83,7 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
                 Expected to migrate process instance '%s' \
                 but active element with id '%s' is intermediate catch event of type '%s'. \
                 Migrating active intermediate catch event of this type is not possible yet.""",
-                processInstanceKey, "timer1", "TIMER"));
+                processInstanceKey, "catch1", "SIGNAL"));
   }
 
   @Test
