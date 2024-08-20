@@ -68,4 +68,8 @@ public final class SearchQueryBuilders {
       final Function<IncidentQuery.Builder, ObjectBuilder<IncidentQuery>> fn) {
     return fn.apply(incidentSearchQuery()).build();
   }
+
+  public static IncidentsByErrorMessageQuery incidentByErrorMessageQuery() {
+    return new IncidentsByErrorMessageQuery(null, null, null);
+  }
 }

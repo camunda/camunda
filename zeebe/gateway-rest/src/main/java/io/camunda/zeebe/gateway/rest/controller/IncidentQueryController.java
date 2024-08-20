@@ -11,6 +11,7 @@ import io.camunda.service.IncidentServices;
 import io.camunda.service.search.query.IncidentQuery;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentsByErrorMessageStatisticsResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
@@ -40,6 +41,27 @@ public class IncidentQueryController {
       @RequestBody(required = false) final IncidentSearchQueryRequest query) {
     return SearchQueryRequestMapper.toIncidentQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
+  @PostMapping(
+      path = "/byError",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public ResponseEntity<IncidentsByErrorMessageStatisticsResponse> searchIncidents() {
+    try {
+      final var result =
+          incidentServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .byErrorMessageStatistics();
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toIncidentsByErrorMessageStatisticsResponse(result));
+    } catch (final Throwable e) {
+      final var problemDetail =
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.BAD_REQUEST,
+              e.getMessage(),
+              "Failed to execute Incidents by error message statics Query");
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    }
   }
 
   private ResponseEntity<IncidentSearchQueryResponse> search(final IncidentQuery query) {

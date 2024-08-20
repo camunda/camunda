@@ -12,6 +12,7 @@ import static java.util.Optional.ofNullable;
 import io.camunda.service.entities.DecisionDefinitionEntity;
 import io.camunda.service.entities.DecisionRequirementsEntity;
 import io.camunda.service.entities.IncidentEntity;
+import io.camunda.service.entities.IncidentsByErrorMessageStatisticsEntity;
 import io.camunda.service.entities.ProcessInstanceEntity;
 import io.camunda.service.entities.UserTaskEntity;
 import io.camunda.service.search.query.SearchQueryResult;
@@ -21,6 +22,9 @@ import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsItem;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentItem;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentsByErrorMessageStatisticsItem;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentsByErrorMessageStatisticsResponse;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentsByProcessStatisticsItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
@@ -194,5 +198,47 @@ public final class SearchQueryResponseMapper {
         .processDefinitionVersion(t.processDefinitionVersion())
         .customHeaders(t.customHeaders())
         .priority(t.priority());
+  }
+
+  public static IncidentsByErrorMessageStatisticsResponse
+      toIncidentsByErrorMessageStatisticsResponse(
+          final SearchQueryResult<IncidentsByErrorMessageStatisticsEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new IncidentsByErrorMessageStatisticsResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toIncidentsByErrorMessageStatistics)
+                .orElseGet(Collections::emptyList));
+  }
+
+  private static List<IncidentsByErrorMessageStatisticsItem> toIncidentsByErrorMessageStatistics(
+      final List<IncidentsByErrorMessageStatisticsEntity>
+          incidentsByErrorMessageStatisticsEntities) {
+    return incidentsByErrorMessageStatisticsEntities.stream()
+        .map(SearchQueryResponseMapper::toIncidentsByErrorMessageStatistic)
+        .toList();
+  }
+
+  private static IncidentsByErrorMessageStatisticsItem toIncidentsByErrorMessageStatistic(
+      final IncidentsByErrorMessageStatisticsEntity entity) {
+    final var processes =
+        entity.processes().stream()
+            .map(
+                i ->
+                    new IncidentsByProcessStatisticsItem()
+                        .bpmnProcessId(i.bpmnProcessId())
+                        .errorMessage(i.errorMessage())
+                        .processId(i.processId())
+                        .activeInstancesCount(i.activeInstancesCount())
+                        .instancesWithActiveIncidentsCount(i.instancesWithActiveIncidentsCount())
+                        .name(i.name())
+                        .tenantId(i.tenantId())
+                        .version(i.version()))
+            .toList();
+    return new IncidentsByErrorMessageStatisticsItem()
+        .errorMessage(entity.errorMessage())
+        .instancesWithErrorCount(entity.instancesWithErrorCount())
+        .processes(processes);
   }
 }

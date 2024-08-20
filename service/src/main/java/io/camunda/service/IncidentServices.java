@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.search.clients.CamundaSearchClient;
 import io.camunda.service.entities.IncidentEntity;
+import io.camunda.service.entities.IncidentsByErrorMessageStatisticsEntity;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.search.query.IncidentQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
@@ -36,6 +37,12 @@ public class IncidentServices
   public SearchQueryResult<IncidentEntity> search(
       final Function<IncidentQuery.Builder, ObjectBuilder<IncidentQuery>> fn) {
     return search(SearchQueryBuilders.incidentSearchQuery(fn));
+  }
+
+  public SearchQueryResult<IncidentsByErrorMessageStatisticsEntity> byErrorMessageStatistics() {
+    return executor.search(
+        SearchQueryBuilders.incidentByErrorMessageQuery(),
+        IncidentsByErrorMessageStatisticsEntity.class);
   }
 
   @Override
