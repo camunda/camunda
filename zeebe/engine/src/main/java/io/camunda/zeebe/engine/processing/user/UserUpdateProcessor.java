@@ -46,9 +46,9 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
   @Override
   public void processNewCommand(final TypedRecord<UserRecord> command) {
     final var username = command.getValue().getUsernameBuffer();
-    final var user = userState.getUser(username);
+    final var persistedUser = userState.getUser(username);
 
-    if (user == null) {
+    if (persistedUser == null) {
       final var rejectionMessage =
           "Expected to update user with username %s, but a user with this username does not exist"
               .formatted(command.getValue().getUsername());
@@ -58,9 +58,11 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
       return;
     }
 
+    final var updatedUser = overlayUser(persistedUser, command.getValue());
+
     final long key = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(key, UserIntent.UPDATED, command.getValue());
-    responseWriter.writeEventOnCommand(key, UserIntent.UPDATED, command.getValue(), command);
+    stateWriter.appendFollowUpEvent(key, UserIntent.UPDATED, updatedUser);
+    responseWriter.writeEventOnCommand(key, UserIntent.UPDATED, updatedUser, command);
 
     distributionBehavior.distributeCommand(command.getKey(), command);
   }
@@ -70,5 +72,21 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
     stateWriter.appendFollowUpEvent(command.getKey(), UserIntent.UPDATED, command.getValue());
 
     distributionBehavior.acknowledgeCommand(command);
+  }
+
+  private UserRecord overlayUser(final UserRecord persistedUser, final UserRecord updatedUser) {
+    if (!updatedUser.getName().isEmpty()) {
+      persistedUser.setName(updatedUser.getName());
+    }
+
+    if (!updatedUser.getEmail().isEmpty()) {
+      persistedUser.setEmail(updatedUser.getEmail());
+    }
+
+    if (!updatedUser.getPassword().isEmpty()) {
+      persistedUser.setPassword(updatedUser.getPassword());
+    }
+
+    return persistedUser;
   }
 }
