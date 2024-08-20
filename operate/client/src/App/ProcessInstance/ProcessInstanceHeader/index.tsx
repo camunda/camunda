@@ -171,7 +171,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
         ...(hasVersionTag
           ? [
               {
-                title: versionTag,
+                title: 'User-defined label identifying a definition.',
                 content: (
                   <VersionTag size="sm" type="outline">
                     {versionTag}
