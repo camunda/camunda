@@ -22,10 +22,6 @@ on:
       pushDocker:
         description: "Whether the built docker images are pushed to camunda registry"
         type: boolean
-        default: true
-      previewEnv:
-        description: "Defines whether this is a preview environment build or not. If true, the image will be pushed to the Harbor Docker registry."
-        type: boolean
         default: false
 
 defaults:
@@ -54,11 +50,7 @@ jobs:
           GIT_COMMIT_HASH=$(git rev-parse ${{ inputs.branch }})
           echo "GIT_COMMIT_HASH=$GIT_COMMIT_HASH" >> $GITHUB_ENV
           echo "IMAGE_TAG=registry.camunda.cloud/team-camunda/optimize:pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
-          if [ "${{ inputs.previewEnv }}" = "true" ]; then
-            echo "IMAGE_TAG=registry.camunda.cloud/team-camunda/optimize:pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
-          else
-            echo "IMAGE_TAG=registry.camunda.cloud/team-optimize/optimize:pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
-          fi
+          echo "IMAGE_TAG=registry.camunda.cloud/team-camunda/optimize:pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
 
       #########################################################################
       # Setup: read java version from pom
@@ -99,4 +91,4 @@ jobs:
             VERSION=${{ steps.pom-info.outputs.project_version }}
             REVISION=${{ env.GIT_COMMIT_HASH }}
           tags: ${{ env.IMAGE_TAG }}
-          push: true
+          push: ${{ inputs.pushDocker }}
