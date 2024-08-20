@@ -70,7 +70,6 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.security.KeyStore;
@@ -78,7 +77,6 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -535,7 +533,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
   }
 
   private X509Certificate[] getCertificateChain(final File keyStoreFile, final String password)
-      throws CertificateException, KeyStoreException, IOException, NoSuchAlgorithmException {
+      throws KeyStoreException {
     final var keyStore = getKeyStore(keyStoreFile, password);
 
     final String alias = keyStore.aliases().nextElement();
@@ -545,11 +543,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
   }
 
   private PrivateKey getPrivateKey(final File keyStoreFile, final String password)
-      throws CertificateException,
-          KeyStoreException,
-          IOException,
-          NoSuchAlgorithmException,
-          UnrecoverableKeyException {
+      throws KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException {
+
     final var keyStore = getKeyStore(keyStoreFile, password);
 
     final String alias = keyStore.aliases().nextElement();
