@@ -8,6 +8,14 @@
 package io.camunda.zeebe.util;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.X509Certificate;
+import java.util.Arrays;
 
 public class TlsConfigUtil {
   public static void validateTlsConfig(
@@ -61,5 +69,39 @@ public class TlsConfigUtil {
                 keyStore));
       }
     }
+  }
+
+  public static PrivateKey getPrivateKey(final File keyStoreFile, final String password)
+      throws KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException {
+    final var keyStore = getKeyStore(keyStoreFile, password);
+
+    final String alias = keyStore.aliases().nextElement();
+    return (PrivateKey) keyStore.getKey(alias, password.toCharArray());
+  }
+
+  public static X509Certificate[] getCertificateChain(
+      final File keyStoreFile, final String password) throws KeyStoreException {
+    final var keyStore = getKeyStore(keyStoreFile, password);
+
+    final String alias = keyStore.aliases().nextElement();
+    return Arrays.stream(keyStore.getCertificateChain(alias))
+        .map(X509Certificate.class::cast)
+        .toArray(X509Certificate[]::new);
+  }
+
+  private static KeyStore getKeyStore(final File keyStoreFile, final String password)
+      throws KeyStoreException {
+    final var keyStore = KeyStore.getInstance("PKCS12");
+    try {
+      keyStore.load(new FileInputStream(keyStoreFile), password.toCharArray());
+    } catch (final Exception e) {
+      throw new IllegalStateException(
+          String.format(
+              "Keystore failed to load file: %s, please ensure it is a valid PKCS12 keystore",
+              keyStoreFile.toPath()),
+          e);
+    }
+
+    return keyStore;
   }
 }
