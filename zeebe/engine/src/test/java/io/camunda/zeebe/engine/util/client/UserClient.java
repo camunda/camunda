@@ -30,6 +30,10 @@ public final class UserClient {
     return new UpdateUserClient(writer, username);
   }
 
+  public UpdateUserClient updateUser(final String username, final UserRecord userRecord) {
+    return new UpdateUserClient(writer, username, userRecord);
+  }
+
   public static class UserCreationClient {
 
     private static final Function<Long, Record<UserRecordValue>> SUCCESS_SUPPLIER =
@@ -110,6 +114,13 @@ public final class UserClient {
       this.writer = writer;
       userRecord = new UserRecord();
       userRecord.setUsername(username);
+    }
+
+    public UpdateUserClient(
+        final CommandWriter writer, final String username, final UserRecord userRecord) {
+      this.writer = writer;
+      this.userRecord = userRecord;
+      this.userRecord.setUsername(username);
     }
 
     public UpdateUserClient withName(final String name) {
