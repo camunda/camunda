@@ -43,20 +43,20 @@
     },
     {
       "matchManagers": ["maven"],
-      "matchPackageNames": ["/^org.opensearch.client/", "/^org.elasticsearch/", "/^co.elastic/"],
+      "matchPackagePrefixes": ["org.opensearch.client", "org.elasticsearch", "co.elastic"],
       "matchUpdateTypes": ["minor", "major"],
       "enabled": false
     },
     {
       "description": "Skip lucene major updates to avoid breaking changes.",
       "matchManagers": ["maven"],
-      "matchPackageNames": ["/^org.apache.lucene/"],
+      "matchPackagePrefixes": ["org.apache.lucene"],
       "matchUpdateTypes": ["major"],
       "enabled": false
     },
     {
       "matchManagers": ["maven"],
-      "matchPackageNames": ["/^com.graphql-java/"],
+      "matchPackagePrefixes": ["com.graphql-java"],
       "matchUpdateTypes": ["major"],
       "enabled": false
     },
@@ -69,19 +69,19 @@
     },
     {
       "matchManagers": ["maven"],
-      "matchPackageNames": ["/^org.jacoco/"],
+      "matchPackagePrefixes": ["org.jacoco"],
       "allowedVersions": "!/0.8.9/"
     },
     {
       "description": "Exclude SNAPSHOT versions, renovate may suggest them for pre-release values.",
       "matchManagers": ["maven"],
-      "matchPackageNames": ["/.*/"],
+      "matchPackagePrefixes": [".*"],
       "allowedVersions": "!/-SNAPSHOT$/"
     },
     {
       "description": "Exclude internal Maven modules and Maven dependencies lacking metadata.",
       "matchManagers": ["maven"],
-      "matchPackageNames": [
+      "matchPackagePrefixes": [
         "io.camunda:operate-parent",
         "io.camunda:operate-qa",
         "io.camunda:operate-qa-migration-tests-parent",
@@ -95,7 +95,7 @@
       "description": "Exclude frontend deps until migration is done in Operate (see issues #17736, #17844, #18851)",
       "matchManagers": ["npm", "nvm"],
       "matchFileNames": ["operate/**"],
-      "matchPackageNames": [
+      "matchPackagePrefixes": [
         "react-router-dom",
         "msw",
         "@carbon/react"
@@ -111,7 +111,7 @@
       "description": "Exclude frontend deps until Optimize migrates to react-router v6 and react v18",
       "matchManagers": ["npm", "nvm"],
       "matchFileNames": ["optimize/**"],
-      "matchPackageNames": [
+      "matchPackagePrefixes": [
         "@carbon/react",
         "old-bpmn-js",
         "react",
@@ -131,14 +131,14 @@
         "optimize/**",
         ".github/optimize/scripts/healthStatusReport/**"
       ],
-      "matchPackageNames": ["node-fetch"],
+      "matchPackagePrefixes": ["node-fetch"],
       "enabled": false
     },
     {
       "description": "Exclude Optimize backend dependencies",
       "matchManagers": ["maven"],
       "matchFileNames": ["optimize/**"],
-      "matchPackageNames": [
+      "matchPackagePrefixes": [
         "io.camunda.optimize:optimize-data-generator",
         "io.camunda.optimize:camunda-optimize",
         "io.camunda.optimize:util",
@@ -151,11 +151,11 @@
       "enabled": false
     },
     {
-      "matchPackageNames": ["mcr.microsoft.com/playwright"],
+      "matchPackagePrefixes": ["mcr.microsoft.com/playwright"],
       "additionalBranchPrefix": "fe-"
     },
     {
-      "matchPackageNames": ["/^@types/"],
+      "matchPackagePrefixes": ["@types"],
       "groupName": "definitelyTyped"
     },
     {
@@ -168,7 +168,7 @@
     },
     {
       "matchManagers": ["npm", "nvm"],
-      "matchPackageNames": ["*"],
+      "matchPackagePrefixes": ["*"],
       "matchUpdateTypes": ["patch"],
       "groupName": "all non-major dependencies",
       "groupSlug": "all-minor-patch"
@@ -178,19 +178,19 @@
       "matchFileNames": [
         ".github/workflows/*.yml"
       ],
-      "matchPackageNames": [
+      "matchPackagePrefixes": [
         "rhysd/actionlint"
       ],
       "extractVersion": "^v(?<version>.*)$"
     },
     {
       "description": "Both dependencies need to be updated at once for green CI.",
-      "matchPackageNames": ["@playwright/test", "mcr.microsoft.com/playwright"],
+      "matchPackagePrefixes": ["@playwright/test", "mcr.microsoft.com/playwright"],
       "groupName": "playwright"
     },
     {
       "description": "Automerge all updates with green CI.",
-      "matchPackageNames": ["*"],
+      "matchPackagePrefixes": ["*"],
       "automerge": true,
       "addLabels": ["automerge"]
     }
