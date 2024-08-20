@@ -3,7 +3,7 @@ ARG BASE_IMAGE="alpine:3.20.2"
 ARG BASE_DIGEST="sha256:0a4eaa0eecf5f8c050e5bba433f58c052be7587ee8af3e8b3910ef9ab5fbe9f5"
 
 # Prepare tasklist Distribution
-FROM ${BASE_IMAGE}@${BASE_DIGEST} as prepare
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS prepare
 
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 WORKDIR /tmp/tasklist
@@ -15,7 +15,7 @@ RUN tar xzvf tasklist.tar.gz --strip 1 && \
 
 ### Base image ###
 # hadolint ignore=DL3006
-FROM ${BASE_IMAGE}@${BASE_DIGEST} as base
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
 
 # Install Tini
 RUN apk update && apk add --no-cache tini
@@ -23,7 +23,7 @@ RUN apk update && apk add --no-cache tini
 ### Application Image ###
 # hadolint ignore=DL3006
 
-FROM base as app
+FROM base AS app
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
 ARG BASE_DIGEST
