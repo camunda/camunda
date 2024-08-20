@@ -8,9 +8,9 @@ set EXPECTED_JAVA_VERSION=21
 
 set BASEDIR=%~dp0
 echo BASEDIR=%BASEDIR%
-set PARENTDIR=%BASEDIR%\..
+set PARENTDIR=%BASEDIR%..
 set DEPLOYMENT_DIR=%PARENTDIR%\configuration\resources
-set PID_PATH=%BASEDIR%\run.pid
+set PID_PATH=%BASEDIR%run.pid
 set ELASTIC_PID_PATH=%BASEDIR%\elasticsearch.pid
 set CONNECTORS_PID_PATH=%BASEDIR%\connectors.pid
 rem Define the OPTIONS_HELP variable
@@ -28,53 +28,96 @@ REM set environment parameters
 set detachProcess=false
 set classPath=%PARENTDIR%\configuration\userlib\,%PARENTDIR%\configuration\keystore\
 
+set baseCommand=""
+set insideConfigFlag=false
+
+REM inspect arguments
+
 if "%1"=="start" (
-    shift
+    set baseCommand=start
+) else if "%1" == "stop" (
+    set baseCommand=stop
+)
+
+:inspectArgs
+shift
+echo %1
+if insideConfigFlag==true (
+    if "%1"=="" (
+        echo %OPTIONS_HELP%
+        exit /b 0
+    )
+    set configuration=%1%
+    set insideConfigFlag=false
+    goto inspectArgs
+)
+
+if not "%1"=="" (
+    if "%1"=="--config" (
+        set insideConfigFlag=true
+    ) else if "%1"=="--detached" (
+        set detachProcess=true
+        REM Camunda Run will start in the background. Use the shutdown.bat script to stop it
+        echo Not yet implemented.
+    ) else if "%1"=="--help" (
+        echo %OPTIONS_HELP%
+        exit /b 0
+    ) else (
+        echo "Invalid option: %1"
+        exit /b 1
+    )
+    goto inspectArgs
+) 
+
+
+if "%baseCommand%"=="start" (
     REM setup the JVM
-    if "%JAVA%"=="" (
-        if not "%JAVA_HOME%"=="" (
-            echo Setting JAVA property to "%JAVA_HOME%\bin\java"
-            set JAVA="%JAVA_HOME%\bin\java"
-        ) else (
+    if not defined JAVA (
+        if not defined JAVA_HOME (
             echo JAVA_HOME is not set. Unexpected results may occur.
             echo Set JAVA_HOME to the directory of your local JDK to avoid this message.
+            setx JAVA java
             set JAVA=java
+        ) else (
+            echo Setting JAVA property to "%JAVA_HOME%\bin\java"
+            setx JAVA "%JAVA_HOME%\bin\java"
+            set JAVA="%JAVA_HOME%\bin\java"
+        )
+    )
+    :javaVersionRetrieved
+    if not defined JAVA_VERSION (
+        for /f "tokens=2" %%g in ('java --version') do (
+            echo %%g
+            if defined JAVA_VERSION (
+                goto javaVersionRetrieved
+            )
+            set JAVA_VERSION=%%g
+            setx JAVA_VERSION %%g
         )
     )
 
-    for /f "tokens=2 delims==" %%i in ('%JAVA% -version') do set JAVA_VERSION=%%i
+    :javaMajorRetrieved
+    if not defined JAVA_MAJOR_VERSION (
+        for /f "tokens=1 delims=." %%g in ('echo %JAVA_VERSION%') do (
+            if defined JAVA_MAJOR_VERSION (
+                goto javaMajorRetrieved
+            )
+            set JAVA_MAJOR_VERSION=%%g
+            setx JAVA_MAJOR_VERSION %%g
+        )
+    )
+
     echo Java version is %JAVA_VERSION%
-    if "%JAVA_VERSION%" lss "%EXPECTED_JAVA_VERSION%" (
+    if "%JAVA_MAJOR_VERSION%" lss "%EXPECTED_JAVA_VERSION%" (
         echo You must use at least JDK %EXPECTED_JAVA_VERSION% to start Camunda Platform Run.
         exit /b 1
     )
 
-    if not "%JAVA_OPTS%"=="" (
+    if defined JAVA_OPTS (
         echo JAVA_OPTS: %JAVA_OPTS%
     )
 
-    REM inspect arguments
-    :inspectArgs
-    if not "%1"=="" (
-        if "%1"=="--config" (
-            shift
-            if "%1"=="" (
-                echo %OPTIONS_HELP%
-                exit /b 0
-            )
-            set configuration=%1%
-        ) else if "%1"=="--detached" (
-            set detachProcess=true
-            echo Camunda Run will start in the background. Use the shutdown.bat script to stop it
-        ) else if "%1"=="--help" (
-            echo %OPTIONS_HELP%
-            exit /b 0
-        ) else (
-            exit /b 1
-        )
-        shift
-        goto inspectArgs
-    )
+    echo "after inspect args"
 
     REM limit the java heapspace used by ElasticSearch to 1GB
     set ES_JAVA_OPTS=-Xms1g -Xmx1g
@@ -90,7 +133,7 @@ if "%1"=="start" (
     REM check if a Camunda Run instance is already in operation
     if exist "%PID_PATH%" (
         echo.
-        echo A Camunda Run instance is already in operation (process id %PID_PATH%).
+        echo A Camunda Run instance is already in operation process id %PID_PATH%
 
         echo Please stop it or remove the file %PID_PATH%.
         exit /b 1
@@ -98,7 +141,7 @@ if "%1"=="start" (
 
     set classPath=%classPath:~0,-1%
 
-    if not "%configuration%"=="" (
+    if not defined configuration (
         if "%configuration:~0,1%"=="\" (
             set extraArgs=--spring.config.location=%configuration%
         ) else (
@@ -106,21 +149,14 @@ if "%1"=="start" (
         )
     )
 
-    if "%detachProcess%"=="true" (
-        cd /d %PARENTDIR%\camunda-zeebe-%CAMUNDA_VERSION%
-        echo %JAVA% -cp "%PARENTDIR%\*,%PARENTDIR%\custom_connectors\*,.\camunda-zeebe-%CAMUNDA_VERSION%\lib\*" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> %PARENTDIR%\log\connectors.log 2>>&1
-        start /b %JAVA% -cp "%PARENTDIR%\*,%PARENTDIR%\custom_connectors\*,.\camunda-zeebe-%CAMUNDA_VERSION%\lib\*" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> %PARENTDIR%\log\connectors.log 2>>&1
-        echo %! > "%CONNECTORS_PID_PATH%"
-        start /b cmd /c "%PARENTDIR%\camunda-zeebe-%CAMUNDA_VERSION%\bin\camunda %extraArgs% >> %PARENTDIR%\log\camunda.log 2>>&1"
-        echo %! > "%PID_PATH%"
-    ) else (
-        %JAVA% -cp "%PARENTDIR%\*,%PARENTDIR%\custom_connectors\*,.\camunda-zeebe-%CAMUNDA_VERSION%\lib\*" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> %PARENTDIR%\log\connectors.log 2>>&1
-        echo %! > "%CONNECTORS_PID_PATH%"
-        cd /d %PARENTDIR%\camunda-zeebe-%CAMUNDA_VERSION%
-        %PARENTDIR%\camunda-zeebe-%CAMUNDA_VERSION%\bin\camunda %extraArgs% 2>&1 | tee %PARENTDIR%\log\camunda.log
-    )
+    REM command that worked: java -classpath C:\Users\JesseSimpson\camunda\c8run\*;C:\Users\JesseSimpson\camunda\c8run\custom_connectors\*;.\camunda-zeebe-8.6.0-alpha3\lib\* io.camunda.connector.runtime.app.ConnectorRuntimeApplication --spring.config.location=.\connectors-application.properties
 
-) else if "%1"=="stop" (
+    start "Connectors App" cmd /c "%JAVA% -classpath %PARENTDIR%\*;%PARENTDIR%\custom_connectors\*;.\camunda-zeebe-%CAMUNDA_VERSION%\lib\* io.camunda.connector.runtime.app.ConnectorRuntimeApplication --spring.config.location=./connectors-application.properties >> %PARENTDIR%\log\connectors.log 2>>&1"
+    echo %! > "%CONNECTORS_PID_PATH%"
+    cd /d %PARENTDIR%\camunda-zeebe-%CAMUNDA_VERSION%
+    %PARENTDIR%\camunda-zeebe-%CAMUNDA_VERSION%\bin\camunda %extraArgs% >> %PARENTDIR%\log\camunda.log 2>>&1
+
+) else if "%baseCommand%"=="stop" (
 
     if exist "%PID_PATH%" (
         REM stop Camunda Run if the process is still running
