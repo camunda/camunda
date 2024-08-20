@@ -52,9 +52,7 @@ public class EntitiesClient {
   }
 
   public EntityNameResponseDto getEntityNames(
-      final String collectionId,
-      final String dashboardId,
-      final String reportId) {
+      final String collectionId, final String dashboardId, final String reportId) {
     return getEntityNamesAsUser(
         collectionId, dashboardId, reportId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }

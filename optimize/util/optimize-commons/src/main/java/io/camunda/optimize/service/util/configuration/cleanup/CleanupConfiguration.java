@@ -50,8 +50,7 @@ public class CleanupConfiguration {
     this.decisionCleanupConfiguration = decisionCleanupConfiguration;
   }
 
-  protected CleanupConfiguration() {
-  }
+  protected CleanupConfiguration() {}
 
   public void validate() {
     if (ttl == null) {
@@ -159,21 +158,21 @@ public class CleanupConfiguration {
     result =
         result * PRIME
             + ($processDataCleanupConfiguration == null
-            ? 43
-            : $processDataCleanupConfiguration.hashCode());
+                ? 43
+                : $processDataCleanupConfiguration.hashCode());
     final Object $decisionCleanupConfiguration = getDecisionCleanupConfiguration();
     result =
         result * PRIME
             + ($decisionCleanupConfiguration == null
-            ? 43
-            : $decisionCleanupConfiguration.hashCode());
+                ? 43
+                : $decisionCleanupConfiguration.hashCode());
 
     final Object $externalVariableCleanupConfiguration = getExternalVariableCleanupConfiguration();
     result =
         result * PRIME
             + ($externalVariableCleanupConfiguration == null
-            ? 43
-            : $externalVariableCleanupConfiguration.hashCode());
+                ? 43
+                : $externalVariableCleanupConfiguration.hashCode());
     return result;
   }
 

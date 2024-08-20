@@ -276,7 +276,7 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
             bucketForKey ->
                 (definition.getTenantIds().contains(bucketForKey.getTenant()))
                     || (bucketForKey.getTenant().equals(MISSING_TENANT_KEY)
-                    && definition.getTenantIds().contains(null)))
+                        && definition.getTenantIds().contains(null)))
         .collect(Collectors.toList());
   }
 

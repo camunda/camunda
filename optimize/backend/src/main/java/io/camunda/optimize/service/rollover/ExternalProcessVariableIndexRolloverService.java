@@ -25,8 +25,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class ExternalProcessVariableIndexRolloverService extends AbstractScheduledService {
 
-  private static final Logger log = org.slf4j.LoggerFactory.getLogger(
-      ExternalProcessVariableIndexRolloverService.class);
+  private static final Logger log =
+      org.slf4j.LoggerFactory.getLogger(ExternalProcessVariableIndexRolloverService.class);
 
   private final DatabaseClient databaseClient;
   private final ConfigurationService configurationService;

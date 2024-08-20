@@ -302,8 +302,8 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   public void deleteAllSingleProcessReports() {
     final DeleteByQueryRequest request =
         new DeleteByQueryRequest(
-            getIndexNameService()
-                .getOptimizeIndexAliasForIndex(new SingleProcessReportIndexES()))
+                getIndexNameService()
+                    .getOptimizeIndexAliasForIndex(new SingleProcessReportIndexES()))
             .setQuery(matchAllQuery())
             .setRefresh(true);
 
@@ -315,7 +315,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
       throw new OptimizeIntegrationTestException(
           "Could not delete data in index "
               + getIndexNameService()
-              .getOptimizeIndexAliasForIndex(new SingleProcessReportIndexES()),
+                  .getOptimizeIndexAliasForIndex(new SingleProcessReportIndexES()),
           e);
     }
   }
@@ -847,7 +847,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
             index -> indexNameToAliasMap.get(index).stream().anyMatch(AliasMetadata::writeIndex))
         .toList();
   }
-  
+
   public OptimizeIndexNameService getIndexNameService() {
     return getOptimizeElasticClient().getIndexNameService();
   }
@@ -961,7 +961,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   private <T> List<T> getAllDocumentsOfIndexAs(
       final String indexName, final Class<T> type, final QueryBuilder query) {
     try {
-      return getAllDocumentsOfIndicesAs(new String[]{indexName}, type, query);
+      return getAllDocumentsOfIndicesAs(new String[] {indexName}, type, query);
     } catch (final ElasticsearchStatusException e) {
       throw new OptimizeIntegrationTestException(
           "Cannot get all documents for index " + indexName, e);

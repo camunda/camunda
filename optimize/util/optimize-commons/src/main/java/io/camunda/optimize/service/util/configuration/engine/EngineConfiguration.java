@@ -45,8 +45,7 @@ public class EngineConfiguration {
     this.authentication = authentication;
   }
 
-  protected EngineConfiguration() {
-  }
+  protected EngineConfiguration() {}
 
   @JsonIgnore
   public Optional<String> getDefaultTenantId() {
@@ -260,8 +259,7 @@ public class EngineConfiguration {
     private boolean excludedTenants$set;
     private EngineAuthenticationConfiguration authentication;
 
-    EngineConfigurationBuilder() {
-    }
+    EngineConfigurationBuilder() {}
 
     public EngineConfigurationBuilder name(final String name) {
       this.name = name;

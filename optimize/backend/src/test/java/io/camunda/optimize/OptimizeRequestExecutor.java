@@ -592,15 +592,15 @@ public class OptimizeRequestExecutor {
   }
 
   public <T extends SingleReportDataDto>
-  OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequestWithPagination(
-      final T entity, final PaginationRequestDto paginationDto) {
+      OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequestWithPagination(
+          final T entity, final PaginationRequestDto paginationDto) {
     buildEvaluateSingleUnsavedReportRequest(entity);
     Optional.ofNullable(paginationDto).ifPresent(this::addPaginationParams);
     return this;
   }
 
   public <T extends SingleReportDataDto>
-  OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequest(final T entity) {
+      OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequest(final T entity) {
     path = "report/evaluate";
     if (entity instanceof ProcessReportDataDto) {
       final ProcessReportDataDto dataDto = (ProcessReportDataDto) entity;
@@ -624,7 +624,7 @@ public class OptimizeRequestExecutor {
   }
 
   public <T extends SingleReportDefinitionDto>
-  OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequest(final T definitionDto) {
+      OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequest(final T definitionDto) {
     path = "report/evaluate";
     if (definitionDto instanceof SingleProcessReportDefinitionRequestDto) {
       body = getBody(definitionDto);
@@ -758,8 +758,8 @@ public class OptimizeRequestExecutor {
     return buildGetCollectionEntitiesRequest(id, null);
   }
 
-  public OptimizeRequestExecutor buildGetCollectionEntitiesRequest(final String id,
-      final EntitySorter sorter) {
+  public OptimizeRequestExecutor buildGetCollectionEntitiesRequest(
+      final String id, final EntitySorter sorter) {
     path = "collection/" + id + "/entities";
     method = GET;
     Optional.ofNullable(sorter).ifPresent(sortParams -> addSortParams(sorter.getSortRequestDto()));

@@ -23,8 +23,7 @@ public class EntityNameResponseDto {
     this.reportName = reportName;
   }
 
-  public EntityNameResponseDto() {
-  }
+  public EntityNameResponseDto() {}
 
   public String getCollectionName() {
     return collectionName;

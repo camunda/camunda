@@ -70,8 +70,7 @@ public class DefinitionResponseDto extends SimpleDefinitionDto {
     this.tenants = tenants;
   }
 
-  protected DefinitionResponseDto() {
-  }
+  protected DefinitionResponseDto() {}
 
   public static DefinitionResponseDto from(
       final DefinitionWithTenantIdsDto definitionWithTenantIdsDto,

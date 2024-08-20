@@ -26,8 +26,7 @@ public class TimestampBasedImportIndexDto extends ImportIndexDto<IngestedDataSou
     this.esTypeIndexRefersTo = esTypeIndexRefersTo;
   }
 
-  public TimestampBasedImportIndexDto() {
-  }
+  public TimestampBasedImportIndexDto() {}
 
   @JsonIgnore
   public String getDataSourceName() {

@@ -19,10 +19,7 @@ public class SimpleDefinitionDto {
   private Set<String> engines = new HashSet<>();
 
   public SimpleDefinitionDto(
-      final String key,
-      final String name,
-      final DefinitionType type,
-      final String engine) {
+      final String key, final String name, final DefinitionType type, final String engine) {
     if (key == null) {
       throw new IllegalArgumentException("key cannot be null");
     }
@@ -40,10 +37,7 @@ public class SimpleDefinitionDto {
   }
 
   public SimpleDefinitionDto(
-      final String key,
-      final String name,
-      final DefinitionType type,
-      final Set<String> engines) {
+      final String key, final String name, final DefinitionType type, final Set<String> engines) {
     if (key == null) {
       throw new IllegalArgumentException("key cannot be null");
     }
@@ -62,8 +56,7 @@ public class SimpleDefinitionDto {
     this.engines = engines;
   }
 
-  protected SimpleDefinitionDto() {
-  }
+  protected SimpleDefinitionDto() {}
 
   public String getKey() {
     return key;

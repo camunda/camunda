@@ -166,8 +166,8 @@ public class ImportRepositoryES implements ImportRepository {
   }
 
   private IndexRequest createTimestampBasedRequest(final TimestampBasedImportIndexDto importIndex) {
-    final String currentTimeStamp = dateTimeFormatter.format(
-        importIndex.getTimestampOfLastEntity());
+    final String currentTimeStamp =
+        dateTimeFormatter.format(importIndex.getTimestampOfLastEntity());
     log.debug(
         "Writing timestamp based import index [{}] of type [{}] with execution timestamp [{}] to elasticsearch",
         currentTimeStamp,

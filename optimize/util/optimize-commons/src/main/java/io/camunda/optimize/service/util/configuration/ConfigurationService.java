@@ -921,8 +921,8 @@ public class ConfigurationService {
   }
 
   /**
-   * This method is mostly for internal usage. All API invocations should rely on
-   * {@link #getEngineRestApiEndpointOfCustomEngine(String)}
+   * This method is mostly for internal usage. All API invocations should rely on {@link
+   * #getEngineRestApiEndpointOfCustomEngine(String)}
    *
    * @param engineAlias - an alias of configured engine
    * @return <b>raw</b> REST endpoint, without engine suffix

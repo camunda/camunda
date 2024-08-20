@@ -183,19 +183,19 @@ public class ZeebeProcessInstanceImportService
     final ZeebeProcessInstanceDataDto zeebeInstanceRecord =
         zeebeProcessInstanceRecordDto.getValue();
     return new FlowNodeInstanceDto(
-        String.valueOf(zeebeInstanceRecord.getBpmnProcessId()),
-        String.valueOf(zeebeInstanceRecord.getVersion()),
-        zeebeInstanceRecord.getTenantId(),
-        String.valueOf(zeebeInstanceRecord.getProcessInstanceKey()),
-        zeebeInstanceRecord.getElementId(),
-        zeebeInstanceRecord
-            .getBpmnElementType()
-            .getElementTypeName()
-            .orElseThrow(
-                () ->
-                    new OptimizeRuntimeException(
-                        "Cannot create flow node instances for records without element types")),
-        String.valueOf(zeebeProcessInstanceRecordDto.getKey()))
+            String.valueOf(zeebeInstanceRecord.getBpmnProcessId()),
+            String.valueOf(zeebeInstanceRecord.getVersion()),
+            zeebeInstanceRecord.getTenantId(),
+            String.valueOf(zeebeInstanceRecord.getProcessInstanceKey()),
+            zeebeInstanceRecord.getElementId(),
+            zeebeInstanceRecord
+                .getBpmnElementType()
+                .getElementTypeName()
+                .orElseThrow(
+                    () ->
+                        new OptimizeRuntimeException(
+                            "Cannot create flow node instances for records without element types")),
+            String.valueOf(zeebeProcessInstanceRecordDto.getKey()))
         .setCanceled(false);
   }
 

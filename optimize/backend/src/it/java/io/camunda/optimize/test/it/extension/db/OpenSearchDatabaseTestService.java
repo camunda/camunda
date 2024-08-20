@@ -18,6 +18,7 @@ import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInsta
 import static io.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithPercentileInterpolation;
 
 import com.google.common.collect.Iterables;
+import io.camunda.optimize.dto.optimize.OptimizeDto;
 import io.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import io.camunda.optimize.dto.optimize.query.MetadataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
@@ -227,7 +228,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   public Integer getDocumentCountOf(final String indexName) {
     try {
       return Long.valueOf(
-              getOptimizeOpenSearchClient().count(new String[]{indexName}, QueryDSL.matchAll()))
+              getOptimizeOpenSearchClient().count(new String[] {indexName}, QueryDSL.matchAll()))
           .intValue();
     } catch (final IOException e) {
       throw new OptimizeIntegrationTestException(
@@ -460,7 +461,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
       final TermsQueryContainer queryContainer, final String expectedIndex) {
     try {
       return getOptimizeOpenSearchClient()
-          .count(new String[]{expectedIndex}, queryContainer.toOpenSearchQuery());
+          .count(new String[] {expectedIndex}, queryContainer.toOpenSearchQuery());
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
@@ -486,6 +487,52 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public void deleteProcessInstancesFromIndex(final String indexName, final String id) {
+    getOptimizeOpenSearchClient().getRichOpenSearchClient().doc().delete(indexName, id);
+  }
+
+  @Override
+  public DatabaseType getDatabaseVendor() {
+    return DatabaseType.OPENSEARCH;
+  }
+
+  @Override
+  protected <T extends OptimizeDto> List<T> getInstancesById(
+      final String indexName,
+      final List<String> instanceIds,
+      final String idField,
+      final Class<T> type) {
+    return getAllDocumentsOfIndicesAs(
+        new String[] {indexName}, type, QueryDSL.stringTerms(idField, instanceIds));
+  }
+
+  @Override
+  public <T> Optional<T> getDatabaseEntryById(
+      final String indexName, final String entryId, final Class<T> type) {
+    return Optional.ofNullable(
+        getOptimizeOpenSearchClient()
+            .get(
+                RequestDSL.getRequest(indexName, entryId),
+                type,
+                "Could not retrieve entry from index " + indexName + " with id " + entryId)
+            .source());
+  }
+
+  @Override
+  public String getDatabaseVersion() {
+    if (opensearchDatabaseVersion == null) {
+      try {
+        opensearchDatabaseVersion =
+            OpenSearchClientBuilder.getCurrentOSVersion(
+                getOptimizeOpenSearchClient().getOpenSearchClient());
+      } catch (final IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+    return opensearchDatabaseVersion;
   }
 
   @Override
@@ -680,7 +727,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   private <T> List<T> getAllDocumentsOfIndexAs(
       final String indexName, final Class<T> type, final Query query) {
-    return getAllDocumentsOfIndicesAs(new String[]{indexName}, type, query);
+    return getAllDocumentsOfIndicesAs(new String[] {indexName}, type, query);
   }
 
   private OptimizeIndexNameService getIndexNameService() {
@@ -706,7 +753,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     try {
       return Long.valueOf(
               getOptimizeOpenSearchClient()
-                  .count(new String[]{PROCESS_INSTANCE_MULTI_ALIAS}, query))
+                  .count(new String[] {PROCESS_INSTANCE_MULTI_ALIAS}, query))
           .intValue();
     } catch (final IOException e) {
       throw new OptimizeIntegrationTestException(
@@ -721,7 +768,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   private void deleteIndexOfMapping(final IndexMappingCreator<IndexSettings.Builder> indexMapping) {
-    deleteIndices(new String[]{indexMapping.getIndexName()});
+    deleteIndices(new String[] {indexMapping.getIndexName()});
   }
 
   private void deleteIndices(final String[] indicesToDelete) {

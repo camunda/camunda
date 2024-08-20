@@ -77,13 +77,11 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
       final String bpmn20Xml,
       final List<FlowNodeDataDto> flowNodeData,
       final Map<String, String> userTaskNames,
-      final boolean onboarded,
-      final boolean eventBased) {
+      final boolean onboarded) {
     this.bpmn20Xml = bpmn20Xml;
     this.flowNodeData = flowNodeData;
     this.userTaskNames = userTaskNames;
     this.onboarded = onboarded;
-    this.eventBased = eventBased;
   }
 
   public final List<FlowNodeDataDto> getFlowNodeData() {
@@ -127,15 +125,6 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
     this.onboarded = onboarded;
   }
 
-  public boolean isEventBased() {
-    return eventBased;
-  }
-
-  @JsonIgnore
-  public void setEventBased(final boolean eventBased) {
-    this.eventBased = eventBased;
-  }
-
   @Override
   protected boolean canEqual(final Object other) {
     return other instanceof ProcessDefinitionOptimizeDto;
@@ -152,7 +141,6 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
     final Object $userTaskNames = getUserTaskNames();
     result = result * PRIME + ($userTaskNames == null ? 43 : $userTaskNames.hashCode());
     result = result * PRIME + (isOnboarded() ? 79 : 97);
-    result = result * PRIME + (isEventBased() ? 79 : 97);
     return result;
   }
 
@@ -195,9 +183,6 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
     if (isOnboarded() != other.isOnboarded()) {
       return false;
     }
-    if (isEventBased() != other.isEventBased()) {
-      return false;
-    }
     return true;
   }
 
@@ -211,8 +196,6 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
         + getUserTaskNames()
         + ", onboarded="
         + isOnboarded()
-        + ", eventBased="
-        + isEventBased()
         + ")";
   }
 

@@ -48,8 +48,7 @@ public class IngestionRestService {
 
   private final ExternalVariableService externalVariableService;
 
-  public IngestionRestService(
-      final ExternalVariableService externalVariableService) {
+  public IngestionRestService(final ExternalVariableService externalVariableService) {
     this.externalVariableService = externalVariableService;
   }
 
@@ -79,8 +78,7 @@ public class IngestionRestService {
 
     private List<E> list = new ArrayList<>();
 
-    public ValidList() {
-    }
+    public ValidList() {}
 
     public List<E> getList() {
       return list;

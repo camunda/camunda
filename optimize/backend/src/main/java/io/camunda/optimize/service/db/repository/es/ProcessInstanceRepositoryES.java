@@ -83,7 +83,7 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
     this.objectMapper = objectMapper;
     this.dateTimeFormatter = dateTimeFormatter;
   }
-  
+
   @Override
   public void deleteByIds(
       final String index, final String itemName, final List<String> processInstanceIds) {

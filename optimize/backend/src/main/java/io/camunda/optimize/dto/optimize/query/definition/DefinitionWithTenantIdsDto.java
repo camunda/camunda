@@ -47,8 +47,7 @@ public class DefinitionWithTenantIdsDto extends SimpleDefinitionDto {
     this.tenantIds = tenantIds;
   }
 
-  protected DefinitionWithTenantIdsDto() {
-  }
+  protected DefinitionWithTenantIdsDto() {}
 
   public List<String> getTenantIds() {
     return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);

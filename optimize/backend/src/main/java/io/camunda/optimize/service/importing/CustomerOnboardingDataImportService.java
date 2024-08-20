@@ -78,9 +78,7 @@ public class CustomerOnboardingDataImportService {
   }
 
   private void importCustomerOnboardingData(
-      final String processDefinition,
-      final String pathToProcessInstances,
-      final int batchSize) {
+      final String processDefinition, final String pathToProcessInstances, final int batchSize) {
     try (final InputStream customerOnboardingDefinition =
         getClass().getClassLoader().getResourceAsStream(processDefinition)) {
       if (customerOnboardingDefinition != null) {
@@ -92,8 +90,7 @@ public class CustomerOnboardingDataImportService {
           Optional.ofNullable(processDefinitionDto.getKey())
               .ifPresentOrElse(
                   key -> {
-                    processDefinitionWriter.importProcessDefinitions(
-                        List.of(processDefinitionDto));
+                    processDefinitionWriter.importProcessDefinitions(List.of(processDefinitionDto));
                     readProcessInstanceJson(pathToProcessInstances, batchSize);
                   },
                   () ->
@@ -120,18 +117,15 @@ public class CustomerOnboardingDataImportService {
           getClass().getClassLoader().getResourceAsStream(pathToProcessInstances)) {
         if (customerOnboardingProcessInstances != null) {
           final String result =
-              new String(customerOnboardingProcessInstances.readAllBytes(),
-                  StandardCharsets.UTF_8);
+              new String(customerOnboardingProcessInstances.readAllBytes(), StandardCharsets.UTF_8);
           final List<ProcessInstanceDto> rawProcessInstanceDtos =
-              objectMapper.readValue(result, new TypeReference<>() {
-              });
+              objectMapper.readValue(result, new TypeReference<>() {});
           for (final ProcessInstanceDto processInstance : rawProcessInstanceDtos) {
             if (processInstance != null) {
               final Optional<Long> processInstanceDuration =
                   Optional.ofNullable(processInstance.getDuration());
               if (processInstance.getProcessDefinitionKey() != null
-                  && (processInstanceDuration.isEmpty()
-                  || processInstanceDuration.get() >= 0)) {
+                  && (processInstanceDuration.isEmpty() || processInstanceDuration.get() >= 0)) {
                 processInstanceDtos.add(processInstance);
               }
             } else {
@@ -185,8 +179,7 @@ public class CustomerOnboardingDataImportService {
             .filter(processInstanceDto -> processInstanceDto.getEndDate() == null)
             .collect(Collectors.toList());
     final List<ImportRequestDto> completedProcessInstanceImports =
-        processInstanceWriter.generateCompletedProcessInstanceImports(
-            completedProcessInstances);
+        processInstanceWriter.generateCompletedProcessInstanceImports(completedProcessInstances);
     processInstanceRepository.bulkImport(
         "Completed process instances", completedProcessInstanceImports);
     final List<ImportRequestDto> runningProcessInstanceImports =
@@ -212,8 +205,7 @@ public class CustomerOnboardingDataImportService {
             flowNodeInstanceDto -> {
               Optional.ofNullable(flowNodeInstanceDto.getStartDate())
                   .ifPresent(
-                      startDate -> flowNodeInstanceDto.setStartDate(
-                          startDate.plusSeconds(offset)));
+                      startDate -> flowNodeInstanceDto.setStartDate(startDate.plusSeconds(offset)));
               Optional.ofNullable(flowNodeInstanceDto.getEndDate())
                   .ifPresent(
                       endDate -> flowNodeInstanceDto.setEndDate(endDate.plusSeconds(offset)));

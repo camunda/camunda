@@ -21,16 +21,13 @@ public class EntityNameRequestDto {
   private String reportId;
 
   public EntityNameRequestDto(
-      final String collectionId,
-      final String dashboardId,
-      final String reportId) {
+      final String collectionId, final String dashboardId, final String reportId) {
     this.collectionId = collectionId;
     this.dashboardId = dashboardId;
     this.reportId = reportId;
   }
 
-  public EntityNameRequestDto() {
-  }
+  public EntityNameRequestDto() {}
 
   public String getCollectionId() {
     return collectionId;

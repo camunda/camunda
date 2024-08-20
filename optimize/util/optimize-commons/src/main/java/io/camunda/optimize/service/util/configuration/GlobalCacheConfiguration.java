@@ -42,14 +42,6 @@ public class GlobalCacheConfiguration {
     this.definitionEngines = definitionEngines;
   }
 
-  public CacheConfiguration getEventProcessRoles() {
-    return eventProcessRoles;
-  }
-
-  public void setEventProcessRoles(final CacheConfiguration eventProcessRoles) {
-    this.eventProcessRoles = eventProcessRoles;
-  }
-
   public CloudUserCacheConfiguration getCloudUsers() {
     return cloudUsers;
   }
@@ -88,8 +80,6 @@ public class GlobalCacheConfiguration {
     result = result * PRIME + ($definitions == null ? 43 : $definitions.hashCode());
     final Object $definitionEngines = getDefinitionEngines();
     result = result * PRIME + ($definitionEngines == null ? 43 : $definitionEngines.hashCode());
-    final Object $eventProcessRoles = getEventProcessRoles();
-    result = result * PRIME + ($eventProcessRoles == null ? 43 : $eventProcessRoles.hashCode());
     final Object $cloudUsers = getCloudUsers();
     result = result * PRIME + ($cloudUsers == null ? 43 : $cloudUsers.hashCode());
     final Object $cloudTenantAuthorizations = getCloudTenantAuthorizations();
@@ -132,13 +122,6 @@ public class GlobalCacheConfiguration {
         : !this$definitionEngines.equals(other$definitionEngines)) {
       return false;
     }
-    final Object this$eventProcessRoles = getEventProcessRoles();
-    final Object other$eventProcessRoles = other.getEventProcessRoles();
-    if (this$eventProcessRoles == null
-        ? other$eventProcessRoles != null
-        : !this$eventProcessRoles.equals(other$eventProcessRoles)) {
-      return false;
-    }
     final Object this$cloudUsers = getCloudUsers();
     final Object other$cloudUsers = other.getCloudUsers();
     if (this$cloudUsers == null
@@ -169,8 +152,6 @@ public class GlobalCacheConfiguration {
         + getDefinitions()
         + ", definitionEngines="
         + getDefinitionEngines()
-        + ", eventProcessRoles="
-        + getEventProcessRoles()
         + ", cloudUsers="
         + getCloudUsers()
         + ", cloudTenantAuthorizations="
