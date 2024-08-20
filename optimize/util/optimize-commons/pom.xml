@@ -77,7 +77,7 @@
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.174</version>
+      <version>4.8.175</version>
     </dependency>
 
     <!-- Logging -->
