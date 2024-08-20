@@ -50,7 +50,6 @@ jobs:
           GIT_COMMIT_HASH=$(git rev-parse ${{ inputs.branch }})
           echo "GIT_COMMIT_HASH=$GIT_COMMIT_HASH" >> $GITHUB_ENV
           echo "IMAGE_TAG=registry.camunda.cloud/team-camunda/optimize:pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
-          echo "IMAGE_TAG=registry.camunda.cloud/team-camunda/optimize:pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
 
       #########################################################################
       # Setup: read java version from pom
