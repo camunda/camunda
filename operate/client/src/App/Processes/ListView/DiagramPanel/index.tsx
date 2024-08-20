@@ -13,10 +13,8 @@ import {deleteSearchParams} from 'modules/utils/filter';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 
 import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
-import {Restricted} from 'modules/components/Restricted';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {ProcessOperations} from '../ProcessOperations';
-import {PanelHeader, Section} from './styled';
+import {Section} from './styled';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {Diagram} from 'modules/components/Diagram';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
@@ -24,12 +22,12 @@ import {observer} from 'mobx-react';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.list';
-import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
 import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
 import {processStatisticsBatchModificationStore} from 'modules/stores/processStatistics/processStatistics.batchModification';
 import {BatchModificationNotification} from './BatchModificationNotification';
+import {DiagramHeader} from './DiagramHeader';
 
 const OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE = 'batchModificationsBadge';
 
@@ -61,8 +59,8 @@ const DiagramPanel: React.FC = observer(() => {
 
   const isVersionSelected = version !== undefined && version !== 'all';
 
-  const {bpmnProcessId, processName} =
-    processesStore.getSelectedProcessDetails();
+  const processDetails = processesStore.getSelectedProcessDetails();
+  const {processName} = processDetails;
 
   const isDiagramLoading =
     processXmlStore.state.status === 'fetching' ||
@@ -130,29 +128,12 @@ const DiagramPanel: React.FC = observer(() => {
 
   return (
     <Section>
-      <PanelHeader title={processName} ref={panelHeaderRef}>
-        <>
-          <CopiableProcessID bpmnProcessId={bpmnProcessId} />
-          {isVersionSelected && processId !== undefined && (
-            <Restricted
-              scopes={['write']}
-              resourceBasedRestrictions={{
-                scopes: ['DELETE'],
-                permissions: processesStore.getPermissions(
-                  bpmnProcessId,
-                  tenant,
-                ),
-              }}
-            >
-              <ProcessOperations
-                processDefinitionId={processId}
-                processName={processName}
-                processVersion={version}
-              />
-            </Restricted>
-          )}
-        </>
-      </PanelHeader>
+      <DiagramHeader
+        processDetails={processDetails}
+        processDefinitionId={processId}
+        isVersionSelected={isVersionSelected}
+        panelHeaderRef={panelHeaderRef}
+      />
       <DiagramShell
         status={getStatus()}
         emptyMessage={
