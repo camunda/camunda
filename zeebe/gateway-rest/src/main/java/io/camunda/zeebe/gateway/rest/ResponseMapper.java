@@ -9,8 +9,11 @@ package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.service.DocumentServices.DocumentReferenceResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentReference;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResponse;
 import io.camunda.zeebe.msgpack.value.LongValue;
@@ -19,6 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRec
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -68,6 +72,27 @@ public final class ResponseMapper {
             .tenantId(brokerResponse.getTenantId())
             .processInstanceKey(brokerResponse.getProcessInstanceKey());
     return new ResponseEntity<>(response, HttpStatus.OK);
+  }
+
+  public static ResponseEntity<Object> toDocumentReference(
+      final DocumentReferenceResponse response) {
+    final var internalMetadata = response.metadata();
+    final var externalMetadata =
+        new DocumentMetadata()
+            .expiresAt(
+                Optional.ofNullable(internalMetadata.expiresAt())
+                    .map(Object::toString)
+                    .orElse(null))
+            .fileName(internalMetadata.fileName())
+            .contentType(internalMetadata.contentType());
+    Optional.ofNullable(internalMetadata.additionalProperties())
+        .ifPresent(map -> map.forEach(externalMetadata::putAdditionalProperty));
+    final var reference =
+        new DocumentReference()
+            .documentId(response.documentId())
+            .storeId(response.storeId())
+            .metadata(externalMetadata);
+    return new ResponseEntity<>(reference, HttpStatus.CREATED);
   }
 
   static class RestJobActivationResult implements JobActivationResult<JobActivationResponse> {
