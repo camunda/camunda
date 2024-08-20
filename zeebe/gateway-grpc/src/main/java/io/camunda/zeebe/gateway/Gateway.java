@@ -38,6 +38,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.TlsConfigUtil;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import io.grpc.BindableService;
 import io.grpc.Server;
@@ -261,32 +262,9 @@ public final class Gateway implements CloseableSilently {
   private void setSecurityConfig(final ServerBuilder<?> serverBuilder, final SecurityCfg security) {
     final var certificateChainPath = security.getCertificateChainPath();
     final var privateKeyPath = security.getPrivateKeyPath();
+    final var keyStorePath = security.getKeyStore().getFilePath();
 
-    if (certificateChainPath == null) {
-      throw new IllegalArgumentException(
-          "Expected to find a valid path to a certificate chain but none was found. "
-              + "Edit the gateway configuration file to provide one or to disable TLS.");
-    }
-
-    if (privateKeyPath == null) {
-      throw new IllegalArgumentException(
-          "Expected to find a valid path to a private key but none was found. "
-              + "Edit the gateway configuration file to provide one or to disable TLS.");
-    }
-
-    if (!certificateChainPath.exists()) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected to find a certificate chain file at the provided location '%s' but none was found.",
-              certificateChainPath));
-    }
-
-    if (!privateKeyPath.exists()) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected to find a private key file at the provided location '%s' but none was found.",
-              privateKeyPath));
-    }
+    TlsConfigUtil.validateTlsConfig(certificateChainPath, privateKeyPath, keyStorePath);
 
     serverBuilder.useTransportSecurity(certificateChainPath, privateKeyPath);
   }
