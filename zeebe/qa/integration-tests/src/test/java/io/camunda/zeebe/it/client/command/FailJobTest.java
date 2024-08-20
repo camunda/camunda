@@ -11,14 +11,11 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
-import io.camunda.zeebe.client.api.command.ClientStatusException;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -27,12 +24,10 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -41,8 +36,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @AutoCloseResources
 public final class FailJobTest {
 
-  @AutoCloseResource
-  ZeebeClient client;
+  @AutoCloseResource ZeebeClient client;
 
   @TestZeebe
   final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
@@ -111,11 +105,7 @@ public final class FailJobTest {
 
     // when
     final Duration backoffTimeout = Duration.ofSeconds(30);
-    getCommand(client, useRest, jobKey)
-        .retries(1)
-        .retryBackoff(backoffTimeout)
-        .send()
-        .join();
+    getCommand(client, useRest, jobKey).retries(1).retryBackoff(backoffTimeout).send().join();
 
     // then
     final Record<JobRecordValue> beforeRecurRecord =
@@ -139,18 +129,14 @@ public final class FailJobTest {
     final var expectedMessage =
         String.format("Expected to fail job with key '%d', but no such job was found", jobKey);
 
-    assertThatThrownBy(
-            () -> getCommand(client, useRest, jobKey).retries(1).send().join())
+    assertThatThrownBy(() -> getCommand(client, useRest, jobKey).retries(1).send().join())
         .hasMessageContaining(expectedMessage);
   }
 
-  private ActivatedJob activateJob(final ZeebeClient client, final boolean useRest, final String jobType) {
+  private ActivatedJob activateJob(
+      final ZeebeClient client, final boolean useRest, final String jobType) {
     final var activateResponse =
-        getActivateCommand(client, useRest)
-            .jobType(jobType)
-            .maxJobsToActivate(1)
-            .send()
-            .join();
+        getActivateCommand(client, useRest).jobType(jobType).maxJobsToActivate(1).send().join();
 
     assertThat(activateResponse.getJobs())
         .describedAs("Expected one job to be activated")
