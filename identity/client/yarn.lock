@@ -354,16 +354,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/icons-react@npm:^11.46.0":
-  version: 11.46.0
-  resolution: "@carbon/icons-react@npm:11.46.0"
+"@carbon/icons-react@npm:^11.47.1":
+  version: 11.47.1
+  resolution: "@carbon/icons-react@npm:11.47.1"
   dependencies:
     "@carbon/icon-helpers": "npm:^10.50.0"
     "@ibm/telemetry-js": "npm:^1.5.0"
     prop-types: "npm:^15.7.2"
   peerDependencies:
     react: ">=16"
-  checksum: 10c0/b5259a325dbfef7bde7cdb4259a36b980471cf325b274b4bc1430f3934ce7e4fad301b4a107e840bedae357f796c4be0cc271cfbd00c75cdd9813b1ceec6808b
+  checksum: 10c0/005f67160ae29454986e064d0be2425a8322ef30037c862005be4499d4623da574272bef6d0e7d33bc1ca7565be5cd1edffe79d24650adaf95c5ec45caef573c
   languageName: node
   linkType: hard
 
@@ -385,15 +385,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/react@npm:1.63.2":
-  version: 1.63.2
-  resolution: "@carbon/react@npm:1.63.2"
+"@carbon/react@npm:1.64.1":
+  version: 1.64.1
+  resolution: "@carbon/react@npm:1.64.1"
   dependencies:
     "@babel/runtime": "npm:^7.24.7"
     "@carbon/feature-flags": "npm:^0.21.0"
-    "@carbon/icons-react": "npm:^11.46.0"
+    "@carbon/icons-react": "npm:^11.47.1"
     "@carbon/layout": "npm:^11.24.0"
-    "@carbon/styles": "npm:^1.62.0"
+    "@carbon/styles": "npm:^1.63.1"
     "@floating-ui/react": "npm:^0.26.0"
     "@ibm/telemetry-js": "npm:^1.5.0"
     classnames: "npm:2.5.1"
@@ -415,13 +415,13 @@ __metadata:
     react: ^16.8.6 || ^17.0.1 || ^18.2.0
     react-dom: ^16.8.6 || ^17.0.1 || ^18.2.0
     sass: ^1.33.0
-  checksum: 10c0/32ecd5a80aa6076e6989b9b10e627a9560560ae42139b360cae259a9bb00a0a2568d17feef0c401331f4af5be82fcfa3d9c4427e7fd6e7e36b53a987cb47d6cb
+  checksum: 10c0/06898db06726958051346e606ef9944649ed713da02f724cfd45b6abaae983602fa89991aefd19a00fee452961ceefd5acf5a00e89d536451b2362c818dcfb04
   languageName: node
   linkType: hard
 
-"@carbon/styles@npm:^1.62.0":
-  version: 1.62.0
-  resolution: "@carbon/styles@npm:1.62.0"
+"@carbon/styles@npm:^1.63.1":
+  version: 1.63.1
+  resolution: "@carbon/styles@npm:1.63.1"
   dependencies:
     "@carbon/colors": "npm:^11.24.0"
     "@carbon/feature-flags": "npm:^0.21.0"
@@ -437,7 +437,7 @@ __metadata:
   peerDependenciesMeta:
     sass:
       optional: true
-  checksum: 10c0/1b95f24a5813bc4bec8273f706dd09d8e7ce8c7c06eeaecf801f65eca1f2b51507602dff1f706bcf98dbeb6b1e62a534c9fd7042bcc4e2df0cd002cfc00a1f3e
+  checksum: 10c0/762d974c024a90fb19e4950e431202f6450d6eee9c35ac1dfa9c7ba2fb38507dbdb234f346427143dd8fb422f770e8da1226d201e033954ec26ccad8c4d083b1
   languageName: node
   linkType: hard
 
@@ -2500,7 +2500,7 @@ __metadata:
   resolution: "identity-frontend@workspace:."
   dependencies:
     "@camunda/camunda-composite-components": "npm:0.8.1"
-    "@carbon/react": "npm:1.63.2"
+    "@carbon/react": "npm:1.64.1"
     "@types/event-source-polyfill": "npm:1.0.5"
     "@types/node": "npm:20.16.1"
     "@types/react": "npm:18.3.3"

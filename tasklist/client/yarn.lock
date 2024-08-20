@@ -365,10 +365,10 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
-"@carbon/icons-react@^11.46.0":
-  version "11.46.0"
-  resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.46.0.tgz#46213b60de49b9d5fd908c2b0958eb54efafd61e"
-  integrity sha512-LgQy/nt2ORu1XOL7Lt6KmfpBTxBILHiX69ogpJKWR8SWSKRlzb6DB41TtfRtes1f8ViJ1sG7xE4qcWOj4QfVHQ==
+"@carbon/icons-react@^11.47.1":
+  version "11.47.1"
+  resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.47.1.tgz#060ead788e61cdf9c9ef8cfe9ef25205e6048cbe"
+  integrity sha512-GHwOTi/UKkf55qhPhAr4csb6rrv2MpESP3L4LeuCTa61BCC0q1G01TvfoeXhZCoRhX8OvgYKrD8STuRq54+G3A==
   dependencies:
     "@carbon/icon-helpers" "^10.50.0"
     "@ibm/telemetry-js" "^1.5.0"
@@ -395,16 +395,16 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
-"@carbon/react@1.63.2":
-  version "1.63.2"
-  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.63.2.tgz#676c0130634c60bbf0cae016a06ab988c3918e4b"
-  integrity sha512-n+QxNaSnp+DcDrqaFicZeKIY0sAJc32TO1Nn+ZMf2WTAbVsCbONafE9FjywVQIfZx/5b+JXOMUIW1w2eFh4yCw==
+"@carbon/react@1.64.1":
+  version "1.64.1"
+  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.64.1.tgz#b0bb29498d1be1990466cd54e8e058227b3d824c"
+  integrity sha512-On7QcOzFR3j6wqA60XrZABD4iX49ipioD1qns4yH4xG/OOuFbmwJHVhER3wxGsCc3uHhFeELG7Ih11U+SDolDA==
   dependencies:
     "@babel/runtime" "^7.24.7"
     "@carbon/feature-flags" "^0.21.0"
-    "@carbon/icons-react" "^11.46.0"
+    "@carbon/icons-react" "^11.47.1"
     "@carbon/layout" "^11.24.0"
-    "@carbon/styles" "^1.62.0"
+    "@carbon/styles" "^1.63.1"
     "@floating-ui/react" "^0.26.0"
     "@ibm/telemetry-js" "^1.5.0"
     classnames "2.5.1"
@@ -423,10 +423,10 @@
     use-resize-observer "^6.0.0"
     window-or-global "^1.0.1"
 
-"@carbon/styles@^1.62.0":
-  version "1.62.0"
-  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.62.0.tgz#c8abc8ae4e7af1504aa7c30a86edd0d6af55f69f"
-  integrity sha512-JvtdkzOLepeqUahSAH7TXZsrSiz/+hQ+Gus5E+ODNzvn089nAgXW37bSFQJ7TENeUWH3HkuGEazJXYCRYiQtsA==
+"@carbon/styles@^1.63.1":
+  version "1.63.1"
+  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.63.1.tgz#00ccfb6b869a16dd36fe6c4127118ccc28d99eb8"
+  integrity sha512-PO1S1fR1iUrv9voCYnSP3gv8KTwKR7RfoMqsDKcAScYRTIa18Aa9hip9oyXQ0cHHAY+LYOEFXSQbuhos82Ozyg==
   dependencies:
     "@carbon/colors" "^11.24.0"
     "@carbon/feature-flags" "^0.21.0"
