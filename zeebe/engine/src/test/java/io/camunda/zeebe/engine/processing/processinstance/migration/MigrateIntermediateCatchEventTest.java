@@ -14,9 +14,12 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
@@ -193,5 +196,74 @@ public class MigrateIntermediateCatchEventTest {
         .hasBpmnProcessId(targetProcessId)
         .describedAs("Expect that the correlation key is not re-evaluated")
         .hasCorrelationKey("key1");
+  }
+
+  @Test
+  public void shouldWriteTimerInstanceMigratedEvent() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .intermediateCatchEvent("catch1", c -> c.timerWithDuration("PT5M"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .intermediateCatchEvent("catch2", c -> c.timerWithDuration("PT10M"))
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    final TimerRecordValue timerRecord =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue();
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("catch1", "catch2")
+        .migrate();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.timerRecords(TimerIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that the target element id is updated")
+        .hasTargetElementId("catch2")
+        .describedAs("Expect that the due date is not changed")
+        .hasDueDate(timerRecord.getDueDate());
+
+    engine.increaseTime(Duration.ofMinutes(6));
+
+    Assertions.assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that the target element id is updated")
+        .hasTargetElementId("catch2")
+        .describedAs("Expect that the due date is not changed")
+        .hasDueDate(timerRecord.getDueDate());
   }
 }
