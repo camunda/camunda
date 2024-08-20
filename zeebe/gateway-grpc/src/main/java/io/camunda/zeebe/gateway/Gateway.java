@@ -47,8 +47,10 @@ import io.grpc.ServerInterceptor;
 import io.grpc.ServerInterceptors;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.StatusException;
+import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.protobuf.StatusProto;
+import io.netty.handler.ssl.SslContextBuilder;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
@@ -224,7 +226,7 @@ public final class Gateway implements CloseableSilently {
     builder.executor(grpcExecutor);
   }
 
-  private void applySecurityConfiguration(final ServerBuilder<?> serverBuilder) {
+  private void applySecurityConfiguration(final NettyServerBuilder serverBuilder) {
     final SecurityCfg securityCfg = gatewayCfg.getSecurity();
     if (securityCfg.isEnabled()) {
       setSecurityConfig(serverBuilder, securityCfg);
@@ -259,14 +261,30 @@ public final class Gateway implements CloseableSilently {
         .permitKeepAliveWithoutCalls(false);
   }
 
-  private void setSecurityConfig(final ServerBuilder<?> serverBuilder, final SecurityCfg security) {
+  private void setSecurityConfig(
+      final NettyServerBuilder serverBuilder, final SecurityCfg security) {
     final var certificateChainPath = security.getCertificateChainPath();
     final var privateKeyPath = security.getPrivateKeyPath();
     final var keyStorePath = security.getKeyStore().getFilePath();
+    final var keyStorePassword = security.getKeyStore().getPassword();
 
     TlsConfigUtil.validateTlsConfig(certificateChainPath, privateKeyPath, keyStorePath);
 
-    serverBuilder.useTransportSecurity(certificateChainPath, privateKeyPath);
+    try {
+      final SslContextBuilder sslContextBuilder;
+      if (keyStorePath != null) {
+        final var privateKey = TlsConfigUtil.getPrivateKey(keyStorePath, keyStorePassword);
+        final var certChain = TlsConfigUtil.getCertificateChain(keyStorePath, keyStorePassword);
+        sslContextBuilder = SslContextBuilder.forServer(privateKey, certChain);
+      } else {
+        sslContextBuilder = SslContextBuilder.forServer(certificateChainPath, privateKeyPath);
+      }
+      final var sslContext = GrpcSslContexts.configure(sslContextBuilder).build();
+      serverBuilder.sslContext(sslContext);
+    } catch (final Exception e) {
+      throw new IllegalArgumentException(
+          "Failed to start messaging service; invalid server TLS configuration", e);
+    }
   }
 
   @Override
