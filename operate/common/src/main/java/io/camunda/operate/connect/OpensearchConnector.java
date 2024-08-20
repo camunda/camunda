@@ -137,7 +137,7 @@ public class OpensearchConnector {
   public OpenSearchAsyncClient createAsyncOsClient(final OpensearchProperties osConfig) {
     LOGGER.debug("Creating Async OpenSearch connection...");
     LOGGER.debug("Creating OpenSearch connection...");
-    if (isAws()) {
+    if (hasAwsCredentials()) {
       return getAwsAsyncClient(osConfig);
     }
     final HttpHost host = getHttpHost(osConfig);
@@ -186,7 +186,11 @@ public class OpensearchConnector {
     return openSearchAsyncClient;
   }
 
-  private boolean isAws() {
+  private boolean hasAwsCredentials() {
+    if (!operateProperties.getOpensearch().isAwsEnabled()) {
+      LOGGER.info("AWS Credentials are disabled. Using basic auth.");
+      return false;
+    }
     final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
     try {
       credentialsProvider.resolveCredentials();
@@ -200,7 +204,7 @@ public class OpensearchConnector {
 
   public OpenSearchClient createOsClient(final OpensearchProperties osConfig) {
     LOGGER.debug("Creating OpenSearch connection...");
-    if (isAws()) {
+    if (hasAwsCredentials()) {
       return getAwsClient(osConfig);
     }
     final HttpHost host = getHttpHost(osConfig);
