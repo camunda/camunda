@@ -42,6 +42,7 @@
     <version.camunda>7.22.0-SNAPSHOT</version.camunda>
     <version.camunda-license-check>2.9.0</version.camunda-license-check>
     <version.checkstyle>10.17.0</version.checkstyle>
+    <version.commons-beanutils>1.9.4</version.commons-beanutils>
     <version.commons-lang>3.16.0</version.commons-lang>
     <version.commons-logging>1.3.4</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
@@ -1327,6 +1328,18 @@
       </dependency>
 
       <dependency>
+        <groupId>commons-beanutils</groupId>
+        <artifactId>commons-beanutils</artifactId>
+        <version>${version.commons-beanutils}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>commons-collections</groupId>
+            <artifactId>commons-collections</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-annotations</artifactId>
         <version>${version.spotbugs}</version>
@@ -1422,6 +1435,12 @@
       <dependency>
         <groupId>org.wiremock</groupId>
         <artifactId>wiremock</artifactId>
+        <version>${version.wiremock}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.wiremock</groupId>
+        <artifactId>wiremock-standalone</artifactId>
         <version>${version.wiremock}</version>
       </dependency>
 
