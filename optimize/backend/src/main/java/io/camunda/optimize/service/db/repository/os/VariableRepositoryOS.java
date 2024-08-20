@@ -24,7 +24,6 @@ import static io.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInst
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 
-import io.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import io.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
@@ -112,8 +111,8 @@ public class VariableRepositoryOS implements VariableRepository {
         processInstanceIds.stream()
             .map(
                 processInstanceId -> {
-                  final UpdateOperation<DecisionDefinitionOptimizeDto> updateOperation =
-                      new UpdateOperation.Builder<DecisionDefinitionOptimizeDto>()
+                  final UpdateOperation<Void> updateOperation =
+                      new UpdateOperation.Builder<Void>()
                           .index(
                               indexNameService.getOptimizeIndexAliasForIndex(
                                   getProcessInstanceIndexAliasName(processDefinitionKey)))
