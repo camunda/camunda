@@ -109,6 +109,17 @@ public class MigrateMessageEventSubprocessTest {
         .hasElementId("sub2")
         .describedAs("Expect that version number did not change")
         .hasVersion(1);
+
+    Assertions.assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("msg")
+                .withCorrelationKey(helper.getCorrelationValue())
+                .skip(1)
+                .exists())
+        .describedAs(
+            "Expect that no message subscription is created after migration because it is an interrupting subprocess")
+        .isFalse();
   }
 
   @Test
