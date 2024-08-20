@@ -22,7 +22,7 @@ steps:
 - name: Start Cambpm
   uses: ./.github/actions/compose
   with:
-    .github/actions/compose/docker-compose.cambpm.yml
+    compose_file: .github/actions/compose/docker-compose.cambpm.yml
     project_name: cambpm
   env:
     CAMBPM_VERSION: 7.19.0
