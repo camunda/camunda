@@ -311,7 +311,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     BuilderUtils.applyIfNotNull(
         properties,
         DEFAULT_REQUEST_TIMEOUT,
-        value -> defaultRequestTimeout(Duration.ofSeconds(Long.parseLong(value))));
+        value -> defaultRequestTimeout(Duration.ofMillis(Long.parseLong(value))));
 
     BuilderUtils.applyIfNotNull(
         properties,

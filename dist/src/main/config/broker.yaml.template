@@ -526,7 +526,7 @@
           # enabled: false # If enabled, throttle the write rate based on exporting backlog
           # acceptableBacklog: 100000 # when exporting is a bottleneck, the write rate is throttled to keep the backlog at this value
           # minimumLimit: 100 # Even when exporting is fully blocked, always allow this many writes per second
-          # resolution: 15s # How often to adjust the the throttling
+          # resolution: 15s # How often to adjust the throttling
 
     # backpressure:
       # Configure backpressure below.
