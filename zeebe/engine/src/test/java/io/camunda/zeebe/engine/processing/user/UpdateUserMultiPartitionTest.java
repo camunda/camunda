@@ -34,7 +34,6 @@ public class UpdateUserMultiPartitionTest {
 
   @Test
   public void shouldDistributeUserUpdateCommand() {
-    // when
     final var username = UUID.randomUUID().toString();
 
     ENGINE
