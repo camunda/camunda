@@ -57,13 +57,6 @@ export async function createNewReport(t) {
   await toggleReportAutoPreviewUpdate(t);
 }
 
-export async function createNewDecisionReport(t) {
-  await t.click(Common.createNewButton);
-  await t.hover(Common.newReportOption);
-  await t.click(Common.submenuOption('Decision report'));
-  await toggleReportAutoPreviewUpdate(t);
-}
-
 export async function selectVersion(t, selector, version) {
   await t.click(selector.find('.Popover button'));
   await t.click('.VersionPopover');

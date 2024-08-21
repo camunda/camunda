@@ -9,15 +9,15 @@ Object {
       "text": "Remove",
     },
   ],
-  "className": "decision",
+  "className": "process",
   "entityType": "process",
   "icon": <ForwardRef(TableSplit) />,
-  "id": "decision:defKey2",
+  "id": "process:defKey1",
   "meta": Array [
     false,
   ],
-  "name": "decision report",
-  "type": "Decision table",
+  "name": "definition 1",
+  "type": "Process",
 }
 `;
 
@@ -80,7 +80,7 @@ exports[`should match snapshot 1`] = `
           ],
           "className": "process",
           "entityType": "process",
-          "icon": <ForwardRef(DecisionTree) />,
+          "icon": <ForwardRef(TableSplit) />,
           "id": "process:defKey",
           "meta": Array [
             "Not defined, Sales, (Unauthorized tenant)",
@@ -101,15 +101,15 @@ exports[`should match snapshot 1`] = `
               "text": "Remove",
             },
           ],
-          "className": "decision",
+          "className": "process",
           "entityType": "process",
           "icon": <ForwardRef(TableSplit) />,
-          "id": "decision:defKey2",
+          "id": "process:defKey1",
           "meta": Array [
-            "Not defined, Marketing",
+            "Sales",
           ],
-          "name": "decision report",
-          "type": "Decision table",
+          "name": "definition 1",
+          "type": "Process",
         },
       ]
     }

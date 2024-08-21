@@ -12,17 +12,12 @@ import {t} from 'translation';
 
 interface ShowInstanceCountProps {
   showInstanceCount: boolean;
-  label: string;
   onChange: (change: {showInstanceCount: {$set: boolean}}) => void;
 }
 
-export default function ShowInstanceCount({
-  showInstanceCount,
-  onChange,
-  label,
-}: ShowInstanceCountProps) {
+export default function ShowInstanceCount({showInstanceCount, onChange}: ShowInstanceCountProps) {
   return (
-    <FormGroup legendText={t(`report.config.showCount.${label}`)} className="ShowInstanceCount">
+    <FormGroup legendText={t(`report.config.showCount.instance`)} className="ShowInstanceCount">
       <Toggle
         id="showInstanceCount"
         size="sm"

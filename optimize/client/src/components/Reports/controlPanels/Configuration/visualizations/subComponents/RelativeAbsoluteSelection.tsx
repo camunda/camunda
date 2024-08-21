@@ -14,7 +14,6 @@ interface RelativeAbsoluteSelectionProps {
   hideRelative?: boolean;
   absolute: boolean;
   relative: boolean;
-  reportType: string;
   onChange: (type: string, value: boolean) => void;
 }
 
@@ -22,7 +21,6 @@ export default function RelativeAbsoluteSelection({
   hideRelative,
   absolute,
   relative,
-  reportType,
   onChange,
 }: RelativeAbsoluteSelectionProps) {
   return (
@@ -42,7 +40,7 @@ export default function RelativeAbsoluteSelection({
           size="sm"
           toggled={relative}
           onToggle={(checked) => onChange('relative', checked)}
-          labelText={t('report.config.tooltips.showRelative.' + reportType).toString()}
+          labelText={t('report.config.tooltips.showRelative.process').toString()}
           hideLabel
         />
       )}

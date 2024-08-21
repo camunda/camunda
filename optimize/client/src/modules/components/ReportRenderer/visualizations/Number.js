@@ -22,10 +22,10 @@ import ProgressBar from './ProgressBar';
 import './Number.scss';
 
 export function Number({report, formatter, mightFail}) {
-  const {data, result, reportType} = report;
+  const {data, result} = report;
   const {targetValue, precision} = data.configuration;
   const [processVariable, setProcessVariable] = useState();
-  const processVariableReport = reportType === 'process' && data.view.entity === 'variable';
+  const processVariableReport = data.view.entity === 'variable';
   const isMultiMeasure = result?.measures.length > 1;
 
   useEffect(() => {
@@ -105,16 +105,13 @@ export function Number({report, formatter, mightFail}) {
           } else if (measure.property === 'percentage') {
             viewString = t('report.percentageOfInstances');
           } else {
-            const config = reportConfig[reportType];
-            const view = config.view.find(({matcher}) => matcher(data));
+            const view = reportConfig.view.find(({matcher}) => matcher(data));
             let measureString = '';
-            if (reportType === 'process') {
-              measureString = t(
-                'report.view.' + (measure.property === 'frequency' ? 'count' : 'duration')
-              );
-              if (view.key === 'incident' && measure.property === 'duration') {
-                measureString = t('report.view.resolutionDuration');
-              }
+            measureString = t(
+              'report.view.' + (measure.property === 'frequency' ? 'count' : 'duration')
+            );
+            if (view.key === 'incident' && measure.property === 'duration') {
+              measureString = t('report.view.resolutionDuration');
             }
 
             viewString = `${view.label()} ${measureString}`;
