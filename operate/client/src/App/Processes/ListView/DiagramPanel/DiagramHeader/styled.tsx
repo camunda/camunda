@@ -6,11 +6,29 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {styles} from '@carbon/elements';
 import styled from 'styled-components';
 import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
 
 const PanelHeader = styled(BasePanelHeader)`
   padding-right: 0;
+  gap: var(--cds-spacing-09);
 `;
 
-export {PanelHeader};
+const Dl = styled.dl`
+  overflow: hidden;
+`;
+
+const Dt = styled.dt`
+  ${styles.label01};
+  color: var(--cds-text-secondary);
+`;
+
+const Dd = styled.dd`
+  ${styles.label02};
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+`;
+
+export {PanelHeader, Dl, Dt, Dd};

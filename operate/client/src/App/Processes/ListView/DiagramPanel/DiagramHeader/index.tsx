@@ -7,16 +7,19 @@
  */
 
 import {observer} from 'mobx-react';
-import {PanelHeader} from './styled';
+import isNil from 'lodash/isNil';
 import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
 import {ProcessOperations} from '../../ProcessOperations';
 import {Restricted} from 'modules/components/Restricted';
 import {processesStore} from 'modules/stores/processes/processes.list';
+import {PanelHeader, Dd, Dl, Dt} from './styled';
+import {IS_VERSION_TAG_ENABLED} from 'modules/feature-flags';
 
 type ProcessDetails = {
   bpmnProcessId?: string;
   processName: string;
   version?: string;
+  versionTag?: string | null;
 };
 
 type DiagramHeaderProps = {
@@ -24,7 +27,7 @@ type DiagramHeaderProps = {
   processDefinitionId?: string;
   tenant?: string;
   isVersionSelected: boolean;
-  panelHeaderRef: React.RefObject<HTMLDivElement>;
+  panelHeaderRef?: React.RefObject<HTMLDivElement>;
 };
 
 const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
@@ -35,33 +38,57 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
     isVersionSelected,
     panelHeaderRef,
   }) => {
-    const {processName, bpmnProcessId, version} = processDetails;
+    const {processName, bpmnProcessId, version, versionTag} = processDetails;
+    const hasVersionTag = !isNil(versionTag);
+    const hasSelectedProcess = bpmnProcessId !== undefined;
 
     return (
-      <PanelHeader title={processName} ref={panelHeaderRef}>
-        <>
-          <CopiableProcessID bpmnProcessId={bpmnProcessId} />
-          {isVersionSelected && processDefinitionId !== undefined && (
-            <Restricted
-              scopes={['write']}
-              resourceBasedRestrictions={{
-                scopes: ['DELETE'],
-                permissions: processesStore.getPermissions(
-                  bpmnProcessId,
-                  tenant,
-                ),
-              }}
-            >
-              {version !== undefined && (
-                <ProcessOperations
-                  processDefinitionId={processDefinitionId}
-                  processName={processName}
-                  processVersion={version}
-                />
-              )}
-            </Restricted>
-          )}
-        </>
+      <PanelHeader
+        title={!hasSelectedProcess ? 'Process' : undefined}
+        ref={panelHeaderRef}
+      >
+        {hasSelectedProcess && (
+          <>
+            <Dl>
+              <Dt>Process name</Dt>
+              <Dd title={processName} role="heading">
+                {processName}
+              </Dd>
+            </Dl>
+
+            <Dl>
+              <Dt>Process ID</Dt>
+              <Dd>
+                <CopiableProcessID bpmnProcessId={bpmnProcessId} />
+              </Dd>
+            </Dl>
+
+            {hasVersionTag && IS_VERSION_TAG_ENABLED && (
+              <Dl>
+                <Dt>Version Tag</Dt>
+                <Dd title={versionTag}>{versionTag}</Dd>
+              </Dl>
+            )}
+          </>
+        )}
+
+        {isVersionSelected && processDefinitionId !== undefined && (
+          <Restricted
+            scopes={['write']}
+            resourceBasedRestrictions={{
+              scopes: ['DELETE'],
+              permissions: processesStore.getPermissions(bpmnProcessId, tenant),
+            }}
+          >
+            {version !== undefined && (
+              <ProcessOperations
+                processDefinitionId={processDefinitionId}
+                processName={processName}
+                processVersion={version}
+              />
+            )}
+          </Restricted>
+        )}
       </PanelHeader>
     );
   },
