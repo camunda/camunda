@@ -14,6 +14,7 @@ jobs:
       identifier: camunda-helm-int
       camunda-helm-dir: camunda-platform-alpha
       test-enabled: true
+      deployment-ttl: '6h'
       caller-git-ref: main
       extra-values: |
         zeebe:
