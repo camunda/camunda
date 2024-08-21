@@ -9,7 +9,6 @@ package io.camunda.zeebe.it.auth;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.postgresql.hostchooser.HostRequirement.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -19,12 +18,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.sources.DefaultObjectMapperConfiguration;
 import io.camunda.service.UserServices;
-import io.camunda.service.entities.CamundaUserEntity;
-import io.camunda.service.entities.CamundaUserEntity.User;
+import io.camunda.service.entities.UserEntity;
+import io.camunda.service.entities.UserEntity.User;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
-import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserWithPasswordRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -72,16 +71,12 @@ public class BasicAuthIT {
             new SearchQueryResult<>(
                 1,
                 List.of(
-                    new CamundaUserEntity(
-                        new User(USERNAME, "", "", passwordEncoder.encode(PASSWORD)))),
+                    new UserEntity(new User(USERNAME, "", "", passwordEncoder.encode(PASSWORD)))),
                 null));
 
     content =
         objectMapper.writeValueAsString(
-            new CamundaUserWithPasswordRequest()
-                .username("demo")
-                .password("password")
-                .email("demo@e.c"));
+            new UserWithPasswordRequest().username("demo").password("password").email("demo@e.c"));
   }
 
   @Test
@@ -93,7 +88,7 @@ public class BasicAuthIT {
             .header("Authorization", "Basic " + Base64Util.encode(USERNAME + ":" + PASSWORD))
             .content(content);
     final MvcResult mvcResult =
-        mockMvc.perform(request).andExpect(status().isNoContent()).andReturn();
+        mockMvc.perform(request).andExpect(request().asyncStarted()).andReturn();
     mvcResult.getAsyncResult();
     mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isNoContent());
   }
