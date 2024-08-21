@@ -330,8 +330,21 @@ public final class ProcessInstanceMigrationPreconditions {
       final String elementId,
       final EnumSet<BpmnEventType> allowedEventTypes,
       final String errorTemplate) {
+    final AbstractFlowElement elementById =
+        sourceProcessDefinition.getProcess().getElementById(elementId);
+
+    if (!(ExecutableActivity.class.isAssignableFrom(elementById.getClass()))) {
+      // no event subprocess event check needed because the given element cannot contain an event
+      // subprocess
+      return;
+    }
+
     final List<ExecutableStartEvent> rejectedEvents =
-        sourceProcessDefinition.getProcess().getEventSubprocesses().stream()
+        sourceProcessDefinition
+            .getProcess()
+            .getElementById(elementId, ExecutableActivity.class)
+            .getEventSubprocesses()
+            .stream()
             .flatMap(sub -> sub.getStartEvents().stream())
             .filter(start -> !allowedEventTypes.contains(start.getEventType()))
             .toList();
