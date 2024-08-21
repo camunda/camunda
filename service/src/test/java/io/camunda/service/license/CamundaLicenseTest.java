@@ -15,6 +15,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import io.camunda.service.license.CamundaLicense.LicenseType;
 import java.util.HashMap;
 import java.util.Map;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
@@ -28,7 +29,6 @@ public class CamundaLicenseTest {
   private static final String LICENSE_TYPE_KEY = "licenseType";
   private static final String SELF_MANAGED_LICENSE_TYPE = "self-managed";
   private static final String SAAS_LICENSE_TYPE = "saas";
-  private static final String UNKNOWN_LICENSE_TYPE = "unknown";
   private static final String TEST_EXCEPTION_MESSAGE = "test exception";
 
   @Test
@@ -77,7 +77,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense(TEST_LICENSE);
 
     // then
-    assertEquals(SELF_MANAGED_LICENSE_TYPE, testLicense.getLicenseType());
+    assertEquals(LicenseType.SELFMANAGED, testLicense.getLicenseType());
   }
 
   @Test
@@ -95,7 +95,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense(TEST_LICENSE);
 
     // then
-    assertEquals(UNKNOWN_LICENSE_TYPE, testLicense.getLicenseType());
+    assertEquals(LicenseType.UNKNOWN, testLicense.getLicenseType());
   }
 
   @Test
@@ -114,7 +114,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense(TEST_LICENSE);
 
     // then
-    assertEquals(SAAS_LICENSE_TYPE, testLicense.getLicenseType());
+    assertEquals(LicenseType.SAAS, testLicense.getLicenseType());
     assertTrue(testLicense.isValid());
   }
 }
