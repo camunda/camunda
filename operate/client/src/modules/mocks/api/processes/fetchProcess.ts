@@ -6,7 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED = false;
-const IS_VERSION_TAG_ENABLED = false;
+import {mockGetRequest} from '../mockRequest';
 
-export {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED, IS_VERSION_TAG_ENABLED};
+const mockFetchProcess = (contextPath = '') =>
+  mockGetRequest(`${contextPath}/api/processes/:processId`);
+
+export {mockFetchProcess};

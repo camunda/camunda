@@ -6,7 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED = false;
-const IS_VERSION_TAG_ENABLED = false;
+import {Tag} from '@carbon/react';
+import styled from 'styled-components';
 
-export {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED, IS_VERSION_TAG_ENABLED};
+const VersionTag = styled(Tag)`
+  margin-left: 0;
+`;
+
+export {VersionTag};
