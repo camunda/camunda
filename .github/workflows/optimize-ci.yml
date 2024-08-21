@@ -56,47 +56,12 @@ jobs:
     secrets: inherit
 
   docker:
+    name: Optimize Build
     if: github.event_name == 'pull_request'
-    name: Docker
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
-
-    - name: Fetch main branch
-      run: git fetch origin main:refs/remote/origin/main
-
-    - name: "Read Java / Version Info"
-      id: pom-info
-      uses: YunaBraska/java-info-action@191c7fcb671125f85486b6fee92b17b180d8e0ab # 2.1.2
-
-    - name: Login to Harbor registry
-      uses: ./.github/actions/login-registry
-      with:
-        secrets: ${{ toJSON(secrets) }}
-
-    - name: Setup Maven
-      uses: ./.github/actions/setup-maven
-      with:
-        secrets: ${{ toJSON(secrets) }}
-
-    - name: Generate production .tar.gz
-      uses: ./.github/actions/run-maven
-      with:
-        parameters: -f optimize/pom.xml install -DskipTests -Dskip.docker -PrunAssembly
-
-    - name: Build and push Docker image
-      uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
-      with:
-        context: .
-        file: optimize.Dockerfile
-        provenance: false
-        build-args: |
-          VERSION=${{ steps.pom-info.outputs.project_version }}
-          REVISION=${{ github.event.pull_request.head.sha }}
-        tags: "registry.camunda.cloud/team-optimize/optimize:pr-${{ github.event.pull_request.head.sha }}"
-        push: true
+    uses: ./.github/workflows/optimize-ci-build-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref }}
 
   integration-tests:
     name: Integration Tests
