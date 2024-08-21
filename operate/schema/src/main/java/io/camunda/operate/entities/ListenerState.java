@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate;
+package io.camunda.operate.entities;
 
 public enum ListenerState {
   ACTIVE,
@@ -16,13 +16,16 @@ public enum ListenerState {
   UNKNOWN;
 
   public static ListenerState fromZeebeJobIntent(final String jobState) {
+    if (jobState == null) {
+      return UNKNOWN;
+    }
     final ListenerState result =
         switch (jobState) {
-          case "CREATED", "RETRIES_UPDATED", "MIGRATED" -> ACTIVE;
+          case "CREATED", "RETRIES_UPDATED", "MIGRATED", "UPDATED" -> ACTIVE;
           case "COMPLETED" -> COMPLETED;
           case "TIMED_OUT" -> TIMED_OUT;
           case "CANCELED" -> CANCELED;
-          case "FAILED", "FAIL" -> FAILED;
+          case "FAILED", "ERROR_THROWN" -> FAILED;
           default -> UNKNOWN;
         };
     return result;

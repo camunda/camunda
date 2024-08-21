@@ -344,7 +344,8 @@ public class OperationReader extends AbstractReader
     } catch (final IOException e) {
       final String message =
           String.format(
-              "Exception occurred, while searching for batch operation metadata.", e.getMessage());
+              "Exception occurred, while searching for batch operation metadata: %s",
+              e.getMessage());
       LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
