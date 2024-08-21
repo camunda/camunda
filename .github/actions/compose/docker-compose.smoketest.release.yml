@@ -36,7 +36,6 @@ services:
     environment:
       - TZ=Europe/Berlin
       - OPTIMIZE_API_ACCESS_TOKEN=secret
-      - OPTIMIZE_SUPER_USER_IDS=[demo]
       - OPTIMIZE_JAVA_OPTS=-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m
       - OPTIMIZE_ELASTICSEARCH_HOST=elasticsearch
       - OPTIMIZE_ELASTICSEARCH_HTTP_PORT=${ELASTIC_HTTP_PORT:-9200}
