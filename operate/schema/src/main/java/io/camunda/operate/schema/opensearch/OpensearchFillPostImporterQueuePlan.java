@@ -31,6 +31,7 @@ import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public class OpensearchFillPostImporterQueuePlan implements FillPostImporterQueuePlan {
 
@@ -54,7 +55,7 @@ public class OpensearchFillPostImporterQueuePlan implements FillPostImporterQueu
 
   public OpensearchFillPostImporterQueuePlan(
       final RichOpenSearchClient richOpenSearchClient,
-      final ObjectMapper objectMapper,
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper,
       final OperateProperties operateProperties,
       final MigrationProperties migrationProperties) {
     this.richOpenSearchClient = richOpenSearchClient;
@@ -64,26 +65,26 @@ public class OpensearchFillPostImporterQueuePlan implements FillPostImporterQueu
   }
 
   @Override
-  public FillPostImporterQueuePlan setListViewIndexName(String listViewIndexName) {
+  public FillPostImporterQueuePlan setListViewIndexName(final String listViewIndexName) {
     this.listViewIndexName = listViewIndexName;
     return this;
   }
 
   @Override
-  public FillPostImporterQueuePlan setIncidentsIndexName(String incidentsIndexName) {
+  public FillPostImporterQueuePlan setIncidentsIndexName(final String incidentsIndexName) {
     this.incidentsIndexName = incidentsIndexName;
     return this;
   }
 
   @Override
   public FillPostImporterQueuePlan setPostImporterQueueIndexName(
-      String postImporterQueueIndexName) {
+      final String postImporterQueueIndexName) {
     this.postImporterQueueIndexName = postImporterQueueIndexName;
     return this;
   }
 
   @Override
-  public FillPostImporterQueuePlan setSteps(List<Step> steps) {
+  public FillPostImporterQueuePlan setSteps(final List<Step> steps) {
     this.steps = steps;
     return this;
   }
@@ -121,7 +122,7 @@ public class OpensearchFillPostImporterQueuePlan implements FillPostImporterQueu
                         getIncidentEntities(incidentKeysFieldName, hits);
                     final var batchRequest = richOpenSearchClient.batch().newBatchRequest();
                     int index = 0;
-                    for (IncidentEntity incident : incidents) {
+                    for (final IncidentEntity incident : incidents) {
                       index++;
                       final PostImporterQueueEntity entity =
                           createPostImporterQueueEntity(incident, index);
@@ -134,7 +135,7 @@ public class OpensearchFillPostImporterQueuePlan implements FillPostImporterQueu
                   flowNodesWithIncidentsCount = hitsMetadata.total().value();
                 }
               });
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new MigrationException(e.getMessage(), e);
     }
   }
@@ -152,7 +153,7 @@ public class OpensearchFillPostImporterQueuePlan implements FillPostImporterQueu
   }
 
   private List<IncidentEntity> getIncidentEntities(
-      String incidentKeysFieldName, List<Hit<Long>> hits) {
+      final String incidentKeysFieldName, final List<Hit<Long>> hits) {
     final var incidentKeys = hits.stream().map(Hit::source).toList();
     final var request =
         searchRequestBuilder(incidentKeysFieldName + "*")
@@ -163,7 +164,7 @@ public class OpensearchFillPostImporterQueuePlan implements FillPostImporterQueu
   }
 
   private PostImporterQueueEntity createPostImporterQueueEntity(
-      IncidentEntity incident, long index) {
+      final IncidentEntity incident, final long index) {
     return new PostImporterQueueEntity()
         .setId(String.format("%s-%s", incident.getId(), incident.getState().getZeebeIntent()))
         .setCreationTime(OffsetDateTime.now())
