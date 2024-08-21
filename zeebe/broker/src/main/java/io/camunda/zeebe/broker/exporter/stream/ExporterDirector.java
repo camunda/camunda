@@ -101,6 +101,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     logStream = Objects.requireNonNull(context.getLogStream());
     partitionId = logStream.getPartitionId();
     meterRegistry = context.getMeterRegistry();
+    clock = context.getClock();
     containers =
         context.getDescriptors().entrySet().stream()
             .map(
@@ -110,11 +111,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                         partitionId,
                         descriptorEntry.getValue(),
                         meterRegistry,
-                        context.getClock()))
+                        clock))
             .collect(Collectors.toCollection(ArrayList::new));
     metrics = new ExporterMetrics(partitionId);
     metrics.initializeExporterState(exporterPhase);
-    recordExporter = new RecordExporter(metrics, containers, partitionId);
+    recordExporter = new RecordExporter(metrics, containers, partitionId, clock);
     exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
     recordWrapStrategy = new EndlessRetryStrategy(actor);
     zeebeDb = context.getZeebeDb();
@@ -124,7 +125,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     exporterMode = context.getExporterMode();
     distributionInterval = context.getDistributionInterval();
     positionsToSkipFilter = context.getPositionsToSkipFilter();
-    clock = context.getClock();
   }
 
   public ActorFuture<Void> startAsync(final ActorSchedulingService actorSchedulingService) {

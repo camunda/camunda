@@ -11,9 +11,9 @@ import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
+import java.time.InstantSource;
 import java.util.List;
 
 final class RecordExporter {
@@ -26,14 +26,17 @@ final class RecordExporter {
 
   private boolean shouldExport;
   private int exporterIndex;
+  private final InstantSource clock;
 
   RecordExporter(
       final ExporterMetrics exporterMetrics,
       final List<ExporterContainer> containers,
-      final int partitionId) {
+      final int partitionId,
+      final InstantSource clock) {
     this.containers = containers;
     typedEvent = new TypedRecordImpl(partitionId);
     this.exporterMetrics = exporterMetrics;
+    this.clock = clock;
   }
 
   void wrap(final LoggedEvent rawEvent) {
@@ -55,8 +58,13 @@ final class RecordExporter {
     }
 
     final ValueType valueType = typedEvent.getValueType();
-    exporterMetrics.exportingLatency(
-        valueType, typedEvent.getTimestamp(), ActorClock.currentTimeMillis());
+    // exporting latency tracks time
+    // from record written to exporting of record started
+    final long currentMillis = clock.millis();
+    // we track this here already, even if it is not successful as otherwise
+    // we might get no metric at all when exporting is not possible
+    // this allows us to observe that exporting latency is increasing
+    exporterMetrics.exportingLatency(valueType, typedEvent.getTimestamp(), currentMillis);
 
     final int exportersCount = containers.size();
 
