@@ -9,7 +9,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {DefinitionSelection, Button} from 'components';
+import {DefinitionSelection} from 'components';
 
 import {DecisionControlPanel} from './DecisionControlPanel';
 import GroupBy from './GroupBy';
