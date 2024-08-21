@@ -86,12 +86,6 @@ export interface FilterData {
   operator?: string;
 }
 
-interface DecisionFilter<Data = FilterData> {
-  type: 'evaluationDateTime' | 'inputVariable' | 'outputVariable';
-  data: Data;
-  appliedTo: string[];
-}
-
 type VariableType =
   | 'String'
   | 'Short'
@@ -115,10 +109,6 @@ interface ProcessView {
   properties: (ProcessViewProperty | string)[];
 }
 
-interface DecisionView {
-  properties: (ProcessViewProperty | string)[];
-}
-
 interface ProcessGroupBy<Value = unknown> {
   type:
     | 'assignee'
@@ -131,11 +121,6 @@ interface ProcessGroupBy<Value = unknown> {
     | 'startDate'
     | 'userTasks'
     | 'variable';
-  value: Value;
-}
-
-interface DecisionGroupBy<Value = unknown> {
-  type: 'evaluationDateTime' | 'inputVariable' | 'matchedRule' | 'none' | 'outputVariable';
   value: Value;
 }
 
@@ -156,8 +141,6 @@ interface DistributedBy<Value = unknown> {
 }
 
 type ProcessReportVisualization = 'number' | 'table' | 'bar' | 'barLine' | 'line' | 'pie' | 'heat';
-
-type DecisionReportVisualization = 'number' | 'table' | 'bar' | 'line' | 'pie' | 'heat';
 
 type AggregationTypeType = 'avg' | 'min' | 'max' | 'sum' | 'percentile';
 
@@ -309,20 +292,11 @@ export interface SingleProcessReportData<GroupByValue = unknown, DistributedByVa
   userTaskReport: boolean;
 }
 
-interface SingleDecisionReportData<GroupByValue = unknown, DistributedByValue = unknown>
-  extends SingleReportData {
-  filter: DecisionFilter[];
-  view: DecisionView | null;
-  groupBy: DecisionGroupBy<GroupByValue> | null;
-  distributedBy: DistributedBy<DistributedByValue>;
-  visualization: DecisionReportVisualization | null;
-}
-
-export type ReportType = 'process' | 'decision';
+export type ReportType = 'process';
 
 export interface Report<
   Type extends ReportType = 'process',
-  Data extends object = Type extends 'process' ? SingleProcessReportData : SingleDecisionReportData,
+  Data extends object = SingleProcessReportData,
   Result = unknown | undefined,
 > extends GenericEntity<Data> {
   id: string;
@@ -336,14 +310,11 @@ export type SingleProcessReport<GroupByValue = unknown, DistributedByValue = unk
   'process',
   SingleProcessReportData<GroupByValue, DistributedByValue>
 >;
-export type SingleDecisionReport<GroupByValue = unknown, DistributedByValue = unknown> = Report<
-  'decision',
-  SingleDecisionReportData<GroupByValue, DistributedByValue>
->;
 
-export type GenericReport<GroupByValue = unknown, DistributedByValue = unknown> =
-  | SingleProcessReport<GroupByValue, DistributedByValue>
-  | SingleDecisionReport<GroupByValue, DistributedByValue>;
+export type GenericReport<
+  GroupByValue = unknown,
+  DistributedByValue = unknown,
+> = SingleProcessReport<GroupByValue, DistributedByValue>;
 
 type DashboardTileCommonProps = {
   id: string;

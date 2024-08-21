@@ -19,7 +19,6 @@ import './BarChartConfig.scss';
 
 export default function BarChartConfig({onChange, report}) {
   const {
-    reportType,
     data: {configuration, groupBy, distributedBy, visualization},
     result,
   } = report;
@@ -49,7 +48,6 @@ export default function BarChartConfig({onChange, report}) {
       <FormGroup legendText={t('report.config.tooltips.legend')}>
         <Stack gap={4}>
           <RelativeAbsoluteSelection
-            reportType={reportType}
             hideRelative={durationReport}
             absolute={configuration.alwaysShowAbsolute}
             relative={configuration.alwaysShowRelative}

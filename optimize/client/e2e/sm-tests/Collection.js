@@ -200,9 +200,6 @@ test('add, edit and delete sources', async (t) => {
   // await t.takeElementScreenshot(Common.modalContainer, 'img/sourceByTenant.png');
   // await t.click(Common.modalConfirmButton);
   // await t.expect(e.processItem.visible).ok();
-  // await t.expect(e.decisionItem.visible).ok();
-  // await t.expect(e.processItem.nth(0).textContent).contains('Book Request with no business key');
-  // await t.expect(e.decisionItem.textContent).contains('Beverages');
 
   // // edit source
   // await t.click(Common.listItemTrigger(e.processItem.nth(1), 'Edit'));

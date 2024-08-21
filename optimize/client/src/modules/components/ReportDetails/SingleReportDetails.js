@@ -26,13 +26,12 @@ import './SingleReportDetails.scss';
 
 const {formatVersions, formatTenants} = formatters;
 
-function getSelectedView(report, type) {
+function getSelectedView(report) {
   if (report.view.entity === 'variable') {
     return `${t('report.view.variable')} ${report.view.properties[0].name}`;
   }
 
-  const config = reportConfig[type];
-  const view = config.view.find(({matcher}) => matcher(report));
+  const view = reportConfig.view.find(({matcher}) => matcher(report));
   let measure = '';
   if (['frequency', 'duration'].includes(report.view.properties[0])) {
     measure = report.view.properties
@@ -43,7 +42,7 @@ function getSelectedView(report, type) {
   }
 
   const viewString = `${view.label()} ${measure}`;
-  const group = config.group.find(({matcher}) => matcher(report)).label();
+  const group = reportConfig.group.find(({matcher}) => matcher(report)).label();
 
   if (group.key !== 'none') {
     return t('report.viewByGroup', {
@@ -63,16 +62,15 @@ export function SingleReportDetails({report, showReportName, mightFail, location
 
   const reportName = report.name;
   const definitions = report.data.definitions;
-  const type = report.reportType;
   const isShared = location.pathname.startsWith('/share');
 
   useEffect(() => {
     if (definitions.length && !isShared) {
-      mightFail(loadTenants(definitions, type), setTenants, showError);
+      mightFail(loadTenants(definitions), setTenants, showError);
     } else {
       setTenants();
     }
-  }, [definitions, isShared, type, mightFail]);
+  }, [definitions, isShared, mightFail]);
 
   useEffect(() => {
     (async () => {
@@ -94,7 +92,7 @@ export function SingleReportDetails({report, showReportName, mightFail, location
         {showReportName && <h2>{reportName}</h2>}
         {definitions.length > 0 && (
           <div>
-            <h3>{t('report.definition.' + type + (definitions.length > 1 ? '-plural' : ''))}</h3>
+            <h3>{t('report.definition.process' + (definitions.length > 1 ? '-plural' : ''))}</h3>
             {definitions.map((definition, idx) => {
               const tenantInfo = getTenantInfoForDefinition(definition);
               const showOnlyTenant = tenantInfo?.length === 1 && optimizeProfile === 'ccsm';
@@ -119,7 +117,7 @@ export function SingleReportDetails({report, showReportName, mightFail, location
                       className="modalButton"
                       onClick={() => setShowDiagram(definition)}
                     >
-                      {t('common.entity.viewModel.' + report.reportType)}
+                      {t('common.entity.viewModel.process')}
                     </Button>
                   )}
                 </div>
@@ -130,13 +128,13 @@ export function SingleReportDetails({report, showReportName, mightFail, location
         )}
         {report.data.view && report.data.groupBy && (
           <div>
-            <h3>{t('report.view.' + type)}</h3>
+            <h3>{t('report.view.process')}</h3>
             <h4
               className={classnames({
                 nowrap: report.data.view.entity === 'variable',
               })}
             >
-              {getSelectedView(report.data, type)}
+              {getSelectedView(report.data)}
             </h4>
             {!isShared && (
               <Button
@@ -152,9 +150,7 @@ export function SingleReportDetails({report, showReportName, mightFail, location
           </div>
         )}
       </div>
-      {!!showDiagram && (
-        <DiagramModal open type={type} definition={showDiagram} onClose={closePopover} />
-      )}
+      {!!showDiagram && <DiagramModal open definition={showDiagram} onClose={closePopover} />}
       {showRawData && (
         <RawDataModal
           open
