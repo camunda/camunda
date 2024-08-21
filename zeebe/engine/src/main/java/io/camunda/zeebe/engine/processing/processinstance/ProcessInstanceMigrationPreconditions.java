@@ -332,10 +332,8 @@ public final class ProcessInstanceMigrationPreconditions {
       final String errorTemplate) {
     final List<ExecutableStartEvent> rejectedEvents =
         sourceProcessDefinition.getProcess().getEventSubprocesses().stream()
-            .flatMap(
-                sub ->
-                    sub.getStartEvents().stream()
-                        .filter(start -> !allowedEventTypes.contains(start.getEventType())))
+            .flatMap(sub -> sub.getStartEvents().stream())
+            .filter(start -> !allowedEventTypes.contains(start.getEventType()))
             .toList();
 
     if (!rejectedEvents.isEmpty()) {
