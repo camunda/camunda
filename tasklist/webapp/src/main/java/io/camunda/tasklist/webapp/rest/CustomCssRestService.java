@@ -26,22 +26,30 @@ public class CustomCssRestService {
   // TODO: prepare for docker
   public static final String PATH_LOCATION = "custom.css";
   private static final Logger LOGGER = LoggerFactory.getLogger(CustomCssRestService.class);
+
   private String customCssContent;
 
   @PostConstruct
   public void init() {
     try {
-      final Resource resource = new ClassPathResource(PATH_LOCATION);
+      final Resource resource = loadResource(PATH_LOCATION);
       customCssContent = new String(resource.getContentAsString(Charsets.UTF_8));
     } catch (final IOException e) {
       LOGGER.error("Error when reading custom css file {}", PATH_LOCATION, e);
-      throw new RuntimeException(e);
     }
   }
 
   @Hidden
   @GetMapping(path = TASKLIST_CUSTOM_CSS, produces = "text/css")
   public String getClientConfig() {
+    return customCssContent;
+  }
+
+  public Resource loadResource(final String path) {
+    return new ClassPathResource(path);
+  }
+
+  public String getCustomCssContent() {
     return customCssContent;
   }
 }
