@@ -539,7 +539,8 @@ public class MigrateProcessInstanceRejectionTest {
   }
 
   @Test
-  public void shouldRejectCommandWhenTheMigratedProcessInstanceSubscribedToATimerEventSubprocess() {
+  public void
+      shouldRejectCommandWhenTheMigratedProcessInstanceSubscribedToASignalEventSubprocess() {
     // given
     final var deployment =
         ENGINE
@@ -549,7 +550,7 @@ public class MigrateProcessInstanceRejectionTest {
                     .eventSubProcess(
                         "eventSubProcess",
                         sub ->
-                            sub.startEvent("eventSubProcessStart", s -> s.timerWithDuration("PT1S"))
+                            sub.startEvent("eventSubProcessStart", s -> s.signal("signal"))
                                 .endEvent())
                     .startEvent()
                     .serviceTask("A", a -> a.zeebeJobType("A"))
@@ -590,12 +591,12 @@ public class MigrateProcessInstanceRejectionTest {
             Expected to migrate process instance '%s' \
             but active process with id '%s' has one or more event subprocesses with start events of types '%s'. \
             Migrating event subprocesses with start events of these types is not possible yet."""
-                .formatted(processInstanceKey, "process", "TIMER"))
+                .formatted(processInstanceKey, "process", "SIGNAL"))
         .hasKey(processInstanceKey);
   }
 
   @Test
-  public void shouldRejectCommandWhenTheTargetProcessIsSubscribedToATimerEventSubprocess() {
+  public void shouldRejectCommandWhenTheTargetProcessIsSubscribedToASignalEventSubprocess() {
     // given
     final var deployment =
         ENGINE
@@ -611,7 +612,7 @@ public class MigrateProcessInstanceRejectionTest {
                     .eventSubProcess(
                         "eventSubProcess",
                         sub ->
-                            sub.startEvent("eventSubProcessStart", s -> s.timerWithDuration("PT1S"))
+                            sub.startEvent("eventSubProcessStart", s -> s.signal("signal"))
                                 .endEvent())
                     .startEvent()
                     .serviceTask("A", a -> a.zeebeJobType("A"))
@@ -646,13 +647,13 @@ public class MigrateProcessInstanceRejectionTest {
       Expected to migrate process instance '%s' \
       but target process with id '%s' has one or more event subprocesses with start events of types '%s'. \
       Migrating event subprocesses with start events of these types is not possible yet."""
-                .formatted(processInstanceKey, "process2", "TIMER"))
+                .formatted(processInstanceKey, "process2", "SIGNAL"))
         .hasKey(processInstanceKey);
   }
 
   @Test
   public void
-      shouldRejectMigrationForInterruptingActiveTimerEventSubprocessInsideEmbeddedProcess() {
+      shouldRejectMigrationForInterruptingActiveSignalEventSubprocessInsideEmbeddedProcess() {
     // given
     final var deployment =
         ENGINE
@@ -667,8 +668,8 @@ public class MigrateProcessInstanceRejectionTest {
                                 .eventSubProcess(
                                     "subsub1",
                                     es ->
-                                        es.startEvent("timer_start1")
-                                            .timerWithDuration("PT5M")
+                                        es.startEvent("signal_start1")
+                                            .signal("signal1")
                                             .serviceTask("A", t -> t.zeebeJobType("task1"))
                                             .endEvent())
                                 .startEvent()
@@ -685,8 +686,8 @@ public class MigrateProcessInstanceRejectionTest {
                                 .eventSubProcess(
                                     "subsub2",
                                     es ->
-                                        es.startEvent("timer_start2")
-                                            .timerWithDuration("PT5M")
+                                        es.startEvent("signal_start2")
+                                            .signal("signal2")
                                             .serviceTask("C", t -> t.zeebeJobType("task3"))
                                             .endEvent())
                                 .startEvent()
@@ -728,7 +729,7 @@ public class MigrateProcessInstanceRejectionTest {
       Expected to migrate process instance '%s' \
       but active process with id '%s' has one or more event subprocesses with start events of types '%s'. \
       Migrating event subprocesses with start events of these types is not possible yet."""
-                .formatted(processInstanceKey, "sub1", "TIMER"));
+                .formatted(processInstanceKey, "sub1", "SIGNAL"));
   }
 
   @Test
