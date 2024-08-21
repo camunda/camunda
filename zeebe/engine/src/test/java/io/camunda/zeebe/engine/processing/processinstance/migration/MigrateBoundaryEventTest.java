@@ -534,7 +534,7 @@ public class MigrateBoundaryEventTest {
         .hasRejectionType(RejectionType.INVALID_STATE)
         .extracting(Record::getRejectionReason)
         .asString()
-        .contains("Expected to migrate process instance '2251799813685252'")
+        .contains("Expected to migrate process instance '" + processInstanceKey + "'")
         .contains("active element with id 'A' is mapped to an element with id 'A'")
         .contains(
             "and has a boundary event with id 'boundary' that is mapped to an element with id 'boundary'")
@@ -609,7 +609,7 @@ public class MigrateBoundaryEventTest {
         .hasRejectionType(RejectionType.INVALID_STATE)
         .extracting(Record::getRejectionReason)
         .asString()
-        .contains("Expected to migrate process instance '2251799813685252'")
+        .contains("Expected to migrate process instance '" + processInstanceKey + "'")
         .contains("active element with id 'A' has a boundary event attached")
         .contains("boundary event attached that is mapped to a boundary event with id 'boundary3'")
         .contains(
