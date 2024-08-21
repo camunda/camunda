@@ -127,7 +127,7 @@ const DiagramPanel: React.FC = observer(() => {
   };
 
   return (
-    <Section>
+    <Section aria-label="Diagram Panel">
       <DiagramHeader
         processDetails={processDetails}
         processDefinitionId={processId}

@@ -65,7 +65,7 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
 
             {hasVersionTag && IS_VERSION_TAG_ENABLED && (
               <Dl>
-                <Dt>Version Tag</Dt>
+                <Dt>Version tag</Dt>
                 <Dd title={versionTag}>{versionTag}</Dd>
               </Dl>
             )}

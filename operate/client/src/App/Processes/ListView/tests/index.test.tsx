@@ -110,7 +110,7 @@ describe('Instances', () => {
 
     // diagram panel
     expect(
-      screen.getByRole('heading', {name: 'Process', level: 2}),
+      screen.getByRole('region', {name: 'Diagram Panel'}),
     ).toBeInTheDocument();
 
     // filters panel
