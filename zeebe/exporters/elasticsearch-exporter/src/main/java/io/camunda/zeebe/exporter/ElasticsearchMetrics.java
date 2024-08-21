@@ -89,6 +89,8 @@ public class ElasticsearchMetrics {
   }
 
   public void stopRecordBufferLifetimeMeasurement(final Timer.Sample sample) {
-    sample.stop(recordBufferLifetime);
+    if (sample != null) {
+      sample.stop(recordBufferLifetime);
+    }
   }
 }
