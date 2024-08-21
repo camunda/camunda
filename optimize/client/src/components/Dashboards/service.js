@@ -48,7 +48,7 @@ export function convertFilterToDefaultValues(availableFilter, filters) {
     return filters.find(({type}) => type === availableFilter.type)?.data ?? null;
   }
 
-  // assignee / candidate group
+  // assignee
   if (availableFilter.type === 'assignee') {
     return (
       filters.find(
