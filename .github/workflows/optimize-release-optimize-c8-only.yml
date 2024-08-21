@@ -1,6 +1,8 @@
 name: Optimize Release Camunda Optimize C8
 
 on:
+  schedule:
+    - cron: "0 0 * * 1-5"
   workflow_dispatch:
     inputs:
       RELEASE_VERSION:
@@ -35,6 +37,7 @@ jobs:
     name: Execute Release
     runs-on: gcp-core-2-release
     env:
+      DOCKER_IMAGE_TEAM: registry.camunda.cloud/optimize-ee/optimize
       DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
       DOCKER_LATEST_TAG: latest
     strategy:
@@ -76,7 +79,7 @@ jobs:
       - name: Is current release major or minor.
         id: release-type
         env:
-          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION }}
+          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}
         run: |
           is_major_or_minor="false"
           is_patch="true"
@@ -116,17 +119,17 @@ jobs:
       - name: Expose common variables as Env
         run: |
           {
-            echo "DOCKER_LATEST=${{ github.event.inputs.DOCKER_LATEST }}"
-            echo "DEVELOPMENT_VERSION=${{ github.event.inputs.DEVELOPMENT_VERSION }}"
-            echo "RELEASE_VERSION=${{ github.event.inputs.RELEASE_VERSION }}"
-            echo "BRANCH=${{ github.event.inputs.BRANCH }}"
+            echo "DOCKER_LATEST=${{ github.event.inputs.DOCKER_LATEST || true}}"
+            echo "DEVELOPMENT_VERSION=${{ github.event.inputs.DEVELOPMENT_VERSION || '0.1.0-SNAPSHOT' }}"
+            echo "RELEASE_VERSION=${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}"
+            echo "BRANCH=${{ github.event.inputs.BRANCH || github.ref_name }}"
             echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
             echo "MAJOR_OR_MINOR=${{ steps.release-type.outputs.is_major_or_minor }}"
             echo "IS_PATCH=${{ steps.release-type.outputs.is_patch }}"
             echo "IS_ALPHA=${{ steps.release-type.outputs.is_alpha }}"
             echo "IS_RC=${{ steps.release-type.outputs.is_rc }}"
-            echo "IS_DRY_RUN=${{ github.event.inputs.IS_DRY_RUN }}"
-            echo "TAG=${{ github.event.inputs.RELEASE_VERSION }}-optimize"
+            echo "IS_DRY_RUN=${{ github.event.inputs.IS_DRY_RUN || 'true' }}"
+            echo "TAG=${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}-optimize"
           } >> "$GITHUB_ENV"
 
       - name: Login to prod Harbor docker registry
@@ -244,11 +247,13 @@ jobs:
 
           # Tagging the optimize release Docker image with the specified version
           echo "Tagging optimize release docker image with version ${RELEASE_VERSION}"
-          tags=("${DOCKER_IMAGE_DOCKER_HUB}:${RELEASE_VERSION}")
+          tags=("${DOCKER_IMAGE_TEAM}:${RELEASE_VERSION}")
+          tags+=("${DOCKER_IMAGE_DOCKER_HUB}:${RELEASE_VERSION}")
 
           # Major and minor versions are always tagged as the latest
           if [ "${MAJOR_OR_MINOR}" = true ] || [ "${DOCKER_LATEST}" = true ]; then
               echo "Tagging optimize release docker image with \`${DOCKER_LATEST_TAG}\`"
+              tags+=("${DOCKER_IMAGE_TEAM}:${DOCKER_LATEST_TAG}")
               tags+=("${DOCKER_IMAGE_DOCKER_HUB}:${DOCKER_LATEST_TAG}")
           fi
 
@@ -289,7 +294,6 @@ jobs:
           ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}
           ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_version }}
           IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version }}
-          DOCKER_IMAGE_DOCKER_HUB: ${{ env.DOCKER_IMAGE_DOCKER_HUB }}
 
       - name: Wait for Optimize to start
         run: ./.github/optimize/scripts/wait-for.sh http://localhost:8090/ready
