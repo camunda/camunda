@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
 
@@ -34,8 +32,7 @@
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
     <spotbugs.include>spotbugs/spotbugs-include.xml</spotbugs.include>
     <spotbugs.exclude>spotbugs/spotbugs-exclude.xml</spotbugs.exclude>
-    <maven-profiler-report-directory>${project.build.directory}/profiler
-    </maven-profiler-report-directory>
+    <maven-profiler-report-directory>${project.build.directory}/profiler</maven-profiler-report-directory>
 
     <!-- EXTERNAL LIBS -->
     <version.agrona>1.22.0</version.agrona>
@@ -210,8 +207,7 @@
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.12</plugin.version.jacoco>
     <plugin.version.maven-jar>3.4.2</plugin.version.maven-jar>
-    <plugin.version.proto-backwards-compatibility>1.0.7
-    </plugin.version.proto-backwards-compatibility>
+    <plugin.version.proto-backwards-compatibility>1.0.7</plugin.version.proto-backwards-compatibility>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.3.1</plugin.version.resources>
@@ -817,7 +813,7 @@
         <type>test-jar</type>
         <scope>test</scope>
       </dependency>
-      
+
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-search-client</artifactId>
@@ -2321,8 +2317,7 @@
               </property>
             </properties>
             <reportNameSuffix>${env.SUREFIRE_REPORT_NAME_SUFFIX}</reportNameSuffix>
-            <statelessTestsetReporter
-              implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
+            <statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
               <disable>false</disable>
               <version>3.0</version>
               <usePhrasedFileName>false</usePhrasedFileName>
@@ -2330,8 +2325,7 @@
               <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
               <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
             </statelessTestsetReporter>
-            <consoleOutputReporter
-              implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"></consoleOutputReporter>
+            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"></consoleOutputReporter>
             <skip>${skipUTs}</skip>
           </configuration>
           <dependencies>
@@ -2363,8 +2357,7 @@
               ensure junit5 display names are properly reported; see the documentation for more
               https://maven.apache.org/surefire/maven-failsafe-plugin/examples/junit-platform.html
               -->
-            <statelessTestsetReporter
-              implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
+            <statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
               <disable>false</disable>
               <version>3.0</version>
               <usePhrasedFileName>false</usePhrasedFileName>
@@ -2372,8 +2365,7 @@
               <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
               <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
             </statelessTestsetReporter>
-            <consoleOutputReporter
-              implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"></consoleOutputReporter>
+            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"></consoleOutputReporter>
             <skip>${skipITs}</skip>
           </configuration>
           <dependencies>
@@ -2503,13 +2495,9 @@
           <version>${plugin.version.protobuf-maven-plugin}</version>
           <configuration>
             <checkStaleness>true</checkStaleness>
-            <protocArtifact>
-              com.google.protobuf:protoc:${version.protobuf}:exe:${os.detected.classifier}
-            </protocArtifact>
+            <protocArtifact>com.google.protobuf:protoc:${version.protobuf}:exe:${os.detected.classifier}</protocArtifact>
             <pluginId>grpc-java</pluginId>
-            <pluginArtifact>
-              io.grpc:protoc-gen-grpc-java:${version.grpc}:exe:${os.detected.classifier}
-            </pluginArtifact>
+            <pluginArtifact>io.grpc:protoc-gen-grpc-java:${version.grpc}:exe:${os.detected.classifier}</pluginArtifact>
           </configuration>
           <executions>
             <execution>
@@ -2695,9 +2683,7 @@
             <generateModels>true</generateModels>
             <configOptions>
               <sourceFolder>src/main</sourceFolder>
-              <additionalModelTypeAnnotations>
-                @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-              </additionalModelTypeAnnotations>
+              <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
               <useSpringBoot3>true</useSpringBoot3>
             </configOptions>
           </configuration>
