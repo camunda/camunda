@@ -77,6 +77,7 @@ jobs:
         uses: ./.github/actions/run-maven
         with:
           parameters: -f optimize/pom.xml install -DskipTests -Dskip.docker -PrunAssembly
+          threads: 4C
 
       #########################################################################
       # Build Docker image
