@@ -257,9 +257,10 @@
                 </goals>
                 <configuration>
                   <skip>${skipTests}</skip>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>up</argument>
                     <argument>-d</argument>
                     <argument>elasticsearch</argument>
@@ -275,9 +276,10 @@
                 </goals>
                 <configuration>
                   <skip>${skipTests}</skip>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>down</argument>
                   </arguments>
                 </configuration>
@@ -304,9 +306,10 @@
                 </goals>
                 <configuration>
                   <skip>${skipTests}</skip>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>up</argument>
                     <argument>-d</argument>
                     <argument>opensearch</argument>
@@ -322,9 +325,10 @@
                 </goals>
                 <configuration>
                   <skip>${skipTests}</skip>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>down</argument>
                   </arguments>
                 </configuration>

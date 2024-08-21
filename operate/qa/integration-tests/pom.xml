@@ -453,9 +453,10 @@
                 <phase>pre-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>up</argument>
                     <argument>-d</argument>
                     <argument>elasticsearch</argument>
@@ -471,9 +472,10 @@
                 <phase>post-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
-                  <executable>docker-compose</executable>
+                  <executable>docker</executable>
                   <workingDirectory>..</workingDirectory>
                   <arguments>
+                    <argument>compose</argument>
                     <argument>down</argument>
                   </arguments>
                 </configuration>
