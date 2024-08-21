@@ -43,11 +43,6 @@
     "rightsReserved": "All Rights Reserved",
     "timezone": "Date and time displayed in local timezone:"
   },
-  "license": {
-    "referTo": "If you would like information on production usage, please refer to our",
-    "terms": "terms & conditions",
-    "contactSales": "contact sales"
-  },
   "saveGuard": {
     "header": "Unsaved changes",
     "text": "The {label} has unsaved changes. Save before continuing?",

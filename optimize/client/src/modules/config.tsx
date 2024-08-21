@@ -61,6 +61,8 @@ export type UiConfig = {
   userSearchAvailable: boolean;
   optimizeDatabase: 'opensearch' | 'elasticsearch';
   userTaskAssigneeAnalyticsEnabled: boolean;
+  licenseType: 'self-managed' | 'saas' | 'unknown';
+  validLicense: boolean;
 };
 
 let globalConfig: UiConfig;

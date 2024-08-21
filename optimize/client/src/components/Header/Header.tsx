@@ -43,6 +43,8 @@ export default function Header({noActions}: {noActions?: boolean}) {
     optimizeDatabase,
     onboarding,
     notificationsUrl,
+    validLicense,
+    licenseType,
   } = useUiConfig();
 
   useEffect(() => {
@@ -56,7 +58,12 @@ export default function Header({noActions}: {noActions?: boolean}) {
   };
 
   if (!noActions) {
-    props.navbar = createNavBarProps(enterpriseMode, location.pathname, optimizeDatabase);
+    props.navbar = createNavBarProps(
+      validLicense,
+      licenseType,
+      location.pathname,
+      optimizeDatabase
+    );
     props.infoSideBar = createInfoSideBarProps(getBaseDocsUrl(), enterpriseMode);
     props.userSideBar = userSideBar;
   }
@@ -126,7 +133,8 @@ function createWebappLinks(webappLinks: Record<string, string> | null): C3Naviga
 }
 
 function createNavBarProps(
-  enterpriseMode: boolean,
+  validLicense: boolean,
+  licenseType: 'self-managed' | 'saas' | 'unknown',
   pathname: string,
   optimizeDatabase?: string
 ): C3NavigationNavBarProps {
@@ -186,8 +194,8 @@ function createNavBarProps(
   }
 
   const licenseTag: C3NavigationNavBarProps['licenseTag'] = {
-    show: false,
-    isProductionLicense: false,
+    show: licenseType !== 'saas',
+    isProductionLicense: validLicense,
   };
 
   return {
