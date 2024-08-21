@@ -587,9 +587,9 @@ public class MigrateProcessInstanceRejectionTest {
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
             """
-      Expected to migrate process instance '%s' \
-      but active process with id '%s' has one or more event subprocesses with start events of types '%s'. \
-      Migrating event subprocesses with start events of these types is not possible yet."""
+            Expected to migrate process instance '%s' \
+            but active process with id '%s' has one or more event subprocesses with start events of types '%s'. \
+            Migrating event subprocesses with start events of these types is not possible yet."""
                 .formatted(processInstanceKey, "process", "TIMER"))
         .hasKey(processInstanceKey);
   }
