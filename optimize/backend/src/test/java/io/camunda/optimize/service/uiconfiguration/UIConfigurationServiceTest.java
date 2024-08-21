@@ -161,6 +161,20 @@ public class UIConfigurationServiceTest {
     assertThat(configurationResponse.getMaxNumDataSourcesForReport()).isEqualTo(50);
   }
 
+  @Test
+  public void testCamundaLicenseInformationIsReturned() {
+    // given
+    initializeMocks();
+    when(environment.getActiveProfiles()).thenReturn(new String[] {CLOUD_PROFILE});
+
+    // when
+    final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
+
+    // then
+    assertThat(configurationResponse.getLicenseType()).isEqualTo("saas");
+    assertThat(configurationResponse.isValidLicense()).isEqualTo(true);
+  }
+
   private void initializeMocks() {
     when(configurationService.getConfiguredWebhooks()).thenReturn(Collections.emptyMap());
     when(identity.users()).thenReturn(identityUsers);
