@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -613,6 +614,63 @@ public final class ProcessInstanceMigrationPreconditions {
             reason, RejectionType.INVALID_STATE);
       }
     }
+  }
+
+  /**
+   * It should not be possible for a mapped element's boundary events to be merged into a single
+   * boundary event. This would mean an element instance is subscribed multiple times to the same
+   * boundary event.
+   *
+   * <p>To avoid this, we check each boundary event attached to the source element and ensure that
+   * they are the target of a mapping instruction only once.
+   *
+   * @param processInstanceKey process instance key to be logged
+   * @param sourceProcessDefinition source process definition to check
+   * @param sourceElementId source element id to check
+   * @param mappingInstructions mapping instructions (source element id to target element id)
+   */
+  public static void requireNoDuplicateTargetsInBoundaryEventMappings(
+      final long processInstanceKey,
+      final DeployedProcess sourceProcessDefinition,
+      final String sourceElementId,
+      final Map<String, String> mappingInstructions) {
+    final var sourceElement =
+        sourceProcessDefinition
+            .getProcess()
+            .getElementById(sourceElementId, ExecutableCatchEventSupplier.class);
+
+    record Mapping(String sourceElementId, String targetElementId) {}
+
+    final Map<String, List<String>> sourceBoundaryEventIdsByTargetBoundaryEventId =
+        sourceElement.getBoundaryElementIds().stream()
+            .map(BufferUtil::bufferAsString)
+            .filter(mappingInstructions::containsKey)
+            .map(sourceId -> new Mapping(sourceId, mappingInstructions.get(sourceId)))
+            .collect(
+                Collectors.groupingBy(
+                    Mapping::targetElementId,
+                    HashMap::new,
+                    Collectors.mapping(Mapping::sourceElementId, Collectors.toList())));
+
+    sourceBoundaryEventIdsByTargetBoundaryEventId.forEach(
+        (targetBoundaryEventId, sourceBoundaryEventIds) -> {
+          if (sourceBoundaryEventIds.size() > 1) {
+            final var reason =
+                String.format(
+                    """
+                    Expected to migrate process instance '%s' but active element with id '%s' \
+                    has a boundary event attached that is mapped to a boundary event with id '%s'. \
+                    There are multiple mapping instructions that target this boundary event: '%s'. \
+                    Boundary events cannot be merged by process instance migration. \
+                    Please ensure the mapping instructions target a boundary event only once.""",
+                    processInstanceKey,
+                    sourceElementId,
+                    targetBoundaryEventId,
+                    sourceBoundaryEventIds.stream().sorted().collect(Collectors.joining("', '")));
+            throw new ProcessInstanceMigrationPreconditionFailedException(
+                reason, RejectionType.INVALID_STATE);
+          }
+        });
   }
 
   /**
