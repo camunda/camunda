@@ -1,5 +1,164 @@
 :root[data-carbon-theme='g10']{
+  background-color: #F4F4F4 ; /* Light Grey for a sophisticated backdrop */
+
+  /* Backgrounds and Layers */
+  --cds-background: #FFFFFF ; /* White for clean and elegant backgrounds */
+  --cds-layer: #C5A1A1 ; /* Soft Rose for main layers */
+  --cds-layer-01: #D1B6B6 ; /* Lighter Rose for subtle contrasts */
+  --cds-layer-02: #F0E2C2 ; /* Light Beige for secondary layers */
+  --cds-layer-03: #B07A7A ; /* Muted Mauve for tertiary layers */
+
+  /* Borders */
+  --cds-border-01: #D1B6B6 ; /* Soft Rose for borders */
+  --cds-border-02: #B07A7A ; /* Muted Mauve for secondary borders */
+  --cds-border-strong-01: #C5A1A1 ; /* Soft Rose for strong borders */
+  --cds-border-interactive: #F0E2C2 ; /* Light Beige for interactive borders */
+
+  /* Text */
+  --cds-text-primary: #333333 ; /* Dark Grey for primary text */
+  --cds-text-secondary: #7D4F4F ; /* Deep Rose for secondary text */
+  --cds-text-placeholder: #B07A7A ; /* Muted Mauve for placeholder text */
+  --cds-text-error: #A04141 ; /* Warm Red-Brown for error messages */
+
+  /* Links and Interactions */
+  --cds-link-primary: #D1B6B6 ; /* Soft Rose for links */
+  --cds-link-hover: #C5A1A1 ; /* Slightly darker Rose for link hover states */
+  --cds-link-visited: #B07A7A ; /* Muted Mauve for visited links */
+
+  /* Buttons */
+  --cds-button-primary: #7D4F4F ; /* Deep Rose for primary buttons */
+  --cds-button-primary-text: #FFFFFF ; /* White text on primary buttons */
+  --cds-button-secondary: #F0E2C2 ; /* Light Beige for secondary buttons */
+  --cds-button-secondary-text: #7D4F4F ; /* Deep Rose text on secondary buttons */
+  --cds-button-tertiary: #D1B6B6 ; /* Soft Rose for tertiary buttons */
+  --cds-button-tertiary-text: #FFFFFF ; /* White text on tertiary buttons */
+
+  /* Focus */
+  --cds-focus: #F0E2C2 ; /* Light Beige for focus states */
+
+  /* Skeleton (loading states) */
+  --cds-skeleton-background: #D1B6B6 ; /* Soft Rose for skeleton backgrounds */
+  --cds-skeleton-element: #F0E2C2 ; /* Light Beige for skeleton elements */
+
+  /* Toggles */
+  --cds-toggle-off: #F0E2C2 ; /* Light Beige for toggles in off state */
+  --cds-toggle-on: #7D4F4F ; /* Deep Rose for toggles in on state */
+
+  /* Layer Accent */
+  --cds-layer-accent-01: #F0E2C2 ; /* Light Beige for accent layers */
+  --cds-layer-accent-02: #B07A7A ; /* Muted Mauve for accent layers */
+
+  /* Field */
+  --cds-field-01: #F0E2C2 ; /* Light Beige for input fields */
+  --cds-field-02: #C5A1A1 ; /* Soft Rose for field background */
+
+  /* Tooltip */
+  --cds-tooltip-background: #D1B6B6 ; /* Soft Rose for tooltip backgrounds */
+  --cds-tooltip-text: #7D4F4F ; /* Deep Rose for tooltip text */
+
+  /* Notifications */
+  --cds-notification-background: #B07A7A ; /* Muted Mauve for notifications */
+  --cds-notification-text: #FFFFFF ; /* White text for notifications */
+
+  /* Overlays */
+  --cds-overlay: rgba(76, 76, 76, 0.5) ; /* Semi-transparent Dark Grey for overlays */
+
+  /* Alerts and Statuses */
+  --cds-danger: #A04141 ; /* Warm Red-Brown for danger/error states */
+  --cds-warning: #F0E2C2 ; /* Light Beige for warnings */
+  --cds-success: #4CAF50 ; /* Elegant Green for success messages */
+  --cds-info: #D1B6B6 ; /* Soft Rose for informational messages */
+
+  /* Disabled Elements */
+  --cds-disabled: #C5A1A1 ; /* Soft Rose for disabled elements */
+
+  /* Interactive Elements */
+  --cds-interactive-01: #7D4F4F ; /* Deep Rose for interactive elements */
+  --cds-interactive-02: #F0E2C2 ; /* Light Beige for secondary interactive elements */
+
+  /* Highlights */
+  --cds-highlight: #C5A1A1 ; /* Soft Rose for highlights */
 }
 
 :root[data-carbon-theme='g100']{
+  background-color: #DA291C ; /* McDonald's Red */
+
+  /* Backgrounds and Layers */
+  --cds-background: #FFC72C ; /* McDonald's Yellow */
+  --cds-layer: #DA291C ; /* McDonald's Red */
+  --cds-layer-01: #FF5733 ; /* A slightly lighter red for layer contrast */
+  --cds-layer-02: #FFD700 ; /* A golden yellow for secondary layers */
+  --cds-layer-03: #C70039 ; /* A deep, rich red for tertiary layers */
+
+  /* Borders */
+  --cds-border-01: #FFC300 ; /* A bold yellow for borders */
+  --cds-border-02: #FF5733 ; /* A slightly lighter red for secondary borders */
+  --cds-border-strong-01: #DA291C ; /* McDonald's Red for strong borders */
+  --cds-border-interactive: #FFC72C ; /* McDonald's Yellow for interactive borders */
+
+  /* Text */
+  --cds-text-primary: #FFFFFF ; /* White for primary text */
+  --cds-text-secondary: #FFC72C ; /* McDonald's Yellow for secondary text */
+  --cds-text-placeholder: #FFD700 ; /* Golden yellow for placeholder text */
+  --cds-text-error: #C70039 ; /* Deep red for error messages */
+
+  /* Links and Interactions */
+  --cds-link-primary: #FFC72C ; /* McDonald's Yellow for links */
+  --cds-link-hover: #FF5733 ; /* Slightly lighter red for link hover states */
+  --cds-link-visited: #DA291C ; /* McDonald's Red for visited links */
+
+  /* Buttons */
+  --cds-button-primary: #DA291C ; /* McDonald's Red for primary buttons */
+  --cds-button-primary-text: #FFFFFF ; /* White text on primary buttons */
+  --cds-button-secondary: #FFC72C ; /* McDonald's Yellow for secondary buttons */
+  --cds-button-secondary-text: #DA291C ; /* McDonald's Red text on secondary buttons */
+  --cds-button-tertiary: #FF5733 ; /* Slightly lighter red for tertiary buttons */
+  --cds-button-tertiary-text: #FFFFFF ; /* White text on tertiary buttons */
+
+  /* Focus */
+  --cds-focus: #FFC72C ; /* McDonald's Yellow for focus states */
+
+  /* Skeleton (loading states) */
+  --cds-skeleton-background: #FF5733 ; /* Slightly lighter red for skeleton backgrounds */
+  --cds-skeleton-element: #FFD700 ; /* Golden yellow for skeleton elements */
+
+  /* Toggles */
+  --cds-toggle-off: #FFD700 ; /* Golden yellow for toggles in off state */
+  --cds-toggle-on: #DA291C ; /* McDonald's Red for toggles in on state */
+
+  /* Layer Accent */
+  --cds-layer-accent-01: #FFC72C ; /* McDonald's Yellow for accent layers */
+  --cds-layer-accent-02: #C70039 ; /* Deep red for accent layers */
+
+  /* Field */
+  --cds-field-01: #FFC72C ; /* McDonald's Yellow for input fields */
+  --cds-field-02: #DA291C ; /* McDonald's Red for field background */
+
+  /* Tooltip */
+  --cds-tooltip-background: #FFC300 ; /* A bold yellow for tooltip backgrounds */
+  --cds-tooltip-text: #DA291C ; /* McDonald's Red for tooltip text */
+
+  /* Notifications */
+  --cds-notification-background: #C70039 ; /* Deep red for notifications */
+  --cds-notification-text: #FFFFFF ; /* White text for notifications */
+
+  /* Overlays */
+  --cds-overlay: rgba(218, 41, 28, 0.75) ; /* Semi-transparent McDonald's Red for overlays */
+
+  /* Alerts and Statuses */
+  --cds-danger: #C70039 ; /* Deep red for danger/error states */
+  --cds-warning: #FFC72C ; /* McDonald's Yellow for warnings */
+  --cds-success: #32CD32 ; /* Lime green for success messages */
+  --cds-info: #FFD700 ; /* Golden yellow for informational messages */
+
+  /* Disabled Elements */
+  --cds-disabled: #FF5733 ; /* Slightly lighter red for disabled elements */
+
+  /* Interactive Elements */
+  --cds-interactive-01: #DA291C ; /* McDonald's Red for interactive elements */
+  --cds-interactive-02: #FFC72C ; /* McDonald's Yellow for secondary interactive elements */
+
+  /* Highlights */
+  --cds-highlight: #FF5733 ; /* Slightly lighter red for highlights */
 }
+
