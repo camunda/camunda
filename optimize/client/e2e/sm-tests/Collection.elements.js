@@ -32,7 +32,6 @@ export const emptyStateAdd = activeTab.find('.EmptyState .cds--btn--primary');
 export const typeaheadInput = Selector('.Typeahead input');
 export const checkbox = (text) => Selector('.Checklist tr').withText(text);
 export const processItem = listItem('process');
-export const decisionItem = listItem('decision table');
 export const userName = (entity) => entity.find('td:nth-child(2) .cds--stack-vertical').child(0);
 export const roleOption = (text) =>
   Selector('.Modal.is-visible .LabeledInput .label.after').withText(text);
