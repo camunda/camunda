@@ -77,7 +77,7 @@
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.174</version>
+      <version>4.8.175</version>
     </dependency>
 
     <!-- Logging -->
@@ -181,7 +181,7 @@
     <dependency>
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-java-sdk-core</artifactId>
-      <version>1.12.769</version>
+      <version>1.12.770</version>
       <scope>compile</scope>
     </dependency>
     <dependency>

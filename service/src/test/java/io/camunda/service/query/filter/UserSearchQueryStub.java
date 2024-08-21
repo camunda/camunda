@@ -10,32 +10,31 @@ package io.camunda.service.query.filter;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
-import io.camunda.service.entities.CamundaUserEntity;
+import io.camunda.service.entities.UserEntity;
 import io.camunda.service.util.StubbedCamundaSearchClient;
 import io.camunda.service.util.StubbedCamundaSearchClient.RequestStub;
 import java.util.List;
 
-public class UserSearchQueryStub implements RequestStub<CamundaUserEntity> {
+public class UserSearchQueryStub implements RequestStub<UserEntity> {
   @Override
-  public SearchQueryResponse<CamundaUserEntity> handle(final SearchQueryRequest request)
-      throws Exception {
+  public SearchQueryResponse<UserEntity> handle(final SearchQueryRequest request) throws Exception {
 
-    final List<SearchQueryHit<CamundaUserEntity>> hits =
+    final List<SearchQueryHit<UserEntity>> hits =
         List.of(
-            new SearchQueryHit.Builder<CamundaUserEntity>()
+            new SearchQueryHit.Builder<UserEntity>()
                 .id("1")
                 .source(
-                    new CamundaUserEntity(
-                        new CamundaUserEntity.User("username1", "name1", "email1", "password1")))
+                    new UserEntity(
+                        new UserEntity.User("username1", "name1", "email1", "password1")))
                 .build(),
-            new SearchQueryHit.Builder<CamundaUserEntity>()
+            new SearchQueryHit.Builder<UserEntity>()
                 .id("2")
                 .source(
-                    new CamundaUserEntity(
-                        new CamundaUserEntity.User("username2", "name2", "email2", "password2")))
+                    new UserEntity(
+                        new UserEntity.User("username2", "name2", "email2", "password2")))
                 .build());
 
-    final SearchQueryResponse<CamundaUserEntity> response =
+    final SearchQueryResponse<UserEntity> response =
         SearchQueryResponse.of(
             (f) -> {
               f.totalHits(hits.size()).hits(hits);

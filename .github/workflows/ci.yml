@@ -16,7 +16,7 @@ on:
 # Exception for deploy jobs that have to wait for each other to avoid overwriting
 concurrency:
   cancel-in-progress: true
-  group: ${{ github.ref == 'refs/heads/main' && github.sha || format('{0}-{1}', github.workflow, github.ref) }}
+  group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 defaults:
   run:
@@ -439,16 +439,6 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
-
-  test-summary:
-    # Used as migration path to support old Zeebe CI Test summary
-    # TODO: can be removed after 2024-08-16, remaining PRs need to be rebased
-    name: Test summary
-    runs-on: ubuntu-latest
-    needs:
-      - zeebe-ci
-    steps:
       - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
 
   notify-if-failed:

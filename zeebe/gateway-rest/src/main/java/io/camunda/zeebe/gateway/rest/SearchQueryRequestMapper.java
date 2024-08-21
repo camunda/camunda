@@ -38,8 +38,6 @@ import io.camunda.service.search.sort.SortOptionBuilders;
 import io.camunda.service.search.sort.UserSort;
 import io.camunda.service.search.sort.UserTaskSort;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.zeebe.gateway.protocol.rest.CamundaUserFilterRequest;
-import io.camunda.zeebe.gateway.protocol.rest.CamundaUserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsFilterRequest;
@@ -49,6 +47,8 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterRequest;
@@ -127,8 +127,7 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userTaskSearchQuery);
   }
 
-  public static Either<ProblemDetail, UserQuery> toUserQuery(
-      final CamundaUserSearchQueryRequest request) {
+  public static Either<ProblemDetail, UserQuery> toUserQuery(final UserSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.userSearchQuery().build());
     }
@@ -261,27 +260,16 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static UserFilter toUserFilter(final CamundaUserFilterRequest filter) {
-    final var builder = FilterBuilders.user();
-
-    if (filter != null) {
-      // username
-      if (filter.getUsername() != null) {
-        builder.username(filter.getUsername());
-      }
-
-      // name
-      if (filter.getName() != null) {
-        builder.name(filter.getName());
-      }
-
-      // email
-      if (filter.getEmail() != null) {
-        builder.email(filter.getEmail());
-      }
-    }
-
-    return builder.build();
+  private static UserFilter toUserFilter(final UserFilterRequest filter) {
+    return Optional.ofNullable(filter)
+        .map(
+            f ->
+                FilterBuilders.user()
+                    .username(f.getUsername())
+                    .name(f.getName())
+                    .email(f.getEmail())
+                    .build())
+        .orElse(null);
   }
 
   private static List<String> applyProcessInstanceSortField(

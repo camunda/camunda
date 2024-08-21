@@ -13,7 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.service.UserServices;
-import io.camunda.service.entities.CamundaUserEntity;
+import io.camunda.service.entities.UserEntity;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.SearchQueryResult.Builder;
 import io.camunda.service.search.query.UserQuery;
@@ -54,13 +54,12 @@ public class UserQueryControllerTest extends RestControllerTest {
           }""";
   private static final String USERS_SEARCH_URL = "/v2/users/search";
 
-  private static final SearchQueryResult<CamundaUserEntity> SEARCH_QUERY_RESULT =
-      new Builder<CamundaUserEntity>()
+  private static final SearchQueryResult<UserEntity> SEARCH_QUERY_RESULT =
+      new Builder<UserEntity>()
           .total(1L)
           .items(
               List.of(
-                  new CamundaUserEntity(
-                      new CamundaUserEntity.User("username1", "name1", "email1", "password1"))))
+                  new UserEntity(new UserEntity.User("username1", "name1", "email1", "password1"))))
           .sortValues(new Object[] {"v"})
           .build();
 

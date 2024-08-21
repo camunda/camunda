@@ -8,7 +8,7 @@
 package io.camunda.service;
 
 import io.camunda.search.clients.CamundaSearchClient;
-import io.camunda.service.entities.CamundaUserEntity;
+import io.camunda.service.entities.UserEntity;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.UserQuery;
@@ -19,8 +19,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserCreateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.concurrent.CompletableFuture;
 
-public class UserServices<T>
-    extends SearchQueryService<UserServices<T>, UserQuery, CamundaUserEntity> {
+public class UserServices<T> extends SearchQueryService<UserServices<T>, UserQuery, UserEntity> {
 
   public UserServices(final BrokerClient brokerClient, final CamundaSearchClient dataStoreClient) {
     this(brokerClient, dataStoreClient, null, null);
@@ -35,8 +34,8 @@ public class UserServices<T>
   }
 
   @Override
-  public SearchQueryResult<CamundaUserEntity> search(final UserQuery query) {
-    return executor.search(query, CamundaUserEntity.class);
+  public SearchQueryResult<UserEntity> search(final UserQuery query) {
+    return executor.search(query, UserEntity.class);
   }
 
   @Override

@@ -23,12 +23,12 @@
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
     <!-- maven plugins -->
-    <surefire-plugin.version>3.3.1</surefire-plugin.version>
+    <surefire-plugin.version>3.4.0</surefire-plugin.version>
 
     <!-- database config -->
     <elasticsearch.version>7.17.23</elasticsearch.version>
     <opensearch.version>2.10.1</opensearch.version>
-    <awssdk.version>2.27.7</awssdk.version>
+    <awssdk.version>2.27.9</awssdk.version>
     <!-- The default es 8 version we are going to be testing with-->
     <elasticsearch8.test.version>8.9.0</elasticsearch8.test.version>
     <!-- The default opensearch version we are going to be testing with-->
@@ -45,7 +45,7 @@
     <apache.http5-client.version>5.3.1</apache.http5-client.version>
     <apache.http5-core.version>5.2.5</apache.http5-core.version>
     <guava.version>33.3.0-jre</guava.version>
-    <spring.boot.version>3.3.0</spring.boot.version>
+    <spring.boot.version>3.3.2</spring.boot.version>
     <spring.version>6.1.12</spring.version>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
@@ -64,8 +64,8 @@
     <postgres.version>42.7.3</postgres.version>
     <mockito.version>5.12.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
-    <junit.jupiter.version>5.10.3</junit.jupiter.version>
-    <junit.platform.version>1.10.3</junit.platform.version>
+    <junit.jupiter.version>5.11.0</junit.jupiter.version>
+    <junit.platform.version>1.11.0</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
     <assertj.version>3.26.3</assertj.version>
     <google-java-format.plugin.version>1.23.0</google-java-format.plugin.version>
@@ -79,7 +79,7 @@
 
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
-    <spring-boot.version>3.3.0</spring-boot.version>
+    <spring-boot.version>3.3.2</spring-boot.version>
   </properties>
 
   <modules>
@@ -313,6 +313,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-commons</artifactId>
+      <version>${junit.platform.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
       <version>${assertj.version}</version>
@@ -504,7 +510,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-deploy-plugin</artifactId>
-          <version>3.1.2</version>
+          <version>3.1.3</version>
         </plugin>
         <plugin>
           <groupId>com.github.eirslett</groupId>

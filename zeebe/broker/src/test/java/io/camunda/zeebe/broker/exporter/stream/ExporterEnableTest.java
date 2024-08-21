@@ -8,8 +8,12 @@
 package io.camunda.zeebe.broker.exporter.stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
@@ -21,6 +25,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -181,6 +186,27 @@ public class ExporterEnableTest {
     Awaitility.await()
         .untilAsserted(
             () -> assertThat(exporters.get(newExporterId).getExportedRecords()).hasSize(1));
+  }
+
+  @Test
+  public void shouldRetryExporterEnableIfCalledWithRetry() {
+    // given
+    rule.startExporterDirector(exporterDescriptors);
+    rule.getDirector().disableExporter(EXPORTER_ID_2).join();
+
+    final var descriptor = createExporter(EXPORTER_ID_2, Collections.singletonMap("x", 1));
+    final var exporter = exporters.get(EXPORTER_ID_2);
+    doThrow(new RuntimeException("open failed")).doCallRealMethod().when(exporter).open(any());
+
+    // when
+    rule.getDirector()
+        .enableExporterWithRetry(EXPORTER_ID_2, new ExporterInitializationInfo(1, null), descriptor)
+        .join();
+
+    // then
+    Awaitility.await("exporter open has been retried")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> verify(exporter, times(2)).open(any()));
   }
 
   private void waitUntilExportersHaveSeenTheExpectedRecords() {

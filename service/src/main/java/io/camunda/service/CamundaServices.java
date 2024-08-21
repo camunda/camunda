@@ -65,6 +65,10 @@ public final class CamundaServices extends ApiServices<CamundaServices> {
     return new MessageServices(brokerClient, searchClient, transformers, authentication);
   }
 
+  public DocumentServices documentServices() {
+    return new DocumentServices(brokerClient, searchClient, transformers, authentication);
+  }
+
   @Override
   public CamundaServices withAuthentication(final Authentication authentication) {
     return new CamundaServices(brokerClient, searchClient, transformers, authentication);

@@ -62,7 +62,7 @@ jobs:
       #########################################################################
       # Setup: import secrets from vault
       - name: Import Secrets
-        id: secrets  # important to refer to it in later steps
+        id: secrets # important to refer to it in later steps
         uses: hashicorp/vault-action@v3
         with:
           url: ${{ secrets.VAULT_ADDR }}
@@ -86,10 +86,15 @@ jobs:
           nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       #########################################################################
+      # Build Operate frontend
+      - name: Build frontend
+        uses: ./.github/actions/build-operate-fe
+
+      #########################################################################
       # Build: maven artifacts and Docker images
       - name: Build Maven
         run: |
-          mvn clean deploy -B -T1C -P -docker -DskipTests -D skipOptimize -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+          mvn clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -D skipOptimize -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       #########################################################################
       # Docker login and image tagging

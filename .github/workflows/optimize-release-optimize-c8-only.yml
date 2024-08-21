@@ -273,7 +273,7 @@ jobs:
       - name: Start Smoketest
         uses: ./.github/actions/compose
         with:
-          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.smoketest.release.yml
+          compose_file: .github/actions/compose/docker-compose.smoketest.release.yml
           project_name: smoketest
           timeout: 600
         env:
