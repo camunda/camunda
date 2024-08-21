@@ -28,11 +28,11 @@ public final class ExporterMetrics {
           .labelNames(LABEL_NAME_PARTITION, LABEL_NAME_VALUE_TYPE)
           .register();
 
-  private static final Histogram EXPORTER_LATENCY =
+  private static final Histogram EXPORTER_EXPORTING_DURATION =
       Histogram.build()
           .namespace(NAMESPACE_ZEEBE)
-          .name("exporter_latency")
-          .help("Time exporter needs to export certain record (in seconds)")
+          .name("exporter_exporting_duration")
+          .help("The time an exporter needs to export certain record (duration in seconds)")
           .labelNames(LABEL_NAME_PARTITION, LABEL_NAME_EXPORTER, LABEL_NAME_VALUE_TYPE)
           .register();
 
@@ -116,8 +116,11 @@ public final class ExporterMetrics {
         .observe((exporting - written) / 1000f);
   }
 
-  public Histogram.Timer startExportLatencyTimer(final ValueType valueType, final String exporter) {
-    return EXPORTER_LATENCY.labels(partitionIdLabel, exporter, valueType.name()).startTimer();
+  public Histogram.Timer startExporterExportingTimer(
+      final ValueType valueType, final String exporter) {
+    return EXPORTER_EXPORTING_DURATION
+        .labels(partitionIdLabel, exporter, valueType.name())
+        .startTimer();
   }
 
   public void initializeExporterState(final ExporterPhase state) {

@@ -74,7 +74,7 @@ final class RecordExporter {
       final ExporterContainer container = containers.get(exporterIndex);
 
       try (final var timer =
-          exporterMetrics.startExportLatencyTimer(valueType, container.getId())) {
+          exporterMetrics.startExporterExportingTimer(valueType, container.getId())) {
         if (container.exportRecord(rawMetadata, typedEvent)) {
           exporterIndex++;
           exporterMetrics.setLastExportedPosition(container.getId(), typedEvent.getPosition());
