@@ -40,7 +40,7 @@ public class CustomCssRestServiceTest {
   }
 
   @Test
-  void init_shouldLoadCustomCssContent() throws IOException {
+  void initShouldLoadCustomCssContent() throws IOException {
     doReturn(mockResource).when(customCssRestService).loadResource(resourceLocation);
     when(mockResource.getContentAsString(any())).thenReturn(cssContent);
 
@@ -50,7 +50,7 @@ public class CustomCssRestServiceTest {
   }
 
   @Test
-  void getClientConfig_shouldReturnNull_whenCssContentIsNull() {
+  void getClientConfigShouldReturnNullWhenCssContentIsNull() {
     // Act
     final String result = customCssRestService.getClientConfig();
 
