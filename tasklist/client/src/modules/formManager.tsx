@@ -31,13 +31,21 @@ class FormManager {
     },
   });
   #schema: string | null = null;
-  #onSubmit: (result: {errors: Errors; data: FormJSData}) => void = () => {};
+  #onSubmit: (result: {
+    errors: Errors;
+    data: FormJSData;
+    files: Map<string, File[]>;
+  }) => void = () => {};
   #data: FormJSData | null = null;
 
   render = async (options: {
     schema: string;
     data: FormJSData;
-    onSubmit: (result: {errors: Errors; data: FormJSData}) => void;
+    onSubmit: (result: {
+      errors: Errors;
+      data: FormJSData;
+      files: Map<string, File[]>;
+    }) => void;
     onImportError?: () => void;
     container: HTMLElement;
   }) => {

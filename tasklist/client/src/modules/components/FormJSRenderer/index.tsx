@@ -18,7 +18,7 @@ import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
 import '@bpmn-io/form-js-carbon-styles/src/carbon-styles.scss';
 
 type Props = {
-  handleSubmit: (variables: Variable[]) => Promise<void>;
+  handleSubmit: (variables: Variable[], files?: File[]) => Promise<void>;
   schema: string;
   data?: Record<string, unknown>;
   readOnly?: boolean;
@@ -126,7 +126,7 @@ const FormJSRenderer: React.FC<Props> = ({
           schema,
           data,
           onImportError,
-          onSubmit: async ({data: newData, errors}) => {
+          onSubmit: async ({data: newData, errors, files}) => {
             onSubmitStart?.();
             setInvalidFields(undefined);
             if (Object.keys(errors).length === 0) {
@@ -141,7 +141,10 @@ const FormJSRenderer: React.FC<Props> = ({
               );
 
               try {
-                await handleSubmit(variables);
+                await handleSubmit(
+                  variables,
+                  Array.from(files.values()).flat(),
+                );
                 onSubmitSuccess?.();
               } catch (error) {
                 onSubmitError?.(error);

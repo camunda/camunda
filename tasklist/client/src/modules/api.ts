@@ -315,6 +315,20 @@ const api = {
       },
     });
   },
+  uploadDocuments: ({file}: {file: File}) => {
+    const body = new FormData();
+
+    body.append('file', file);
+
+    return new Request(getFullURL('/v2/documents'), {
+      ...BASE_REQUEST_OPTIONS,
+      method: 'POST',
+      body,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
 } as const;
 
 export {api};
