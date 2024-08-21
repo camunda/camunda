@@ -15,7 +15,7 @@ ARG DIST="distball"
 ### Base image ###
 # All package installation, updates, etc., anything with APT should be done here in a single step
 # hadolint ignore=DL3006
-FROM ${BASE_IMAGE}@${BASE_DIGEST} as base
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
 WORKDIR /
 
 # Upgrade all outdated packages and install missing ones (e.g. locales, tini)
@@ -33,7 +33,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 ### Build custom JRE using the base JDK image
 # hadolint ignore=DL3006
-FROM ${JDK_IMAGE}@${JDK_DIGEST} as jre-build
+FROM ${JDK_IMAGE}@${JDK_DIGEST} AS jre-build
 
 # Build a custom JRE which will strip down and compress modules to end up with a smaller Java \
 # distribution than the official JRE. This will also include useful debugging tools like
@@ -76,7 +76,7 @@ COPY --from=jre-build /jre ${JAVA_HOME}
 RUN java -Xshare:dump;
 
 ### Build camunda from scratch ###
-FROM java as build
+FROM java AS build
 WORKDIR /camunda
 ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
 COPY --link . ./
@@ -86,7 +86,7 @@ RUN --mount=type=cache,target=/root/.m2,rw \
 
 ### Extract camunda from distball ###
 # hadolint ignore=DL3006
-FROM base as distball
+FROM base AS distball
 WORKDIR /camunda
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 COPY --link ${DISTBALL} camunda.tar.gz
@@ -98,12 +98,12 @@ RUN mkdir camunda-zeebe && \
 
 ### Image containing the camunda distribution ###
 # hadolint ignore=DL3006
-FROM ${DIST} as dist
+FROM ${DIST} AS dist
 
 ### Application Image ###
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
-FROM java as app
+FROM java AS app
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
 ARG BASE_DIGEST
