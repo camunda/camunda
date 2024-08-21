@@ -108,7 +108,7 @@ jobs:
     - name: Verify integration
       uses: ./.github/actions/run-maven
       env:
-        LIMITS_CPU: 8
+        LIMITS_CPU: 16
       with:
         threads: 4C
         parameters: >
@@ -183,7 +183,7 @@ jobs:
       - name: Verify integration
         uses: ./.github/actions/run-maven
         env:
-          LIMITS_CPU: 8
+          LIMITS_CPU: 16
         with:
           threads: 4C
           parameters: >
@@ -261,7 +261,7 @@ jobs:
       - name: Verify integration
         uses: ./.github/actions/run-maven
         env:
-          LIMITS_CPU: 8
+          LIMITS_CPU: 16
         with:
           threads: 4C
           parameters: >
