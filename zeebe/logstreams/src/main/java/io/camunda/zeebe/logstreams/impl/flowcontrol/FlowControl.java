@@ -10,13 +10,10 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 import com.google.common.util.concurrent.RateLimiter;
 import com.netflix.concurrency.limits.Limit;
 import com.netflix.concurrency.limits.Limiter;
-import com.netflix.concurrency.limits.Limiter.Listener;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.RequestLimiter.CommandRateLimiterBuilder;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.WriteContext;
-import io.camunda.zeebe.logstreams.log.WriteContext.Internal;
-import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
@@ -128,8 +125,8 @@ public final class FlowControl implements AppendListener {
 
   private Either<Rejection, InFlightEntry> tryAcquireInternal(
       final WriteContext context, final List<LogAppendEntryMetadata> batchMetadata) {
-    final Listener requestListener;
-    switch (context) {
+    return null;
+    /*switch (context) {
       case final Internal ignored -> {
         // Internal commands are always accepted for incident response and maintenance.
         return Either.right(new InFlightEntry(metrics, batchMetadata, null));
@@ -150,7 +147,7 @@ public final class FlowControl implements AppendListener {
       return Either.left(Rejection.WriteRateLimitExhausted);
     }
 
-    return Either.right(new InFlightEntry(metrics, batchMetadata, requestListener));
+    return Either.right(new InFlightEntry(metrics, batchMetadata, requestListener));*/
   }
 
   public void onAppend(final InFlightEntry entry, final long highestPosition) {
