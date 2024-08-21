@@ -213,6 +213,8 @@ public final class CallActivityProcessor
     return switch (bindingType) {
       case deployment -> getProcessVersionInSameDeployment(processId, context);
       case latest -> getLatestProcessVersion(processId, context.getTenantId());
+      // will be implemented with https://github.com/camunda/camunda/issues/21038
+      case versionTag -> Either.left(new Failure("Binding type 'versionTag' not supported"));
     };
   }
 

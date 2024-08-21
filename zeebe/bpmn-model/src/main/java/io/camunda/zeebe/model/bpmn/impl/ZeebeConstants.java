@@ -60,6 +60,7 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_RESULT_VARIABLE = "resultVariable";
 
   public static final String ATTRIBUTE_BINDING_TYPE = "bindingType";
+  public static final String ATTRIBUTE_VERSION_TAG = "versionTag";
 
   public static final String ATTRIBUTE_PRIORITY = "priority";
 

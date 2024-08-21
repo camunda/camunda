@@ -128,4 +128,23 @@ public class BusinessRuleTaskBuilderTest {
         .extracting(ZeebeCalledDecision::getBindingType)
         .containsExactly(bindingType);
   }
+
+  @Test
+  void shouldSetVersionTag() {
+    // when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .businessRuleTask("task", task -> task.zeebeVersionTag("v1"))
+            .done();
+
+    // then
+    final ModelElementInstance businessRuleTask = instance.getModelElementById("task");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) businessRuleTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeCalledDecision.class))
+        .hasSize(1)
+        .extracting(ZeebeCalledDecision::getVersionTag)
+        .containsExactly("v1");
+  }
 }

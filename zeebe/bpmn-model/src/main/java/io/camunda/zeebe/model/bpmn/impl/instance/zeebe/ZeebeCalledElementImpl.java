@@ -32,6 +32,7 @@ public class ZeebeCalledElementImpl extends BpmnModelElementInstanceImpl
   private static Attribute<Boolean> propagateAllChildVariablesAttribute;
   private static Attribute<Boolean> propagateAllParentVariablesAttribute;
   private static Attribute<ZeebeBindingType> bindingTypeAttribute;
+  private static Attribute<String> versionTagAttribute;
 
   public ZeebeCalledElementImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -79,6 +80,16 @@ public class ZeebeCalledElementImpl extends BpmnModelElementInstanceImpl
     bindingTypeAttribute.setValue(this, bindingType);
   }
 
+  @Override
+  public String getVersionTag() {
+    return versionTagAttribute.getValue(this);
+  }
+
+  @Override
+  public void setVersionTag(final String versionTag) {
+    versionTagAttribute.setValue(this, versionTag);
+  }
+
   public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -111,6 +122,12 @@ public class ZeebeCalledElementImpl extends BpmnModelElementInstanceImpl
             .enumAttribute(ZeebeConstants.ATTRIBUTE_BINDING_TYPE, ZeebeBindingType.class)
             .namespace(BpmnModelConstants.ZEEBE_NS)
             .defaultValue(ZeebeBindingType.latest)
+            .build();
+
+    versionTagAttribute =
+        typeBuilder
+            .stringAttribute(ZeebeConstants.ATTRIBUTE_VERSION_TAG)
+            .namespace(BpmnModelConstants.ZEEBE_NS)
             .build();
 
     typeBuilder.build();

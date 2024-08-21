@@ -17,5 +17,6 @@ package io.camunda.zeebe.model.bpmn.instance.zeebe;
 
 public enum ZeebeBindingType {
   deployment,
-  latest
+  latest,
+  versionTag
 }
