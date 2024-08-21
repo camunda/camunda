@@ -14,10 +14,12 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOW
 import static java.util.Optional.ofNullable;
 
 import io.camunda.service.search.filter.ComparableValueFilter;
+import io.camunda.service.search.filter.DateValueFilter;
 import io.camunda.service.search.filter.DecisionDefinitionFilter;
 import io.camunda.service.search.filter.DecisionRequirementsFilter;
 import io.camunda.service.search.filter.FilterBase;
 import io.camunda.service.search.filter.FilterBuilders;
+import io.camunda.service.search.filter.IncidentFilter;
 import io.camunda.service.search.filter.ProcessInstanceFilter;
 import io.camunda.service.search.filter.UserFilter;
 import io.camunda.service.search.filter.UserTaskFilter;
@@ -25,6 +27,7 @@ import io.camunda.service.search.filter.VariableValueFilter;
 import io.camunda.service.search.page.SearchQueryPage;
 import io.camunda.service.search.query.DecisionDefinitionQuery;
 import io.camunda.service.search.query.DecisionRequirementsQuery;
+import io.camunda.service.search.query.IncidentQuery;
 import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.TypedSearchQueryBuilder;
@@ -32,6 +35,7 @@ import io.camunda.service.search.query.UserQuery;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.service.search.sort.DecisionDefinitionSort;
 import io.camunda.service.search.sort.DecisionRequirementsSort;
+import io.camunda.service.search.sort.IncidentSort;
 import io.camunda.service.search.sort.ProcessInstanceSort;
 import io.camunda.service.search.sort.SortOption;
 import io.camunda.service.search.sort.SortOptionBuilders;
@@ -42,6 +46,8 @@ import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.PriorityValueFilter;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
@@ -54,6 +60,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.VariableValueFilterRequest;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import io.camunda.zeebe.util.Either;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -140,6 +147,21 @@ public final class SearchQueryRequestMapper {
             SearchQueryRequestMapper::applyUserSortField);
     final var filter = toUserFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userSearchQuery);
+  }
+
+  public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
+      final IncidentSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.incidentSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            request.getSort(),
+            SortOptionBuilders::incident,
+            SearchQueryRequestMapper::applyIncidentSortField);
+    final var filter = toIncidentFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::incidentSearchQuery);
   }
 
   private static ProcessInstanceFilter toProcessInstanceFilter(
@@ -272,6 +294,37 @@ public final class SearchQueryRequestMapper {
         .orElse(null);
   }
 
+  private static IncidentFilter toIncidentFilter(final IncidentFilterRequest filter) {
+    final var builder = FilterBuilders.incident();
+
+    if (filter != null) {
+      ofNullable(filter.getKey()).ifPresent(builder::keys);
+      ofNullable(filter.getState()).ifPresent(builder::states);
+      ofNullable(filter.getProcessInstanceKey()).ifPresent(builder::processInstanceKeys);
+      ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
+      ofNullable(filter.getFlowNodeId()).ifPresent(builder::flowNodeIds);
+      ofNullable(filter.getFlowNodeInstanceId()).ifPresent(builder::flowNodeInstanceIds);
+      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+      ofNullable(filter.getJobKey()).ifPresent(builder::jobKeys);
+      ofNullable(filter.getType()).ifPresent(builder::types);
+      ofNullable(filter.getHasActiveOperation())
+          .ifPresent(
+              b -> {
+                if (b) {
+                  builder.hasActiveOperation();
+                }
+              });
+      ofNullable(filter.getCreationTime())
+          .ifPresent(
+              t -> {
+                final var creationTime = OffsetDateTime.parse(t);
+                builder.creationTime(
+                    new DateValueFilter.Builder().before(creationTime).after(creationTime).build());
+              });
+    }
+    return builder.build();
+  }
+
   private static List<String> applyProcessInstanceSortField(
       final String field, final ProcessInstanceSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
@@ -319,6 +372,29 @@ public final class SearchQueryRequestMapper {
         case "dmnDecisionRequirementsName" -> builder.dmnDecisionRequirementsName();
         case "version" -> builder.version();
         case "dmnDecisionRequirementsId" -> builder.dmnDecisionRequirementsId();
+        case "tenantId" -> builder.tenantId();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  private static List<String> applyIncidentSortField(
+      final String field, final IncidentSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case "key" -> builder.key();
+        case "type" -> builder.type();
+        case "state" -> builder.state();
+        case "creationTime" -> builder.creationTime();
+        case "processInstanceKey" -> builder.processInstanceKey();
+        case "processDefinitionKey" -> builder.processDefinitionKey();
+        case "flowNodeInstanceId" -> builder.flowNodeInstanceId();
+        case "flowNodeId" -> builder.flowNodeId();
+        case "jobKey" -> builder.jobKey();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
