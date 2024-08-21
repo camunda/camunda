@@ -160,7 +160,6 @@ export default class Configuration extends Component {
               <ShowInstanceCount
                 showInstanceCount={configuration.showInstanceCount}
                 onChange={this.updateConfiguration}
-                label="instance"
               />
               <DateVariableUnit
                 configuration={configuration}

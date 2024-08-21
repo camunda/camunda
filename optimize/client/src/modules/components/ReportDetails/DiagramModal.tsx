@@ -29,7 +29,8 @@ export function DiagramModal({definition, open, onClose, mightFail}: DiagramModa
   const [xml, setXml] = useState<string | null>(null);
 
   useEffect(() => {
-    mightFail(loadXML(definition), setXml, showError);
+    const {key, versions, tenantIds} = definition;
+    mightFail(loadProcessDefinitionXml(key, versions[0], tenantIds[0]), setXml, showError);
   }, [mightFail, definition]);
 
   return (
@@ -50,8 +51,3 @@ export function DiagramModal({definition, open, onClose, mightFail}: DiagramModa
 }
 
 export default withErrorHandling(DiagramModal);
-
-function loadXML(definition: Definition) {
-  const {key, versions, tenantIds} = definition;
-  return loadProcessDefinitionXml(key, versions[0], tenantIds[0]);
-}

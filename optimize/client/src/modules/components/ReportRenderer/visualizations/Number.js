@@ -105,8 +105,7 @@ export function Number({report, formatter, mightFail}) {
           } else if (measure.property === 'percentage') {
             viewString = t('report.percentageOfInstances');
           } else {
-            const config = reportConfig;
-            const view = config.view.find(({matcher}) => matcher(data));
+            const view = reportConfig.view.find(({matcher}) => matcher(data));
             let measureString = '';
             measureString = t(
               'report.view.' + (measure.property === 'frequency' ? 'count' : 'duration')

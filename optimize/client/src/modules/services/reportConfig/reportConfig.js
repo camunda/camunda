@@ -14,10 +14,10 @@ import {getVariableLabel} from 'variables';
 
 import {isCategoricalBar, isCategorical} from '../reportService';
 
-import * as processOptions from './process';
+import * as reportOptions from './process';
 
 export function createReportUpdate(report, updateType, newValue, payloadAdjustment) {
-  let newPayload = processOptions[updateType].find(({key}) => key === newValue).payload(report);
+  let newPayload = reportOptions[updateType].find(({key}) => key === newValue).payload(report);
 
   if (payloadAdjustment) {
     newPayload = update(newPayload, payloadAdjustment);
@@ -26,9 +26,9 @@ export function createReportUpdate(report, updateType, newValue, payloadAdjustme
   let newReport = {...structuredClone(report), ...newPayload};
 
   // ensure group is still valid
-  const oldGroup = processOptions.group.find(({matcher}) => matcher(newReport));
+  const oldGroup = reportOptions.group.find(({matcher}) => matcher(newReport));
   if (!oldGroup?.visible(newReport) || !oldGroup?.enabled(newReport)) {
-    const possibleGroups = processOptions.group
+    const possibleGroups = reportOptions.group
       .filter(({visible, enabled}) => visible(newReport) && enabled(newReport))
       .sort((a, b) => a.priority - b.priority);
 
@@ -36,20 +36,20 @@ export function createReportUpdate(report, updateType, newValue, payloadAdjustme
   }
 
   // ensure distribution is still valid
-  const oldDistribution = processOptions.distribution.find(({matcher}) => matcher(newReport));
+  const oldDistribution = reportOptions.distribution.find(({matcher}) => matcher(newReport));
   if (
     !oldDistribution?.visible(newReport) ||
     !oldDistribution?.enabled(newReport) ||
     (updateType === 'view' &&
-      processOptions.view.find(({matcher}) => matcher(report)) !==
-        processOptions.view.find(({matcher}) => matcher(newReport)) &&
+      reportOptions.view.find(({matcher}) => matcher(report)) !==
+        reportOptions.view.find(({matcher}) => matcher(newReport)) &&
       oldDistribution.key === 'none') || // try to find distribution when switching view
     (updateType === 'group' &&
       ['flowNodes', 'userTasks'].includes(
-        processOptions.group.find(({matcher}) => matcher(report))?.key
+        reportOptions.group.find(({matcher}) => matcher(report))?.key
       )) // try to find distribution when switching away from flowNodes
   ) {
-    const possibleDistributions = processOptions.distribution
+    const possibleDistributions = reportOptions.distribution
       .filter(({visible, enabled}) => visible(newReport) && enabled(newReport))
       .sort((a, b) => a.priority - b.priority);
 
@@ -57,9 +57,9 @@ export function createReportUpdate(report, updateType, newValue, payloadAdjustme
   }
 
   // ensure visualization is still valid
-  const oldVisualization = processOptions.visualization.find(({matcher}) => matcher(newReport));
+  const oldVisualization = reportOptions.visualization.find(({matcher}) => matcher(newReport));
   if (!oldVisualization?.visible(newReport) || !oldVisualization?.enabled(newReport)) {
-    const possibleVisualizations = processOptions.visualization
+    const possibleVisualizations = reportOptions.visualization
       .filter(({visible, enabled}) => visible(newReport) && enabled(newReport))
       .sort((a, b) => a.priority - b.priority);
 
@@ -69,7 +69,7 @@ export function createReportUpdate(report, updateType, newValue, payloadAdjustme
   // --- ensure configuration is still valid ---
   // update y label on view change
   if (updateType === 'view' && ['duration', 'frequency'].includes(newReport.view.properties[0])) {
-    let label = processOptions.view.find(({matcher}) => matcher(newReport)).label() + ' ';
+    let label = reportOptions.view.find(({matcher}) => matcher(newReport)).label() + ' ';
     if (newReport.view.properties[0] === 'frequency') {
       label += t('report.view.count');
     } else if (newReport.view.properties[0] === 'duration') {
@@ -84,7 +84,7 @@ export function createReportUpdate(report, updateType, newValue, payloadAdjustme
       const {name, type} = newReport.groupBy.value;
       newReport.configuration.xLabel = getVariableLabel(name, type);
     } else {
-      newReport.configuration.xLabel = processOptions.group
+      newReport.configuration.xLabel = reportOptions.group
         .find(({matcher}) => matcher(newReport))
         .label();
     }

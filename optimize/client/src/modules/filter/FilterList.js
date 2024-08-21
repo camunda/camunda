@@ -130,9 +130,7 @@ export default class FilterList extends React.Component {
 
         const areVariablesMissing =
           variables &&
-          !filterVariables.every(({name, type}) =>
-            variableExists(name, type, filter.type, variables)
-          );
+          !filterVariables.every(({name, type}) => processVariablesExists(name, type, variables));
 
         let warning;
         if (!definitionIsValid) {
@@ -154,7 +152,7 @@ export default class FilterList extends React.Component {
               {filterVariables.map(({name, type, data}, idx) => {
                 const variableLabel = areVariablesMissing
                   ? t('report.missingVariable')
-                  : getVariableLabel(name, type, filter.type, variables);
+                  : getProcessVariableLabel(name, type, variables);
 
                 return (
                   <div key={idx}>
@@ -378,14 +376,6 @@ FilterList.defaultProps = {
   openEditFilterModal: () => {},
   deleteFilter: () => {},
 };
-
-function getVariableLabel(nameOrId, type, filterType, variables) {
-  return getProcessVariableLabel(nameOrId, type, variables);
-}
-
-function variableExists(nameOrId, type, filterType, variables) {
-  return processVariablesExists(nameOrId, type, variables);
-}
 
 function getProcessVariableLabel(name, type, variables) {
   const {label} =
