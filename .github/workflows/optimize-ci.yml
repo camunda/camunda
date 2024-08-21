@@ -95,7 +95,7 @@ jobs:
         build-args: |
           VERSION=${{ steps.pom-info.outputs.project_version }}
           REVISION=${{ github.event.pull_request.head.sha }}
-        tags: "registry.camunda.cloud/optimize-ee/optimize:pr-${{ github.event.pull_request.head.sha }}"
+        tags: "registry.camunda.cloud/team-optimize/optimize:pr-${{ github.event.pull_request.head.sha }}"
         push: true
 
   integration-tests:

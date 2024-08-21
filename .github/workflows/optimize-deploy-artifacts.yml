@@ -9,7 +9,7 @@ jobs:
     runs-on: gcp-core-2-default
     timeout-minutes: 30
     env:
-      DOCKER_IMAGE_TEAM: registry.camunda.cloud/optimize-ee/optimize
+      DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
       DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
     steps:
     - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
