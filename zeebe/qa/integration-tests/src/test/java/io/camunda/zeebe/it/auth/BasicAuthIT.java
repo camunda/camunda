@@ -10,31 +10,38 @@ package io.camunda.zeebe.it.auth;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.postgresql.hostchooser.HostRequirement.any;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.sources.DefaultObjectMapperConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.service.entities.CamundaUserEntity;
+import io.camunda.service.entities.CamundaUserEntity.User;
+import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import org.junit.jupiter.api.Assertions;
+import org.apache.logging.log4j.util.Base64Util;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.web.context.WebApplicationContext;
 
 @SpringBootTest(
     classes = {
@@ -44,55 +51,72 @@ import org.springframework.web.context.WebApplicationContext;
     },
     properties = {"spring.profiles.active=broker,auth-basic"})
 @WebAppConfiguration
+@AutoConfigureMockMvc
 public class BasicAuthIT {
 
+  private static final String USERNAME = "correct_username";
+  private static final String PASSWORD = "correct_password";
   @MockBean UserServices userService;
   @Autowired private ObjectMapper objectMapper;
-  @Autowired private WebApplicationContext webAppContext;
-  private MockMvc mockMvc;
+  @Autowired private PasswordEncoder passwordEncoder;
+  @Autowired private MockMvc mockMvc;
+  private String content;
 
   @BeforeEach
-  void setUp() {
-    mockMvc = webAppContextSetup(webAppContext).build();
+  void setUp() throws JsonProcessingException {
     when(userService.withAuthentication(any(Authentication.class))).thenReturn(userService);
     when(userService.createUser(any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new UserRecord()));
+    when(userService.search(any()))
+        .thenReturn(
+            new SearchQueryResult<>(
+                1,
+                List.of(
+                    new CamundaUserEntity(
+                        new User(USERNAME, "", "", passwordEncoder.encode(PASSWORD)))),
+                null));
+
+    content =
+        objectMapper.writeValueAsString(
+            new CamundaUserWithPasswordRequest()
+                .username("demo")
+                .password("password")
+                .email("demo@e.c"));
   }
 
   @Test
   void basicAuthWithValidCredentials() throws Exception {
-    final CamundaUserWithPasswordRequest dto = new CamundaUserWithPasswordRequest();
-    dto.setUsername("demo");
-    dto.setPassword("password");
-    dto.setName("Demo");
-    dto.setEmail("demo@e.c");
-
     final MockHttpServletRequestBuilder request =
         MockMvcRequestBuilders.post("/v2/users")
             .accept("application/json")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(dto));
-    final MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
-    Assertions.assertEquals(mvcResult.getResponse().getContentAsString(), "");
+            .header("Authorization", "Basic " + Base64Util.encode(USERNAME + ":" + PASSWORD))
+            .content(content);
+    final MvcResult mvcResult =
+        mockMvc.perform(request).andExpect(status().isNoContent()).andReturn();
+    mvcResult.getAsyncResult();
+    mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isNoContent());
   }
 
-  //  @Test
-  //  void basicAuthWithNoCredentials() {
-  //    final CamundaUserWithPasswordRequest dto = new CamundaUserWithPasswordRequest();
-  //    dto.setUsername("demo");
-  //    dto.setPassword("password");
-  //    dto.setName("Demo");
-  //    dto.setEmail("demo@e.c");
-  //    client.post().uri("/v2/users").bodyValue(dto).exchange().expectStatus().isUnauthorized();
-  //  }
-  //
-  //  @Test
-  //  void basicAuthWithBadCredentials() {
-  //    final CamundaUserWithPasswordRequest dto = new CamundaUserWithPasswordRequest();
-  //    dto.setUsername("demo");
-  //    dto.setPassword("password");
-  //    dto.setName("Demo");
-  //    dto.setEmail("demo@e.c");
-  //    client.post().uri("/v2/users").bodyValue(dto).exchange().expectStatus().isUnauthorized();
-  //  }
+  @Test
+  void basicAuthWithNoCredentials() throws Exception {
+    final MockHttpServletRequestBuilder request =
+        MockMvcRequestBuilders.post("/v2/users")
+            .accept("application/json")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(content);
+    mockMvc.perform(request).andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void basicAuthWithBadCredentials() throws Exception {
+    final MockHttpServletRequestBuilder request =
+        MockMvcRequestBuilders.post("/v2/users")
+            .accept("application/json")
+            .contentType(MediaType.APPLICATION_JSON)
+            .header(
+                "Authorization", "Basic " + Base64Util.encode(USERNAME + ":" + PASSWORD + "Wrong"))
+            .content(content);
+    mockMvc.perform(request).andExpect(status().isUnauthorized()).andReturn();
+  }
 }
