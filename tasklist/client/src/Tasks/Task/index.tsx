@@ -32,6 +32,7 @@ import {getCompleteTaskErrorMessage} from './getCompleteTaskErrorMessage';
 import {shouldFetchMore} from './shouldFetchMore';
 import {Variables} from './Variables';
 import {FormJS} from './FormJS';
+import {useUploadDocuments} from 'modules/mutations/useUploadDocuments';
 
 const CAMUNDA_FORMS_PREFIX = 'camunda-forms:bpmn:';
 
@@ -62,6 +63,7 @@ const Task: React.FC = observer(() => {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const {mutateAsync: completeTask} = useCompleteTask();
+  const {mutateAsync: uploadDocuments} = useUploadDocuments();
   const {formKey, processDefinitionKey, formId, id: taskId} = task;
 
   const {enabled: autoSelectNextTaskEnabled} = autoSelectNextTaskStore;
@@ -84,7 +86,13 @@ const Task: React.FC = observer(() => {
 
   async function handleSubmission(
     variables: Pick<Variable, 'name' | 'value'>[],
+    files?: File[],
   ) {
+    if (files !== undefined) {
+      await uploadDocuments({
+        files,
+      });
+    }
     await completeTask({
       taskId,
       variables,
