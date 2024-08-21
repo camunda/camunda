@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance.migration;
 
+import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -648,6 +648,87 @@ public class MigrateProcessInstanceRejectionTest {
       Migrating event subprocesses with start events of these types is not possible yet."""
                 .formatted(processInstanceKey, "process2", "TIMER"))
         .hasKey(processInstanceKey);
+  }
+
+  @Test
+  public void
+      shouldRejectMigrationForInterruptingActiveTimerEventSubprocessInsideEmbeddedProcess() {
+    // given
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process")
+                    .startEvent("start")
+                    .subProcess(
+                        "sub1",
+                        s ->
+                            s.embeddedSubProcess()
+                                .eventSubProcess(
+                                    "subsub1",
+                                    es ->
+                                        es.startEvent("timer_start1")
+                                            .timerWithDuration("PT5M")
+                                            .serviceTask("A", t -> t.zeebeJobType("task1"))
+                                            .endEvent())
+                                .startEvent()
+                                .serviceTask("B", t -> t.zeebeJobType("task2"))
+                                .endEvent())
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process2")
+                    .startEvent("start")
+                    .subProcess(
+                        "sub2",
+                        s ->
+                            s.embeddedSubProcess()
+                                .eventSubProcess(
+                                    "subsub2",
+                                    es ->
+                                        es.startEvent("timer_start2")
+                                            .timerWithDuration("PT5M")
+                                            .serviceTask("C", t -> t.zeebeJobType("task3"))
+                                            .endEvent())
+                                .startEvent()
+                                .serviceTask("D", t -> t.zeebeJobType("task4"))
+                                .endEvent())
+                    .done())
+            .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("B")
+        .await();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, "process2");
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("sub1", "sub2")
+        .addMappingInstruction("subsub1", "subsub2")
+        .addMappingInstruction("B", "D")
+        .expectRejection()
+        .migrate();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            """
+      Expected to migrate process instance '%s' \
+      but active process with id '%s' has one or more event subprocesses with start events of types '%s'. \
+      Migrating event subprocesses with start events of these types is not possible yet."""
+                .formatted(processInstanceKey, "sub1", "TIMER"));
   }
 
   @Test
