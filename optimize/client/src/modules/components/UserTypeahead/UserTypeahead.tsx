@@ -43,8 +43,8 @@ export default function UserTypeahead({
       return mightFail(
         getUser(user.id),
         (user) => {
-          const {id} = user;
-          const exists = (users: User[]) => users.some((user) => user.id === getUserId(id));
+          const exists = (users: User[]) =>
+            users.some((existingUser) => existingUser.id === getUserId(user.id));
 
           if (exists(users)) {
             return showError(t('home.roles.existing-identity'));

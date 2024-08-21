@@ -32,9 +32,7 @@ const testUser = {
   identity: {
     name: 'kermit',
     id: 'kermit',
-    type: 'user',
     email: 'kermit@kermit.com',
-    memberCount: '1',
   },
 };
 
@@ -44,7 +42,6 @@ it('should invoke onChange when adding a user', () => {
 
   node.find('MultiUserInput').simulate('add', {
     id: 'user2',
-    type: 'user',
     name: 'User 2',
   });
 

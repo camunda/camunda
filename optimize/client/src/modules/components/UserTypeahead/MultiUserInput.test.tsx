@@ -57,8 +57,8 @@ it('should enable loading while loading data', async () => {
 it('should format user list information correctly', async () => {
   (searchIdentities as jest.Mock).mockReturnValueOnce({
     result: [
-      {id: 'testUser', type: 'user', email: 'testUser@test.com'},
-      {id: 'user2', email: 'user2@test.com', type: 'user', name: 'user2'},
+      {id: 'testUser', email: 'testUser@test.com'},
+      {id: 'user2', email: 'user2@test.com', name: 'user2'},
     ],
     total: 50,
   });
