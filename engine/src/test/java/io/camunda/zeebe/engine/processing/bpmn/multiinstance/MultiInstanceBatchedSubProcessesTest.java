@@ -18,13 +18,13 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-// TODO rename
-public class NewMultiInstanceTest {
+public class MultiInstanceBatchedSubProcessesTest {
 
   @ClassRule
   public static final EngineRule ENGINE = EngineRule.singlePartition().maxCommandsInBatch(47);
 
   private static final String PROCESS_ID = "process";
+  private static final String SUBPROCESS_2_START_EVENT = "subprocess2StartEvent";
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
@@ -45,7 +45,7 @@ public class NewMultiInstanceTest {
                           b.zeebeInputCollectionExpression("line.orders")
                               .zeebeInputElement("order")))
           .embeddedSubProcess()
-          .startEvent("subprocess2StartEvent")
+          .startEvent(SUBPROCESS_2_START_EVENT)
           .exclusiveGateway("exclusive-gateway")
           .defaultFlow()
           .exclusiveGateway()
@@ -61,19 +61,18 @@ public class NewMultiInstanceTest {
       new RecordingExporterTestWatcher();
 
   @Test
-  public void test() {
+  public void shouldCompleteAllChildInstancesBeforeCompletingTheMultiInstanceBody() {
     // given
     ENGINE.deployment().withXmlResource(PROCESS).deploy();
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final int orderCount = 50;
 
     // when
-    final int orderCount = 50;
-    final String startEventToLookFor = "subprocess2StartEvent";
+    ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withElementId(startEventToLookFor)
+                .withElementId(SUBPROCESS_2_START_EVENT)
                 .limit(orderCount)
                 .toList())
         .hasSize(orderCount);
