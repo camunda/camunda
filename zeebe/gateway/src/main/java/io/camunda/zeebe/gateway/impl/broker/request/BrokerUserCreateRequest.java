@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
@@ -19,6 +20,7 @@ public class BrokerUserCreateRequest extends BrokerExecuteCommand<UserRecord> {
 
   public BrokerUserCreateRequest() {
     super(ValueType.USER, UserIntent.CREATE);
+    setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
   public BrokerUserCreateRequest setUsername(final String username) {

@@ -62,8 +62,8 @@
     "src/**/*.scss": [
       "prettier --write"
     ],
-    "src/**/*.js": [
-      "eslint --fix",
+    "src/**/*.{js,jsx}": [
+      "eslint --fix --max-warnings=0",
       "prettier --write"
     ]
   },
@@ -81,7 +81,7 @@
     "@types/enzyme": "3.10.18",
     "@types/enzyme-adapter-react-16": "1.0.9",
     "@types/jest": "29.5.12",
-    "@types/node": "20.16.0",
+    "@types/node": "20.16.1",
     "@types/react": "^18.0.11",
     "@types/react-date-range": "1.4.9",
     "@types/react-dom": "^18.0.11",

@@ -33,12 +33,13 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
   private String action;
   private List<String> changedAttributes;
   private String tenantId = DEFAULT_TENANT_ID;
+  private Integer priority;
 
   public Long getUserTaskKey() {
     return userTaskKey;
   }
 
-  public UserTaskEntity setUserTaskKey(Long userTaskKey) {
+  public UserTaskEntity setUserTaskKey(final Long userTaskKey) {
     this.userTaskKey = userTaskKey;
     return this;
   }
@@ -47,7 +48,7 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
     return assignee;
   }
 
-  public UserTaskEntity setAssignee(String assignee) {
+  public UserTaskEntity setAssignee(final String assignee) {
     this.assignee = assignee;
     return this;
   }
@@ -56,7 +57,7 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
     return candidateGroups;
   }
 
-  public UserTaskEntity setCandidateGroups(List<String> candidateGroups) {
+  public UserTaskEntity setCandidateGroups(final List<String> candidateGroups) {
     this.candidateGroups = candidateGroups;
     return this;
   }
@@ -65,7 +66,7 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
     return candidateUsers;
   }
 
-  public UserTaskEntity setCandidateUsers(List<String> candidateUsers) {
+  public UserTaskEntity setCandidateUsers(final List<String> candidateUsers) {
     this.candidateUsers = candidateUsers;
     return this;
   }
@@ -74,7 +75,7 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
     return dueDate;
   }
 
-  public UserTaskEntity setDueDate(OffsetDateTime dueDate) {
+  public UserTaskEntity setDueDate(final OffsetDateTime dueDate) {
     this.dueDate = dueDate;
     return this;
   }
@@ -83,7 +84,7 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
     return followUpDate;
   }
 
-  public UserTaskEntity setFollowUpDate(OffsetDateTime followUpDate) {
+  public UserTaskEntity setFollowUpDate(final OffsetDateTime followUpDate) {
     this.followUpDate = followUpDate;
     return this;
   }
@@ -92,7 +93,7 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
     return formKey;
   }
 
-  public UserTaskEntity setFormKey(Long formKey) {
+  public UserTaskEntity setFormKey(final Long formKey) {
     this.formKey = formKey;
     return this;
   }
@@ -101,7 +102,7 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
     return elementId;
   }
 
-  public UserTaskEntity setElementId(String elementId) {
+  public UserTaskEntity setElementId(final String elementId) {
     this.elementId = elementId;
     return this;
   }
@@ -110,7 +111,7 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
     return elementInstanceKey;
   }
 
-  public UserTaskEntity setElementInstanceKey(Long elementInstanceKey) {
+  public UserTaskEntity setElementInstanceKey(final Long elementInstanceKey) {
     this.elementInstanceKey = elementInstanceKey;
     return this;
   }
@@ -119,7 +120,7 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
     return bpmnProcessId;
   }
 
-  public UserTaskEntity setBpmnProcessId(String bpmnProcessId) {
+  public UserTaskEntity setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -128,7 +129,7 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
     return processDefinitionKey;
   }
 
-  public UserTaskEntity setProcessDefinitionKey(Long processDefinitionKey) {
+  public UserTaskEntity setProcessDefinitionKey(final Long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
     return this;
   }
@@ -137,7 +138,7 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
     return processDefinitionVersion;
   }
 
-  public UserTaskEntity setProcessDefinitionVersion(Integer processDefinitionVersion) {
+  public UserTaskEntity setProcessDefinitionVersion(final Integer processDefinitionVersion) {
     this.processDefinitionVersion = processDefinitionVersion;
     return this;
   }
@@ -146,7 +147,7 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
     return processInstanceKey;
   }
 
-  public UserTaskEntity setProcessInstanceKey(Long processInstanceKey) {
+  public UserTaskEntity setProcessInstanceKey(final Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
     return this;
   }
@@ -155,7 +156,7 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
     return variables;
   }
 
-  public UserTaskEntity setVariables(String variables) {
+  public UserTaskEntity setVariables(final String variables) {
     this.variables = variables;
     return this;
   }
@@ -164,7 +165,7 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
     return tenantId;
   }
 
-  public UserTaskEntity setTenantId(String tenantId) {
+  public UserTaskEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -173,7 +174,7 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
     return externalReference;
   }
 
-  public UserTaskEntity setExternalReference(String externalReference) {
+  public UserTaskEntity setExternalReference(final String externalReference) {
     this.externalReference = externalReference;
     return this;
   }
@@ -182,7 +183,7 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
     return action;
   }
 
-  public UserTaskEntity setAction(String action) {
+  public UserTaskEntity setAction(final String action) {
     this.action = action;
     return this;
   }
@@ -191,13 +192,47 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
     return changedAttributes;
   }
 
-  public UserTaskEntity setChangedAttributes(List<String> changedAttributes) {
+  public UserTaskEntity setChangedAttributes(final List<String> changedAttributes) {
     this.changedAttributes = changedAttributes;
     return this;
   }
 
+  public Integer getPriority() {
+    return priority;
+  }
+
+  public UserTaskEntity setPriority(final Integer priority) {
+    this.priority = priority;
+    return this;
+  }
+
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        userTaskKey,
+        assignee,
+        candidateGroups,
+        candidateUsers,
+        dueDate,
+        followUpDate,
+        formKey,
+        elementId,
+        elementInstanceKey,
+        bpmnProcessId,
+        processDefinitionKey,
+        processDefinitionVersion,
+        processInstanceKey,
+        variables,
+        externalReference,
+        action,
+        changedAttributes,
+        tenantId,
+        priority);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -225,30 +260,7 @@ public class UserTaskEntity extends OperateZeebeEntity<UserTaskEntity> {
         && Objects.equals(externalReference, that.externalReference)
         && Objects.equals(action, that.action)
         && Objects.equals(changedAttributes, that.changedAttributes)
-        && Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        super.hashCode(),
-        userTaskKey,
-        assignee,
-        candidateGroups,
-        candidateUsers,
-        dueDate,
-        followUpDate,
-        formKey,
-        elementId,
-        elementInstanceKey,
-        bpmnProcessId,
-        processDefinitionKey,
-        processDefinitionVersion,
-        processInstanceKey,
-        variables,
-        externalReference,
-        action,
-        changedAttributes,
-        tenantId);
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(priority, that.priority);
   }
 }

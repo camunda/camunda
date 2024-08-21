@@ -42,6 +42,7 @@
     <version.camunda>7.22.0-SNAPSHOT</version.camunda>
     <version.camunda-license-check>2.9.0</version.camunda-license-check>
     <version.checkstyle>10.17.0</version.checkstyle>
+    <version.commons-beanutils>1.9.4</version.commons-beanutils>
     <version.commons-lang>3.16.0</version.commons-lang>
     <version.commons-logging>1.3.4</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
@@ -124,7 +125,7 @@
     <version.feign>13.3</version.feign>
     <version.google-sdk>26.44.0</version.google-sdk>
     <version.azure-sdk>1.2.26</version.azure-sdk>
-    <version.awssdk>2.27.8</version.awssdk>
+    <version.awssdk>2.27.9</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -154,15 +155,16 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.769</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.770</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.20.1</version.elasticsearch-test-container>
     <version.postgres-test-container>1.20.1</version.postgres-test-container>
     <version.elasticsearch7>7.17.23</version.elasticsearch7>
+    <!-- the lucene version must be coupled with version.elasticsearch7 -->
     <version.lucene>8.11.3</version.lucene>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
     <version.joda-time>2.12.7</version.joda-time>
     <version.commons-collections4>4.4</version.commons-collections4>
-    <version.jetty>11.0.22</version.jetty>
+    <version.jetty>11.0.23</version.jetty>
 
     <!-- Auth0 Dependencies -->
     <!-- If any of the following version changes, -->
@@ -1327,6 +1329,18 @@
       </dependency>
 
       <dependency>
+        <groupId>commons-beanutils</groupId>
+        <artifactId>commons-beanutils</artifactId>
+        <version>${version.commons-beanutils}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>commons-collections</groupId>
+            <artifactId>commons-collections</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-annotations</artifactId>
         <version>${version.spotbugs}</version>
@@ -1422,6 +1436,12 @@
       <dependency>
         <groupId>org.wiremock</groupId>
         <artifactId>wiremock</artifactId>
+        <version>${version.wiremock}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.wiremock</groupId>
+        <artifactId>wiremock-standalone</artifactId>
         <version>${version.wiremock}</version>
       </dependency>
 

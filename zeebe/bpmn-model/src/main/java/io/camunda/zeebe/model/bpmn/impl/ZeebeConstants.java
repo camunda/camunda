@@ -97,6 +97,8 @@ public class ZeebeConstants {
   public static final String ELEMENT_EXECUTION_LISTENERS = "executionListeners";
   public static final String ELEMENT_EXECUTION_LISTENER = "executionListener";
 
+  public static final String ELEMENT_VERSION_TAG = "versionTag";
+
   /** Form key format used for camunda-forms format */
   public static final String USER_TASK_FORM_KEY_CAMUNDA_FORMS_FORMAT = "camunda-forms";
 

@@ -1278,14 +1278,14 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
-"@carbon/elements@11.51.0":
-  version "11.51.0"
-  resolved "https://registry.yarnpkg.com/@carbon/elements/-/elements-11.51.0.tgz#6b8507bd0e1545f89bc606e06c2dfd21fd30186f"
-  integrity sha512-GmaKS3VCroSvVt7rAdOQcf3uPcT04T1WkCHOTVHekgz/n1FXnatr3ZvDdQ/KyYnfbVpQD5zTCS3GXYhkJd2v5Q==
+"@carbon/elements@11.51.1":
+  version "11.51.1"
+  resolved "https://registry.yarnpkg.com/@carbon/elements/-/elements-11.51.1.tgz#aff7a102ef65ce23331b801b332cc366bd66c2a3"
+  integrity sha512-hBuloXvIrEdMi8wQh7ItoS2+8aAbk0eFcc1jmVZiaJQgfD0zGi1jRfq9ds0bbKx2vCmIwCbBLq1vIgrD/ylT4g==
   dependencies:
     "@carbon/colors" "^11.24.0"
     "@carbon/grid" "^11.25.0"
-    "@carbon/icons" "^11.47.0"
+    "@carbon/icons" "^11.47.1"
     "@carbon/layout" "^11.24.0"
     "@carbon/motion" "^11.20.0"
     "@carbon/themes" "^11.38.0"
@@ -1331,10 +1331,10 @@
     "@ibm/telemetry-js" "^1.5.0"
     prop-types "^15.7.2"
 
-"@carbon/icons@^11.47.0":
-  version "11.47.0"
-  resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.47.0.tgz#5951980d64acabfdb36cc3f07fee249d81b64d57"
-  integrity sha512-tVtdVNIblrukvZjNeU54k8kPJttKi+gNR7t7rOsFT2ApCi5accIen+k3kikJie81Slmj1VL6CHTOZcpf4qqX0A==
+"@carbon/icons@^11.47.1":
+  version "11.47.1"
+  resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.47.1.tgz#3d509800316eec6f0413b338b8c20f44168ab305"
+  integrity sha512-6r9PbB7p5HvWAs95NniuKo/kDwL3Z3a/w/hJBy9wIaHAyCQ9YtK5YZc03mugGOr5tlRhiZfV/aOxCMUhxOdwkQ==
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
@@ -2824,10 +2824,10 @@
   dependencies:
     undici-types "~6.11.1"
 
-"@types/node@20.16.0":
-  version "20.16.0"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.16.0.tgz#02e5cd414f76bf345874ee65a1e5590d755d894f"
-  integrity sha512-vDxceJcoZhIVh67S568bm1UGZO0DX0hpplJZxzeXMKwIPLn190ec5RRxQ69BKhX44SUGIxxgMdDY557lGLKprQ==
+"@types/node@20.16.1":
+  version "20.16.1"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.16.1.tgz#0b44b15271d0e2191ca68faf1fbe506e06aed732"
+  integrity sha512-zJDo7wEadFtSyNz5QITDfRcrhqDvQI1xQNQ0VoizPjM/dVAODqqIUWbJPkvsxmTI0MYRGRikcdjMPhOssnPejQ==
   dependencies:
     undici-types "~6.19.2"
 
@@ -2883,10 +2883,10 @@
     "@types/prop-types" "*"
     csstype "^3.0.2"
 
-"@types/react@18.3.3":
-  version "18.3.3"
-  resolved "https://registry.yarnpkg.com/@types/react/-/react-18.3.3.tgz#9679020895318b0915d7a3ab004d92d33375c45f"
-  integrity sha512-hti/R0pS0q1/xx+TsI73XIqk26eBsISZ2R0wUijXIngRK9R/e7Xw/cXVxQK7R5JjW+SV4zGcn5hXjudkN/pLIw==
+"@types/react@18.3.4":
+  version "18.3.4"
+  resolved "https://registry.yarnpkg.com/@types/react/-/react-18.3.4.tgz#dfdd534a1d081307144c00e325c06e00312c93a3"
+  integrity sha512-J7W30FTdfCxDDjmfRM+/JqLHBIyl7xUIp9kwK637FGmY7+mkSFSe6L4jpZzhj5QMfLssSDP4/i75AKkrdC7/Jw==
   dependencies:
     "@types/prop-types" "*"
     csstype "^3.0.2"
@@ -6780,10 +6780,10 @@ human-signals@^5.0.0:
   resolved "https://registry.yarnpkg.com/human-signals/-/human-signals-5.0.0.tgz#42665a284f9ae0dade3ba41ebc37eb4b852f3a28"
   integrity sha512-AXcZb6vzzrFAUE61HnN4mpLqd/cSIwNQjtNWR0euPm6y0iqx3G4gOXaIDdtdDwZmhwe82LA6+zinmW4UBWVePQ==
 
-husky@9.1.4:
-  version "9.1.4"
-  resolved "https://registry.yarnpkg.com/husky/-/husky-9.1.4.tgz#926fd19c18d345add5eab0a42b2b6d9a80259b34"
-  integrity sha512-bho94YyReb4JV7LYWRWxZ/xr6TtOTt8cMfmQ39MQYJ7f/YE268s3GdghGwi+y4zAeqewE5zYLvuhV0M0ijsDEA==
+husky@9.1.5:
+  version "9.1.5"
+  resolved "https://registry.yarnpkg.com/husky/-/husky-9.1.5.tgz#2b6edede53ee1adbbd3a3da490628a23f5243b83"
+  integrity sha512-rowAVRUBfI0b4+niA4SJMhfQwc107VLkBUgEYYAOQAbqDCnra1nYh83hF/MDmhYs9t9n1E3DuKOrs2LYNC+0Ag==
 
 iconv-lite@0.4.24, iconv-lite@^0.4.24:
   version "0.4.24"

@@ -37,7 +37,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
 
-@DisabledIf("isZeebeVersionPre85")
+@DisabledIf("isZeebeVersionPre86")
 public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
 
   private static final String TEST_PROCESS = "aProcess";

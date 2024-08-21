@@ -16,16 +16,17 @@ import {getProcessName} from 'modules/utils/instance';
 import {ProcessInstanceHeader} from './index';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {variablesStore} from 'modules/stores/variables';
-import {operationsStore} from 'modules/stores/operations';
 import {
   mockInstanceWithActiveOperation,
   mockInstanceWithoutOperations,
   mockInstanceWithParentInstance,
   mockOperationCreated,
   mockCanceledInstance,
+  mockProcess,
+  Wrapper,
 } from './index.setup';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {
   createBatchOperation,
@@ -36,16 +37,15 @@ import {
 } from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {LocationLog} from 'modules/utils/LocationLog';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {mockGetOperation} from 'modules/mocks/api/getOperation';
 import * as operationApi from 'modules/api/getOperation';
-import {useEffect, act} from 'react';
-import {Paths} from 'modules/Routes';
+import {act} from 'react';
 import {notificationsStore} from 'modules/stores/notifications';
+import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -55,29 +55,11 @@ jest.mock('modules/stores/notifications', () => ({
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
-const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  useEffect(() => {
-    return () => {
-      operationsStore.reset();
-      variablesStore.reset();
-      processInstanceDetailsStore.reset();
-      processInstanceDetailsDiagramStore.reset();
-      authenticationStore.reset();
-    };
-  }, []);
-
-  return (
-    <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-      <Routes>
-        <Route path={Paths.processInstance()} element={children} />
-        <Route path={Paths.processes()} element={children} />
-      </Routes>
-      <LocationLog />
-    </MemoryRouter>
-  );
-};
-
 describe('InstanceHeader', () => {
+  beforeEach(() => {
+    mockFetchProcess().withSuccess(mockProcess);
+  });
+
   afterEach(() => {
     window.clientConfig = undefined;
   });

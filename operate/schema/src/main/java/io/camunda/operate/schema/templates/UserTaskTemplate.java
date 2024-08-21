@@ -35,6 +35,7 @@ public class UserTaskTemplate extends AbstractTemplateDescriptor
   public static final String EXTERNAL_REFERENCE = "externalReference";
   public static final String ACTION = "action";
   public static final String CHANGED_ATTRIBUTES = "changedAttributes";
+  public static final String PRIORITY = "priority";
 
   @Override
   public String getIndexName() {

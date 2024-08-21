@@ -41,6 +41,9 @@ const clearPollingStates = () => {
 };
 
 jest.mock('modules/utils/bpmn');
+jest.mock('modules/stores/process', () => ({
+  processStore: {state: {process: {}}, fetchProcess: jest.fn()},
+}));
 
 describe('ProcessInstance - modification mode', () => {
   beforeEach(() => {
