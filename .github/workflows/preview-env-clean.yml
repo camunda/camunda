@@ -1,7 +1,8 @@
 ---
-name: preview-env-clean
+name: Preview Env Clean
 
 on:
+  pull_request:
   schedule:
   - cron: 0 6,22 * * *
   workflow_call:
@@ -24,7 +25,7 @@ on:
 jobs:
   preview-env-clean:
     concurrency:
-      group: ${{ github.workflow }}-${{ inputs.pull-request }}
+      group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -34,9 +35,9 @@ jobs:
       uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
       with:
         github-app-id-vault-key: GITHUB_PREVIEW_ENVIRONMENTS_APP_ID
-        github-app-id-vault-path: secret/data/products/optimize/ci/common
+        github-app-id-vault-path: secret/data/products/camunda/ci/camunda
         github-app-private-key-vault-key: GITHUB_PREVIEW_ENVIRONMENTS_APP_PRIVATE_KEY
-        github-app-private-key-vault-path: secret/data/products/optimize/ci/common
+        github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
         vault-auth-method: approle
         vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
         vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
