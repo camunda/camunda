@@ -7,116 +7,132 @@
  */
 
 import {AppHeader} from '../index';
-import {render, screen, within} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {Wrapper} from './mocks';
+import {mockFetchLicense} from 'modules/mocks/api/v2/fetchLicense';
+import {licenseTagStore} from 'modules/stores/licenseTag';
 
 describe('license note', () => {
-  afterEach(() => {
-    window.clientConfig = undefined;
-  });
-
   it('should show and hide license information', async () => {
+    mockFetchLicense().withSuccess({
+      licenseType: 'self-managed',
+      validLicense: false,
+    });
+
     const {user} = render(<AppHeader />, {
       wrapper: Wrapper,
     });
 
-    expect(
-      await within(
-        screen.getByRole('navigation', {
-          name: /camunda operate/i,
-        }),
-      ).findByRole('link', {
-        name: /dashboard/i,
-      }),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('button', {
-        name: 'Non-Production License',
-        expanded: false,
-      }),
-    ).toBeInTheDocument();
-
-    await user.click(
-      screen.getByRole('button', {name: 'Non-Production License'}),
+    await waitFor(() =>
+      expect(licenseTagStore.state.status).toEqual('fetched'),
     );
 
     expect(
-      screen.getByRole('button', {
-        name: 'Non-Production License',
-        expanded: true,
-      }),
+      await screen.findByText(/^Non-production license$/i),
     ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /learn more/i}));
 
     expect(
       screen.getByText(
-        /Non-Production License. If you would like information on production usage, please refer to our/,
+        /Non-production license. For production usage details, visit our/i,
       ),
     ).toBeInTheDocument();
   });
 
-  it('should show license note in CCSM free/trial environment', async () => {
-    window.clientConfig = {
-      isEnterprise: false,
-      organizationId: null,
-    };
+  it('should show license note in self-managed free/trial environment', async () => {
+    mockFetchLicense().withSuccess({
+      licenseType: 'self-managed',
+      validLicense: false,
+    });
 
     render(<AppHeader />, {
       wrapper: Wrapper,
     });
 
+    await waitFor(() =>
+      expect(licenseTagStore.state.status).toEqual('fetched'),
+    );
+
     expect(
-      await screen.findByText('Non-Production License'),
+      await screen.findByText(/^Non-production license$/i),
     ).toBeInTheDocument();
   });
 
   it('should not show license note in SaaS environment', async () => {
-    window.clientConfig = {
-      isEnterprise: false,
-      organizationId: '000000000-0000-0000-0000-000000000000',
-    };
+    mockFetchLicense().withSuccess({
+      licenseType: 'saas',
+      validLicense: false,
+    });
 
     render(<AppHeader />, {
       wrapper: Wrapper,
     });
 
-    expect(
-      await within(
-        screen.getByRole('navigation', {
-          name: /camunda operate/i,
-        }),
-      ).findByRole('link', {
-        name: /dashboard/i,
-      }),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(licenseTagStore.state.status).toEqual('fetched'),
+    );
 
     expect(
-      screen.queryByText('Non-Production License'),
+      screen.queryByText(/^Non-production license$/i),
     ).not.toBeInTheDocument();
   });
 
-  it('should not show license note in CCSM enterprise environment', async () => {
-    window.clientConfig = {
-      isEnterprise: true,
-      organizationId: null,
-    };
+  it('should not show license note in unknown environment', async () => {
+    mockFetchLicense().withSuccess({
+      licenseType: 'unknown',
+      validLicense: false,
+    });
 
     render(<AppHeader />, {
       wrapper: Wrapper,
     });
 
+    await waitFor(() =>
+      expect(licenseTagStore.state.status).toEqual('fetched'),
+    );
+
     expect(
-      await within(
-        screen.getByRole('navigation', {
-          name: /camunda operate/i,
-        }),
-      ).findByRole('link', {
-        name: /dashboard/i,
-      }),
+      screen.queryByText(/^Non-production license$/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should show license note in self-managed enterprise environment', async () => {
+    mockFetchLicense().withSuccess({
+      licenseType: 'self-managed',
+      validLicense: true,
+    });
+
+    render(<AppHeader />, {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() =>
+      expect(licenseTagStore.state.status).toEqual('fetched'),
+    );
+
+    expect(
+      await screen.findByText(/^production license$/i),
     ).toBeInTheDocument();
 
     expect(
-      screen.queryByText('Non-Production License'),
+      screen.queryByText(/^Non-production license$/i),
     ).not.toBeInTheDocument();
+  });
+
+  it('should not show license note on fetch error', async () => {
+    mockFetchLicense().withServerError();
+
+    render(<AppHeader />, {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => expect(licenseTagStore.state.status).toEqual('error'));
+
+    expect(
+      screen.queryByText(/^Non-production license$/i),
+    ).not.toBeInTheDocument();
+
+    expect(screen.queryByText(/^production license$/i)).not.toBeInTheDocument();
   });
 });

@@ -6,11 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled from 'styled-components';
-import {Link} from '@carbon/react';
+import {requestAndParse} from 'modules/request';
 
-const InlineLink = styled(Link)`
-  display: inline;
-`;
+type License = {
+  licenseType: 'saas' | 'self-managed' | 'unknown';
+  validLicense: boolean;
+};
 
-export {InlineLink};
+const fetchLicense = async () => {
+  return requestAndParse<License>({
+    url: `/v2/license`,
+  });
+};
+
+export {fetchLicense};
+export type {License};
