@@ -19,7 +19,7 @@ spec:
     helm:
       parameters: []
     path: .ci/preview-environments/charts/c8sm
-    repoURL: https://github.com/camunda/camunda-optimize.git
+    repoURL: https://github.com/camunda/camunda.git
   syncPolicy:
     automated:
       prune: true
