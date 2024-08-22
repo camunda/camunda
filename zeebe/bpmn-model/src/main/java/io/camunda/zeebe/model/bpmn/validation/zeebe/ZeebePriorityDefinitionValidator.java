@@ -22,8 +22,8 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 public class ZeebePriorityDefinitionValidator
     implements ModelElementValidator<ZeebePriorityDefinition> {
 
-  private static final Long PRIORITY_LOWER_BOUND = 0L;
-  private static final Long PRIORITY_UPPER_BOUND = 100L;
+  public static final Integer PRIORITY_LOWER_BOUND = 0;
+  public static final Integer PRIORITY_UPPER_BOUND = 100;
 
   @Override
   public Class<ZeebePriorityDefinition> getElementType() {
