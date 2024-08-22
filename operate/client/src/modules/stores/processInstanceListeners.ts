@@ -119,7 +119,7 @@ class ProcessInstanceListeners {
   getListenersFailureCount = () => {
     if (this.state.listenersCount === 0) return 0;
 
-    const failedListeners = this.state.listeners.filter(
+    const failedListeners = this.state?.listeners?.filter(
       (listener) => listener.state === 'FAILED',
     );
 
@@ -129,13 +129,13 @@ class ProcessInstanceListeners {
   getListeners = (fetchType: FetchType, listeners: ListenerEntity[]) => {
     switch (fetchType) {
       case 'next':
-        const allListeners = [...this.state.listeners, ...listeners];
+        const allListeners = [...this.state?.listeners, ...listeners];
 
-        return allListeners.slice(
-          Math.max(allListeners.length - MAX_LISTENERS_STORED, 0),
+        return allListeners?.slice(
+          Math.max(allListeners?.length - MAX_LISTENERS_STORED, 0),
         );
       case 'prev':
-        return [...listeners, ...this.state.listeners].slice(
+        return [...listeners, ...this.state?.listeners].slice(
           0,
           MAX_LISTENERS_STORED,
         );
@@ -153,7 +153,7 @@ class ProcessInstanceListeners {
 
     return (
       (latestFetch?.fetchType === 'next' &&
-        listeners.length === MAX_LISTENERS_STORED) ||
+        listeners?.length === MAX_LISTENERS_STORED) ||
       (latestFetch?.fetchType === 'prev' &&
         latestFetch?.listenersCount === MAX_LISTENERS_PER_REQUEST)
     );
@@ -169,7 +169,7 @@ class ProcessInstanceListeners {
       (latestFetch?.fetchType === 'next' &&
         latestFetch?.listenersCount === MAX_LISTENERS_STORED) ||
       (latestFetch?.fetchType === 'prev' &&
-        listeners.length === MAX_LISTENERS_STORED) ||
+        listeners?.length === MAX_LISTENERS_STORED) ||
       latestFetch?.fetchType === 'initial'
     );
   };
@@ -242,7 +242,7 @@ class ProcessInstanceListeners {
         listeners: this.getListeners(fetchType, listeners),
       });
 
-      this.setLatestFetchDetails(fetchType, listeners.length);
+      this.setLatestFetchDetails(fetchType, listeners?.length);
 
       this.handleFetchSuccess();
     } else {

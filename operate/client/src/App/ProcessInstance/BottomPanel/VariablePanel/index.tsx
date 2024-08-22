@@ -53,7 +53,7 @@ const VariablePanel = observer(function VariablePanel() {
   }, [fetchListeners, processInstanceId, flowNodeId]);
 
   useEffect(() => {
-    listeners.length > 0
+    listeners?.length > 0
       ? setFlowNodeHasListeners(true)
       : setFlowNodeHasListeners(false);
   }, [listeners]);
