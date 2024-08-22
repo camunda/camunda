@@ -16,6 +16,7 @@
 package io.camunda.zeebe.protocol.record.intent;
 
 public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
+  CREATE(16), // TODO clarify can we update the value for other enums in order to have `CREATE(0)`?
   CREATING(0),
   CREATED(1),
 
@@ -90,6 +91,8 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
         return MIGRATED;
       case 15:
         return COMPLETE_TASK_LISTENER;
+      case 16:
+        return CREATE;
       default:
         return UNKNOWN;
     }

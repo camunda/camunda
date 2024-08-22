@@ -37,6 +37,10 @@ public final class UserTaskEventProcessors {
     typedRecordProcessors
         .onCommand(
             ValueType.USER_TASK,
+            UserTaskIntent.CREATE,
+            new UserTaskCreateProcessor(processingState, writers))
+        .onCommand(
+            ValueType.USER_TASK,
             UserTaskIntent.COMPLETE,
             new UserTaskCompleteProcessor(
                 processingState, eventHandle, writers, bpmnBehaviors.jobBehavior()))
