@@ -16,9 +16,11 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.util.ReflectUtil;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Optional;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Combinators;
@@ -75,8 +77,14 @@ final class PersistedClusterConfigurationRandomizedPropertyTest {
           Arbitraries.forType(CompletedChange.class).enableRecursion().optional();
       final var arbitraryChangePlan =
           Arbitraries.forType(ClusterChangePlan.class).enableRecursion().optional();
+      // TODO: Generate random routing state
+      final var arbitraryRoutingState = Arbitraries.<Optional<RoutingState>>of(Optional.empty());
       return Combinators.combine(
-              arbitraryVersion, arbitraryMembers, arbitraryCompletedChange, arbitraryChangePlan)
+              arbitraryVersion,
+              arbitraryMembers,
+              arbitraryCompletedChange,
+              arbitraryChangePlan,
+              arbitraryRoutingState)
           .as(ClusterConfiguration::new);
     }
 
