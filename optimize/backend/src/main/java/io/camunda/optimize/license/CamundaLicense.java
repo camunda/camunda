@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.license;
 
-import io.camunda.zeebe.util.VisibleForTesting;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
 import org.camunda.bpm.licensecheck.LicenseKey;
 import org.camunda.bpm.licensecheck.LicenseKeyImpl;
@@ -23,7 +22,7 @@ public class CamundaLicense {
   private LicenseType licenseType;
   private boolean isInitialized;
 
-  @VisibleForTesting
+  // @VisibleForTesting
   protected CamundaLicense() {}
 
   public CamundaLicense(final String license) {
