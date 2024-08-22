@@ -28,6 +28,8 @@ public class StarterCfg {
 
   private String[] extraBpmnModels;
 
+  private String businessKey;
+
   private String payloadPath;
   private boolean withResults;
   private Duration withResultsTimeout;
@@ -83,6 +85,14 @@ public class StarterCfg {
 
   public void setExtraBpmnModels(final String[] extraBpmnModels) {
     this.extraBpmnModels = extraBpmnModels;
+  }
+
+  public String getBusinessKey() {
+    return businessKey;
+  }
+
+  public void setBusinessKey(final String businessKey) {
+    this.businessKey = businessKey;
   }
 
   public String getBpmnXmlPath() {
