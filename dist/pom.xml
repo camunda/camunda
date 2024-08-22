@@ -107,6 +107,17 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-operate-elasticsearch-exporter</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
 
@@ -673,6 +684,7 @@
           <usedDependencies>
             <dependency>io.camunda:camunda-exporter</dependency>
             <dependency>io.camunda:zeebe-elasticsearch-exporter</dependency>
+            <dependency>io.camunda:zeebe-operate-elasticsearch-exporter</dependency>
             <dependency>io.camunda:zeebe-opensearch-exporter</dependency>
 
             <!-- Needed for Spring Actuators, and REST API -->

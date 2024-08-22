@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.zeebeimport.util;
+package io.camunda.zeebe.operate.exporter.util;
 
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.ProcessFlowNodeEntity;
@@ -21,22 +21,15 @@ import javax.xml.parsers.SAXParserFactory;
 import org.camunda.bpm.model.xml.ModelException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-@Component
-@Configuration
-@Deprecated // TODO remove after https://github.com/camunda/product-hub/issues/2128 is implemented
 public class XMLUtil {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(XMLUtil.class);
 
-  @Bean
-  public SAXParserFactory getSAXParserFactory() {
+  private SAXParserFactory getSAXParserFactory() {
     final SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
     saxParserFactory.setNamespaceAware(true);
     try {
