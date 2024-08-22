@@ -48,6 +48,7 @@ public final class ConfigurationUtil {
         ClusterConfiguration.INITIAL_VERSION,
         Map.copyOf(memberStates),
         Optional.empty(),
+        Optional.empty(),
         Optional.empty());
   }
 

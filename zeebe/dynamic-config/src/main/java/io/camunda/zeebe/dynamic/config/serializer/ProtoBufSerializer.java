@@ -134,7 +134,11 @@ public class ProtoBufSerializer
             : Optional.empty();
 
     return new ClusterConfiguration(
-        encodedClusterTopology.getVersion(), members, completedChange, currentChange);
+        encodedClusterTopology.getVersion(),
+        members,
+        completedChange,
+        currentChange,
+        Optional.empty());
   }
 
   private Map<MemberId, io.camunda.zeebe.dynamic.config.state.MemberState> decodeMemberStateMap(

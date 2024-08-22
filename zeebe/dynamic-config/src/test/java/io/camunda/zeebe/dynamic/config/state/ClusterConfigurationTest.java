@@ -252,6 +252,7 @@ class ClusterConfigurationTest {
                     Map.of(1, PartitionState.active(1, emptyPartitionConfig)))),
             Optional.of(
                 new CompletedChange(changeId, Status.COMPLETED, Instant.now(), Instant.now())),
+            Optional.empty(),
             Optional.empty());
 
     ClusterConfigurationAssert.assertThatClusterTopology(finalTopology).hasSameTopologyAs(expected);
@@ -302,6 +303,7 @@ class ClusterConfigurationTest {
                 MemberState.initializeAsActive(
                     Map.of(1, PartitionState.active(1, DynamicPartitionConfig.uninitialized())))),
             Optional.empty(),
+            Optional.empty(),
             Optional.empty());
 
     final DynamicPartitionConfig validConfig =
@@ -313,6 +315,7 @@ class ClusterConfigurationTest {
             Map.of(
                 member(1),
                 MemberState.initializeAsActive(Map.of(1, PartitionState.active(1, validConfig)))),
+            Optional.empty(),
             Optional.empty(),
             Optional.empty());
 
