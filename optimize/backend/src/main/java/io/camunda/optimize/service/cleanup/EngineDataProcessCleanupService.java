@@ -14,7 +14,6 @@ import io.camunda.optimize.dto.optimize.query.PageResultDto;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessInstanceReader;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
-import io.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
 import io.camunda.optimize.service.db.writer.variable.VariableUpdateInstanceWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
@@ -35,7 +34,6 @@ public class EngineDataProcessCleanupService extends CleanupService {
   private final ProcessDefinitionReader processDefinitionReader;
   private final ProcessInstanceReader processInstanceReader;
   private final ProcessInstanceWriter processInstanceWriter;
-  private final ProcessVariableUpdateWriter processVariableUpdateWriter;
   private final VariableUpdateInstanceWriter variableUpdateInstanceWriter;
 
   @Override
@@ -67,29 +65,17 @@ public class EngineDataProcessCleanupService extends CleanupService {
             .getProcessDefinitionCleanupConfigurationForKey(currentProcessDefinitionKey);
 
     log.info(
-        "Performing cleanup on process instances for processDefinitionKey: {}, with ttl: {} and mode:{}",
+        "Performing cleanup on process instances for processDefinitionKey: {}, with ttl: {}.",
         currentProcessDefinitionKey,
-        cleanupConfigurationForKey.getTtl(),
-        cleanupConfigurationForKey.getCleanupMode());
+        cleanupConfigurationForKey.getTtl());
 
     final OffsetDateTime endDate = startTime.minus(cleanupConfigurationForKey.getTtl());
-    switch (cleanupConfigurationForKey.getCleanupMode()) {
-      case ALL:
-        performInstanceDataCleanup(currentProcessDefinitionKey, endDate, getBatchSize());
-        break;
-      case VARIABLES:
-        performVariableDataCleanup(currentProcessDefinitionKey, endDate, getBatchSize());
-        break;
-      default:
-        throw new IllegalStateException(
-            "Unsupported cleanup mode " + cleanupConfigurationForKey.getCleanupMode());
-    }
+    performInstanceDataCleanup(currentProcessDefinitionKey, endDate, getBatchSize());
 
     log.info(
-        "Finished cleanup on process instances for processDefinitionKey: {}, with ttl: {} and mode:{}",
+        "Finished cleanup on process instances for processDefinitionKey: {}, with ttl: {}.",
         currentProcessDefinitionKey,
-        cleanupConfigurationForKey.getTtl(),
-        cleanupConfigurationForKey.getCleanupMode());
+        cleanupConfigurationForKey.getTtl());
   }
 
   private void performInstanceDataCleanup(
@@ -103,23 +89,6 @@ public class EngineDataProcessCleanupService extends CleanupService {
       processInstanceWriter.deleteByIds(definitionKey, currentInstanceIds);
       currentPageOfProcessInstanceIds =
           processInstanceReader.getNextPageOfProcessInstanceIdsThatEndedBefore(
-              definitionKey, endDate, batchSize, currentPageOfProcessInstanceIds);
-    }
-  }
-
-  private void performVariableDataCleanup(
-      final String definitionKey, final OffsetDateTime endDate, final int batchSize) {
-    PageResultDto<String> currentPageOfProcessInstanceIds =
-        processInstanceReader.getFirstPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(
-            definitionKey, endDate, batchSize);
-    while (!currentPageOfProcessInstanceIds.isEmpty()) {
-      final List<String> currentInstanceIds = currentPageOfProcessInstanceIds.getEntities();
-      variableUpdateInstanceWriter.deleteByProcessInstanceIds(currentInstanceIds);
-      processVariableUpdateWriter.deleteVariableDataByProcessInstanceIds(
-          definitionKey, currentInstanceIds);
-
-      currentPageOfProcessInstanceIds =
-          processInstanceReader.getNextPageOfProcessInstanceIdsThatHaveVariablesAndEndedBefore(
               definitionKey, endDate, batchSize, currentPageOfProcessInstanceIds);
     }
   }

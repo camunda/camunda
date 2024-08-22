@@ -7,11 +7,8 @@
  */
 package io.camunda.optimize.service.util.configuration.cleanup;
 
-import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.HISTORY_CLEANUP_PROCESS_DATA;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.util.SuppressionConstants;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,13 +20,10 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = false)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ProcessCleanupConfiguration {
   @JsonProperty("enabled")
   private boolean enabled;
-
-  @JsonProperty("cleanupMode")
-  private CleanupMode cleanupMode = CleanupMode.ALL;
 
   @JsonProperty("batchSize")
   private int batchSize;
@@ -40,18 +34,6 @@ public class ProcessCleanupConfiguration {
 
   public ProcessCleanupConfiguration(final boolean enabled) {
     this.enabled = enabled;
-  }
-
-  public ProcessCleanupConfiguration(final boolean enabled, final CleanupMode cleanupMode) {
-    this.enabled = enabled;
-    this.cleanupMode = cleanupMode;
-  }
-
-  public void validate() {
-    if (cleanupMode == null) {
-      throw new OptimizeConfigurationException(
-          HISTORY_CLEANUP_PROCESS_DATA + ".cleanupMode must be set");
-    }
   }
 
   public Set<String> getAllProcessSpecificConfigurationKeys() {

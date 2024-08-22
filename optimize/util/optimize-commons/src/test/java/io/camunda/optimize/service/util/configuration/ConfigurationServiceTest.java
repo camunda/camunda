@@ -16,14 +16,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.jayway.jsonpath.spi.mapper.MappingException;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.util.CronNormalizerUtil;
-import io.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import io.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import io.camunda.optimize.service.util.configuration.extension.EnvironmentVariablesExtension;
 import io.camunda.optimize.service.util.configuration.extension.SystemPropertiesExtension;
 import java.lang.reflect.Method;
 import java.time.Period;
-import java.util.Locale;
 import java.util.Optional;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -37,7 +35,6 @@ public class ConfigurationServiceTest {
   public static final int CUSTOM_CONTAINER_MAX_STATUS_CONNECTIONS = 5;
   public static final String CUSTOM_HISTORY_CLEANUP_CRON_TRIGGER = "0 * * * 1";
   public static final Period CUSTOM_HISTORY_CLEANUP_TTL = Period.ZERO;
-  public static final CleanupMode CUSTOM_HISTORY_CLEANUP_MODE = CleanupMode.VARIABLES;
   public static final int CUSTOM_HISTORY_CLEANUP_BATCH_SIZE = 5000;
   private static final int DEFAULT_AUTH_TOKEN_LIFE_MIN = 5;
   private static final int CUSTOM_AUTH_TOKEN_LIFE_MIN = 6;
@@ -245,9 +242,6 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_ENABLED", String.valueOf(true));
     environmentVariablesExtension.set(
-        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_CLEANUP_MODE",
-        String.valueOf(CUSTOM_HISTORY_CLEANUP_MODE).toLowerCase(Locale.ENGLISH));
-    environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE",
         String.valueOf(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE));
     environmentVariablesExtension.set(
@@ -318,9 +312,6 @@ public class ConfigurationServiceTest {
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_TTL", String.valueOf(CUSTOM_HISTORY_CLEANUP_TTL));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_ENABLED", String.valueOf(true));
-    System.setProperty(
-        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_CLEANUP_MODE",
-        String.valueOf(CUSTOM_HISTORY_CLEANUP_MODE).toLowerCase(Locale.ENGLISH));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE",
         String.valueOf(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE));
@@ -393,9 +384,6 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_ENABLED", String.valueOf(false));
     environmentVariablesExtension.set(
-        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_CLEANUP_MODE",
-        String.valueOf(CleanupMode.ALL).toLowerCase(Locale.ENGLISH));
-    environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE", String.valueOf(1000));
     environmentVariablesExtension.set(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_DECISION_DATA_CLEANUP_ENABLED", String.valueOf(false));
@@ -456,9 +444,6 @@ public class ConfigurationServiceTest {
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_TTL", String.valueOf(CUSTOM_HISTORY_CLEANUP_TTL));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_ENABLED", String.valueOf(true));
-    System.setProperty(
-        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_CLEANUP_MODE",
-        String.valueOf(CUSTOM_HISTORY_CLEANUP_MODE).toLowerCase(Locale.ENGLISH));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE",
         String.valueOf(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE));
@@ -543,9 +528,6 @@ public class ConfigurationServiceTest {
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_TTL", String.valueOf(CUSTOM_HISTORY_CLEANUP_TTL));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_ENABLED", String.valueOf(true));
-    System.setProperty(
-        "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_CLEANUP_MODE",
-        String.valueOf(CUSTOM_HISTORY_CLEANUP_MODE).toLowerCase(Locale.ENGLISH));
     System.setProperty(
         "CAMUNDA_OPTIMIZE_HISTORY_CLEANUP_PROCESS_DATA_CLEANUP_BATCH_SIZE",
         String.valueOf(CUSTOM_HISTORY_CLEANUP_BATCH_SIZE));
@@ -685,12 +667,6 @@ public class ConfigurationServiceTest {
             underTest
                 .getCleanupServiceConfiguration()
                 .getProcessDataCleanupConfiguration()
-                .getCleanupMode())
-        .isEqualTo(CleanupMode.ALL);
-    assertThat(
-            underTest
-                .getCleanupServiceConfiguration()
-                .getProcessDataCleanupConfiguration()
                 .getBatchSize())
         .isEqualTo(10000);
     assertThat(
@@ -783,12 +759,6 @@ public class ConfigurationServiceTest {
                 .getProcessDataCleanupConfiguration()
                 .isEnabled())
         .isTrue();
-    assertThat(
-            underTest
-                .getCleanupServiceConfiguration()
-                .getProcessDataCleanupConfiguration()
-                .getCleanupMode())
-        .isEqualTo(CUSTOM_HISTORY_CLEANUP_MODE);
     assertThat(
             underTest
                 .getCleanupServiceConfiguration()

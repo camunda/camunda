@@ -62,7 +62,6 @@ public class CleanupConfiguration {
       throw new OptimizeConfigurationException(
           HISTORY_CLEANUP + ".cronTrigger must be set and not empty");
     }
-    processDataCleanupConfiguration.validate();
   }
 
   // not relevant for serialization but only for application logic
@@ -84,10 +83,7 @@ public class CleanupConfiguration {
             .flatMap(map -> Optional.ofNullable(map.get(processDefinitionKey)));
 
     return new ProcessDefinitionCleanupConfiguration(
-        keySpecificConfig.flatMap(config -> Optional.ofNullable(config.getTtl())).orElse(getTtl()),
-        keySpecificConfig
-            .flatMap(config -> Optional.ofNullable(config.getCleanupMode()))
-            .orElse(processDataCleanupConfiguration.getCleanupMode()));
+        keySpecificConfig.flatMap(config -> Optional.ofNullable(config.getTtl())).orElse(getTtl()));
   }
 
   public DecisionDefinitionCleanupConfiguration getDecisionDefinitionCleanupConfigurationForKey(

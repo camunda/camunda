@@ -17,22 +17,11 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonIgnoreProperties
 @Getter
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ProcessDefinitionCleanupConfiguration {
 
   @JsonProperty("ttl")
   private Period ttl;
-
-  @JsonProperty("cleanupMode")
-  private CleanupMode cleanupMode;
-
-  public ProcessDefinitionCleanupConfiguration(Period ttl) {
-    this(ttl, null);
-  }
-
-  public ProcessDefinitionCleanupConfiguration(CleanupMode cleanupMode) {
-    this(null, cleanupMode);
-  }
 }
