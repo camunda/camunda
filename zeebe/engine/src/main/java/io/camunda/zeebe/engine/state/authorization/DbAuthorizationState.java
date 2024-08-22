@@ -11,7 +11,6 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
-import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
@@ -24,7 +23,6 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
 
   private final PersistedPermissions persistedPermissions = new PersistedPermissions();
 
-  private final DbLong authorizationKey;
   private final DbString ownerKey;
   private final DbString ownerType;
   private final DbString resourceKey;
@@ -41,8 +39,6 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
 
   public DbAuthorizationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
-    authorizationKey = new DbLong();
-
     ownerKey = new DbString();
     ownerType = new DbString();
     resourceKey = new DbString();
@@ -61,7 +57,6 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
 
   @Override
   public void createAuthorization(final AuthorizationRecord authorizationRecord) {
-    authorizationKey.wrapLong(authorizationRecord.getAuthorizationKey());
     persistedAuthorization.setAuthorization(authorizationRecord);
 
     ownerKey.wrapString(authorizationRecord.getOwnerKey());
