@@ -49,7 +49,6 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private final long jobKey;
-  private final JsonMapper jsonMapper;
 
   public FailJobCommandImpl(
       final GatewayStub asyncStub,
@@ -70,7 +69,6 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
     httpRequestObject = new JobFailRequest();
     useRest = preferRestOverGrpc;
     jobKey = key;
-    this.jsonMapper = jsonMapper;
   }
 
   @Override
@@ -105,7 +103,7 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
     // - For REST commands, users have to provide a valid JSON Object String.
     //    Otherwise, the client throws an exception already.
     if (useRest) {
-      httpRequestObject.setVariables(jsonMapper.fromJsonAsMap(variables));
+      httpRequestObject.setVariables(objectMapper.fromJsonAsMap(variables));
     }
     return this;
   }
@@ -130,7 +128,7 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
     final HttpZeebeFuture<FailJobResponse> result = new HttpZeebeFuture<>();
     httpClient.post(
         "/jobs/" + jobKey + "/failure",
-        jsonMapper.toJson(httpRequestObject),
+        objectMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
         result);
     return result;
