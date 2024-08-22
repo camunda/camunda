@@ -38,7 +38,6 @@
   "scripts": {
     "start": "vite",
     "build": "tsc && vite build",
-    "lint": "eslint src",
     "test": "react-scripts --expose-gc --max_old_space_size=1024 --no-compilation-cache test --verbose=false",
     "test:ci": "CI=true react-scripts --expose-gc --max_old_space_size=1024 --no-compilation-cache test --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
     "screenshots": "testcafe chrome e2e/tests/*.js -s thumbnails=false,path=../../camunda-platform-docs/optimize/components/userguide",
@@ -95,7 +94,6 @@
     "enzyme": "3.11.0",
     "eslint": "8.57.0",
     "eslint-config-prettier": "9.1.0",
-    "eslint-plugin-camunda-licensed": "^0.4.6",
     "eslint-plugin-license-header": "^0.6.1",
     "eslint-plugin-prettier": "5.2.1",
     "eslint-plugin-react-hooks": "4.6.2",

@@ -1,14 +1,15 @@
 {
+  "root": true,
   "env": {
     "browser": true,
     "node": true,
     "jest": true,
   },
-  "plugins": ["prettier", "testcafe", "react-refresh", "@typescript-eslint"],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "sourceType": "module",
   },
+  "plugins": ["testcafe", "react-refresh", "license-header"],
   "rules": {
     "license-header/header": ["error", "./resources/license-header.js"],
     "prettier/prettier": [
@@ -21,12 +22,11 @@
   },
   "globals": {
     "flushPromises": "readonly",
-    "JSX": "readonly",
   },
   "extends": [
     "plugin:react-hooks/recommended",
     "plugin:prettier/recommended",
-    "plugin:camunda-licensed/commercial",
     "plugin:testcafe/recommended",
   ],
+  "ignorePatterns": ["dist/**", "**/__mocks__/**"],
 }

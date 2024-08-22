@@ -9,6 +9,7 @@
 import {defineConfig, transformWithEsbuild} from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
+import {readdirSync} from 'fs';
 
 export default defineConfig({
   base: '',
@@ -41,28 +42,7 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {
-      components: '/src/modules/components',
-      filter: '/src/modules/filter',
-      HOC: '/src/modules/HOC',
-      hooks: '/src/modules/hooks',
-      notifications: '/src/modules/notifications',
-      onboarding: '/src/modules/onboarding',
-      polyfills: '/src/modules/polyfills',
-      prompt: '/src/modules/prompt',
-      saveGuard: '/src/modules/saveGuard',
-      services: '/src/modules/services',
-      'shared-styles': '/src/modules/shared-styles',
-      theme: '/src/modules/theme',
-      tracking: '/src/modules/tracking',
-      translation: '/src/modules/translation',
-      config: '/src/modules/config.tsx',
-      dates: '/src/modules/dates.ts',
-      debouncePromise: '/src/modules/debouncePromise.ts',
-      request: '/src/modules/request.ts',
-      types: '/src/modules/types.ts',
-      variables: '/src/modules/variables.ts',
-    },
+    alias: generateAliases(),
   },
   server: {
     port: 3000,
@@ -94,3 +74,15 @@ export default defineConfig({
     },
   },
 });
+
+// Function to generate aliases dynamically
+function generateAliases() {
+  const aliases: Record<string, string> = {};
+
+  readdirSync('src/modules').forEach((item) => {
+    const aliasKey = item.replace(/\.[^/.]+$/, ''); // Remove file extension if present
+    aliases[aliasKey] = `/src/modules/${aliasKey}`;
+  });
+
+  return aliases;
+}
