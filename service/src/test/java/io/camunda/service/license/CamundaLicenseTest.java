@@ -15,7 +15,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
-import io.camunda.service.license.CamundaLicense.LicenseType;
 import java.util.HashMap;
 import java.util.Map;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;

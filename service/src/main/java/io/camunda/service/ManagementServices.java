@@ -8,7 +8,7 @@
 package io.camunda.service;
 
 import io.camunda.service.license.CamundaLicense;
-import io.camunda.service.license.CamundaLicense.LicenseType;
+import io.camunda.service.license.LicenseType;
 
 public final class ManagementServices {
 

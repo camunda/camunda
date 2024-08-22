@@ -7,8 +7,8 @@
  */
 package io.camunda.optimize.service;
 
-import io.camunda.service.license.CamundaLicense;
-import io.camunda.service.license.CamundaLicense.LicenseType;
+import io.camunda.optimize.license.CamundaLicense;
+import io.camunda.optimize.license.LicenseType;
 import org.springframework.stereotype.Component;
 
 @Component

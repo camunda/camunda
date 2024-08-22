@@ -17,6 +17,7 @@ import io.camunda.optimize.dto.optimize.query.ui_configuration.MixpanelConfigRes
 import io.camunda.optimize.dto.optimize.query.ui_configuration.OnboardingResponseDto;
 import io.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import io.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
+import io.camunda.optimize.license.LicenseType;
 import io.camunda.optimize.rest.cloud.CloudSaasMetaInfoService;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.metadata.OptimizeVersionService;
@@ -24,7 +25,6 @@ import io.camunda.optimize.service.tenant.TenantService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.OptimizeProfile;
 import io.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
-import io.camunda.service.license.CamundaLicense.LicenseType;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service.license;
+package io.camunda.optimize.license;
 
 import io.camunda.zeebe.util.VisibleForTesting;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
