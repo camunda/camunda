@@ -26,7 +26,7 @@ public class CamundaLicenseTest {
 
   private static final String TEST_LICENSE = "whatever";
   private static final String LICENSE_TYPE_KEY = "licenseType";
-  private static final String SELF_MANAGED_LICENSE_TYPE = "self-managed";
+  private static final String PRODUCTION_LICENSE_TYPE = "production";
   private static final String SAAS_LICENSE_TYPE = "saas";
   private static final String TEST_EXCEPTION_MESSAGE = "test exception";
 
@@ -67,7 +67,7 @@ public class CamundaLicenseTest {
     final LicenseKey mockKey = mock(LicenseKey.class);
 
     final Map<String, String> testProperties = new HashMap<>();
-    testProperties.put(LICENSE_TYPE_KEY, SELF_MANAGED_LICENSE_TYPE);
+    testProperties.put(LICENSE_TYPE_KEY, PRODUCTION_LICENSE_TYPE);
     when(mockKey.getProperties()).thenReturn(testProperties);
 
     Mockito.doReturn(mockKey).when(testLicense).getLicenseKey(anyString());
