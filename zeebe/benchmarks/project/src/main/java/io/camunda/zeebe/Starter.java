@@ -17,6 +17,7 @@ package io.camunda.zeebe;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
@@ -62,7 +63,7 @@ public class Starter extends App {
     final ScheduledExecutorService executorService =
         Executors.newScheduledThreadPool(starterCfg.getThreads());
 
-    deployProcess(client, starterCfg.getBpmnXmlPath());
+    deployProcess(client, starterCfg);
 
     // start instances
     final long intervalNanos = Math.floorDiv(NANOS_PER_SECOND, rate);
@@ -196,10 +197,12 @@ public class Starter extends App {
     return builder.build();
   }
 
-  private void deployProcess(final ZeebeClient client, final String bpmnXmlPath) {
+  private void deployProcess(final ZeebeClient client, final StarterCfg starterCfg) {
+    final var deployCmd = constructDeploymentCommand(client, starterCfg);
+
     while (true) {
       try {
-        client.newDeployResourceCommand().addResourceFromClasspath(bpmnXmlPath).send().join();
+        deployCmd.send().join();
         break;
       } catch (final Exception e) {
         THROTTLED_LOGGER.warn("Failed to deploy process, retrying", e);
@@ -210,6 +213,20 @@ public class Starter extends App {
         }
       }
     }
+  }
+
+  private static DeployResourceCommandStep2 constructDeploymentCommand(
+      final ZeebeClient client, final StarterCfg starterCfg) {
+    final var deployCmd =
+        client.newDeployResourceCommand().addResourceFromClasspath(starterCfg.getBpmnXmlPath());
+
+    final String[] extraBpmnModels = starterCfg.getExtraBpmnModels();
+    if (extraBpmnModels != null) {
+      for (final var model : extraBpmnModels) {
+        deployCmd.addResourceFromClasspath(model);
+      }
+    }
+    return deployCmd;
   }
 
   private BooleanSupplier createContinuationCondition(final StarterCfg starterCfg) {
