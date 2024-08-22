@@ -809,6 +809,14 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>camunda-service</artifactId>
+        <version>${project.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>camunda-search-client</artifactId>
         <version>${project.version}</version>
       </dependency>
