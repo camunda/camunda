@@ -75,7 +75,7 @@ const FormModal: React.FC<Props> = ({
   return createPortal(
     <Layer level={0}>
       <Modal
-        aria-label={`Start process ${processDisplayName}`}
+        aria-label={t('processesStartProcessWithForm', {processDisplayName})}
         modalHeading={
           <>
             {t('processesStartProcessWithForm', {processDisplayName})}
@@ -105,6 +105,7 @@ const FormModal: React.FC<Props> = ({
             ) : null}
           </>
         }
+        closeButtonLabel={t('optionsModalCloseButton')}
         open={isOpen}
         onRequestClose={handleClose}
         onRequestSubmit={() => {
