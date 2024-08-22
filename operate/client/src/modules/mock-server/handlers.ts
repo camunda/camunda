@@ -6,12 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ListenerPayload} from 'modules/api/processInstances/fetchProcessInstanceListeners';
 import {
   IS_LISTENERS_TAB_SUPPORTED,
   IS_VERSION_TAG_ENABLED,
 } from 'modules/feature-flags';
-import {mockListeners} from 'modules/mocks/mockListeners';
 import {RequestHandler, rest} from 'msw';
 
 const processVersionTagHandler = IS_VERSION_TAG_ENABLED
@@ -58,21 +56,11 @@ const listenersHandler = IS_LISTENERS_TAB_SUPPORTED
       rest.post(
         '/api/process-instances/:instanceId/listeners',
         async (req, res, ctx) => {
-          const body: ListenerPayload = await req.json();
+          const originalResponse = await ctx.fetch(req);
+          let originalResponseData = await originalResponse.json();
+          let totalCount = originalResponseData?.length;
 
-          if (body.flowNodeId.includes('start')) {
-            let listeners: ListenerEntity[] = [];
-            if (body.searchAfter) {
-              listeners = mockListeners.slice(
-                body.pageSize,
-                (body.pageSize || 6) * 2,
-              );
-            } else {
-              listeners = mockListeners.slice(0, body.pageSize);
-            }
-            return res(ctx.json({listeners, totalCount: listeners.length}));
-          }
-          return res(ctx.json([]));
+          return res(ctx.json({listeners: originalResponseData, totalCount}));
         },
       ),
     ]
