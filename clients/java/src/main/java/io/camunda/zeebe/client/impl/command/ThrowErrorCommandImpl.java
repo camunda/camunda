@@ -47,7 +47,6 @@ public final class ThrowErrorCommandImpl extends CommandWithVariables<ThrowError
   private final JobErrorRequest httpRequestObject;
   private boolean useRest;
   private final long jobKey;
-  private final JsonMapper jsonMapper;
 
   public ThrowErrorCommandImpl(
       final GatewayStub asyncStub,
@@ -68,7 +67,6 @@ public final class ThrowErrorCommandImpl extends CommandWithVariables<ThrowError
     httpRequestObject = new JobErrorRequest();
     useRest = preferRestOverGrpc;
     jobKey = key;
-    this.jsonMapper = jsonMapper;
   }
 
   @Override
@@ -96,7 +94,7 @@ public final class ThrowErrorCommandImpl extends CommandWithVariables<ThrowError
     // - For REST commands, users have to provide a valid JSON Object String.
     //    Otherwise, the client throws an exception already.
     if (useRest) {
-      httpRequestObject.setVariables(jsonMapper.fromJsonAsMap(variables));
+      httpRequestObject.setVariables(objectMapper.fromJsonAsMap(variables));
     }
     return this;
   }
@@ -121,7 +119,7 @@ public final class ThrowErrorCommandImpl extends CommandWithVariables<ThrowError
     final HttpZeebeFuture<Void> result = new HttpZeebeFuture<>();
     httpClient.post(
         "/jobs/" + jobKey + "/error",
-        jsonMapper.toJson(httpRequestObject),
+        objectMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
         result);
     return result;
