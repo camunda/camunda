@@ -52,12 +52,6 @@ final class SecureClusteredMessagingIT {
   @ParameterizedTest
   @MethodSource("provideTestCases")
   void shouldFormAClusterWithTlsWithCertChain(final TestCase testCase) {
-    final var cluster = createCluster(this::configureGateway, this::configureBroker);
-    // given - a cluster with 2 standalone brokers, and 1 standalone gateway
-
-  @ParameterizedTest
-  @MethodSource("provideTestCases")
-  void shouldFormAClusterWithTlsWithCertChain(final TestCase testCase) {
     // given - a cluster with 2 standalone brokers, and 1 standalone gateway
     cluster.brokers().values().forEach(node -> node.withBrokerConfig(testCase.brokerConfig));
     cluster.gateways().values().forEach(node -> node.withGatewayConfig(testCase.gatewayConfig));

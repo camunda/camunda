@@ -16,6 +16,7 @@ import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Objects;
 
 public class TlsConfigUtil {
   public static void validateTlsConfig(
@@ -73,15 +74,16 @@ public class TlsConfigUtil {
 
   public static PrivateKey getPrivateKey(final File keyStoreFile, final String password)
       throws KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException {
-    final var keyStore = getKeyStore(keyStoreFile, password);
+    final var sanitisedPassword = Objects.toString(password, "");
+    final var keyStore = getKeyStore(keyStoreFile, sanitisedPassword);
 
     final String alias = keyStore.aliases().nextElement();
-    return (PrivateKey) keyStore.getKey(alias, password.toCharArray());
+    return (PrivateKey) keyStore.getKey(alias, sanitisedPassword.toCharArray());
   }
 
   public static X509Certificate[] getCertificateChain(
       final File keyStoreFile, final String password) throws KeyStoreException {
-    final var keyStore = getKeyStore(keyStoreFile, password);
+    final var keyStore = getKeyStore(keyStoreFile, Objects.toString(password, ""));
 
     final String alias = keyStore.aliases().nextElement();
     return Arrays.stream(keyStore.getCertificateChain(alias))
