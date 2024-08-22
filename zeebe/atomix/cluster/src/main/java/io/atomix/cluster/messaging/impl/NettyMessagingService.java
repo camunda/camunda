@@ -68,10 +68,21 @@ import io.netty.resolver.dns.DnsNameResolverBuilder;
 import io.netty.resolver.dns.LoggingDnsQueryLifeCycleObserverFactory;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -472,12 +483,17 @@ public final class NettyMessagingService implements ManagedMessagingService {
 
   private CompletableFuture<Void> loadClientSslContext() {
     try {
+
+      final var sslContextBuilder = SslContextBuilder.forClient();
+
+      if (config.getKeyStore() != null) {
+        sslContextBuilder.trustManager(
+            getCertificateChain(config.getKeyStore(), config.getKeyStorePassword()));
+      } else {
+        sslContextBuilder.trustManager(config.getCertificateChain());
+      }
       clientSslContext =
-          SslContextBuilder.forClient()
-              .trustManager(config.getCertificateChain())
-              .sslProvider(SslProvider.OPENSSL_REFCNT)
-              .protocols(TLS_PROTOCOL)
-              .build();
+          sslContextBuilder.sslProvider(SslProvider.OPENSSL_REFCNT).protocols(TLS_PROTOCOL).build();
       return CompletableFuture.completedFuture(null);
     } catch (final Exception e) {
       return CompletableFuture.failedFuture(
@@ -488,11 +504,20 @@ public final class NettyMessagingService implements ManagedMessagingService {
 
   private CompletableFuture<Void> loadServerSslContext() {
     try {
+      final SslContextBuilder sslContextBuilder;
+
+      if (config.getKeyStore() != null) {
+        final var privateKey = getPrivateKey(config.getKeyStore(), config.getKeyStorePassword());
+        final var certChain =
+            getCertificateChain(config.getKeyStore(), config.getKeyStorePassword());
+
+        sslContextBuilder = SslContextBuilder.forServer(privateKey, certChain);
+      } else {
+        sslContextBuilder =
+            SslContextBuilder.forServer(config.getCertificateChain(), config.getPrivateKey());
+      }
       serverSslContext =
-          SslContextBuilder.forServer(config.getCertificateChain(), config.getPrivateKey())
-              .sslProvider(SslProvider.OPENSSL_REFCNT)
-              .protocols(TLS_PROTOCOL)
-              .build();
+          sslContextBuilder.sslProvider(SslProvider.OPENSSL_REFCNT).protocols(TLS_PROTOCOL).build();
       return CompletableFuture.completedFuture(null);
     } catch (final Exception e) {
       return CompletableFuture.failedFuture(
@@ -507,6 +532,44 @@ public final class NettyMessagingService implements ManagedMessagingService {
     } else {
       initNioTransport();
     }
+  }
+
+  private X509Certificate[] getCertificateChain(final File keyStoreFile, final String password)
+      throws CertificateException, KeyStoreException, IOException, NoSuchAlgorithmException {
+    final var keyStore = getKeyStore(keyStoreFile, password);
+
+    final String alias = keyStore.aliases().nextElement();
+    return Arrays.stream(keyStore.getCertificateChain(alias))
+        .map(X509Certificate.class::cast)
+        .toArray(X509Certificate[]::new);
+  }
+
+  private PrivateKey getPrivateKey(final File keyStoreFile, final String password)
+      throws CertificateException,
+          KeyStoreException,
+          IOException,
+          NoSuchAlgorithmException,
+          UnrecoverableKeyException {
+    final var keyStore = getKeyStore(keyStoreFile, password);
+
+    final String alias = keyStore.aliases().nextElement();
+    return (PrivateKey) keyStore.getKey(alias, password.toCharArray());
+  }
+
+  private KeyStore getKeyStore(final File keyStoreFile, final String password)
+      throws KeyStoreException {
+    final var keyStore = KeyStore.getInstance("PKCS12");
+    try {
+      keyStore.load(new FileInputStream(keyStoreFile), password.toCharArray());
+    } catch (final Exception e) {
+      throw new IllegalStateException(
+          String.format(
+              "Keystore failed to load file: %s, please ensure it is a valid PKCS12 keystore",
+              keyStoreFile.toPath()),
+          e);
+    }
+
+    return keyStore;
   }
 
   private void initEpollTransport() {

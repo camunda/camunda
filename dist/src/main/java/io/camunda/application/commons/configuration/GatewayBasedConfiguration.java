@@ -162,8 +162,11 @@ public final class GatewayBasedConfiguration {
     if (security.isEnabled()) {
       messaging
           .setTlsEnabled(true)
-          .setCertificateChain(security.getCertificateChainPath())
-          .setPrivateKey(security.getPrivateKeyPath());
+          .configureTls(
+              security.getKeyStore().getFilePath(),
+              security.getKeyStore().getPassword(),
+              security.getPrivateKeyPath(),
+              security.getCertificateChainPath());
     }
     return messaging;
   }
