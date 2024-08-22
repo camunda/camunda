@@ -26,15 +26,7 @@ public final class TlsConfigUtil {
       final File certificateChain, final File privateKey, final File keyStore) {
     if ((certificateChain != null || privateKey != null) && keyStore != null) {
       throw new IllegalArgumentException(
-          String.format(
-              """
-                      Cannot provide both separate certificate chain and or private key along with a
-                      keystore file, use only one approach.
-                      certificateChainPath: %s
-                      privateKeyPath: %s
-                      OR
-                      keyStorePath: %s""",
-              certificateChain, privateKey, keyStore));
+          "Expected to configure with a certificate and private key pair, or with a key store and password, but both were provided. Please select only one approach");
     }
 
     if (keyStore == null) {
