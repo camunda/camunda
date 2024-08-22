@@ -48,6 +48,7 @@ import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplate
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -66,7 +67,7 @@ public class OpensearchSchemaManager implements SchemaManager {
 
   protected final RichOpenSearchClient richOpenSearchClient;
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper;
   private final JsonbJsonpMapper jsonpMapper = new JsonbJsonpMapper();
 
   private final List<TemplateDescriptor> templateDescriptors;
@@ -78,11 +79,13 @@ public class OpensearchSchemaManager implements SchemaManager {
       final OperateProperties operateProperties,
       final RichOpenSearchClient richOpenSearchClient,
       final List<TemplateDescriptor> templateDescriptors,
-      final List<IndexDescriptor> indexDescriptors) {
+      final List<IndexDescriptor> indexDescriptors,
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
     super();
     this.operateProperties = operateProperties;
     this.richOpenSearchClient = richOpenSearchClient;
     this.templateDescriptors = templateDescriptors;
+    this.objectMapper = objectMapper;
     this.indexDescriptors =
         indexDescriptors.stream()
             .filter(indexDescriptor -> !(indexDescriptor instanceof TemplateDescriptor))

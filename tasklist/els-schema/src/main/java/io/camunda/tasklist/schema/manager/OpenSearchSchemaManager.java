@@ -88,7 +88,9 @@ public class OpenSearchSchemaManager implements SchemaManager {
   @Qualifier("tasklistOsClient")
   private OpenSearchClient openSearchClient;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Override
   public void createSchema() {
