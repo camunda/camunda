@@ -13,6 +13,7 @@ import {
   MAX_LISTENERS_STORED,
   processInstanceListenersStore,
 } from 'modules/stores/processInstanceListeners';
+import {formatDate} from 'modules/utils/date';
 
 type Props = {
   listeners: ListenerEntity[];
@@ -96,7 +97,11 @@ const Listeners: React.FC<Props> = observer(({listeners}) => {
                     <CellContainer>{spaceAndCapitalize(event)}</CellContainer>
                   ),
                 },
-                {cellContent: <CellContainer>{time}</CellContainer>},
+                {
+                  cellContent: (
+                    <CellContainer>{formatDate(time)}</CellContainer>
+                  ),
+                },
               ],
             };
           },
