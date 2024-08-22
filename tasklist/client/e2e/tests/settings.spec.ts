@@ -9,10 +9,6 @@
 import {expect} from '@playwright/test';
 import {test} from '@/test-fixtures';
 
-test.afterAll(async ({resetData}) => {
-  await resetData();
-});
-
 test.beforeEach(async ({page, loginPage}) => {
   await loginPage.goto();
   await loginPage.login({
