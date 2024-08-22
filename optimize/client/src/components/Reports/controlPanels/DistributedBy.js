@@ -16,7 +16,7 @@ import {Select} from 'components';
 import {useUiConfig} from 'hooks';
 
 export default function DistributedBy({report, onChange, variables}) {
-  const {userTaskAssigneeAnalyticsEnabled, optimizeProfile} = useUiConfig();
+  const {userTaskAssigneeAnalyticsEnabled} = useUiConfig();
 
   if (!report.groupBy) {
     return null;
@@ -31,8 +31,7 @@ export default function DistributedBy({report, onChange, variables}) {
       ({visible, key}) =>
         visible(report) &&
         key !== 'none' &&
-        (userTaskAssigneeAnalyticsEnabled || key !== 'assignee') &&
-        (optimizeProfile === 'platform' ? true : key !== 'candidateGroup')
+        (userTaskAssigneeAnalyticsEnabled || key !== 'assignee')
     )
     .map(({key, enabled, label}) => {
       if (key === 'variable') {

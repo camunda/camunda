@@ -347,7 +347,7 @@ export default class FilterList extends React.Component {
             </ActionItem>
           </li>
         );
-      } else if (['assignee', 'candidateGroup'].includes(filter.type)) {
+      } else if (['assignee'].includes(filter.type)) {
         const definitionIsValid = checkDefinition(definitions, filter.appliedTo[0]);
         list.push(
           <li key={i} className="listItem">

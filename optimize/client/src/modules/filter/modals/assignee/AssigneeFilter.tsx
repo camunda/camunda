@@ -20,7 +20,7 @@ import {FilterProps} from '../types';
 
 import {loadUsersByDefinition, loadUsersByReportIds, getUsersById} from './service';
 
-export default function AssigneeFilter(props: FilterProps<'assignee' | 'candidateGroup'>) {
+export default function AssigneeFilter(props: FilterProps<'assignee'>) {
   const {
     filterData,
     close,
@@ -61,7 +61,6 @@ export default function AssigneeFilter(props: FilterProps<'assignee' | 'candidat
             identity: {
               id: null,
               name: t('common.filter.assigneeModal.unassigned').toString(),
-              type: 'user',
             },
           });
         }

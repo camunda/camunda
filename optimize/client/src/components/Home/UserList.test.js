@@ -28,18 +28,15 @@ jest.mock('./service', () => ({
       id: 'USER:kermit',
       identity: {
         id: 'kermit',
-        type: 'user', // or group
       },
       role: 'manager', // or editor, viewer
     },
     {
-      id: 'GROUP:sales',
+      id: 'USER:john',
       identity: {
-        id: 'sales',
-        type: 'group',
-        memberCount: 2,
+        id: 'john',
       },
-      role: 'manager',
+      role: 'editor',
     },
   ]),
   editUser: jest.fn(),
@@ -72,9 +69,9 @@ it('should hide add button and edit menu when in readOnly mode', () => {
 it('should pass Entity to Deleter', () => {
   const node = shallow(<UserList {...props} />);
 
-  node.find(EntityList).prop('rows')[0].actions[1].action();
+  node.find(EntityList).prop('rows')[1].actions[1].action();
 
-  expect(node.find(Deleter).prop('entity').id).toBe('kermit');
+  expect(node.find(Deleter).prop('entity').id).toBe('john');
 });
 
 it('should delete collection', () => {
@@ -89,7 +86,7 @@ it('should delete collection', () => {
 it('should show an edit modal when clicking the edit button', () => {
   const node = shallow(<UserList {...props} />);
 
-  node.find(EntityList).prop('rows')[0].actions[0].action();
+  node.find(EntityList).prop('rows')[1].actions[0].action();
 
   expect(node.find(EditUserModal)).toExist();
 });
@@ -111,28 +108,4 @@ it('should pass optimize environment to addUserModal', async () => {
   node.find(EntityList).prop('action').props.onClick({});
 
   expect(node.find(AddUserModal).prop('optimizeProfile')).toBe('ccsm');
-});
-
-it('should hide members column in ccsm and cloud', async () => {
-  getOptimizeProfile.mockReturnValueOnce('ccsm');
-  let node = shallow(<UserList {...props} />);
-
-  expect(node.find(EntityList).prop('headers')).toEqual(['Name', 'Role']);
-  expect(node.find(EntityList).prop('rows')[0].meta.length).toBe(1);
-
-  getOptimizeProfile.mockReturnValueOnce('platform');
-  node = shallow(<UserList {...props} />);
-
-  await flushPromises();
-
-  expect(node.find(EntityList).prop('headers')).toEqual(['Name', 'Members', 'Role']);
-  expect(node.find(EntityList).prop('rows')[0].meta.length).toBe(2);
-
-  getOptimizeProfile.mockReturnValueOnce('cloud');
-  node = shallow(<UserList {...props} />);
-
-  await flushPromises();
-
-  expect(node.find(EntityList).prop('headers')).toEqual(['Name', 'Role']);
-  expect(node.find(EntityList).prop('rows')[0].meta.length).toBe(1);
 });

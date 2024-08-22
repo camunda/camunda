@@ -47,7 +47,6 @@ import {ReactComponent as cancel} from './cancel.svg';
 import {ReactComponent as arrowRight} from './arrow-right.svg';
 import {ReactComponent as calender} from './calender.svg';
 import {ReactComponent as user} from './user.svg';
-import {ReactComponent as userGroup} from './user-group.svg';
 import {ReactComponent as collapse} from './collapse.svg';
 import {ReactComponent as expand} from './expand.svg';
 import {ReactComponent as alert} from './alert.svg';
@@ -116,7 +115,6 @@ const icons: Icons = {
   'arrow-right': arrowRight,
   calender,
   user,
-  'user-group': userGroup,
   collapse,
   expand,
   alert,

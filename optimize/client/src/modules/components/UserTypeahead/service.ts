@@ -14,8 +14,6 @@ export interface User {
     name: string;
     email?: string;
     id: string | null;
-    type: string;
-    memberCount?: string;
   };
   type?: string;
 }
@@ -33,6 +31,6 @@ export async function getUser(id: string): Promise<User['identity']> {
   return await response.json();
 }
 
-export function getUserId(id: string | null, type: string): string {
-  return `${type.toUpperCase()}:${id}`;
+export function getUserId(id: string | null): string {
+  return `USER:${id}`;
 }

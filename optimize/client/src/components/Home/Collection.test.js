@@ -47,7 +47,7 @@ jest.mock('services', () => {
           {
             identity: {
               id: 'kermit',
-              type: 'user', // or group
+              type: 'user',
             },
             role: 'manager', // or editor, viewer
           },
