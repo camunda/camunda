@@ -2566,8 +2566,7 @@ final class JsonSerializableToJsonTest {
                     .setOwnerKey("owner")
                     .setOwnerType(AuthorizationOwnerType.USER)
                     .setResourceKey("resource")
-                    .setResourceType("type")
-                    .setPermissions(List.of("permission")),
+                    .setResourceType("type"),
         """
         {
           "authorizationKey": -1,
@@ -2575,7 +2574,7 @@ final class JsonSerializableToJsonTest {
           "ownerType": "USER",
           "resourceKey": "resource",
           "resourceType": "type",
-          "permissions": ["permission"]
+          "permissions": []
         }
         """
       },
