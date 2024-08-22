@@ -9,12 +9,16 @@
 import {Page, Locator} from '@playwright/test';
 
 class Header {
+  private page: Page;
   readonly openSettingsButton: Locator;
+  readonly languageSelector: Locator;
   readonly processesTab: Locator;
   readonly logoutButton: Locator;
 
   constructor(page: Page) {
+    this.page = page;
     this.openSettingsButton = page.getByRole('button', {name: 'Open Settings'});
+    this.languageSelector = page.getByRole('combobox', {name: 'Language'});
     this.processesTab = page.getByRole('link', {name: 'Processes'});
     this.logoutButton = page.getByRole('button', {name: 'Log out'});
   }
@@ -22,6 +26,12 @@ class Header {
   async logout() {
     await this.openSettingsButton.click();
     await this.logoutButton.click();
+  }
+
+  async changeLanguage(option: 'Français' | 'English' | 'Deutsch' | 'Español') {
+    await this.openSettingsButton.click();
+    await this.languageSelector.click();
+    await this.page.getByRole('option', {name: option, exact: true}).click();
   }
 }
 
