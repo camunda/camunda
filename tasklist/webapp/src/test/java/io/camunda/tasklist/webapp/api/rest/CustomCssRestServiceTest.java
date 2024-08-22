@@ -50,7 +50,7 @@ public class CustomCssRestServiceTest {
   }
 
   @Test
-  void getClientConfigShouldReturnNullWhenCssContentIsNull() {
+  void getClientConfigShouldReturnEmptyWhenCssContentIsNull() {
     // Act
     final String result = customCssRestService.getClientConfig();
 

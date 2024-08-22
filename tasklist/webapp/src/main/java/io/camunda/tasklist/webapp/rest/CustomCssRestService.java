@@ -36,6 +36,7 @@ public class CustomCssRestService {
       customCssContent = new String(resource.getContentAsString(Charsets.UTF_8));
     } catch (final IOException e) {
       LOGGER.error("Error when reading custom css file {}", PATH_LOCATION, e);
+      customCssContent = "";
     }
   }
 
