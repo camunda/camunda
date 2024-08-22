@@ -49,12 +49,11 @@ const Listeners: React.FC<Props> = observer(({listeners}) => {
           if (
             processInstanceListenersStore.state?.listeners?.length ===
               MAX_LISTENERS_STORED &&
-            processInstanceListenersStore.state.latestFetch?.listenersCount !==
-              0 &&
+            processInstanceListenersStore.state.latestFetch?.itemsCount !== 0 &&
             processInstanceListenersStore.state.latestFetch !== null
           ) {
             scrollDown(
-              processInstanceListenersStore.state.latestFetch.listenersCount *
+              processInstanceListenersStore.state.latestFetch.itemsCount *
                 ROW_HEIGHT,
             );
           }
@@ -71,8 +70,8 @@ const Listeners: React.FC<Props> = observer(({listeners}) => {
         rows={listeners?.map(
           ({listenerType, listenerKey, state, jobType, event, time}) => {
             return {
-              key: `${listenerKey}`,
-              dataTestId: `${listenerKey}`,
+              key: listenerKey,
+              dataTestId: listenerKey,
               columns: [
                 {
                   cellContent: (

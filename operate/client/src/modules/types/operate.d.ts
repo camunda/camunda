@@ -102,11 +102,11 @@ interface DecisionInstanceEntity {
 }
 
 interface ListenerEntity {
-  listenerType: 'EXECUTION' | 'USER_TASK';
-  listenerKey: number;
+  listenerType: 'EXECUTION_LISTENER';
+  listenerKey: string;
   state: 'ACTIVE' | 'COMPLETED' | 'FAILED';
-  jobType: 'UNSPECIFIED' | 'START' | 'END';
-  event: string;
+  jobType: string;
+  event: 'UNSPECIFIED' | 'START' | 'END';
   time: string;
-  sortValues: ReadonlyArray<string>;
+  sortValues: ReadonlyArray<string>; // @TODO: Check if it is needed
 }

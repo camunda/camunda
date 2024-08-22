@@ -12,7 +12,6 @@ import {
   ListenerPayload,
   ListenersDto,
 } from 'modules/api/processInstances/fetchProcessInstanceListeners';
-import {getSortParams} from 'modules/utils/filter';
 
 type FetchType = 'initial' | 'prev' | 'next';
 
@@ -21,9 +20,9 @@ type State = {
   listeners: ListenersDto['listeners'];
   page: number;
   latestFetch: {
-    fetchType: FetchType;
-    listenersCount: number;
-  } | null;
+    fetchType: FetchType | null;
+    itemsCount: number;
+  };
   status:
     | 'initial'
     | 'first-fetch'
@@ -40,7 +39,7 @@ const DEFAULT_STATE: State = {
   listenersCount: 0,
   listeners: [],
   page: 1,
-  latestFetch: null,
+  latestFetch: {fetchType: null, itemsCount: 0},
   status: 'initial',
   currentProcessInstanceId: '',
   currentFlowNodeId: '',
@@ -100,20 +99,9 @@ class ProcessInstanceListeners {
     this.state.listenersCount = listenersCount;
   };
 
-  getSorting = () => {
-    return (
-      getSortParams() || {
-        sortBy: 'startDate',
-        sortOrder: 'desc',
-      }
-    );
-  };
-
   setLatestFetchDetails = (fetchType: FetchType, listenersCount: number) => {
-    this.state.latestFetch = {
-      fetchType,
-      listenersCount,
-    };
+    this.state.latestFetch.fetchType = fetchType;
+    this.state.latestFetch.itemsCount = listenersCount;
   };
 
   getListenersFailureCount = () => {
@@ -147,30 +135,36 @@ class ProcessInstanceListeners {
 
   shouldFetchPreviousListeners = () => {
     const {latestFetch, listeners, status} = this.state;
-    if (['fetching-prev', 'fetching-next', 'fetching'].includes(status)) {
+    if (
+      ['fetching-prev', 'fetching-next', 'fetching'].includes(status) ||
+      listeners.length < MAX_LISTENERS_PER_REQUEST
+    ) {
       return false;
     }
 
     return (
       (latestFetch?.fetchType === 'next' &&
-        listeners?.length === MAX_LISTENERS_STORED) ||
+        latestFetch.itemsCount === MAX_LISTENERS_PER_REQUEST) ||
       (latestFetch?.fetchType === 'prev' &&
-        latestFetch?.listenersCount === MAX_LISTENERS_PER_REQUEST)
+        listeners?.length === MAX_LISTENERS_STORED)
     );
   };
 
   shouldFetchNextListeners = () => {
     const {latestFetch, listeners, status} = this.state;
-    if (['fetching-prev', 'fetching-next', 'fetching'].includes(status)) {
+    if (
+      ['fetching-prev', 'fetching-next', 'fetching'].includes(status) ||
+      listeners.length < MAX_LISTENERS_PER_REQUEST
+    ) {
       return false;
     }
 
     return (
-      (latestFetch?.fetchType === 'next' &&
-        latestFetch?.listenersCount === MAX_LISTENERS_STORED) ||
-      (latestFetch?.fetchType === 'prev' &&
-        listeners?.length === MAX_LISTENERS_STORED) ||
-      latestFetch?.fetchType === 'initial'
+      (latestFetch.fetchType === 'next' &&
+        latestFetch.itemsCount === MAX_LISTENERS_PER_REQUEST) ||
+      (latestFetch.fetchType === 'prev' &&
+        listeners.length === MAX_LISTENERS_STORED) ||
+      latestFetch.fetchType === 'initial'
     );
   };
 
@@ -182,7 +176,6 @@ class ProcessInstanceListeners {
       processInstanceId: this.state.currentProcessInstanceId,
       payload: {
         flowNodeId: this.state.currentFlowNodeId,
-        sorting: this.getSorting(),
         searchBefore: this.state.listeners[0]?.sortValues,
         pageSize: MAX_LISTENERS_PER_REQUEST,
       },
@@ -197,7 +190,6 @@ class ProcessInstanceListeners {
       processInstanceId: this.state.currentProcessInstanceId,
       payload: {
         flowNodeId: this.state.currentFlowNodeId,
-        sorting: this.getSorting(),
         searchAfter:
           this.state.listeners[this.state.listeners.length - 1]?.sortValues,
         pageSize: MAX_LISTENERS_PER_REQUEST,
