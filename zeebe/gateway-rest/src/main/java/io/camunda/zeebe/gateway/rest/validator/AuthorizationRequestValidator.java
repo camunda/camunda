@@ -34,7 +34,8 @@ public final class AuthorizationRequestValidator {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("resourceKey"));
     }
 
-    if (authorizationAssignRequest.getResourceType() == null) {
+    if (authorizationAssignRequest.getResourceType() == null
+        || authorizationAssignRequest.getResourceType().isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("resourceType"));
     }
 
