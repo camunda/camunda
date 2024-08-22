@@ -14,8 +14,7 @@ public final class ExecutableUserTask extends ExecutableJobWorkerTask {
 
   private UserTaskProperties userTaskProperties;
 
-  private Map<TaskListenerEventType, List<String>> taskListeners =
-      Map.of(TaskListenerEventType.COMPLETE, List.of("listener_1", "listener_2"));
+  private Map<TaskListenerEventType, List<String>> taskListeners = Map.of();
 
   public ExecutableUserTask(final String id) {
     super(id);

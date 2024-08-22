@@ -7,27 +7,37 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
+import static java.util.stream.Collectors.mapping;
+
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask.TaskListenerEventType;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.element.UserTaskProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
+import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListeners;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTask;
 import io.camunda.zeebe.protocol.Protocol;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
@@ -61,6 +71,7 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     transformTaskFormId(element, userTaskProperties);
     transformModelTaskHeaders(element, userTaskProperties);
     transformBindingType(element, userTaskProperties);
+    transformTaskListeners(element, userTask);
 
     if (isZeebeUserTask) {
       transformExternalReference(element, userTaskProperties);
@@ -274,5 +285,34 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
         }
       }
     }
+  }
+
+  private void transformTaskListeners(final FlowNode element, final ExecutableUserTask userTask) {
+
+    Optional.ofNullable(element.getSingleExtensionElement(ZeebeTaskListeners.class))
+        .ifPresent(listeners -> transform(userTask, listeners.getTaskListeners()));
+  }
+
+  public void transform(
+      final ExecutableUserTask userTask, final Collection<ZeebeTaskListener> taskListeners) {
+
+    final Map<TaskListenerEventType, List<String>> eventTypeToListenerTypes =
+        taskListeners.stream()
+            .collect(
+                Collectors.groupingBy(
+                    l -> toTaskListenerEventType(l.getEventType()),
+                    mapping(ZeebeTaskListener::getType, Collectors.toList())));
+
+    userTask.setTaskListeners(eventTypeToListenerTypes);
+  }
+
+  private TaskListenerEventType toTaskListenerEventType(ZeebeTaskListenerEventType zeebeEventType) {
+    return switch (zeebeEventType) {
+      case create -> TaskListenerEventType.CREATE;
+      case assign -> TaskListenerEventType.ASSIGN;
+      case update -> TaskListenerEventType.UPDATE;
+      case complete -> TaskListenerEventType.COMPLETE;
+      default -> throw new IllegalArgumentException("Unknown event type: " + zeebeEventType);
+    };
   }
 }

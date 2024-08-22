@@ -38,9 +38,13 @@ public class TaskListenerTest {
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
-            .userTask()
-            .zeebeUserTask()
-            .zeebeAssignee("foo")
+            .userTask(
+                "my_user_task",
+                t ->
+                    t.zeebeUserTask()
+                        .zeebeAssignee("foo")
+                        .zeebeTaskListener(l -> l.complete().type("listener_1"))
+                        .zeebeTaskListener(l -> l.complete().type("listener_2")))
             .endEvent()
             .done();
 
