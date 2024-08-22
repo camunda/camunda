@@ -408,7 +408,7 @@
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-license-check</artifactId>
-      <version>2.10.0</version>
+      <version>2.9.0</version>
     </dependency>
   </dependencies>
 
@@ -697,30 +697,4 @@
       </build>
     </profile>
   </profiles>
-
-  <repositories>
-    <repository>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <id>camunda-cpm</id>
-      <name>Camunda BPM Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/camunda-bpm/</url>
-    </repository>
-
-    <repository>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <id>camunda-bpm-snapshots</id>
-      <name>Camunda BPM Snapshot Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/camunda-bpm-snapshots/</url>
-    </repository>
-  </repositories>
 </project>
