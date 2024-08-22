@@ -105,7 +105,7 @@ public class CamundaLicense {
     }
   }
 
-  @VisibleForTesting
+  // @VisibleForTesting
   protected LicenseKey getLicenseKey(final String licenseStr) throws InvalidLicenseException {
     return new LicenseKeyImpl(licenseStr);
   }
