@@ -76,7 +76,7 @@ public class CamundaLicenseTest {
     testLicense.initializeWithLicense(TEST_LICENSE);
 
     // then
-    assertEquals(LicenseType.SELFMANAGED, testLicense.getLicenseType());
+    assertEquals(LicenseType.PRODUCTION, testLicense.getLicenseType());
   }
 
   @Test

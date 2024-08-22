@@ -13,7 +13,7 @@ import java.util.Map;
 
 public enum LicenseType {
   SAAS("saas"),
-  SELFMANAGED("self-managed"),
+  PRODUCTION("production"),
   UNKNOWN("unknown");
   private static final Map<String, LicenseType> ENUM_MAP;
 
