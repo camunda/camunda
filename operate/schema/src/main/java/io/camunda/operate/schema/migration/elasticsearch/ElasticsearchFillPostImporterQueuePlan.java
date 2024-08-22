@@ -44,6 +44,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQueuePlan {
 
@@ -65,7 +66,7 @@ public class ElasticsearchFillPostImporterQueuePlan implements FillPostImporterQ
   public ElasticsearchFillPostImporterQueuePlan(
       final OperateProperties operateProperties,
       final MigrationProperties migrationProperties,
-      final ObjectMapper objectMapper,
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper,
       final RestHighLevelClient esClient) {
     this.operateProperties = operateProperties;
     this.migrationProperties = migrationProperties;
