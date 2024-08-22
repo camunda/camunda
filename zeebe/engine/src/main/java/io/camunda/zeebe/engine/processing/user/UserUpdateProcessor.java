@@ -21,7 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public class UserCreateProcessor implements DistributedTypedRecordProcessor<UserRecord> {
+public class UserUpdateProcessor implements DistributedTypedRecordProcessor<UserRecord> {
 
   private final UserState userState;
   private final KeyGenerator keyGenerator;
@@ -30,13 +30,13 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
 
-  public UserCreateProcessor(
+  public UserUpdateProcessor(
       final KeyGenerator keyGenerator,
       final ProcessingState state,
       final Writers writers,
       final CommandDistributionBehavior distributionBehavior) {
-    userState = state.getUserState();
     this.keyGenerator = keyGenerator;
+    userState = state.getUserState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
@@ -46,33 +46,47 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
   @Override
   public void processNewCommand(final TypedRecord<UserRecord> command) {
     final var username = command.getValue().getUsernameBuffer();
-    final var user = userState.getUser(username);
+    final var persistedUser = userState.getUser(username);
 
-    if (user != null) {
-      rejectionWriter.appendRejection(
-          command,
-          RejectionType.ALREADY_EXISTS,
-          "Expected to create user with username %s, but a user with this username already exists"
-              .formatted(user.getUsername()));
-      responseWriter.writeRejectionOnCommand(
-          command,
-          RejectionType.ALREADY_EXISTS,
-          "Expected to create user with username %s, but a user with this username already exists"
-              .formatted(user.getUsername()));
+    if (persistedUser == null) {
+      final var rejectionMessage =
+          "Expected to update user with username %s, but a user with this username does not exist"
+              .formatted(command.getValue().getUsername());
+
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, rejectionMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, rejectionMessage);
       return;
     }
 
+    final var updatedUser = overlayUser(persistedUser, command.getValue());
+
     final long key = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(key, UserIntent.CREATED, command.getValue());
-    responseWriter.writeEventOnCommand(key, UserIntent.CREATED, command.getValue(), command);
+    stateWriter.appendFollowUpEvent(key, UserIntent.UPDATED, updatedUser);
+    responseWriter.writeEventOnCommand(key, UserIntent.UPDATED, updatedUser, command);
 
     distributionBehavior.distributeCommand(key, command);
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<UserRecord> command) {
-    stateWriter.appendFollowUpEvent(command.getKey(), UserIntent.CREATED, command.getValue());
+    stateWriter.appendFollowUpEvent(command.getKey(), UserIntent.UPDATED, command.getValue());
 
     distributionBehavior.acknowledgeCommand(command);
+  }
+
+  private UserRecord overlayUser(final UserRecord persistedUser, final UserRecord updatedUser) {
+    if (!updatedUser.getName().isEmpty()) {
+      persistedUser.setName(updatedUser.getName());
+    }
+
+    if (!updatedUser.getEmail().isEmpty()) {
+      persistedUser.setEmail(updatedUser.getEmail());
+    }
+
+    if (!updatedUser.getPassword().isEmpty()) {
+      persistedUser.setPassword(updatedUser.getPassword());
+    }
+
+    return persistedUser;
   }
 }
