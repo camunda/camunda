@@ -42,7 +42,7 @@ class LicenseTag {
   handleFetchSuccess = ({validLicense, licenseType}: License) => {
     this.state.status = 'fetched';
     this.state.isProductionLicense = validLicense;
-    this.state.isTagVisible = licenseType === 'self-managed';
+    this.state.isTagVisible = licenseType !== 'saas';
   };
 
   handleFetchFailure = () => {

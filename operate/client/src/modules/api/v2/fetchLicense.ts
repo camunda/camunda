@@ -9,7 +9,7 @@
 import {requestAndParse} from 'modules/request';
 
 type License = {
-  licenseType: 'saas' | 'self-managed' | 'unknown';
+  licenseType: string;
   validLicense: boolean;
 };
 
