@@ -1288,3 +1288,7 @@
         # We recommend testing this feature in a non-production environment before enabling it in production.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLETIMERDUEDATECHECKERASYNC
         # enableTimerDueDateCheckerAsync: false
+
+        # Disables the experimental partition scaling feature by default until it is stable: https://github.com/camunda/camunda/issues/21439
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEPARTITIONSCALING
+        # enablePartitionScaling: false
