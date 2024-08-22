@@ -332,7 +332,7 @@
     <dependency>
       <groupId>org.junit.platform</groupId>
       <artifactId>junit-platform-commons</artifactId>
-      <version>1.10.3</version>
+      <version>${junit.platform.version}</version>
       <scope>test</scope>
     </dependency>
 
