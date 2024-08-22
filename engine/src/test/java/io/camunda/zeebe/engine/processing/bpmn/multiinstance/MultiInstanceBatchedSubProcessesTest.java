@@ -21,37 +21,23 @@ import org.junit.Test;
 public class MultiInstanceBatchedSubProcessesTest {
 
   @ClassRule
-  public static final EngineRule ENGINE = EngineRule.singlePartition().maxCommandsInBatch(47);
+  public static final EngineRule ENGINE = EngineRule.singlePartition().maxCommandsInBatch(6);
 
   private static final String PROCESS_ID = "process";
-  private static final String SUBPROCESS_2_START_EVENT = "subprocess2StartEvent";
+  private static final String SUB_PROCESS_START = "sub-process-start";
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
-          .zeebeOutputExpression(getProcessVariable(), "bill")
+          .zeebeOutputExpression("= [1,2]", "inputCollection")
           .subProcess(
               "subprocess1",
               s ->
                   s.multiInstance(
                       b ->
-                          b.zeebeInputCollectionExpression("bill.lines").zeebeInputElement("line")))
+                          b.zeebeInputCollectionExpression("inputCollection")
+                              .zeebeInputElement("input")))
           .embeddedSubProcess()
-          .startEvent("sub-process-start")
-          .subProcess(
-              "subprocess2",
-              s ->
-                  s.multiInstance(
-                      b ->
-                          b.zeebeInputCollectionExpression("line.orders")
-                              .zeebeInputElement("order")))
-          .embeddedSubProcess()
-          .startEvent(SUBPROCESS_2_START_EVENT)
-          .exclusiveGateway("exclusive-gateway")
-          .defaultFlow()
-          .exclusiveGateway()
-          .endEvent()
-          .subProcessDone()
-          .endEvent()
+          .startEvent(SUB_PROCESS_START)
           .subProcessDone()
           .endEvent()
           .done();
@@ -61,10 +47,11 @@ public class MultiInstanceBatchedSubProcessesTest {
       new RecordingExporterTestWatcher();
 
   @Test
+  // Regression test for https://github.com/camunda/camunda/issues/20958
   public void shouldCompleteAllChildInstancesBeforeCompletingTheMultiInstanceBody() {
     // given
     ENGINE.deployment().withXmlResource(PROCESS).deploy();
-    final int orderCount = 50;
+    final int count = 2;
 
     // when
     ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -72,330 +59,9 @@ public class MultiInstanceBatchedSubProcessesTest {
     // then
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withElementId(SUBPROCESS_2_START_EVENT)
-                .limit(orderCount)
+                .withElementId(SUB_PROCESS_START)
+                .limit(count)
                 .toList())
-        .hasSize(orderCount);
-  }
-
-  private static String getProcessVariable() {
-    return """
-           = {
-             	"billId" : "1",
-             	"name": "Facture 1",
-             	"state": "Ok",
-             	"lines": [
-             		{
-             			"lineId": "11",
-             			"state": "Ok",
-             			"orders": [
-             				{
-             					"orderId": "111",
-             					"state": "Ok",
-             					"name": "Commande PC1"
-             				},
-             				{
-             					"orderId": "112",
-             					"state": "Ok",
-             					"name": "Commande PC2"
-             				},
-             				{
-             					"orderId": "113",
-             					"state": "Ok",
-             					"name": "Commande PC3"
-             				},
-             				{
-             					"orderId": "114",
-             					"state": "Ok",
-             					"name": "Commande PC4"
-             				},
-             				{
-             					"orderId": "115",
-             					"state": "Ko",
-             					"name": "Commande PC5"
-             				}
-             			]
-             		},
-             		{
-             			"lineId": "12",
-             			"state": "Ok",
-             			"orders": [
-             				{
-             					"orderId": "121",
-             					"state": "Ok",
-             					"name": "Commande PC1"
-             				},
-             				{
-             					"orderId": "122",
-             					"state": "Ok",
-             					"name": "Commande PC2"
-             				},
-             				{
-             					"orderId": "123",
-             					"state": "Ok",
-             					"name": "Commande PC3"
-             				},
-             				{
-             					"orderId": "124",
-             					"state": "Ok",
-             					"name": "Commande PC4"
-             				},
-             				{
-             					"orderId": "125",
-             					"state": "E2",
-             					"name": "Commande PC5"
-             				}
-             			]
-             		},
-             		{
-             			"lineId": "13",
-             			"state": "Ok",
-             			"orders": [
-             				{
-             					"orderId": "131",
-             					"state": "Ok",
-             					"name": "Commande PC1"
-             				},
-             				{
-             					"orderId": "132",
-             					"state": "Ok",
-             					"name": "Commande PC2"
-             				},
-             				{
-             					"orderId": "133",
-             					"state": "Ok",
-             					"name": "Commande PC3"
-             				},
-             				{
-             					"orderId": "134",
-             					"state": "Ok",
-             					"name": "Commande PC4"
-             				},
-             				{
-             					"orderId": "135",
-             					"state": "E1",
-             					"name": "Commande PC5"
-             				}
-             			]
-             		},
-             		{
-             			"lineId": "14",
-             			"state": "Ok",
-             			"orders": [
-             				{
-             					"orderId": "141",
-             					"state": "Ok",
-             					"name": "Commande PC1"
-             				},
-             				{
-             					"orderId": "142",
-             					"state": "Ok",
-             					"name": "Commande PC2"
-             				},
-             				{
-             					"orderId": "143",
-             					"state": "Ok",
-             					"name": "Commande PC3"
-             				},
-             				{
-             					"orderId": "144",
-             					"state": "Ok",
-             					"name": "Commande PC4"
-             				},
-             				{
-             					"orderId": "145",
-             					"state": "18",
-             					"name": "Commande PC5"
-             				}
-             			]
-             		},
-             		{
-             			"lineId": "15",
-             			"state": "Ok",
-             			"orders": [
-             				{
-             					"orderId": "151",
-             					"state": "Ok",
-             					"name": "Commande PC1"
-             				},
-             				{
-             					"orderId": "152",
-             					"state": "Ok",
-             					"name": "Commande PC2"
-             				},
-             				{
-             					"orderId": "153",
-             					"state": "Ok",
-             					"name": "Commande PC3"
-             				},
-             				{
-             					"orderId": "154",
-             					"state": "Ok",
-             					"name": "Commande PC4"
-             				},
-             				{
-             					"orderId": "155",
-             					"state": "Ko",
-             					"name": "Commande PC5"
-             				}
-             			]
-             		},
-             		{
-             			"lineId": "16",
-             			"state": "Ok",
-             			"orders": [
-             				{
-             					"orderId": "161",
-             					"state": "Ok",
-             					"name": "Commande PC1"
-             				},
-             				{
-             					"orderId": "162",
-             					"state": "Ok",
-             					"name": "Commande PC2"
-             				},
-             				{
-             					"orderId": "163",
-             					"state": "Ok",
-             					"name": "Commande PC3"
-             				},
-             				{
-             					"orderId": "164",
-             					"state": "Ok",
-             					"name": "Commande PC4"
-             				},
-             				{
-             					"orderId": "165",
-             					"state": "Ko",
-             					"name": "Commande PC5"
-             				}
-             			]
-             		},
-             		{
-             			"lineId": "17",
-             			"state": "Ok",
-             			"orders": [
-             				{
-             					"orderId": "171",
-             					"state": "Ok",
-             					"name": "Commande PC1"
-             				},
-             				{
-             					"orderId": "172",
-             					"state": "Ok",
-             					"name": "Commande PC2"
-             				},
-             				{
-             					"orderId": "173",
-             					"state": "Ok",
-             					"name": "Commande PC3"
-             				},
-             				{
-             					"orderId": "174",
-             					"state": "Ok",
-             					"name": "Commande PC4"
-             				},
-             				{
-             					"orderId": "175",
-             					"state": "Ko",
-             					"name": "Commande PC5"
-             				}
-             			]
-             		},
-             		{
-             			"lineId": "18",
-             			"state": "Ok",
-             			"orders": [
-             				{
-             					"orderId": "181",
-             					"state": "Ok",
-             					"name": "Commande PC1"
-             				},
-             				{
-             					"orderId": "182",
-             					"state": "Ok",
-             					"name": "Commande PC2"
-             				},
-             				{
-             					"orderId": "183",
-             					"state": "Ok",
-             					"name": "Commande PC3"
-             				},
-             				{
-             					"orderId": "184",
-             					"state": "Ok",
-             					"name": "Commande PC4"
-             				},
-             				{
-             					"orderId": "185",
-             					"state": "Ko",
-             					"name": "Commande PC5"
-             				}
-             			]
-             		},
-             		{
-             			"lineId": "19",
-             			"state": "Ok",
-             			"orders": [
-             				{
-             					"orderId": "191",
-             					"state": "Ok",
-             					"name": "Commande PC1"
-             				},
-             				{
-             					"orderId": "192",
-             					"state": "Ok",
-             					"name": "Commande PC2"
-             				},
-             				{
-             					"orderId": "193",
-             					"state": "Ok",
-             					"name": "Commande PC3"
-             				},
-             				{
-             					"orderId": "194",
-             					"state": "Ko",
-             					"name": "Commande PC4"
-             				},
-             				{
-             					"orderId": "195",
-             					"state": "Ok",
-             					"name": "Commande PC5"
-             				}
-             			]
-             		},
-             		{
-             			"lineId": "21",
-             			"state": "Ok",
-             			"orders": [
-             				{
-             					"orderId": "211",
-             					"state": "Ok",
-             					"name": "Commande PC1"
-             				},
-             				{
-             					"orderId": "212",
-             					"state": "Ok",
-             					"name": "Commande PC2"
-             				},
-             				{
-             					"orderId": "213",
-             					"state": "Ok",
-             					"name": "Commande PC3"
-             				},
-             				{
-             					"orderId": "214",
-             					"state": "Ko",
-             					"name": "Commande PC4"
-             				},
-             				{
-             					"orderId": "215",
-             					"state": "Ok",
-             					"name": "Commande PC5"
-             				}
-             			]
-             		}
-             	]
-             }""";
+        .hasSize(count);
   }
 }
