@@ -77,4 +77,11 @@ public class AbstractCallActivityBuilder<B extends AbstractCallActivityBuilder<B
     calledElement.setBindingType(bindingType);
     return myself;
   }
+
+  public B zeebeVersionTag(final String versionTag) {
+    final ZeebeCalledElement calledElement =
+        getCreateSingleExtensionElement(ZeebeCalledElement.class);
+    calledElement.setVersionTag(versionTag);
+    return myself;
+  }
 }

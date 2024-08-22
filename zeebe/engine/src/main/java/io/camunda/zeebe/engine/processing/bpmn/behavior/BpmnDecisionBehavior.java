@@ -131,6 +131,8 @@ public final class BpmnDecisionBehavior {
     return switch (bindingType) {
       case deployment -> getDecisionVersionInSameDeployment(decisionId, context);
       case latest -> getLatestDecisionVersion(decisionId, context.getTenantId());
+      // will be implemented with https://github.com/camunda/camunda/issues/21040
+      case versionTag -> Either.left(new Failure("Binding type 'versionTag' not supported"));
     };
   }
 

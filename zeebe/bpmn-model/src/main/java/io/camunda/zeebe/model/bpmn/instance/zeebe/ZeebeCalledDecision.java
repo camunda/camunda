@@ -55,4 +55,16 @@ public interface ZeebeCalledDecision extends BpmnModelElementInstance {
    * @param bindingType the binding type for the decision
    */
   void setBindingType(ZeebeBindingType bindingType);
+
+  /**
+   * @return The version tag of the decision that is called
+   */
+  String getVersionTag();
+
+  /**
+   * Sets the version tag of the decision that is called.
+   *
+   * @param versionTag the version tag of the decision
+   */
+  void setVersionTag(String versionTag);
 }

@@ -130,4 +130,23 @@ public class CallActivityBuilderTest {
         .extracting(ZeebeCalledElement::getBindingType)
         .containsExactly(bindingType);
   }
+
+  @Test
+  void shouldSetVersionTag() {
+    // when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .callActivity("callActivity", c -> c.zeebeVersionTag("v1"))
+            .done();
+
+    // then
+    final ModelElementInstance callActivity = instance.getModelElementById("callActivity");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) callActivity.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeCalledElement.class))
+        .hasSize(1)
+        .extracting(ZeebeCalledElement::getVersionTag)
+        .containsExactly("v1");
+  }
 }

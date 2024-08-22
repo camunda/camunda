@@ -18,13 +18,11 @@ jest.mock('services', () => {
 
   return {
     ...rest,
-    createReportUpdate: jest.fn((a, b, type, value) => ({[type]: value})),
+    createReportUpdate: jest.fn((b, type, value) => ({[type]: value})),
   };
 });
 
 const config = {
-  type: 'process',
-  onChange: jest.fn(),
   report: {
     view: {},
     visualization: 'bar',
@@ -34,6 +32,7 @@ const config = {
       sorting: null,
     },
   },
+  onChange: jest.fn(),
 };
 
 beforeEach(() => {

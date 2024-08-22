@@ -29,7 +29,6 @@ import {withDocs} from 'HOC';
 import {track} from 'tracking';
 
 import ReportControlPanel from './controlPanels/ReportControlPanel';
-import DecisionControlPanel from './controlPanels/DecisionControlPanel';
 import ConflictModal from './ConflictModal';
 import {Configuration} from './controlPanels/Configuration';
 import ReportWarnings from './ReportWarnings';
@@ -102,8 +101,8 @@ export class ReportEdit extends React.Component {
 
   save = () => {
     return new Promise(async (resolve, reject) => {
-      const {id, name, description, data, reportType} = this.state.report;
-      const endpoint = `report/${reportType}/single`;
+      const {id, name, description, data} = this.state.report;
+      const endpoint = `report/process/single`;
 
       if (this.props.isNew) {
         const collectionId = getCollection(this.props.location.pathname);
@@ -322,7 +321,7 @@ export class ReportEdit extends React.Component {
       runButtonLoading,
       showReportRenderer,
     } = this.state;
-    const {name, description, data, reportType} = report;
+    const {name, description, data} = report;
 
     if (redirect) {
       return <Redirect to={redirect} />;
@@ -373,7 +372,6 @@ export class ReportEdit extends React.Component {
               <div className={classnames('Report__content', {hidden: !showReportRenderer})}>
                 <div className="visualization">
                   <Visualization
-                    type={reportType}
                     report={data}
                     onChange={(change) => this.updateReport(change, true)}
                   />
@@ -415,20 +413,11 @@ export class ReportEdit extends React.Component {
               </CollapsibleContainer>
             )}
           </div>
-          {reportType === 'process' && (
-            <ReportControlPanel
-              report={report}
-              updateReport={this.updateReport}
-              setLoading={this.setLoading}
-            />
-          )}
-          {reportType === 'decision' && (
-            <DecisionControlPanel
-              report={report}
-              updateReport={this.updateReport}
-              setLoading={this.setLoading}
-            />
-          )}
+          <ReportControlPanel
+            report={report}
+            updateReport={this.updateReport}
+            setLoading={this.setLoading}
+          />
         </div>
         <ConflictModal
           conflicts={conflict}

@@ -27,7 +27,7 @@
     <!-- database config -->
     <elasticsearch.version>7.17.23</elasticsearch.version>
     <opensearch.version>2.10.1</opensearch.version>
-    <awssdk.version>2.27.9</awssdk.version>
+    <awssdk.version>2.27.10</awssdk.version>
     <!-- The default es 8 version we are going to be testing with-->
     <elasticsearch8.test.version>8.9.0</elasticsearch8.test.version>
     <!-- The default opensearch version we are going to be testing with-->
@@ -415,7 +415,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.7.1</version>
+          <version>3.8.0</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>

@@ -203,6 +203,8 @@ public final class BpmnUserTaskBehavior {
     return switch (bindingType) {
       case deployment -> findFormByIdInSameDeployment(formId, context, scopeKey);
       case latest -> findLatestFormById(formId, context.getTenantId(), scopeKey);
+      // will be implemented with https://github.com/camunda/camunda/issues/21041
+      case versionTag -> Either.left(new Failure("Binding type 'versionTag' not supported"));
     };
   }
 

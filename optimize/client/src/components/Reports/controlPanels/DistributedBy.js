@@ -22,7 +22,7 @@ export default function DistributedBy({report, onChange, variables}) {
     return null;
   }
 
-  const distributions = reportConfig.process.distribution;
+  const distributions = reportConfig.distribution;
   const selectedOption = distributions.find(({matcher}) => matcher(report));
   const hasDistribution = selectedOption.key !== 'none';
 
@@ -85,7 +85,7 @@ export default function DistributedBy({report, onChange, variables}) {
           }
 
           onChange(
-            createReportUpdate('process', report, 'distribution', type, {
+            createReportUpdate(report, 'distribution', type, {
               distributedBy: {value: {$set: value}},
             })
           );
@@ -100,7 +100,7 @@ export default function DistributedBy({report, onChange, variables}) {
           kind="ghost"
           iconDescription={t('common.reset')}
           className="removeGrouping"
-          onClick={() => onChange(createReportUpdate('process', report, 'distribution', 'none'))}
+          onClick={() => onChange(createReportUpdate(report, 'distribution', 'none'))}
           hasIconOnly
           renderIcon={Close}
         ></Button>

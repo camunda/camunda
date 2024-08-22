@@ -25,14 +25,13 @@ export default function createPlugins({updateReport, report: {hyper, data, resul
   if (
     !hyper &&
     updateReport &&
-    ['startDate', 'evaluationDateTime', 'endDate'].includes(data.groupBy.type) &&
+    ['startDate', 'endDate'].includes(data.groupBy.type) &&
     ['line', 'bar'].includes(data.visualization) &&
     !data.configuration.horizontalBar
   ) {
     const dataPoints = result.data.map(({key}) => key);
 
     const groupByFilterType = {
-      evaluationDateTime: 'evaluationDateTime',
       startDate: 'instanceStartDate',
       endDate: 'instanceEndDate',
     };

@@ -26,12 +26,10 @@ const {createDurationFormattingOptions, duration} = formatters;
 
 export default function createDefaultChartOptions({report, targetValue, theme, formatter}) {
   const {
-    data: {visualization, view, groupBy, configuration, definitions},
+    data: {visualization, view, groupBy, configuration},
     result,
   } = report;
-  const {precision, xml} = configuration;
-
-  const decisionDefinitionKey = definitions?.[0].key;
+  const {precision} = configuration;
 
   const isDark = theme === 'dark';
   const isDuration = isDurationReport(report);
@@ -58,7 +56,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
         isPersistedTooltips,
         measures: result.measures,
         entity: view.entity,
-        autoSkip: canBeInterpolated(groupBy, xml, decisionDefinitionKey),
+        autoSkip: canBeInterpolated(groupBy),
       });
       break;
     default:

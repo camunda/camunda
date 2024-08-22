@@ -18,6 +18,7 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -39,10 +40,10 @@ public class RichOpenSearchClient {
   OpenSearchClient openSearchClient;
 
   public RichOpenSearchClient(
-      BeanFactory beanFactory,
-      OpenSearchClient openSearchClient,
-      OpenSearchAsyncClient openSearchAsyncClient,
-      ObjectMapper objectMapper) {
+      final BeanFactory beanFactory,
+      final OpenSearchClient openSearchClient,
+      final OpenSearchAsyncClient openSearchAsyncClient,
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
     this.beanFactory = beanFactory;
     this.openSearchClient = openSearchClient;
     async = new Async(openSearchAsyncClient);
@@ -107,14 +108,14 @@ public class RichOpenSearchClient {
     final OpenSearchAsyncSnapshotOperations openSearchAsyncSnapshotOperations;
     final OpenSearchAsyncTaskOperations openSearchAsyncTaskOperations;
 
-    public Async(OpenSearchAsyncClient openSearchAsyncClient) {
-      this.openSearchAsyncDocumentOperations =
+    public Async(final OpenSearchAsyncClient openSearchAsyncClient) {
+      openSearchAsyncDocumentOperations =
           new OpenSearchAsyncDocumentOperations(LOGGER, openSearchAsyncClient);
-      this.openSearchAsyncIndexOperations =
+      openSearchAsyncIndexOperations =
           new OpenSearchAsyncIndexOperations(LOGGER, openSearchAsyncClient);
-      this.openSearchAsyncSnapshotOperations =
+      openSearchAsyncSnapshotOperations =
           new OpenSearchAsyncSnapshotOperations(LOGGER, openSearchAsyncClient);
-      this.openSearchAsyncTaskOperations =
+      openSearchAsyncTaskOperations =
           new OpenSearchAsyncTaskOperations(LOGGER, openSearchAsyncClient);
     }
 

@@ -8,13 +8,7 @@
 
 import {get, post} from 'request';
 
-export {
-  loadProcessDefinitionXml,
-  loadDecisionDefinitionXml,
-  loadVariables,
-  loadInputVariables,
-  loadOutputVariables,
-} from './dataLoaders.ts';
+export {loadProcessDefinitionXml, loadVariables} from './dataLoaders.ts';
 
 export async function getFlowNodeNames(processDefinitionKey, processDefinitionVersion, tenantId) {
   if (processDefinitionKey && processDefinitionVersion) {
