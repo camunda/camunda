@@ -12,6 +12,8 @@ import {Wrapper} from './mocks';
 import {mockFetchLicense} from 'modules/mocks/api/v2/fetchLicense';
 import {licenseTagStore} from 'modules/stores/licenseTag';
 
+jest.unmock('modules/stores/licenseTag');
+
 describe('license note', () => {
   it('should show and hide license information', async () => {
     mockFetchLicense().withSuccess({
