@@ -44,10 +44,10 @@ public class UpdateUserTest {
             .withName("Bar Foo")
             .withEmail("foo@bar.blah")
             .withPassword("Foo Bar")
-            .update();
+            .update()
+            .getValue();
 
-    final var createdUser = updatedUser.getValue();
-    assertThat(createdUser)
+    assertThat(updatedUser)
         .isNotNull()
         .hasFieldOrPropertyWithValue("username", username)
         .hasFieldOrPropertyWithValue("name", "Bar Foo")
