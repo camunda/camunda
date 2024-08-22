@@ -24,7 +24,7 @@ public class ElasticsearchMetrics {
   private final Timer flushDuration;
   private final DistributionSummary bulkSize;
   private final Counter failedFlush;
-  private final Timer recordBufferLifetime;
+  private final Timer flushLatency;
 
   public ElasticsearchMetrics(final int partitionId, final MeterRegistry registry) {
     partitionIdLabel = String.valueOf(partitionId);
@@ -55,10 +55,10 @@ public class ElasticsearchMetrics {
             .tags(PARTITION_LABEL, partitionIdLabel)
             .register(meterRegistry);
 
-    recordBufferLifetime =
-        Timer.builder(meterName("record.buffer.lifetime"))
+    flushLatency =
+        Timer.builder(meterName("flush.latency"))
             .description(
-                "Approximation of how long a record (the first) has to spent in the exporter buffer, before flushing.")
+                "Time of how long a export buffer is open and collects new records before flushing, meaning latency until the next flush is done.")
             .tags(PARTITION_LABEL, partitionIdLabel)
             .publishPercentileHistogram()
             .register(meterRegistry);
@@ -84,13 +84,13 @@ public class ElasticsearchMetrics {
     return NAMESPACE + "." + name;
   }
 
-  public Timer.Sample startRecordBufferLifetimeMeasurement() {
+  public Timer.Sample startFlushLatencyMeasurement() {
     return Timer.start(meterRegistry);
   }
 
-  public void stopRecordBufferLifetimeMeasurement(final Timer.Sample sample) {
-    if (sample != null) {
-      sample.stop(recordBufferLifetime);
+  public void stopFlushLatencyMeasurement(final Timer.Sample flushLatencySample) {
+    if (flushLatencySample != null) {
+      flushLatencySample.stop(flushLatency);
     }
   }
 }

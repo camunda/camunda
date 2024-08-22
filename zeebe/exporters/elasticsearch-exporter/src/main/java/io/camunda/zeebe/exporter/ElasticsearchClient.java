@@ -49,11 +49,12 @@ class ElasticsearchClient implements AutoCloseable {
   private ElasticsearchMetrics metrics;
 
   /**
-   * Sample to measure the lifetime of the first record in the current bulk.
+   * Sample to measure the flush latency of the current bulk request.
    *
-   * <p>Used to approximate of how long a record has to stay in the buffer, before flushed.
+   * <p>Time of how long an export bulk request is open and collects new records before flushing,
+   * meaning latency until the next flush is done.
    */
-  private Sample recordBufferLifetimeMeasurement;
+  private Sample flushLatencyMeasurement;
 
   ElasticsearchClient(
       final ElasticsearchExporterConfiguration configuration, final MeterRegistry meterRegistry) {
@@ -95,7 +96,7 @@ class ElasticsearchClient implements AutoCloseable {
     }
 
     if (bulkIndexRequest.isEmpty()) {
-      recordBufferLifetimeMeasurement = metrics.startRecordBufferLifetimeMeasurement();
+      flushLatencyMeasurement = metrics.startFlushLatencyMeasurement();
     }
 
     final BulkIndexAction action =
@@ -123,7 +124,7 @@ class ElasticsearchClient implements AutoCloseable {
         () -> {
           try {
             exportBulk();
-            metrics.stopRecordBufferLifetimeMeasurement(recordBufferLifetimeMeasurement);
+            metrics.stopFlushLatencyMeasurement(flushLatencyMeasurement);
 
             bulkIndexRequest.clear();
           } catch (final ElasticsearchExporterException e) {
