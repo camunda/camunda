@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -27,8 +28,12 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
@@ -92,8 +97,6 @@ public class AuthorizationControllerTest extends RestControllerTest {
 
   @Test
   void createAuthorizationThrowsExceptionWhenServiceThrowsException() {
-    final String message = "message";
-
     final var request =
         new AuthorizationAssignRequest()
             .ownerKey("1")
@@ -131,5 +134,87 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .isBadRequest()
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideInvalidRequests")
+  public void createAuthorizationShouldReturnBadRequest(
+      final AuthorizationAssignRequest request, final String errorMessage) {
+    final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+    expectedBody.setTitle(INVALID_ARGUMENT.name());
+    expectedBody.setInstance(URI.create("/v2/authorizations"));
+    expectedBody.setDetail(errorMessage);
+
+    webClient
+        .post()
+        .uri("/v2/authorizations")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  private static Stream<Arguments> provideInvalidRequests() {
+    return Stream.of(
+        Arguments.of(
+            new AuthorizationAssignRequest()
+                .ownerKey(null)
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceKey("2")
+                .resourceType("resourceType")
+                .permissions(null),
+            "No ownerKey provided."),
+        Arguments.of(
+            new AuthorizationAssignRequest()
+                .ownerKey("   ")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceKey("2")
+                .resourceType("resourceType")
+                .permissions(null),
+            "No ownerKey provided."),
+        Arguments.of(
+            new AuthorizationAssignRequest()
+                .ownerKey("1")
+                .ownerType(null)
+                .resourceKey("2")
+                .resourceType("resourceType")
+                .permissions(null),
+            "No ownerType provided."),
+        Arguments.of(
+            new AuthorizationAssignRequest()
+                .ownerKey("1")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceKey(null)
+                .resourceType("resourceType")
+                .permissions(null),
+            "No resourceKey provided."),
+        Arguments.of(
+            new AuthorizationAssignRequest()
+                .ownerKey("1")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceKey("    ")
+                .resourceType("resourceType")
+                .permissions(null),
+            "No resourceKey provided."),
+        Arguments.of(
+            new AuthorizationAssignRequest()
+                .ownerKey("1")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceKey("2")
+                .resourceType(null)
+                .permissions(null),
+            "No resourceType provided."),
+        Arguments.of(
+            new AuthorizationAssignRequest()
+                .ownerKey("1")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceKey("2")
+                .resourceType("    ")
+                .permissions(null),
+            "No resourceType provided."));
   }
 }
