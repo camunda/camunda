@@ -26,6 +26,8 @@ public class StarterCfg {
   /** Paths are relative to classpath. */
   private String bpmnXmlPath;
 
+  private String[] extraBpmnModels;
+
   private String payloadPath;
   private boolean withResults;
   private Duration withResultsTimeout;
@@ -73,6 +75,14 @@ public class StarterCfg {
 
   public void setThreads(final int threads) {
     this.threads = threads;
+  }
+
+  public String[] getExtraBpmnModels() {
+    return extraBpmnModels;
+  }
+
+  public void setExtraBpmnModels(final String[] extraBpmnModels) {
+    this.extraBpmnModels = extraBpmnModels;
   }
 
   public String getBpmnXmlPath() {
