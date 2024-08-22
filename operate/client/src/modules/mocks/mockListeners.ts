@@ -64,7 +64,7 @@ const mockListeners: ListenerEntity[] = [
   {
     listenerType: 'EXECUTION',
     listenerKey: 2344567895437407,
-    state: 'FAILED',
+    state: 'ACTIVE',
     jobType: 'START',
     event: 'EVENT',
     time: '2024-01-02 16:51:16',
@@ -109,7 +109,7 @@ const mockListeners: ListenerEntity[] = [
   {
     listenerType: 'USER_TASK',
     listenerKey: 2344567895437412,
-    state: 'ACTIVE',
+    state: 'FAILED',
     jobType: 'END',
     event: 'EVENT',
     time: '2024-01-02 20:11:12',
@@ -118,7 +118,7 @@ const mockListeners: ListenerEntity[] = [
   {
     listenerType: 'USER_TASK',
     listenerKey: 2344567895437413,
-    state: 'ACTIVE',
+    state: 'FAILED',
     jobType: 'END',
     event: 'EVENT',
     time: '2024-01-02 21:11:12',

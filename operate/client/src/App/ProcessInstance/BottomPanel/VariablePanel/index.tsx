@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useMemo} from 'react';
 import {observer} from 'mobx-react';
 
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -18,6 +18,7 @@ import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {InputOutputMappings} from './InputOutputMappings';
 import {VariablesContent} from './VariablesContent';
 import {Listeners} from './Listeners';
+import {WarningFilled} from './styled';
 
 const VariablePanel = observer(function VariablePanel() {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -25,8 +26,13 @@ const VariablePanel = observer(function VariablePanel() {
 
   const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
 
-  const {fetchListeners, state} = processInstanceListenersStore;
+  const {fetchListeners, state, getListenersFailureCount} =
+    processInstanceListenersStore;
   const {listeners} = state;
+  const listenersFailureCount = useMemo(
+    () => getListenersFailureCount(),
+    [listeners, getListenersFailureCount],
+  );
 
   useEffect(() => {
     variablesStore.init(processInstanceId);
@@ -84,6 +90,9 @@ const VariablePanel = observer(function VariablePanel() {
                 ? [
                     {
                       id: 'listeners',
+                      ...(listenersFailureCount && {
+                        labelIcon: <WarningFilled />,
+                      }),
                       label: 'Listeners',
                       content: <Listeners listeners={listeners} />,
                       removePadding: true,

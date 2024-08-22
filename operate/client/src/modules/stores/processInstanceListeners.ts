@@ -116,6 +116,16 @@ class ProcessInstanceListeners {
     };
   };
 
+  getListenersFailureCount = () => {
+    if (this.state.listenersCount === 0) return 0;
+
+    const failedListeners = this.state.listeners.filter(
+      (listener) => listener.state === 'FAILED',
+    );
+
+    return failedListeners?.length || 0;
+  };
+
   getListeners = (fetchType: FetchType, listeners: ListenerEntity[]) => {
     switch (fetchType) {
       case 'next':

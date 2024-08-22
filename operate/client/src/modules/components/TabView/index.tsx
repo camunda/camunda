@@ -7,12 +7,20 @@
  */
 
 import {PanelHeader} from 'modules/components/PanelHeader';
-import {Container, Tab, Content, TabPanel, TabList} from './styled';
+import {
+  Container,
+  Tab,
+  TabInternalContainer,
+  Content,
+  TabPanel,
+  TabList,
+} from './styled';
 import {tracking} from 'modules/tracking';
 import {Tabs, TabPanels} from '@carbon/react';
 
 type TabType = {
   id: string;
+  labelIcon?: React.ReactNode;
   label: string;
   content: React.ReactNode;
   removePadding?: boolean;
@@ -36,7 +44,7 @@ const TabView: React.FC<Props> = ({tabs = [], eventName, dataTestId}) => {
       ) : (
         <Tabs>
           <TabList aria-label="Variable Panel Tabs">
-            {tabs.map(({id, label, onClick}) => (
+            {tabs.map(({id, labelIcon, label, onClick}) => (
               <Tab
                 key={id}
                 onClick={() => {
@@ -49,7 +57,10 @@ const TabView: React.FC<Props> = ({tabs = [], eventName, dataTestId}) => {
                   }
                 }}
               >
-                {label}
+                <TabInternalContainer>
+                  {label}
+                  {labelIcon}
+                </TabInternalContainer>
               </Tab>
             ))}
           </TabList>
