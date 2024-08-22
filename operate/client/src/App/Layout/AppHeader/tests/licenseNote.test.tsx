@@ -15,7 +15,7 @@ import {licenseTagStore} from 'modules/stores/licenseTag';
 describe('license note', () => {
   it('should show and hide license information', async () => {
     mockFetchLicense().withSuccess({
-      licenseType: 'self-managed',
+      licenseType: 'production',
       validLicense: false,
     });
 
@@ -42,7 +42,7 @@ describe('license note', () => {
 
   it('should show license note in self-managed free/trial environment', async () => {
     mockFetchLicense().withSuccess({
-      licenseType: 'self-managed',
+      licenseType: 'production',
       validLicense: false,
     });
 
@@ -78,7 +78,7 @@ describe('license note', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should not show license note in unknown environment', async () => {
+  it('should show license note in unknown environment', async () => {
     mockFetchLicense().withSuccess({
       licenseType: 'unknown',
       validLicense: false,
@@ -93,13 +93,13 @@ describe('license note', () => {
     );
 
     expect(
-      screen.queryByText(/^Non-production license$/i),
-    ).not.toBeInTheDocument();
+      await screen.findByText(/^Non-production license$/i),
+    ).toBeInTheDocument();
   });
 
   it('should show license note in self-managed enterprise environment', async () => {
     mockFetchLicense().withSuccess({
-      licenseType: 'self-managed',
+      licenseType: 'production',
       validLicense: true,
     });
 
