@@ -29,6 +29,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.util.TlsConfigUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -244,59 +245,10 @@ public final class SystemContext {
   }
 
   private void validateNetworkSecurityConfig(final SecurityCfg security) {
-    final var certificateChainPath = security.getCertificateChainPath();
-    final var privateKeyPath = security.getPrivateKeyPath();
-    final var keyStorePath = security.getKeyStore().getFilePath();
-
-    if ((certificateChainPath != null || privateKeyPath != null) && keyStorePath != null) {
-      throw new IllegalArgumentException(
-          String.format(
-              """
-                      Cannot provide both separate certificate chain and or private key along with a
-                      keystore file, use only one approach.
-                      certificateChainPath: %s
-                      privateKeyPath: %s
-                      OR
-                      keyStorePath: %s""",
-              certificateChainPath, privateKeyPath, keyStorePath));
-    }
-
-    if (keyStorePath == null) {
-      if (certificateChainPath == null) {
-        throw new IllegalArgumentException(
-            "Expected to have a valid certificate chain path for network security, but none "
-                + "configured");
-      }
-
-      if (privateKeyPath == null) {
-        throw new IllegalArgumentException(
-            "Expected to have a valid private key path for network security, but none configured");
-      }
-
-      if (!certificateChainPath.canRead()) {
-        throw new IllegalArgumentException(
-            String.format(
-                "Expected the configured network security certificate chain path '%s' to point to a"
-                    + " readable file, but it does not",
-                certificateChainPath));
-      }
-
-      if (!privateKeyPath.canRead()) {
-        throw new IllegalArgumentException(
-            String.format(
-                "Expected the configured network security private key path '%s' to point to a "
-                    + "readable file, but it does not",
-                privateKeyPath));
-      }
-    } else {
-      if (!keyStorePath.canRead()) {
-        throw new IllegalArgumentException(
-            String.format(
-                "Expected the configured network security keystorej file '%s' to point to a "
-                    + "readable file, but it does not",
-                keyStorePath));
-      }
-    }
+    TlsConfigUtil.validateTlsConfig(
+        security.getCertificateChainPath(),
+        security.getPrivateKeyPath(),
+        security.getKeyStore().getFilePath());
   }
 
   public ActorScheduler getScheduler() {
