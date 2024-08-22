@@ -22,8 +22,12 @@ test.describe('settings', () => {
   test('change language', async ({page, header}) => {
     await header.changeLanguage('Français');
 
-    await expect(page.locator('text=Bienvenue dans Tasklist')).toBeVisible();
-    await expect(page.locator('text=Toutes tâches ouvertes')).toBeVisible();
-    await expect(page.locator('text=Déconnexion')).toBeVisible();
+    await expect(
+      page.getByRole('heading', {name: 'Bienvenue dans Tasklist'}),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', {name: 'Toutes tâches ouvertes'}),
+    ).toBeVisible();
+    await expect(page.getByRole('button', {name: 'Déconnexion'})).toBeVisible();
   });
 });
