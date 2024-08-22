@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask.TaskListenerEventType;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
@@ -15,6 +16,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 
 final class JobCreatedApplier implements TypedEventApplier<JobIntent, JobRecord> {
 
@@ -38,9 +40,24 @@ final class JobCreatedApplier implements TypedEventApplier<JobIntent, JobRecord>
         if (value.getJobKind() == JobKind.EXECUTION_LISTENER) {
           elementInstance.incrementExecutionListenerIndex();
         }
+        if (value.getJobKind() == JobKind.TASK_LISTENER) {
+          elementInstance.incrementTaskListenerIndex(
+              toTaskListenerEvent(value.getJobListenerEventType()));
+        }
+
         elementInstance.setJobKey(key);
         elementInstanceState.updateInstance(elementInstance);
       }
     }
+  }
+
+  private TaskListenerEventType toTaskListenerEvent(JobListenerEventType eventType) {
+    return switch (eventType) {
+      case CREATE -> TaskListenerEventType.CREATE;
+      case ASSIGN -> TaskListenerEventType.ASSIGN;
+      case UPDATE -> TaskListenerEventType.UPDATE;
+      case COMPLETE -> TaskListenerEventType.COMPLETE;
+      default -> null;
+    };
   }
 }

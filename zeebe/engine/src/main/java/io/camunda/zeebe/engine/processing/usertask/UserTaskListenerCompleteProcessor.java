@@ -28,8 +28,10 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.List;
+import java.util.Optional;
 
-public final class UserTaskCompleteProcessor implements TypedRecordProcessor<UserTaskRecord> {
+public final class UserTaskListenerCompleteProcessor
+    implements TypedRecordProcessor<UserTaskRecord> {
 
   private static final String DEFAULT_ACTION = "complete";
 
@@ -39,11 +41,11 @@ public final class UserTaskCompleteProcessor implements TypedRecordProcessor<Use
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
-  private final UserTaskCommandPreconditionChecker preconditionChecker;
   private final ProcessState processState;
   private final BpmnJobBehavior jobBehavior;
+  private final UserTaskCommandPreconditionChecker preconditionChecker;
 
-  public UserTaskCompleteProcessor(
+  public UserTaskListenerCompleteProcessor(
       final ProcessingState state,
       final EventHandle eventHandle,
       final Writers writers,
@@ -52,37 +54,21 @@ public final class UserTaskCompleteProcessor implements TypedRecordProcessor<Use
     this.eventHandle = eventHandle;
     stateWriter = writers.state();
     commandWriter = writers.command();
-    rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    rejectionWriter = writers.rejection();
     processState = state.getProcessState();
     jobBehavior = bpmnJobBehavior;
     preconditionChecker =
         new UserTaskCommandPreconditionChecker(
-            List.of(LifecycleState.CREATED), "complete", state.getUserTaskState());
+            List.of(LifecycleState.COMPLETING), "complete", state.getUserTaskState());
   }
 
-  @Override
-  public void processRecord(final TypedRecord<UserTaskRecord> userTaskRecord) {
-    preconditionChecker
-        .check(userTaskRecord)
-        .ifRightOrLeft(
-            persistedRecord -> completeUserTask(userTaskRecord, persistedRecord),
-            violation -> {
-              rejectionWriter.appendRejection(
-                  userTaskRecord, violation.getLeft(), violation.getRight());
-              responseWriter.writeRejectionOnCommand(
-                  userTaskRecord, violation.getLeft(), violation.getRight());
-            });
-  }
+  private void onTaskListenerComplete(
+      final TypedRecord<UserTaskRecord> record, final UserTaskRecord userTaskRecord) {
+    final long userTaskKey = record.getKey();
 
-  private void completeUserTask(
-      final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
-    final long userTaskKey = command.getKey();
-
-    userTaskRecord.setVariables(command.getValue().getVariablesBuffer());
-    userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
-
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETING, userTaskRecord);
+    userTaskRecord.setVariables(record.getValue().getVariablesBuffer());
+    userTaskRecord.setAction(record.getValue().getActionOrDefault(DEFAULT_ACTION));
 
     final ExecutableUserTask element =
         processState.getFlowElement(
@@ -91,18 +77,44 @@ public final class UserTaskCompleteProcessor implements TypedRecordProcessor<Use
             userTaskRecord.getElementIdBuffer(),
             ExecutableUserTask.class);
 
-    // if COMPLETE TLs are defined
-    if (element.hasTaskListeners(TaskListenerEventType.COMPLETE)) {
-      // - create job for the fist COMPLETE TL
-      final var listenerType = element.getTaskListeners(TaskListenerEventType.COMPLETE).getFirst();
-      jobBehavior.createNewTaskListenerJob(
-          listenerType, JobListenerEventType.COMPLETE, userTaskRecord, element);
-    } else {
-      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
-      completeElementInstance(userTaskRecord);
-      responseWriter.writeEventOnCommand(
-          userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord, command);
-    }
+    final var userTaskElementInstanceKey = record.getValue().getElementInstanceKey();
+    final ElementInstance userTaskElementInstance =
+        elementInstanceState.getInstance(userTaskElementInstanceKey);
+
+    final Integer taskListenerIndex =
+        userTaskElementInstance.getTaskListenerIndex(TaskListenerEventType.COMPLETE);
+    final List<String> taskListeners = element.getTaskListeners(TaskListenerEventType.COMPLETE);
+    findNextTaskListener(taskListeners, taskListenerIndex)
+        .ifPresentOrElse(
+            listenerType ->
+                jobBehavior.createNewTaskListenerJob(
+                    listenerType, JobListenerEventType.COMPLETE, userTaskRecord, element),
+            () -> {
+              stateWriter.appendFollowUpEvent(
+                  userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
+              completeElementInstance(userTaskRecord);
+              responseWriter.writeEventOnCommand(
+                  userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord, record);
+            });
+  }
+
+  @Override
+  public void processRecord(final TypedRecord<UserTaskRecord> userTaskRecord) {
+    preconditionChecker
+        .check(userTaskRecord)
+        .ifRightOrLeft(
+            persistedRecord -> onTaskListenerComplete(userTaskRecord, persistedRecord),
+            violation -> {
+              rejectionWriter.appendRejection(
+                  userTaskRecord, violation.getLeft(), violation.getRight());
+              responseWriter.writeRejectionOnCommand(
+                  userTaskRecord, violation.getLeft(), violation.getRight());
+            });
+  }
+
+  private Optional<String> findNextTaskListener(
+      final List<String> listeners, final int nextListenerIndex) {
+    return listeners.stream().skip(nextListenerIndex).findFirst();
   }
 
   private void completeElementInstance(final UserTaskRecord userTaskRecord) {

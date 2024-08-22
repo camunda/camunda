@@ -79,6 +79,9 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
         .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
         .thenDo(
             userTaskProperties -> {
+              // TODO write here a UserTaskIntent.CREATE command,
+              //  create `UserTaskCreateProcessor`
+              //  move the task creation logic to new `UserTaskCreateProcessor`
               final var userTaskRecord =
                   userTaskBehavior.createNewUserTask(context, element, userTaskProperties);
               userTaskBehavior.userTaskCreated(userTaskRecord);

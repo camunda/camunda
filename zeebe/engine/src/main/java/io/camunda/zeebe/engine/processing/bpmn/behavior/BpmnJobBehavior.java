@@ -27,6 +27,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventTyp
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -175,6 +176,17 @@ public final class BpmnJobBehavior {
     jobMetrics.jobCreated(jobProperties.getType(), JobKind.EXECUTION_LISTENER);
   }
 
+  public void createNewTaskListenerJob(
+      final String listenerType,
+      final JobListenerEventType jobListenerEventType,
+      final UserTaskRecord userTaskRecord,
+      final ExecutableFlowElement element) {
+
+    writeTaskListenerJobCreatedEvent(
+        listenerType, userTaskRecord, element, JobKind.TASK_LISTENER, jobListenerEventType);
+    jobMetrics.jobCreated(listenerType, JobKind.TASK_LISTENER);
+  }
+
   private Either<Failure, String> evalTypeExp(final Expression type, final long scopeKey) {
     return expressionBehavior
         .evaluateStringExpression(type, scopeKey)
@@ -193,6 +205,32 @@ public final class BpmnJobBehavior {
 
   private Either<Failure, Long> evalRetriesExp(final Expression retries, final long scopeKey) {
     return expressionBehavior.evaluateLongExpression(retries, scopeKey);
+  }
+
+  private void writeTaskListenerJobCreatedEvent(
+      final String listenerType,
+      final UserTaskRecord userTaskRecord,
+      final ExecutableFlowElement element,
+      final JobKind jobKind,
+      final JobListenerEventType jobListenerEventType) {
+
+    jobRecord
+        .setType(listenerType)
+        .setJobKind(jobKind)
+        .setListenerEventType(jobListenerEventType)
+        .setRetries(3) // TODO read retries from configuration
+        // .setCustomHeaders(encodedHeaders)
+        .setBpmnProcessId(userTaskRecord.getBpmnProcessId())
+        .setProcessDefinitionVersion(1) // TODO get the real process version
+        .setProcessDefinitionKey(userTaskRecord.getProcessDefinitionKey())
+        .setProcessInstanceKey(userTaskRecord.getProcessInstanceKey())
+        .setElementId(element.getId())
+        .setElementInstanceKey(userTaskRecord.getElementInstanceKey())
+        .setTenantId(userTaskRecord.getTenantId());
+
+    final var jobKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
+    jobActivationBehavior.publishWork(jobKey, jobRecord);
   }
 
   private void writeJobCreatedEvent(

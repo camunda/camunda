@@ -36,7 +36,9 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
   UPDATING(12),
   UPDATED(13),
 
-  MIGRATED(14);
+  MIGRATED(14),
+
+  COMPLETE_TASK_LISTENER(15);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -86,6 +88,8 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
         return UPDATED;
       case 14:
         return MIGRATED;
+      case 15:
+        return COMPLETE_TASK_LISTENER;
       default:
         return UNKNOWN;
     }

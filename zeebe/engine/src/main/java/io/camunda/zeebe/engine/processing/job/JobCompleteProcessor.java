@@ -15,12 +15,15 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
@@ -30,6 +33,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
       "Expected to update retries for job with key '%d', but no such job was found";
 
   private final JobState jobState;
+  private final UserTaskState userTaskState;
   private final ElementInstanceState elementInstanceState;
   private final DefaultJobCommandPreconditionGuard defaultProcessor;
   private final JobMetrics jobMetrics;
@@ -38,6 +42,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   public JobCompleteProcessor(
       final ProcessingState state, final JobMetrics jobMetrics, final EventHandle eventHandle) {
     jobState = state.getJobState();
+    userTaskState = state.getUserTaskState();
     elementInstanceState = state.getElementInstanceState();
     defaultProcessor =
         new DefaultJobCommandPreconditionGuard("complete", jobState, this::acceptCommand);
@@ -59,29 +64,38 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
       final Intent intent,
       final JobRecord value) {
 
-    final var serviceTaskKey = value.getElementInstanceKey();
+    final var elementInstanceKey = value.getElementInstanceKey();
 
-    final ElementInstance serviceTask = elementInstanceState.getInstance(serviceTaskKey);
-
-    if (serviceTask != null) {
+    final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);
+    if (elementInstance != null) {
       if (value.getJobKind() == JobKind.EXECUTION_LISTENER) {
         // to store the variable for merge, to handle concurrent commands
         eventHandle.triggeringProcessEvent(value);
 
         commandWriter.appendFollowUpCommand(
-            serviceTaskKey,
+            elementInstanceKey,
             ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER,
-            serviceTask.getValue());
+            elementInstance.getValue());
         return;
       }
 
-      final long scopeKey = serviceTask.getValue().getFlowScopeKey();
+      if (value.getJobKind() == JobKind.TASK_LISTENER) {
+        // TODO review do we need `eventHandle.triggeringProcessEvent(value);` for TLs
+        // to store the variable for merge, to handle concurrent commands
+        eventHandle.triggeringProcessEvent(value);
+        final UserTaskRecord userTask = userTaskState.getUserTask(elementInstance.getUserTaskKey());
+        commandWriter.appendFollowUpCommand(
+            userTask.getUserTaskKey(), UserTaskIntent.COMPLETE_TASK_LISTENER, userTask);
+        return;
+      }
+
+      final long scopeKey = elementInstance.getValue().getFlowScopeKey();
       final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
 
       if (scopeInstance != null && scopeInstance.isActive()) {
         eventHandle.triggeringProcessEvent(value);
         commandWriter.appendFollowUpCommand(
-            serviceTaskKey, ProcessInstanceIntent.COMPLETE_ELEMENT, serviceTask.getValue());
+            elementInstanceKey, ProcessInstanceIntent.COMPLETE_ELEMENT, elementInstance.getValue());
       }
     }
   }

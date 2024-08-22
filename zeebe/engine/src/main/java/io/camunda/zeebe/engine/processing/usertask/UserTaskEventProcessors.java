@@ -38,7 +38,13 @@ public final class UserTaskEventProcessors {
         .onCommand(
             ValueType.USER_TASK,
             UserTaskIntent.COMPLETE,
-            new UserTaskCompleteProcessor(processingState, eventHandle, writers))
+            new UserTaskCompleteProcessor(
+                processingState, eventHandle, writers, bpmnBehaviors.jobBehavior()))
+        .onCommand(
+            ValueType.USER_TASK,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            new UserTaskListenerCompleteProcessor(
+                processingState, eventHandle, writers, bpmnBehaviors.jobBehavior()))
         .onCommand(
             ValueType.USER_TASK,
             UserTaskIntent.ASSIGN,

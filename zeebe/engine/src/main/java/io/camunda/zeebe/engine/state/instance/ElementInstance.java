@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask.TaskListenerEventType;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
@@ -48,9 +49,11 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1L);
   private final IntegerProperty executionListenerIndexProp =
       new IntegerProperty("executionListenerIndex", 0);
+  private final ObjectProperty<TaskListenerIndicesRecord> taskListenerIndicesRecordProp =
+      new ObjectProperty<>("taskListenerIndicesRecord", new TaskListenerIndicesRecord());
 
   public ElementInstance() {
-    super(14);
+    super(15);
     declareProperty(parentKeyProp)
         .declareProperty(childCountProp)
         .declareProperty(childActivatedCountProp)
@@ -64,7 +67,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(activeSequenceFlowsProp)
         .declareProperty(activeSequenceFlowIdsProp)
         .declareProperty(userTaskKeyProp)
-        .declareProperty(executionListenerIndexProp);
+        .declareProperty(executionListenerIndexProp)
+        .declareProperty(taskListenerIndicesRecordProp);
   }
 
   public ElementInstance(
@@ -264,7 +268,19 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   }
 
   public void resetExecutionListenerIndex() {
-    executionListenerIndexProp.setValue(0);
+    executionListenerIndexProp.reset();
+  }
+
+  public Integer getTaskListenerIndex(TaskListenerEventType event) {
+    return taskListenerIndicesRecordProp.getValue().getTaskListenerIndex(event);
+  }
+
+  public void incrementTaskListenerIndex(TaskListenerEventType event) {
+    taskListenerIndicesRecordProp.getValue().incrementTaskListenerIndex(event);
+  }
+
+  public void resetTaskListenerIndex(TaskListenerEventType event) {
+    taskListenerIndicesRecordProp.getValue().resetTaskListenerIndex(event);
   }
 
   /**
