@@ -315,8 +315,20 @@ public final class ExpressionProcessor {
       final Expression expression, final long scopeKey) {
     return evaluateExpressionAsEither(expression, scopeKey)
         .flatMap(result -> typeCheck(result, ResultType.NUMBER, scopeKey))
-        .map(EvaluationResult::getNumber)
-        .map(Number::intValue);
+        .flatMap(
+            result -> {
+              if (result.getNumber().doubleValue() % 1 == 0) {
+                return Either.right(result.getNumber().intValue());
+              } else {
+                return Either.left(
+                    createFailureMessage(
+                        result,
+                        String.format(
+                            "Expected result of the expression '%s' to be an integer, but was a decimal.",
+                            expression.getExpression()),
+                        scopeKey));
+              }
+            });
   }
 
   private Either<Failure, EvaluationResult> typeCheckCorrelationKey(

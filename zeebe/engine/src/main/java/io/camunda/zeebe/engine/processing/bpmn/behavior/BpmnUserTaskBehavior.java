@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import static io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefinitionValidator.PRIORITY_LOWER_BOUND;
+import static io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefinitionValidator.PRIORITY_UPPER_BOUND;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.el.Expression;
@@ -266,7 +268,20 @@ public final class BpmnUserTaskBehavior {
     if (priorityExpression == null) {
       return Either.right(ZeebePriorityDefinition.DEFAULT_NUMBER_PRIORITY);
     }
-    return expressionBehavior.evaluateIntegerExpression(priorityExpression, scopeKey);
+    return expressionBehavior
+        .evaluateIntegerExpression(priorityExpression, scopeKey)
+        .flatMap(
+            priority -> {
+              if (priority < PRIORITY_LOWER_BOUND || priority > PRIORITY_UPPER_BOUND) {
+                return Either.left(
+                    new Failure(
+                        String.format(
+                            "Expected priority to be in the range [0,100] but was '%s'.", priority),
+                        ErrorType.EXTRACT_VALUE_ERROR,
+                        scopeKey));
+              }
+              return Either.right(priority);
+            });
   }
 
   public void cancelUserTask(final BpmnElementContext context) {
