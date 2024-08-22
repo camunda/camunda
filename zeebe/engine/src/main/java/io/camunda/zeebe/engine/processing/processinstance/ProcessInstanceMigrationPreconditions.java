@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -639,18 +640,17 @@ public final class ProcessInstanceMigrationPreconditions {
             .getProcess()
             .getElementById(sourceElementId, ExecutableCatchEventSupplier.class);
 
-    record Mapping(String sourceElementId, String targetElementId) {}
-
-    final Map<String, List<String>> sourceBoundaryEventIdsByTargetBoundaryEventId =
-        sourceElement.getBoundaryElementIds().stream()
-            .map(BufferUtil::bufferAsString)
-            .filter(mappingInstructions::containsKey)
-            .map(sourceId -> new Mapping(sourceId, mappingInstructions.get(sourceId)))
-            .collect(
-                Collectors.groupingBy(
-                    Mapping::targetElementId,
-                    HashMap::new,
-                    Collectors.mapping(Mapping::sourceElementId, Collectors.toList())));
+    final var sourceBoundaryEventIdsByTargetBoundaryEventId = new HashMap<String, List<String>>();
+    sourceElement.getBoundaryElementIds().stream()
+        .map(BufferUtil::bufferAsString)
+        .filter(mappingInstructions::containsKey)
+        .forEach(
+            sourceBoundaryEventId -> {
+              final String targetBoundaryEventId = mappingInstructions.get(sourceBoundaryEventId);
+              sourceBoundaryEventIdsByTargetBoundaryEventId
+                  .computeIfAbsent(targetBoundaryEventId, k -> new ArrayList<>())
+                  .add(sourceBoundaryEventId);
+            });
 
     sourceBoundaryEventIdsByTargetBoundaryEventId.forEach(
         (targetBoundaryEventId, sourceBoundaryEventIds) -> {
