@@ -18,7 +18,10 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class TlsConfigUtil {
+public final class TlsConfigUtil {
+
+  private TlsConfigUtil() {}
+
   public static void validateTlsConfig(
       final File certificateChain, final File privateKey, final File keyStore) {
     if ((certificateChain != null || privateKey != null) && keyStore != null) {
