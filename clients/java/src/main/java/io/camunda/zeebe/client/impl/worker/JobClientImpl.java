@@ -86,7 +86,13 @@ public final class JobClientImpl implements JobClient {
   @Override
   public ThrowErrorCommandStep1 newThrowErrorCommand(final long jobKey) {
     return new ThrowErrorCommandImpl(
-        asyncStub, jsonMapper, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
+        asyncStub,
+        jsonMapper,
+        jobKey,
+        config.getDefaultRequestTimeout(),
+        retryPredicate,
+        httpClient,
+        config.preferRestOverGrpc());
   }
 
   @Override
