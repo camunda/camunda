@@ -59,7 +59,8 @@ public class UpdateUserMultiPartitionTest {
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
-                .limit(record -> record.getIntent().equals(CommandDistributionIntent.FINISHED)))
+                .limitByCount(
+                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 2))
         .extracting(
             Record::getIntent,
             Record::getRecordType,
