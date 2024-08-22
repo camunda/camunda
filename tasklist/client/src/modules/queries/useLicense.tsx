@@ -8,7 +8,7 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {RequestError, request} from 'modules/request';
+import {request, RequestError} from 'modules/request';
 import {License} from 'modules/types';
 
 function useLicense() {
@@ -18,12 +18,15 @@ function useLicense() {
       const {response, error} = await request(api.getLicense());
 
       if (response !== null) {
-        const license = await response.json();
-        return license;
+        return await response.json();
       }
 
-      throw error ?? new Error('Could not fetch license');
+      throw error;
     },
+    gcTime: Infinity,
+    staleTime: Infinity,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: false,
   });
 }
 
