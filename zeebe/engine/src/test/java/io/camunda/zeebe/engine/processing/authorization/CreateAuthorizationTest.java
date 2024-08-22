@@ -53,7 +53,7 @@ public class CreateAuthorizationTest {
     Assertions.assertThat(createdAuthorization)
         .isNotNull()
         .hasFieldOrPropertyWithValue("ownerKey", owner)
-        .hasFieldOrPropertyWithValue("ownerType", AuthorizationOwnerType.USER.toString())
+        .hasFieldOrPropertyWithValue("ownerType", AuthorizationOwnerType.USER)
         .hasFieldOrPropertyWithValue("resourceKey", "resource")
         .hasFieldOrPropertyWithValue("resourceType", "bpmn-id")
         .hasFieldOrPropertyWithValue("permissions", permissions);

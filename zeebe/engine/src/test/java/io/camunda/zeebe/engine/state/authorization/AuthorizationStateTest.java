@@ -73,21 +73,27 @@ public class AuthorizationStateTest {
       "should throw an exception when an authorization for owner and resource pair already exist")
   @Test
   void shouldThrowExceptionInCreateIfUsernameDoesNotExist() {
+    final var owner = "owner" + UUID.randomUUID();
     // given
     final AuthorizationRecord authorizationRecord =
         new AuthorizationRecord()
             .setAuthorizationKey(1L)
-            .setOwnerKey("owner" + UUID.randomUUID())
+            .setOwnerKey(owner)
             .setOwnerType(AuthorizationOwnerType.GROUP)
-            .setResourceKey("resource")
-            .setResourceType("resourceType")
+            .setResourceKey("my-resource-key")
+            .setResourceType("process-definition")
             .setPermissions(List.of("write:*"));
     authorizationState.createAuthorization(authorizationRecord);
 
     // when/then
     assertThatThrownBy(() -> authorizationState.createAuthorization(authorizationRecord))
         .isInstanceOf(ZeebeDbInconsistentException.class)
-        .hasMessageContaining("Key DbLong{1} in ColumnFamily AUTHORIZATIONS already exists");
+        .hasMessageContaining(
+            "Key DbCompositeKey{first=DbCompositeKey{first="
+                + owner
+                + ", second="
+                + AuthorizationOwnerType.GROUP
+                + "}, second=DbCompositeKey{first=my-resource-key, second=process-definition}} in ColumnFamily AUTHORIZATIONS_BY_USERNAME_AND_PERMISSION already exists");
   }
 
   @DisplayName("should return the correct authorization")
