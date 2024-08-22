@@ -26,12 +26,14 @@ jobs:
         id: "pom_info"
         uses: YunaBraska/java-info-action@main
 
-      - name: Setup yarn cache
+      - name: Setup NodeJS
         uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4
         with:
           node-version: ${{ steps.pom_info.outputs.x_version_node }}
-          cache: "yarn"
-          cache-dependency-path: optimize/c4/yarn.lock
+
+      - uses: ./.github/actions/setup-yarn-cache
+        with:
+          directory: optimize/c4
 
       - name: Install dependencies
         working-directory: ./optimize/c4

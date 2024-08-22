@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./optimize/c4 
+        working-directory: ./optimize/c4
     steps:
       - name: Checkout repository
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
@@ -19,8 +19,9 @@ jobs:
         uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4
         with:
           node-version: ${{ steps.pom_info.outputs.x_version_node }}
-          cache: "yarn"
-          cache-dependency-path: 'optimize/c4/yarn.lock'
+      - uses: ./.github/actions/setup-yarn-cache
+        with:
+          directory: optimize/c4
       - name: Install
         run: yarn install --frozen-lockfile
       - name: Build

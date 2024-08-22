@@ -62,12 +62,13 @@ jobs:
         ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
         ELASTIC_JVM_MEMORY: 1
         ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
-    - name: Setup yarn cache
+    - name: Setup NodeJS
       uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4
       with:
         node-version: ${{ steps.pom-info.outputs.x_version_node }}
-        cache: "yarn"
-        cache-dependency-path: optimize/client/yarn.lock
+    - uses: ./.github/actions/setup-yarn-cache
+      with:
+        directory: optimize/client
     - name: Install node dependencies
       working-directory: ./optimize/client
       run: yarn install

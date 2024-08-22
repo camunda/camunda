@@ -15,7 +15,7 @@ runs:
     - name: Setup yarn
       run: npm install -g yarn
       shell: bash
-    - name: Setup yarn cache
+    - name: Setup NodeJS
       uses: actions/setup-node@v4
       with:
         node-version: "20"
