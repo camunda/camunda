@@ -1299,8 +1299,6 @@ components:
           type: string
         flowNodeInstanceId:
           type: string
-        creationTime:
-          type: string
         state:
           type: string
         jobKey:

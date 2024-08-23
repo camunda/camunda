@@ -14,7 +14,6 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 
 public record IncidentFilter(
     List<Long> keys,
@@ -23,7 +22,6 @@ public record IncidentFilter(
     List<String> types,
     List<String> flowNodeIds,
     List<String> flowNodeInstanceIds,
-    DateValueFilter creationTimeFilter,
     List<String> states,
     List<Long> jobKeys,
     List<String> tenantIds,
@@ -98,16 +96,6 @@ public record IncidentFilter(
       return this;
     }
 
-    public Builder creationTime(
-        final Function<DateValueFilter.Builder, ObjectBuilder<DateValueFilter>> fn) {
-      return creationTime(FilterBuilders.dateValue(fn));
-    }
-
-    public Builder creationTime(final DateValueFilter value) {
-      creationTimeFilter = value;
-      return this;
-    }
-
     public Builder states(final String value, final String... values) {
       return states(collectValues(value, values));
     }
@@ -149,7 +137,6 @@ public record IncidentFilter(
           Objects.requireNonNullElse(types, Collections.emptyList()),
           Objects.requireNonNullElse(flowNodeIds, Collections.emptyList()),
           Objects.requireNonNullElse(flowNodeInstanceIds, Collections.emptyList()),
-          creationTimeFilter,
           Objects.requireNonNullElse(states, Collections.emptyList()),
           Objects.requireNonNullElse(jobKeys, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
