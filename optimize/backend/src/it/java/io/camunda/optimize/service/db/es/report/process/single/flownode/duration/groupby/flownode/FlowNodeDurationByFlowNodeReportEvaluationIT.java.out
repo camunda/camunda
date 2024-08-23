@@ -25,7 +25,6 @@
 // import static io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 // import static io.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 // import static io.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-// import static io.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 // import static
 // io.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 // import static io.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;

@@ -11,7 +11,6 @@ import static io.camunda.optimize.service.util.configuration.ConfigurationServic
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CLOUD_PROFILE;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_DATABASE_PROPERTY;
-import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
@@ -65,15 +64,13 @@ public class UIConfigurationServiceTest {
   @Mock private Users identityUsers;
 
   private static Stream<Arguments> optimizeProfiles() {
-    return Stream.of(
-        Arguments.of(CLOUD_PROFILE), Arguments.of(CCSM_PROFILE), Arguments.of(PLATFORM_PROFILE));
+    return Stream.of(Arguments.of(CLOUD_PROFILE), Arguments.of(CCSM_PROFILE));
   }
 
   private static Stream<Arguments> optimizeProfilesAndExpectedIsEnterpriseModeResult() {
     return Stream.of(
         Arguments.of(CLOUD_PROFILE, true),
-        Arguments.of(CCSM_PROFILE, false), // false by default because it's not mocked
-        Arguments.of(PLATFORM_PROFILE, true));
+        Arguments.of(CCSM_PROFILE, false)); // false by default because it's not mocked
   }
 
   @ParameterizedTest
@@ -101,7 +98,7 @@ public class UIConfigurationServiceTest {
     final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
 
     // then
-    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(OptimizeProfile.PLATFORM);
+    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(OptimizeProfile.CCSM);
   }
 
   @Test
@@ -126,7 +123,7 @@ public class UIConfigurationServiceTest {
     final UIConfigurationResponseDto configurationResponse = underTest.getUIConfiguration();
 
     // then
-    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(OptimizeProfile.PLATFORM);
+    assertThat(configurationResponse.getOptimizeProfile()).isEqualTo(OptimizeProfile.CCSM);
   }
 
   @ParameterizedTest

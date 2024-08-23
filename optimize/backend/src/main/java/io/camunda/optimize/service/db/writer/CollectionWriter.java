@@ -182,19 +182,19 @@ public interface CollectionWriter {
   Logger log = LoggerFactory.getLogger(CollectionWriter.class);
 
   default IdResponseDto createNewCollectionAndReturnId(
-      @NonNull String userId,
-      @NonNull PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {
+      @NonNull final String userId,
+      @NonNull final PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {
     return createNewCollectionAndReturnId(
         userId, partialCollectionDefinitionDto, IdGenerator.getNextId(), false);
   }
 
   default IdResponseDto createNewCollectionAndReturnId(
-      @NonNull String userId,
-      @NonNull PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto,
-      @NonNull String id,
-      boolean automaticallyCreated) {
+      @NonNull final String userId,
+      @NonNull final PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto,
+      @NonNull final String id,
+      final boolean automaticallyCreated) {
     log.debug("Writing new collection to Database");
-    CollectionDefinitionDto collectionDefinitionDto = new CollectionDefinitionDto();
+    final CollectionDefinitionDto collectionDefinitionDto = new CollectionDefinitionDto();
     collectionDefinitionDto.setId(id);
     collectionDefinitionDto.setCreated(LocalDateUtil.getCurrentDateTime());
     collectionDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
@@ -220,7 +220,7 @@ public interface CollectionWriter {
     return new IdResponseDto(id);
   }
 
-  default void createNewCollection(@NonNull CollectionDefinitionDto collectionDefinitionDto) {
+  default void createNewCollection(@NonNull final CollectionDefinitionDto collectionDefinitionDto) {
     persistCollection(collectionDefinitionDto.getId(), collectionDefinitionDto);
   }
 
@@ -255,8 +255,6 @@ public interface CollectionWriter {
       final String roleEntryId,
       final CollectionRoleUpdateRequestDto roleUpdateDto,
       final String userId);
-
-  void removeRoleFromCollection(final String collectionId, final String roleEntryId);
 
   void removeRoleFromCollectionUnlessIsLastManager(
       final String collectionId, final String roleEntryId, final String userId);

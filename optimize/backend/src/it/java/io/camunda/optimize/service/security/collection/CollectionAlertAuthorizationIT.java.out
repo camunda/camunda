@@ -14,7 +14,6 @@
 // import static io.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 // import static io.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 // import static
-// io.camunda.optimize.util.DefinitionResourceTypeUtil.getResourceTypeByDefinitionType;
 // import static org.assertj.core.api.Assertions.assertThat;
 //
 // import io.camunda.optimize.AbstractAlertIT;
