@@ -17,6 +17,11 @@ import java.util.Map;
 public record TestRecord(long position, ValueType valueType) implements Record<TestValue> {
 
   @Override
+  public long getPosition() {
+    return position;
+  }
+
+  @Override
   public long getSourceRecordPosition() {
     return 0;
   }
