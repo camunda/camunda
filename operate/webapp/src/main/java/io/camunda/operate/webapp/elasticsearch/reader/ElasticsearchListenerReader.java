@@ -20,10 +20,12 @@ import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.reader.ListenerReader;
 import io.camunda.operate.webapp.rest.dto.ListenerDto;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
+import io.camunda.operate.webapp.rest.dto.ListenerResponseDto;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.TermQueryBuilder;
@@ -52,7 +54,7 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
   }
 
   @Override
-  public List<ListenerDto> getListenerExecutions(
+  public ListenerResponseDto getListenerExecutions(
       final String processInstanceId, final ListenerRequestDto request) {
     final TermQueryBuilder processInstanceQ =
         termQuery(JobTemplate.PROCESS_INSTANCE_KEY, processInstanceId);
@@ -78,13 +80,14 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
                     .sort(sorting)
                     .size(request.getPageSize()));
 
+    final Long totalHitCount;
     final List<JobEntity> jobEntities;
     try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      totalHitCount = response.getHits().getTotalHits().value;
       jobEntities =
           ElasticsearchUtil.mapSearchHits(
-              esClient.search(searchRequest, RequestOptions.DEFAULT).getHits().getHits(),
-              objectMapper,
-              JobEntity.class);
+              response.getHits().getHits(), objectMapper, JobEntity.class);
 
     } catch (final IOException e) {
       final String message =
@@ -96,6 +99,6 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
         jobEntities.stream()
             .map(job -> ListenerDto.fromJobEntity(job))
             .collect(Collectors.toUnmodifiableList());
-    return listeners;
+    return new ListenerResponseDto(listeners, totalHitCount);
   }
 }
