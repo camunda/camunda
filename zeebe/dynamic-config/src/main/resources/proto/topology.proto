@@ -14,6 +14,23 @@ message ClusterTopology {
   map<string, MemberState> members = 2;
   CompletedChange lastChange = 3;
   ClusterChangePlan currentChange = 4;
+  RoutingState routingState = 5;
+}
+
+message RoutingState {
+  int64  version = 1;
+  repeated sint32 activePartitions = 2;
+  MessageCorrelation messageCorrelation = 3;
+}
+
+message MessageCorrelation {
+  oneof correlation {
+    HashMod hashMod = 1;
+  }
+
+  message HashMod {
+    sint32 partitionCount = 1;
+  }
 }
 
 message MemberState {
