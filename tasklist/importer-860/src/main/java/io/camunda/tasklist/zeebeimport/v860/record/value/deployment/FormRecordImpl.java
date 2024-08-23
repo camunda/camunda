@@ -128,7 +128,8 @@ public class FormRecordImpl implements Form {
         checksum,
         duplicate,
         tenantId,
-        deploymentKey);
+        deploymentKey,
+        versionTag);
   }
 
   @Override
@@ -151,7 +152,8 @@ public class FormRecordImpl implements Form {
         && Objects.equals(formId, that.formId)
         && Objects.equals(resourceName, that.resourceName)
         && Objects.equals(checksum, that.checksum)
-        && Objects.equals(tenantId, that.tenantId);
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(versionTag, that.versionTag);
   }
 
   @Override
@@ -178,7 +180,9 @@ public class FormRecordImpl implements Form {
         + '\''
         + ", deploymentKey="
         + deploymentKey
-        + "} "
+        + ", versionTag='"
+        + versionTag
+        + "'} "
         + super.toString();
   }
 }
