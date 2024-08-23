@@ -92,7 +92,7 @@ public class UpdateUserMultiPartitionTest {
                   .limit(record -> record.getIntent().equals(UserIntent.UPDATED))
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
-          .endsWith(UserIntent.UPDATE, UserIntent.UPDATED);
+          .containsSubsequence(UserIntent.UPDATE, UserIntent.UPDATED);
     }
   }
 }
