@@ -96,8 +96,7 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
-  public AuthorizationServices authorizationServices(
-      final CamundaServices camundaServices) {
+  public AuthorizationServices authorizationServices(final CamundaServices camundaServices) {
     return camundaServices.authorizationServices();
   }
 }
