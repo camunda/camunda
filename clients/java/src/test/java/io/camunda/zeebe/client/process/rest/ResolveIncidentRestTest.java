@@ -13,13 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.command;
+package io.camunda.zeebe.client.process.rest;
 
-import io.camunda.zeebe.client.api.response.ResolveIncidentResponse;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public interface ResolveIncidentCommandStep1
-    extends CommandWithOperationReferenceStep<ResolveIncidentCommandStep1>,
-        CommandWithCommunicationApiStep<ResolveIncidentCommandStep1>,
-        FinalCommandStep<ResolveIncidentResponse> {
-  // the place for new optional parameters
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.zeebe.client.util.ClientRestTest;
+import org.junit.jupiter.api.Test;
+
+public class ResolveIncidentRestTest extends ClientRestTest {
+
+  @Test
+  public void shouldSendCommand() {
+    // when
+    client.newResolveIncidentCommand(123).send().join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request).isNotNull();
+  }
 }
