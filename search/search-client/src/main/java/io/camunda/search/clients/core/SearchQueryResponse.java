@@ -7,14 +7,19 @@
  */
 package io.camunda.search.clients.core;
 
+import io.camunda.search.clients.aggregation.SearchAggregate;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
-public final record SearchQueryResponse<T>(
-    long totalHits, String scrollId, List<SearchQueryHit<T>> hits) {
+public record SearchQueryResponse<T>(
+    long totalHits,
+    String scrollId,
+    List<SearchQueryHit<T>> hits,
+    Map<String, SearchAggregate> aggregations) {
 
   public static <T> SearchQueryResponse<T> of(
       final Function<Builder<T>, ObjectBuilder<SearchQueryResponse<T>>> fn) {
@@ -26,6 +31,7 @@ public final record SearchQueryResponse<T>(
     private long totalHits;
     private String scrollId;
     private List<SearchQueryHit<T>> hits;
+    private Map<String, SearchAggregate> aggregations;
 
     public Builder<T> totalHits(final long value) {
       totalHits = value;
@@ -42,10 +48,18 @@ public final record SearchQueryResponse<T>(
       return this;
     }
 
+    public Builder<T> aggregations(final Map<String, SearchAggregate> value) {
+      aggregations = value;
+      return this;
+    }
+
     @Override
     public SearchQueryResponse<T> build() {
       return new SearchQueryResponse<T>(
-          totalHits, scrollId, Objects.requireNonNullElse(hits, Collections.emptyList()));
+          totalHits,
+          scrollId,
+          Objects.requireNonNullElse(hits, Collections.emptyList()),
+          aggregations);
     }
   }
 }

@@ -9,14 +9,17 @@ package io.camunda.search.es.transformers.search;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.json.JsonData;
+import io.camunda.search.clients.aggregation.SearchAggregation;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.sort.SearchSortOptions;
 import io.camunda.search.es.transformers.ElasticsearchTransformer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class SearchRequestTransformer
@@ -31,6 +34,7 @@ public final class SearchRequestTransformer
     final var sort = value.sort();
     final var searchAfter = value.searchAfter();
     final var searchQuery = value.query();
+    final var aggregations = value.aggregations();
 
     final var builder =
         new SearchRequest.Builder().index(value.index()).from(value.from()).size(value.size());
@@ -39,6 +43,10 @@ public final class SearchRequestTransformer
       final var queryTransformer = getQueryTransformer();
       final var transformedQuery = queryTransformer.apply(searchQuery);
       builder.query(transformedQuery);
+    }
+
+    if (aggregations != null && !aggregations.isEmpty()) {
+      builder.aggregations(of(aggregations));
     }
 
     if (sort != null && !sort.isEmpty()) {
@@ -62,5 +70,13 @@ public final class SearchRequestTransformer
         .map(JsonData::of)
         .map(FieldValue::of)
         .collect(Collectors.toList());
+  }
+
+  private Map<String, Aggregation> of(final Map<String, SearchAggregation> values) {
+    final var aggregationTransformer = getAggregationTransformer();
+    return values.entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey, entry -> aggregationTransformer.apply(entry.getValue())));
   }
 }
