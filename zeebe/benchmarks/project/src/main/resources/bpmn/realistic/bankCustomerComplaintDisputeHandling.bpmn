@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="bfbfe02" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.5.0" camunda:diagramRelationId="85f5b096-5a43-4668-93ef-b132f519bbbc">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.26.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.5.0" camunda:diagramRelationId="85f5b096-5a43-4668-93ef-b132f519bbbc">
   <bpmn:collaboration id="bankCustomerComplaintDisputeHandling">
-    <bpmn:participant id="Participant_06rogqo" name="Bank" processRef="Process_0ffvgea" />
+    <bpmn:participant id="Participant_06rogqo" name="Bank" processRef="bankDisputeHandling" />
     <bpmn:participant id="Participant_15e0f4x" name="Customer" />
     <bpmn:participant id="Participant_036pi5i" name="Vendor" />
     <bpmn:participant id="Participant_1hny6d4" name="Bank IT and CRM systems" />
@@ -20,7 +20,7 @@
     <bpmn:messageFlow id="Flow_106ia8a" sourceRef="Activity_03cktkd" targetRef="Participant_1hny6d4" />
     <bpmn:messageFlow id="Flow_1vatont" sourceRef="Participant_1hny6d4" targetRef="Activity_03cktkd" />
   </bpmn:collaboration>
-  <bpmn:process id="Process_0ffvgea" name="Bank: Customer complaint/dispute handling" isExecutable="true">
+  <bpmn:process id="bankDisputeHandling" name="Bank: Customer complaint/dispute handling" isExecutable="true">
     <bpmn:sequenceFlow id="Flow_15wpx65" sourceRef="Event_1694q1n" targetRef="Activity_199882v" />
     <bpmn:sequenceFlow id="Flow_06bdzt7" sourceRef="Activity_199882v" targetRef="Activity_02tn153" />
     <bpmn:sequenceFlow id="Flow_1g6chbg" sourceRef="Event_0jastu6" targetRef="Activity_0ynau00" />
