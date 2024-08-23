@@ -779,5 +779,4 @@ externalVariable:
 
 multitenancy:
   # Currently only available in C8SM. Determines whether multi tenancy is enabled in Optimize.
-  # Note that multi tenancy is active by default in Optimize C7 and therefore this flag will have no influence on a C7 system.
   enabled: ${CAMUNDA_OPTIMIZE_MULTITENANCY_ENABLED:false}

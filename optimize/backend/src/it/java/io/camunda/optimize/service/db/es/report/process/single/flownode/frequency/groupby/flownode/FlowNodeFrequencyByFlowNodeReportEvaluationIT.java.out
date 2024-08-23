@@ -23,7 +23,6 @@
 // import static io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 // import static io.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 // import static io.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-// import static io.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 // import static io.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
 // import static io.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
 // import static io.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;

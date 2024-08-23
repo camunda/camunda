@@ -51,13 +51,13 @@ public class CloudUserTaskIdentityServiceTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   ConfigurationService configurationService;
 
-  private CloudUserTaskIdentityService underTest;
+  private UserTaskIdentityService underTest;
 
   @BeforeEach
   public void setup() {
     when(configurationService.getCaches().getUsers().getMaxSize()).thenReturn(10000);
     when(configurationService.getCaches().getUsers().getDefaultTtlMillis()).thenReturn(600000);
-    underTest = new CloudUserTaskIdentityService(identityService, configurationService);
+    underTest = new UserTaskIdentityService(identityService, configurationService);
   }
 
   @Test

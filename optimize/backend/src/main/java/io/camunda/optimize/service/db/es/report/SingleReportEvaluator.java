@@ -26,7 +26,6 @@ import io.camunda.optimize.service.exceptions.OptimizeException;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.util.ValidationHelper;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.configuration.OptimizeProfile;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -56,9 +55,7 @@ public class SingleReportEvaluator {
       final ApplicationContext applicationContext,
       final Collection<Command<?, ?>> commands) {
     final boolean isAssigneeAnalyticsEnabled =
-        ConfigurationService.getOptimizeProfile(applicationContext.getEnvironment())
-                .equals(OptimizeProfile.PLATFORM)
-            || configurationService.getUiConfiguration().isUserTaskAssigneeAnalyticsEnabled();
+        configurationService.getUiConfiguration().isUserTaskAssigneeAnalyticsEnabled();
     this.configurationService = configurationService;
     this.notSupportedCommand = notSupportedCommand;
     this.applicationContext = applicationContext;

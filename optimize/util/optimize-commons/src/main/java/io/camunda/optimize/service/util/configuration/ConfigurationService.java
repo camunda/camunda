@@ -201,7 +201,7 @@ public class ConfigurationService {
     if (specifiedProfiles.size() > 1) {
       throw new OptimizeConfigurationException("Cannot configure more than one Optimize profile");
     } else if (specifiedProfiles.isEmpty()) {
-      return OptimizeProfile.PLATFORM;
+      return OptimizeProfile.CCSM;
     } else {
       return specifiedProfiles.get(0);
     }
