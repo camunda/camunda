@@ -18,10 +18,6 @@ import {AutoRefreshSelect} from './AutoRefresh';
 import {DashboardView} from './DashboardView';
 import {loadEntities} from 'services';
 
-jest.mock('config', () => ({
-  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
-}));
-
 jest.mock('services', () => ({
   ...jest.requireActual('services'),
   createEntity: jest.fn().mockReturnValue('collectionId'),

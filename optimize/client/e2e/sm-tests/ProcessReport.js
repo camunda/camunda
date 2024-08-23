@@ -786,7 +786,7 @@ test('should only enable valid combinations for user task', async (t) => {
   await t.expect(e.reportTable.visible).ok();
 });
 
-test('should be able to distribute candidate group by user task', async (t) => {
+test('should be able to distribute assignee by user task', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Order process');
   await u.selectView(t, 'User task', 'Count');

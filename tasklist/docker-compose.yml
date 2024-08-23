@@ -144,6 +144,7 @@ services:
       - graphql.playground.settings.request.credentials=include
     volumes:
       - ./config/application.yml:/usr/local/tasklist/config/application.yml
+      - ./config/custom.css:/usr/local/tasklist/config/custom.css
     depends_on:
       - elasticsearch
       - zeebe

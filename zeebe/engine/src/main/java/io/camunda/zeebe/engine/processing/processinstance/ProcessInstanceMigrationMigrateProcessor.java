@@ -239,6 +239,8 @@ public class ProcessInstanceMigrationMigrateProcessor
         elementId,
         targetElementId,
         sourceElementIdToTargetElementId);
+    requireNoDuplicateTargetsInBoundaryEventMappings(
+        processInstanceKey, sourceProcessDefinition, elementId, sourceElementIdToTargetElementId);
     requireNoConcurrentCommand(eventScopeInstanceState, elementInstance, processInstanceKey);
 
     stateWriter.appendFollowUpEvent(

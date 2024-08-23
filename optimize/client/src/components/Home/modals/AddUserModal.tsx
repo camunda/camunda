@@ -52,20 +52,12 @@ export default function AddUserModal(props: AddUserModalProps) {
 
   return (
     <Modal className="AddUserModal" open={open} onClose={onClose} isOverflowVisible>
-      <Modal.Header
-        title={
-          optimizeProfile === 'platform'
-            ? t('home.roles.addUserGroupTitle')
-            : t('home.roles.addUserTitle')
-        }
-      />
+      <Modal.Header title={t('home.roles.addUserTitle')} />
       <Modal.Content>
         <Form>
           <Stack gap={6}>
             <UserTypeahead
-              titleText={
-                optimizeProfile === 'platform' ? t('home.userGroupsTitle') : t('home.userTitle')
-              }
+              titleText={t('home.userTitle')}
               users={users}
               collectionUsers={existingUsers}
               onChange={(users: User[]) => setUsers(users)}

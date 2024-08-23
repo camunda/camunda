@@ -30,7 +30,6 @@ exports[`should match snapshot 1`] = `
     headers={
       Array [
         "Name",
-        "Members",
         "Role",
       ]
     }
@@ -39,28 +38,16 @@ exports[`should match snapshot 1`] = `
     rows={
       Array [
         Object {
-          "actions": Array [
-            Object {
-              "action": [Function],
-              "icon": <ForwardRef(Edit) />,
-              "text": "Edit",
-            },
-            Object {
-              "action": [Function],
-              "icon": <ForwardRef(TrashCan) />,
-              "text": "Remove",
-            },
-          ],
-          "className": "user",
+          "actions": false,
+          "className": undefined,
           "entityType": "user",
           "icon": <ForwardRef(User) />,
           "id": "USER:kermit",
           "meta": Array [
-            false,
             "Manager",
           ],
           "name": "kermit",
-          "type": "User",
+          "type": "Unknown entity",
         },
         Object {
           "actions": Array [
@@ -75,16 +62,15 @@ exports[`should match snapshot 1`] = `
               "text": "Remove",
             },
           ],
-          "className": "group",
+          "className": undefined,
           "entityType": "user",
-          "icon": <ForwardRef(Group) />,
-          "id": "GROUP:sales",
+          "icon": <ForwardRef(User) />,
+          "id": "USER:john",
           "meta": Array [
-            "2 Users",
-            "Manager",
+            "Editor",
           ],
-          "name": "sales",
-          "type": "User group",
+          "name": "john",
+          "type": "Unknown entity",
         },
       ]
     }
@@ -102,18 +88,15 @@ exports[`should match snapshot 1`] = `
           "id": "USER:kermit",
           "identity": Object {
             "id": "kermit",
-            "type": "user",
           },
           "role": "manager",
         },
         Object {
-          "id": "GROUP:sales",
+          "id": "USER:john",
           "identity": Object {
-            "id": "sales",
-            "memberCount": 2,
-            "type": "group",
+            "id": "john",
           },
-          "role": "manager",
+          "role": "editor",
         },
       ]
     }

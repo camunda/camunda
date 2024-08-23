@@ -534,11 +534,87 @@ public class MigrateBoundaryEventTest {
         .hasRejectionType(RejectionType.INVALID_STATE)
         .extracting(Record::getRejectionReason)
         .asString()
-        .contains("Expected to migrate process instance '2251799813685252'")
+        .contains("Expected to migrate process instance '" + processInstanceKey + "'")
         .contains("active element with id 'A' is mapped to an element with id 'A'")
         .contains(
             "and has a boundary event with id 'boundary' that is mapped to an element with id 'boundary'")
         .contains("These mappings detach the boundary event from the element in the target process")
         .contains("Boundary events must stay attached to the same element instance");
+  }
+
+  @Test
+  public void shouldRejectCommandWhenMappedBoundaryEventsAreMerged() {
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent("start")
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
+                    .boundaryEvent(
+                        "boundary1",
+                        b ->
+                            b.message(m -> m.name("msg1").zeebeCorrelationKeyExpression("key"))
+                                .endEvent())
+                    .moveToActivity("A")
+                    .boundaryEvent(
+                        "boundary2",
+                        b ->
+                            b.message(m -> m.name("msg2").zeebeCorrelationKeyExpression("key"))
+                                .endEvent())
+                    .moveToActivity("A")
+                    .endEvent("end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent("start")
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
+                    .boundaryEvent(
+                        "boundary3",
+                        b ->
+                            b.message(m -> m.name("msg3").zeebeCorrelationKeyExpression("key"))
+                                .endEvent())
+                    .moveToActivity("A")
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("key", "key").create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withElementId("A")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("A", "A")
+            .addMappingInstruction("boundary1", "boundary3")
+            .addMappingInstruction("boundary2", "boundary3")
+            .expectRejection()
+            .migrate();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .extracting(Record::getRejectionReason)
+        .asString()
+        .contains("Expected to migrate process instance '" + processInstanceKey + "'")
+        .contains("active element with id 'A' has a boundary event attached")
+        .contains("boundary event attached that is mapped to a boundary event with id 'boundary3'")
+        .contains(
+            "There are multiple mapping instructions that target this boundary event: 'boundary1', 'boundary2'")
+        .contains("Boundary events cannot be merged by process instance migration")
+        .contains("Please ensure the mapping instructions target a boundary event only once");
   }
 }

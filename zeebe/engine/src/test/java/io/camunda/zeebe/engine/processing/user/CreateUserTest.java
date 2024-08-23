@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.user;
 
+import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
+import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,7 +44,7 @@ public class CreateUserTest {
 
     // then
     final var createdUser = createdUserRecord.getValue();
-    assertThat(createdUser)
+    Assertions.assertThat(createdUser)
         .isNotNull()
         .hasFieldOrPropertyWithValue("username", username)
         .hasFieldOrPropertyWithValue("name", "Foo Bar")
@@ -76,9 +78,11 @@ public class CreateUserTest {
             .create();
 
     final var createdUser = createdUserRecord.getValue();
-    assertThat(createdUser).isNotNull().hasFieldOrPropertyWithValue("username", username);
+    Assertions.assertThat(createdUser)
+        .isNotNull()
+        .hasFieldOrPropertyWithValue("username", username);
 
-    io.camunda.zeebe.protocol.record.Assertions.assertThat(duplicatedUserRecord)
+    assertThat(duplicatedUserRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
             "Expected to create user with username "

@@ -14,7 +14,7 @@ import {t} from 'translation';
 import {useUiConfig} from 'hooks';
 
 export default function ViewFilters({openNewFilterModal, processDefinitionIsNotSelected}) {
-  const {userTaskAssigneeAnalyticsEnabled, optimizeProfile} = useUiConfig();
+  const {userTaskAssigneeAnalyticsEnabled} = useUiConfig();
 
   return (
     <MenuDropdown
@@ -57,13 +57,6 @@ export default function ViewFilters({openNewFilterModal, processDefinitionIsNotS
           label={t('report.groupBy.userAssignee')}
           disabled={processDefinitionIsNotSelected}
           onClick={openNewFilterModal('assignee')}
-        />
-      )}
-      {optimizeProfile === 'platform' && (
-        <MenuItem
-          label={t('report.groupBy.userGroup')}
-          disabled={processDefinitionIsNotSelected}
-          onClick={openNewFilterModal('candidateGroup')}
         />
       )}
       <MenuItem

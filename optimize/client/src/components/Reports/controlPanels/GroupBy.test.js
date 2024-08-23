@@ -207,12 +207,3 @@ it('should hide assignee option in cloud environment', async () => {
 
   expect(node.find({value: 'assignee'})).not.toExist();
 });
-
-it('should hide candidate group option in C8 environment', async () => {
-  useUiConfig.mockImplementation(() => ({optimizeProfile: 'cloud'}));
-  const node = shallow(<GroupBy {...config} />);
-
-  await runAllEffects();
-
-  expect(node.find({value: 'assignee'})).not.toExist();
-});

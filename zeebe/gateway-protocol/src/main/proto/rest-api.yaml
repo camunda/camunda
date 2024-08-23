@@ -693,6 +693,52 @@ paths:
           description: >
             The Decision Requirements Search Query failed.
             More details are provided in the response body.
+  /authorizations:
+    post:
+      tags:
+        - Authorization
+      summary: Create an authorization
+      operationId: createAuthorization
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthorizationAssignRequest"
+        required: true
+      responses:
+        "204":
+          description: |
+            The Authorization was created successfully.
+        "400":
+          description: |
+            The Authorization could not be created.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: |
+            The request to create an authorization was unauthorized.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: |
+            The request to create an authorization was denied.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /users:
     post:
       tags:
@@ -1253,6 +1299,25 @@ components:
           format: int64
         tenantId:
           type: string
+    AuthorizationAssignRequest:
+      type: object
+      properties:
+        ownerKey:
+          type: string
+        ownerType:
+          type: string
+          enum:
+            - USER
+            - ROLE
+            - GROUP
+        resourceKey:
+          type: string
+        resourceType:
+          type: string
+        permissions:
+            type: array
+            items:
+                type: string
     UserWithPasswordRequest:
       type: "object"
       properties:
