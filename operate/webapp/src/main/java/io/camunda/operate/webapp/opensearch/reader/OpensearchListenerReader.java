@@ -19,11 +19,13 @@ import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.reader.ListenerReader;
 import io.camunda.operate.webapp.rest.dto.ListenerDto;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
+import io.camunda.operate.webapp.rest.dto.ListenerResponseDto;
 import io.camunda.operate.webapp.rest.dto.SortingDto;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.search.SearchResult;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -47,7 +49,7 @@ public class OpensearchListenerReader extends OpensearchAbstractReader implement
   }
 
   @Override
-  public List<ListenerDto> getListenerExecutions(
+  public ListenerResponseDto getListenerExecutions(
       final String processInstanceId, final ListenerRequestDto request) {
     final Query query =
         and(
@@ -64,15 +66,18 @@ public class OpensearchListenerReader extends OpensearchAbstractReader implement
                     request.getSorting().getSortBy(),
                     getSortOrder(request.getSorting().getSortOrder())));
 
+    final SearchResult<JobEntity> searchResult =
+        richOpenSearchClient.doc().search(searchRequest, JobEntity.class);
+    final Long totalHitCount = searchResult.hits().total().value();
     final List<ListenerDto> listenerDtos =
-        richOpenSearchClient.doc().search(searchRequest, JobEntity.class).hits().hits().stream()
+        searchResult.hits().hits().stream()
             .map(
                 hit -> {
                   final JobEntity entity = hit.source();
-                  return new ListenerDto().fromJobEntity(entity);
+                  return ListenerDto.fromJobEntity(entity);
                 })
             .collect(Collectors.toUnmodifiableList());
-    return listenerDtos;
+    return new ListenerResponseDto(listenerDtos, totalHitCount);
   }
 
   private SortOrder getSortOrder(final String sortOrder) {

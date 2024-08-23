@@ -205,7 +205,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
 
   @Operation(summary = "Get listeners by process instance id")
   @PostMapping("/{processInstanceId}/listeners")
-  public List<ListenerDto> getListeners(
+  public ListenerResponseDto getListeners(
       @PathVariable @ValidLongId final String processInstanceId,
       @RequestBody final ListenerRequestDto request) {
     checkIdentityReadPermission(Long.parseLong(processInstanceId));

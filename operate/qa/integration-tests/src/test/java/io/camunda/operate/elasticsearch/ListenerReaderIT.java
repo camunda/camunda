@@ -23,11 +23,11 @@ import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.ListenerDto;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
+import io.camunda.operate.webapp.rest.dto.ListenerResponseDto;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.UserService;
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.List;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
@@ -57,12 +57,13 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
     final ListenerRequestDto request =
         new ListenerRequestDto().setPageSize(20).setFlowNodeId("test_task");
+    final ListenerResponseDto response = postListenerRequest("111", request);
+    final List<ListenerDto> resultListeners = response.getListeners();
 
-    final List<ListenerDto> result = postListenerRequest("111", request);
-
-    assertEquals(5, result.size());
+    assertEquals(5L, response.getTotalCount());
+    assertEquals(5, resultListeners.size());
     // results should be ordered by finish date (latest first)
-    final ListenerDto actual0 = result.get(0);
+    final ListenerDto actual0 = resultListeners.get(0);
     assertEquals("12", actual0.getListenerKey());
     assertEquals(ListenerType.EXECUTION_LISTENER, actual0.getListenerType());
     assertEquals(ListenerEventType.END, actual0.getEvent());
@@ -70,28 +71,28 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
     assertEquals("test_type", actual0.getJobType());
     assertNotNull(actual0.getTime());
 
-    final ListenerDto actual1 = result.get(1);
+    final ListenerDto actual1 = resultListeners.get(1);
     assertEquals("11", actual1.getListenerKey());
     assertEquals(ListenerType.EXECUTION_LISTENER, actual1.getListenerType());
     assertEquals(ListenerEventType.START, actual1.getEvent());
     assertEquals(ListenerState.COMPLETED, actual1.getState());
     assertNotNull(actual1.getTime());
 
-    final ListenerDto actual2 = result.get(2);
+    final ListenerDto actual2 = resultListeners.get(2);
     assertEquals("31", actual2.getListenerKey());
     assertEquals(ListenerType.TASK_LISTENER, actual2.getListenerType());
     assertEquals(ListenerEventType.UNSPECIFIED, actual2.getEvent());
     assertEquals(ListenerState.UNKNOWN, actual2.getState());
     assertNotNull(actual2.getTime());
 
-    final ListenerDto actual3 = result.get(3);
+    final ListenerDto actual3 = resultListeners.get(3);
     assertEquals("21", actual3.getListenerKey());
     assertEquals(ListenerType.TASK_LISTENER, actual3.getListenerType());
     assertEquals(ListenerEventType.UNSPECIFIED, actual3.getEvent());
     assertEquals(ListenerState.ACTIVE, actual3.getState());
     assertNull(actual3.getTime());
 
-    final ListenerDto actual4 = result.get(4);
+    final ListenerDto actual4 = resultListeners.get(4);
     assertEquals("22", actual4.getListenerKey());
     assertEquals(ListenerType.TASK_LISTENER, actual4.getListenerType());
     assertEquals(ListenerEventType.UNSPECIFIED, actual4.getEvent());
@@ -209,7 +210,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
         .setListenerEventType("END");
   }
 
-  private List<ListenerDto> postListenerRequest(
+  private ListenerResponseDto postListenerRequest(
       final String processInstanceId, final ListenerRequestDto query) throws Exception {
     final MvcResult mvcResult =
         mockMvcManager.postRequest(
@@ -220,7 +221,6 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
             query,
             HttpStatus.SC_OK);
     final String response = mvcResult.getResponse().getContentAsString();
-    final ListenerDto[] dtos = objectMapper.readValue(response, ListenerDto[].class);
-    return Arrays.stream(dtos).toList();
+    return objectMapper.readValue(response, ListenerResponseDto.class);
   }
 }
