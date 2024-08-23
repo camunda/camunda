@@ -121,6 +121,9 @@
                 },
                 "deploymentKey": {
                   "type": "long"
+                },
+                "versionTag": {
+                  "type": "keyword"
                 }
               }
             },
