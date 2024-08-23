@@ -701,7 +701,12 @@ public class ResourceDeletionTest {
   private long deployProcess(final String processId) {
     return engine
         .deployment()
-        .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .versionTag("v1.0")
+                .startEvent()
+                .endEvent()
+                .done())
         .deploy()
         .getValue()
         .getProcessesMetadata()
@@ -874,6 +879,7 @@ public class ResourceDeletionTest {
             ProcessMetadataValue::getBpmnProcessId,
             ProcessMetadataValue::getResourceName,
             ProcessMetadataValue::getVersion,
+            ProcessMetadataValue::getVersionTag,
             ProcessMetadataValue::getProcessDefinitionKey,
             ProcessMetadataValue::getDeploymentKey)
         .containsOnly(
@@ -881,6 +887,7 @@ public class ResourceDeletionTest {
                 processCreatedRecord.getBpmnProcessId(),
                 processCreatedRecord.getResourceName(),
                 processCreatedRecord.getVersion(),
+                processCreatedRecord.getVersionTag(),
                 processCreatedRecord.getProcessDefinitionKey(),
                 processCreatedRecord.getDeploymentKey()));
   }
