@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 public record StaticConfiguration(
+    boolean enablePartitionScaling,
     PartitionDistributor partitionDistributor,
     Set<MemberId> clusterMembers,
     MemberId localMemberId,
