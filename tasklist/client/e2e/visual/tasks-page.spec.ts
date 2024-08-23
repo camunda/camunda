@@ -8,7 +8,7 @@
 
 import {expect, Route, Request} from '@playwright/test';
 import schema from '@/resources/bigForm.json' assert {type: 'json'};
-import {test} from '@/test-fixtures';
+import {test} from '@/visual-fixtures';
 
 type Task = {
   id: string;

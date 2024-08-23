@@ -6,8 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
 import subscribeFormSchema from '@/resources/subscribeForm.json' assert {type: 'json'};
+import {test} from '@/visual-fixtures';
 
 test.describe('start process from form page', () => {
   test('initial page', async ({page}) => {

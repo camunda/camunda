@@ -74,6 +74,22 @@ const test = base.extend<PlaywrightFixtures>({
   taskFormView: async ({page}, use) => {
     await use(new TaskFormView(page));
   },
+  page: async ({page}, use) => {
+    await page.route('**/v2/license', (route) =>
+      route.fulfill({
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          validLicense: false,
+          licenseType: 'unknown',
+        }),
+      }),
+    );
+
+    await use(page);
+  },
 });
 
 export {test};
