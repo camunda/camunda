@@ -58,16 +58,10 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-service</artifactId>
-      <type>jar</type>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-broker-client</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
