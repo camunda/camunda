@@ -15,7 +15,7 @@ const searchSchema = zod.tuple([zod.string(), zod.string()]);
 const filtersSchema = zod.object({
   filter: zod.string().default('all-open'),
   sortBy: zod
-    .enum(['creation', 'follow-up', 'due', 'completion'])
+    .enum(['creation', 'follow-up', 'due', 'completion', 'priority'])
     .default('creation'),
   sortOrder: zod.enum(['asc', 'desc']).default('desc'),
   state: zod.enum(['CREATED', 'COMPLETED', 'CANCELED']).optional(),

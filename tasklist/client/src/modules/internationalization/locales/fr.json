@@ -234,6 +234,7 @@
     "taskFiltersSortFollowUpDate": "Date de suivi",
     "taskFiltersSortDueDate": "Date d'échéance",
     "taskFiltersSortCompletionDate": "Date d'achèvement",
+    "taskFiltersSortPriority": "Priorité",
     "taskFiltersSortButton": "Trier les tâches",
     "taskOptionsSectionAria": "Options",
     "taskOptionsAutoSelectLabel": "Sélectionner la 1ère tâche disponible",
