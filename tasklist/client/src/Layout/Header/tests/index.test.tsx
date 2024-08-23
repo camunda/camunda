@@ -12,7 +12,7 @@ import {http, HttpResponse} from 'msw';
 import {Header} from '..';
 import {getWrapper} from './mocks';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
-import * as licenseMocks from '../../../modules/mock-schema/mocks/license';
+import * as licenseMocks from 'modules/mock-schema/mocks/license';
 
 describe('<Header />', () => {
   it('should render a header', async () => {
