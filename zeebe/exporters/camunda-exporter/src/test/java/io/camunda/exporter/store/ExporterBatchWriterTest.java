@@ -20,6 +20,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.entities.TestExporterEntity;
+import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.TestExportHandler;
 import io.camunda.protocol.TestRecord;
 import java.util.List;
@@ -107,5 +108,29 @@ class ExporterBatchWriterTest {
     verify(handler, never()).createNewEntity(eq(id));
 
     assertThat(batchWriter.getBatchSize()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldFlushCachedEntitiesToBatchRequestAndExecutesIt() throws PersistenceException {
+    // given
+    final TestRecord record = new TestRecord(0, NULL_VAL);
+    final String id = "1";
+    final TestExporterEntity entity = new TestExporterEntity().setId(id);
+    when(handler.handlesRecord(eq(record))).thenReturn(true);
+    when(handler.generateIds(eq(record))).thenReturn(List.of(id));
+    when(handler.createNewEntity(eq(id))).thenReturn(entity);
+
+    batchWriter.addRecord(record);
+    assertThat(batchWriter.getBatchSize()).isEqualTo(1);
+
+    // When
+    final BatchRequest batchRequest = mock(BatchRequest.class);
+    batchWriter.flush(batchRequest);
+
+    // then
+
+    verify(handler).flush(entity, batchRequest);
+    verify(batchRequest).execute();
+    assertThat(batchWriter.getBatchSize()).isEqualTo(0);
   }
 }
