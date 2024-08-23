@@ -501,6 +501,7 @@ public final class DbDecisionState implements MutableDecisionState {
     dbDecisionId.wrapBuffer(record.getDecisionIdBuffer());
     dbDecisionVersion.wrapInt(record.getVersion());
     dbDeploymentKey.wrapLong(record.getDeploymentKey());
+    dbVersionTag.wrapString(record.getVersionTag());
 
     decisionKeyByDecisionRequirementsKey.deleteExisting(dbDecisionRequirementsKeyAndDecisionKey);
     decisionsByKey.deleteExisting(tenantAwareDecisionKey);
@@ -508,6 +509,9 @@ public final class DbDecisionState implements MutableDecisionState {
 
     // use deleteIfExists as no entry exists for older records that do not have a deployment key yet
     decisionKeyByDecisionIdAndDeploymentKey.deleteIfExists(tenantAwareDecisionIdAndDeploymentKey);
+
+    // use deleteIfExists as no entry exists for decisions that do not have a version tag assigned
+    decisionKeyByDecisionIdAndVersionTag.deleteIfExists(tenantAwareDecisionIdAndVersionTag);
   }
 
   @Override
