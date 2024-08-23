@@ -48,7 +48,7 @@ public class JobZeebeRecordProcessor {
     JOB_EVENTS.add(JobIntent.MIGRATED.name());
 
     FAILED_JOB_EVENTS.add(JobIntent.FAILED.name());
-    JOB_EVENTS.add(JobIntent.ERROR_THROWN.name());
+    FAILED_JOB_EVENTS.add(JobIntent.ERROR_THROWN.name());
   }
 
   @Autowired private JobTemplate jobTemplate;
