@@ -15,6 +15,9 @@ import java.util.stream.IntStream;
 /**
  * Holds information about the state of partitions that is necessary to decide where to route new
  * requests.
+ *
+ * <p>The version is incremented by the coordinator, every time the routing state changes. This is
+ * used to resolve conflicts when the members receive gossip updates out of order.
  */
 public record RoutingState(
     long version, Set<Integer> activePartitions, MessageCorrelation messageCorrelation) {
@@ -30,6 +33,21 @@ public record RoutingState(
       if (partition <= 0) {
         throw new IllegalArgumentException("Partition id must be positive");
       }
+    }
+  }
+
+  public RoutingState merge(final RoutingState other) {
+    if (equals(other)) {
+      return this;
+    }
+
+    if (version > other.version) {
+      return this;
+    } else if (version < other.version) {
+      return other;
+    } else {
+      throw new IllegalStateException(
+          "Cannot merge two different routing states with the same version");
     }
   }
 
