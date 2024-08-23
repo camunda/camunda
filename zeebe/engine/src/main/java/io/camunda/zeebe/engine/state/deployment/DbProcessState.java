@@ -260,6 +260,7 @@ public final class DbProcessState implements MutableProcessState {
     processId.wrapString(processRecord.getBpmnProcessId());
     processVersion.wrapLong(processRecord.getVersion());
     deploymentKey.wrapLong(processRecord.getDeploymentKey());
+    versionTag.wrapString(processRecord.getVersionTag());
 
     processColumnFamily.deleteExisting(tenantAwareProcessDefinitionKey);
     processByIdAndVersionColumnFamily.deleteExisting(tenantAwareProcessIdAndVersionKey);
@@ -267,6 +268,10 @@ public final class DbProcessState implements MutableProcessState {
     // use deleteIfExists as no entry exists for older records that do not have a deployment key yet
     processDefinitionKeyByProcessIdAndDeploymentKeyColumnFamily.deleteIfExists(
         tenantAwareProcessIdAndDeploymentKey);
+
+    // use deleteIfExists as no entry exists for processes that do not have a version tag assigned
+    processDefinitionKeyByProcessIdAndVersionTagColumnFamily.deleteIfExists(
+        tenantAwareProcessIdAndVersionTagKey);
 
     final var tenantIdAndProcessIdAndVersion =
         new TenantIdAndProcessIdAndVersion(
