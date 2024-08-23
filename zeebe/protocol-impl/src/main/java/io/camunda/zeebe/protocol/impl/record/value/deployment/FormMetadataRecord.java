@@ -68,6 +68,16 @@ public class FormMetadataRecord extends UnifiedRecordValue implements FormMetada
   }
 
   @Override
+  public String getVersionTag() {
+    return bufferAsString(versionTagProp.getValue());
+  }
+
+  public FormMetadataRecord setVersionTag(final String versionTag) {
+    versionTagProp.setValue(versionTag);
+    return this;
+  }
+
+  @Override
   public long getFormKey() {
     return formKeyProp.getValue();
   }
@@ -114,16 +124,6 @@ public class FormMetadataRecord extends UnifiedRecordValue implements FormMetada
 
   public FormMetadataRecord setDeploymentKey(final long deploymentKey) {
     deploymentKeyProp.setValue(deploymentKey);
-    return this;
-  }
-
-  @Override
-  public String getVersionTag() {
-    return bufferAsString(versionTagProp.getValue());
-  }
-
-  public FormMetadataRecord setVersionTag(final String versionTag) {
-    versionTagProp.setValue(versionTag);
     return this;
   }
 

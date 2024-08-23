@@ -85,6 +85,16 @@ public final class FormRecord extends UnifiedRecordValue implements Form {
   }
 
   @Override
+  public String getVersionTag() {
+    return bufferAsString(versionTagProp.getValue());
+  }
+
+  public FormRecord setVersionTag(final String versionTag) {
+    versionTagProp.setValue(versionTag);
+    return this;
+  }
+
+  @Override
   public long getFormKey() {
     return formKeyProp.getValue();
   }
@@ -131,16 +141,6 @@ public final class FormRecord extends UnifiedRecordValue implements Form {
 
   public FormRecord setDeploymentKey(final long deploymentKey) {
     deploymentKeyProp.setValue(deploymentKey);
-    return this;
-  }
-
-  @Override
-  public String getVersionTag() {
-    return bufferAsString(versionTagProp.getValue());
-  }
-
-  public FormRecord setVersionTag(final String versionTag) {
-    versionTagProp.setValue(versionTag);
     return this;
   }
 

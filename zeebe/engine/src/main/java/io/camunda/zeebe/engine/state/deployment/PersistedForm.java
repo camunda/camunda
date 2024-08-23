@@ -68,6 +68,10 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
     return versionProp.getValue();
   }
 
+  public String getVersionTag() {
+    return bufferAsString(versionTagProp.getValue());
+  }
+
   public long getFormKey() {
     return formKeyProp.getValue();
   }
@@ -90,10 +94,6 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
 
   public long getDeploymentKey() {
     return deploymentKeyProp.getValue();
-  }
-
-  public String getVersionTag() {
-    return bufferAsString(versionTagProp.getValue());
   }
 
   public void wrap(final FormRecord record) {

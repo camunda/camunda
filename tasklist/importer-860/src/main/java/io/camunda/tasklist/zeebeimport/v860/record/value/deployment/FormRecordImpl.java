@@ -53,6 +53,15 @@ public class FormRecordImpl implements Form {
   }
 
   @Override
+  public String getVersionTag() {
+    return versionTag;
+  }
+
+  public void setVersionTag(final String versionTag) {
+    this.versionTag = versionTag;
+  }
+
+  @Override
   public long getFormKey() {
     return formKey;
   }
@@ -96,15 +105,6 @@ public class FormRecordImpl implements Form {
 
   public void setDeploymentKey(final long deploymentKey) {
     this.deploymentKey = deploymentKey;
-  }
-
-  @Override
-  public String getVersionTag() {
-    return versionTag;
-  }
-
-  public void setVersionTag(final String versionTag) {
-    this.versionTag = versionTag;
   }
 
   @Override
