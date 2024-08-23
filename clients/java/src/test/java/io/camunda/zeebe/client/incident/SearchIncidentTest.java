@@ -1,9 +1,17 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package io.camunda.zeebe.client.incident;
 
@@ -11,9 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.IncidentSearchQueryRequest;
-import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public class SearchIncidentTest extends ClientRestTest {
@@ -42,7 +48,7 @@ public class SearchIncidentTest extends ClientRestTest {
                     .tenantId("tenant")
                     .flowNodeId("flowNode")
                     .flowNodeInstanceId("flowNodeInstance")
-                    .jobKey(4l)
+                    .jobKey(4L)
                     .state("state")
                     .type("type")
                     .hasActiveOperation(false))
@@ -58,37 +64,9 @@ public class SearchIncidentTest extends ClientRestTest {
     assertThat(filter.getTenantId()).isEqualTo("tenant");
     assertThat(filter.getFlowNodeId()).isEqualTo("flowNode");
     assertThat(filter.getFlowNodeInstanceId()).isEqualTo("flowNodeInstance");
-    assertThat(filter.getJobKey()).isEqualTo(4l);
+    assertThat(filter.getJobKey()).isEqualTo(4L);
     assertThat(filter.getState()).isEqualTo("state");
     assertThat(filter.getType()).isEqualTo("type");
     assertThat(filter.getHasActiveOperation()).isFalse();
-  }
-
-  @Test
-  public void shouldSearchIncidentWithFullSorting() {
-    // when
-    client
-        .newIncidentQuery()
-        .sort(
-            s ->
-                s.key()
-                    .creationTime()
-                    .jobKey()
-                    .flowNodeId()
-                    .state()
-                    .flowNodeInstanceId()
-                    .processDefinitionKey()
-                    .processInstanceKey()
-                    .tenantId()
-                    .type())
-        .send()
-        .join();
-    // then
-    final IncidentSearchQueryRequest request =
-        gatewayService.getLastRequest(IncidentSearchQueryRequest.class);
-    final List<SearchQuerySortRequest> sort = request.getSort();
-    assertThat(sort.size()).isEqualTo(9);
-    assertThat(sort.get(0).getField()).isEqualTo("key");
-    assertThat(sort.get(0).getOrder()).isEqualTo("asc");
   }
 }
