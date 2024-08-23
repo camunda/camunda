@@ -33,11 +33,12 @@ import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;
 import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.impl.search.sort.IncidentSortImpl;
 import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.IncidentSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.IncidentSearchQueryResponse;
+import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -91,8 +92,8 @@ public class IncidentQueryImpl
 
   @Override
   public IncidentQuery sort(final IncidentSort value) {
-    final IncidentSortImpl sorting = (IncidentSortImpl) value;
-    request.setSort(sorting.getSearchRequestProperty());
+    final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
+    request.setSort(sorting);
     return this;
   }
 
