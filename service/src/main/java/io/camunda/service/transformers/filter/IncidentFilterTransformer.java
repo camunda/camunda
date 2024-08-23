@@ -36,7 +36,6 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
     final var typeQuery = getTypeQuery(filter.types());
     final var flowNodeIdQuery = getFlowNodeIdQuery(filter.flowNodeIds());
     final var flowNodeInstanceIdQuery = getFlowNodeInstanceIdQuery(filter.flowNodeInstanceIds());
-    final var creationTimeQuery = getCreationTimeQuery(filter.creationTimeFilter());
     final var stateQuery = getStateQuery(filter.states());
     final var jobKeyQuery = getJobKeyQuery(filter.jobKeys());
     final var tenantIdQuery = getTenantIdQuery(filter.tenantIds());
@@ -49,7 +48,6 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
         typeQuery,
         flowNodeIdQuery,
         flowNodeInstanceIdQuery,
-        creationTimeQuery,
         stateQuery,
         jobKeyQuery,
         tenantIdQuery,

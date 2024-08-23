@@ -13,7 +13,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.service.IncidentServices;
 import io.camunda.service.entities.IncidentEntity;
-import io.camunda.service.search.filter.DateValueFilter;
 import io.camunda.service.search.filter.IncidentFilter;
 import io.camunda.service.search.query.IncidentQuery;
 import io.camunda.service.search.query.SearchQueryResult;
@@ -192,11 +191,6 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                         .states("s")
                         .types("ty")
                         .hasActiveOperation()
-                        .creationTime(
-                            new DateValueFilter.Builder()
-                                .before(creationTime)
-                                .after(creationTime)
-                                .build())
                         .build())
                 .build());
   }
