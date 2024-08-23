@@ -16,6 +16,7 @@
 package io.camunda.zeebe.config;
 
 import java.time.Duration;
+import java.util.List;
 
 public class StarterCfg {
 
@@ -26,7 +27,7 @@ public class StarterCfg {
   /** Paths are relative to classpath. */
   private String bpmnXmlPath;
 
-  private String[] extraBpmnModels;
+  private List<String> extraBpmnModels;
 
   private String businessKey;
 
@@ -79,11 +80,11 @@ public class StarterCfg {
     this.threads = threads;
   }
 
-  public String[] getExtraBpmnModels() {
+  public List<String> getExtraBpmnModels() {
     return extraBpmnModels;
   }
 
-  public void setExtraBpmnModels(final String[] extraBpmnModels) {
+  public void setExtraBpmnModels(final List<String> extraBpmnModels) {
     this.extraBpmnModels = extraBpmnModels;
   }
 
