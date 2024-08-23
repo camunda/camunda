@@ -196,6 +196,7 @@ public class ResourceDeletionDeleteProcessor
             .setDecisionId(BufferUtil.bufferAsString(persistedDecision.getDecisionId()))
             .setDecisionName(BufferUtil.bufferAsString(persistedDecision.getDecisionName()))
             .setVersion(persistedDecision.getVersion())
+            .setVersionTag(persistedDecision.getVersionTag())
             .setDecisionKey(persistedDecision.getDecisionKey())
             .setDecisionRequirementsId(
                 BufferUtil.bufferAsString(persistedDecision.getDecisionRequirementsId()))
