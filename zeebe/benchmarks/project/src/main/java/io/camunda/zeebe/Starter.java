@@ -254,7 +254,7 @@ public class Starter extends App {
     final var deployCmd =
         client.newDeployResourceCommand().addResourceFromClasspath(starterCfg.getBpmnXmlPath());
 
-    final String[] extraBpmnModels = starterCfg.getExtraBpmnModels();
+    final var extraBpmnModels = starterCfg.getExtraBpmnModels();
     if (extraBpmnModels != null) {
       for (final var model : extraBpmnModels) {
         deployCmd.addResourceFromClasspath(model);
