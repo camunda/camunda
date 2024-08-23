@@ -16,7 +16,6 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.Initializ
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.StaticInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.SyncInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
-import io.camunda.zeebe.dynamic.config.ClusterConfigurationModifier.ExporterStateInitializer;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestsHandler;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestServer;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliersImpl;

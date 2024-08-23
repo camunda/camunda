@@ -59,8 +59,7 @@ final class ClusterConfigurationModifierTest {
     void shouldUpdateExporterConfig(final ExporterConfigParameter parameter) {
       // given
       final var exporterStateInitializer =
-          new ClusterConfigurationModifier.ExporterStateInitializer(
-              parameter.configuredExporters(), localMemberId, executor);
+          new ExporterStateInitializer(parameter.configuredExporters(), localMemberId, executor);
 
       // when
       final var newConfiguration = exporterStateInitializer.modify(currentConfiguration).join();
@@ -103,8 +102,7 @@ final class ClusterConfigurationModifierTest {
 
       // when
       final var newConfiguration =
-          new ClusterConfigurationModifier.ExporterStateInitializer(
-                  Set.of("expA", "expB"), localMemberId, executor)
+          new ExporterStateInitializer(Set.of("expA", "expB"), localMemberId, executor)
               .modify(currentConfiguration)
               .join();
 
@@ -121,8 +119,7 @@ final class ClusterConfigurationModifierTest {
     void shouldNotUpdateMemberStateIfNoExporterChanges() {
       // when
       final var newConfiguration =
-          new ClusterConfigurationModifier.ExporterStateInitializer(
-                  Set.of("expA", "expB"), localMemberId, executor)
+          new ExporterStateInitializer(Set.of("expA", "expB"), localMemberId, executor)
               .modify(currentConfiguration)
               .join();
 
