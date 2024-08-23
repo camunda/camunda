@@ -81,6 +81,10 @@ public class ExporterBatchWriter {
     cachedEntities.clear();
   }
 
+  public int getBatchSize() {
+    return cachedEntities.size();
+  }
+
   public static class Builder {
     private ExporterBatchWriter writer;
 
