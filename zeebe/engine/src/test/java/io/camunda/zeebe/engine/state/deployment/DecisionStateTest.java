@@ -602,10 +602,13 @@ public final class DecisionStateTest {
     // given
     final var drg = sampleDecisionRequirementsRecord();
     final var decisionRecord =
-        sampleDecisionRecord().setDecisionRequirementsKey(drg.getDecisionRequirementsKey());
+        sampleDecisionRecord()
+            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+            .setVersionTag("v1.0");
     decisionState.storeDecisionRequirements(drg);
     decisionState.storeDecisionRecord(decisionRecord);
     decisionState.storeDecisionKeyByDecisionIdAndDeploymentKey(decisionRecord);
+    decisionState.storeDecisionKeyByDecisionIdAndVersionTag(decisionRecord);
 
     // when
     decisionState.deleteDecision(decisionRecord);
@@ -624,6 +627,10 @@ public final class DecisionStateTest {
     assertThat(
             decisionState.findDecisionByIdAndDeploymentKey(
                 TENANT_ID, decisionRecord.getDecisionIdBuffer(), decisionRecord.getDeploymentKey()))
+        .isEmpty();
+    assertThat(
+            decisionState.findDecisionByIdAndVersionTag(
+                TENANT_ID, decisionRecord.getDecisionIdBuffer(), decisionRecord.getVersionTag()))
         .isEmpty();
   }
 
