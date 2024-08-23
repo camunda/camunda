@@ -151,8 +151,10 @@ public record ClusterConfiguration(
               .flatMap(Optional::stream)
               .reduce(ClusterChangePlan::merge);
 
-      // TODO: Merge routing state
-      final var mergedRoutingState = routingState;
+      final var mergedRoutingState =
+          Stream.of(routingState, other.routingState)
+              .flatMap(Optional::stream)
+              .reduce(RoutingState::merge);
 
       return new ClusterConfiguration(
           version,
