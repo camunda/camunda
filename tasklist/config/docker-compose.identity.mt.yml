@@ -34,6 +34,29 @@ services:
     volumes:
       - ./els-snapshots:/usr/local/els-snapshots
 
+  opensearch:
+    image: opensearchproject/opensearch:2.16.0
+    container_name: opensearch
+    environment:
+      - cluster.name=opensearch-cluster
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+      - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
+      - "OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx1024m" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=yourStrongPassword123!
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536 # maximum number of open files for the OpenSearch user, set to at least 65536 on modern systems
+        hard: 65536
+    ports:
+      - 9205:9200
+      - 9605:9605 # required for Performance Analyzer
+    networks:
+      - identity-network
+
   kibana:
     image: docker.elastic.co/kibana/kibana:8.15.1
     ports:
@@ -80,130 +103,74 @@ services:
       - "8084:8084"
     environment:
       SERVER_PORT: 8084
-      KEYCLOAK_URL: http://keycloak:8080/auth
-      IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
-      IDENTITY_DATABASE_HOST: postgres
-      IDENTITY_DATABASE_PORT: 5432
-      IDENTITY_DATABASE_NAME: identity
-      IDENTITY_DATABASE_USERNAME: identity
-      IDENTITY_DATABASE_PASSWORD: "t2L@!AqSMg8%I%NmHM"
-      KEYCLOAK_INIT_OPERATE_SECRET: the-cake-is-alive
-      KEYCLOAK_INIT_OPERATE_ROOT_URL: http://localhost:8081
-      KEYCLOAK_INIT_TASKLIST_SECRET: the-cake-is-alive
-      KEYCLOAK_INIT_TASKLIST_ROOT_URL: http://localhost:8082
       IDENTITY_LOG_LEVEL: DEBUG
-      MULTITENANCY_ENABLED: true
-      KEYCLOAK_INIT_ZEEBE_NAME: Zeebe
-      KEYCLOAK_INIT_ZEEBE_SECRET: zecret
-      KEYCLOAK_CLIENTS_0_NAME: Zeebe
-      KEYCLOAK_CLIENTS_0_ID: zeebe
-      KEYCLOAK_CLIENTS_0_SECRET: zecret
-      KEYCLOAK_CLIENTS_0_TYPE: M2M
-      KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID: zeebe-api
-      KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION: write:*
-    env_file: .env.test
+    env_file:
+      - .env.test
+      - envs/.env.identity
+      - envs/.env.multi-tenancy
     networks:
       - identity-network
 
   zeebe:
-    depends_on:
-      - elasticsearch
-    container_name: zeebe
+    container_name: zeebe-${DATABASE}
     image: camunda/zeebe:SNAPSHOT
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
-      - ZEEBE_HOST=${ZEEBE_HOST:-}
       - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=4
-      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_DEPLOYMENT=false
-      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME=io.camunda.zeebe.exporter.ElasticsearchExporter
-      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL=http://elasticsearch:9200
-      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE=1
-      - ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED=true
-      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE=identity
-      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_TYPE=keycloak
-      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL=http://keycloak:8080/auth/realms/camunda-platform
-      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE=zeebe-api
-      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL=http://identity:8084
-      - ZEEBE_BROKER_GATEWAY_ENABLE=true
+      - SPRING_PROFILES_ACTIVE=identity-auth
       - CAMUNDA_IDENTITY_ISSUERBACKENDURL=http://keycloak:8080/auth/realms/camunda-platform
       - CAMUNDA_IDENTITY_BASEURL=http://identity:8084
       - CAMUNDA_IDENTITY_AUDIENCE=zeebe-api
-      - SPRING_PROFILES_ACTIVE=identity-auth
     ports:
       - 26500:26500
       - 8000:8000
       - 8089:8080
     restart: always
+    env_file:
+      - envs/.env.multi-tenancy
+      - envs/.env.identity
+      - envs/.env.database.${DATABASE}
+    depends_on:
+      - ${DATABASE}
     networks:
       - identity-network
 
   operate:
-    depends_on:
-      identity:
-        condition: service_started
-      zeebe:
-        condition: service_started
-      elasticsearch:
-        condition: service_started
     image: camunda/operate:SNAPSHOT
-    container_name: operate
+    container_name: operate-${DATABASE}
     environment:
       - SERVER_PORT=8081
-      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
-      - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
-      - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
       - SPRING_PROFILES_ACTIVE=dev-data,identity-auth
-      - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
-      - CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL=http://keycloak:8080/auth/realms/camunda-platform
-      - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
-      - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive
-      - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
-      - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
-      - CAMUNDA_OPERATE_MULTITENANCY_ENABLED=true
-      - ZEEBE_CLIENT_ID=zeebe
-      - ZEEBE_CLIENT_SECRET=zecret
-      - ZEEBE_AUTHORIZATION_SERVER_URL=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/token
-      - ZEEBE_TOKEN_AUDIENCE=zeebe-api
     ports:
       - 8081:8081
+    env_file:
+      - envs/.env.multi-tenancy
+      - envs/.env.identity
+      - envs/.env.database.${DATABASE}
+    depends_on:
+      - identity
+      - zeebe
+      - ${DATABASE}
     networks:
       - identity-network
 
   tasklist:
-    depends_on:
-      identity:
-        condition: service_started
-      zeebe:
-        condition: service_started
-      elasticsearch:
-        condition: service_started
     restart: on-failure
     image: camunda/tasklist:SNAPSHOT
-    container_name: tasklist
+    container_name: tasklist-${DATABASE}
     environment:
       - SERVER_PORT=8082
-      - CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=zeebe:26500
-      - CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://zeebe:8080
-      - CAMUNDA_TASKLIST_ELASTICSEARCH_URL=http://elasticsearch:9200
-      - CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
       - SPRING_PROFILES_ACTIVE=identity-auth,dev,dev-data
-      - CAMUNDA_TASKLIST_IDENTITY_ISSUERURL=http://localhost:18080/auth/realms/camunda-platform
-      - CAMUNDA_TASKLIST_IDENTITY_ISSUERBACKENDURL=http://keycloak:8080/auth/realms/camunda-platform
-      - CAMUNDA_TASKLIST_IDENTITY_BASEURL=http://identity:8084
-      - CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID=tasklist
-      - CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET=the-cake-is-alive
-      - CAMUNDA_TASKLIST_IDENTITY_AUDIENCE=tasklist-api
-      - CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED=true
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://keycloak:8080/auth/realms/camunda-platform
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
-      - CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME=test
-      - CAMUNDA_TASKLIST_MULTITENANCY_ENABLED=true
-      - ZEEBE_CLIENT_ID=zeebe
-      - ZEEBE_CLIENT_SECRET=zecret
-      - ZEEBE_AUTHORIZATION_SERVER_URL=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/token
-      - ZEEBE_TOKEN_AUDIENCE=zeebe-api
     ports:
       - 8082:8082
+    depends_on:
+      - identity
+      - zeebe
+      - ${DATABASE}
+    env_file:
+      - envs/.env.multi-tenancy
+      - envs/.env.identity
+      - envs/.env.database.${DATABASE}
     networks:
       - identity-network
 

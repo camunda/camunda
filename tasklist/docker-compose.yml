@@ -61,109 +61,51 @@ services:
       - zeebe_network
 
   zeebe:
-    container_name: zeebe
+    container_name: zeebe-${DATABASE}
     image: camunda/zeebe:SNAPSHOT
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
-      - ZEEBE_BROKER_NETWORK_HOST=zeebe
-      - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=2
-      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME=io.camunda.zeebe.exporter.ElasticsearchExporter
-      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL=http://elasticsearch:9200
-      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE=1
-      - ZEEBE_BROKER_NETWORK_HOST=0.0.0.0
-      - ZEEBE_BROKER_GATEWAY_ENABLE=true
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
     ports:
       - 26500:26500
       - 9601:9600
       - 8089:8080
     depends_on:
-      - elasticsearch
+      - ${DATABASE}
     networks:
       - zeebe_network
-    restart: always
-
-  zeebe-opensearch:
-    container_name: zeebe-opensearch
-    image: camunda/zeebe:SNAPSHOT
-    environment:
-      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
-      - ZEEBE_BROKER_NETWORK_HOST=0.0.0.0
-      - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=2
-      - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME=io.camunda.zeebe.exporter.opensearch.OpensearchExporter
-      - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL=http://opensearch:9200
-      - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_SIZE=1
-      - ZEEBE_BROKER_GATEWAY_ENABLE=true
-      #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
-    ports:
-      - 26500:26500
-      - 8000:8000
-      - 8089:8080
-    depends_on:
-      - opensearch
-    networks:
-      - zeebe_network
-    restart: always
-
-  tasklist-opensearch:
-    container_name: tasklist-opensearch
-    image: camunda/tasklist:SNAPSHOT
-    ports:
-      - 8080:8080
-    environment:
-      - camunda.tasklist.opensearch.url=http://opensearch:9200
-      - camunda.tasklist.zeebeOpensearch.url=http://opensearch:9200
-      - camunda.tasklist.zeebe.gatewayAddress=zeebe-opensearch:26500
-      #- server.servlet.context-path=/tasklist/
-      - spring.profiles.active=dev,dev-data,auth
-      - graphql.playground.enabled=true
-      - graphql.playground.settings.request.credentials=include
-      - camunda.tasklist.database=opensearch
-      - CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://zeebe-opensearch:8080
-      - camunda.tasklist.archiver.ilmEnabled=true
-    depends_on:
-      - opensearch
-      - zeebe-opensearch
-    networks:
-      - zeebe_network
+    env_file:
+      - ./config/envs/.env.database.${DATABASE}
     restart: always
 
   tasklist:
-    container_name: tasklist
+    container_name: tasklist-${DATABASE}
     image: camunda/tasklist:SNAPSHOT
     ports:
       - 8080:8080
     environment:
-      - camunda.tasklist.elasticsearch.url=http://elasticsearch:9200
-      - camunda.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
-      - camunda.tasklist.zeebe.gatewayAddress=zeebe:26500
-      - CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://zeebe:8080
-      #- server.servlet.context-path=/tasklist/
       - spring.profiles.active=dev,dev-data,auth
-      - graphql.playground.enabled=true
-      - graphql.playground.settings.request.credentials=include
-    volumes:
-      - ./config/application.yml:/usr/local/tasklist/config/application.yml
-      - ./config/custom.css:/usr/local/tasklist/config/custom.css
     depends_on:
-      - elasticsearch
+      - ${DATABASE}
       - zeebe
+    env_file:
+      - ./config/envs/.env.database.${DATABASE}
     networks:
       - zeebe_network
     restart: always
 
   operate:
-    container_name: tasklist-operate
+    container_name: tasklist-operate-${DATABASE}
     image: camunda/operate:SNAPSHOT
     ports:
       - 8088:8080
     environment:
       - spring.profiles.active=dev,auth
-    volumes:
-      - ./config/operate-application.yml:/usr/local/operate/config/application.yml
     depends_on:
-      - elasticsearch
+      - ${DATABASE}
       - zeebe
+    env_file:
+      - ./config/envs/.env.database.${DATABASE}
     networks:
       - zeebe_network
     restart: always
@@ -195,9 +137,7 @@ services:
     ports:
       - 8081:8080
     environment:
-      - camunda.tasklist.elasticsearch.url=http://elasticsearch:9200
       - camunda.tasklist.elasticsearch.indexPrefix=e2etasklist
-      - camunda.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
       - camunda.tasklist.zeebeElasticsearch.prefix=e2e
       - camunda.tasklist.zeebe.gatewayAddress=zeebe-e2e:26503
       - camunda.tasklist.zeebe.restAddress=http://zeebe-e2e:8088
@@ -209,6 +149,8 @@ services:
       - zeebe-e2e
     networks:
       - zeebe_network
+    env_file:
+      - ./config/envs/.env.database.${DATABASE}
     restart: always
 
   tasklist-sso:
@@ -217,9 +159,6 @@ services:
     ports:
       - 8080:8080
     environment:
-      - camunda.tasklist.elasticsearch.url=http://elasticsearch:9200
-      - camunda.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
-      - camunda.tasklist.zeebe.gatewayAddress=zeebe:26500
       - spring.profiles.active=dev,dev-data,sso-auth
       - camunda.tasklist.auth0.backendDomain=camunda-dev.eu.auth0.com
       - camunda.tasklist.auth0.claimName=https://camunda.com/orgs
@@ -232,6 +171,8 @@ services:
     depends_on:
       - elasticsearch
       - zeebe
+    env_file:
+      - ./config/envs/.env.database.${DATABASE}
     networks:
       - zeebe_network
     restart: always

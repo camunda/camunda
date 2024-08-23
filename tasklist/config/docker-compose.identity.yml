@@ -92,163 +92,72 @@ services:
       - "8084:8084"
     environment:
       SERVER_PORT: 8084
-      KEYCLOAK_URL: http://keycloak:8080/auth
-      IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
-      IDENTITY_DATABASE_HOST: postgres
-      IDENTITY_DATABASE_PORT: 5432
-      IDENTITY_DATABASE_NAME: identity
-      IDENTITY_DATABASE_USERNAME: identity
-      IDENTITY_DATABASE_PASSWORD: "t2L@!AqSMg8%I%NmHM"
-      KEYCLOAK_INIT_OPERATE_SECRET: the-cake-is-alive
-      KEYCLOAK_INIT_OPERATE_ROOT_URL: http://localhost:8081
-      KEYCLOAK_INIT_TASKLIST_SECRET: the-cake-is-alive
-      KEYCLOAK_INIT_TASKLIST_ROOT_URL: http://localhost:8082
       IDENTITY_LOG_LEVEL: DEBUG
-    env_file: .env.test
+    env_file:
+      - .env.test
+      - envs/.env.identity
     networks:
       - identity-network
 
   zeebe:
-    depends_on:
-      - elasticsearch
-    container_name: zeebe
+    container_name: zeebe-${DATABASE}
     image: camunda/zeebe:SNAPSHOT
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
-      - ZEEBE_HOST=${ZEEBE_HOST:-}
       - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=4
-      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_DEPLOYMENT=false
-      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME=io.camunda.zeebe.exporter.ElasticsearchExporter
-      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL=http://elasticsearch:9200
-      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE=1
-      - ZEEBE_BROKER_GATEWAY_ENABLE=true
+      - SPRING_PROFILES_ACTIVE=identity-auth
       - CAMUNDA_IDENTITY_ISSUERBACKENDURL=http://keycloak:8080/auth/realms/camunda-platform
       - CAMUNDA_IDENTITY_BASEURL=http://identity:8084
       - CAMUNDA_IDENTITY_AUDIENCE=zeebe-api
-      - SPRING_PROFILES_ACTIVE=identity-auth
     ports:
       - 26500:26500
       - 8000:8000
       - 8089:8080
     restart: always
+    env_file:
+      - envs/.env.database.${DATABASE}
+      - envs/.env.identity
     networks:
       - identity-network
-
-  zeebe-opensearch:
     depends_on:
-      - opensearch
-    container_name: zeebe-opensearch
-    image: camunda/zeebe:SNAPSHOT
-    environment:
-      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
-      - ZEEBE_HOST=${ZEEBE_HOST:-}
-      - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=4
-      - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME=io.camunda.zeebe.exporter.opensearch.OpensearchExporter
-      - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL=http://opensearch:9200
-      - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_SIZE=1
-      - ZEEBE_BROKER_GATEWAY_ENABLE=true
-    ports:
-      - 26500:26500
-      - 8000:8000
-      - 8089:8080
-    restart: always
-    networks:
-      - identity-network
+      - ${DATABASE}
 
   operate:
-    depends_on:
-      identity:
-        condition: service_started
-      zeebe:
-        condition: service_started
-      elasticsearch:
-        condition: service_started
     image: camunda/operate:SNAPSHOT
-    container_name: operate
+    container_name: operate-${DATABASE}
     environment:
       - SERVER_PORT=8081
-      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
-      - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
-      - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
       - SPRING_PROFILES_ACTIVE=dev-data,identity-auth
-      - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
-      - CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL=http://keycloak:8080/auth/realms/camunda-platform
-      - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
-      - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive
-      - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
-      - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
     ports:
       - 8081:8081
+    env_file:
+      - envs/.env.database.${DATABASE}
+      - envs/.env.identity
     networks:
       - identity-network
+    depends_on:
+      - identity
+      - zeebe
+      - ${DATABASE}
 
   tasklist:
-    depends_on:
-      identity:
-        condition: service_started
-      zeebe:
-        condition: service_started
-      elasticsearch:
-        condition: service_started
     restart: on-failure
     image: camunda/tasklist:SNAPSHOT
-    container_name: tasklist
+    container_name: tasklist-${DATABASE}
     environment:
       - SERVER_PORT=8082
-      - CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=zeebe:26500
-      - CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://zeebe:8080
-      - CAMUNDA_TASKLIST_ELASTICSEARCH_URL=http://elasticsearch:9200
-      - CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
       - SPRING_PROFILES_ACTIVE=identity-auth,dev,dev-data
-      - CAMUNDA_TASKLIST_IDENTITY_ISSUERURL=http://localhost:18080/auth/realms/camunda-platform
-      - CAMUNDA_TASKLIST_IDENTITY_ISSUERBACKENDURL=http://keycloak:8080/auth/realms/camunda-platform
-      - CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID=tasklist
-      - CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET=the-cake-is-alive
-      - CAMUNDA_TASKLIST_IDENTITY_BASEURL=http://identity:8084
-      - CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED=true
-      - CAMUNDA_TASKLIST_IDENTITY_AUDIENCE=tasklist-api
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://keycloak:8080/auth/realms/camunda-platform
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
-      - CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME=test
     ports:
       - 8082:8082
+    env_file:
+      - envs/.env.database.${DATABASE}
+      - envs/.env.identity
     networks:
       - identity-network
-
-  tasklist-opensearch:
     depends_on:
-      identity:
-        condition: service_started
-      zeebe-opensearch:
-        condition: service_started
-      opensearch:
-        condition: service_started
-    restart: on-failure
-    image: camunda/tasklist:SNAPSHOT
-    container_name: tasklist-opensearch
-    environment:
-      - SERVER_PORT=8082
-      - CAMUNDA_TASKLIST_DATABASE=opensearch
-      - CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=zeebe-opensearch:26500
-      - CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://zeebe-opensearch:8080
-      - CAMUNDA_TASKLIST_OPENSEARCH_URL=http://opensearch:9200
-      - CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL=http://opensearch:9200
-      - SPRING_PROFILES_ACTIVE=identity-auth,dev,dev-data
-      - CAMUNDA_TASKLIST_IDENTITY_ISSUERURL=http://localhost:18080/auth/realms/camunda-platform
-      - CAMUNDA_TASKLIST_IDENTITY_ISSUERBACKENDURL=http://keycloak:8080/auth/realms/camunda-platform
-      - CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID=tasklist
-      - CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET=the-cake-is-alive
-      - CAMUNDA_TASKLIST_IDENTITY_BASEURL=http://identity:8084
-      - CAMUNDA_TASKLIST_IDENTITY_RESOURCE_PERMISSIONS_ENABLED=true
-      - CAMUNDA_TASKLIST_IDENTITY_AUDIENCE=tasklist-api
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://keycloak:8080/auth/realms/camunda-platform
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
-      - CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME=test
-      - CAMUNDA_TASKLIST_ARCHIVER_ILMENABLED=true
-    ports:
-      - 8082:8082
-    networks:
-      - identity-network
+      - identity
+      - zeebe
+      - ${DATABASE}
 
 networks:
   identity-network: {}
