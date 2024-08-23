@@ -65,12 +65,6 @@ public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<Incid
   }
 
   @Override
-  public IncidentFilter creationTime(final String value) {
-    filter.setCreationTime(value);
-    return this;
-  }
-
-  @Override
   public IncidentFilter state(final String value) {
     filter.setState(value);
     return this;

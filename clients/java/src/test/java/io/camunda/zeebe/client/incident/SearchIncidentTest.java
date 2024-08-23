@@ -39,7 +39,6 @@ public class SearchIncidentTest extends ClientRestTest {
                 f.key(1L)
                     .processDefinitionKey(2L)
                     .processInstanceKey(3L)
-                    .creationTime("2025")
                     .tenantId("tenant")
                     .flowNodeId("flowNode")
                     .flowNodeInstanceId("flowNodeInstance")
@@ -54,7 +53,6 @@ public class SearchIncidentTest extends ClientRestTest {
         gatewayService.getLastRequest(IncidentSearchQueryRequest.class);
     final IncidentFilterRequest filter = request.getFilter();
     assertThat(filter.getKey()).isEqualTo(1L);
-    assertThat(filter.getCreationTime()).isEqualTo("2025");
     assertThat(filter.getProcessDefinitionKey()).isEqualTo(2L);
     assertThat(filter.getProcessInstanceKey()).isEqualTo(3L);
     assertThat(filter.getTenantId()).isEqualTo("tenant");
@@ -89,7 +87,7 @@ public class SearchIncidentTest extends ClientRestTest {
     final IncidentSearchQueryRequest request =
         gatewayService.getLastRequest(IncidentSearchQueryRequest.class);
     final List<SearchQuerySortRequest> sort = request.getSort();
-    assertThat(sort.size()).isEqualTo(10);
+    assertThat(sort.size()).isEqualTo(9);
     assertThat(sort.get(0).getField()).isEqualTo("key");
     assertThat(sort.get(0).getOrder()).isEqualTo("asc");
   }

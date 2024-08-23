@@ -31,8 +31,6 @@ public interface IncidentFilter extends SearchRequestFilter {
 
   IncidentFilter flowNodeInstanceId(final String value);
 
-  IncidentFilter creationTime(final String value);
-
   IncidentFilter state(final String value);
 
   IncidentFilter jobKey(final Long value);
