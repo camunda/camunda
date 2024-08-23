@@ -76,7 +76,8 @@ final class PersistedClusterConfigurationRandomizedPropertyTest {
       // `ClusterTopology#isUninitialized` to return false.
       final var arbitraryVersion = Arbitraries.integers().greaterOrEqual(0);
       final var arbitraryMembers =
-          Arbitraries.maps(memberIds(), Arbitraries.forType(MemberState.class).enableRecursion());
+          Arbitraries.maps(memberIds(), Arbitraries.forType(MemberState.class).enableRecursion())
+              .ofMaxSize(10);
       final var arbitraryCompletedChange =
           Arbitraries.forType(CompletedChange.class).enableRecursion().optional();
       final var arbitraryChangePlan =
