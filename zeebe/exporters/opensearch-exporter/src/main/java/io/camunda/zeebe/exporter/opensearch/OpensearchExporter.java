@@ -306,6 +306,10 @@ public class OpensearchExporter implements Exporter {
       if (index.user) {
         createValueIndexTemplate(ValueType.USER);
       }
+
+      if (index.authorization) {
+        createValueIndexTemplate(ValueType.AUTHORIZATION);
+      }
     }
 
     indexTemplatesCreated = true;

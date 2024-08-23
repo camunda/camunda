@@ -180,7 +180,10 @@ public enum ZbColumnFamilies implements EnumValue {
   USERS(86),
   USER_KEY_BY_USERNAME(87),
 
-  CLOCK(88);
+  CLOCK(88),
+
+  AUTHORIZATIONS(89),
+  AUTHORIZATIONS_BY_USERNAME_AND_PERMISSION(90);
 
   private final int value;
 

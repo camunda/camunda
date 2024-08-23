@@ -47,7 +47,7 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  void createUserShouldCreateAndReturnNewUser() {
+  void createUserShouldReturnNoContent() {
 
     final UserWithPasswordRequest dto = new UserWithPasswordRequest();
     dto.setUsername("demo");
@@ -74,8 +74,7 @@ public class UserControllerTest extends RestControllerTest {
         .bodyValue(dto)
         .exchange()
         .expectStatus()
-        .is2xxSuccessful()
-        .expectBody();
+        .isNoContent();
 
     verify(userServices, times(1))
         .createUser(dto.getUsername(), dto.getName(), dto.getEmail(), dto.getPassword());
