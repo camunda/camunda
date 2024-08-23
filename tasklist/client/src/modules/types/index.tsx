@@ -121,7 +121,12 @@ type TasksSearchBody = {
   processInstanceKey?: string;
   pageSize?: number;
   sort?: Array<{
-    field: 'completionTime' | 'creationTime' | 'followUpDate' | 'dueDate';
+    field:
+      | 'completionTime'
+      | 'creationTime'
+      | 'followUpDate'
+      | 'dueDate'
+      | 'priority';
     order: 'ASC' | 'DESC';
   }>;
   searchAfter?: PaginationSearchPair;

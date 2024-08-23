@@ -237,6 +237,7 @@
     "taskFiltersSortFollowUpDate": "Follow-up date",
     "taskFiltersSortDueDate": "Due date",
     "taskFiltersSortCompletionDate": "Completion date",
+    "taskFiltersSortPriority": "Priority",
     "taskFiltersSortButton": "Sort tasks",
     "taskOptionsSectionAria": "Options",
     "taskOptionsAutoSelectLabel": "Auto-select first available task",
