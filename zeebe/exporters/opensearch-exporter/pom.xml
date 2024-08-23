@@ -27,6 +27,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-plugins</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-rest-client</artifactId>
     </dependency>
@@ -178,6 +183,12 @@
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

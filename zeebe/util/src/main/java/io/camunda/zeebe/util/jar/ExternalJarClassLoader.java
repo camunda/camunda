@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.util.jar;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -28,7 +29,14 @@ public final class ExternalJarClassLoader extends URLClassLoader {
     super(urls);
   }
 
-  static ExternalJarClassLoader ofPath(final Path jarPath) throws ExternalJarLoadException {
+  @Override
+  public void close() throws IOException {
+    LOGGER.warn(
+        "Closing the external JAR class loader may lead to ClassNotFoundException; only close if it's truly necessary");
+    super.close();
+  }
+
+  public static ExternalJarClassLoader ofPath(final Path jarPath) throws ExternalJarLoadException {
     final URL jarUrl;
 
     try {
