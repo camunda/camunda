@@ -13,16 +13,21 @@ import org.camunda.bpm.licensecheck.LicenseKeyImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This class is a duplicate of src/main/java/io/camunda/service/license/CamundaLicense.java
+ *
+ * <p>This class exists because Optimize is not part of the single application, and cannot use any
+ * of the monorepo's modules. Once Optimize is added, the `service` implementation of
+ * `CamundaLicense` can be used, and this Optimize duplicate can be removed
+ */
 public class CamundaLicense {
 
   public static final String CAMUNDA_LICENSE_ENV_VAR_KEY = "CAMUNDA_LICENSE_KEY";
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaLicense.class);
-  private static final String UNKNOWN_LICENSE_TYPE = "unknown";
   private boolean isValid;
   private LicenseType licenseType;
   private boolean isInitialized;
 
-  // @VisibleForTesting
   protected CamundaLicense() {}
 
   public CamundaLicense(final String license) {
@@ -43,8 +48,7 @@ public class CamundaLicense {
     }
 
     if (license != null && !license.isBlank()) {
-      isValid = determineLicenseValidity(license);
-      licenseType = getLicenseTypeFromProperty(license);
+      validateLicense(license);
     } else {
       isValid = false;
       licenseType = LicenseType.UNKNOWN;
@@ -57,55 +61,36 @@ public class CamundaLicense {
     isInitialized = true;
   }
 
-  /**
-   * Camunda licenses will have a license type property, fetch that out of the license and return
-   * the value
-   *
-   * <p>Self-managed mode is any other possibility. (ex, blank license, prop missing, etc)
-   */
-  private LicenseType getLicenseTypeFromProperty(final String licenseStr) {
+  private void validateLicense(final String licenseStr) {
     try {
       final LicenseKey licenseKey = getLicenseKey(licenseStr);
-      final String licenseType =
-          licenseKey.getProperties().getOrDefault("licenseType", UNKNOWN_LICENSE_TYPE);
+      licenseKey.validate(); // this method logs the license status
 
-      if (UNKNOWN_LICENSE_TYPE.equals(licenseType)) {
+      licenseType = LicenseType.get(licenseKey.getProperties().get("licenseType"));
+
+      if (LicenseType.UNKNOWN.equals(licenseType)) {
         LOGGER.error(
-            "Expected a licenseType property on the Camunda License, but none were found.");
+            "Expected a valid licenseType property on the Camunda License, but none were found.");
+        isValid = false;
+      } else {
+        isValid = true;
       }
 
-      return LicenseType.get(licenseType);
-    } catch (final InvalidLicenseException e) {
-      LOGGER.error(
-          "Expected a valid license when determining the type of license, but encountered an invalid one instead. ",
-          e);
-    } catch (final Exception e) {
-      LOGGER.error(
-          "Expected to determine the license type of the license, but the following unexpected error was encountered: ",
-          e);
-    }
-    return LicenseType.UNKNOWN;
-  }
-
-  private boolean determineLicenseValidity(final String licenseStr) {
-    try {
-      final LicenseKey license = getLicenseKey(licenseStr);
-      license.validate(); // this method logs the license status
-      return true;
+      return;
     } catch (final InvalidLicenseException e) {
       LOGGER.error(
           "Expected a valid license when determining license validity, but encountered an invalid one instead. ",
           e);
-      return false;
     } catch (final Exception e) {
       LOGGER.error(
-          "Expected to validate a the Camunda license, but the following unexpected error was encountered: ",
+          "Expected to determine the validity of the license, but the following unexpected error was encountered: ",
           e);
-      return false;
     }
+
+    licenseType = LicenseType.UNKNOWN;
+    isValid = false;
   }
 
-  // @VisibleForTesting
   protected LicenseKey getLicenseKey(final String licenseStr) throws InvalidLicenseException {
     return new LicenseKeyImpl(licenseStr);
   }

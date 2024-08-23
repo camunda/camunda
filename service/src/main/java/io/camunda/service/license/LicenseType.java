@@ -36,6 +36,9 @@ public enum LicenseType {
   }
 
   public static LicenseType get(final String name) {
+    if (name == null) {
+      return LicenseType.UNKNOWN;
+    }
     return ENUM_MAP.getOrDefault(name.toLowerCase(), LicenseType.UNKNOWN);
   }
 }

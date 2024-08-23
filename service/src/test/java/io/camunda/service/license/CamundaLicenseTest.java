@@ -36,6 +36,10 @@ public class CamundaLicenseTest {
     final CamundaLicense testLicense = spy(CamundaLicense.class);
     final LicenseKey mockKey = mock(LicenseKey.class);
 
+    final Map<String, String> testProperties = new HashMap<>();
+    testProperties.put(LICENSE_TYPE_KEY, PRODUCTION_LICENSE_TYPE);
+    when(mockKey.getProperties()).thenReturn(testProperties);
+
     Mockito.doReturn(mockKey).when(testLicense).getLicenseKey(anyString());
 
     // when
