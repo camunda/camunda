@@ -19,6 +19,7 @@ import io.camunda.zeebe.client.api.response.ResolveIncidentResponse;
 
 public interface ResolveIncidentCommandStep1
     extends CommandWithOperationReferenceStep<ResolveIncidentCommandStep1>,
+        CommandWithCommunicationApiStep<ResolveIncidentCommandStep1>,
         FinalCommandStep<ResolveIncidentResponse> {
   // the place for new optional parameters
 }
