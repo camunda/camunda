@@ -693,6 +693,52 @@ paths:
           description: >
             The Decision Requirements Search Query failed.
             More details are provided in the response body.
+  /authorizations:
+    post:
+      tags:
+        - Authorization
+      summary: Create an authorization
+      operationId: createAuthorization
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthorizationAssignRequest"
+        required: true
+      responses:
+        "204":
+          description: |
+            The Authorization was created successfully.
+        "400":
+          description: |
+            The Authorization could not be created.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: |
+            The request to create an authorization was unauthorized.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: |
+            The request to create an authorization was denied.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /users:
     post:
       tags:
@@ -703,7 +749,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CamundaUserWithPasswordRequest"
+              $ref: "#/components/schemas/UserWithPasswordRequest"
         required: true
       responses:
         "204":
@@ -976,6 +1022,56 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
+  /users/search:
+    post:
+      tags:
+        - User
+      summary: "Get list of users"
+      operationId: "findAllUsers"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserSearchQueryRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSearchResponse"
+        "400":
+          description: "Bad request"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: "Forbidden"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: "Not found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: "Internal server error"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+
 components:
   schemas:
     UserTaskSearchQueryRequest:
@@ -1203,7 +1299,26 @@ components:
           format: int64
         tenantId:
           type: string
-    CamundaUserWithPasswordRequest:
+    AuthorizationAssignRequest:
+      type: object
+      properties:
+        ownerKey:
+          type: string
+        ownerType:
+          type: string
+          enum:
+            - USER
+            - ROLE
+            - GROUP
+        resourceKey:
+          type: string
+        resourceType:
+          type: string
+        permissions:
+            type: array
+            items:
+                type: string
+    UserWithPasswordRequest:
       type: "object"
       properties:
         password:
@@ -1217,8 +1332,44 @@ components:
           type: "string"
         email:
           type: "string"
-        enabled:
-          type: "boolean"
+    UserSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          allOf:
+            - $ref: "#/components/schemas/UserFilterRequest"
+    UserFilterRequest:
+      type: object
+      properties:
+        username:
+          type: "string"
+        name:
+          type: "string"
+        email:
+          type: "string"
+    UserResponse:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+        username:
+          type: "string"
+        name:
+          type: "string"
+        email:
+          type: "string"
+    UserSearchResponse:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserResponse"
     TopologyResponse:
       description: The response of a topology request.
       type: object

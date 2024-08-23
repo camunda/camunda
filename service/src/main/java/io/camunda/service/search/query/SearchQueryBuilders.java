@@ -59,4 +59,13 @@ public final class SearchQueryBuilders {
           fn) {
     return fn.apply(decisionRequirementsSearchQuery()).build();
   }
+
+  public static UserQuery.Builder userSearchQuery() {
+    return new UserQuery.Builder();
+  }
+
+  public static UserQuery userSearchQuery(
+      final Function<UserQuery.Builder, ObjectBuilder<UserQuery>> fn) {
+    return fn.apply(userSearchQuery()).build();
+  }
 }

@@ -18,13 +18,11 @@ jest.mock('services', () => {
 
   return {
     ...rest,
-    createReportUpdate: jest.fn((a, b, type, value) => ({[type]: value})),
+    createReportUpdate: jest.fn((b, type, value) => ({[type]: value})),
   };
 });
 
 const config = {
-  type: 'process',
-  onChange: jest.fn(),
   report: {
     view: {},
     visualization: 'bar',
@@ -34,6 +32,7 @@ const config = {
       sorting: null,
     },
   },
+  onChange: jest.fn(),
 };
 
 beforeEach(() => {
@@ -48,14 +47,6 @@ it('should show soritng options for bar/line/barLine chart grouped by date', () 
 
 it('should not show soritng options for other chart type', () => {
   const node = shallow(<Sorting {...config} report={{...config.report, visualization: 'table'}} />);
-
-  expect(node.find('.sortingOrder')).not.toExist();
-});
-
-it('should not show soritng options for other grouping', () => {
-  const node = shallow(
-    <Sorting {...config} report={{...config.report, groupBy: {type: 'candidateGroup'}}} />
-  );
 
   expect(node.find('.sortingOrder')).not.toExist();
 });

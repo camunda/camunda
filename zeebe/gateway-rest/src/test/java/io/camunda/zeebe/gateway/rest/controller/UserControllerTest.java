@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.service.CamundaServiceException;
 import io.camunda.service.UserServices;
 import io.camunda.service.security.auth.Authentication;
-import io.camunda.zeebe.gateway.protocol.rest.CamundaUserWithPasswordRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserWithPasswordRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.usermanagement.UserController;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -47,21 +47,20 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  void createUserShouldCreateAndReturnNewUser() {
+  void createUserShouldReturnNoContent() {
 
-    final CamundaUserWithPasswordRequest dto = new CamundaUserWithPasswordRequest();
+    final UserWithPasswordRequest dto = new UserWithPasswordRequest();
     dto.setUsername("demo");
     dto.setPassword("password");
     dto.setName("Demo");
     dto.setEmail("demo@e.c");
-    dto.setEnabled(true);
 
     final var userRecord =
         new UserRecord()
             .setUsername(dto.getUsername())
             .setName(dto.getName())
             .setEmail(dto.getEmail())
-            .setName(dto.getPassword());
+            .setPassword(dto.getPassword());
 
     when(userServices.createUser(
             dto.getUsername(), dto.getName(), dto.getEmail(), dto.getPassword()))
@@ -75,8 +74,7 @@ public class UserControllerTest extends RestControllerTest {
         .bodyValue(dto)
         .exchange()
         .expectStatus()
-        .is2xxSuccessful()
-        .expectBody();
+        .isNoContent();
 
     verify(userServices, times(1))
         .createUser(dto.getUsername(), dto.getName(), dto.getEmail(), dto.getPassword());
@@ -86,11 +84,10 @@ public class UserControllerTest extends RestControllerTest {
   void createUserThrowsExceptionWhenServiceThrowsException() {
     final String message = "message";
 
-    final CamundaUserWithPasswordRequest dto = new CamundaUserWithPasswordRequest();
+    final UserWithPasswordRequest dto = new UserWithPasswordRequest();
     dto.setUsername("demo");
     dto.setEmail("demo@e.c");
     dto.setPassword("password");
-    dto.setEnabled(true);
 
     when(userServices.createUser(
             dto.getUsername(), dto.getName(), dto.getEmail(), dto.getPassword()))

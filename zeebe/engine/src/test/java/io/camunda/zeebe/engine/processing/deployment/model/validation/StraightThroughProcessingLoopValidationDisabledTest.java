@@ -23,7 +23,7 @@ public class StraightThroughProcessingLoopValidationDisabledTest {
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
           // Disable loop detector feature flag
-          .withFeatureFlags(new FeatureFlags(true, false, true, true, false));
+          .withFeatureFlags(new FeatureFlags(true, false, true, true, false, true));
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporter = new RecordingExporterTestWatcher();

@@ -16,9 +16,7 @@ import {useUiConfig} from 'hooks';
 import DistributedBy from './DistributedBy';
 
 jest.mock('hooks', () => ({
-  useUiConfig: jest
-    .fn()
-    .mockReturnValue({optimizeProfile: 'platform', userTaskAssigneeAnalyticsEnabled: true}),
+  useUiConfig: jest.fn().mockReturnValue({userTaskAssigneeAnalyticsEnabled: true}),
 }));
 
 jest.mock('services', () => {
@@ -47,7 +45,7 @@ const config = {
 };
 
 beforeEach(() => {
-  reportConfig.process.distribution = [
+  reportConfig.distribution = [
     {
       key: 'none',
       matcher: jest.fn().mockReturnValue(false),
@@ -89,7 +87,7 @@ beforeEach(() => {
 });
 
 it('should disable options which would create a wrong combination', () => {
-  reportConfig.process.distribution[1].enabled.mockReturnValue(false);
+  reportConfig.distribution[1].enabled.mockReturnValue(false);
 
   const node = shallow(<DistributedBy {...config} />);
 
@@ -121,7 +119,7 @@ it('invoke configUpdate with the correct variable data', async () => {
 
   node.find(Select).simulate('change', 'variable_testName');
 
-  expect(createReportUpdate.mock.calls[0][4].distributedBy.value.$set).toEqual(
+  expect(createReportUpdate.mock.calls[0][3].distributedBy.value.$set).toEqual(
     CarbonselectedOption.value
   );
   expect(spy).toHaveBeenCalledWith({content: 'change'});
@@ -135,12 +133,12 @@ it('should have a button to remove the distribution', () => {
 
   node.find('.removeGrouping').simulate('click');
 
-  expect(createReportUpdate.mock.calls[0][3]).toBe('none');
+  expect(createReportUpdate.mock.calls[0][2]).toBe('none');
   expect(spy).toHaveBeenCalledWith({content: 'change'});
 });
 
 it('should not fail if variables are null', () => {
-  reportConfig.process.group = [
+  reportConfig.group = [
     {
       key: 'none',
       matcher: jest.fn().mockReturnValue(false),
@@ -180,15 +178,6 @@ it('should not fail if variables are null', () => {
 
 it('should hide assignee option when assignee analytics are disabled', async () => {
   useUiConfig.mockImplementation(() => ({userTaskAssigneeAnalyticsEnabled: false}));
-  const node = shallow(<DistributedBy {...config} />);
-
-  await runAllEffects();
-
-  expect(node.find({value: 'assignee'})).not.toExist();
-});
-
-it('should hide candidate group option in C8 environment', async () => {
-  useUiConfig.mockImplementation(() => ({optimizeProfile: 'cloud'}));
   const node = shallow(<DistributedBy {...config} />);
 
   await runAllEffects();

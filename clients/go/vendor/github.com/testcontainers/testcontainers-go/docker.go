@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/containerd/containerd/platforms"
+	"github.com/containerd/platforms"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
@@ -113,7 +113,7 @@ func (c *DockerContainer) IsRunning() bool {
 	return c.isRunning
 }
 
-// Endpoint gets proto://host:port string for the first exposed port
+// Endpoint gets proto://host:port string for the lowest numbered exposed port
 // Will returns just host:port if proto is ""
 func (c *DockerContainer) Endpoint(ctx context.Context, proto string) (string, error) {
 	inspect, err := c.Inspect(ctx)
@@ -121,16 +121,15 @@ func (c *DockerContainer) Endpoint(ctx context.Context, proto string) (string, e
 		return "", err
 	}
 
-	ports := inspect.NetworkSettings.Ports
-
-	// get first port
-	var firstPort nat.Port
-	for p := range ports {
-		firstPort = p
-		break
+	// Get lowest numbered bound port.
+	var lowestPort nat.Port
+	for port := range inspect.NetworkSettings.Ports {
+		if lowestPort == "" || port.Int() < lowestPort.Int() {
+			lowestPort = port
+		}
 	}
 
-	return c.PortEndpoint(ctx, firstPort, proto)
+	return c.PortEndpoint(ctx, lowestPort, proto)
 }
 
 // PortEndpoint gets proto://host:port string for the given exposed port
@@ -222,38 +221,43 @@ func (c *DockerContainer) SessionID() string {
 func (c *DockerContainer) Start(ctx context.Context) error {
 	err := c.startingHook(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("starting hook: %w", err)
 	}
 
 	if err := c.provider.client.ContainerStart(ctx, c.ID, container.StartOptions{}); err != nil {
-		return err
+		return fmt.Errorf("container start: %w", err)
 	}
 	defer c.provider.Close()
 
 	err = c.startedHook(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("started hook: %w", err)
 	}
 
 	c.isRunning = true
 
 	err = c.readiedHook(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("readied hook: %w", err)
 	}
 
 	return nil
 }
 
-// Stop will stop an already started container
+// Stop stops the container.
 //
-// In case the container fails to stop
-// gracefully within a time frame specified by the timeout argument,
-// it is forcefully terminated (killed).
+// In case the container fails to stop gracefully within a time frame specified
+// by the timeout argument, it is forcefully terminated (killed).
 //
 // If the timeout is nil, the container's StopTimeout value is used, if set,
 // otherwise the engine default. A negative timeout value can be specified,
 // meaning no timeout, i.e. no forceful termination is performed.
+//
+// All hooks are called in the following order:
+//   - [ContainerLifecycleHooks.PreStops]
+//   - [ContainerLifecycleHooks.PostStops]
+//
+// If the container is already stopped, the method is a no-op.
 func (c *DockerContainer) Stop(ctx context.Context, timeout *time.Duration) error {
 	err := c.stoppingHook(ctx)
 	if err != nil {
@@ -504,12 +508,12 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tce
 
 	response, err := cli.ContainerExecCreate(ctx, c.ID, processOptions.ExecConfig)
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, fmt.Errorf("container exec create: %w", err)
 	}
 
 	hijack, err := cli.ContainerExecAttach(ctx, response.ID, container.ExecAttachOptions{})
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, fmt.Errorf("container exec attach: %w", err)
 	}
 
 	processOptions.Reader = hijack.Reader
@@ -524,7 +528,7 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string, options ...tce
 	for {
 		execResp, err := cli.ContainerExecInspect(ctx, response.ID)
 		if err != nil {
-			return 0, nil, err
+			return 0, nil, fmt.Errorf("container exec inspect: %w", err)
 		}
 
 		if !execResp.Running {
@@ -815,7 +819,16 @@ func (c *DockerContainer) stopLogProduction() error {
 
 	c.logProductionWaitGroup.Wait()
 
-	return <-c.logProductionError
+	if err := <-c.logProductionError; err != nil {
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			// Returning context errors is not useful for the consumer.
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 // GetLogProductionErrorChannel exposes the only way for the consumer
@@ -888,14 +901,14 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 			var err error
 			buildOptions, err = img.BuildOptions()
 			if err != nil {
-				return types.ImageBuildResponse{}, backoff.Permanent(err)
+				return types.ImageBuildResponse{}, backoff.Permanent(fmt.Errorf("build options: %w", err))
 			}
 			defer tryClose(buildOptions.Context) // release resources in any case
 
 			resp, err := p.client.ImageBuild(ctx, buildOptions.Context, buildOptions)
 			if err != nil {
 				if isPermanentClientError(err) {
-					return types.ImageBuildResponse{}, backoff.Permanent(err)
+					return types.ImageBuildResponse{}, backoff.Permanent(fmt.Errorf("build image: %w", err))
 				}
 				return types.ImageBuildResponse{}, err
 			}
@@ -909,30 +922,28 @@ func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (st
 		},
 	)
 	if err != nil {
-		return "", err
+		return "", err // Error is already wrapped.
 	}
 	defer resp.Body.Close()
 
+	output := io.Discard
 	if img.ShouldPrintBuildLog() {
-		termFd, isTerm := term.GetFdInfo(os.Stderr)
-		err = jsonmessage.DisplayJSONMessagesStream(resp.Body, os.Stderr, termFd, isTerm, nil)
-		if err != nil {
-			return "", err
-		}
+		output = os.Stderr
 	}
 
-	// need to read the response from Docker, I think otherwise the image
-	// might not finish building before continuing to execute here
-	_, err = io.Copy(io.Discard, resp.Body)
-	if err != nil {
-		return "", err
+	// Always process the output, even if it is not printed
+	// to ensure that errors during the build process are
+	// correctly handled.
+	termFd, isTerm := term.GetFdInfo(output)
+	if err = jsonmessage.DisplayJSONMessagesStream(resp.Body, output, termFd, isTerm, nil); err != nil {
+		return "", fmt.Errorf("build image: %w", err)
 	}
 
 	// the first tag is the one we want
 	return buildOptions.Tags[0], nil
 }
 
-// CreateContainer fulfills a request for a container without starting it
+// CreateContainer fulfils a request for a container without starting it
 func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerRequest) (Container, error) {
 	var err error
 
@@ -1089,7 +1100,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	// default hooks include logger hook and pre-create hook
 	defaultHooks := []ContainerLifecycleHooks{
 		DefaultLoggingHook(p.Logger),
-		defaultPreCreateHook(ctx, p, req, dockerInput, hostConfig, networkingConfig),
+		defaultPreCreateHook(p, dockerInput, hostConfig, networkingConfig),
 		defaultCopyFileToContainerHook(req.Files),
 		defaultLogConsumersHook(req.LogConsumerCfg),
 		defaultReadinessHook(),
@@ -1103,7 +1114,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		// forward the host ports to the container ports.
 		sshdForwardPortsHook, err := exposeHostPorts(ctx, &req, req.HostAccessPorts...)
 		if err != nil {
-			return nil, fmt.Errorf("failed to expose host ports: %w", err)
+			return nil, fmt.Errorf("expose host ports: %w", err)
 		}
 
 		defaultHooks = append(defaultHooks, sshdForwardPortsHook)
@@ -1118,7 +1129,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 
 	resp, err := p.client.ContainerCreate(ctx, dockerInput, hostConfig, networkingConfig, platform, req.Name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("container create: %w", err)
 	}
 
 	// #248: If there is more than one network specified in the request attach newly created container to them one by one
@@ -1133,7 +1144,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 				}
 				err = p.client.NetworkConnect(ctx, nw.ID, resp.ID, &endpointSetting)
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("network connect: %w", err)
 				}
 			}
 		}
@@ -1234,7 +1245,7 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 	if !p.config.RyukDisabled {
 		r, err := reuseOrCreateReaper(context.WithValue(ctx, core.DockerHostContextKey, p.host), sessionID, p)
 		if err != nil {
-			return nil, fmt.Errorf("%w: creating reaper failed", err)
+			return nil, fmt.Errorf("reaper: %w", err)
 		}
 		termSignal, err = r.Connect()
 		if err != nil {
@@ -1281,12 +1292,12 @@ func (p *DockerProvider) ReuseOrCreateContainer(ctx context.Context, req Contain
 func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pullOpt image.PullOptions) error {
 	registry, imageAuth, err := DockerImageAuth(ctx, tag)
 	if err != nil {
-		p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is:%s", registry, tag, err)
+		p.Logger.Printf("Failed to get image auth for %s. Setting empty credentials for the image: %s. Error is: %s", registry, tag, err)
 	} else {
 		// see https://github.com/docker/docs/blob/e8e1204f914767128814dca0ea008644709c117f/engine/api/sdk/examples.md?plain=1#L649-L657
 		encodedJSON, err := json.Marshal(imageAuth)
 		if err != nil {
-			p.Logger.Printf("Failed to marshal image auth. Setting empty credentials for the image: %s. Error is:%s", tag, err)
+			p.Logger.Printf("Failed to marshal image auth. Setting empty credentials for the image: %s. Error is: %s", tag, err)
 		} else {
 			pullOpt.RegistryAuth = base64.URLEncoding.EncodeToString(encodedJSON)
 		}
@@ -1653,6 +1664,7 @@ var permanentClientErrors = []func(error) bool{
 	errdefs.IsUnauthorized,
 	errdefs.IsForbidden,
 	errdefs.IsNotImplemented,
+	errdefs.IsSystem,
 }
 
 func isPermanentClientError(err error) bool {

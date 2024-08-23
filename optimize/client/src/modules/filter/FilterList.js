@@ -53,11 +53,7 @@ export default class FilterList extends React.Component {
 
     for (let i = 0; i < data.length; i++) {
       const filter = data[i];
-      if (
-        filter.type === 'instanceStartDate' ||
-        filter.type === 'instanceEndDate' ||
-        filter.type === 'evaluationDateTime'
-      ) {
+      if (filter.type === 'instanceStartDate' || filter.type === 'instanceEndDate') {
         list.push(
           <li key={i} className="listItem">
             <ActionItem
@@ -132,15 +128,9 @@ export default class FilterList extends React.Component {
         const filterVariables =
           filter.type === 'multipleVariable' ? filter.data?.data : [filter.data];
 
-        const variablesLoaded = isDecisionVariable(filter.type)
-          ? variables?.[filter.type]
-          : variables;
-
         const areVariablesMissing =
-          variablesLoaded &&
-          !filterVariables.every(({name, type}) =>
-            variableExists(name, type, filter.type, variables)
-          );
+          variables &&
+          !filterVariables.every(({name, type}) => processVariablesExists(name, type, variables));
 
         let warning;
         if (!definitionIsValid) {
@@ -162,7 +152,7 @@ export default class FilterList extends React.Component {
               {filterVariables.map(({name, type, data}, idx) => {
                 const variableLabel = areVariablesMissing
                   ? t('report.missingVariable')
-                  : getVariableLabel(name, type, filter.type, variables);
+                  : getProcessVariableLabel(name, type, variables);
 
                 return (
                   <div key={idx}>
@@ -357,7 +347,7 @@ export default class FilterList extends React.Component {
             </ActionItem>
           </li>
         );
-      } else if (['assignee', 'candidateGroup'].includes(filter.type)) {
+      } else if (['assignee'].includes(filter.type)) {
         const definitionIsValid = checkDefinition(definitions, filter.appliedTo[0]);
         list.push(
           <li key={i} className="listItem">
@@ -387,36 +377,11 @@ FilterList.defaultProps = {
   deleteFilter: () => {},
 };
 
-function isDecisionVariable(type) {
-  return ['inputVariable', 'outputVariable'].includes(type);
-}
-
-function getVariableLabel(nameOrId, type, filterType, variables) {
-  return isDecisionVariable(filterType)
-    ? getDecisionVariableLabel(nameOrId, filterType, variables)
-    : getProcessVariableLabel(nameOrId, type, variables);
-}
-
-function variableExists(nameOrId, type, filterType, variables) {
-  return isDecisionVariable(filterType)
-    ? decisionVariableExists(nameOrId, filterType, variables)
-    : processVariablesExists(nameOrId, type, variables);
-}
-
 function getProcessVariableLabel(name, type, variables) {
   const {label} =
     variables?.find((variable) => variable.name === name && variable.type === type) || {};
 
   return label || name;
-}
-
-function getDecisionVariableLabel(id, type, variables) {
-  const {name} = variables?.[type]?.find((variable) => variable.id === id) || {};
-  return name || id;
-}
-
-function decisionVariableExists(variableId, filterType, variables) {
-  return variables?.[filterType]?.some((variable) => variable.id === variableId);
 }
 
 function processVariablesExists(name, type, variables) {
@@ -432,9 +397,6 @@ function checkAllFlowNodesExist(availableFlowNodeNames, flowNodeIds) {
 }
 
 function getFilterLevelText(filterLevel) {
-  if (!filterLevel) {
-    return t('common.filter.decisionFilter');
-  }
   if (filterLevel === 'instance') {
     return t('common.filter.instanceFilter');
   }

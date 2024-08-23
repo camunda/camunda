@@ -83,7 +83,8 @@ final class SecurityTest {
     assertThatThrownBy(() -> gateway.start().join())
         .hasRootCauseInstanceOf(IllegalArgumentException.class)
         .hasRootCauseMessage(
-            "Expected to find a certificate chain file at the provided location '%s' but none was found.",
+            "Expected the configured network security certificate chain path '%s' to point to a"
+                + " readable file, but it does not",
             cfg.getSecurity().getCertificateChainPath());
   }
 
@@ -100,7 +101,8 @@ final class SecurityTest {
     assertThatThrownBy(() -> gateway.start().join())
         .hasRootCauseInstanceOf(IllegalArgumentException.class)
         .hasRootCauseMessage(
-            "Expected to find a private key file at the provided location '%s' but none was found.",
+            "Expected the configured network security private key path '%s' to point to a "
+                + "readable file, but it does not",
             cfg.getSecurity().getPrivateKeyPath());
   }
 
@@ -117,8 +119,7 @@ final class SecurityTest {
     assertThatThrownBy(() -> gateway.start().join())
         .hasRootCauseInstanceOf(IllegalArgumentException.class)
         .hasRootCauseMessage(
-            "Expected to find a valid path to a private key but none was found. "
-                + "Edit the gateway configuration file to provide one or to disable TLS.");
+            "Expected to have a valid private key path for network security, but none configured");
   }
 
   @Test
@@ -134,8 +135,7 @@ final class SecurityTest {
     assertThatThrownBy(() -> gateway.start().join())
         .hasRootCauseInstanceOf(IllegalArgumentException.class)
         .hasRootCauseMessage(
-            "Expected to find a valid path to a certificate chain but none was found. "
-                + "Edit the gateway configuration file to provide one or to disable TLS.");
+            "Expected to have a valid certificate chain path for network security, but none configured");
   }
 
   private GatewayCfg createGatewayCfg() {

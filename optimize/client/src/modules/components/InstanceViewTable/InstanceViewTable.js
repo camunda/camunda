@@ -75,8 +75,7 @@ export default function InstanceViewTable({report}) {
 }
 
 function convertToRawData(report) {
-  const newType = report.type === 'decision' ? 'new-decision' : 'new';
-  const defaultReport = newReport[newType];
+  const defaultReport = newReport['new'];
 
   return {
     ...report,

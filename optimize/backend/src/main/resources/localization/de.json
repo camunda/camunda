@@ -84,13 +84,11 @@
       "dashboard": "Dashboard",
       "report": {
         "default": "Bericht",
-        "process": "Prozessbericht",
-        "decision": "Entscheidungsbericht"
+        "process": "Prozessbericht"
       }
     },
     "title": "Sammlungen, Dashboards, und Berichte",
     "contents": "Inhalt",
-    "members": "Mitglieder",
     "search": {
       "generic": "Zum Suchen eingeben...",
       "name": "Nach Namen suchen..."
@@ -98,7 +96,6 @@
     "collectionTitle": "Dashboards und Berichte",
     "collectionTitleWithAmpersand": "Dashboards & Berichte",
     "userTitle": "Benutzer",
-    "userGroupsTitle": "Benutzer und Benutzergruppen",
     "copy": {
       "subEntity": "{entityType} enthält 1 Bericht. Dieser wird ebenfalls kopiert.",
       "subEntities": "{entityType} enthält {number} Berichte. Diese werden ebenfalls kopiert.",
@@ -111,12 +108,10 @@
     },
     "types": {
       "process": "Prozessbericht",
-      "decision": "Entscheidungsbericht",
       "unknown": "Unbekannte Entität"
     },
     "roles": {
       "addUserTitle": "Benutzer hinzufügen",
-      "addUserGroupTitle": "Benutzer oder Benutzergruppe hinzufügen",
       "userRole": "Benutzer-Rolle",
       "role": "Rolle",
       "viewer": "Betrachter",
@@ -125,13 +120,12 @@
       "editor-description": "Erstellen, bearbeiten und löschen von Dashboards, Berichten und Alarmen",
       "manager": "Manager",
       "manager-description": "Volle Rechte beim Bearbeiten von Sammlungen und Benutzern",
-      "existing-identity": "Ein Benutzer oder eine Gruppe mit dieser ID existiert schon",
+      "existing-identity": "Ein Benutzer mit dieser ID existiert schon",
       "inCollection": "in dieser Sammlung",
       "deleteWarning": "'{name}' {type} wird von der Sammlung entfernt."
     },
     "sources": {
       "title": "Datenquellen",
-      "decision": "Entscheidungstabelle",
       "process": "Prozess",
       "notCreated": "Es wurden noch keine Quellen hinzugefügt",
       "addSources": "Sie können der Sammlung eine oder mehrere Quellen hinzufügen",
@@ -280,12 +274,6 @@
         "label-plural": "Zeigt Daten von {count} Instanzen.",
         "label-withFilter": "Zeigt Daten von {count} aus {totalCount} Instanz.",
         "label-plural-withFilter": "Zeigt Daten von {count} aus {totalCount} Instanzen."
-      },
-      "decision": {
-        "label": "Zeigt Daten von {count} Evaluierung.",
-        "label-plural": "Zeigt Daten von {count} Evaluierungen.",
-        "label-withFilter": "Zeigt Daten von {count} aus {totalCount} Evaluierung.",
-        "label-plural-withFilter": "Zeigt Daten von {count} aus {totalCount} Evaluierungen."
       }
     },
     "view": {
@@ -302,8 +290,7 @@
       "multi": "Anzahl und Dauer",
       "evaluationCount": "Evaluierungsanzahl",
       "variable": "Variable",
-      "process": "Prozessansicht",
-      "decision": "Entscheidungsansicht"
+      "process": "Prozessansicht"
     },
     "groupBy": {
       "label": "Gruppiere nach",
@@ -317,7 +304,6 @@
       "endDate": "Enddatum",
       "variable": "Variable",
       "userAssignee": "Bearbeiter",
-      "userGroup": "Potenzielle Gruppe",
       "evaluationDate": "Evaluierungsdatum",
       "rules": "Regeln",
       "inputVariable": "Eingabevariable",
@@ -388,16 +374,13 @@
     "incompleteNotice": "Die Berichtskonfiguration ist unvollständig",
     "setupNotice": "Konfigurieren Sie Ihren Bericht",
     "totalCount": {
-      "instance": "Gesamtanzahl der Instanzen: <b>{count}</b>",
-      "evaluation": "Gesamtanzahl</br> Evaluierungen: <b>{count}</b>"
+      "instance": "Gesamtanzahl der Instanzen: <b>{count}</b>"
     },
     "definition": {
       "add": "{type} hinzufügen",
       "search": "Nach {type} suchen",
       "process": "Prozessdefinition",
       "process-plural": "Prozessdefinitionen",
-      "decision": "Entscheidungsdefinition",
-      "decision-plural": "Entscheidungsdefinitionen",
       "variables": {
         "rename": "Variablen umbenennen",
         "variableName": "Variablennamen",
@@ -411,8 +394,7 @@
       }
     },
     "noDefinitionMessage": {
-      "process": "Wählen Sie eine <b>Prozessdefinition</b> aus.",
-      "decision": "Wählen Sie eine <b>Entscheidungsdefinition</b> aus."
+      "process": "Wählen Sie eine <b>Prozessdefinition</b> aus."
     },
     "saveConflict": {
       "header": "Inkompatible Änderungen",
@@ -442,9 +424,6 @@
         "processDefinitionKey": "Prozess Definitions Schlüssel",
         "processDefinitionId": "Prozess Definitions Id",
         "processInstanceId": "Prozess Instanz Id",
-        "decisionDefinitionKey": "Entscheidungs Definitions Schlüssel",
-        "decisionDefinitionId": "Entscheidungs Definitions Id",
-        "decisionInstanceId": "Entscheidungs Instanz Id",
         "evaluationDateTime": "Auswertungszeitpunkt",
         "businessKey": "Fachlicher Schlüssel",
         "startDate": "Startdatum",
@@ -473,8 +452,7 @@
       "buttonTooltip": "Konfigurationsoptionen",
       "reset": "Zurücksetzen auf Standardwerte",
       "showCount": {
-        "instance": "Instanzanzahl anzeigen",
-        "evaluation": "Zeige Evaluierungsanzahl"
+        "instance": "Instanzanzahl anzeigen"
       },
       "aggregation": {
         "label": "Aggregation",
@@ -508,8 +486,7 @@
       "tooltips": {
         "legend": "Tooltips",
         "showRelative": {
-          "process": "Relativen Wert basierend auf der Anzahl der Prozessinstanzen anzeigen",
-          "decision": "Relativen Wert basierend auf der Anzahl der Entscheidungsevaluierungen anzeigen"
+          "process": "Relativen Wert basierend auf der Anzahl der Prozessinstanzen anzeigen"
         },
         "showAbsolute": "Absolutwert anzeigen"
       },
@@ -754,7 +731,7 @@
       "label": "Berichtsfilter hinzufügen",
       "viewLabel": "Berichtsdaten filtern",
       "disabledVariable": "Variablenfilter sind nur für Dashboards mit mindestens einem Bericht verfügbar.",
-      "disabledAssignee": "Bearbeiter- und potenzielle Gruppen-Filter sind nur für Dashboards mit mindestens einem Bericht verfügbar.",
+      "disabledAssignee": "Bearbeiterfilter sind nur für Dashboards mit mindestens einem Bericht verfügbar.",
       "resetAll": "Alle zurücksetzen",
       "operatorLink": "Werte werden durch {operator} verknüpft",
       "multiple": "mehrere",
@@ -981,10 +958,6 @@
       "label": "Prozess",
       "label-plural": "Prozesse"
     },
-    "decision": {
-      "label": "Entscheidung",
-      "label-plural": "Entscheidungen"
-    },
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig",
       "number": "Eine Zahl eingeben",
@@ -1037,7 +1010,6 @@
       "createdBy": "Erstellt von",
       "viewRawData": "Rohdaten",
       "viewModel": {
-        "decision": "Entscheidungstabelle",
         "process": "Prozessmodell",
         "model": "Modell"
       },
@@ -1051,11 +1023,6 @@
       "label": "Benutzer",
       "label-plural": "Benutzer",
       "id": "Benutzer ID"
-    },
-    "user-group": {
-      "label": "Nutzergruppe",
-      "label-plural": "Nutzergruppen",
-      "id": "Nutzergruppen ID"
     },
     "collection": {
       "label": "Sammlung",
@@ -1145,7 +1112,6 @@
         "instanceState": "Instanzstatus",
         "date": "Instanzdatum",
         "assignee": "Bearbeiter",
-        "candidateGroup": "Potenzielle Gruppe",
         "instanceStartDate": "Startdatum",
         "instanceEndDate": "Enddatum",
         "instance": "Prozessinstanz",
@@ -1209,8 +1175,7 @@
         "endDateWarning": "Berichte mit einem aktiven Enddatumsfilter zeigen nur abgeschlossene Instanzen an.",
         "info": {
           "instanceStartDate": "Prozessinstanzen <b>gestartet</b>",
-          "instanceEndDate": "Prozessinstanzen <b>beendet</b>",
-          "evaluationDateTime": "Entscheidungsinstanzen <b>evaluierte</b>"
+          "instanceEndDate": "Prozessinstanzen <b>beendet</b>"
         },
         "to": "bis",
         "invalidDate": "Gültiges Datum eingeben",
@@ -1307,26 +1272,22 @@
         "includeOnly": "Nur einschließen",
         "excludeOnly": "Nur ausschließen",
         "type": {
-          "assignee": "Bearbeiter",
-          "candidateGroup": "Potenzielle Gruppe"
+          "assignee": "Bearbeiter"
         },
         "unassigned": "Nicht zugewiesen",
         "selectValue": "Filter für ID"
       },
       "dropdownLabel": {
         "instance": "Prozessinstanzen filtern",
-        "view": "Prozessknoten-Daten filtern",
-        "decision": "Entscheidungsevaluierungen filtern"
+        "view": "Prozessknoten-Daten filtern"
       },
       "allVisible": {
         "instance": "Alle Instanzen sichtbar",
-        "view": "Alle Prozessknoten-Daten sichtbar",
-        "decision": "Alle Evaluierungen sichtbar"
+        "view": "Alle Prozessknoten-Daten sichtbar"
       },
       "linkingTip": "Filter sind durch 'und' Logik verbunden",
       "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind.",
       "instanceFilter": "Prozessinstanzen Filter",
-      "decisionFilter": "Entscheidungsevaluierungen Filter",
       "flowNodeFilter": "Prozessknoten-Daten Filter",
       "excludedFlowNodes": "Ausgeschlossene Prozessknoten",
       "selectedFlowNodes": "Ausgewählte Prozessknoten",
@@ -1339,7 +1300,6 @@
       "limitReached": "Prozessdefinitionsgrenze erreicht. Nur {maxNumProcesses} Prozesse erlaubt.",
       "select": {
         "process": "Prozess auswählen",
-        "decision": "Entscheidung auswählen",
         "multiProcess": "Einen oder mehrere Prozesse auswählen "
       },
       "version": {
@@ -1363,7 +1323,6 @@
         "dashboard": "Dashboard",
         "alert": "Alarm",
         "user": "Benutzer",
-        "group": "Gruppe",
         "source": "Datenquelle",
         "collection": "Sammlung",
         "process": "Prozess",

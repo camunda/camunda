@@ -13,12 +13,13 @@ import {formatRFC3339} from 'date-fns';
 
 const SORT_BY_FIELD: Record<
   TaskFilters['sortBy'],
-  'creationTime' | 'dueDate' | 'followUpDate' | 'completionTime'
+  'creationTime' | 'dueDate' | 'followUpDate' | 'completionTime' | 'priority'
 > = {
   creation: 'creationTime',
   due: 'dueDate',
   'follow-up': 'followUpDate',
   completion: 'completionTime',
+  priority: 'priority',
 };
 
 const getQueryVariables = (

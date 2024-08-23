@@ -17,7 +17,6 @@
 // io.camunda.optimize.service.collection.CollectionScopeService.SCOPE_NOT_AUTHORIZED_MESSAGE;
 // import static
 // io.camunda.optimize.service.collection.CollectionScopeService.UNAUTHORIZED_TENANT_MASK;
-// import static io.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 // import static
 // io.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
 // import static

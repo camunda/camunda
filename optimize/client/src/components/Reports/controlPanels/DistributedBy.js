@@ -16,13 +16,13 @@ import {Select} from 'components';
 import {useUiConfig} from 'hooks';
 
 export default function DistributedBy({report, onChange, variables}) {
-  const {userTaskAssigneeAnalyticsEnabled, optimizeProfile} = useUiConfig();
+  const {userTaskAssigneeAnalyticsEnabled} = useUiConfig();
 
   if (!report.groupBy) {
     return null;
   }
 
-  const distributions = reportConfig.process.distribution;
+  const distributions = reportConfig.distribution;
   const selectedOption = distributions.find(({matcher}) => matcher(report));
   const hasDistribution = selectedOption.key !== 'none';
 
@@ -31,8 +31,7 @@ export default function DistributedBy({report, onChange, variables}) {
       ({visible, key}) =>
         visible(report) &&
         key !== 'none' &&
-        (userTaskAssigneeAnalyticsEnabled || key !== 'assignee') &&
-        (optimizeProfile === 'platform' ? true : key !== 'candidateGroup')
+        (userTaskAssigneeAnalyticsEnabled || key !== 'assignee')
     )
     .map(({key, enabled, label}) => {
       if (key === 'variable') {
@@ -85,7 +84,7 @@ export default function DistributedBy({report, onChange, variables}) {
           }
 
           onChange(
-            createReportUpdate('process', report, 'distribution', type, {
+            createReportUpdate(report, 'distribution', type, {
               distributedBy: {value: {$set: value}},
             })
           );
@@ -100,7 +99,7 @@ export default function DistributedBy({report, onChange, variables}) {
           kind="ghost"
           iconDescription={t('common.reset')}
           className="removeGrouping"
-          onClick={() => onChange(createReportUpdate('process', report, 'distribution', 'none'))}
+          onClick={() => onChange(createReportUpdate(report, 'distribution', 'none'))}
           hasIconOnly
           renderIcon={Close}
         ></Button>

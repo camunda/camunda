@@ -17,37 +17,28 @@ import {useUiConfig} from 'hooks';
 
 import './GroupBy.scss';
 
-export default function GroupBy({type, report, onChange, variables}) {
-  const {userTaskAssigneeAnalyticsEnabled, optimizeProfile} = useUiConfig();
-
-  const reportType = type;
+export default function GroupBy({report, onChange, variables}) {
+  const {userTaskAssigneeAnalyticsEnabled} = useUiConfig();
 
   if (!report.view) {
     return null;
   }
 
-  const groups = reportConfig[type].group;
+  const groups = reportConfig.group;
   const selectedOption = report.groupBy ? groups.find(({matcher}) => matcher(report)) : {key: null};
   const hasGroup = selectedOption.key !== 'none';
-  let hasDistribution;
-
-  if (type === 'decision') {
-    hasDistribution = false;
-  } else {
-    hasDistribution =
-      reportConfig[type].distribution.find(({matcher}) => matcher(report)).key !== 'none';
-  }
+  const hasDistribution =
+    reportConfig.distribution.find(({matcher}) => matcher(report)).key !== 'none';
 
   const options = groups
     .filter(
       ({visible, key}) =>
         visible(report) &&
         key !== 'none' &&
-        (userTaskAssigneeAnalyticsEnabled || key !== 'assignee') &&
-        (optimizeProfile === 'platform' ? true : key !== 'candidateGroup')
+        (userTaskAssigneeAnalyticsEnabled || key !== 'assignee')
     )
     .map(({key, enabled, label}) => {
-      if (['variable', 'inputVariable', 'outputVariable'].includes(key)) {
+      if (key === 'variable') {
         return (
           <Select.Submenu
             key={key}
@@ -87,11 +78,7 @@ export default function GroupBy({type, report, onChange, variables}) {
         onChange={(selection) => {
           let type = selection,
             value = null;
-          if (
-            selection.startsWith('variable_') ||
-            selection.startsWith('inputVariable_') ||
-            selection.startsWith('outputVariable_')
-          ) {
+          if (selection.startsWith('variable_')) {
             [type, value] = selection.split('_');
             value = variables[type].find(({name}) => name === selection.substr(type.length + 1));
           } else if (
@@ -104,9 +91,7 @@ export default function GroupBy({type, report, onChange, variables}) {
             value = {unit: value};
           }
 
-          onChange(
-            createReportUpdate(reportType, report, 'group', type, {groupBy: {value: {$set: value}}})
-          );
+          onChange(createReportUpdate(report, 'group', type, {groupBy: {value: {$set: value}}}));
         }}
         value={getValue(selectedOption.key, report.groupBy)}
       >
@@ -121,7 +106,7 @@ export default function GroupBy({type, report, onChange, variables}) {
           className="removeGrouping"
           onClick={() =>
             onChange(
-              createReportUpdate(reportType, report, 'group', 'none', {
+              createReportUpdate(report, 'group', 'none', {
                 groupBy: {
                   $set:
                     selectedOption.key === 'process'
@@ -141,7 +126,7 @@ export default function GroupBy({type, report, onChange, variables}) {
 }
 
 function getValue(selectedOption, groupBy) {
-  if (['variable', 'inputVariable', 'outputVariable'].includes(selectedOption)) {
+  if (selectedOption === 'variable') {
     return selectedOption + '_' + groupBy.value.name;
   }
   if (['startDate', 'endDate', 'runningDate', 'evaluationDate'].includes(selectedOption)) {

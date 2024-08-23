@@ -18,9 +18,9 @@ import org.agrona.DirectBuffer;
 
 public final class UserRecord extends UnifiedRecordValue implements UserRecordValue {
   private final StringProperty usernameProp = new StringProperty("username");
-  private final StringProperty nameProp = new StringProperty("name");
-  private final StringProperty emailProp = new StringProperty("email");
-  private final StringProperty passwordProp = new StringProperty("password");
+  private final StringProperty nameProp = new StringProperty("name", "");
+  private final StringProperty emailProp = new StringProperty("email", "");
+  private final StringProperty passwordProp = new StringProperty("password", "");
 
   public UserRecord() {
     super(4);

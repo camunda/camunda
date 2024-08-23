@@ -6,7 +6,7 @@ on:
 jobs:
   deploy-artifacts:
     name: Deploy Artifacts
-    runs-on: gcp-core-2-default
+    runs-on: gcp-core-4-default
     timeout-minutes: 30
     env:
       DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
@@ -66,7 +66,8 @@ jobs:
     - name: Generate production .tar.gz
       uses: ./.github/actions/run-maven
       with:
-        parameters: install -DskipTests -Dskip.docker -PrunAssembly
+        parameters: install -f optimize -DskipTests -Dskip.docker -PrunAssembly
+        threads: 4C
     - name: Build Docker Image
       run: ./.github/optimize/scripts/build-docker-image.sh
     # The SmokeTest is running as part of the "deploy-artifact" job to ensure we only push the artifact on success
@@ -79,12 +80,9 @@ jobs:
       env:
         OPTIMIZE_IMAGE_TAG: ${{ env.DOCKER_TAG }}
         ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}
-        CAMBPM_HOST: "172.17.0.1"
-        CAMBPM_PORT: "8080"
-        # ^ starting ~2023-10-10, the hostname resolution for the cambpm docker-compose service
-        # http://cambpm:8080 does not work anymore for neither SaaS nor self-hosted Linux runners.
-        # 172.17.0.1 is the host IP address from the container perspective, and cambpm is running
-        # exposed there on port 8080.
+
+    - name: Wait for Optimize to start
+      run: ./.github/optimize/scripts/wait-for.sh http://localhost:8090/ready
     - name: Execute health check and push docker image
       uses: ./.github/actions/execute-healthcheck-and-push-image
       with:
@@ -96,7 +94,8 @@ jobs:
     - name: Deploy to Artifactory
       uses: ./.github/actions/run-maven
       with:
-        parameters: deploy -Dskip.fe.build -DskipTests -Dskip.docker -PrunAssembly
+        parameters: deploy -f optimize -Dskip.fe.build -DskipTests -Dskip.docker -PrunAssembly
+        threads: 4C
     - name: Docker log dump
       uses: ./.github/actions/docker-logs
       if: always()

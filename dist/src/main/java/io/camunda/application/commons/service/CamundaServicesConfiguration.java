@@ -8,6 +8,7 @@
 package io.camunda.application.commons.service;
 
 import io.camunda.search.clients.CamundaSearchClient;
+import io.camunda.service.AuthorizationServices;
 import io.camunda.service.CamundaServices;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.DecisionRequirementsServices;
@@ -92,5 +93,10 @@ public class CamundaServicesConfiguration {
   @Bean
   public DocumentServices documentServices(final CamundaServices camundaServices) {
     return camundaServices.documentServices();
+  }
+
+  @Bean
+  public AuthorizationServices authorizationServices(final CamundaServices camundaServices) {
+    return camundaServices.authorizationServices();
   }
 }

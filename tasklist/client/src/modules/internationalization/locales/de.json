@@ -233,6 +233,7 @@
     "taskFiltersSortFollowUpDate": "Nachverfolgungsdatum",
     "taskFiltersSortDueDate": "Fälligkeitsdatum",
     "taskFiltersSortCompletionDate": "Abschlussdatum",
+    "taskFiltersSortPriority": "Priorität",
     "taskFiltersSortButton": "Aufgaben sortieren",
     "taskOptionsSectionAria": "Optionen",
     "taskOptionsAutoSelectLabel": "Erste Aufgabe automatisch wählen",

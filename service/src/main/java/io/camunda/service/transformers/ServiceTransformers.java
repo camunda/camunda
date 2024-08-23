@@ -15,6 +15,7 @@ import io.camunda.service.search.filter.DecisionDefinitionFilter;
 import io.camunda.service.search.filter.DecisionRequirementsFilter;
 import io.camunda.service.search.filter.FilterBase;
 import io.camunda.service.search.filter.ProcessInstanceFilter;
+import io.camunda.service.search.filter.UserFilter;
 import io.camunda.service.search.filter.UserTaskFilter;
 import io.camunda.service.search.filter.VariableFilter;
 import io.camunda.service.search.filter.VariableValueFilter;
@@ -23,12 +24,14 @@ import io.camunda.service.search.query.DecisionRequirementsQuery;
 import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.TypedSearchQuery;
+import io.camunda.service.search.query.UserQuery;
 import io.camunda.service.search.query.UserTaskQuery;
 import io.camunda.service.search.query.VariableQuery;
 import io.camunda.service.search.sort.DecisionDefinitionSort;
 import io.camunda.service.search.sort.DecisionRequirementsSort;
 import io.camunda.service.search.sort.ProcessInstanceSort;
 import io.camunda.service.search.sort.SortOption;
+import io.camunda.service.search.sort.UserSort;
 import io.camunda.service.search.sort.UserTaskSort;
 import io.camunda.service.search.sort.VariableSort;
 import io.camunda.service.security.auth.Authentication;
@@ -39,6 +42,7 @@ import io.camunda.service.transformers.filter.DecisionDefinitionFilterTransforme
 import io.camunda.service.transformers.filter.DecisionRequirementsFilterTransformer;
 import io.camunda.service.transformers.filter.FilterTransformer;
 import io.camunda.service.transformers.filter.ProcessInstanceFilterTransformer;
+import io.camunda.service.transformers.filter.UserFilterTransformer;
 import io.camunda.service.transformers.filter.UserTaskFilterTransformer;
 import io.camunda.service.transformers.filter.VariableFilterTransformer;
 import io.camunda.service.transformers.filter.VariableValueFilterTransformer;
@@ -95,6 +99,7 @@ public final class ServiceTransformers {
         DecisionRequirementsQuery.class,
         new TypedSearchQueryTransformer<DecisionRequirementsFilter, DecisionRequirementsSort>(
             mappers));
+    mappers.put(UserQuery.class, new TypedSearchQueryTransformer<UserFilter, UserSort>(mappers));
 
     // search query response -> search query result
     mappers.put(SearchQueryResult.class, new SearchQueryResultTransformer());
@@ -113,6 +118,7 @@ public final class ServiceTransformers {
         new VariableFilterTransformer(mappers, new VariableValueFilterTransformer()));
     mappers.put(DecisionDefinitionFilter.class, new DecisionDefinitionFilterTransformer());
     mappers.put(DecisionRequirementsFilter.class, new DecisionRequirementsFilterTransformer());
+    mappers.put(UserFilter.class, new UserFilterTransformer());
     mappers.put(ComparableValueFilter.class, new ComparableValueFilterTransformer());
   }
 }

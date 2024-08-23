@@ -289,7 +289,6 @@ export class Collection extends Component {
                         name,
                         description,
                         data,
-                        reportType,
                       } = entity;
                       const actions = [
                         {
@@ -327,7 +326,7 @@ export class Collection extends Component {
                         entityType,
                         link: formatLink(id, entityType),
                         icon: getEntityIcon(entityType),
-                        type: formatType(entityType, reportType),
+                        type: formatType(entityType),
                         name,
                         meta: [
                           description,

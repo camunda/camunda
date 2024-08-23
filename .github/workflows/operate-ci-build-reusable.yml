@@ -20,9 +20,13 @@ on:
         required: true
         type: string
       pushDocker:
-        description: "whether the built docker images are pushed to camunda registry"
+        description: "Whether the built docker images are pushed to camunda registry"
         type: boolean
         default: true
+      previewEnv:
+        description: "Defines whether this is a preview environment build or not. If true, the image will be pushed to the Harbor Docker registry."
+        type: boolean
+        default: false
 
 defaults:
   run:
@@ -110,7 +114,7 @@ jobs:
       - name: Build Docker image
         uses: ./.github/actions/build-platform-docker
         with:
-          repository: registry.camunda.cloud/team-operate/camunda-operate
+          repository: ${{ inputs.previewEnv && 'registry.camunda.cloud/team-camunda/operate' || 'registry.camunda.cloud/team-operate/camunda-operate' }}
           version: |
             ${{ env.IMAGE_TAG }}
             ${{ env.CI_IMAGE_TAG }}

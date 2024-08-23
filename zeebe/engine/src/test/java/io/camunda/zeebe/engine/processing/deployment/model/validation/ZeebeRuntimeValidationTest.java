@@ -497,6 +497,17 @@ public final class ZeebeRuntimeValidationTest {
                 ZeebePriorityDefinition.class,
                 "Priority must be a number between 0 and 100, but was '120'"))
       },
+      {
+        /*decimal priority static value */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeTaskPriority("33.3"))
+            .done(),
+        List.of(
+            expect(
+                ZeebePriorityDefinition.class,
+                "Expected static value to be a valid Number between 0 and 100, but found '33.3'"))
+      },
     };
   }
 

@@ -14,7 +14,6 @@ import {formatters, getReportResult} from 'services';
 import {t} from 'translation';
 
 import ProcessReportRenderer from './ProcessReportRenderer';
-import DecisionReportRenderer from './DecisionReportRenderer';
 import HyperReportRenderer from './HyperReportRenderer';
 import SetupNotice from './SetupNotice';
 import NoDataNotice from './NoDataNotice';
@@ -30,16 +29,10 @@ function ReportRenderer(props) {
 
   if (report) {
     const result = getReportResult(report);
-    const isDecision = report.reportType === 'decision';
     const isHyper = result?.type === 'hyperMap';
 
-    if (isDecision) {
-      View = DecisionReportRenderer;
-      somethingMissing = checkDecisionReport(report.data);
-    } else {
-      View = isHyper ? HyperReportRenderer : ProcessReportRenderer;
-      somethingMissing = checkProcessReport(report.data);
-    }
+    View = isHyper ? HyperReportRenderer : ProcessReportRenderer;
+    somethingMissing = checkProcessReport(report.data);
 
     if (somethingMissing) {
       if (updateReport) {
@@ -63,7 +56,7 @@ function ReportRenderer(props) {
           <View {...props} />
           {report.data.configuration.showInstanceCount && (
             <div className="additionalInfo">
-              {t(`report.totalCount.${isDecision ? 'evaluation' : 'instance'}`, {
+              {t('report.totalCount.instance', {
                 count: formatters.frequency(
                   report.result.instanceCount || 0,
                   report.data.configuration.precision
@@ -96,18 +89,6 @@ export default React.memo(ReportRenderer, (prevProps, nextProps) => {
   }
   return false;
 });
-
-function checkDecisionReport(data) {
-  if (
-    isEmpty(data.definitions) ||
-    isEmpty(data.definitions?.[0].key) ||
-    isEmpty(data.definitions?.[0].versions)
-  ) {
-    return <p>{t('report.noDefinitionMessage.decision')}</p>;
-  } else {
-    return checkSingleReport(data);
-  }
-}
 
 function checkProcessReport(data) {
   if (

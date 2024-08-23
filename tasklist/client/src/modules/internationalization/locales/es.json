@@ -233,6 +233,7 @@
     "taskFiltersSortFollowUpDate": "Fecha de seguimiento",
     "taskFiltersSortDueDate": "Fecha de vencimiento",
     "taskFiltersSortCompletionDate": "Fecha de finalización",
+    "taskFiltersSortPriority": "Prioridad",
     "taskFiltersSortButton": "Ordenar tareas",
     "taskOptionsSectionAria": "Opciones",
     "taskOptionsAutoSelectLabel": "Seleccionar primera tarea disponible",

@@ -46,21 +46,19 @@ export default function NumberConfig({report, onChange}) {
     >
       <Stack gap={4}>
         <TargetSelection report={report} onChange={onChange} />
-        {view.entity !== 'variable' &&
-          report.reportType !== 'decision' &&
-          isSingleProcessReport && (
-            <Checkbox
-              id="setKpiCheckbox"
-              labelText={t('report.config.goal.setKpi')}
-              disabled={!targetValue.active}
-              checked={!targetValue.active || targetValue.isKpi}
-              onChange={(evt, {checked}) => {
-                onChange({targetValue: {isKpi: {$set: checked}}});
-                trackKpiState(checked, report.id);
-              }}
-              helperText={t('report.config.goal.kpiDescription')}
-            />
-          )}
+        {view.entity !== 'variable' && isSingleProcessReport && (
+          <Checkbox
+            id="setKpiCheckbox"
+            labelText={t('report.config.goal.setKpi')}
+            disabled={!targetValue.active}
+            checked={!targetValue.active || targetValue.isKpi}
+            onChange={(evt, {checked}) => {
+              onChange({targetValue: {isKpi: {$set: checked}}});
+              trackKpiState(checked, report.id);
+            }}
+            helperText={t('report.config.goal.kpiDescription')}
+          />
+        )}
       </Stack>
     </FormGroup>
   );

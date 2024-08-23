@@ -84,13 +84,11 @@
       "dashboard": "Dashboard",
       "report": {
         "default": "Report",
-        "process": "Process report",
-        "decision": "Decision report"
+        "process": "Process report"
       }
     },
     "title": "Collections, dashboards, and reports",
     "contents": "Contents",
-    "members": "Members",
     "search": {
       "generic": "Type to search....",
       "name": "Search for name..."
@@ -98,7 +96,6 @@
     "collectionTitle": "Dashboards and reports",
     "collectionTitleWithAmpersand": "Dashboards & reports",
     "userTitle": "Users",
-    "userGroupsTitle": "Users and user groups",
     "copy": {
       "subEntity": "This {entityType} contains 1 report. It will be copied, too.",
       "subEntities": "This {entityType} contains {number} reports. They will be copied, too.",
@@ -111,12 +108,10 @@
     },
     "types": {
       "process": "Process report",
-      "decision": "Decision report",
       "unknown": "Unknown entity"
     },
     "roles": {
       "addUserTitle": "Add user",
-      "addUserGroupTitle": "Add user or user group",
       "userRole": "User role",
       "role": "Role",
       "viewer": "Viewer",
@@ -125,13 +120,12 @@
       "editor-description": "Create, edit, and delete dashboards, reports, and alerts",
       "manager": "Manager",
       "manager-description": "Full rights editing collections and users",
-      "existing-identity": "A user or a group with this id already exists",
+      "existing-identity": "A user with this id already exists",
       "inCollection": "in this collection",
       "deleteWarning": "The '{name}' {type} will be removed from the collection."
     },
     "sources": {
       "title": "Data sources",
-      "decision": "Decision table",
       "process": "Process",
       "notCreated": "There are no sources added yet",
       "addSources": "You can add one or more sources to the collection",
@@ -280,12 +274,6 @@
         "label-plural": "Displaying data from {count} instances.",
         "label-withFilter": "Displaying data from {count} of {totalCount} instance.",
         "label-plural-withFilter": "Displaying data from {count} of {totalCount} instances."
-      },
-      "decision": {
-        "label": "Displaying data from {count} evaluation.",
-        "label-plural": "Displaying data from {count} evaluations.",
-        "label-withFilter": "Displaying data from {count} of {totalCount} evaluation.",
-        "label-plural-withFilter": "Displaying data from {count} of {totalCount} evaluations."
       }
     },
     "view": {
@@ -302,8 +290,7 @@
       "multi": "Count and duration",
       "evaluationCount": "Evaluation count",
       "variable": "Variable",
-      "process": "Process view",
-      "decision": "Decision view"
+      "process": "Process view"
     },
     "groupBy": {
       "label": "Group by",
@@ -317,7 +304,6 @@
       "endDate": "End date",
       "variable": "Variable",
       "userAssignee": "Assignee",
-      "userGroup": "Candidate group",
       "evaluationDate": "Evaluation date",
       "rules": "Rules",
       "inputVariable": "Input variable",
@@ -388,16 +374,13 @@
     "incompleteNotice": "Report configuration is incomplete",
     "setupNotice": "Set up your report",
     "totalCount": {
-      "instance": "Total instance</br> count: <b>{count}</b>",
-      "evaluation": "Total evaluation</br> count: <b>{count}</b>"
+      "instance": "Total instance</br> count: <b>{count}</b>"
     },
     "definition": {
       "add": "Add {type}",
       "search": "Search for {type}",
       "process": "Process definition",
       "process-plural": "Process definitions",
-      "decision": "Decision definition",
-      "decision-plural": "Decision definitions",
       "variables": {
         "rename": "Rename variables",
         "variableName": "Variable name",
@@ -411,8 +394,7 @@
       }
     },
     "noDefinitionMessage": {
-      "process": "Select a <b>process definition</b>.",
-      "decision": "Select a <b>decision definition</b>."
+      "process": "Select a <b>process definition</b>."
     },
     "saveConflict": {
       "header": "Destructive changes",
@@ -442,9 +424,6 @@
         "processDefinitionKey": "Process definition key",
         "processDefinitionId": "Process definition Id",
         "processInstanceId": "Process instance Id",
-        "decisionDefinitionKey": "Decision definition key",
-        "decisionDefinitionId": "Decision definition Id",
-        "decisionInstanceId": "Decision instance Id",
         "evaluationDateTime": "Evaluation date",
         "businessKey": "Business key",
         "startDate": "Start date",
@@ -473,8 +452,7 @@
       "buttonTooltip": "Configuration options",
       "reset": "Reset to defaults",
       "showCount": {
-        "instance": "Show instance count",
-        "evaluation": "Show evaluation count"
+        "instance": "Show instance count"
       },
       "aggregation": {
         "label": "Aggregation",
@@ -508,8 +486,7 @@
       "tooltips": {
         "legend": "Tooltips",
         "showRelative": {
-          "process": "Show relative value based on process instance count",
-          "decision": "Show relative value based on decision evaluation count"
+          "process": "Show relative value based on process instance count"
         },
         "showAbsolute": "Show absolute value"
       },
@@ -754,7 +731,7 @@
       "label": "Add a filter",
       "viewLabel": "Filter report data",
       "disabledVariable": "Variable filters are only available for dashboards that contain at least one report.",
-      "disabledAssignee": "Assignee and candidate group filters are only available for dashboards that contain at least one report.",
+      "disabledAssignee": "Assignee filters are only available for dashboards that contain at least one report.",
       "resetAll": "Reset all",
       "operatorLink": "Values linked by {operator} logic",
       "multiple": "multiple",
@@ -981,10 +958,6 @@
       "label": "Process",
       "label-plural": "Processes"
     },
-    "decision": {
-      "label": "Decision",
-      "label-plural": "Decisions"
-    },
     "errors": {
       "inValidLink": "This link is not valid.",
       "number": "Enter a number",
@@ -1037,7 +1010,6 @@
       "createdBy": "Created by",
       "viewRawData": "View raw data",
       "viewModel": {
-        "decision": "View decision table",
         "process": "View process model",
         "model": "View model"
       },
@@ -1051,11 +1023,6 @@
       "label": "User",
       "label-plural": "Users",
       "id": "User ID"
-    },
-    "user-group": {
-      "label": "User group",
-      "label-plural": "User groups",
-      "id": "User group ID"
     },
     "collection": {
       "label": "Collection",
@@ -1145,7 +1112,6 @@
         "instanceState": "Instance state",
         "date": "Instance date",
         "assignee": "Assignee",
-        "candidateGroup": "Candidate group",
         "instanceStartDate": "Start date",
         "instanceEndDate": "End date",
         "instance": "Process instance",
@@ -1209,8 +1175,7 @@
         "endDateWarning": "Reports with an active end date filter will only show completed instances.",
         "info": {
           "instanceStartDate": "Process instances <b>started</b>",
-          "instanceEndDate": "Process instances <b>ended</b>",
-          "evaluationDateTime": "Decision instances <b>evaluated</b>"
+          "instanceEndDate": "Process instances <b>ended</b>"
         },
         "to": "to",
         "invalidDate": "Enter a valid date",
@@ -1307,26 +1272,22 @@
         "includeOnly": "Include only",
         "excludeOnly": "Exclude only",
         "type": {
-          "assignee": "Assignees",
-          "candidateGroup": "Candidate groups"
+          "assignee": "Assignees"
         },
         "unassigned": "unassigned",
         "selectValue": "Filter for ID"
       },
       "dropdownLabel": {
         "instance": "Filter process instances",
-        "view": "Filter flow nodes",
-        "decision": "Filter decision evaluations"
+        "view": "Filter flow nodes"
       },
       "allVisible": {
         "instance": "All instances visible",
-        "view": "All flow node data visible",
-        "decision": "All evaluations visible"
+        "view": "All flow node data visible"
       },
       "linkingTip": "Filters are linked by 'and' logic",
       "incompatibleFilters": "No data shown due to incompatible filters",
       "instanceFilter": "Process instance filter",
-      "decisionFilter": "Decision instance filter",
       "flowNodeFilter": "Flow node data filter",
       "excludedFlowNodes": "excluded flow node(s)",
       "selectedFlowNodes": "selected flow node(s)",
@@ -1339,7 +1300,6 @@
       "limitReached": "Process definition limit reached. Only {maxNumProcesses} processes allowed.",
       "select": {
         "process": "Select process",
-        "decision": "Select decision",
         "multiProcess": "Select one or more processes"
       },
       "version": {
@@ -1363,7 +1323,6 @@
         "dashboard": "Dashboard",
         "alert": "Alert",
         "user": "User",
-        "group": "Group",
         "source": "Data source",
         "collection": "Collection",
         "process": "Process",

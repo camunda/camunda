@@ -84,6 +84,9 @@
 
       # security:
         # Enables TLS authentication between this gateway and other nodes in the cluster
+        # If this setting is enabled then the certificate and private key must either be provided separately
+        # or in a key store file containing both, these options are mutually exclusive and setting both at the same time will
+        # cause an error.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_SECURITY_ENABLED.
         # enabled: false
 
@@ -94,6 +97,18 @@
         # Sets the path to the private key file location
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_SECURITY_PRIVATEKEYPATH.
         # privateKeyPath:
+
+        # keyStore:
+          # Configures the keystore file containing both the certificate chain and the private key.
+          # Currently only supports PKCS12 format.
+
+          # The path for keystore file
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_KEYSTORE_FILEPATH
+          # filePath:
+
+          # Sets the password for the keystore file, if not set it is assumed there is no password
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_KEYSTORE_PASSWORD
+          # password:
 
       # commandApi:
         # Overrides the host used for gateway-to-broker communication
@@ -1178,3 +1193,7 @@
         # We recommend testing this feature in a non-production environment before enabling it in production.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLETIMERDUEDATECHECKERASYNC
         # enableTimerDueDateCheckerAsync: false
+
+        # Disables the experimental partition scaling feature by default until it is stable: https://github.com/camunda/camunda/issues/21439
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEPARTITIONSCALING
+        # enablePartitionScaling: false
