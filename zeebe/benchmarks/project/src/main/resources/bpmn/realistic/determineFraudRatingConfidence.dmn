@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/dmn" id="Definitions_17ojz6y" name="DRD" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.26.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.5.0" camunda:diagramRelationId="c00115a7-7647-4f2f-9032-8b2a2efe752d">
   <decision id="determine-fraud-rating-1dmmwcu" name="Determine fraud rating confidence">
-    <decisionTable id="DecisionTable_1xgcg4h" hitPolicy="COLLECT" aggregation="SUM">
+    <decisionTable id="DecisionTable_1xgcg4h" hitPolicy="COLLECT">
       <input id="InputClause_1abpx7l" label="1-year customer claim frequency">
         <inputExpression id="LiteralExpression_0ftj8n5" typeRef="number">
           <text>customer_claim_frequency</text>
