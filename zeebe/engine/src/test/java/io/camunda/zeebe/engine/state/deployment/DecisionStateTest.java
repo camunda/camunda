@@ -132,6 +132,101 @@ public final class DecisionStateTest {
     assertThat(persistedDecision.get().getVersionTag()).isEqualTo(decisionRecord.getVersionTag());
   }
 
+  @DisplayName(
+      "should store decision key by ID and version tag and return decision with all properties")
+  @Test
+  public void shouldStoreDecisionKeyByDecisionIdAndVersionTag() {
+    // given
+    final var drg = sampleDecisionRequirementsRecord();
+    final var decision = sampleDecisionRecord().setVersionTag("v1.0");
+    decisionState.storeDecisionRequirements(drg);
+    decisionState.storeDecisionRecord(decision);
+
+    // when
+    decisionState.storeDecisionKeyByDecisionIdAndVersionTag(decision);
+
+    // then
+    assertThat(
+            decisionState.findDecisionByIdAndVersionTag(
+                TENANT_ID, decision.getDecisionIdBuffer(), "v1.0"))
+        .hasValueSatisfying(
+            persistedDecision -> {
+              assertThat(bufferAsString(persistedDecision.getDecisionId()))
+                  .isEqualTo(decision.getDecisionId());
+              assertThat(bufferAsString(persistedDecision.getDecisionName()))
+                  .isEqualTo(decision.getDecisionName());
+              assertThat(persistedDecision.getDecisionKey()).isEqualTo(decision.getDecisionKey());
+              assertThat(persistedDecision.getVersion()).isEqualTo(decision.getVersion());
+              assertThat(bufferAsString(persistedDecision.getDecisionRequirementsId()))
+                  .isEqualTo(decision.getDecisionRequirementsId());
+              assertThat(persistedDecision.getDecisionRequirementsKey())
+                  .isEqualTo(decision.getDecisionRequirementsKey());
+              assertThat(persistedDecision.getDeploymentKey())
+                  .isEqualTo(decision.getDeploymentKey());
+              assertThat(persistedDecision.getVersionTag()).isEqualTo(decision.getVersionTag());
+            });
+  }
+
+  @DisplayName("should store decision key by ID and version tag and overwrite existing entry")
+  @Test
+  public void shouldStoreDecisionKeyByDecisionIdAndVersionTagAndOverwriteExistingEntry() {
+    // given
+    final var drg1 =
+        sampleDecisionRequirementsRecord()
+            .setDecisionRequirementsVersion(1)
+            .setDecisionRequirementsKey(1L);
+    final var drg2 =
+        sampleDecisionRequirementsRecord()
+            .setDecisionRequirementsVersion(2)
+            .setDecisionRequirementsKey(2L);
+    final var decisionV1 =
+        sampleDecisionRecord()
+            .setVersion(1)
+            .setVersionTag("v1.0")
+            .setDecisionKey(1L)
+            .setDeploymentKey(1L)
+            .setDecisionRequirementsKey(drg1.getDecisionRequirementsKey());
+    final var decisionV1New =
+        sampleDecisionRecord()
+            .setVersion(2)
+            .setVersionTag("v1.0")
+            .setDecisionKey(2L)
+            .setDeploymentKey(2L)
+            .setDecisionRequirementsKey(drg2.getDecisionRequirementsKey());
+    decisionState.storeDecisionRequirements(drg1);
+    decisionState.storeDecisionRequirements(drg2);
+    decisionState.storeDecisionRecord(decisionV1);
+    decisionState.storeDecisionRecord(decisionV1New);
+    decisionState.storeDecisionKeyByDecisionIdAndVersionTag(decisionV1);
+
+    // when
+    decisionState.storeDecisionKeyByDecisionIdAndVersionTag(decisionV1New);
+
+    // then
+    assertThat(
+            decisionState.findDecisionByIdAndVersionTag(
+                TENANT_ID, decisionV1New.getDecisionIdBuffer(), "v1.0"))
+        .hasValueSatisfying(
+            persistedDecision -> {
+              assertThat(bufferAsString(persistedDecision.getDecisionId()))
+                  .isEqualTo(decisionV1New.getDecisionId());
+              assertThat(bufferAsString(persistedDecision.getDecisionName()))
+                  .isEqualTo(decisionV1New.getDecisionName());
+              assertThat(persistedDecision.getDecisionKey())
+                  .isEqualTo(decisionV1New.getDecisionKey());
+              assertThat(persistedDecision.getVersion()).isEqualTo(decisionV1New.getVersion());
+              assertThat(bufferAsString(persistedDecision.getDecisionRequirementsId()))
+                  .isEqualTo(decisionV1New.getDecisionRequirementsId());
+              assertThat(persistedDecision.getDecisionRequirementsKey())
+                  .isEqualTo(decisionV1New.getDecisionRequirementsKey());
+              assertThat(persistedDecision.getDeploymentKey())
+                  .isEqualTo(decisionV1New.getDeploymentKey());
+              assertThat(persistedDecision.getVersionTag())
+                  .isEqualTo(decisionV1New.getVersionTag());
+            });
+  }
+
+  @DisplayName("should not store decision key by ID and version tag if version tag is empty")
   @Test
   public void shouldNotStoreDecisionKeyByDecisionIdAndVersionTagIfVersionTagIsEmpty() {
     // given
