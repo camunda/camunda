@@ -141,6 +141,11 @@ type TasksSearchBody = {
   }>;
 };
 
+type License = {
+  validLicense: boolean;
+  licenseType: string;
+};
+
 export type {
   CurrentUser,
   Variable,
@@ -153,4 +158,5 @@ export type {
   TasksSearchBody,
   FullVariable,
   TruncatedVariable,
+  License,
 };
