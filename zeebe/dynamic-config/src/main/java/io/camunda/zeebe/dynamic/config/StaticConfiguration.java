@@ -24,6 +24,10 @@ public record StaticConfiguration(
     int replicationFactor,
     DynamicPartitionConfig partitionConfig) {
 
+  public int partitionCount() {
+    return partitionIds.size();
+  }
+
   public ClusterConfiguration generateTopology() {
     final Set<PartitionMetadata> partitionDistribution = generatePartitionDistribution();
     return ConfigurationUtil.getClusterConfigFrom(partitionDistribution, partitionConfig);
