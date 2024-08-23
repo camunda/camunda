@@ -37,6 +37,11 @@ public class DeployedProcessImpl implements Process {
   }
 
   @Override
+  public String getVersionTag() {
+    return versionTag;
+  }
+
+  @Override
   public long getProcessDefinitionKey() {
     return processDefinitionKey;
   }
@@ -61,15 +66,6 @@ public class DeployedProcessImpl implements Process {
     return deploymentKey;
   }
 
-  @Override
-  public String getVersionTag() {
-    return versionTag;
-  }
-
-  public void setVersionTag(final String versionTag) {
-    this.versionTag = versionTag;
-  }
-
   public void setDeploymentKey(final long deploymentKey) {
     this.deploymentKey = deploymentKey;
   }
@@ -89,6 +85,10 @@ public class DeployedProcessImpl implements Process {
 
   public void setProcessDefinitionKey(final long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public void setVersionTag(final String versionTag) {
+    this.versionTag = versionTag;
   }
 
   public void setVersion(final int version) {
