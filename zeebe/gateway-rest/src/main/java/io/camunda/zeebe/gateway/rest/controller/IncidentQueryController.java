@@ -15,6 +15,7 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
+import jakarta.validation.ValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -47,12 +48,19 @@ public class IncidentQueryController {
       final var result =
           incidentServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
-    } catch (final Throwable e) {
+    } catch (final ValidationException e) {
       final var problemDetail =
           RestErrorMapper.createProblemDetail(
               HttpStatus.BAD_REQUEST,
               e.getMessage(),
-              "Failed to execute Decision Definition Search Query");
+              "Validation failed for Incident Search Query");
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    } catch (final Exception e) {
+      final var problemDetail =
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.INTERNAL_SERVER_ERROR,
+              e.getMessage(),
+              "Failed to execute Incident Search Query");
       return RestErrorMapper.mapProblemToResponse(problemDetail);
     }
   }
