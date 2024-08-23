@@ -10,7 +10,7 @@ import {test as base} from './test-fixtures';
 
 const test = base.extend({
   page: async ({page}, use) => {
-    await page.route('**v2/license', (route) =>
+    await page.route('**/v2/license', (route) =>
       route.fulfill({
         status: 200,
         headers: {
