@@ -213,6 +213,7 @@ public class ResourceDeletionDeleteProcessor
         new ProcessRecord()
             .setBpmnProcessId(processIdBuffer)
             .setVersion(process.getVersion())
+            .setVersionTag(process.getVersionTag())
             .setKey(process.getKey())
             .setResourceName(process.getResourceName())
             .setTenantId(process.getTenantId())
