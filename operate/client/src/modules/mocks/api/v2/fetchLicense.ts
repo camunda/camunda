@@ -6,11 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled from 'styled-components';
-import {Link} from '@carbon/react';
+import {License} from 'modules/api/v2/fetchLicense';
+import {mockGetRequest} from '../mockRequest';
 
-const InlineLink = styled(Link)`
-  display: inline;
-`;
+const mockFetchLicense = () => mockGetRequest<License>('/v2/license');
 
-export {InlineLink};
+export {mockFetchLicense};
