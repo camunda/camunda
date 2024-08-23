@@ -124,6 +124,13 @@ public final class ClusterConfigurationAssert
         .usingRecursiveComparison()
         .ignoringFieldsMatchingRegexes(".*startedAt", ".*version")
         .isEqualTo(optionalExpectedOngoingChange);
+
+    // compare routing state without version
+    assertThat(actual.routingState())
+        .usingRecursiveComparison()
+        .ignoringFieldsOfTypesMatchingRegexes(".*version")
+        .isEqualTo(expected.routingState());
+
     return this;
   }
 }
