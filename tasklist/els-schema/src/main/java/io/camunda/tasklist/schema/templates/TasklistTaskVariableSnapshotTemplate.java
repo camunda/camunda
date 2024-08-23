@@ -17,7 +17,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TasklistTaskVariableSnapshotTemplate extends AbstractTemplateDescriptor implements Prio3Backup {
+public class TasklistTaskVariableSnapshotTemplate extends AbstractTemplateDescriptor
+    implements Prio3Backup {
 
   public static final String INDEX_NAME = "task-variable-snapshot";
   public static final String INDEX_VERSION = "1.0.0";

@@ -7,43 +7,108 @@
  */
 package io.camunda.tasklist.entities;
 
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import java.util.Map;
-import java.util.Set;
 
 public class TaskVariableSnapshotEntity {
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String id;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String taskId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String flowNodeBpmnId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String flowNodeInstanceId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private Integer partitionId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String completionTime;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String processInstanceId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long position;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String state;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long key;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String creationTime;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String bpmnProcessId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String processDefinitionId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String assignee;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String[] candidateGroups;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String[] candidateUsers;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String formKey;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String formId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long formVersion;
-  private Boolean isFormEmbedded;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Boolean isFormEmbedded = null;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String followUpDate;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String dueDate;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String tenantId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String implementation;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String externalFormReference;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private Integer processDefinitionVersion;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private Map<String, String> customHeaders;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private Integer priority;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String variableName;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String variableValue;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private String variableFullValue;
-  private Boolean isPreview;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Boolean isPreview = null;
+
+  private Map<String, Object> joinField; // Add this field
 
   public String getId() {
     return id;
@@ -274,7 +339,8 @@ public class TaskVariableSnapshotEntity {
     return processDefinitionVersion;
   }
 
-  public TaskVariableSnapshotEntity setProcessDefinitionVersion(final Integer processDefinitionVersion) {
+  public TaskVariableSnapshotEntity setProcessDefinitionVersion(
+      final Integer processDefinitionVersion) {
     this.processDefinitionVersion = processDefinitionVersion;
     return this;
   }
@@ -330,6 +396,16 @@ public class TaskVariableSnapshotEntity {
 
   public TaskVariableSnapshotEntity setPreview(final Boolean preview) {
     isPreview = preview;
+    return this;
+  }
+
+  // Getters and setters for all fields
+  public Map<String, Object> getJoinField() {
+    return joinField;
+  }
+
+  public TaskVariableSnapshotEntity setJoinField(final Map<String, Object> joinField) {
+    this.joinField = joinField;
     return this;
   }
 }

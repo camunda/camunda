@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.zeebeimport.v860.processors.es;
 
+import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
@@ -16,9 +17,11 @@ import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.entities.FlowNodeType;
 import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.entities.ProcessInstanceState;
+import io.camunda.tasklist.entities.TaskVariableSnapshotEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
+import io.camunda.tasklist.schema.templates.TasklistTaskVariableSnapshotTemplate;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.util.DateUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.value.ProcessInstanceRecordValueImpl;
@@ -27,11 +30,14 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +77,8 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
 
   @Autowired private ProcessInstanceIndex processInstanceIndex;
 
+  @Autowired private TasklistTaskVariableSnapshotTemplate taskVariableSnapshotTemplate;
+
   public void processProcessInstanceRecord(final Record record, final BulkRequest bulkRequest)
       throws PersistenceException {
 
@@ -79,6 +87,7 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
     if (isVariableScopeType(recordValue) && FLOW_NODE_STATES.contains(record.getIntent().name())) {
       final FlowNodeInstanceEntity flowNodeInstance = createFlowNodeInstance(record);
       bulkRequest.add(getFlowNodeInstanceQuery(flowNodeInstance));
+      bulkRequest.add(persistSnapshot(flowNodeInstance));
     }
 
     if (isProcessEvent(recordValue)
@@ -172,5 +181,29 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
       return false;
     }
     return bpmnElementType.equals(type);
+  }
+
+  private UpdateRequest persistSnapshot(final FlowNodeInstanceEntity flowNodeInstance)
+      throws PersistenceException {
+    final TaskVariableSnapshotEntity entity = new TaskVariableSnapshotEntity();
+
+    entity.setId(flowNodeInstance.getProcessInstanceId());
+
+    final Map<String, Object> joinField = new HashMap<>();
+    joinField.put("name", "process");
+    entity.setJoinField(joinField);
+
+    try {
+      final Map<String, Object> jsonMap =
+          objectMapper.readValue(objectMapper.writeValueAsString(entity), HashMap.class);
+      return new UpdateRequest()
+          .index(taskVariableSnapshotTemplate.getFullQualifiedName())
+          .id(entity.getId())
+          .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+          .doc(jsonMap)
+          .retryOnConflict(UPDATE_RETRY_COUNT);
+    } catch (final IOException e) {
+      throw new PersistenceException("Error preparing the query to upsert snapshot entity", e);
+    }
   }
 }

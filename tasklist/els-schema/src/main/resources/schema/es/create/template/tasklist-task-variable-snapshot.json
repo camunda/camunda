@@ -5,7 +5,8 @@
       "join_field": {
         "type": "join",
         "relations": {
-          "task": "variable"
+          "task": "task-variable",
+          "process": "process-variable"
         }
       },
       "flowNodeBpmnId": {
