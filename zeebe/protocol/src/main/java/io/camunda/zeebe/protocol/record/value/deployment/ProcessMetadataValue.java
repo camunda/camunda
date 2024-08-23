@@ -35,6 +35,11 @@ public interface ProcessMetadataValue extends RecordValue, TenantOwned {
   int getVersion();
 
   /**
+   * @return the custom version tag of this process
+   */
+  String getVersionTag();
+
+  /**
    * @return the key of this process
    */
   long getProcessDefinitionKey();
@@ -58,9 +63,4 @@ public interface ProcessMetadataValue extends RecordValue, TenantOwned {
    * @return the key of the deployment this process was deployed with
    */
   long getDeploymentKey();
-
-  /**
-   * @return the custom version tag of this process
-   */
-  String getVersionTag();
 }

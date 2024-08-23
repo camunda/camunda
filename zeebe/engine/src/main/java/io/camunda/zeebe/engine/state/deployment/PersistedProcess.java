@@ -62,6 +62,10 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
     return versionProp.getValue();
   }
 
+  public String getVersionTag() {
+    return bufferAsString(versionTagProp.getValue());
+  }
+
   public long getKey() {
     return keyProp.getValue();
   }
@@ -98,10 +102,6 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
 
   public long getDeploymentKey() {
     return deploymentKeyProp.getValue();
-  }
-
-  public String getVersionTag() {
-    return bufferAsString(versionTagProp.getValue());
   }
 
   public enum PersistedProcessState {
