@@ -1346,15 +1346,54 @@ components:
     ProcessInstanceFilterRequest:
       type: object
       properties:
-        key:
+        running:
+          type: boolean
+        active:
+          type: boolean
+        incidents:
+          type: boolean
+        finished:
+          type: boolean
+        completed:
+          type: boolean
+        canceled:
+          type: boolean
+        retriesLeft:
+          type: boolean
+        errorMessage:
+          type: string
+        activityId:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        bpmnProcessId:
+          type: string
+        processDefinitionVersion:
+          type: integer
+          format: int32
+        variable:
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceVariableFilterRequest"
+        batchOperationId:
+          type: string
+        parentProcessInstanceKey:
+          type: integer
+          format: int64
+        tenantId:
+          type: string
+    ProcessInstanceVariableFilterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        values:
           type: array
           items:
-            type: integer
-            format: int64
-        variables:
-          type: array
-          items:
-            $ref: "#/components/schemas/VariableValueFilterRequest"
+            type: string
     ProcessInstanceSearchQueryResponse:
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -1367,14 +1406,11 @@ components:
     ProcessInstanceItem:
       type: object
       properties:
-        tenantId:
-          type: string
         key:
           type: integer
           format: int64
-        processDefinitionKey:
-          type: integer
-          format: int64
+        processName:
+          type: string
         processVersion:
           type: integer
           format: int32
@@ -1392,6 +1428,43 @@ components:
         endDate:
           type: string
           format: date-time
+        state:
+          type: string
+          enum:
+            - ACTIVE
+            - INCIDENT
+            - COMPLETED
+            - CANCELED
+            - UNKNOWN
+            - UNSPECIFIED
+        incident:
+          type: boolean
+        hasActiveOperation:
+          type: boolean
+        processDefinitionKey:
+          type: integer
+          format: int64
+        tenantId:
+          type: string
+        rootInstanceId:
+          type: string
+        operations:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationItem"
+        callHierarchy:
+          type: array
+          items:
+            $ref: "#/components/schemas/CallHierarchyItem"
+    CallHierarchyItem:
+      type: object
+      properties:
+        instanceId:
+          type: string
+        processDefinitionId:
+          type: string
+        processDefinitionName:
+          type: string
     DecisionDefinitionSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -1513,12 +1586,29 @@ components:
           type: string
         type:
           type: string
+          enum:
+            - RESOLVE_INCIDENT
+            - CANCEL_PROCESS_INSTANCE
+            - DELETE_PROCESS_INSTANCE
+            - ADD_VARIABLE
+            - UPDATE_VARIABLE
+            - MODIFY_PROCESS_INSTANCE
+            - DELETE_DECISION_DEFINITION
+            - DELETE_PROCESS_DEFINITION
+            - MIGRATE_PROCESS_INSTANCE
         state:
           type: string
+          enum:
+            - SCHEDULED
+            - LOCKED
+            - SENT
+            - FAILED
+            - COMPLETED
         errorMessage:
           type: string
         completedDate:
           type: string
+          format: date-time
     ProcessInstanceReferenceItem:
       description: "Process instance reference description"
       type: object
@@ -2124,6 +2214,8 @@ components:
         name:
           type: string
         eq:
+          type: object
+        neq:
           type: object
         gt:
           type: object

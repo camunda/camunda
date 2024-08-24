@@ -18,6 +18,10 @@ public final class FilterBuilders {
     return new ProcessInstanceFilter.Builder();
   }
 
+  public static ProcessInstanceVariableFilter.Builder processInstanceVariable() {
+    return new ProcessInstanceVariableFilter.Builder();
+  }
+
   public static UserTaskFilter.Builder userTask() {
     return new UserTaskFilter.Builder();
   }
@@ -41,6 +45,13 @@ public final class FilterBuilders {
   public static ProcessInstanceFilter processInstance(
       final Function<ProcessInstanceFilter.Builder, ObjectBuilder<ProcessInstanceFilter>> fn) {
     return fn.apply(processInstance()).build();
+  }
+
+  public static ProcessInstanceVariableFilter processInstanceVariable(
+      final Function<
+              ProcessInstanceVariableFilter.Builder, ObjectBuilder<ProcessInstanceVariableFilter>>
+          fn) {
+    return fn.apply(processInstanceVariable()).build();
   }
 
   public static UserTaskFilter userTask(
