@@ -72,7 +72,12 @@ public class HealthConfigurationInitializer
   protected boolean shouldReadinessState(final List<String> activeProfiles) {
     return activeProfiles.stream()
         .anyMatch(
-            Set.of(Profile.OPERATE.getId(), Profile.TASKLIST.getId(), Profile.BROKER)::contains);
+            Set.of(
+                    Profile.OPERATE.getId(),
+                    Profile.TASKLIST.getId(),
+                    Profile.BROKER,
+                    Profile.IDENTITY.getId())
+                ::contains);
   }
 
   /**
@@ -99,6 +104,10 @@ public class HealthConfigurationInitializer
 
     if (activeProfiles.contains(Profile.TASKLIST.getId())) {
       healthIndicators.add(INDICATOR_TASKLIST_SEARCH_ENGINE_CHECK);
+    }
+
+    if (activeProfiles.contains(Profile.IDENTITY.getId())) {
+      healthIndicators.add(INDICATOR_SPRING_READINESS_STATE);
     }
 
     return healthIndicators;
