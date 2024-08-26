@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.service.ManagementServices;
+import io.camunda.service.license.LicenseType;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -35,7 +36,7 @@ public class LicenseControllerTest extends RestControllerTest {
   void shouldReturnProperSaaSResponse() {
     // given
     when(managementServices.isCamundaLicenseValid()).thenReturn(true);
-    when(managementServices.getCamundaLicenseType()).thenReturn("saas");
+    when(managementServices.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
 
     // when / then
     webClient
