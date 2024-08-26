@@ -9,7 +9,6 @@
 import {spawn} from 'child_process';
 import {resolve as _resolve, dirname} from 'path';
 import {platform} from 'os';
-import fetch from 'node-fetch';
 import {readFile} from 'fs';
 import {parseString} from 'xml2js';
 import {fileURLToPath} from 'url';
