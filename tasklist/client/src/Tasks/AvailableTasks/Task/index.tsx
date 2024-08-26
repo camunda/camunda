@@ -200,7 +200,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 
             <div className={cn(styles.flex, styles.flexRow)}>
               <AssigneeTag currentUser={currentUser} assignee={assignee} />
-              {priority !== null && <PriorityLabel priority={priority} />}
+              {priority === null ? null : <PriorityLabel priority={priority} />}
             </div>
             <div
               data-testid="dates"
