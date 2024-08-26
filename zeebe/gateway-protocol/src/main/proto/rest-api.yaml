@@ -1745,7 +1745,6 @@ components:
 
         The job cannot be completed or failed with this endpoint, use the Complete job or Fail job endpoints instead.
       type: object
-      additionalProperties: true
       properties:
         retries:
           type: integer
