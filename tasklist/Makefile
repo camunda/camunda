@@ -54,6 +54,7 @@ operate-os-up:
 .PHONY: env-identity-up
 env-identity-up: elasticsearch-env identity-env
 	@DATABASE=elasticsearch docker compose -f ./config/docker-compose.identity.yml up -d identity zeebe
+	@mvn install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
 	@set -o allexport && source $(IDENTITY_CONFIG) && source $(DATABASE_CONFIG) && set +o allexport && env \
 		CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL=$${EXT_CAMUNDA_IDENTITY_ISSUER_BACKEND_URL} \
 		CAMUNDA_TASKLIST_IDENTITY_BASEURL=$${EXT_CAMUNDA_IDENTITY_URL} \
