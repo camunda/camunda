@@ -6,10 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  IS_LISTENERS_TAB_SUPPORTED,
-  IS_VERSION_TAG_ENABLED,
-} from 'modules/feature-flags';
+import {IS_VERSION_TAG_ENABLED} from 'modules/feature-flags';
 import {RequestHandler, rest} from 'msw';
 
 const processVersionTagHandler = IS_VERSION_TAG_ENABLED
@@ -51,25 +48,9 @@ const processInstancesVersionTagHandler = [
   }),
 ];
 
-const listenersHandler = IS_LISTENERS_TAB_SUPPORTED
-  ? [
-      rest.post(
-        '/api/process-instances/:instanceId/listeners',
-        async (req, res, ctx) => {
-          const originalResponse = await ctx.fetch(req);
-          let originalResponseData = await originalResponse.json();
-          let totalCount = originalResponseData?.length;
-
-          return res(ctx.json({listeners: originalResponseData, totalCount}));
-        },
-      ),
-    ]
-  : [];
-
 const handlers: RequestHandler[] = [
   ...processVersionTagHandler,
   ...processInstancesVersionTagHandler,
-  ...listenersHandler,
 ];
 
 export {handlers};

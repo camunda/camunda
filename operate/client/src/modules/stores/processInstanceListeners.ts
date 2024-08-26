@@ -105,7 +105,7 @@ class ProcessInstanceListeners {
   };
 
   getListenersFailureCount = () => {
-    if (this.state.listenersCount === 0) return 0;
+    if (!this.state.listenersCount) return 0;
 
     const failedListeners = this.state?.listeners?.filter(
       (listener) => listener.state === 'FAILED',
