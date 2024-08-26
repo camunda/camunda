@@ -13,23 +13,28 @@ runs:
   using: composite
   steps:
   - name: Get Yarn global cache directory
-    id: get-yarn-global-cache-dir
     shell: bash
     working-directory: ${{ inputs.directory }}
     run: |
       yarn_version=$(yarn --version)
+      echo "yarn version: $yarn_version"
 
       if [[ $yarn_version == 1* ]]; then
-        echo "result=$(yarn cache dir)" >> $GITHUB_OUTPUT
+        echo "Yarn version 1.x"
+        yarn cache dir || true
+        echo "CUSTOM_YARN_GLOBAL_CACHE_DIR=$(yarn cache dir)" >> $GITHUB_ENV
       else
-        echo "result=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
+        echo "Yarn version 2.x?"
+        yarn config get cacheFolder || true
+        echo "CUSTOM_YARN_GLOBAL_CACHE_DIR=$(yarn config get cacheFolder)" >> $GITHUB_ENV
       fi
 
   - name: Save global Yarn cache on non-PRs
     if: startsWith(github.ref_name, 'stable') || github.ref_name == 'main'
     uses: actions/cache@v4
     with:
-      path: "${{ steps.get-yarn-global-cache-dir.outputs.result }}"
+      # need to use an environment variable here, thx to https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/pull/7415
+      path: "${{ env.CUSTOM_YARN_GLOBAL_CACHE_DIR }}"
       # it matters for caching as absolute paths on self-hosted and Github runners differ
       # self-hosted: `/runner/` vs gh-hosted: `/home/runner`
       key: ${{ runner.environment }}-${{ runner.os }}-yarn-${{ hashFiles(format('{0}/yarn.lock', inputs.directory)) }}
@@ -41,7 +46,7 @@ runs:
     if: ${{ !(startsWith(github.ref_name, 'stable') || github.ref_name == 'main') }}
     uses: actions/cache/restore@v4
     with:
-      path: "${{ steps.get-yarn-global-cache-dir.outputs.result }}"
+      path: "${{ env.CUSTOM_YARN_GLOBAL_CACHE_DIR }}"
       key: ${{ runner.environment }}-${{ runner.os }}-yarn-${{ hashFiles(format('{0}/yarn.lock', inputs.directory)) }}
       restore-keys: |
         ${{ runner.environment }}-${{ runner.os }}-yarn
