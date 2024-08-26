@@ -637,11 +637,12 @@ public final class ProcessInstanceMigrationPreconditions {
       final String sourceElementId,
       final String targetElementId,
       final Map<String, String> sourceElementIdToTargetElementId) {
-    final var sourceElement =
-        sourceProcessDefinition
-            .getProcess()
-            .getElementById(sourceElementId, ExecutableCatchEventSupplier.class);
-    for (final var boundaryIdBuffer : sourceElement.getBoundaryElementIds()) {
+    final var sourceElement = sourceProcessDefinition.getProcess().getElementById(sourceElementId);
+    if (!(sourceElement instanceof final ExecutableCatchEventSupplier sourceElementWithEvents)) {
+      return;
+    }
+
+    for (final var boundaryIdBuffer : sourceElementWithEvents.getBoundaryElementIds()) {
       final String sourceBoundaryEventId = BufferUtil.bufferAsString(boundaryIdBuffer);
       if (!sourceElementIdToTargetElementId.containsKey(sourceBoundaryEventId)) {
         // only check mapped boundary events
@@ -689,13 +690,13 @@ public final class ProcessInstanceMigrationPreconditions {
       final DeployedProcess sourceProcessDefinition,
       final String sourceElementId,
       final Map<String, String> mappingInstructions) {
-    final var sourceElement =
-        sourceProcessDefinition
-            .getProcess()
-            .getElementById(sourceElementId, ExecutableCatchEventSupplier.class);
+    final var sourceElement = sourceProcessDefinition.getProcess().getElementById(sourceElementId);
+    if (!(sourceElement instanceof final ExecutableCatchEventSupplier sourceElementWithEvents)) {
+      return;
+    }
 
     final var sourceBoundaryEventIdsByTargetBoundaryEventId = new HashMap<String, List<String>>();
-    sourceElement.getBoundaryElementIds().stream()
+    sourceElementWithEvents.getBoundaryElementIds().stream()
         .map(BufferUtil::bufferAsString)
         .filter(mappingInstructions::containsKey)
         .forEach(
