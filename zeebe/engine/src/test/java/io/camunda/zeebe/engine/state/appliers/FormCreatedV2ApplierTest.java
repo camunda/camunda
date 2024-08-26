@@ -126,6 +126,21 @@ public class FormCreatedV2ApplierTest extends AbstractFormCreatedApplierTest {
     assertThat(maybePersistedForm4).isEmpty(); // form-2 not deployed again
   }
 
+  @Test
+  void shouldStoreFormKeyByIdAndVersionTagAndOverwriteExistingEntry() {
+    // given
+    final var formV1 = sampleFormRecord(1L, "form-id", 1, 1L, TENANT_1).setVersionTag("v1.0");
+    final var formV1New = sampleFormRecord(2L, "form-id", 2, 2L, TENANT_1).setVersionTag("v1.0");
+    formCreatedApplier.applyState(formV1.getFormKey(), formV1);
+
+    // when
+    formCreatedApplier.applyState(formV1New.getFormKey(), formV1New);
+
+    // then
+    assertThat(formState.findFormByIdAndVersionTag(wrapString("form-id"), "v1.0", TENANT_1))
+        .hasValueSatisfying(isEqualToFormRecord(formV1New));
+  }
+
   @Override
   TypedEventApplier<FormIntent, FormRecord> createEventApplier(final MutableFormState formState) {
     return new FormCreatedV2Applier(formState);
