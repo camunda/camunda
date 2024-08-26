@@ -74,9 +74,10 @@ public class MultiInstanceBatchedSubProcessesTest {
 
     // then
     Assertions.assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            RecordingExporter.processInstanceRecords()
+                .limitToProcessInstanceCompleted()
                 .withElementId(SUB_PROCESS_START)
-                .limit(count)
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .toList())
         .hasSize(count);
   }
