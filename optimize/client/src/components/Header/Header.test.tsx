@@ -26,7 +26,7 @@ const defaultUiConfig = {
   onboarding: {orgId: 'orgId'},
   notificationsUrl: 'notificationsUrl',
   validLicense: true,
-  licenseType: 'self-managed',
+  licenseType: 'production',
 };
 
 jest.mock('hooks', () => ({
