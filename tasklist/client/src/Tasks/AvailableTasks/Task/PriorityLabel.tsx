@@ -31,7 +31,7 @@ const ICON_MAPPINGS = {
 
 const PriorityLabel: React.FC<PriorityLabelProps> = ({
   priority,
-  align = 'top-left',
+  align = 'top-end',
 }) => {
   const priorityLabel = getPriorityLabel(priority);
   const PriorityIcon = ICON_MAPPINGS[priorityLabel.key];
