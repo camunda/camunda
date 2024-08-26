@@ -49,7 +49,7 @@ public class ResourceDeletionTest {
   private static final String DRG_SINGLE_DECISION_V2 = "/dmn/decision-table_v2.dmn";
   private static final String DRG_MULTIPLE_DECISIONS = "/dmn/drg-force-user.dmn";
   private static final String RESULT_VARIABLE = "result";
-  private static final String FORM = "/form/test-form-1-with-version-tag.form";
+  private static final String FORM = "/form/test-form-1-with-version-tag-v1.form";
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();

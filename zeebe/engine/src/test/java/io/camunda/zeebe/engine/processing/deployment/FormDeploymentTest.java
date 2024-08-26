@@ -31,8 +31,10 @@ import org.junit.Test;
 public class FormDeploymentTest {
 
   private static final String TEST_FORM_1 = "/form/test-form-1.form";
-  private static final String TEST_FORM_1_WITH_VERSION_TAG =
-      "/form/test-form-1-with-version-tag.form";
+  private static final String TEST_FORM_1_WITH_VERSION_TAG_V1 =
+      "/form/test-form-1-with-version-tag-v1.form";
+  private static final String TEST_FORM_1_WITH_VERSION_TAG_V1_NEW =
+      "/form/test-form-1-with-version-tag-v1-new.form";
   private static final String TEST_FORM_1_V2 = "/form/test-form-1_v2.form";
   private static final String TEST_FORM_2 = "/form/test-form-2.form";
   private static final String TEST_FORM_WITHOUT_ID = "/form/test-form_without_id.form";
@@ -43,7 +45,7 @@ public class FormDeploymentTest {
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   @Test
-  public void shouldDeployFormResource() {
+  public void shouldDeployFormResourceAndReturnFormMetadataWithoutVersionTag() {
     // when
     final var deploymentEvent = engine.deployment().withJsonClasspathResource(TEST_FORM_1).deploy();
 
@@ -52,6 +54,43 @@ public class FormDeploymentTest {
         .hasIntent(DeploymentIntent.CREATED)
         .hasValueType(ValueType.DEPLOYMENT)
         .hasRecordType(RecordType.EVENT);
+    assertThat(deploymentEvent.getValue().getFormMetadata())
+        .singleElement()
+        .satisfies(
+            formMetadata ->
+                Assertions.assertThat(formMetadata)
+                    .hasFormId(TEST_FORM_1_ID)
+                    .hasVersion(1)
+                    .hasVersionTag("")
+                    .hasResourceName(TEST_FORM_1)
+                    .hasChecksum(getChecksum(TEST_FORM_1))
+                    .isNotDuplicate()
+                    .hasDeploymentKey(deploymentEvent.getKey()));
+  }
+
+  @Test
+  public void shouldDeployFormResourceAndReturnFormMetadataWithVersionTag() {
+    // when
+    final var deploymentEvent =
+        engine.deployment().withJsonClasspathResource(TEST_FORM_1_WITH_VERSION_TAG_V1).deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATED)
+        .hasValueType(ValueType.DEPLOYMENT)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(deploymentEvent.getValue().getFormMetadata())
+        .singleElement()
+        .satisfies(
+            formMetadata ->
+                Assertions.assertThat(formMetadata)
+                    .hasFormId(TEST_FORM_1_ID)
+                    .hasVersion(1)
+                    .hasVersionTag("v1.0")
+                    .hasResourceName(TEST_FORM_1_WITH_VERSION_TAG_V1)
+                    .hasChecksum(getChecksum(TEST_FORM_1_WITH_VERSION_TAG_V1))
+                    .isNotDuplicate()
+                    .hasDeploymentKey(deploymentEvent.getKey()));
   }
 
   @Test
@@ -125,7 +164,7 @@ public class FormDeploymentTest {
   @Test
   public void shouldWriteFormRecordWithVersionTag() {
     // when
-    engine.deployment().withJsonClasspathResource(TEST_FORM_1_WITH_VERSION_TAG).deploy();
+    engine.deployment().withJsonClasspathResource(TEST_FORM_1_WITH_VERSION_TAG_V1).deploy();
 
     // then
     final Record<Form> record = RecordingExporter.formRecords().getFirst();
@@ -236,6 +275,33 @@ public class FormDeploymentTest {
         .extracting(Record::getValue)
         .extracting(FormMetadataValue::getFormId, FormMetadataValue::getVersion)
         .contains(tuple(TEST_FORM_1_ID, 1), tuple(TEST_FORM_2_ID, 1));
+  }
+
+  @Test
+  public void shouldDeployNewVersionWithExistingVersionTag() {
+    // given
+    final var deployment1 =
+        engine.deployment().withJsonClasspathResource(TEST_FORM_1_WITH_VERSION_TAG_V1).deploy();
+
+    // when
+    final var deployment2 =
+        engine.deployment().withJsonClasspathResource(TEST_FORM_1_WITH_VERSION_TAG_V1_NEW).deploy();
+
+    // then
+    assertThat(deployment2.getValue().getFormMetadata())
+        .singleElement()
+        .extracting(FormMetadataValue::getVersion, FormMetadataValue::getVersionTag)
+        .containsExactly(2, "v1.0");
+    assertThat(RecordingExporter.formRecords().limit(2))
+        .extracting(Record::getValue)
+        .extracting(
+            FormMetadataValue::getFormId,
+            FormMetadataValue::getVersion,
+            FormMetadataValue::getVersionTag,
+            FormMetadataValue::getDeploymentKey)
+        .containsExactly(
+            tuple(TEST_FORM_1_ID, 1, "v1.0", deployment1.getKey()),
+            tuple(TEST_FORM_1_ID, 2, "v1.0", deployment2.getKey()));
   }
 
   @Test
