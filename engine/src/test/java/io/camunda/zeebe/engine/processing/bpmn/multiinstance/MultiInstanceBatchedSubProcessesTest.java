@@ -20,21 +20,37 @@ import org.junit.Test;
 
 public class MultiInstanceBatchedSubProcessesTest {
 
+  /**
+   * Looking at the comments next to the PROCESS creation step, you will notice that the PI_BATCH
+   * Activate will come at the position number 6 in the command batch. (CREATE PROCESS, Activate
+   * PROCESS, ACTIVATE START_EVENT, COMPLETE START_EVENT, ACTIVATE MULTI_INSTANCE_BODY, ACTIVATE
+   * PI_BATCH)
+   *
+   * <p>We also had to create a sub process small enough that could be completed and trigger
+   * completing the parent in less than 6 commands to be contained in the same batch together to be
+   * able to reproduce the case. That's why in the example the sub process has only a `startEvent`,
+   * so we are able to (ACTIVATE SUB_PROCESS, ACTIVATE START_EVENT, COMPLETE START_EVENT, COMPLETE
+   * SUB_PROCESS, COMPLETE MULTI_INSTANCE_BODY) together in the next command batch.
+   */
+  public static final int MAX_COMMANDS_IN_BATCH = 6;
+
   @ClassRule
-  public static final EngineRule ENGINE = EngineRule.singlePartition().maxCommandsInBatch(6);
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition().maxCommandsInBatch(MAX_COMMANDS_IN_BATCH);
 
   private static final String PROCESS_ID = "process";
   private static final String SUB_PROCESS_START = "sub-process-start";
   private static final BpmnModelInstance PROCESS =
-      Bpmn.createExecutableProcess(PROCESS_ID)
-          .startEvent()
+      Bpmn.createExecutableProcess(PROCESS_ID) // Generates 2 Commands (CREATE, Activate Process)
+          .startEvent() // Generates 2 Commands ( ACTIVATE, COMPLETE START_EVENT)
           .zeebeOutputExpression("= [1,2]", "inputCollection")
           .subProcess(
               "subprocess1",
               s ->
-                  s.multiInstance(
+                  s.multiInstance( // Generates 1 Command (ACTIVATE MULTI_INSTANCE_BODY)
                       b ->
                           b.zeebeInputCollectionExpression("inputCollection")
+                              // This will result in 1 command (PI_BATCH ACTIVATE)
                               .zeebeInputElement("input")))
           .embeddedSubProcess()
           .startEvent(SUB_PROCESS_START)
