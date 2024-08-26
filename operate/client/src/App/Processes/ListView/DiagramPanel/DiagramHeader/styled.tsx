@@ -22,10 +22,12 @@ const Dl = styled.dl`
 const Dt = styled.dt`
   ${styles.label01};
   color: var(--cds-text-secondary);
+  margin-bottom: 2px;
 `;
 
 const Dd = styled.dd`
   ${styles.label02};
+  color: var(--cds-text-secondary);
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
