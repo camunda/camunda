@@ -50,7 +50,7 @@ public class CamundaLicense {
     } else {
       isValid = false;
       licenseType = LicenseType.UNKNOWN;
-      LOGGER.error(
+      LOGGER.warn(
           "No license detected when one is expected. Please provide a license through the "
               + CAMUNDA_LICENSE_ENV_VAR_KEY
               + " environment variable.");
@@ -67,7 +67,7 @@ public class CamundaLicense {
       licenseType = LicenseType.get(licenseKey.getProperties().get("licenseType"));
 
       if (LicenseType.UNKNOWN.equals(licenseType)) {
-        LOGGER.error(
+        LOGGER.warn(
             "Expected a valid licenseType property on the Camunda License, but none were found.");
         isValid = false;
       } else {
@@ -76,11 +76,11 @@ public class CamundaLicense {
 
       return;
     } catch (final InvalidLicenseException e) {
-      LOGGER.error(
+      LOGGER.warn(
           "Expected a valid license when determining license validity, but encountered an invalid one instead. ",
           e);
     } catch (final Exception e) {
-      LOGGER.error(
+      LOGGER.warn(
           "Expected to determine the validity of the license, but the following unexpected error was encountered: ",
           e);
     }
