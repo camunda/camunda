@@ -11,6 +11,7 @@ import {formatDate} from 'modules/utils/formatDate';
 import styles from './Aside.module.scss';
 import {CurrentUser, Task} from 'modules/types';
 import {useTranslation} from 'react-i18next';
+import {getPriorityLabel} from 'modules/utils/getPriorityLabel';
 
 type Props = {
   task: Task;
@@ -23,6 +24,7 @@ const Aside: React.FC<Props> = ({task, user}) => {
     completionDate,
     dueDate,
     followUpDate,
+    priority,
     candidateUsers,
     candidateGroups,
     tenantId,
@@ -71,6 +73,17 @@ const Aside: React.FC<Props> = ({task, user}) => {
             </Tag>
           ))}
         </ContainedListItem>
+        {priority === null ? null : (
+          <ContainedListItem>
+            <span className={styles.itemHeading}>
+              {t('taskDetailsPriorityLabel')}
+            </span>
+            <br />
+            <span className={styles.itemBody}>
+              {getPriorityLabel(priority).short}
+            </span>
+          </ContainedListItem>
+        )}
         {completionDate ? (
           <ContainedListItem>
             <span className={styles.itemHeading}>

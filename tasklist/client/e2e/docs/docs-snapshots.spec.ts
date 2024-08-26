@@ -111,7 +111,7 @@ function toTask(
     processName: processName,
     creationDate: creationDate.toISOString(),
     completionDate: completionDate ? completionDate.toISOString() : null,
-    priority: priority || 50,
+    priority: priority ?? 50,
     assignee: assignee,
     taskState: taskState,
     sortValues: ['1715692084940', '2251799813685299'],

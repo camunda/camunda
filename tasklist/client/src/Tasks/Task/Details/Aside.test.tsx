@@ -147,4 +147,25 @@ describe('<Aside />', () => {
 
     expect(screen.queryByText('Tenant A')).not.toBeInTheDocument();
   });
+
+  [
+    {priority: 20, label: 'Low'},
+    {priority: 40, label: 'Medium'},
+    {priority: 60, label: 'High'},
+    {priority: 80, label: 'Critical'},
+  ].forEach(({priority, label}) => {
+    it(`should render priority - ${label}`, () => {
+      render(
+        <Aside
+          task={{...taskMocks.unassignedTask(), priority}}
+          user={userMocks.currentUser}
+        />,
+        {
+          wrapper: getWrapper(),
+        },
+      );
+
+      expect(screen.getByText(label)).toBeInTheDocument();
+    });
+  });
 });

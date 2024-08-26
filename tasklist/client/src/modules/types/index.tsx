@@ -56,6 +56,7 @@ type Task = {
   followUpDate: string | null;
   dueDate: string | null;
   completionDate: string | null;
+  priority: number | null;
   assignee: string | null;
   taskState: TaskState;
   sortValues: [string, string];
