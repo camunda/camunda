@@ -74,4 +74,11 @@ public interface MutableFormState extends FormState {
    * @param record the record of the form that is deleted
    */
   void deleteFormInFormKeyByFormIdAndDeploymentKeyColumnFamily(FormRecord record);
+
+  /**
+   * Deletes a form from FORM_KEY_BY_FORM_ID_AND_VERSION_TAG column family
+   *
+   * @param record the record of the form that is deleted
+   */
+  void deleteFormInFormKeyByFormIdAndVersionTagColumnFamily(FormRecord record);
 }

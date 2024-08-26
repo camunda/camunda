@@ -207,6 +207,14 @@ public class DbFormState implements MutableFormState {
   }
 
   @Override
+  public void deleteFormInFormKeyByFormIdAndVersionTagColumnFamily(final FormRecord record) {
+    tenantIdKey.wrapString(record.getTenantId());
+    dbFormId.wrapString(record.getFormId());
+    dbVersionTag.wrapString(record.getVersionTag());
+    formKeyByFormIdAndVersionTagColumnFamily.deleteIfExists(tenantAwareFormIdAndVersionTagKey);
+  }
+
+  @Override
   public Optional<PersistedForm> findLatestFormById(
       final DirectBuffer formId, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
