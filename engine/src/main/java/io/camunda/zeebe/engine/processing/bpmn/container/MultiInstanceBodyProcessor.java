@@ -178,10 +178,6 @@ public final class MultiInstanceBodyProcessor
       return satisfiesCompletionConditionOrFailure;
     }
 
-    if (!element.getLoopCharacteristics().isSequential()) {
-      return Either.right(satisfiesCompletionConditionOrFailure.get());
-    }
-
     // test that input collection variable can be evaluated correctly
     return readInputCollectionVariable(element, flowScopeContext)
         .map(ok -> satisfiesCompletionConditionOrFailure.get());
