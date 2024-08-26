@@ -31,7 +31,8 @@ public record StaticConfiguration(
 
   public ClusterConfiguration generateTopology() {
     final Set<PartitionMetadata> partitionDistribution = generatePartitionDistribution();
-    return ConfigurationUtil.getClusterConfigFrom(partitionDistribution, partitionConfig);
+    return ConfigurationUtil.getClusterConfigFrom(
+        enablePartitionScaling, partitionDistribution, partitionConfig);
   }
 
   public Set<PartitionMetadata> generatePartitionDistribution() {

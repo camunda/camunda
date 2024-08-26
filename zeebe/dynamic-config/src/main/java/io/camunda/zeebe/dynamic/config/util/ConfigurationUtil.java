@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -27,6 +28,7 @@ public final class ConfigurationUtil {
   private ConfigurationUtil() {}
 
   public static ClusterConfiguration getClusterConfigFrom(
+      final boolean enablePartitionScaling,
       final Set<PartitionMetadata> partitionDistribution,
       final DynamicPartitionConfig partitionConfig) {
     final var partitionStatesByMember = new HashMap<MemberId, Map<Integer, PartitionState>>();
@@ -44,12 +46,17 @@ public final class ConfigurationUtil {
       memberStates.put(e.getKey(), MemberState.initializeAsActive(e.getValue()));
     }
 
+    final var routingState =
+        enablePartitionScaling
+            ? Optional.of(RoutingState.initializeWithPartitionCount(partitionDistribution.size()))
+            : Optional.<RoutingState>empty();
+
     return new ClusterConfiguration(
         ClusterConfiguration.INITIAL_VERSION,
         Map.copyOf(memberStates),
         Optional.empty(),
         Optional.empty(),
-        Optional.empty());
+        routingState);
   }
 
   public static Set<PartitionMetadata> getPartitionDistributionFrom(
