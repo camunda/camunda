@@ -80,6 +80,7 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
         size="md"
         disabled={disabled}
         align="bottom"
+        menuOptionsClass={styles.overflowMenu}
       >
         {sortOptionsOrder.map((id) => (
           <OverflowMenuItem
@@ -94,9 +95,7 @@ const Filters: React.FC<Props> = memo(({disabled}) => {
                     visibility: sortBy === id ? undefined : 'hidden',
                   }}
                 />
-                <span className={styles.menuItem}>
-                  {getSortingOptions()[id]}
-                </span>
+                {getSortingOptions()[id]}
               </div>
             }
             onClick={() => {

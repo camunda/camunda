@@ -26,7 +26,7 @@ test.describe('settings', () => {
       page.getByRole('heading', {name: 'Bienvenue dans Tasklist'}),
     ).toBeVisible();
     await expect(
-      page.getByRole('heading', {name: 'Toutes tâches ouvertes'}),
+      page.getByRole('heading', {name: 'Tâches ouvertes'}),
     ).toBeVisible();
     await expect(page.getByRole('button', {name: 'Déconnexion'})).toBeVisible();
   });
