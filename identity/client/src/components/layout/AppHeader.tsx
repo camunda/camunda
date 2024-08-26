@@ -10,8 +10,8 @@ const AppHeader = () => {
   const { data: license } = useApi(checkLicense);
   const showLicense: boolean =
     license == null
-      ? false
-      : license.licenseType !== undefined && license.licenseType != "saas";
+      ? true
+      : license.licenseType === undefined && license.licenseType != "saas";
   const isProductionLicense: boolean =
     license == null ? false : license.validLicense;
 
