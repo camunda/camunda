@@ -795,6 +795,11 @@ test.describe('tasks page', () => {
     await tasksPage.goto({sortBy: 'priority'});
 
     await expect(page).toHaveScreenshot();
+
+    const task = tasksPage.task('Register the passenger');
+    await task.getByTitle('Critical').hover();
+
+    await expect(page).toHaveScreenshot();
   });
 
   test('selected task without a form and without variables', async ({
