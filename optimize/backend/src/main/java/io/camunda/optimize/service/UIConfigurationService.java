@@ -16,6 +16,7 @@ import io.camunda.optimize.dto.optimize.query.ui_configuration.MixpanelConfigRes
 import io.camunda.optimize.dto.optimize.query.ui_configuration.OnboardingResponseDto;
 import io.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import io.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
+import io.camunda.optimize.license.LicenseType;
 import io.camunda.optimize.rest.cloud.CloudSaasMetaInfoService;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.metadata.OptimizeVersionService;
@@ -41,6 +42,7 @@ public class UIConfigurationService {
   private final OptimizeVersionService versionService;
   private final TenantService tenantService;
   private final SettingsService settingService;
+  private final CamundaLicenseService camundaLicenseService;
   private final Environment environment;
   // optional as it is only available conditionally, see implementations of the interface
   private final Optional<CloudSaasMetaInfoService> cloudSaasMetaInfoService;
@@ -68,6 +70,8 @@ public class UIConfigurationService {
     uiConfigurationDto.setMaxNumDataSourcesForReport(
         configurationService.getUiConfiguration().getMaxNumDataSourcesForReport());
     uiConfigurationDto.setOptimizeDatabase(ConfigurationService.getDatabaseType(environment));
+    uiConfigurationDto.setValidLicense(isCamundaLicenseValid());
+    uiConfigurationDto.setLicenseType(getLicenseType().getName());
 
     final MixpanelConfigResponseDto mixpanel = uiConfigurationDto.getMixpanel();
     mixpanel.setEnabled(configurationService.getAnalytics().isEnabled());
@@ -98,6 +102,14 @@ public class UIConfigurationService {
         });
 
     return uiConfigurationDto;
+  }
+
+  private boolean isCamundaLicenseValid() {
+    return camundaLicenseService.isCamundaLicenseValid();
+  }
+
+  private LicenseType getLicenseType() {
+    return camundaLicenseService.getCamundaLicenseType();
   }
 
   private boolean isEnterpriseMode(final OptimizeProfile optimizeProfile) {
