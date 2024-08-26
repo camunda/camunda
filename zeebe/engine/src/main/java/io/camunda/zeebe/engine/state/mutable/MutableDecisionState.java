@@ -37,6 +37,14 @@ public interface MutableDecisionState extends DecisionState {
   void storeDecisionKeyByDecisionIdAndDeploymentKey(DecisionRecord record);
 
   /**
+   * Store a reference to the decision key in the state, using the decision id and version tag as
+   * composite database key.
+   *
+   * @param record the record of the decision
+   */
+  void storeDecisionKeyByDecisionIdAndVersionTag(DecisionRecord record);
+
+  /**
    * Deletes a decision from the state. Updates the latest version of the decision if the deleted
    * version is the latest version and a previous version is available.
    *

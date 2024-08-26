@@ -45,7 +45,7 @@ import org.junit.Test;
 
 public class ResourceDeletionTest {
 
-  private static final String DRG_SINGLE_DECISION = "/dmn/decision-table.dmn";
+  private static final String DRG_SINGLE_DECISION = "/dmn/decision-table-with-version-tag-v1.dmn";
   private static final String DRG_SINGLE_DECISION_V2 = "/dmn/decision-table_v2.dmn";
   private static final String DRG_MULTIPLE_DECISIONS = "/dmn/drg-force-user.dmn";
   private static final String RESULT_VARIABLE = "result";
@@ -841,6 +841,7 @@ public class ResourceDeletionTest {
             DecisionRecordValue::getDecisionId,
             DecisionRecordValue::getDecisionName,
             DecisionRecordValue::getVersion,
+            DecisionRecordValue::getVersionTag,
             DecisionRecordValue::getDecisionKey,
             DecisionRecordValue::getDecisionRequirementsId,
             DecisionRecordValue::getDecisionRequirementsKey,
@@ -850,6 +851,7 @@ public class ResourceDeletionTest {
             decisionCreatedRecord.getDecisionId(),
             decisionCreatedRecord.getDecisionName(),
             decisionCreatedRecord.getVersion(),
+            decisionCreatedRecord.getVersionTag(),
             decisionCreatedRecord.getDecisionKey(),
             decisionCreatedRecord.getDecisionRequirementsId(),
             decisionCreatedRecord.getDecisionRequirementsKey(),

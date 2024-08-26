@@ -13,11 +13,14 @@ import io.camunda.zeebe.dmn.DecisionEngine;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.dmn.ParsedDecision;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
+import io.camunda.zeebe.dmn.impl.ParsedDmnScalaDrg;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
+import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
+import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -30,10 +33,12 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayInputStream;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
+import org.camunda.bpm.model.dmn.instance.ExtensionElements;
 
 public final class DmnResourceTransformer implements DeploymentResourceTransformer {
 
@@ -143,6 +148,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                                 .setDecisionId(decision.getDecisionId())
                                 .setDecisionName(decision.getDecisionName())
                                 .setVersion(decision.getVersion())
+                                .setVersionTag(decision.getVersionTag())
                                 .setDecisionRequirementsId(decision.getDecisionRequirementsId())
                                 .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
                                 .setTenantId(decision.getTenantId())
@@ -279,6 +285,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                   .setDecisionRequirementsKey(drgRecord.getDecisionRequirementsKey())
                   .setTenantId(drgRecord.getTenantId())
                   .setDeploymentKey(deploymentEvent.getDeploymentKey());
+              getOptionalVersionTag(parsedDrg, decision.getId())
+                  .ifPresent(decisionRecord::setVersionTag);
 
               decisionState
                   .findLatestDecisionByIdAndTenant(
@@ -327,5 +335,20 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                     .map(PersistedDecision::getDecisionRequirementsKey)
                     .orElse(UNKNOWN_DECISION_REQUIREMENTS_KEY))
         .allMatch(drgKey -> drgKey == drg.getDecisionRequirementsKey());
+  }
+
+  private Optional<String> getOptionalVersionTag(
+      final ParsedDecisionRequirementsGraph parsedDrg, final String decisionId) {
+    if (parsedDrg instanceof final ParsedDmnScalaDrg dmn) {
+      final var decisionElement = dmn.getParsedDmn().model().getModelElementById(decisionId);
+      return Optional.ofNullable(
+              decisionElement.getUniqueChildElementByType(ExtensionElements.class))
+          .map(
+              extensionElements ->
+                  extensionElements.getUniqueChildElementByNameNs(
+                      BpmnModelConstants.ZEEBE_NS, ZeebeConstants.ELEMENT_VERSION_TAG))
+          .map(versionTag -> versionTag.getAttributeValue(ZeebeConstants.ATTRIBUTE_VALUE));
+    }
+    return Optional.empty();
   }
 }

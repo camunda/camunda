@@ -304,8 +304,8 @@ final class JsonSerializableToJsonTest {
               final int processVersion = 12;
               final DirectBuffer checksum = wrapString("checksum");
               final long deploymentKey = 1234;
-              final DeploymentRecord record = new DeploymentRecord();
               final String versionTag = "v1.0";
+              final DeploymentRecord record = new DeploymentRecord();
               record
                   .setDeploymentKey(deploymentKey)
                   .resources()
@@ -344,6 +344,7 @@ final class JsonSerializableToJsonTest {
                   .setDecisionRequirementsKey(1L)
                   .setDecisionRequirementsId("drg-id")
                   .setDeploymentKey(deploymentKey)
+                  .setVersionTag(versionTag)
                   .setDuplicate(true);
               record
                   .formMetadata()
@@ -388,7 +389,8 @@ final class JsonSerializableToJsonTest {
               "decisionKey": 2,
               "duplicate": true,
               "tenantId": "<default>",
-              "deploymentKey": 1234
+              "deploymentKey": 1234,
+              "versionTag": "v1.0"
             }
           ],
           "decisionRequirementsMetadata": [
@@ -1585,7 +1587,8 @@ final class JsonSerializableToJsonTest {
                     .setDecisionKey(2L)
                     .setDecisionRequirementsKey(3L)
                     .setDecisionRequirementsId("decision-requirements-id")
-                    .setDeploymentKey(4L),
+                    .setDeploymentKey(4L)
+                    .setVersionTag("v1.0"),
         """
         {
           "decisionId": "decision-id",
@@ -1596,12 +1599,13 @@ final class JsonSerializableToJsonTest {
           "decisionRequirementsId": "decision-requirements-id",
           "duplicate": false,
           "tenantId": "<default>",
-          "deploymentKey": 4
+          "deploymentKey": 4,
+          "versionTag": "v1.0"
         }
         """
       },
       {
-        "DecisionRecord (with empty deployment key)",
+        "DecisionRecord (with empty deployment key and version tag)",
         (Supplier<UnifiedRecordValue>)
             () ->
                 new DecisionRecord()
@@ -1621,7 +1625,8 @@ final class JsonSerializableToJsonTest {
           "decisionRequirementsId": "decision-requirements-id",
           "duplicate": false,
           "tenantId": "<default>",
-          "deploymentKey": -1
+          "deploymentKey": -1,
+          "versionTag": ""
         }
         """
       },
