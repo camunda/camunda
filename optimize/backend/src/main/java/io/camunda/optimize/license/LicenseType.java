@@ -7,9 +7,7 @@
  */
 package io.camunda.optimize.license;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Arrays;
 
 /**
  * This class is a duplicate of src/main/java/io/camunda/service/license/LicenseType.java
@@ -22,15 +20,6 @@ public enum LicenseType {
   SAAS("saas"),
   PRODUCTION("production"),
   UNKNOWN("unknown");
-  private static final Map<String, LicenseType> ENUM_MAP;
-
-  static {
-    final Map<String, LicenseType> map = new HashMap<>();
-    for (final LicenseType instance : LicenseType.values()) {
-      map.put(instance.getName().toLowerCase(), instance);
-    }
-    ENUM_MAP = Collections.unmodifiableMap(map);
-  }
 
   private final String name;
 
@@ -42,10 +31,10 @@ public enum LicenseType {
     return name;
   }
 
-  public static LicenseType get(final String name) {
-    if (name == null) {
-      return LicenseType.UNKNOWN;
-    }
-    return ENUM_MAP.getOrDefault(name.toLowerCase(), LicenseType.UNKNOWN);
+  public static LicenseType get(final String licenseTypeName) {
+    return Arrays.stream(LicenseType.values())
+        .filter(e -> e.name().equalsIgnoreCase(licenseTypeName))
+        .findAny()
+        .orElse(LicenseType.UNKNOWN);
   }
 }

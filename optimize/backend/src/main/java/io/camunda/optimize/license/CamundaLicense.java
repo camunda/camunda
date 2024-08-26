@@ -28,8 +28,6 @@ public class CamundaLicense {
   private LicenseType licenseType;
   private boolean isInitialized;
 
-  protected CamundaLicense() {}
-
   public CamundaLicense(final String license) {
     initializeWithLicense(license);
   }
