@@ -306,6 +306,7 @@ public class ResourceDeletionDeleteProcessor
             .setResource(persistedForm.getResource())
             .setChecksum(persistedForm.getChecksum())
             .setVersion(persistedForm.getVersion())
+            .setVersionTag(persistedForm.getVersionTag())
             .setDeploymentKey(persistedForm.getDeploymentKey());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), FormIntent.DELETED, form);

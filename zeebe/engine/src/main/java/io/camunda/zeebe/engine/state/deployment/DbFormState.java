@@ -57,6 +57,19 @@ public class DbFormState implements MutableFormState {
           DbForeignKey<DbTenantAwareKey<DbLong>>>
       formKeyByFormIdAndDeploymentKeyColumnFamily;
 
+  private final DbString dbVersionTag;
+  private final DbTenantAwareKey<DbCompositeKey<DbString, DbString>>
+      tenantAwareFormIdAndVersionTagKey;
+
+  /**
+   * <b>Note</b>: Will only be filled with forms deployed from 8.6 onwards that have a version tag
+   * assigned (which is an optional property).
+   */
+  private final ColumnFamily<
+          DbTenantAwareKey<DbCompositeKey<DbString, DbString>>,
+          DbForeignKey<DbTenantAwareKey<DbLong>>>
+      formKeyByFormIdAndVersionTagColumnFamily;
+
   private final Cache<TenantIdAndFormId, PersistedForm> formsByTenantIdAndIdCache;
 
   public DbFormState(
@@ -93,6 +106,17 @@ public class DbFormState implements MutableFormState {
             ZbColumnFamilies.FORM_KEY_BY_FORM_ID_AND_DEPLOYMENT_KEY,
             transactionContext,
             tenantAwareFormIdAndDeploymentKey,
+            fkFormKey);
+
+    dbVersionTag = new DbString();
+    tenantAwareFormIdAndVersionTagKey =
+        new DbTenantAwareKey<>(
+            tenantIdKey, new DbCompositeKey<>(dbFormId, dbVersionTag), PlacementType.PREFIX);
+    formKeyByFormIdAndVersionTagColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.FORM_KEY_BY_FORM_ID_AND_VERSION_TAG,
+            transactionContext,
+            tenantAwareFormIdAndVersionTagKey,
             fkFormKey);
 
     versionManager =
@@ -134,6 +158,18 @@ public class DbFormState implements MutableFormState {
   }
 
   @Override
+  public void storeFormInFormKeyByFormIdAndVersionTagColumnFamily(final FormRecord record) {
+    final var versionTag = record.getVersionTag();
+    if (!versionTag.isBlank()) {
+      tenantIdKey.wrapString(record.getTenantId());
+      dbFormKey.wrapLong(record.getFormKey());
+      dbFormId.wrapString(record.getFormId());
+      dbVersionTag.wrapString(versionTag);
+      formKeyByFormIdAndVersionTagColumnFamily.upsert(tenantAwareFormIdAndVersionTagKey, fkFormKey);
+    }
+  }
+
+  @Override
   public void updateLatestVersion(final FormRecord record) {
     versionManager.addResourceVersion(
         record.getFormId(), record.getVersion(), record.getTenantId());
@@ -171,6 +207,14 @@ public class DbFormState implements MutableFormState {
   }
 
   @Override
+  public void deleteFormInFormKeyByFormIdAndVersionTagColumnFamily(final FormRecord record) {
+    tenantIdKey.wrapString(record.getTenantId());
+    dbFormId.wrapString(record.getFormId());
+    dbVersionTag.wrapString(record.getVersionTag());
+    formKeyByFormIdAndVersionTagColumnFamily.deleteIfExists(tenantAwareFormIdAndVersionTagKey);
+  }
+
+  @Override
   public Optional<PersistedForm> findLatestFormById(
       final DirectBuffer formId, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
@@ -202,6 +246,17 @@ public class DbFormState implements MutableFormState {
     dbDeploymentKey.wrapLong(deploymentKey);
     return Optional.ofNullable(
             formKeyByFormIdAndDeploymentKeyColumnFamily.get(tenantAwareFormIdAndDeploymentKey))
+        .flatMap(key -> findFormByKey(key.inner().wrappedKey().getValue(), tenantId));
+  }
+
+  @Override
+  public Optional<PersistedForm> findFormByIdAndVersionTag(
+      final DirectBuffer formId, final String versionTag, final String tenantId) {
+    tenantIdKey.wrapString(tenantId);
+    dbFormId.wrapBuffer(formId);
+    dbVersionTag.wrapString(versionTag);
+    return Optional.ofNullable(
+            formKeyByFormIdAndVersionTagColumnFamily.get(tenantAwareFormIdAndVersionTagKey))
         .flatMap(key -> findFormByKey(key.inner().wrappedKey().getValue(), tenantId));
   }
 
