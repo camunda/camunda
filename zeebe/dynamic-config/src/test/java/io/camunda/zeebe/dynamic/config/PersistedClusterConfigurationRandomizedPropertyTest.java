@@ -16,6 +16,8 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.util.ReflectUtil;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -53,6 +55,10 @@ final class PersistedClusterConfigurationRandomizedPropertyTest {
     assertThat(updatedTopology).isEqualTo(persistedClusterTopology.getConfiguration());
     assertThat(PersistedClusterConfiguration.ofFile(topologyFile, serializer).getConfiguration())
         .usingRecursiveComparison()
+        // The type of generated `activePartitions` is `LinkedHashSet`, which AssertJ treats as an
+        // ordered collection. We are not interested in the order of the partitions, so we ignore
+        // it here.
+        .ignoringCollectionOrderInFields("routingState.value.activePartitions")
         .isEqualTo(updatedTopology);
   }
 
@@ -70,14 +76,35 @@ final class PersistedClusterConfigurationRandomizedPropertyTest {
       // `ClusterTopology#isUninitialized` to return false.
       final var arbitraryVersion = Arbitraries.integers().greaterOrEqual(0);
       final var arbitraryMembers =
-          Arbitraries.maps(memberIds(), Arbitraries.forType(MemberState.class).enableRecursion());
+          Arbitraries.maps(memberIds(), Arbitraries.forType(MemberState.class).enableRecursion())
+              .ofMaxSize(10);
       final var arbitraryCompletedChange =
           Arbitraries.forType(CompletedChange.class).enableRecursion().optional();
       final var arbitraryChangePlan =
           Arbitraries.forType(ClusterChangePlan.class).enableRecursion().optional();
+      final var arbitraryRoutingState = routingStates().optional();
       return Combinators.combine(
-              arbitraryVersion, arbitraryMembers, arbitraryCompletedChange, arbitraryChangePlan)
+              arbitraryVersion,
+              arbitraryMembers,
+              arbitraryCompletedChange,
+              arbitraryChangePlan,
+              arbitraryRoutingState)
           .as(ClusterConfiguration::new);
+    }
+
+    @Provide
+    Arbitrary<RoutingState> routingStates() {
+      final var version = Arbitraries.longs().greaterOrEqual(0);
+      final var activePartitions = Arbitraries.integers().greaterOrEqual(1).set().ofMaxSize(10);
+      return Combinators.combine(version, activePartitions, messageCorrelation())
+          .as(RoutingState::new);
+    }
+
+    @Provide
+    Arbitrary<MessageCorrelation> messageCorrelation() {
+      return Arbitraries.of(
+              ReflectUtil.implementationsOfSealedInterface(MessageCorrelation.class).toList())
+          .flatMap(Arbitraries::forType);
     }
 
     @Provide

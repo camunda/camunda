@@ -368,6 +368,11 @@
                 "id": 4,
                 "name": "currentChange",
                 "type": "ClusterChangePlan"
+              },
+              {
+                "id": 5,
+                "name": "routingState",
+                "type": "RoutingState"
               }
             ],
             "maps": [
@@ -378,6 +383,49 @@
                   "name": "members",
                   "type": "MemberState"
                 }
+              }
+            ]
+          },
+          {
+            "name": "RoutingState",
+            "fields": [
+              {
+                "id": 1,
+                "name": "version",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "activePartitions",
+                "type": "sint32",
+                "is_repeated": true
+              },
+              {
+                "id": 3,
+                "name": "messageCorrelation",
+                "type": "MessageCorrelation"
+              }
+            ]
+          },
+          {
+            "name": "MessageCorrelation",
+            "fields": [
+              {
+                "id": 1,
+                "name": "hashMod",
+                "type": "HashMod"
+              }
+            ],
+            "messages": [
+              {
+                "name": "HashMod",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "partitionCount",
+                    "type": "sint32"
+                  }
+                ]
               }
             ]
           },
