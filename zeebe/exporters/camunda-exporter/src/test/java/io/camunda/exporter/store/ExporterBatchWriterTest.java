@@ -21,19 +21,20 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.entities.TestExporterEntity;
 import io.camunda.exporter.exceptions.PersistenceException;
-import io.camunda.exporter.handlers.TestExportHandler;
+import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.protocol.TestRecord;
+import io.camunda.protocol.TestValue;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ExporterBatchWriterTest {
   private ExporterBatchWriter batchWriter;
-  private TestExportHandler handler;
+  private ExportHandler<TestExporterEntity, TestValue> handler;
 
   @BeforeEach
   void setUp() {
-    handler = mock(TestExportHandler.class);
+    handler = mock(ExportHandler.class);
     when(handler.getHandledValueType()).thenReturn(NULL_VAL);
     when(handler.getEntityType()).thenReturn(TestExporterEntity.class);
     batchWriter = ExporterBatchWriter.Builder.begin().withHandler(handler).build();
