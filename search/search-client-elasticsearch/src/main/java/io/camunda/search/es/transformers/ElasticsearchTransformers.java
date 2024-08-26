@@ -7,7 +7,9 @@
  */
 package io.camunda.search.es.transformers;
 
-import io.camunda.search.clients.aggregation.SearchCardinalityAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.CardinalityAggregate;
+import io.camunda.search.clients.aggregation.SearchAggregation;
 import io.camunda.search.clients.aggregation.SearchCardinalityAggregation;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.core.SearchDeleteRequest;
@@ -40,6 +42,8 @@ import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.es.transformers.aggregation.CardinalityAggregateTransformer;
 import io.camunda.search.es.transformers.aggregation.CardinalityAggregationTransformer;
 import io.camunda.search.es.transformers.aggregator.TermsAggregationTransformer;
+import io.camunda.search.es.transformers.aggregation.SearchAggregateTransformer;
+import io.camunda.search.es.transformers.aggregation.SearchAggregationTransformer;
 import io.camunda.search.es.transformers.query.BoolQueryTransformer;
 import io.camunda.search.es.transformers.query.ConstantScoreQueryTransformer;
 import io.camunda.search.es.transformers.query.ExistsQueryTransformer;
@@ -130,6 +134,7 @@ public final class ElasticsearchTransformers {
     mappers.put(TypedValue.class, new TypedValueTransformer(mappers));
 
     // aggregations
+    mappers.put(SearchAggregation.class, new SearchAggregationTransformer(mappers));
     mappers.put(SearchCardinalityAggregation.class, new CardinalityAggregationTransformer(mappers));
 
     // aggregates
@@ -138,5 +143,7 @@ public final class ElasticsearchTransformers {
     // source
     mappers.put(SearchSourceConfig.class, new SourceConfigTransformer(mappers));
     mappers.put(SearchSourceFilter.class, new SourceFilterTransformer(mappers));
+    mappers.put(Aggregate.class, new SearchAggregateTransformer(mappers));
+    mappers.put(CardinalityAggregate.class, new CardinalityAggregateTransformer(mappers));
   }
 }

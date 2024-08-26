@@ -60,6 +60,6 @@ public abstract class ElasticsearchTransformer<T, R> implements SearchTransfomer
   }
 
   protected SearchTransfomer<Aggregate, SearchAggregate> getAggregateTransformer() {
-    return getTransformer(SearchAggregate.class);
+    return getTransformer(Aggregate.class);
   }
 }
