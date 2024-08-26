@@ -151,7 +151,7 @@ public class OpenSearchConnector {
   private OpenSearchAsyncClient createAsyncOsClient(final OpenSearchProperties osConfig) {
     LOGGER.debug("Creating Async OpenSearch connection...");
     LOGGER.debug("Creating OpenSearch connection...");
-    if (isAws()) {
+    if (hasAwsCredentials()) {
       return getAwsAsyncClient(osConfig);
     }
     final HttpHost host = getHttpHostForClient5(osConfig);
@@ -205,7 +205,7 @@ public class OpenSearchConnector {
 
   private OpenSearchClient createOsClient(final OpenSearchProperties osConfig) {
     LOGGER.debug("Creating OpenSearch connection...");
-    if (isAws()) {
+    if (hasAwsCredentials()) {
       return getAwsClient(osConfig);
     }
     final HttpHost host = getHttpHostForClient5(osConfig);
@@ -479,7 +479,10 @@ public class OpenSearchConnector {
             e -> LOGGER.error("Retries {} exceeded for {}", e.getAttemptCount(), logMessage));
   }
 
-  private boolean isAws() {
+  public boolean hasAwsCredentials() {
+    if (!tasklistProperties.getOpenSearch().isAwsEnabled()) {
+      return false;
+    }
     final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
     try {
       credentialsProvider.resolveCredentials();
@@ -523,7 +526,7 @@ public class OpenSearchConnector {
       final org.apache.http.impl.nio.client.HttpAsyncClientBuilder builder,
       final OpenSearchProperties osConfig) {
 
-    if (isAws()) {
+    if (hasAwsCredentials()) {
       configureAwsSigningForApacheHttpClient(builder);
     } else if (useBasicAuthentication(osConfig)) {
       configureBasicAuthenticationForApacheHttpClient(osConfig, builder);

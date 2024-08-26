@@ -42,6 +42,8 @@ public class OpenSearchProperties {
   private String username;
   private String password;
 
+  private boolean awsEnabled = false;
+
   @NestedConfigurationProperty private SslProperties ssl;
 
   @NestedConfigurationProperty private Map<String, InterceptorPluginProperties> interceptorPlugins;
@@ -175,5 +177,13 @@ public class OpenSearchProperties {
   public void setInterceptorPlugins(
       final Map<String, InterceptorPluginProperties> interceptorPlugins) {
     this.interceptorPlugins = interceptorPlugins;
+  }
+
+  public boolean isAwsEnabled() {
+    return awsEnabled;
+  }
+
+  public void setAwsEnabled(boolean awsEnabled) {
+    this.awsEnabled = awsEnabled;
   }
 }
