@@ -41,8 +41,8 @@ paths:
     get:
       tags:
         - License
-      summary: Get status of Camunda License
-      description: Obtains the status of the current Camunda License
+      summary: Get status of Camunda license
+      description: Obtains the status of the current Camunda license
       responses:
         '200':
           description: Obtains the current status of the Camunda license
@@ -546,7 +546,7 @@ paths:
 
         :::note
         This endpoint is experimental and not enabled on Camunda clusters out of the box.
-        See [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
         for further details.
         :::
       requestBody:
@@ -588,7 +588,7 @@ paths:
 
         :::note
         This endpoint is experimental and not enabled on Camunda clusters out of the box.
-        See [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
         for further details.
         :::
       requestBody:
@@ -630,7 +630,7 @@ paths:
 
         :::note
         This endpoint is experimental and not enabled on Camunda clusters out of the box.
-        See [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
         for further details.
         :::
       requestBody:
@@ -665,14 +665,14 @@ paths:
   /decision-requirements/search:
     post:
       tags:
-        - Decision Requirements
+        - Decision requirements
       summary: Query decision requirements (experimental)
       description: |
         Search for decision requirements based on given criteria.
 
         :::note
         This endpoint is experimental and not enabled on Camunda clusters out of the box.
-        See [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
+        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
         for further details.
         :::
       requestBody:
@@ -684,14 +684,14 @@ paths:
       responses:
         '200':
           description: >
-            The Decision Requirements Search successful response.
+            The decision requirements search successful response.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/DecisionRequirementsSearchQueryResponse"
         '400':
           description: >
-            The Decision Requirements Search Query failed.
+            The decision requirements search query failed.
             More details are provided in the response body.
   /authorizations:
     post:
@@ -754,10 +754,10 @@ paths:
       responses:
         "204":
           description: |
-            The User was created successfully.
+            The user was created successfully.
         "400":
           description: |
-            The User could not be created.
+            The user could not be created.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -789,10 +789,10 @@ paths:
     post:
       tags:
         - Message
-      summary: Correlate a Message
+      summary: Correlate a message
       description: |
-        Publishes a Message and correlates it to a subscription. If correlation is successful it
-        will return the first process instance key the message correlated with.
+        Publishes a message and correlates it to a subscription.
+        If correlation is successful it will return the first process instance key the message correlated with.
       requestBody:
         required: true
         content:
@@ -1404,11 +1404,11 @@ components:
       type: object
       properties:
         validLicense:
-          description: True if the Camunda License is valid, false if otherwise
+          description: True if the Camunda license is valid, false if otherwise
           type: boolean
           nullable: false
         licenseType:
-          description: Will return the license type property of the Camunda License
+          description: Will return the license type property of the Camunda license
           type: string
     BrokerInfo:
       description: Provides information on a broker node.
@@ -1743,7 +1743,7 @@ components:
 
         Providing any of those attributes with a null value or omitting it preserves the persisted attribute’s value.
 
-        The job cannot be completed or failed with this endpoint, use the Complete job or Fail job endpoints instead.
+        The job cannot be completed or failed with this endpoint, use the complete job or fail job endpoints instead.
       type: object
       additionalProperties: true
       properties:
