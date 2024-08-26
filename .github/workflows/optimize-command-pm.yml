@@ -18,19 +18,6 @@ jobs:
             echo "run_url=https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Generate a GitHub token
-        id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
-        with:
-          github-app-id-vault-key: GITHUB_OPTIMIZE_APP_ID
-          github-app-id-vault-path: secret/data/products/optimize/ci/camunda-optimize
-          github-app-private-key-vault-key: GITHUB_OPTIMIZE_APP_KEY
-          github-app-private-key-vault-path: secret/data/products/optimize/ci/camunda-optimize
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
-          vault-url: ${{ secrets.VAULT_ADDR }}
-
       - name: Dump the client payload context
         env:
           PAYLOAD_CONTEXT: ${{ toJson(github.event.client_payload) }}
@@ -51,14 +38,14 @@ jobs:
           ISSUE_URL: ${{ github.event.client_payload.github.payload.issue.html_url }}
           PROJECT_ID: ${{ steps.vars.outputs.project_id }}
           PROJECT_OWNER: ${{ github.event.client_payload.github.payload.organization.login }}
-          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+          GITHUB_TOKEN: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
         run: ./.github/optimize/scripts/commands/get-issue-project-data.sh
 
       - name: Get Engineering DRI
         id: get-engineering-dri
         env:
           ISSUE_URL: ${{ github.event.client_payload.github.payload.issue.html_url }}
-          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+          GITHUB_TOKEN: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
         run: ./.github/optimize/scripts/commands/get-issue-engineering-dri.sh
 
       - name: Validate inputs
@@ -128,7 +115,7 @@ jobs:
         uses: github/update-project-action@main
         if: steps.status.outputs.new_status != ''
         with:
-          github_token: ${{ steps.github-token.outputs.token }}
+          github_token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           organization: ${{ github.event.client_payload.github.payload.organization.login }}
           project_number: ${{ steps.vars.outputs.project_id }}
           content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
@@ -138,7 +125,7 @@ jobs:
       - name: Add reaction
         uses: peter-evans/create-or-update-comment@v4
         with:
-          token: ${{ steps.github-token.outputs.token }}
+          token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
           comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
           reactions: "+1"
