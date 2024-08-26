@@ -15,6 +15,7 @@ import MultiEmailInput from './MultiEmailInput';
 const props = {
   emails: ['email1@hotmail.com', 'email2@gmail.com'],
   onChange: jest.fn(),
+  titleText: 'test'
 };
 
 beforeEach(() => props.onChange.mockClear());

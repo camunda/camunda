@@ -28,7 +28,7 @@ type RetrieverProps = {
 
 interface CommonProps extends ComponentPropsWithoutRef<typeof Button> {
   totalCount: number;
-  // We take user as a prop instead of using the hook because user context is not accesigble in HeatmapOverlay
+  // We take user as a prop instead of using the hook because user context is not accessible in HeatmapOverlay
   user: User | undefined;
 }
 
@@ -90,6 +90,7 @@ export function DownloadButton({
     <>
       <Button
         renderIcon={Download}
+        iconDescription={t('report.downloadCSV').toString()}
         {...props}
         onClick={() => (totalCount > exportLimit ? setModalOpen(true) : triggerDownload())}
       />
