@@ -1209,14 +1209,14 @@ public class FlowNodeMetadataZeebeImportIT extends OperateZeebeAbstractIT {
     MvcResult mvcResult =
         postRequestThatShouldFail(PROCESS_INSTANCE_URL + "/111/flow-node-metadata", request);
     assertErrorMessageIsEqualTo(
-        mvcResult, "At least flowNodeId or flowNodeInstanceId must be specifies in the request.");
+        mvcResult, "At least flowNodeId or flowNodeInstanceId must be specified in the request.");
 
     request = new FlowNodeMetadataRequestDto("flowNodeId", "flowNodeInstanceId", null);
     mvcResult =
         postRequestThatShouldFail(PROCESS_INSTANCE_URL + "/111/flow-node-metadata", request);
     assertErrorMessageIsEqualTo(
         mvcResult,
-        "Only one of flowNodeId or flowNodeInstanceId must be specifies in the request.");
+        "Only one of flowNodeId or flowNodeInstanceId must be specified in the request.");
   }
 
   private void assertMetadata(

@@ -47,7 +47,7 @@ public class ProcessInstanceRequestValidator {
         && request.getFlowNodeType() == null
         && request.getFlowNodeInstanceId() == null) {
       throw new InvalidRequestException(
-          "At least flowNodeId or flowNodeInstanceId must be specifies in the request.");
+          "At least flowNodeId or flowNodeInstanceId must be specified in the request.");
     }
     if (request.getFlowNodeId() != null && request.getFlowNodeInstanceId() != null) {
       throw new InvalidRequestException(
