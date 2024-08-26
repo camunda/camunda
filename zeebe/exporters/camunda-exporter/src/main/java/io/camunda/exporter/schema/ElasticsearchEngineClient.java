@@ -65,6 +65,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   @Override
+  // change this to be a string instead and force them to use the libraries of ELS/Opensearch to
+  //  build the map object and then serialise it themselves
   public void createComponentTemplate(final ComponentTemplateDescriptor templateDescriptor) {
     final PutComponentTemplateRequest request = putComponentTemplateRequest(templateDescriptor);
 
@@ -139,6 +141,12 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   private InputStream getResourceAsStream(final String classpathFileName) {
     return Thread.currentThread().getContextClassLoader().getResourceAsStream(classpathFileName);
+  }
+
+  private InputStream descriptorSettings(final IndexDescriptor descriptor) {
+    final var sanitisedSettings =
+        descriptor.getSettings() == null ? "{}" : descriptor.getSettings();
+    return IOUtils.toInputStream(sanitisedSettings, StandardCharsets.UTF_8);
   }
 
   private PutIndexTemplateRequest putIndexTemplateRequest(
