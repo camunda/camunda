@@ -480,7 +480,7 @@ public class OpenSearchConnector {
   }
 
   public boolean hasAwsCredentials() {
-    if (tasklistProperties.getOpenSearch().isAwsEnabled()) {
+    if (!tasklistProperties.getOpenSearch().isAwsEnabled()) {
       return false;
     }
     final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
