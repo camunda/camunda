@@ -9,6 +9,7 @@ package io.camunda.search.clients.aggregation;
 
 import io.camunda.search.clients.aggregation.SearchAggregation.Builder;
 import io.camunda.util.ObjectBuilder;
+import java.util.Map;
 import java.util.function.Function;
 
 public class SearchAggregationBuilders {
@@ -36,5 +37,21 @@ public class SearchAggregationBuilders {
   public static SearchCardinalityAggregation cardinality(
       final String field, final Integer precisionThreshold) {
     return cardinality(c -> c.field(field).precisionThreshold(precisionThreshold));
+  }
+
+  public static SearchTermsAggregation.Builder terms() {
+    return new SearchTermsAggregation.Builder();
+  }
+
+  public static SearchTermsAggregation terms(
+      final Function<SearchTermsAggregation.Builder, ObjectBuilder<SearchTermsAggregation>> fn) {
+    return fn.apply(terms()).build();
+  }
+
+  public static SearchTermsAggregation termsAggregation(
+      final String field,
+      final Integer size,
+      final Map<String, SearchAggregation> subAggregations) {
+    return terms(c -> c.field(field).size(size).subAggregations(subAggregations));
   }
 }

@@ -16,6 +16,7 @@ import io.camunda.search.clients.core.SearchDeleteRequest;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
 import io.camunda.search.clients.core.SearchIndexRequest;
+import io.camunda.search.clients.aggregation.SearchTermsAggregation;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
@@ -44,6 +45,7 @@ import io.camunda.search.es.transformers.aggregation.CardinalityAggregationTrans
 import io.camunda.search.es.transformers.aggregator.TermsAggregationTransformer;
 import io.camunda.search.es.transformers.aggregation.SearchAggregateTransformer;
 import io.camunda.search.es.transformers.aggregation.SearchAggregationTransformer;
+import io.camunda.search.es.transformers.aggregation.TermsAggregationTransformer;
 import io.camunda.search.es.transformers.query.BoolQueryTransformer;
 import io.camunda.search.es.transformers.query.ConstantScoreQueryTransformer;
 import io.camunda.search.es.transformers.query.ExistsQueryTransformer;
@@ -136,6 +138,7 @@ public final class ElasticsearchTransformers {
     // aggregations
     mappers.put(SearchAggregation.class, new SearchAggregationTransformer(mappers));
     mappers.put(SearchCardinalityAggregation.class, new CardinalityAggregationTransformer(mappers));
+    mappers.put(SearchTermsAggregation.class, new TermsAggregationTransformer(mappers));
 
     // aggregates
     mappers.put(SearchCardinalityAggregate.class, new CardinalityAggregateTransformer(mappers));
