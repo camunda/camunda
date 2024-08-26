@@ -50,6 +50,7 @@ describe('<Task />', () => {
         followUpDate={null}
         dueDate={null}
         completionDate={null}
+        priority={50}
         currentUser={userMocks.currentUser}
         position={0}
       />,
@@ -81,6 +82,7 @@ describe('<Task />', () => {
         followUpDate={null}
         dueDate={null}
         completionDate={null}
+        priority={50}
         currentUser={userMocks.currentUser}
         position={0}
       />,
@@ -104,6 +106,7 @@ describe('<Task />', () => {
         followUpDate={null}
         dueDate={null}
         completionDate={null}
+        priority={50}
         currentUser={userMocks.currentUser}
         position={0}
       />,
@@ -127,6 +130,7 @@ describe('<Task />', () => {
         followUpDate={null}
         dueDate={null}
         completionDate={null}
+        priority={50}
         currentUser={userMocks.currentUser}
         position={0}
       />,
@@ -151,6 +155,7 @@ describe('<Task />', () => {
         followUpDate={null}
         dueDate={null}
         completionDate={null}
+        priority={50}
         currentUser={userMocks.currentUser}
         position={0}
       />,
@@ -178,6 +183,7 @@ describe('<Task />', () => {
         followUpDate={null}
         dueDate="2025-05-29T14:00:00.000Z"
         completionDate={null}
+        priority={50}
         currentUser={userMocks.currentUser}
         position={0}
       />,
@@ -201,6 +207,7 @@ describe('<Task />', () => {
         followUpDate="2025-05-29T14:00:00.000Z"
         dueDate="2025-05-29T14:00:00.000Z"
         completionDate={null}
+        priority={50}
         currentUser={userMocks.currentUser}
         position={0}
       />,
@@ -226,6 +233,7 @@ describe('<Task />', () => {
         followUpDate="2025-05-29T14:00:00.000Z"
         dueDate="2025-05-29T14:00:00.000Z"
         completionDate={null}
+        priority={50}
         currentUser={userMocks.currentUser}
         position={0}
       />,
@@ -253,6 +261,7 @@ describe('<Task />', () => {
         followUpDate={null}
         dueDate="2025-05-29T14:00:00.000Z"
         completionDate="2025-05-28T14:00:00.000Z"
+        priority={50}
         currentUser={userMocks.currentUser}
         position={0}
       />,
@@ -279,6 +288,7 @@ describe('<Task />', () => {
         followUpDate={null}
         dueDate="2024-05-29T00:00:00.000Z"
         completionDate={null}
+        priority={50}
         currentUser={userMocks.currentUser}
         position={0}
       />,
