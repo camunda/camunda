@@ -31,11 +31,15 @@ runs:
       secrets: |
         secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
         secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
-  - name: Setup Maven Action
-    uses: s4u/setup-maven-action@2f53a7669c7543a045d0bb6c92436df0c5a726f8 # v1.14.0
+  - name: Setup Java
+    uses: actions/setup-java@v4
     with:
       java-version: ${{ inputs.java-version }}
-      java-distribution: ${{ inputs.distribution }}
+      distribution: ${{ inputs.distribution }}
+      cache: "maven"
+  - name: Setup Maven
+    uses: stCarolas/setup-maven@v4.5
+    with:
       maven-version: ${{ inputs.maven-version }}
   - name: 'Create settings.xml'
     uses: s4u/maven-settings-action@7802f6aec16c9098b4798ad1f1d8ac75198194bd # v3.0.0

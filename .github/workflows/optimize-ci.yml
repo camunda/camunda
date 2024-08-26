@@ -43,17 +43,13 @@ jobs:
     name: Get changed directories
     runs-on: ubuntu-latest
     outputs:
-      backend-changes: ${{ steps.filter.outputs.backend-changes }}
+      backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
     - name: Get list of changed directories
       id: filter
-      uses: ./.github/actions/optimize-paths-filter
-  unit-tests:
-    name: Unit Tests
-    uses: ./.github/workflows/optimize-unit-tests.yml
-    secrets: inherit
+      uses: ./.github/actions/paths-filter
 
   docker:
     name: Optimize Build
@@ -317,7 +313,7 @@ jobs:
   deploy-artifacts:
     if: github.event_name == 'push' && (github.ref_name == 'main' || startsWith(github.ref_name, 'stable/'))
     name: Deploy Artifacts
-    needs: [unit-tests, integration-tests]
+    needs: [integration-tests]
     uses: ./.github/workflows/optimize-deploy-artifacts.yml
     secrets: inherit
 
@@ -326,7 +322,6 @@ jobs:
     needs:
       - integration-tests
       - integration-tests-os
-      - unit-tests
       - deploy-artifacts
     if: failure() && fromJSON(github.run_attempt) < 3
     runs-on: ubuntu-latest

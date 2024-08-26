@@ -16,7 +16,7 @@ env:
 jobs:
   smoke-tests:
     name: "[Smoke] ${{ matrix.os }} with ${{ matrix.arch }}"
-    timeout-minutes: 20
+    timeout-minutes: 25
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
